@@ -1,0 +1,42 @@
+#if defined(UNDER_CE)
+#include <winbase.h>
+#else
+#include <winver.h>
+#endif
+
+// ICON
+IDI_ICON1       ICON      "image/my_icon.ico"
+
+// Version
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "https://github.com/Zalafina/QKeyMapper"
+            VALUE "FileDescription", "QKeyMapper"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "QKeyMapper"
+            VALUE "LegalCopyright", "Copyright (c) 2017, Melvin Li"
+            VALUE "OriginalFilename", "QKeyMapper.exe"
+            VALUE "ProductName", "QKeyMapper"
+            VALUE "ProductVersion", "1.0.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
