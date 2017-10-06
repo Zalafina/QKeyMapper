@@ -1,0 +1,12 @@
+# Qt generate file types
+
+build-*/*
+QKeyMapper/*.pro.user
+QKeyMapper/*.pro.user.*
+QKeyMapper/*.moc
+QKeyMapper/*.bin
+QKeyMapper/moc_*.cpp
+QKeyMapper/qrc_*.cpp
+QKeyMapper/ui_*.h
+QKeyMapper/Makefile*
+QKeyMapper/*-build-*

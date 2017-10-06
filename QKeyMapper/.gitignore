@@ -1,7 +1,7 @@
 # Qt generate file types
 
 build-*/*
-build-QChecksumer*/*
+../build-*/*
 *.pro.user
 *.pro.user.*
 *.moc
@@ -11,3 +11,4 @@ qrc_*.cpp
 ui_*.h
 Makefile*
 *-build-*
+../build-*

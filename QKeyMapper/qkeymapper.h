@@ -8,7 +8,12 @@
 #include <QTimer>
 #include <QSettings>
 #include <QSystemTrayIcon>
+#include <QFileInfo>
 #include <windows.h>
+#include <tlhelp32.h>
+#include <Psapi.h>
+#include <tchar.h>
+#include <string.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
@@ -16,6 +21,13 @@
 namespace Ui {
 class QKeyMapper;
 }
+
+typedef struct
+{
+    QString FileName;
+    QString PID;
+    QString WindowTitle;
+}MAP_PROCESSINFO;
 
 class QKeyMapper : public QDialog
 {
@@ -28,6 +40,7 @@ public:
     enum KeyMapStatus
     {
         KEYMAP_IDLE = 0U,
+        KEYMAP_CHECKING,
         KEYMAP_MAPPING
     };
     Q_ENUM(KeyMapStatus)
@@ -75,8 +88,15 @@ public:
     Q_ENUM(VirtualKeyCode)
 
     Q_INVOKABLE void WindowStateChangedProc(void);
+    Q_INVOKABLE void cycleCheckProcessProc(void);
 
     void setKeyHook(void);
+    void setKeyUnHook(void);
+
+    void setMapProcessName(QString &process_name);
+    static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
+
+    static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
 
 protected:
     void changeEvent(QEvent *event);
@@ -86,13 +106,14 @@ protected:
 private slots:
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
+    void on_keymapButton_clicked();
 
     void on_savemaplistButton_clicked();
 
-    void on_keymapButton_clicked();
-
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
+
+    void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
 
     void saveKeyMapList(void);
     void loadKeyMapList(void);
@@ -100,6 +121,9 @@ private:
 private:
     Ui::QKeyMapper *ui;
     quint8 m_KeyMapStatus;
+    QTimer m_CycleCheckTimer;
+    QString m_MapProcessName;
+    MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     HHOOK m_KeyHook;
 };

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>404</width>
-    <height>227</height>
+    <width>731</width>
+    <height>481</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -22,8 +22,8 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>160</y>
+     <x>130</x>
+     <y>400</y>
      <width>111</width>
      <height>31</height>
     </rect>
@@ -39,10 +39,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>KeyMapStart</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
+    <string>MapStart</string>
    </property>
    <property name="default">
     <bool>true</bool>
@@ -51,8 +48,8 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>160</y>
+     <x>430</x>
+     <y>400</y>
      <width>111</width>
      <height>31</height>
     </rect>
@@ -70,11 +67,15 @@
    <property name="text">
     <string>SaveMapList</string>
    </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-   <property name="default">
-    <bool>true</bool>
+  </widget>
+  <widget class="QTableView" name="processTableView">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>30</y>
+     <width>651</width>
+     <height>311</height>
+    </rect>
    </property>
   </widget>
  </widget>
