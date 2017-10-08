@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
 
     // Remove "?" Button from QDialog
     Qt::WindowFlags flags = Qt::Dialog;
+    flags |= Qt::WindowMinMaxButtonsHint;
     flags |= Qt::WindowCloseButtonHint;
-    flags |= Qt::WindowMinimizeButtonHint;
     w.setWindowFlags(flags);
 
     w.show();

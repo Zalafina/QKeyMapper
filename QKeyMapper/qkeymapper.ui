@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>731</width>
-    <height>481</height>
+    <width>730</width>
+    <height>499</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -22,10 +22,10 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>400</y>
-     <width>111</width>
-     <height>31</height>
+     <x>290</x>
+     <y>430</y>
+     <width>131</width>
+     <height>41</height>
     </rect>
    </property>
    <property name="font">
@@ -39,7 +39,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>MapStart</string>
+    <string>KeyMapStart</string>
    </property>
    <property name="default">
     <bool>true</bool>
@@ -48,10 +48,10 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>430</x>
-     <y>400</y>
-     <width>111</width>
-     <height>31</height>
+     <x>510</x>
+     <y>435</y>
+     <width>121</width>
+     <height>30</height>
     </rect>
    </property>
    <property name="font">
@@ -65,17 +65,106 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>SaveMapList</string>
+    <string>SaveMapData</string>
    </property>
   </widget>
-  <widget class="QTableView" name="processTableView">
+  <widget class="QTableWidget" name="processinfoTable">
    <property name="geometry">
     <rect>
-     <x>40</x>
+     <x>30</x>
      <y>30</y>
-     <width>651</width>
-     <height>311</height>
+     <width>671</width>
+     <height>331</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="columnCount">
+    <number>0</number>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="nameCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>390</y>
+     <width>49</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Name</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="titleCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>348</x>
+     <y>390</y>
+     <width>55</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Title</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refreshButton">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>435</y>
+     <width>121</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="nameLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>79</x>
+     <y>390</y>
+     <width>191</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="titleLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>403</x>
+     <y>390</y>
+     <width>298</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>

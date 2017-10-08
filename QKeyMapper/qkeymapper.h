@@ -9,6 +9,7 @@
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QFileInfo>
+#include <QFileIconProvider>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -27,6 +28,7 @@ typedef struct
     QString FileName;
     QString PID;
     QString WindowTitle;
+    QString FilePath;
 }MAP_PROCESSINFO;
 
 class QKeyMapper : public QDialog
@@ -93,15 +95,18 @@ public:
     void setKeyHook(void);
     void setKeyUnHook(void);
 
-    void setMapProcessName(QString &process_name);
+    void setMapProcessInfo(QString &filename, QString &windowtitle);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
+    static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
 
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
 
+    // unused enum all process function >>>
+    static void EnumProcessFunction(void);
+    // unused enum all process function <<<
+
 protected:
     void changeEvent(QEvent *event);
-    //void keyPressEvent(QKeyEvent *event) override;
-    //bool eventFilter(QObject *widgetobject, QEvent *event);
 
 private slots:
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -110,19 +115,27 @@ private slots:
 
     void on_savemaplistButton_clicked();
 
+    void on_refreshButton_clicked();
+
+    void on_processinfoTable_doubleClicked(const QModelIndex &index);
+
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
+    void initProcessInfoTable(void);
+    void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
 
-    void saveKeyMapList(void);
-    void loadKeyMapList(void);
+    void saveKeyMapSetting(void);
+    void loadKeyMapSetting(void);
+
+public:
+    static QList<MAP_PROCESSINFO> static_ProcessInfoList;
 
 private:
     Ui::QKeyMapper *ui;
     quint8 m_KeyMapStatus;
     QTimer m_CycleCheckTimer;
-    QString m_MapProcessName;
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     HHOOK m_KeyHook;
