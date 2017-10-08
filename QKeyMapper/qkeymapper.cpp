@@ -9,6 +9,9 @@ static const int PROCESS_NAME_COLUMN = 0;
 static const int PROCESS_PID_COLUMN = 1;
 static const int PROCESS_TITLE_COLUMN = 2;
 
+static const QString DEFAULT_NAME(QString("AWVSSAO.exe"));
+static const QString DEFAULT_TITLE(QString("Accel World vs. Sword Art Online"));
+
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
@@ -21,6 +24,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyHook(NULL)
 {
     ui->setupUi(this);
+
+    ui->nameLineEdit->setText(DEFAULT_NAME);
+    ui->titleLineEdit->setText(DEFAULT_TITLE);
+    ui->nameCheckBox->setChecked(true);
+    ui->titleCheckBox->setChecked(true);
+
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
