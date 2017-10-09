@@ -27,6 +27,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->nameLineEdit->setText(DEFAULT_NAME);
     ui->titleLineEdit->setText(DEFAULT_TITLE);
+    setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE));
     ui->nameCheckBox->setChecked(true);
     ui->titleCheckBox->setChecked(true);
 
