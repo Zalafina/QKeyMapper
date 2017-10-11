@@ -2,7 +2,7 @@
 #include "ui_qkeymapper.h"
 
 //static const uint WIN_TITLESTR_MAX = 200U;
-static const uint CYCLE_CHECK_TIMEOUT = 5000U;
+static const uint CYCLE_CHECK_TIMEOUT = 1000U;
 static const int PROCESSINFO_TABLE_COLUMN = 3;
 
 static const int PROCESS_NAME_COLUMN = 0;
@@ -359,6 +359,17 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 {
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
 
+#ifdef DEBUG_LOGOUT_ON
+    if (WM_KEYDOWN == wParam){
+        qDebug("VirtualKeyCode:0x%02X (PressDown)", pKeyBoard->vkCode);
+    }
+    else if (WM_KEYUP == wParam){
+        qDebug("VirtualKeyCode:0x%02X (ReleaseUp)", pKeyBoard->vkCode);
+    }
+    else{
+    }
+#endif
+
     switch (pKeyBoard->vkCode)
     {
     case VK_LSHIFT:
@@ -434,6 +445,19 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
         }
         else if (WM_KEYUP == wParam){
             keybd_event(VK_J, 0, KEYEVENTF_KEYUP, 0);
+            return 1;
+        }
+        else{
+            // do nothing.
+        }
+        break;
+    case VK_TAB:
+        if (WM_KEYDOWN == wParam){
+            keybd_event(VK_0, 0, 0, 0);
+            return 1;
+        }
+        else if (WM_KEYUP == wParam){
+            keybd_event(VK_0, 0, KEYEVENTF_KEYUP, 0);
             return 1;
         }
         else{
