@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>730</width>
-    <height>499</height>
+    <width>940</width>
+    <height>540</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -22,10 +22,10 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>430</y>
-     <width>131</width>
-     <height>41</height>
+     <x>350</x>
+     <y>470</y>
+     <width>180</width>
+     <height>51</height>
     </rect>
    </property>
    <property name="font">
@@ -48,8 +48,8 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>510</x>
-     <y>435</y>
+     <x>680</x>
+     <y>480</y>
      <width>121</width>
      <height>30</height>
     </rect>
@@ -73,8 +73,8 @@
     <rect>
      <x>30</x>
      <y>30</y>
-     <width>671</width>
-     <height>331</height>
+     <width>500</width>
+     <height>330</height>
     </rect>
    </property>
    <property name="font">
@@ -105,8 +105,8 @@
   <widget class="QCheckBox" name="titleCheckBox">
    <property name="geometry">
     <rect>
-     <x>348</x>
-     <y>390</y>
+     <x>30</x>
+     <y>425</y>
      <width>55</width>
      <height>21</height>
     </rect>
@@ -122,7 +122,7 @@
    <property name="geometry">
     <rect>
      <x>80</x>
-     <y>435</y>
+     <y>480</y>
      <width>121</width>
      <height>30</height>
     </rect>
@@ -144,9 +144,9 @@
   <widget class="QLineEdit" name="nameLineEdit">
    <property name="geometry">
     <rect>
-     <x>79</x>
+     <x>85</x>
      <y>390</y>
-     <width>191</width>
+     <width>445</width>
      <height>20</height>
     </rect>
    </property>
@@ -157,14 +157,117 @@
   <widget class="QLineEdit" name="titleLineEdit">
    <property name="geometry">
     <rect>
-     <x>403</x>
-     <y>390</y>
-     <width>298</width>
+     <x>85</x>
+     <y>425</y>
+     <width>445</width>
      <height>20</height>
     </rect>
    </property>
    <property name="readOnly">
     <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QTableWidget" name="keymapdataTable">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>30</y>
+     <width>350</width>
+     <height>330</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="columnCount">
+    <number>0</number>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="addmapdataButton">
+   <property name="geometry">
+    <rect>
+     <x>850</x>
+     <y>390</y>
+     <width>60</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ADD</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="orikeyComboBox">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>390</y>
+     <width>82</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="mapkeyCcomboBox">
+   <property name="geometry">
+    <rect>
+     <x>755</x>
+     <y>390</y>
+     <width>82</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="orikeyLabel">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>395</y>
+     <width>50</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Original</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mapkeyLabel">
+   <property name="geometry">
+    <rect>
+     <x>710</x>
+     <y>395</y>
+     <width>46</width>
+     <height>12</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Mapping</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="deleteoneButton">
+   <property name="geometry">
+    <rect>
+     <x>590</x>
+     <y>430</y>
+     <width>121</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Delete One</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="clearallButton">
+   <property name="geometry">
+    <rect>
+     <x>760</x>
+     <y>430</y>
+     <width>121</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Clear All</string>
    </property>
   </widget>
  </widget>

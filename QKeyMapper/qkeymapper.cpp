@@ -3,16 +3,27 @@
 
 //static const uint WIN_TITLESTR_MAX = 200U;
 static const uint CYCLE_CHECK_TIMEOUT = 1000U;
-static const int PROCESSINFO_TABLE_COLUMN = 3;
+static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
+static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 2;
 
 static const int PROCESS_NAME_COLUMN = 0;
 static const int PROCESS_PID_COLUMN = 1;
 static const int PROCESS_TITLE_COLUMN = 2;
 
+static const int ORIGINAL_KEY_COLUMN = 0;
+static const int MAPPING_KEY_COLUMN = 1;
+
 static const QString DEFAULT_NAME(QString("AWVSSAO.exe"));
 static const QString DEFAULT_TITLE(QString("Accel World vs. Sword Art Online"));
 
+static const QString KEYMAPDATA_GROUP(QString("KeyMapData"));
+static const QString CLEARALLFLAG_GROUP(QString("ClearAllFlag"));
+
+static const QString CLEARALL(QString("ClearAll"));
+
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
+QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
+QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -31,12 +42,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->nameCheckBox->setChecked(true);
     ui->titleCheckBox->setChecked(true);
 
+    initVirtualKeyCodeMap();
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::NoFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
 
+    initKeyMappingDataTable();
     loadKeyMapSetting();
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
@@ -324,7 +337,46 @@ void QKeyMapper::saveKeyMapSetting(void)
 
 void QKeyMapper::loadKeyMapSetting(void)
 {
+    bool clearallcontainsflag = true;
+    QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
 
+    settingFile.beginGroup(CLEARALLFLAG_GROUP);
+    if (false == settingFile.contains(CLEARALL)){
+        clearallcontainsflag = false;
+    }
+    settingFile.endGroup();
+
+    if (true == clearallcontainsflag){
+        settingFile.beginGroup(KEYMAPDATA_GROUP);
+        QStringList keymapdatalist = settingFile.childKeys();
+        qDebug() << keymapdatalist;
+        settingFile.endGroup();
+    }
+    else{
+        KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-"             ));
+        KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "="             ));
+        KeyMappingDataList.append(MAP_KEYDATA("I",                "Up"            ));
+        KeyMappingDataList.append(MAP_KEYDATA("K",                "Down"          ));
+        KeyMappingDataList.append(MAP_KEYDATA("H",                "Left"          ));
+        KeyMappingDataList.append(MAP_KEYDATA("J",                "Right"         ));
+        KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0"             ));
+    }
+
+    if (false == KeyMappingDataList.isEmpty()){
+        int rowindex = 0;
+        ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
+        for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+        {
+            ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
+            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(keymapdata.Mapping_Key));
+
+            rowindex += 1;
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << keymapdata.Original_Key << keymapdata.Mapping_Key;
+#endif
+        }
+    }
 }
 
 void QKeyMapper::on_keymapButton_clicked()
@@ -359,122 +411,242 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 {
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
 
-#ifdef DEBUG_LOGOUT_ON
-    if (WM_KEYDOWN == wParam){
-        qDebug("VirtualKeyCode:0x%02X (PressDown)", pKeyBoard->vkCode);
-    }
-    else if (WM_KEYUP == wParam){
-        qDebug("VirtualKeyCode:0x%02X (ReleaseUp)", pKeyBoard->vkCode);
+#if 1
+    V_KEYCODE vkeycode;
+    vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
+    if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
+        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
     }
     else{
+        vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
     }
-#endif
 
+    QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+
+    if (false == keycodeString.isEmpty()){
+
+        int keymapdataindex = 0;
+        bool keymapdatacontainsflag = false;
+        for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+        {
+            if (keymapdata.Original_Key == keycodeString){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("Found VirtualKeyCode at KeyMappingDataList index(%d)", keymapdataindex);
+#endif
+                break;
+            }
+
+            keymapdataindex += 1;
+        }
+
+        if (true == keymapdatacontainsflag){
+            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(keymapdataindex).Mapping_Key);
+            DWORD extenedkeyflag = 0;
+            if (true == map_vkeycode.ExtenedFlag){
+                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+            }
+            else{
+                extenedkeyflag = 0;
+            }
+
+            if (WM_KEYDOWN == wParam){
+                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                return 1;
+            }
+            else if (WM_KEYUP == wParam){
+                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                return 1;
+            }
+            else{
+                // do nothing.
+            }
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        if (WM_KEYDOWN == wParam){
+            qDebug("%s (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+        }
+        else if (WM_KEYUP == wParam){
+            qDebug("%s (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+        }
+        else{
+        }
+#endif
+    }
+    else{
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("UnknownKey (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+#endif
+    }
+
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+
+#else
     switch (pKeyBoard->vkCode)
     {
-    case VK_LSHIFT:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_OEM_MINUS, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_OEM_MINUS, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
-    case VK_LCONTROL:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_OEM_PLUS, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_OEM_PLUS, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
-
-    case VK_UP:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_I, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_I, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
-    case VK_DOWN:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_K, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_K, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
-    case VK_LEFT:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_H, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_H, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
-    case VK_RIGHT:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_J, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_J, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
-    case VK_TAB:
-        if (WM_KEYDOWN == wParam){
-            keybd_event(VK_0, 0, 0, 0);
-            return 1;
-        }
-        else if (WM_KEYUP == wParam){
-            keybd_event(VK_0, 0, KEYEVENTF_KEYUP, 0);
-            return 1;
-        }
-        else{
-            // do nothing.
-        }
-        break;
+//    case VK_RETURN:
+//        if (WM_KEYDOWN == wParam){
+//            if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
+//                qDebug() << "Num Enter PressDown";
+//            }else{
+//                qDebug() << "Enter PressDown";
+//            }
+//        }
+//        else if (WM_KEYUP == wParam){
+//            if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
+//                qDebug() << "Num Enter ReleaseUp";
+//            }else{
+//                qDebug() << "Enter ReleaseUp";
+//            }
+//        }
+//        else{
+//            // do nothing.
+//        }
+//        break;
     default:
         break;
     }
 
     return CallNextHookEx(NULL, nCode, wParam, lParam);
+#endif
+}
+
+void QKeyMapper::initVirtualKeyCodeMap(void)
+{
+    // US 104 Keyboard Main Area
+    // Row 1
+    VirtualKeyCodeMap.insert("`",           V_KEYCODE(VK_OEM_3,         EXTENED_FLAG_FALSE));   // 0xC0
+    VirtualKeyCodeMap.insert("1",           V_KEYCODE(VK_1,             EXTENED_FLAG_FALSE));   // 0x31
+    VirtualKeyCodeMap.insert("2",           V_KEYCODE(VK_2,             EXTENED_FLAG_FALSE));   // 0x32
+    VirtualKeyCodeMap.insert("3",           V_KEYCODE(VK_3,             EXTENED_FLAG_FALSE));   // 0x33
+    VirtualKeyCodeMap.insert("4",           V_KEYCODE(VK_4,             EXTENED_FLAG_FALSE));   // 0x34
+    VirtualKeyCodeMap.insert("5",           V_KEYCODE(VK_5,             EXTENED_FLAG_FALSE));   // 0x35
+    VirtualKeyCodeMap.insert("6",           V_KEYCODE(VK_6,             EXTENED_FLAG_FALSE));   // 0x36
+    VirtualKeyCodeMap.insert("7",           V_KEYCODE(VK_7,             EXTENED_FLAG_FALSE));   // 0x37
+    VirtualKeyCodeMap.insert("8",           V_KEYCODE(VK_8,             EXTENED_FLAG_FALSE));   // 0x38
+    VirtualKeyCodeMap.insert("9",           V_KEYCODE(VK_9,             EXTENED_FLAG_FALSE));   // 0x39
+    VirtualKeyCodeMap.insert("0",           V_KEYCODE(VK_0,             EXTENED_FLAG_FALSE));   // 0x30
+    VirtualKeyCodeMap.insert("-",           V_KEYCODE(VK_OEM_MINUS,     EXTENED_FLAG_FALSE));   // 0xBD
+    VirtualKeyCodeMap.insert("=",           V_KEYCODE(VK_OEM_PLUS,      EXTENED_FLAG_FALSE));   // 0xBB
+    VirtualKeyCodeMap.insert("Backspace",   V_KEYCODE(VK_BACK,          EXTENED_FLAG_FALSE));   // 0x08
+    // Row 2
+    VirtualKeyCodeMap.insert("Tab",         V_KEYCODE(VK_TAB,           EXTENED_FLAG_FALSE));   // 0x09
+    VirtualKeyCodeMap.insert("Q",           V_KEYCODE(VK_Q,             EXTENED_FLAG_FALSE));   // 0x51
+    VirtualKeyCodeMap.insert("W",           V_KEYCODE(VK_W,             EXTENED_FLAG_FALSE));   // 0x57
+    VirtualKeyCodeMap.insert("E",           V_KEYCODE(VK_E,             EXTENED_FLAG_FALSE));   // 0x45
+    VirtualKeyCodeMap.insert("R",           V_KEYCODE(VK_R,             EXTENED_FLAG_FALSE));   // 0x52
+    VirtualKeyCodeMap.insert("T",           V_KEYCODE(VK_T,             EXTENED_FLAG_FALSE));   // 0x54
+    VirtualKeyCodeMap.insert("Y",           V_KEYCODE(VK_Y,             EXTENED_FLAG_FALSE));   // 0x59
+    VirtualKeyCodeMap.insert("U",           V_KEYCODE(VK_U,             EXTENED_FLAG_FALSE));   // 0x55
+    VirtualKeyCodeMap.insert("I",           V_KEYCODE(VK_I,             EXTENED_FLAG_FALSE));   // 0x49
+    VirtualKeyCodeMap.insert("O",           V_KEYCODE(VK_O,             EXTENED_FLAG_FALSE));   // 0x4F
+    VirtualKeyCodeMap.insert("P",           V_KEYCODE(VK_P,             EXTENED_FLAG_FALSE));   // 0x50
+    VirtualKeyCodeMap.insert("[",           V_KEYCODE(VK_OEM_4,         EXTENED_FLAG_FALSE));   // 0xDB
+    VirtualKeyCodeMap.insert("]",           V_KEYCODE(VK_OEM_6,         EXTENED_FLAG_FALSE));   // 0xDD
+    VirtualKeyCodeMap.insert("\\",          V_KEYCODE(VK_OEM_5,         EXTENED_FLAG_FALSE));   // 0xDC
+    // Row 3
+    VirtualKeyCodeMap.insert("CapsLock",    V_KEYCODE(VK_CAPITAL,       EXTENED_FLAG_FALSE));   // 0x14
+    VirtualKeyCodeMap.insert("A",           V_KEYCODE(VK_A,             EXTENED_FLAG_FALSE));   // 0x41
+    VirtualKeyCodeMap.insert("S",           V_KEYCODE(VK_S,             EXTENED_FLAG_FALSE));   // 0x53
+    VirtualKeyCodeMap.insert("D",           V_KEYCODE(VK_D,             EXTENED_FLAG_FALSE));   // 0x44
+    VirtualKeyCodeMap.insert("F",           V_KEYCODE(VK_F,             EXTENED_FLAG_FALSE));   // 0x46
+    VirtualKeyCodeMap.insert("G",           V_KEYCODE(VK_G,             EXTENED_FLAG_FALSE));   // 0x47
+    VirtualKeyCodeMap.insert("H",           V_KEYCODE(VK_H,             EXTENED_FLAG_FALSE));   // 0x48
+    VirtualKeyCodeMap.insert("J",           V_KEYCODE(VK_J,             EXTENED_FLAG_FALSE));   // 0x4A
+    VirtualKeyCodeMap.insert("K",           V_KEYCODE(VK_K,             EXTENED_FLAG_FALSE));   // 0x4B
+    VirtualKeyCodeMap.insert("L",           V_KEYCODE(VK_L,             EXTENED_FLAG_FALSE));   // 0x4C
+    VirtualKeyCodeMap.insert(";",           V_KEYCODE(VK_OEM_1,         EXTENED_FLAG_FALSE));   // 0xBA
+    VirtualKeyCodeMap.insert("'",           V_KEYCODE(VK_OEM_7,         EXTENED_FLAG_FALSE));   // 0xDE
+    VirtualKeyCodeMap.insert("Enter",       V_KEYCODE(VK_RETURN,        EXTENED_FLAG_FALSE));   // 0x0D
+    // Row 4
+    VirtualKeyCodeMap.insert("L-Shift",     V_KEYCODE(VK_LSHIFT,        EXTENED_FLAG_FALSE));   // 0xA0
+    VirtualKeyCodeMap.insert("Z",           V_KEYCODE(VK_Z,             EXTENED_FLAG_FALSE));   // 0x5A
+    VirtualKeyCodeMap.insert("X",           V_KEYCODE(VK_X,             EXTENED_FLAG_FALSE));   // 0x58
+    VirtualKeyCodeMap.insert("C",           V_KEYCODE(VK_C,             EXTENED_FLAG_FALSE));   // 0x43
+    VirtualKeyCodeMap.insert("V",           V_KEYCODE(VK_V,             EXTENED_FLAG_FALSE));   // 0x56
+    VirtualKeyCodeMap.insert("B",           V_KEYCODE(VK_B,             EXTENED_FLAG_FALSE));   // 0x42
+    VirtualKeyCodeMap.insert("N",           V_KEYCODE(VK_N,             EXTENED_FLAG_FALSE));   // 0x4E
+    VirtualKeyCodeMap.insert("M",           V_KEYCODE(VK_M,             EXTENED_FLAG_FALSE));   // 0x4D
+    VirtualKeyCodeMap.insert(",",           V_KEYCODE(VK_OEM_COMMA,     EXTENED_FLAG_FALSE));   // 0xBC
+    VirtualKeyCodeMap.insert(".",           V_KEYCODE(VK_OEM_PERIOD,    EXTENED_FLAG_FALSE));   // 0xBE
+    VirtualKeyCodeMap.insert("/",           V_KEYCODE(VK_OEM_2,         EXTENED_FLAG_FALSE));   // 0xBF
+    VirtualKeyCodeMap.insert("R-Shift",     V_KEYCODE(VK_RSHIFT,        EXTENED_FLAG_TRUE ));   // 0xA1
+    // Row 5
+    VirtualKeyCodeMap.insert("L-Ctrl",      V_KEYCODE(VK_LCONTROL,      EXTENED_FLAG_FALSE));   // 0xA2
+    VirtualKeyCodeMap.insert("L-Win",       V_KEYCODE(VK_LWIN,          EXTENED_FLAG_TRUE ));   // 0x5B
+    VirtualKeyCodeMap.insert("L-Alt",       V_KEYCODE(VK_LMENU,         EXTENED_FLAG_FALSE));   // 0xA4
+    VirtualKeyCodeMap.insert("Space",       V_KEYCODE(VK_SPACE,         EXTENED_FLAG_FALSE));   // 0x20
+    VirtualKeyCodeMap.insert("R-Alt",       V_KEYCODE(VK_RMENU,         EXTENED_FLAG_TRUE ));   // 0xA5
+    VirtualKeyCodeMap.insert("Application", V_KEYCODE(VK_APPS,          EXTENED_FLAG_TRUE ));   // 0x5D
+    VirtualKeyCodeMap.insert("R-Ctrl",      V_KEYCODE(VK_RCONTROL,      EXTENED_FLAG_TRUE ));   // 0xA3
+    VirtualKeyCodeMap.insert("R-Win",       V_KEYCODE(VK_RWIN,          EXTENED_FLAG_TRUE ));   // 0x5C
+
+    // Function Keys
+    VirtualKeyCodeMap.insert("Esc",         V_KEYCODE(VK_ESCAPE,        EXTENED_FLAG_FALSE));   // 0x1B
+    VirtualKeyCodeMap.insert("F1",          V_KEYCODE(VK_F1,            EXTENED_FLAG_FALSE));   // 0x70
+    VirtualKeyCodeMap.insert("F2",          V_KEYCODE(VK_F2,            EXTENED_FLAG_FALSE));   // 0x71
+    VirtualKeyCodeMap.insert("F3",          V_KEYCODE(VK_F3,            EXTENED_FLAG_FALSE));   // 0x72
+    VirtualKeyCodeMap.insert("F4",          V_KEYCODE(VK_F4,            EXTENED_FLAG_FALSE));   // 0x73
+    VirtualKeyCodeMap.insert("F5",          V_KEYCODE(VK_F5,            EXTENED_FLAG_FALSE));   // 0x74
+    VirtualKeyCodeMap.insert("F6",          V_KEYCODE(VK_F6,            EXTENED_FLAG_FALSE));   // 0x75
+    VirtualKeyCodeMap.insert("F7",          V_KEYCODE(VK_F7,            EXTENED_FLAG_FALSE));   // 0x76
+    VirtualKeyCodeMap.insert("F8",          V_KEYCODE(VK_F8,            EXTENED_FLAG_FALSE));   // 0x77
+    VirtualKeyCodeMap.insert("F9",          V_KEYCODE(VK_F9,            EXTENED_FLAG_FALSE));   // 0x78
+    VirtualKeyCodeMap.insert("F10",         V_KEYCODE(VK_F10,           EXTENED_FLAG_FALSE));   // 0x79
+    VirtualKeyCodeMap.insert("F11",         V_KEYCODE(VK_F11,           EXTENED_FLAG_FALSE));   // 0x7A
+    VirtualKeyCodeMap.insert("F12",         V_KEYCODE(VK_F12,           EXTENED_FLAG_FALSE));   // 0x7B
+    VirtualKeyCodeMap.insert("F13",         V_KEYCODE(VK_F13,           EXTENED_FLAG_FALSE));   // 0x7C
+    VirtualKeyCodeMap.insert("F14",         V_KEYCODE(VK_F14,           EXTENED_FLAG_FALSE));   // 0x7D
+    VirtualKeyCodeMap.insert("F15",         V_KEYCODE(VK_F15,           EXTENED_FLAG_FALSE));   // 0x7E
+    VirtualKeyCodeMap.insert("F16",         V_KEYCODE(VK_F16,           EXTENED_FLAG_FALSE));   // 0x7F
+    VirtualKeyCodeMap.insert("F17",         V_KEYCODE(VK_F17,           EXTENED_FLAG_FALSE));   // 0x80
+    VirtualKeyCodeMap.insert("F18",         V_KEYCODE(VK_F18,           EXTENED_FLAG_FALSE));   // 0x81
+    VirtualKeyCodeMap.insert("F19",         V_KEYCODE(VK_F19,           EXTENED_FLAG_FALSE));   // 0x82
+    VirtualKeyCodeMap.insert("F20",         V_KEYCODE(VK_F20,           EXTENED_FLAG_FALSE));   // 0x83
+    VirtualKeyCodeMap.insert("F21",         V_KEYCODE(VK_F21,           EXTENED_FLAG_FALSE));   // 0x84
+    VirtualKeyCodeMap.insert("F22",         V_KEYCODE(VK_F22,           EXTENED_FLAG_FALSE));   // 0x85
+    VirtualKeyCodeMap.insert("F23",         V_KEYCODE(VK_F23,           EXTENED_FLAG_FALSE));   // 0x86
+    VirtualKeyCodeMap.insert("F24",         V_KEYCODE(VK_F24,           EXTENED_FLAG_FALSE));   // 0x87
+
+    VirtualKeyCodeMap.insert("PrintScrn",   V_KEYCODE(VK_SNAPSHOT,      EXTENED_FLAG_TRUE ));   // 0x2C
+    VirtualKeyCodeMap.insert("ScrollLock",  V_KEYCODE(VK_SCROLL,        EXTENED_FLAG_FALSE));   // 0x91
+    VirtualKeyCodeMap.insert("Pause",       V_KEYCODE(VK_PAUSE,         EXTENED_FLAG_FALSE));   // 0x13
+
+    VirtualKeyCodeMap.insert("Insert",      V_KEYCODE(VK_INSERT,        EXTENED_FLAG_TRUE ));   // 0x2D
+    VirtualKeyCodeMap.insert("Delete",      V_KEYCODE(VK_DELETE,        EXTENED_FLAG_TRUE ));   // 0x2E
+    VirtualKeyCodeMap.insert("Home",        V_KEYCODE(VK_HOME,          EXTENED_FLAG_TRUE ));   // 0x24
+    VirtualKeyCodeMap.insert("End",         V_KEYCODE(VK_END,           EXTENED_FLAG_TRUE ));   // 0x23
+    VirtualKeyCodeMap.insert("PageUp",      V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_TRUE ));   // 0x21
+    VirtualKeyCodeMap.insert("PageDown",    V_KEYCODE(VK_NEXT,          EXTENED_FLAG_TRUE ));   // 0x22
+
+    VirtualKeyCodeMap.insert("Up",          V_KEYCODE(VK_UP,            EXTENED_FLAG_TRUE ));   // 0x26
+    VirtualKeyCodeMap.insert("Down",        V_KEYCODE(VK_DOWN,          EXTENED_FLAG_TRUE ));   // 0x28
+    VirtualKeyCodeMap.insert("Left",        V_KEYCODE(VK_LEFT,          EXTENED_FLAG_TRUE ));   // 0x25
+    VirtualKeyCodeMap.insert("Right",       V_KEYCODE(VK_RIGHT,         EXTENED_FLAG_TRUE ));   // 0x27
+
+    VirtualKeyCodeMap.insert("NumLock",     V_KEYCODE(VK_NUMLOCK,       EXTENED_FLAG_TRUE ));   // 0x90
+    VirtualKeyCodeMap.insert("Num /",       V_KEYCODE(VK_DIVIDE,        EXTENED_FLAG_TRUE ));   // 0x6F
+    VirtualKeyCodeMap.insert("Num *",       V_KEYCODE(VK_MULTIPLY,      EXTENED_FLAG_FALSE));   // 0x6A
+    VirtualKeyCodeMap.insert("Num -",       V_KEYCODE(VK_SUBTRACT,      EXTENED_FLAG_FALSE));   // 0x6D
+    VirtualKeyCodeMap.insert("Num +",       V_KEYCODE(VK_ADD,           EXTENED_FLAG_FALSE));   // 0x6B
+    VirtualKeyCodeMap.insert("Num .",       V_KEYCODE(VK_DECIMAL,       EXTENED_FLAG_FALSE));   // 0x6E
+    VirtualKeyCodeMap.insert("Num 0",       V_KEYCODE(VK_NUMPAD0,       EXTENED_FLAG_FALSE));   // 0x60
+    VirtualKeyCodeMap.insert("Num 1",       V_KEYCODE(VK_NUMPAD1,       EXTENED_FLAG_FALSE));   // 0x61
+    VirtualKeyCodeMap.insert("Num 2",       V_KEYCODE(VK_NUMPAD2,       EXTENED_FLAG_FALSE));   // 0x62
+    VirtualKeyCodeMap.insert("Num 3",       V_KEYCODE(VK_NUMPAD3,       EXTENED_FLAG_FALSE));   // 0x63
+    VirtualKeyCodeMap.insert("Num 4",       V_KEYCODE(VK_NUMPAD4,       EXTENED_FLAG_FALSE));   // 0x64
+    VirtualKeyCodeMap.insert("Num 5",       V_KEYCODE(VK_NUMPAD5,       EXTENED_FLAG_FALSE));   // 0x65
+    VirtualKeyCodeMap.insert("Num 6",       V_KEYCODE(VK_NUMPAD6,       EXTENED_FLAG_FALSE));   // 0x66
+    VirtualKeyCodeMap.insert("Num 7",       V_KEYCODE(VK_NUMPAD7,       EXTENED_FLAG_FALSE));   // 0x67
+    VirtualKeyCodeMap.insert("Num 8",       V_KEYCODE(VK_NUMPAD8,       EXTENED_FLAG_FALSE));   // 0x68
+    VirtualKeyCodeMap.insert("Num 9",       V_KEYCODE(VK_NUMPAD9,       EXTENED_FLAG_FALSE));   // 0x69
+    VirtualKeyCodeMap.insert("Num Enter",   V_KEYCODE(VK_RETURN,        EXTENED_FLAG_TRUE ));   // 0x69
 }
 
 void QKeyMapper::initProcessInfoTable(void)
 {
     ui->processinfoTable->setFocusPolicy(Qt::NoFocus);
-    ui->processinfoTable->setColumnCount(PROCESSINFO_TABLE_COLUMN);
+    ui->processinfoTable->setColumnCount(PROCESSINFO_TABLE_COLUMN_COUNT);
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << "Name"
                                                                     << "PID"
                                                                     << "Title" );
@@ -502,6 +674,8 @@ void QKeyMapper::refreshProcessInfoTable(void)
     setProcessInfoTable(static_ProcessInfoList);
 
     ui->processinfoTable->sortItems(PROCESS_NAME_COLUMN);
+    ui->processinfoTable->resizeColumnToContents(PROCESS_NAME_COLUMN);
+    ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
 }
 
 void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
@@ -514,10 +688,36 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
         QFileIconProvider icon_provider;
         ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(icon_provider.icon(file_info), processinfo.FileName));
         ui->processinfoTable->setItem(rowindex, 1, new QTableWidgetItem(processinfo.PID));
+        ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         ui->processinfoTable->setItem(rowindex, 2, new QTableWidgetItem(processinfo.WindowTitle));
 
         rowindex += 1;
     }
+}
+
+void QKeyMapper::initKeyMappingDataTable(void)
+{
+    ui->keymapdataTable->setFocusPolicy(Qt::NoFocus);
+    ui->keymapdataTable->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
+    ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << "Original Key"
+                                                                    << "Mapping Key" );
+
+    ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
+    ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, ui->keymapdataTable->width()/2);
+    ui->keymapdataTable->verticalHeader()->setVisible(false);
+    ui->keymapdataTable->verticalHeader()->setDefaultSectionSize(25);
+    ui->keymapdataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->keymapdataTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->keymapdataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "verticalHeader->isVisible" << ui->keymapdataTable->verticalHeader()->isVisible();
+    qDebug() << "selectionBehavior" << ui->keymapdataTable->selectionBehavior();
+    qDebug() << "selectionMode" << ui->keymapdataTable->selectionMode();
+    qDebug() << "editTriggers" << ui->keymapdataTable->editTriggers();
+    qDebug() << "verticalHeader-DefaultSectionSize" << ui->keymapdataTable->verticalHeader()->defaultSectionSize();
+#endif
 }
 
 void QKeyMapper::on_refreshButton_clicked()
@@ -536,4 +736,14 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
     ui->titleLineEdit->setText(ui->processinfoTable->item(index.row(), 2)->text());
 
     setMapProcessInfo(ui->processinfoTable->item(index.row(), 0)->text(), ui->processinfoTable->item(index.row(), 2)->text());
+}
+
+void QKeyMapper::on_deleteoneButton_clicked()
+{
+    qDebug() << "currentRow:" << ui->processinfoTable->currentRow();
+}
+
+void QKeyMapper::on_clearallButton_clicked()
+{
+
 }
