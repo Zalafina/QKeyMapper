@@ -53,6 +53,9 @@
    <property name="text">
     <string>KeyMapStart</string>
    </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
    <property name="default">
     <bool>true</bool>
    </property>
@@ -206,6 +209,9 @@
      <height>23</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
    <property name="text">
     <string>ADD</string>
    </property>
@@ -220,7 +226,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QComboBox" name="mapkeyCcomboBox">
+  <widget class="QComboBox" name="mapkeyComboBox">
    <property name="geometry">
     <rect>
      <x>755</x>
@@ -265,6 +271,9 @@
      <height>25</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
    <property name="text">
     <string>Delete One</string>
    </property>
@@ -277,6 +286,9 @@
      <width>121</width>
      <height>25</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>Clear All</string>

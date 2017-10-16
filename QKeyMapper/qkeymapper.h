@@ -142,10 +142,9 @@ public:
     void setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
-
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
-
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
+    static int findInKeyMappingDataList(QString &keyname);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -165,6 +164,8 @@ private slots:
 
     void on_processinfoTable_doubleClicked(const QModelIndex &index);
 
+    void on_addmapdataButton_clicked();
+
     void on_deleteoneButton_clicked();
 
     void on_clearallButton_clicked();
@@ -178,9 +179,12 @@ private:
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
 
     void initKeyMappingDataTable(void);
+    void initAddKeyComboBoxes(void);
 
     void saveKeyMapSetting(void);
     void loadKeyMapSetting(void);
+
+    void changeControlEnableStatus(bool status);
 
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;

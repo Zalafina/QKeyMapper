@@ -50,6 +50,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
 
     initKeyMappingDataTable();
+    initAddKeyComboBoxes();
     loadKeyMapSetting();
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
@@ -323,6 +324,25 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     return FALSE;
 }
 
+int QKeyMapper::findInKeyMappingDataList(QString &keyname)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
+    bool keymapdatacontainsflag = false;
+    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+    {
+        if (keymapdata.Original_Key == keyname){
+            keymapdatacontainsflag = true;
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
 void QKeyMapper::EnumProcessFunction(void)
 {
 #if 0
@@ -426,13 +446,13 @@ void QKeyMapper::loadKeyMapSetting(void)
         settingFile.endGroup();
     }
     else{
-        KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-"             ));
-        KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "="             ));
+        KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-_"            ));
+        KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "=+"            ));
         KeyMappingDataList.append(MAP_KEYDATA("I",                "Up"            ));
         KeyMappingDataList.append(MAP_KEYDATA("K",                "Down"          ));
         KeyMappingDataList.append(MAP_KEYDATA("H",                "Left"          ));
         KeyMappingDataList.append(MAP_KEYDATA("J",                "Right"         ));
-        KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0"             ));
+        KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0)"            ));
     }
 
     if (false == KeyMappingDataList.isEmpty()){
@@ -459,6 +479,28 @@ void QKeyMapper::loadKeyMapSetting(void)
     }
 }
 
+void QKeyMapper::changeControlEnableStatus(bool status)
+{
+    ui->nameCheckBox->setEnabled(status);
+    ui->titleCheckBox->setEnabled(status);
+    ui->nameLineEdit->setEnabled(status);
+    ui->titleLineEdit->setEnabled(status);
+
+    ui->orikeyLabel->setEnabled(status);
+    ui->mapkeyLabel->setEnabled(status);
+    ui->orikeyComboBox->setEnabled(status);
+    ui->mapkeyComboBox->setEnabled(status);
+    ui->addmapdataButton->setEnabled(status);
+    ui->deleteoneButton->setEnabled(status);
+    ui->clearallButton->setEnabled(status);
+
+    ui->refreshButton->setEnabled(status);
+    ui->savemaplistButton->setEnabled(status);
+
+    ui->processinfoTable->setEnabled(status);
+    ui->keymapdataTable->setEnabled(status);
+}
+
 void QKeyMapper::on_keymapButton_clicked()
 {
     if (KEYMAP_IDLE == m_KeyMapStatus){
@@ -466,6 +508,7 @@ void QKeyMapper::on_keymapButton_clicked()
                 && (false == m_MapProcessInfo.WindowTitle.isEmpty())){
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
             m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
+            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
             ui->keymapButton->setText("MapStop");
             m_KeyMapStatus = KEYMAP_CHECKING;
         }
@@ -476,9 +519,17 @@ void QKeyMapper::on_keymapButton_clicked()
     else{
         m_CycleCheckTimer.stop();
         m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
+        m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
         ui->keymapButton->setText("MapStart");
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+    }
+
+    if (m_KeyMapStatus != KEYMAP_IDLE){
+        changeControlEnableStatus(false);
+    }
+    else{
+        changeControlEnableStatus(true);
     }
 }
 
@@ -494,38 +545,24 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 #if 1
     bool returnFlag = false;
 
-    if (pKeyBoard->scanCode != 0){
-        V_KEYCODE vkeycode;
-        vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
-        if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
-            vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
-        }
-        else{
-            vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
-        }
+    V_KEYCODE vkeycode;
+    vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
+    if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
+        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
+    }
+    else{
+        vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
+    }
 
-        QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+    QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
 
-        if (false == keycodeString.isEmpty()){
+    if (false == keycodeString.isEmpty()){
 
-            int keymapdataindex = 0;
-            bool keymapdatacontainsflag = false;
-            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-            {
-                if (keymapdata.Original_Key == keycodeString){
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "Match KeyMappingDataList index(" << keymapdataindex << ") : "<< keymapdata.Original_Key << " to " << keymapdata.Mapping_Key;
-#endif
+        if (pKeyBoard->scanCode != 0){
+            int findindex = findInKeyMappingDataList(keycodeString);
 
-                    keymapdatacontainsflag = true;
-                    break;
-                }
-
-                keymapdataindex += 1;
-            }
-
-            if (true == keymapdatacontainsflag){
-                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(keymapdataindex).Mapping_Key);
+            if (findindex >=0){
+                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(findindex).Mapping_Key);
                 DWORD extenedkeyflag = 0;
                 if (true == map_vkeycode.ExtenedFlag){
                     extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
@@ -546,23 +583,23 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                     // do nothing.
                 }
             }
+        }
 
 #ifdef DEBUG_LOGOUT_ON
-            if (WM_KEYDOWN == wParam){
-                qDebug("%s (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
-            }
-            else if (WM_KEYUP == wParam){
-                qDebug("%s (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
-            }
-            else{
-            }
-#endif
+        if (WM_KEYDOWN == wParam){
+            qDebug("\"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+        }
+        else if (WM_KEYUP == wParam){
+            qDebug("\"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
         }
         else{
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("UnknownKey (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
-#endif
         }
+#endif
+    }
+    else{
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("UnknownKey (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+#endif
     }
 
     if (true == returnFlag){
@@ -606,19 +643,19 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
 {
     // US 104 Keyboard Main Area
     // Row 1
-    VirtualKeyCodeMap.insert("`",           V_KEYCODE(VK_OEM_3,         EXTENED_FLAG_FALSE));   // 0xC0
-    VirtualKeyCodeMap.insert("1",           V_KEYCODE(VK_1,             EXTENED_FLAG_FALSE));   // 0x31
-    VirtualKeyCodeMap.insert("2",           V_KEYCODE(VK_2,             EXTENED_FLAG_FALSE));   // 0x32
-    VirtualKeyCodeMap.insert("3",           V_KEYCODE(VK_3,             EXTENED_FLAG_FALSE));   // 0x33
-    VirtualKeyCodeMap.insert("4",           V_KEYCODE(VK_4,             EXTENED_FLAG_FALSE));   // 0x34
-    VirtualKeyCodeMap.insert("5",           V_KEYCODE(VK_5,             EXTENED_FLAG_FALSE));   // 0x35
-    VirtualKeyCodeMap.insert("6",           V_KEYCODE(VK_6,             EXTENED_FLAG_FALSE));   // 0x36
-    VirtualKeyCodeMap.insert("7",           V_KEYCODE(VK_7,             EXTENED_FLAG_FALSE));   // 0x37
-    VirtualKeyCodeMap.insert("8",           V_KEYCODE(VK_8,             EXTENED_FLAG_FALSE));   // 0x38
-    VirtualKeyCodeMap.insert("9",           V_KEYCODE(VK_9,             EXTENED_FLAG_FALSE));   // 0x39
-    VirtualKeyCodeMap.insert("0",           V_KEYCODE(VK_0,             EXTENED_FLAG_FALSE));   // 0x30
-    VirtualKeyCodeMap.insert("-",           V_KEYCODE(VK_OEM_MINUS,     EXTENED_FLAG_FALSE));   // 0xBD
-    VirtualKeyCodeMap.insert("=",           V_KEYCODE(VK_OEM_PLUS,      EXTENED_FLAG_FALSE));   // 0xBB
+    VirtualKeyCodeMap.insert("`~",          V_KEYCODE(VK_OEM_3,         EXTENED_FLAG_FALSE));   // 0xC0
+    VirtualKeyCodeMap.insert("1!",          V_KEYCODE(VK_1,             EXTENED_FLAG_FALSE));   // 0x31
+    VirtualKeyCodeMap.insert("2@",          V_KEYCODE(VK_2,             EXTENED_FLAG_FALSE));   // 0x32
+    VirtualKeyCodeMap.insert("3#",          V_KEYCODE(VK_3,             EXTENED_FLAG_FALSE));   // 0x33
+    VirtualKeyCodeMap.insert("4$",          V_KEYCODE(VK_4,             EXTENED_FLAG_FALSE));   // 0x34
+    VirtualKeyCodeMap.insert("5%",          V_KEYCODE(VK_5,             EXTENED_FLAG_FALSE));   // 0x35
+    VirtualKeyCodeMap.insert("6^",          V_KEYCODE(VK_6,             EXTENED_FLAG_FALSE));   // 0x36
+    VirtualKeyCodeMap.insert("7&",          V_KEYCODE(VK_7,             EXTENED_FLAG_FALSE));   // 0x37
+    VirtualKeyCodeMap.insert("8*",          V_KEYCODE(VK_8,             EXTENED_FLAG_FALSE));   // 0x38
+    VirtualKeyCodeMap.insert("9(",          V_KEYCODE(VK_9,             EXTENED_FLAG_FALSE));   // 0x39
+    VirtualKeyCodeMap.insert("0)",          V_KEYCODE(VK_0,             EXTENED_FLAG_FALSE));   // 0x30
+    VirtualKeyCodeMap.insert("-_",          V_KEYCODE(VK_OEM_MINUS,     EXTENED_FLAG_FALSE));   // 0xBD
+    VirtualKeyCodeMap.insert("=+",          V_KEYCODE(VK_OEM_PLUS,      EXTENED_FLAG_FALSE));   // 0xBB
     VirtualKeyCodeMap.insert("Backspace",   V_KEYCODE(VK_BACK,          EXTENED_FLAG_FALSE));   // 0x08
     // Row 2
     VirtualKeyCodeMap.insert("Tab",         V_KEYCODE(VK_TAB,           EXTENED_FLAG_FALSE));   // 0x09
@@ -632,9 +669,9 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
     VirtualKeyCodeMap.insert("I",           V_KEYCODE(VK_I,             EXTENED_FLAG_FALSE));   // 0x49
     VirtualKeyCodeMap.insert("O",           V_KEYCODE(VK_O,             EXTENED_FLAG_FALSE));   // 0x4F
     VirtualKeyCodeMap.insert("P",           V_KEYCODE(VK_P,             EXTENED_FLAG_FALSE));   // 0x50
-    VirtualKeyCodeMap.insert("[",           V_KEYCODE(VK_OEM_4,         EXTENED_FLAG_FALSE));   // 0xDB
-    VirtualKeyCodeMap.insert("]",           V_KEYCODE(VK_OEM_6,         EXTENED_FLAG_FALSE));   // 0xDD
-    VirtualKeyCodeMap.insert("\\",          V_KEYCODE(VK_OEM_5,         EXTENED_FLAG_FALSE));   // 0xDC
+    VirtualKeyCodeMap.insert("[{",          V_KEYCODE(VK_OEM_4,         EXTENED_FLAG_FALSE));   // 0xDB
+    VirtualKeyCodeMap.insert("]}",          V_KEYCODE(VK_OEM_6,         EXTENED_FLAG_FALSE));   // 0xDD
+    VirtualKeyCodeMap.insert("\\|",         V_KEYCODE(VK_OEM_5,         EXTENED_FLAG_FALSE));   // 0xDC
     // Row 3
     VirtualKeyCodeMap.insert("CapsLock",    V_KEYCODE(VK_CAPITAL,       EXTENED_FLAG_FALSE));   // 0x14
     VirtualKeyCodeMap.insert("A",           V_KEYCODE(VK_A,             EXTENED_FLAG_FALSE));   // 0x41
@@ -646,8 +683,8 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
     VirtualKeyCodeMap.insert("J",           V_KEYCODE(VK_J,             EXTENED_FLAG_FALSE));   // 0x4A
     VirtualKeyCodeMap.insert("K",           V_KEYCODE(VK_K,             EXTENED_FLAG_FALSE));   // 0x4B
     VirtualKeyCodeMap.insert("L",           V_KEYCODE(VK_L,             EXTENED_FLAG_FALSE));   // 0x4C
-    VirtualKeyCodeMap.insert(";",           V_KEYCODE(VK_OEM_1,         EXTENED_FLAG_FALSE));   // 0xBA
-    VirtualKeyCodeMap.insert("'",           V_KEYCODE(VK_OEM_7,         EXTENED_FLAG_FALSE));   // 0xDE
+    VirtualKeyCodeMap.insert(";:",          V_KEYCODE(VK_OEM_1,         EXTENED_FLAG_FALSE));   // 0xBA
+    VirtualKeyCodeMap.insert("'\"",         V_KEYCODE(VK_OEM_7,         EXTENED_FLAG_FALSE));   // 0xDE
     VirtualKeyCodeMap.insert("Enter",       V_KEYCODE(VK_RETURN,        EXTENED_FLAG_FALSE));   // 0x0D
     // Row 4
     VirtualKeyCodeMap.insert("L-Shift",     V_KEYCODE(VK_LSHIFT,        EXTENED_FLAG_FALSE));   // 0xA0
@@ -658,9 +695,9 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
     VirtualKeyCodeMap.insert("B",           V_KEYCODE(VK_B,             EXTENED_FLAG_FALSE));   // 0x42
     VirtualKeyCodeMap.insert("N",           V_KEYCODE(VK_N,             EXTENED_FLAG_FALSE));   // 0x4E
     VirtualKeyCodeMap.insert("M",           V_KEYCODE(VK_M,             EXTENED_FLAG_FALSE));   // 0x4D
-    VirtualKeyCodeMap.insert(",",           V_KEYCODE(VK_OEM_COMMA,     EXTENED_FLAG_FALSE));   // 0xBC
-    VirtualKeyCodeMap.insert(".",           V_KEYCODE(VK_OEM_PERIOD,    EXTENED_FLAG_FALSE));   // 0xBE
-    VirtualKeyCodeMap.insert("/",           V_KEYCODE(VK_OEM_2,         EXTENED_FLAG_FALSE));   // 0xBF
+    VirtualKeyCodeMap.insert(",<",          V_KEYCODE(VK_OEM_COMMA,     EXTENED_FLAG_FALSE));   // 0xBC
+    VirtualKeyCodeMap.insert(".>",          V_KEYCODE(VK_OEM_PERIOD,    EXTENED_FLAG_FALSE));   // 0xBE
+    VirtualKeyCodeMap.insert("/?",          V_KEYCODE(VK_OEM_2,         EXTENED_FLAG_FALSE));   // 0xBF
     VirtualKeyCodeMap.insert("R-Shift",     V_KEYCODE(VK_RSHIFT,        EXTENED_FLAG_TRUE ));   // 0xA1
     // Row 5
     VirtualKeyCodeMap.insert("L-Ctrl",      V_KEYCODE(VK_LCONTROL,      EXTENED_FLAG_FALSE));   // 0xA2
@@ -715,6 +752,7 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
     VirtualKeyCodeMap.insert("Left",        V_KEYCODE(VK_LEFT,          EXTENED_FLAG_TRUE ));   // 0x25
     VirtualKeyCodeMap.insert("Right",       V_KEYCODE(VK_RIGHT,         EXTENED_FLAG_TRUE ));   // 0x27
 
+    //NumberPad Keys
     VirtualKeyCodeMap.insert("NumLock",     V_KEYCODE(VK_NUMLOCK,       EXTENED_FLAG_TRUE ));   // 0x90
     VirtualKeyCodeMap.insert("Num /",       V_KEYCODE(VK_DIVIDE,        EXTENED_FLAG_TRUE ));   // 0x6F
     VirtualKeyCodeMap.insert("Num *",       V_KEYCODE(VK_MULTIPLY,      EXTENED_FLAG_FALSE));   // 0x6A
@@ -811,43 +849,234 @@ void QKeyMapper::initKeyMappingDataTable(void)
 #endif
 }
 
+void QKeyMapper::initAddKeyComboBoxes(void)
+{
+    QStringList keycodelist = QStringList() \
+            << ""
+            << "A"
+            << "B"
+            << "C"
+            << "D"
+            << "E"
+            << "F"
+            << "G"
+            << "H"
+            << "I"
+            << "J"
+            << "K"
+            << "L"
+            << "M"
+            << "N"
+            << "O"
+            << "P"
+            << "Q"
+            << "R"
+            << "S"
+            << "T"
+            << "U"
+            << "V"
+            << "W"
+            << "X"
+            << "Y"
+            << "Z"
+            << "1!"
+            << "2@"
+            << "3#"
+            << "4$"
+            << "5%"
+            << "6^"
+            << "7&"
+            << "8*"
+            << "9("
+            << "0)"
+            << "Up"
+            << "Down"
+            << "Left"
+            << "Right"
+            << "Insert"
+            << "Delete"
+            << "Home"
+            << "End"
+            << "PageUp"
+            << "PageDown"
+            << "Space"
+            << "Tab"
+            << "Enter"
+            << "L-Shift"
+            << "R-Shift"
+            << "L-Ctrl"
+            << "R-Ctrl"
+            << "L-Alt"
+            << "R-Alt"
+            << "L-Win"
+            << "R-Win"
+            << "Backspace"
+            << "`~"
+            << "-_"
+            << "=+"
+            << "[{"
+            << "]}"
+            << "\\|"
+            << ";:"
+            << "'\""
+            << ",<"
+            << ".>"
+            << "/?"
+            << "Esc"
+            << "F1"
+            << "F2"
+            << "F3"
+            << "F4"
+            << "F5"
+            << "F6"
+            << "F7"
+            << "F8"
+            << "F9"
+            << "F10"
+            << "F11"
+            << "F12"
+            << "F13"
+            << "F14"
+            << "F15"
+            << "F16"
+            << "F17"
+            << "F18"
+            << "F19"
+            << "F20"
+            << "F21"
+            << "F22"
+            << "F23"
+            << "F24"
+            << "CapsLock"
+            << "Application"
+            << "PrintScrn"
+            << "ScrollLock"
+            << "Pause"
+            << "NumLock"
+            << "Num /"
+            << "Num *"
+            << "Num -"
+            << "Num +"
+            << "Num ."
+            << "Num 0"
+            << "Num 1"
+            << "Num 2"
+            << "Num 3"
+            << "Num 4"
+            << "Num 5"
+            << "Num 6"
+            << "Num 7"
+            << "Num 8"
+            << "Num 9"
+            << "Num Enter";
+
+    ui->orikeyComboBox->addItems(keycodelist);
+    ui->mapkeyComboBox->addItems(keycodelist);
+}
+
 void QKeyMapper::on_refreshButton_clicked()
 {
     ui->processinfoTable->clearContents();
+    ui->processinfoTable->setRowCount(0);
     refreshProcessInfoTable();
 }
 
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 {
+    if ((KEYMAP_IDLE == m_KeyMapStatus)
+            && (true == ui->nameLineEdit->isEnabled())
+            && (true == ui->titleLineEdit->isEnabled())){
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "Table DoubleClicked" << index.row() << ui->processinfoTable->item(index.row(), 0)->text() << ui->processinfoTable->item(index.row(), 2)->text();
+        qDebug() << "Table DoubleClicked" << index.row() << ui->processinfoTable->item(index.row(), 0)->text() << ui->processinfoTable->item(index.row(), 2)->text();
 #endif
 
-    ui->nameLineEdit->setText(ui->processinfoTable->item(index.row(), 0)->text());
-    ui->titleLineEdit->setText(ui->processinfoTable->item(index.row(), 2)->text());
+        ui->nameLineEdit->setText(ui->processinfoTable->item(index.row(), 0)->text());
+        ui->titleLineEdit->setText(ui->processinfoTable->item(index.row(), 2)->text());
 
-    QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
-    QString ProcessPath;
-    DWORD dwProcessId = pidStr.toULong();
+        QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
+        QString ProcessPath;
+        DWORD dwProcessId = pidStr.toULong();
 
-    getProcessInfoFromPID(dwProcessId, ProcessPath);
+        getProcessInfoFromPID(dwProcessId, ProcessPath);
 
-    setMapProcessInfo(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text(),
-                      ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text(),
-                      ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text(),
-                      ProcessPath);
+        setMapProcessInfo(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text(),
+                          ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text(),
+                          ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text(),
+                          ProcessPath);
 
-    ui->nameLineEdit->setToolTip(ProcessPath);
+        ui->nameLineEdit->setToolTip(ProcessPath);
+    }
+}
+
+void QKeyMapper::on_addmapdataButton_clicked()
+{
+    if ((true == VirtualKeyCodeMap.contains(ui->orikeyComboBox->currentText()))
+            && (true == VirtualKeyCodeMap.contains(ui->mapkeyComboBox->currentText()))){
+        int findindex = findInKeyMappingDataList(ui->orikeyComboBox->currentText());
+
+        if (-1 == findindex){
+            KeyMappingDataList.append(MAP_KEYDATA(ui->orikeyComboBox->currentText(), ui->mapkeyComboBox->currentText()));
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "Add keymapdata :" << ui->orikeyComboBox->currentText() << "to" << ui->mapkeyComboBox->currentText();
+#endif
+
+            ui->keymapdataTable->clearContents();
+            ui->keymapdataTable->setRowCount(0);
+
+            if (false == KeyMappingDataList.isEmpty()){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "KeyMappingDataList Start >>>";
+#endif
+                int rowindex = 0;
+                ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
+                for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+                {
+                    ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
+                    ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(keymapdata.Mapping_Key));
+
+                    rowindex += 1;
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
+#endif
+                }
+
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "KeyMappingDataList End   <<<";
+#endif
+            }
+        }
+        else{
+            QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
+        }
+    }
 }
 
 void QKeyMapper::on_deleteoneButton_clicked()
 {
+    int currentrowindex = ui->keymapdataTable->currentRow();
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("DeleteOne: currentRow(%d)", ui->processinfoTable->currentRow());
+    qDebug("DeleteOne: currentRow(%d)", currentrowindex);
 #endif
+
+    if (currentrowindex >= 0){
+        ui->keymapdataTable->removeRow(currentrowindex);
+        KeyMappingDataList.removeAt(currentrowindex);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){
+            qDebug("KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", ui->keymapdataTable->rowCount(), KeyMappingDataList.size());
+        }
+#endif
+
+    }
 }
 
 void QKeyMapper::on_clearallButton_clicked()
 {
-
+    ui->keymapdataTable->clearContents();
+    ui->keymapdataTable->setRowCount(0);
+    KeyMappingDataList.clear();
 }
