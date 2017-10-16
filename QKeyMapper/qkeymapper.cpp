@@ -38,7 +38,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->nameLineEdit->setText(DEFAULT_NAME);
     ui->titleLineEdit->setText(DEFAULT_TITLE);
-    setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE));
+    setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString());
     ui->nameCheckBox->setChecked(true);
     ui->titleCheckBox->setChecked(true);
 
@@ -153,8 +153,11 @@ void QKeyMapper::setKeyUnHook(void)
     }
 }
 
-void QKeyMapper::setMapProcessInfo(QString &filename, QString &windowtitle)
+void QKeyMapper::setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath)
 {
+    m_MapProcessInfo.PID = pid;
+    m_MapProcessInfo.FilePath = filepath;
+
     if ((false == filename.isEmpty())
             && (false == windowtitle.isEmpty())){
         m_MapProcessInfo.FileName = filename;
@@ -167,29 +170,52 @@ void QKeyMapper::setMapProcessInfo(QString &filename, QString &windowtitle)
 
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
 {
-    TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
+    TCHAR szProcessPath[MAX_PATH] = TEXT("");
+    TCHAR szImagePath[MAX_PATH] = TEXT("");
 
     // Get a handle to the process.
     HANDLE hProcess = OpenProcess( PROCESS_QUERY_INFORMATION |
                                    PROCESS_VM_READ,
                                    FALSE, processID );
 
+#if 1
+    if (NULL != hProcess )
+    {
+        if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
+        {
+            CloseHandle(hProcess);
+            return;
+        }
+
+        if(!DosPathToNtPath(szImagePath, szProcessPath))
+        {
+            CloseHandle(hProcess);
+            return;
+        }
+
+        processPathStr = QString::fromWCharArray(szProcessPath);
+    }
+    CloseHandle( hProcess );
+
+#else
     // Get the process name.
     if (NULL != hProcess )
     {
-        GetModuleFileNameEx(hProcess, NULL, szProcessName, MAX_PATH);
+        GetModuleFileNameEx(hProcess, NULL, szProcessPath, MAX_PATH);
         //GetModuleFileName(hProcess, szProcessName, MAX_PATH);
-        processPathStr = QString::fromWCharArray(szProcessName);
+        processPathStr = QString::fromWCharArray(szProcessPath);
     }
 
     // Release the handle to the process.
     CloseHandle( hProcess );
+#endif
 }
 
 void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
 {
     DWORD dwProcessId = 0;
-    TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
+    TCHAR szProcessPath[MAX_PATH] = TEXT("");
+    TCHAR szImagePath[MAX_PATH] = TEXT("");
 
     GetWindowThreadProcessId(hWnd, &dwProcessId);
 
@@ -198,15 +224,22 @@ void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
                                    PROCESS_VM_READ,
                                    FALSE, dwProcessId );
 
-    // Get the process name.
     if (NULL != hProcess )
     {
-        GetModuleFileNameEx(hProcess, NULL, szProcessName, MAX_PATH);
-        //GetModuleFileName(hProcess, szProcessName, MAX_PATH);
-        processPathStr = QString::fromWCharArray(szProcessName);
-    }
+        if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
+        {
+            CloseHandle(hProcess);
+            return;
+        }
 
-    // Release the handle to the process.
+        if(!DosPathToNtPath(szImagePath, szProcessPath))
+        {
+            CloseHandle(hProcess);
+            return;
+        }
+
+        processPathStr = QString::fromWCharArray(szProcessPath);
+    }
     CloseHandle( hProcess );
 }
 
@@ -227,7 +260,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             QString filename;
 
             WindowText = QString::fromWCharArray(titleBuffer);
-            getProcessInfoFromPID( dwProcessId, ProcessPath);
+            getProcessInfoFromPID(dwProcessId, ProcessPath);
 
             if (false == WindowText.isEmpty() && false == ProcessPath.isEmpty()){
                 MAP_PROCESSINFO ProcessInfo;
@@ -248,6 +281,46 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     }
 
     return TRUE;
+}
+
+BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
+{
+    TCHAR           szDriveStr[500];
+    TCHAR           szDrive[3];
+    TCHAR           szDevName[100];
+    INT             cchDevName;
+    INT             i;
+
+    if(!pszDosPath || !pszNtPath )
+        return FALSE;
+
+    if(GetLogicalDriveStrings(sizeof(szDriveStr), szDriveStr))
+    {
+        for(i = 0; szDriveStr[i]; i += 4)
+        {
+            if(!lstrcmpi(&(szDriveStr[i]), TEXT("A:\\")) || !lstrcmpi(&(szDriveStr[i]), TEXT("B:\\")))
+                continue;
+
+            szDrive[0] = szDriveStr[i];
+            szDrive[1] = szDriveStr[i + 1];
+            szDrive[2] = '\0';
+            if(!QueryDosDevice(szDrive, szDevName, 100))
+                return FALSE;
+
+            cchDevName = lstrlen(szDevName);
+            if(_wcsnicmp(pszDosPath, szDevName, cchDevName) == 0)
+            {
+                lstrcpy(pszNtPath, szDrive);
+                lstrcat(pszNtPath, pszDosPath + cchDevName);
+
+                return TRUE;
+            }
+        }
+    }
+
+    lstrcpy(pszNtPath, pszDosPath);
+
+    return FALSE;
 }
 
 void QKeyMapper::EnumProcessFunction(void)
@@ -363,6 +436,9 @@ void QKeyMapper::loadKeyMapSetting(void)
     }
 
     if (false == KeyMappingDataList.isEmpty()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "KeyMappingDataList Start >>>";
+#endif
         int rowindex = 0;
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
         for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
@@ -373,9 +449,13 @@ void QKeyMapper::loadKeyMapSetting(void)
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << keymapdata.Original_Key << keymapdata.Mapping_Key;
+            qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
 #endif
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "KeyMappingDataList End   <<<";
+#endif
     }
 }
 
@@ -412,74 +492,85 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
 
 #if 1
-    V_KEYCODE vkeycode;
-    vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
-    if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
-        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
-    }
-    else{
-        vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
-    }
+    bool returnFlag = false;
 
-    QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
-
-    if (false == keycodeString.isEmpty()){
-
-        int keymapdataindex = 0;
-        bool keymapdatacontainsflag = false;
-        for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-        {
-            if (keymapdata.Original_Key == keycodeString){
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("Found VirtualKeyCode at KeyMappingDataList index(%d)", keymapdataindex);
-#endif
-                break;
-            }
-
-            keymapdataindex += 1;
-        }
-
-        if (true == keymapdatacontainsflag){
-            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(keymapdataindex).Mapping_Key);
-            DWORD extenedkeyflag = 0;
-            if (true == map_vkeycode.ExtenedFlag){
-                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-            }
-            else{
-                extenedkeyflag = 0;
-            }
-
-            if (WM_KEYDOWN == wParam){
-                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                return 1;
-            }
-            else if (WM_KEYUP == wParam){
-                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                return 1;
-            }
-            else{
-                // do nothing.
-            }
-        }
-
-#ifdef DEBUG_LOGOUT_ON
-        if (WM_KEYDOWN == wParam){
-            qDebug("%s (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
-        }
-        else if (WM_KEYUP == wParam){
-            qDebug("%s (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+    if (pKeyBoard->scanCode != 0){
+        V_KEYCODE vkeycode;
+        vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
+        if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
+            vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
         }
         else{
+            vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
         }
-#endif
-    }
-    else{
+
+        QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+
+        if (false == keycodeString.isEmpty()){
+
+            int keymapdataindex = 0;
+            bool keymapdatacontainsflag = false;
+            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+            {
+                if (keymapdata.Original_Key == keycodeString){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("UnknownKey (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                    qDebug().nospace() << "Match KeyMappingDataList index(" << keymapdataindex << ") : "<< keymapdata.Original_Key << " to " << keymapdata.Mapping_Key;
 #endif
+
+                    keymapdatacontainsflag = true;
+                    break;
+                }
+
+                keymapdataindex += 1;
+            }
+
+            if (true == keymapdatacontainsflag){
+                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(keymapdataindex).Mapping_Key);
+                DWORD extenedkeyflag = 0;
+                if (true == map_vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+
+                if (WM_KEYDOWN == wParam){
+                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                    returnFlag = true;
+                }
+                else if (WM_KEYUP == wParam){
+                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                    returnFlag = true;
+                }
+                else{
+                    // do nothing.
+                }
+            }
+
+#ifdef DEBUG_LOGOUT_ON
+            if (WM_KEYDOWN == wParam){
+                qDebug("%s (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+            }
+            else if (WM_KEYUP == wParam){
+                qDebug("%s (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+            }
+            else{
+            }
+#endif
+        }
+        else{
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("UnknownKey (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+#endif
+        }
     }
 
-    return CallNextHookEx(NULL, nCode, wParam, lParam);
+    if (true == returnFlag){
+        return 1;
+    }
+    else{
+        return CallNextHookEx(NULL, nCode, wParam, lParam);
+    }
 
 #else
     switch (pKeyBoard->vkCode)
@@ -735,12 +826,25 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
     ui->nameLineEdit->setText(ui->processinfoTable->item(index.row(), 0)->text());
     ui->titleLineEdit->setText(ui->processinfoTable->item(index.row(), 2)->text());
 
-    setMapProcessInfo(ui->processinfoTable->item(index.row(), 0)->text(), ui->processinfoTable->item(index.row(), 2)->text());
+    QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
+    QString ProcessPath;
+    DWORD dwProcessId = pidStr.toULong();
+
+    getProcessInfoFromPID(dwProcessId, ProcessPath);
+
+    setMapProcessInfo(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text(),
+                      ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text(),
+                      ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text(),
+                      ProcessPath);
+
+    ui->nameLineEdit->setToolTip(ProcessPath);
 }
 
 void QKeyMapper::on_deleteoneButton_clicked()
 {
-    qDebug() << "currentRow:" << ui->processinfoTable->currentRow();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("DeleteOne: currentRow(%d)", ui->processinfoTable->currentRow());
+#endif
 }
 
 void QKeyMapper::on_clearallButton_clicked()

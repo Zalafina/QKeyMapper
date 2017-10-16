@@ -29,7 +29,7 @@ BEGIN
             VALUE "FileDescription", "QKeyMapper"
             VALUE "FileVersion", "1.0.0.0"
             VALUE "InternalName", "QKeyMapper"
-            VALUE "LegalCopyright", "Copyright (c) 2017, Melvin Li"
+            VALUE "LegalCopyright", "Copyright (c) 2017, AsukaVoV"
             VALUE "OriginalFilename", "QKeyMapper.exe"
             VALUE "ProductName", "QKeyMapper"
             VALUE "ProductVersion", "1.0.0.0"

@@ -139,11 +139,13 @@ public:
     void setKeyHook(void);
     void setKeyUnHook(void);
 
-    void setMapProcessInfo(QString &filename, QString &windowtitle);
+    void setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
 
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
+
+    static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);

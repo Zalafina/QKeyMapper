@@ -32,8 +32,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Win x86 libs
 LIBS        += -L$$PWD/win_lib/x86
-LIBS        += User32.lib
-# Psapi.lib AdvAPI32.Lib
+LIBS        += User32.lib Psapi.lib
+# AdvAPI32.Lib
 
 
 SOURCES     += \
