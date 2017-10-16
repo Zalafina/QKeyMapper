@@ -51,7 +51,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>KeyMapStart</string>
+    <string>KeyMappingStart</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>

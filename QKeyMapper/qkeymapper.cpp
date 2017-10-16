@@ -509,7 +509,7 @@ void QKeyMapper::on_keymapButton_clicked()
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
             m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
             m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
-            ui->keymapButton->setText("MapStop");
+            ui->keymapButton->setText("KeyMappingStop");
             m_KeyMapStatus = KEYMAP_CHECKING;
         }
         else{
@@ -520,7 +520,7 @@ void QKeyMapper::on_keymapButton_clicked()
         m_CycleCheckTimer.stop();
         m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
         m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
-        ui->keymapButton->setText("MapStart");
+        ui->keymapButton->setText("KeyMappingStart");
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
     }
