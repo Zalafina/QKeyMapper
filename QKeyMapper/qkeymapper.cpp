@@ -439,20 +439,31 @@ void QKeyMapper::loadKeyMapSetting(void)
     }
     settingFile.endGroup();
 
-    if (true == clearallcontainsflag){
+    if (false == clearallcontainsflag){
+        QStringList keymapdatalist;
         settingFile.beginGroup(KEYMAPDATA_GROUP);
-        QStringList keymapdatalist = settingFile.childKeys();
-        qDebug() << keymapdatalist;
+        keymapdatalist = settingFile.childKeys();
+
+        if (true == keymapdatalist.isEmpty()){
+            KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-_"            ));
+            KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "=+"            ));
+            KeyMappingDataList.append(MAP_KEYDATA("I",                "Up"            ));
+            KeyMappingDataList.append(MAP_KEYDATA("K",                "Down"          ));
+            KeyMappingDataList.append(MAP_KEYDATA("H",                "Left"          ));
+            KeyMappingDataList.append(MAP_KEYDATA("J",                "Right"         ));
+            KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0)"            ));
+        }
+        else{
+            qDebug() << keymapdatalist;
+
+            for (const QString &ori_keyname : keymapdatalist){
+                KeyMappingDataList.append(MAP_KEYDATA(ori_keyname, settingFile.value(ori_keyname).toString()));
+            }
+        }
         settingFile.endGroup();
     }
     else{
-        KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-_"            ));
-        KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "=+"            ));
-        KeyMappingDataList.append(MAP_KEYDATA("I",                "Up"            ));
-        KeyMappingDataList.append(MAP_KEYDATA("K",                "Down"          ));
-        KeyMappingDataList.append(MAP_KEYDATA("H",                "Left"          ));
-        KeyMappingDataList.append(MAP_KEYDATA("J",                "Right"         ));
-        KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0)"            ));
+        KeyMappingDataList.clear();
     }
 
     if (false == KeyMappingDataList.isEmpty()){
@@ -535,7 +546,30 @@ void QKeyMapper::on_keymapButton_clicked()
 
 void QKeyMapper::on_savemaplistButton_clicked()
 {
-    QMessageBox::warning(this, tr("QKeyMapper"), tr("None valid KeyMap Data."));
+    if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
+        QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+
+        if (KeyMappingDataList.size() > 0){
+            settingFile.beginGroup(KEYMAPDATA_GROUP);
+            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+            {
+                settingFile.setValue(keymapdata.Original_Key, keymapdata.Mapping_Key);
+            }
+            settingFile.endGroup();
+
+            settingFile.beginGroup(CLEARALLFLAG_GROUP);
+            settingFile.remove(CLEARALL);
+            settingFile.endGroup();
+        }
+        else{
+            settingFile.beginGroup(CLEARALLFLAG_GROUP);
+            settingFile.setValue(CLEARALL, QString("ClearList"));
+            settingFile.endGroup();
+        }
+    }
+    else{
+        QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid KeyMap Data."));
+    }
 }
 
 LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
