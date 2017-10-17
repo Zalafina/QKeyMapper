@@ -23,6 +23,8 @@ static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
 static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
 static const QString CLEARALL("KeyMapData/ClearAll");
 
+static const QString SAO_FONTFILENAME(":/sao_ui.otf");
+
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
@@ -34,9 +36,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CycleCheckTimer(this),
     m_MapProcessInfo(),
     m_SysTrayIcon(NULL),
-    m_KeyHook(NULL)
+    m_KeyHook(NULL),
+    m_SAO_FontFamilyID(-1),
+    m_SAO_FontName()
 {
     ui->setupUi(this);
+
+    loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
+
+    if ((m_SAO_FontFamilyID != -1)
+            && (false == m_SAO_FontName.isEmpty())){
+        setControlCustomFont(m_SAO_FontName);
+    }
 
     ui->iconLabel->setStyle(QStyleFactory::create("windows"));
     ui->nameLineEdit->setText(DEFAULT_NAME);
@@ -558,6 +569,55 @@ bool QKeyMapper::loadKeyMapSetting(void)
     else{
         return true;
     }
+}
+
+void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
+{
+    returnback_fontid = -1;
+    fontname = QString();
+    QFile fontFile(fontfilename);
+    if(!fontFile.open(QIODevice::ReadOnly))
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug()<<"Open font file failure!!!";
+#endif
+        return;
+    }
+
+    returnback_fontid = QFontDatabase::addApplicationFont(fontfilename);
+    QStringList loadedFontFamilies = QFontDatabase::applicationFontFamilies(returnback_fontid);
+    if(false == loadedFontFamilies.isEmpty())
+    {
+        fontname = loadedFontFamilies.at(0);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Load font from " << fontfilename;
+        qDebug() << loadedFontFamilies;
+#endif
+    }
+    fontFile.close();
+}
+
+void QKeyMapper::setControlCustomFont(const QString &fontname)
+{
+    QFont customFont(fontname);
+
+    customFont.setPointSize(20);
+    ui->refreshButton->setFont(customFont);
+    ui->keymapButton->setFont(customFont);
+    ui->savemaplistButton->setFont(customFont);
+
+    customFont.setPointSize(12);
+    ui->deleteoneButton->setFont(customFont);
+    ui->clearallButton->setFont(customFont);
+    ui->addmapdataButton->setFont(customFont);
+    ui->nameCheckBox->setFont(customFont);
+    ui->titleCheckBox->setFont(customFont);
+    ui->orikeyLabel->setFont(customFont);
+    ui->mapkeyLabel->setFont(customFont);
+
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)

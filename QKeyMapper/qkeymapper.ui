@@ -37,7 +37,7 @@
      <x>350</x>
      <y>470</y>
      <width>180</width>
-     <height>51</height>
+     <height>50</height>
     </rect>
    </property>
    <property name="font">
@@ -63,10 +63,10 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>680</x>
-     <y>480</y>
-     <width>121</width>
-     <height>30</height>
+     <x>660</x>
+     <y>475</y>
+     <width>160</width>
+     <height>40</height>
     </rect>
    </property>
    <property name="font">
@@ -137,9 +137,9 @@
    <property name="geometry">
     <rect>
      <x>80</x>
-     <y>480</y>
-     <width>121</width>
-     <height>30</height>
+     <y>475</y>
+     <width>160</width>
+     <height>40</height>
     </rect>
    </property>
    <property name="font">
@@ -219,7 +219,7 @@
   <widget class="QComboBox" name="orikeyComboBox">
    <property name="geometry">
     <rect>
-     <x>610</x>
+     <x>607</x>
      <y>390</y>
      <width>82</width>
      <height>22</height>
@@ -240,9 +240,9 @@
    <property name="geometry">
     <rect>
      <x>560</x>
-     <y>395</y>
+     <y>390</y>
      <width>50</width>
-     <height>12</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="text">
@@ -252,10 +252,10 @@
   <widget class="QLabel" name="mapkeyLabel">
    <property name="geometry">
     <rect>
-     <x>710</x>
-     <y>395</y>
+     <x>707</x>
+     <y>390</y>
      <width>46</width>
-     <height>12</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="text">

@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="sao_ui.otf">font/SAO_UI.otf</file>
+    </qresource>
+</RCC>

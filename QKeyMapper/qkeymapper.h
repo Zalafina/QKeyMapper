@@ -13,6 +13,7 @@
 #include <QHash>
 #include <QtWin>
 #include <QStyleFactory>
+#include <QFontDatabase>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -187,6 +188,9 @@ private:
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(void);
 
+    void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
+    void setControlCustomFont(const QString &fontname);
+
     void changeControlEnableStatus(bool status);
 
 public:
@@ -201,6 +205,8 @@ private:
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     HHOOK m_KeyHook;
+    int m_SAO_FontFamilyID;
+    QString m_SAO_FontName;
 };
 
 #endif // QLINKKEEPER_H

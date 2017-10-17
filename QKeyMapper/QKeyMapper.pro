@@ -48,7 +48,8 @@ FORMS       += \
     qkeymapper.ui
 
 RESOURCES   += \
-    image.qrc
+    image.qrc \
+    font.qrc
 
 RC_FILE     += \
     QKeyMapper.rc
