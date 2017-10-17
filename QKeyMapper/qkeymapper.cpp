@@ -1128,43 +1128,49 @@ void QKeyMapper::on_addmapdataButton_clicked()
 {
     if ((true == VirtualKeyCodeMap.contains(ui->orikeyComboBox->currentText()))
             && (true == VirtualKeyCodeMap.contains(ui->mapkeyComboBox->currentText()))){
-        int findindex = findInKeyMappingDataList(ui->orikeyComboBox->currentText());
+        if (ui->orikeyComboBox->currentText() != ui->mapkeyComboBox->currentText()){
 
-        if (-1 == findindex){
-            KeyMappingDataList.append(MAP_KEYDATA(ui->orikeyComboBox->currentText(), ui->mapkeyComboBox->currentText()));
+            int findindex = findInKeyMappingDataList(ui->orikeyComboBox->currentText());
+
+            if (-1 == findindex){
+                KeyMappingDataList.append(MAP_KEYDATA(ui->orikeyComboBox->currentText(), ui->mapkeyComboBox->currentText()));
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Add keymapdata :" << ui->orikeyComboBox->currentText() << "to" << ui->mapkeyComboBox->currentText();
+                qDebug() << "Add keymapdata :" << ui->orikeyComboBox->currentText() << "to" << ui->mapkeyComboBox->currentText();
 #endif
 
-            ui->keymapdataTable->clearContents();
-            ui->keymapdataTable->setRowCount(0);
+                ui->keymapdataTable->clearContents();
+                ui->keymapdataTable->setRowCount(0);
 
-            if (false == KeyMappingDataList.isEmpty()){
+                if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "KeyMappingDataList Start >>>";
+                    qDebug() << "KeyMappingDataList Start >>>";
 #endif
-                int rowindex = 0;
-                ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
-                for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-                {
-                    ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-                    ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(keymapdata.Mapping_Key));
+                    int rowindex = 0;
+                    ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
+                    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+                    {
+                        ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
+                        ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(keymapdata.Mapping_Key));
 
-                    rowindex += 1;
+                        rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
+                        qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
+#endif
+                    }
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "KeyMappingDataList End   <<<";
 #endif
                 }
-
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "KeyMappingDataList End   <<<";
-#endif
+            }
+            else{
+                QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
             }
         }
         else{
-            QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
+            QMessageBox::warning(this, tr("QKeyMapper"), tr("Should not mapping to the same key."));
         }
     }
 }
