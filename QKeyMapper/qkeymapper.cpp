@@ -328,6 +328,16 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 #endif
 
                     }
+                    else{
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "(ProcessInfo.WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+                    }
+                }
+                else{
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
                 }
             }
         }
@@ -477,7 +487,46 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 
 void QKeyMapper::saveKeyMapSetting(void)
 {
+    if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
+        QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+        settingFile.setIniCodec("UTF8");
+        QStringList original_keys;
+        QStringList mapping_keys;
 
+        if (KeyMappingDataList.size() > 0){
+            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+            {
+                original_keys << keymapdata.Original_Key;
+                mapping_keys  << keymapdata.Mapping_Key;
+            }
+            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
+            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
+
+            settingFile.remove(CLEARALL);
+        }
+        else{
+            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
+            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
+            settingFile.setValue(CLEARALL, QString("ClearList"));
+        }
+
+        if ((false == ui->nameLineEdit->text().isEmpty())
+                && (false == ui->titleLineEdit->text().isEmpty())
+                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
+            QString value("进程名称");
+            settingFile.setValue("ProcessInfo/FileName", value);
+            //settingFile.setValue();
+        }
+        else{
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "Unmatch display processinfo & stored processinfo.";
+#endif
+        }
+    }
+    else{
+        QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid KeyMap Data."));
+    }
 }
 
 bool QKeyMapper::loadKeyMapSetting(void)
@@ -485,6 +534,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
     bool clearallcontainsflag = true;
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+    settingFile.setIniCodec("UTF8");
 
     if (false == settingFile.contains(CLEARALL)){
         clearallcontainsflag = false;
@@ -676,31 +726,7 @@ void QKeyMapper::on_keymapButton_clicked()
 
 void QKeyMapper::on_savemaplistButton_clicked()
 {
-    if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
-        QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
-        QStringList original_keys;
-        QStringList mapping_keys;
-
-        if (KeyMappingDataList.size() > 0){
-            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-            {
-                original_keys << keymapdata.Original_Key;
-                mapping_keys  << keymapdata.Mapping_Key;
-            }
-            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
-
-            settingFile.remove(CLEARALL);
-        }
-        else{
-            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
-            settingFile.setValue(CLEARALL, QString("ClearList"));
-        }
-    }
-    else{
-        QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid KeyMap Data."));
-    }
+    saveKeyMapSetting();
 }
 
 LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
