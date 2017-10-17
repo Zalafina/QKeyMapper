@@ -23,6 +23,10 @@ static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
 static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
 static const QString CLEARALL("KeyMapData/ClearAll");
 
+static const QString PROCESSINFO_FILENAME("ProcessInfo/FileName");
+static const QString PROCESSINFO_WINDOWTITLE("ProcessInfo/WindowTitle");
+static const QString PROCESSINFO_FILEPATH("ProcessInfo/FilePath");
+
 static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
@@ -50,8 +54,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 
     ui->iconLabel->setStyle(QStyleFactory::create("windows"));
-    ui->nameLineEdit->setText(DEFAULT_NAME);
-    ui->titleLineEdit->setText(DEFAULT_TITLE);
     setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
     ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
     ui->nameCheckBox->setChecked(true);
@@ -68,6 +70,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initAddKeyComboBoxes();
     bool loadresult = loadKeyMapSetting();
     Q_UNUSED(loadresult);
+
+    ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
+    ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
@@ -489,7 +494,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 {
     if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
         QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
-        settingFile.setIniCodec("UTF8");
+        settingFile.setIniCodec("UTF-8");
         QStringList original_keys;
         QStringList mapping_keys;
 
@@ -514,9 +519,17 @@ void QKeyMapper::saveKeyMapSetting(void)
                 && (false == ui->titleLineEdit->text().isEmpty())
                 && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
                 && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
-            QString value("进程名称");
-            settingFile.setValue("ProcessInfo/FileName", value);
-            //settingFile.setValue();
+            settingFile.setValue(PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
+            settingFile.setValue(PROCESSINFO_WINDOWTITLE, m_MapProcessInfo.WindowTitle);
+
+            if (false == m_MapProcessInfo.FilePath.isEmpty()){
+                settingFile.setValue(PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
+            }
+            else{
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "FilePath is empty, unsaved.";
+#endif
+            }
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -534,7 +547,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
     bool clearallcontainsflag = true;
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
-    settingFile.setIniCodec("UTF8");
+    settingFile.setIniCodec("UTF-8");
 
     if (false == settingFile.contains(CLEARALL)){
         clearallcontainsflag = false;
@@ -611,6 +624,16 @@ bool QKeyMapper::loadKeyMapSetting(void)
         qDebug() << "KeyMappingDataList End   <<<";
 #endif
     }
+
+    if ((true == settingFile.contains(PROCESSINFO_FILENAME))
+            && (true == settingFile.contains(PROCESSINFO_WINDOWTITLE))){
+        m_MapProcessInfo.FileName = settingFile.value(PROCESSINFO_FILENAME).toString();
+        m_MapProcessInfo.WindowTitle = settingFile.value(PROCESSINFO_WINDOWTITLE).toString();
+
+        ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
+        ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
+    }
+
 
     if (false == datavalidflag){
         QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
