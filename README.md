@@ -8,4 +8,4 @@ A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
 4. Save button will write KeyMapData to ini setting file, then it will load it at program startup.
 
 ## Screenshot
-![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot.png)
+![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_01.png)
