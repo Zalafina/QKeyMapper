@@ -182,7 +182,7 @@ private:
     void initAddKeyComboBoxes(void);
 
     void saveKeyMapSetting(void);
-    void loadKeyMapSetting(void);
+    bool loadKeyMapSetting(void);
 
     void changeControlEnableStatus(bool status);
 

@@ -13,13 +13,12 @@ static const int PROCESS_TITLE_COLUMN = 2;
 static const int ORIGINAL_KEY_COLUMN = 0;
 static const int MAPPING_KEY_COLUMN = 1;
 
-static const QString DEFAULT_NAME(QString("AWVSSAO.exe"));
-static const QString DEFAULT_TITLE(QString("Accel World vs. Sword Art Online"));
+static const QString DEFAULT_NAME("AWVSSAO.exe");
+static const QString DEFAULT_TITLE("Accel World vs. Sword Art Online");
 
-static const QString KEYMAPDATA_GROUP(QString("KeyMapData"));
-static const QString CLEARALLFLAG_GROUP(QString("ClearAllFlag"));
-
-static const QString CLEARALL(QString("ClearAll"));
+static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
+static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
+static const QString CLEARALL("KeyMapData/ClearAll");
 
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
@@ -51,7 +50,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     initKeyMappingDataTable();
     initAddKeyComboBoxes();
-    loadKeyMapSetting();
+    bool loadresult = loadKeyMapSetting();
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
@@ -63,6 +62,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
+
+//    if (false == loadresult){
+//        QMessageBox::warning(this, tr("QKeyMapper"), tr("Load invalid keymapdata from ini file.\nReset to default values."));
+//    }
 }
 
 QKeyMapper::~QKeyMapper()
@@ -107,6 +110,27 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
 #endif
+            }
+
+            if ((true == ui->nameCheckBox->isChecked())
+                    && (true == ui->titleCheckBox->isChecked())){
+                if ((m_MapProcessInfo.FileName == filename)
+                        && (m_MapProcessInfo.WindowTitle == windowTitle)){
+                    checkresult = true;
+                }
+            }
+            else if (true == ui->nameCheckBox->isChecked()){
+                if (m_MapProcessInfo.FileName == filename){
+                    checkresult = true;
+                }
+            }
+            else if (true == ui->titleCheckBox->isChecked()){
+                if (m_MapProcessInfo.WindowTitle == windowTitle){
+                    checkresult = true;
+                }
+            }
+            else{
+                checkresult = true;
             }
 
             if ((m_MapProcessInfo.FileName == filename)
@@ -428,23 +452,49 @@ void QKeyMapper::saveKeyMapSetting(void)
 
 }
 
-void QKeyMapper::loadKeyMapSetting(void)
+bool QKeyMapper::loadKeyMapSetting(void)
 {
     bool clearallcontainsflag = true;
+    quint8 datavalidflag = 0xFF;
     QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
 
-    settingFile.beginGroup(CLEARALLFLAG_GROUP);
     if (false == settingFile.contains(CLEARALL)){
         clearallcontainsflag = false;
     }
-    settingFile.endGroup();
 
     if (false == clearallcontainsflag){
-        QStringList keymapdatalist;
-        settingFile.beginGroup(KEYMAPDATA_GROUP);
-        keymapdatalist = settingFile.childKeys();
+        QStringList original_keys;
+        QStringList mapping_keys;
+        QList<MAP_KEYDATA> loadkeymapdata;
 
-        if (true == keymapdatalist.isEmpty()){
+        if ((true == settingFile.contains(KEYMAPDATA_ORIGINALKEYS))
+                && (true == settingFile.contains(KEYMAPDATA_MAPPINGKEYS))){
+            original_keys = settingFile.value(KEYMAPDATA_ORIGINALKEYS).toStringList();
+            mapping_keys  = settingFile.value(KEYMAPDATA_MAPPINGKEYS ).toStringList();
+
+            if (original_keys.size() == mapping_keys.size()){
+                datavalidflag = true;
+
+                if (original_keys.size() > 0){
+                    int loadindex = 0;
+                    for (const QString &ori_key : original_keys){
+
+                        if ((true == VirtualKeyCodeMap.contains(ori_key))
+                                && (true == VirtualKeyCodeMap.contains(mapping_keys.at(loadindex)))){
+                            loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex)));
+                        }
+                        else{
+                            datavalidflag = false;
+                            break;
+                        }
+
+                        loadindex += 1;
+                    }
+                }
+            }
+        }
+
+        if (datavalidflag != (quint8)true){
             KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-_"            ));
             KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "=+"            ));
             KeyMappingDataList.append(MAP_KEYDATA("I",                "Up"            ));
@@ -454,13 +504,8 @@ void QKeyMapper::loadKeyMapSetting(void)
             KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0)"            ));
         }
         else{
-            qDebug() << keymapdatalist;
-
-            for (const QString &ori_keyname : keymapdatalist){
-                KeyMappingDataList.append(MAP_KEYDATA(ori_keyname, settingFile.value(ori_keyname).toString()));
-            }
+            KeyMappingDataList = loadkeymapdata;
         }
-        settingFile.endGroup();
     }
     else{
         KeyMappingDataList.clear();
@@ -487,6 +532,14 @@ void QKeyMapper::loadKeyMapSetting(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "KeyMappingDataList End   <<<";
 #endif
+    }
+
+    if (false == datavalidflag){
+        QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
+        return false;
+    }
+    else{
+        return true;
     }
 }
 
@@ -548,23 +601,24 @@ void QKeyMapper::on_savemaplistButton_clicked()
 {
     if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
         QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+        QStringList original_keys;
+        QStringList mapping_keys;
 
         if (KeyMappingDataList.size() > 0){
-            settingFile.beginGroup(KEYMAPDATA_GROUP);
             for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
             {
-                settingFile.setValue(keymapdata.Original_Key, keymapdata.Mapping_Key);
+                original_keys << keymapdata.Original_Key;
+                mapping_keys  << keymapdata.Mapping_Key;
             }
-            settingFile.endGroup();
+            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
+            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
 
-            settingFile.beginGroup(CLEARALLFLAG_GROUP);
             settingFile.remove(CLEARALL);
-            settingFile.endGroup();
         }
         else{
-            settingFile.beginGroup(CLEARALLFLAG_GROUP);
+            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
+            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
             settingFile.setValue(CLEARALL, QString("ClearList"));
-            settingFile.endGroup();
         }
     }
     else{
@@ -849,7 +903,13 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
     {
         QFileInfo file_info(processinfo.FilePath);
         QFileIconProvider icon_provider;
-        ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(icon_provider.icon(file_info), processinfo.FileName));
+        QIcon fileicon = icon_provider.icon(file_info);
+
+        if (true == fileicon.isNull()){
+            continue;
+        }
+
+        ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(fileicon, processinfo.FileName));
         ui->processinfoTable->setItem(rowindex, 1, new QTableWidgetItem(processinfo.PID));
         ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         ui->processinfoTable->setItem(rowindex, 2, new QTableWidgetItem(processinfo.WindowTitle));
