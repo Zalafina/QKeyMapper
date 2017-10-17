@@ -11,6 +11,8 @@
 #include <QFileInfo>
 #include <QFileIconProvider>
 #include <QHash>
+#include <QtWin>
+#include <QStyleFactory>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -30,6 +32,7 @@ typedef struct
     QString PID;
     QString WindowTitle;
     QString FilePath;
+    QIcon   WindowIcon;
 }MAP_PROCESSINFO;
 
 typedef struct MAP_KEYDATA
@@ -139,7 +142,7 @@ public:
     void setKeyHook(void);
     void setKeyUnHook(void);
 
-    void setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath);
+    void setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath, QIcon &windowicon);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);

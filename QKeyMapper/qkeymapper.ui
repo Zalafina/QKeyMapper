@@ -104,7 +104,7 @@
   <widget class="QCheckBox" name="nameCheckBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>115</x>
      <y>390</y>
      <width>49</width>
      <height>21</height>
@@ -120,7 +120,7 @@
   <widget class="QCheckBox" name="titleCheckBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>115</x>
      <y>425</y>
      <width>55</width>
      <height>21</height>
@@ -159,9 +159,9 @@
   <widget class="QLineEdit" name="nameLineEdit">
    <property name="geometry">
     <rect>
-     <x>85</x>
+     <x>170</x>
      <y>390</y>
-     <width>445</width>
+     <width>360</width>
      <height>20</height>
     </rect>
    </property>
@@ -172,9 +172,9 @@
   <widget class="QLineEdit" name="titleLineEdit">
    <property name="geometry">
     <rect>
-     <x>85</x>
+     <x>170</x>
      <y>425</y>
-     <width>445</width>
+     <width>360</width>
      <height>20</height>
     </rect>
    </property>
@@ -292,6 +292,34 @@
    </property>
    <property name="text">
     <string>Clear All</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="iconLabel">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>380</y>
+     <width>72</width>
+     <height>72</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
   </widget>
  </widget>

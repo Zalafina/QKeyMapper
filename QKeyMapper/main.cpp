@@ -1,5 +1,4 @@
 #include <QApplication>
-#include <QStyleFactory>
 #include "qkeymapper.h"
 
 int main(int argc, char *argv[])

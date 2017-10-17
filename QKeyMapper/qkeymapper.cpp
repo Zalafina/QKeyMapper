@@ -13,6 +13,9 @@ static const int PROCESS_TITLE_COLUMN = 2;
 static const int ORIGINAL_KEY_COLUMN = 0;
 static const int MAPPING_KEY_COLUMN = 1;
 
+static const int DEFAULT_ICON_WIDTH = 64;
+static const int DEFAULT_ICON_HEIGHT = 64;
+
 static const QString DEFAULT_NAME("AWVSSAO.exe");
 static const QString DEFAULT_TITLE("Accel World vs. Sword Art Online");
 
@@ -35,9 +38,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->iconLabel->setStyle(QStyleFactory::create("windows"));
     ui->nameLineEdit->setText(DEFAULT_NAME);
     ui->titleLineEdit->setText(DEFAULT_TITLE);
-    setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString());
+    setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
+    ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
     ui->nameCheckBox->setChecked(true);
     ui->titleCheckBox->setChecked(true);
 
@@ -51,6 +56,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initKeyMappingDataTable();
     initAddKeyComboBoxes();
     bool loadresult = loadKeyMapSetting();
+    Q_UNUSED(loadresult);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
@@ -178,15 +184,17 @@ void QKeyMapper::setKeyUnHook(void)
     }
 }
 
-void QKeyMapper::setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath)
+void QKeyMapper::setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath, QIcon &windowicon)
 {
     m_MapProcessInfo.PID = pid;
     m_MapProcessInfo.FilePath = filepath;
 
     if ((false == filename.isEmpty())
-            && (false == windowtitle.isEmpty())){
+            && (false == windowtitle.isEmpty())
+            && (false == windowicon.isNull())){
         m_MapProcessInfo.FileName = filename;
         m_MapProcessInfo.WindowTitle = windowtitle;
+        m_MapProcessInfo.WindowIcon = windowicon;
     }
     else{
         qDebug().nospace().noquote() << "setMapProcessInfo Error: filename(" << filename << "), " << "windowtitle(" << windowtitle << ")";
@@ -296,11 +304,20 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 ProcessInfo.PID = QString::number(dwProcessId);
                 ProcessInfo.WindowTitle = WindowText;
                 ProcessInfo.FilePath = ProcessPath;
-                static_ProcessInfoList.append(ProcessInfo);
+
+                HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
+                if (iconptr != NULL){
+                    ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+
+                    if (ProcessInfo.WindowIcon.isNull() != true){
+                        static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                        qDebug().nospace().noquote() << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
 #endif
+
+                    }
+                }
             }
         }
     }
@@ -547,8 +564,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 {
     ui->nameCheckBox->setEnabled(status);
     ui->titleCheckBox->setEnabled(status);
-    ui->nameLineEdit->setEnabled(status);
-    ui->titleLineEdit->setEnabled(status);
+    //ui->nameLineEdit->setEnabled(status);
+    //ui->titleLineEdit->setEnabled(status);
 
     ui->orikeyLabel->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
@@ -901,6 +918,7 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
     ui->processinfoTable->setRowCount(processinfolist.size());
     for (const MAP_PROCESSINFO &processinfo : processinfolist)
     {
+#if 0
         QFileInfo file_info(processinfo.FilePath);
         QFileIconProvider icon_provider;
         QIcon fileicon = icon_provider.icon(file_info);
@@ -908,8 +926,9 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
         if (true == fileicon.isNull()){
             continue;
         }
+#endif
 
-        ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(fileicon, processinfo.FileName));
+        ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(processinfo.WindowIcon, processinfo.FileName));
         ui->processinfoTable->setItem(rowindex, 1, new QTableWidgetItem(processinfo.PID));
         ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         ui->processinfoTable->setItem(rowindex, 2, new QTableWidgetItem(processinfo.WindowTitle));
@@ -1096,8 +1115,11 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         setMapProcessInfo(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text(),
                           ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text(),
                           ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text(),
-                          ProcessPath);
+                          ProcessPath,
+                          ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->icon());
 
+        //ui->iconLabel->setScaledContents(true);
+        ui->iconLabel->setPixmap(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->icon().pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
         ui->nameLineEdit->setToolTip(ProcessPath);
     }
 }
