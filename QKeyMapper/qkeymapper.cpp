@@ -32,6 +32,8 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
+QComboBox *QKeyMapper::orikeyComboBox_static = NULL;
+QComboBox *QKeyMapper::mapkeyComboBox_static = NULL;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -47,6 +49,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMappingDataTableDelegate(NULL)
 {
     ui->setupUi(this);
+    orikeyComboBox_static = ui->orikeyComboBox;
+    mapkeyComboBox_static = ui->mapkeyComboBox;
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
 
     if ((m_SAO_FontFamilyID != -1)
@@ -357,7 +361,9 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             WindowText = QString::fromWCharArray(titleBuffer);
             getProcessInfoFromPID(dwProcessId, ProcessPath);
 
-            if (false == WindowText.isEmpty() && false == ProcessPath.isEmpty()){
+            if ((false == WindowText.isEmpty())
+                    && (WindowText != QString("QKeyMapper"))
+                    && (false == ProcessPath.isEmpty())){
                 MAP_PROCESSINFO ProcessInfo;
                 QFileInfo fileinfo(ProcessPath);
                 filename = fileinfo.fileName();

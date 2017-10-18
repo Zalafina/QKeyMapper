@@ -15,6 +15,7 @@
 #include <QStyleFactory>
 #include <QFontDatabase>
 #include <QStyledItemDelegate>
+#include <QComboBox>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -208,6 +209,9 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QList<MAP_KEYDATA> KeyMappingDataList;
+
+    static QComboBox *orikeyComboBox_static;
+    static QComboBox *mapkeyComboBox_static;
 
 private:
     Ui::QKeyMapper *ui;
