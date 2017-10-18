@@ -14,6 +14,7 @@
 #include <QtWin>
 #include <QStyleFactory>
 #include <QFontDatabase>
+#include <QStyledItemDelegate>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -75,6 +76,16 @@ typedef struct V_KEYCODE
                 && (ExtenedFlag == other.ExtenedFlag));
     }
 }V_KEYCODE_st;
+
+class StyledDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+
+public:
+    StyledDelegate(QWidget *parent = 0) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const Q_DECL_OVERRIDE;
+};
 
 class QKeyMapper : public QDialog
 {
@@ -207,6 +218,8 @@ private:
     HHOOK m_KeyHook;
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
+    StyledDelegate *m_ProcessInfoTableDelegate;
+    StyledDelegate *m_KeyMappingDataTableDelegate;
 };
 
 #endif // QLINKKEEPER_H

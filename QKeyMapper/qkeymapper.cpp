@@ -42,7 +42,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIcon(NULL),
     m_KeyHook(NULL),
     m_SAO_FontFamilyID(-1),
-    m_SAO_FontName()
+    m_SAO_FontName(),
+    m_ProcessInfoTableDelegate(NULL),
+    m_KeyMappingDataTableDelegate(NULL)
 {
     ui->setupUi(this);
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
@@ -138,6 +140,12 @@ QKeyMapper::~QKeyMapper()
 
     delete m_SysTrayIcon;
     m_SysTrayIcon = NULL;
+
+    delete m_ProcessInfoTableDelegate;
+    m_ProcessInfoTableDelegate = NULL;
+
+    delete m_KeyMappingDataTableDelegate;
+    m_KeyMappingDataTableDelegate = NULL;
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -1056,6 +1064,9 @@ void QKeyMapper::initProcessInfoTable(void)
     ui->processinfoTable->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->processinfoTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+    m_ProcessInfoTableDelegate = new StyledDelegate(ui->processinfoTable);
+    ui->processinfoTable->setItemDelegateForColumn(PROCESS_PID_COLUMN, m_ProcessInfoTableDelegate);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "verticalHeader->isVisible" << ui->processinfoTable->verticalHeader()->isVisible();
     qDebug() << "selectionBehavior" << ui->processinfoTable->selectionBehavior();
@@ -1094,7 +1105,7 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
 
         ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(processinfo.WindowIcon, processinfo.FileName));
         ui->processinfoTable->setItem(rowindex, 1, new QTableWidgetItem(processinfo.PID));
-        ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        //ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         ui->processinfoTable->setItem(rowindex, 2, new QTableWidgetItem(processinfo.WindowTitle));
 
         rowindex += 1;
@@ -1384,4 +1395,18 @@ void QKeyMapper::on_clearallButton_clicked()
     ui->keymapdataTable->clearContents();
     ui->keymapdataTable->setRowCount(0);
     KeyMappingDataList.clear();
+}
+
+void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    if (PROCESS_PID_COLUMN == index.column())
+    {
+        QStyleOptionViewItem myOption = option;
+        myOption.displayAlignment = Qt::AlignRight | Qt::AlignVCenter;
+
+        QStyledItemDelegate::paint(painter, myOption, index);
+    }
+    else{
+        QStyledItemDelegate::paint(painter, option, index);
+    }
 }
