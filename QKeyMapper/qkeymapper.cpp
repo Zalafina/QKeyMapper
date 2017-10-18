@@ -53,6 +53,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 
     // set QTableWidget selected background-color
+    setStyleSheet("QTableWidget { alternate-background-color: blue; background: yellow;");
     setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
 
     ui->iconLabel->setStyle(QStyleFactory::create("windows"));
@@ -109,7 +110,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
     else{
         if ((DEFAULT_NAME == ui->nameLineEdit->text())
-                && (DEFAULT_TITLE == ui->nameLineEdit->text())){
+                && (DEFAULT_TITLE == ui->titleLineEdit->text())){
             ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
         }
     }
