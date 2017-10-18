@@ -85,7 +85,18 @@ class StyledDelegate : public QStyledItemDelegate
 public:
     StyledDelegate(QWidget *parent = 0) : QStyledItemDelegate(parent) {}
 
-    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const Q_DECL_OVERRIDE;
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
+};
+
+class KeyListComboBox : public QComboBox
+{
+    Q_OBJECT
+
+public:
+    explicit KeyListComboBox(QWidget *parent = Q_NULLPTR) : QComboBox(parent) {}
+
+protected:
+    void keyPressEvent(QKeyEvent *e);
 };
 
 class QKeyMapper : public QDialog
@@ -224,6 +235,8 @@ private:
     QString m_SAO_FontName;
     StyledDelegate *m_ProcessInfoTableDelegate;
     StyledDelegate *m_KeyMappingDataTableDelegate;
+    KeyListComboBox *m_orikeyComboBox;
+    KeyListComboBox *m_mapkeyComboBox;
 };
 
 #endif // QLINKKEEPER_H

@@ -46,11 +46,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
     m_ProcessInfoTableDelegate(NULL),
-    m_KeyMappingDataTableDelegate(NULL)
+    m_KeyMappingDataTableDelegate(NULL),
+    m_orikeyComboBox(new KeyListComboBox(this)),
+    m_mapkeyComboBox(new KeyListComboBox(this))
 {
     ui->setupUi(this);
-    orikeyComboBox_static = ui->orikeyComboBox;
-    mapkeyComboBox_static = ui->mapkeyComboBox;
+    initAddKeyComboBoxes();
+    orikeyComboBox_static = m_orikeyComboBox;
+    mapkeyComboBox_static = m_mapkeyComboBox;
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
 
     if ((m_SAO_FontFamilyID != -1)
@@ -74,7 +77,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
 
     initKeyMappingDataTable();
-    initAddKeyComboBoxes();
     bool loadresult = loadKeyMapSetting();
     Q_UNUSED(loadresult);
 
@@ -376,24 +378,31 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
                 if (iconptr != NULL){
                     ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+                }
+                else{
+                    QFileIconProvider icon_provider;
+                    QIcon fileicon = icon_provider.icon(QFileInfo(ProcessPath));
 
-                    if (ProcessInfo.WindowIcon.isNull() != true){
-                        static_ProcessInfoList.append(ProcessInfo);
+                    if (false == fileicon.isNull()){
+                        ProcessInfo.WindowIcon = fileicon;
+                    }
+                }
+
+                if (ProcessInfo.WindowIcon.isNull() != true){
+                    static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
+                    if (iconptr != NULL){
                         qDebug().nospace().noquote() << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-#endif
-
                     }
                     else{
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "(ProcessInfo.WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-#endif
+                        qDebug().nospace().noquote() << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                     }
+#endif
                 }
                 else{
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                    qDebug().nospace().noquote() << "(ProcessInfo.WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
 #endif
                 }
             }
@@ -757,8 +766,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->orikeyLabel->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
-    ui->orikeyComboBox->setEnabled(status);
-    ui->mapkeyComboBox->setEnabled(status);
+    m_orikeyComboBox->setEnabled(status);
+    m_mapkeyComboBox->setEnabled(status);
     ui->addmapdataButton->setEnabled(status);
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
@@ -1266,8 +1275,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Num 9"
             << "Num Enter";
 
-    ui->orikeyComboBox->addItems(keycodelist);
-    ui->mapkeyComboBox->addItems(keycodelist);
+    m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
+    m_orikeyComboBox->setGeometry(QRect(607, 390, 82, 22));
+    m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
+    m_mapkeyComboBox->setGeometry(QRect(755, 390, 82, 22));
+
+    m_orikeyComboBox->addItems(keycodelist);
+    m_mapkeyComboBox->addItems(keycodelist);
 }
 
 void QKeyMapper::on_refreshButton_clicked()
@@ -1326,17 +1340,17 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
-    if ((true == VirtualKeyCodeMap.contains(ui->orikeyComboBox->currentText()))
-            && (true == VirtualKeyCodeMap.contains(ui->mapkeyComboBox->currentText()))){
-        if (ui->orikeyComboBox->currentText() != ui->mapkeyComboBox->currentText()){
+    if ((true == VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText()))
+            && (true == VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText()))){
+        if (m_orikeyComboBox->currentText() != m_mapkeyComboBox->currentText()){
 
-            int findindex = findInKeyMappingDataList(ui->orikeyComboBox->currentText());
+            int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
 
             if (-1 == findindex){
-                KeyMappingDataList.append(MAP_KEYDATA(ui->orikeyComboBox->currentText(), ui->mapkeyComboBox->currentText()));
+                KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText()));
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "Add keymapdata :" << ui->orikeyComboBox->currentText() << "to" << ui->mapkeyComboBox->currentText();
+                qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
 #endif
 
                 ui->keymapdataTable->clearContents();
@@ -1415,4 +1429,9 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     else{
         QStyledItemDelegate::paint(painter, option, index);
     }
+}
+
+void KeyListComboBox::keyPressEvent(QKeyEvent *e)
+{
+    QComboBox::keyPressEvent(e);
 }

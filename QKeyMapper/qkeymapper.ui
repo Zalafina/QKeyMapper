@@ -195,26 +195,6 @@
     <string>ADD</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="orikeyComboBox">
-   <property name="geometry">
-    <rect>
-     <x>607</x>
-     <y>390</y>
-     <width>82</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="mapkeyComboBox">
-   <property name="geometry">
-    <rect>
-     <x>755</x>
-     <y>390</y>
-     <width>82</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QLabel" name="orikeyLabel">
    <property name="geometry">
     <rect>
