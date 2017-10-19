@@ -16,6 +16,7 @@
 #include <QFontDatabase>
 #include <QStyledItemDelegate>
 #include <QComboBox>
+#include <QKeyEvent>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -93,10 +94,18 @@ class KeyListComboBox : public QComboBox
     Q_OBJECT
 
 public:
-    explicit KeyListComboBox(QWidget *parent = Q_NULLPTR) : QComboBox(parent) {}
+    explicit KeyListComboBox(QWidget *parent = Q_NULLPTR) : QComboBox(parent)
+    {
+        if (parent != NULL){
+            m_KeyMapper_ptr = parent;
+        }
+    }
 
 protected:
-    void keyPressEvent(QKeyEvent *e);
+    void keyPressEvent(QKeyEvent *keyevent);
+
+private:
+    QWidget *m_KeyMapper_ptr;
 };
 
 class QKeyMapper : public QDialog
@@ -109,6 +118,16 @@ public:
 
     #define EXTENED_FLAG_TRUE   true
     #define EXTENED_FLAG_FALSE  false
+
+    #define QT_KEY_EXTENDED         (0x01000000U)
+    #define QT_KEY_L_SHIFT          (0x00000001U)
+    #define QT_KEY_L_CTRL           (0x00000002U)
+    #define QT_KEY_L_ALT            (0x00000004U)
+    #define QT_KEY_L_WIN            (0x00000008U)
+    #define QT_KEY_R_SHIFT          (0x00000010U)
+    #define QT_KEY_R_CTRL           (0x00000020U)
+    #define QT_KEY_R_ALT            (0x00000040U)
+    #define QT_KEY_R_WIN            (0x00000080U)
 
     enum KeyMapStatus
     {
@@ -180,10 +199,11 @@ public:
 protected:
     void changeEvent(QEvent *event);
 
+public slots:
+    void on_keymapButton_clicked();
+
 private slots:
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
-
-    void on_keymapButton_clicked();
 
     void on_savemaplistButton_clicked();
 

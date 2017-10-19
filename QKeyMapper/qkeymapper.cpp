@@ -364,7 +364,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             getProcessInfoFromPID(dwProcessId, ProcessPath);
 
             if ((false == WindowText.isEmpty())
-                    && (WindowText != QString("QKeyMapper"))
+                    //&& (WindowText != QString("QKeyMapper"))
                     && (false == ProcessPath.isEmpty())){
                 MAP_PROCESSINFO ProcessInfo;
                 QFileInfo fileinfo(ProcessPath);
@@ -536,6 +536,46 @@ void QKeyMapper::changeEvent(QEvent *event)
         QTimer::singleShot(0, this, SLOT(WindowStateChangedProc()));
     }
     QDialog::changeEvent(event);
+}
+
+void QKeyMapper::on_keymapButton_clicked()
+{
+    if (KEYMAP_IDLE == m_KeyMapStatus){
+        if ((false == m_MapProcessInfo.FileName.isEmpty())
+                && (false == m_MapProcessInfo.WindowTitle.isEmpty())){
+            m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
+            m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
+            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
+            ui->keymapButton->setText("KeyMappingStop");
+            m_KeyMapStatus = KEYMAP_CHECKING;
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
+#endif
+        }
+        else{
+            QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid process info for key mapping."));
+        }
+    }
+    else{
+        m_CycleCheckTimer.stop();
+        m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
+        m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
+        ui->keymapButton->setText("KeyMappingStart");
+        setKeyUnHook();
+        m_KeyMapStatus = KEYMAP_IDLE;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
+#endif
+    }
+
+    if (m_KeyMapStatus != KEYMAP_IDLE){
+        changeControlEnableStatus(false);
+    }
+    else{
+        changeControlEnableStatus(true);
+    }
 }
 
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
@@ -779,38 +819,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->keymapdataTable->setEnabled(status);
 }
 
-void QKeyMapper::on_keymapButton_clicked()
-{
-    if (KEYMAP_IDLE == m_KeyMapStatus){
-        if ((false == m_MapProcessInfo.FileName.isEmpty())
-                && (false == m_MapProcessInfo.WindowTitle.isEmpty())){
-            m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
-            m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
-            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
-            ui->keymapButton->setText("KeyMappingStop");
-            m_KeyMapStatus = KEYMAP_CHECKING;
-        }
-        else{
-            QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid process info for key mapping."));
-        }
-    }
-    else{
-        m_CycleCheckTimer.stop();
-        m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
-        m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
-        ui->keymapButton->setText("KeyMappingStart");
-        setKeyUnHook();
-        m_KeyMapStatus = KEYMAP_IDLE;
-    }
-
-    if (m_KeyMapStatus != KEYMAP_IDLE){
-        changeControlEnableStatus(false);
-    }
-    else{
-        changeControlEnableStatus(true);
-    }
-}
-
 void QKeyMapper::on_savemaplistButton_clicked()
 {
     saveKeyMapSetting();
@@ -986,6 +994,10 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
     VirtualKeyCodeMap.insert        ("Application", V_KEYCODE(VK_APPS,          EXTENED_FLAG_TRUE ));   // 0x5D + E
     VirtualKeyCodeMap.insert        ("R-Ctrl",      V_KEYCODE(VK_RCONTROL,      EXTENED_FLAG_TRUE ));   // 0xA3 + E
     VirtualKeyCodeMap.insert        ("R-Win",       V_KEYCODE(VK_RWIN,          EXTENED_FLAG_TRUE ));   // 0x5C + E
+    // Old special keys
+    VirtualKeyCodeMap.insert        ("Shift",       V_KEYCODE(VK_SHIFT,         EXTENED_FLAG_FALSE));   // 0x10
+    VirtualKeyCodeMap.insert        ("Ctrl",        V_KEYCODE(VK_CONTROL,       EXTENED_FLAG_FALSE));   // 0x11
+    VirtualKeyCodeMap.insert        ("Alt",         V_KEYCODE(VK_MENU,          EXTENED_FLAG_FALSE));   // 0x12
 
     // Function Keys
     VirtualKeyCodeMap.insert        ("Esc",         V_KEYCODE(VK_ESCAPE,        EXTENED_FLAG_FALSE));   // 0x1B
@@ -1207,10 +1219,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Space"
             << "Tab"
             << "Enter"
+            << "Shift"
             << "L-Shift"
             << "R-Shift"
+            << "Ctrl"
             << "L-Ctrl"
             << "R-Ctrl"
+            << "Alt"
             << "L-Alt"
             << "R-Alt"
             << "L-Win"
@@ -1431,7 +1446,76 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     }
 }
 
-void KeyListComboBox::keyPressEvent(QKeyEvent *e)
+void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 {
-    QComboBox::keyPressEvent(e);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListComboBox]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
+    qDebug("[KeyListComboBox] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
+#endif
+
+    V_KEYCODE vkeycode;
+    vkeycode.KeyCode = (quint8)keyevent->nativeVirtualKey();
+    if (QT_KEY_EXTENDED == (keyevent->nativeModifiers() & QT_KEY_EXTENDED)){
+        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
+    }
+    else{
+        vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
+    }
+
+    QString keycodeString = QKeyMapper::VirtualKeyCodeMap.key(vkeycode);
+
+    if (VK_SHIFT == vkeycode.KeyCode){
+        if (QT_KEY_L_SHIFT == (keyevent->nativeModifiers() & QT_KEY_L_SHIFT)){
+            keycodeString = QString("L-Shift");
+        }
+        else if (QT_KEY_R_SHIFT == (keyevent->nativeModifiers() & QT_KEY_R_SHIFT)){
+            keycodeString = QString("R-Shift");
+        }
+    }
+    else if (VK_CONTROL == vkeycode.KeyCode){
+        if (QT_KEY_L_CTRL == (keyevent->nativeModifiers() & QT_KEY_L_CTRL)){
+            keycodeString = QString("L-Ctrl");
+        }
+        else if (QT_KEY_R_CTRL == (keyevent->nativeModifiers() & QT_KEY_R_CTRL)){
+            keycodeString = QString("R-Ctrl");
+        }
+    }
+    else if (VK_MENU == vkeycode.KeyCode){
+        if (QT_KEY_L_ALT == (keyevent->nativeModifiers() & QT_KEY_L_ALT)){
+            keycodeString = QString("L-Alt");
+        }
+        else if (QT_KEY_R_ALT == (keyevent->nativeModifiers() & QT_KEY_R_ALT)){
+            keycodeString = QString("R-Alt");
+        }
+    }
+    else{
+    }
+
+    if (false == keycodeString.isEmpty()){
+        if ((keycodeString == QString("L-Win"))
+                || (keycodeString == QString("R-Win"))){
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeyListComboBox]" <<"Don't act on" << keycodeString;
+#endif
+        }
+        else{
+            if (keycodeString == QString("Enter")){
+                QComboBox::keyPressEvent(keyevent);
+            }
+            else{
+                this->setCurrentText(keycodeString);
+
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[KeyListComboBox]" << "convert to VirtualKeyCodeMap:" << keycodeString;
+#endif
+            }
+        }
+    }
+    else{
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[KeyListComboBox]" << "Unknown key not found in VirtualKeyCodeMap.";
+#endif
+    }
+
+    //QComboBox::keyPressEvent(keyevent);
 }

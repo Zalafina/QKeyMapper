@@ -47,7 +47,7 @@
     <string>KeyMappingStart</string>
    </property>
    <property name="autoDefault">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="default">
     <bool>true</bool>
@@ -67,6 +67,9 @@
    </property>
    <property name="text">
     <string>SaveMapData</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QTableWidget" name="processinfoTable">
@@ -134,6 +137,9 @@
    <property name="text">
     <string>Refresh</string>
    </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QLineEdit" name="nameLineEdit">
    <property name="geometry">
@@ -189,10 +195,13 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::TabFocus</enum>
    </property>
    <property name="text">
     <string>ADD</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QLabel" name="orikeyLabel">
@@ -236,6 +245,9 @@
    <property name="text">
     <string>Delete One</string>
    </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QPushButton" name="clearallButton">
    <property name="geometry">
@@ -251,6 +263,9 @@
    </property>
    <property name="text">
     <string>Clear All</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QLabel" name="iconLabel">
