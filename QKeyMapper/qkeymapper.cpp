@@ -717,7 +717,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
+            qDebug() << "[loadKeyMapSetting]" << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
 #endif
         }
 
@@ -768,8 +768,7 @@ void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid
         fontname = loadedFontFamilies.at(0);
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Load font from " << fontfilename;
-        qDebug() << loadedFontFamilies;
+        qDebug().nospace().noquote() << "[loadFontFile]" << " Load font from \"" << fontfilename <<"\", FontName: " << loadedFontFamilies;
 #endif
     }
     fontFile.close();
@@ -1095,11 +1094,11 @@ void QKeyMapper::initProcessInfoTable(void)
     ui->processinfoTable->setItemDelegateForColumn(PROCESS_PID_COLUMN, m_ProcessInfoTableDelegate);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "verticalHeader->isVisible" << ui->processinfoTable->verticalHeader()->isVisible();
-    qDebug() << "selectionBehavior" << ui->processinfoTable->selectionBehavior();
-    qDebug() << "selectionMode" << ui->processinfoTable->selectionMode();
-    qDebug() << "editTriggers" << ui->processinfoTable->editTriggers();
-    qDebug() << "verticalHeader-DefaultSectionSize" << ui->processinfoTable->verticalHeader()->defaultSectionSize();
+//    qDebug() << "verticalHeader->isVisible" << ui->processinfoTable->verticalHeader()->isVisible();
+//    qDebug() << "selectionBehavior" << ui->processinfoTable->selectionBehavior();
+//    qDebug() << "selectionMode" << ui->processinfoTable->selectionMode();
+//    qDebug() << "editTriggers" << ui->processinfoTable->editTriggers();
+//    qDebug() << "verticalHeader-DefaultSectionSize" << ui->processinfoTable->verticalHeader()->defaultSectionSize();
 #endif
 }
 
@@ -1158,11 +1157,11 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "verticalHeader->isVisible" << ui->keymapdataTable->verticalHeader()->isVisible();
-    qDebug() << "selectionBehavior" << ui->keymapdataTable->selectionBehavior();
-    qDebug() << "selectionMode" << ui->keymapdataTable->selectionMode();
-    qDebug() << "editTriggers" << ui->keymapdataTable->editTriggers();
-    qDebug() << "verticalHeader-DefaultSectionSize" << ui->keymapdataTable->verticalHeader()->defaultSectionSize();
+//    qDebug() << "verticalHeader->isVisible" << ui->keymapdataTable->verticalHeader()->isVisible();
+//    qDebug() << "selectionBehavior" << ui->keymapdataTable->selectionBehavior();
+//    qDebug() << "selectionMode" << ui->keymapdataTable->selectionMode();
+//    qDebug() << "editTriggers" << ui->keymapdataTable->editTriggers();
+//    qDebug() << "verticalHeader-DefaultSectionSize" << ui->keymapdataTable->verticalHeader()->defaultSectionSize();
 #endif
 }
 
