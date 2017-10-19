@@ -188,7 +188,9 @@ public:
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
+    static HWND getHWND_byPID(DWORD dwProcessID);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
+    static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findInKeyMappingDataList(const QString &keyname);
 

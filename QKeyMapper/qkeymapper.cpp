@@ -265,7 +265,9 @@ void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windo
         m_MapProcessInfo.WindowIcon = windowicon;
     }
     else{
+#ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[setMapProcessInfo]"<< " Info Error: filename(" << filename << "), " << "windowtitle(" << windowtitle << ")";
+#endif
     }
 }
 
@@ -284,12 +286,20 @@ void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
     {
         if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
         {
+#ifdef DEBUG_LOGOUT_ON
+            processPathStr = QString::fromWCharArray(szProcessPath);
+            qDebug().nospace().noquote() << "[getProcessInfoFromPID]"<< " GetProcessImageFileName failure(" << processPathStr << ")";
+#endif
             CloseHandle(hProcess);
             return;
         }
 
         if(!DosPathToNtPath(szImagePath, szProcessPath))
         {
+#ifdef DEBUG_LOGOUT_ON
+            processPathStr = QString::fromWCharArray(szProcessPath);
+            qDebug().nospace().noquote() << "[getProcessInfoFromPID]"<< " DosPathToNtPath failure(" << processPathStr << ")";
+#endif
             CloseHandle(hProcess);
             return;
         }
@@ -344,69 +354,192 @@ void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
     CloseHandle( hProcess );
 }
 
-BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
+HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
 {
-    Q_UNUSED(lParam);
+    HWND hWnd = GetTopWindow(0);
+    while ( hWnd )
+    {
+        DWORD pid = 0;
+        DWORD dwTheardId = GetWindowThreadProcessId( hWnd,&pid);
+        if (dwTheardId != 0)
+        {
+            if ( pid == dwProcessID/*your process id*/ )
+            {
+                // here h is the handle to the window
 
-    if(TRUE == IsWindowVisible(hWnd)){
-        DWORD dwProcessId = 0;
-        TCHAR titleBuffer[MAX_PATH];
-        memset(titleBuffer, 0x00, sizeof(titleBuffer));
-
-        GetWindowThreadProcessId(hWnd, &dwProcessId);
-        int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
-        if (resultLength){
-            QString WindowText;
-            QString ProcessPath;
-            QString filename;
-
-            WindowText = QString::fromWCharArray(titleBuffer);
-            getProcessInfoFromPID(dwProcessId, ProcessPath);
-
-            if ((false == WindowText.isEmpty())
-                    //&& (WindowText != QString("QKeyMapper"))
-                    && (false == ProcessPath.isEmpty())){
-                MAP_PROCESSINFO ProcessInfo;
-                QFileInfo fileinfo(ProcessPath);
-                filename = fileinfo.fileName();
-
-                ProcessInfo.FileName = filename;
-                ProcessInfo.PID = QString::number(dwProcessId);
-                ProcessInfo.WindowTitle = WindowText;
-                ProcessInfo.FilePath = ProcessPath;
-
-                HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
-                if (iconptr != NULL){
-                    ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+                if (GetTopWindow(hWnd))
+                {
+                    return hWnd;
                 }
-                else{
-                    QFileIconProvider icon_provider;
-                    QIcon fileicon = icon_provider.icon(QFileInfo(ProcessPath));
-
-                    if (false == fileicon.isNull()){
-                        ProcessInfo.WindowIcon = fileicon;
-                    }
-                }
-
-                if (ProcessInfo.WindowIcon.isNull() != true){
-                    static_ProcessInfoList.append(ProcessInfo);
-
-#ifdef DEBUG_LOGOUT_ON
-                    if (iconptr != NULL){
-                        qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-                    }
-                    else{
-                        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-                    }
-#endif
-                }
-                else{
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(ProcessInfo.WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-#endif
-                }
+               // return h;
             }
         }
+        hWnd = ::GetNextWindow( hWnd , GW_HWNDNEXT);
+    }
+    return NULL;
+}
+BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
+{
+    //EnumChildWindows(hWnd, (WNDENUMPROC)QKeyMapper::EnumChildWindowsProc, 0);
+
+    Q_UNUSED(lParam);
+    QString WindowText;
+    QString ProcessPath;
+    QString filename;
+    DWORD dwProcessId = 0;
+    TCHAR titleBuffer[MAX_PATH] = TEXT("");
+    memset(titleBuffer, 0x00, sizeof(titleBuffer));
+
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    getProcessInfoFromPID(dwProcessId, ProcessPath);
+    int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
+    if (resultLength){
+        WindowText = QString::fromWCharArray(titleBuffer);
+
+        if ((false == WindowText.isEmpty())
+                //&& (WindowText != QString("QKeyMapper"))
+                && (false == ProcessPath.isEmpty())
+                ){
+            MAP_PROCESSINFO ProcessInfo;
+            QFileInfo fileinfo(ProcessPath);
+            filename = fileinfo.fileName();
+
+            ProcessInfo.FileName = filename;
+            ProcessInfo.PID = QString::number(dwProcessId);
+            ProcessInfo.WindowTitle = WindowText;
+            ProcessInfo.FilePath = ProcessPath;
+
+            HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
+            if (iconptr != NULL){
+                ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+            }
+            else{
+                QFileIconProvider icon_provider;
+                QIcon fileicon = icon_provider.icon(QFileInfo(ProcessPath));
+
+                if (false == fileicon.isNull()){
+                    ProcessInfo.WindowIcon = fileicon;
+                }
+            }
+
+            if(FALSE == IsWindowVisible(hWnd)){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(Invisible window)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+                return TRUE;
+            }
+
+            if (ProcessInfo.WindowIcon.isNull() != true){
+                static_ProcessInfoList.append(ProcessInfo);
+
+#ifdef DEBUG_LOGOUT_ON
+                if (iconptr != NULL){
+                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                }
+                else{
+                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                }
+#endif
+            }
+            else{
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+            }
+        }
+        else{
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(ProcessPath empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+        }
+    }
+    else{
+#ifdef DEBUG_LOGOUT_ON
+        WindowText = QString::fromWCharArray(titleBuffer);
+        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+    }
+
+    return TRUE;
+}
+
+BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
+{
+    Q_UNUSED(lParam);
+    QString WindowText;
+    QString ProcessPath;
+    QString filename;
+    DWORD dwProcessId = 0;
+    TCHAR titleBuffer[MAX_PATH] = TEXT("");
+    memset(titleBuffer, 0x00, sizeof(titleBuffer));
+
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    getProcessInfoFromPID(dwProcessId, ProcessPath);
+    int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
+    if (resultLength){
+        WindowText = QString::fromWCharArray(titleBuffer);
+
+        if ((false == WindowText.isEmpty())
+                //&& (WindowText != QString("QKeyMapper"))
+                && (false == ProcessPath.isEmpty())){
+            MAP_PROCESSINFO ProcessInfo;
+            QFileInfo fileinfo(ProcessPath);
+            filename = fileinfo.fileName();
+
+            ProcessInfo.FileName = filename;
+            ProcessInfo.PID = QString::number(dwProcessId);
+            ProcessInfo.WindowTitle = WindowText;
+            ProcessInfo.FilePath = ProcessPath;
+
+            HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
+            if (iconptr != NULL){
+                ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+            }
+            else{
+                QFileIconProvider icon_provider;
+                QIcon fileicon = icon_provider.icon(QFileInfo(ProcessPath));
+
+                if (false == fileicon.isNull()){
+                    ProcessInfo.WindowIcon = fileicon;
+                }
+            }
+
+            if(FALSE == IsWindowVisible(hWnd)){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(Invisible window)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+                return TRUE;
+            }
+
+            if (ProcessInfo.WindowIcon.isNull() != true){
+                static_ProcessInfoList.append(ProcessInfo);
+
+#ifdef DEBUG_LOGOUT_ON
+                if (iconptr != NULL){
+                    qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                }
+                else{
+                    qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                }
+#endif
+            }
+            else{
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+            }
+        }
+        else{
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(ProcessPath empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+        }
+    }
+    else{
+#ifdef DEBUG_LOGOUT_ON
+        WindowText = QString::fromWCharArray(titleBuffer);
+        qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
     }
 
     return TRUE;
@@ -496,33 +629,108 @@ void QKeyMapper::EnumProcessFunction(void)
     }
 #endif
 
-#if 0
+#if 1
     PROCESSENTRY32 pe32;
-    QString ProcessName;
-    QString WindowText;
+    HWND hWnd;
 
     pe32.dwSize = sizeof(pe32);
     HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
     if(hProcessSnap != INVALID_HANDLE_VALUE)
     {
-        qDebug() << "CreateToolhelp32Snapshot Success!!";
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[EnumProcessFunction]" << "CreateToolhelp32Snapshot List Start >>>";
+#endif
 
         BOOL bMore = Process32First(hProcessSnap,&pe32);
         while(bMore)
         {
-            ProcessName = QString::fromWCharArray(pe32.szExeFile);
-            WindowText = GetWindowTextByProcessId(pe32.th32ProcessID);
+            QString ProcessPath;
+            QString WindowText;
+            QString filename;
 
-            qDebug().nospace().noquote() << WindowText <<" [PID:" << pe32.th32ProcessID <<"]" << "(" << ProcessName << ")";
-            //if (false == WindowText.isEmpty()){
+            getProcessInfoFromPID(pe32.th32ProcessID, ProcessPath);
+            hWnd = getHWND_byPID(pe32.th32ProcessID);
+            filename = QString::fromWCharArray(pe32.szExeFile);
 
-            //}
+            DWORD dwProcessId = pe32.th32ProcessID;
+            TCHAR titleBuffer[MAX_PATH] = TEXT("");
+            memset(titleBuffer, 0x00, sizeof(titleBuffer));
+
+            int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
+            if (resultLength){
+                WindowText = QString::fromWCharArray(titleBuffer);
+
+                if ((false == WindowText.isEmpty())
+                        //&& (WindowText != QString("QKeyMapper"))
+                        && (false == ProcessPath.isEmpty())){
+                    MAP_PROCESSINFO ProcessInfo;
+                    ProcessInfo.FileName = filename;
+                    ProcessInfo.PID = QString::number(dwProcessId);
+                    ProcessInfo.WindowTitle = WindowText;
+                    ProcessInfo.FilePath = ProcessPath;
+
+                    HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
+                    if (iconptr != NULL){
+                        ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+                    }
+                    else{
+                        QFileIconProvider icon_provider;
+                        QIcon fileicon = icon_provider.icon(QFileInfo(ProcessPath));
+
+                        if (false == fileicon.isNull()){
+                            ProcessInfo.WindowIcon = fileicon;
+                        }
+                    }
+
+                    //            if(FALSE == IsWindowVisible(hWnd)){
+                    //#ifdef DEBUG_LOGOUT_ON
+                    //                qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(Invisible window)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                    //#endif
+                    //                return TRUE;
+                    //            }
+
+                    if (ProcessInfo.WindowIcon.isNull() != true){
+                        static_ProcessInfoList.append(ProcessInfo);
+
+#ifdef DEBUG_LOGOUT_ON
+                        if (iconptr != NULL){
+                            qDebug().nospace().noquote() << "[EnumProcessFunction] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                        }
+                        else{
+                            qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                        }
+#endif
+                    }
+                    else{
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+                    }
+                }
+                else{
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(ProcessPath empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+                }
+            }
+            else{
+#ifdef DEBUG_LOGOUT_ON
+                WindowText = QString::fromWCharArray(titleBuffer);
+                qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+#endif
+            }
 
             bMore = Process32Next(hProcessSnap,&pe32);
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[EnumProcessFunction]" << "CreateToolhelp32Snapshot List End <<<";
+#endif
     }
     else{
-        qDebug() << "CreateToolhelp32Snapshot Failure!!";
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[EnumProcessFunction]" << "CreateToolhelp32Snapshot Failure!!";
+#endif
     }
     CloseHandle(hProcessSnap);
 #endif
@@ -1105,7 +1313,11 @@ void QKeyMapper::initProcessInfoTable(void)
 void QKeyMapper::refreshProcessInfoTable(void)
 {
     static_ProcessInfoList.clear();
+#if 1
     EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
+#else
+    EnumProcessFunction();
+#endif
     setProcessInfoTable(static_ProcessInfoList);
 
     ui->processinfoTable->sortItems(PROCESS_NAME_COLUMN);
