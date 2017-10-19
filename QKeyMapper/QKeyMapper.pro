@@ -14,6 +14,14 @@ TEMPLATE = app
 CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON
     message("Debug Build")
+
+    VLD_PATH = $$PWD/../vld-2.5.1
+    INCLUDEPATH += $$VLD_PATH/include
+    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
+    LIBS += -L$$VLD_PATH/bin/Win32
+#    VLD_PATH = C:/Qt/vld-2.5.1
+#    INCLUDEPATH += $$VLD_PATH/include
+#    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
 }
 
 CONFIG(release, debug|release){

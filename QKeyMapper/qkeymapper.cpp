@@ -252,7 +252,7 @@ void QKeyMapper::setKeyUnHook(void)
     }
 }
 
-void QKeyMapper::setMapProcessInfo(QString &filename, QString &windowtitle, QString &pid, QString &filepath, QIcon &windowicon)
+void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon)
 {
     m_MapProcessInfo.PID = pid;
     m_MapProcessInfo.FilePath = filepath;
@@ -452,7 +452,7 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     return FALSE;
 }
 
-int QKeyMapper::findInKeyMappingDataList(QString &keyname)
+int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;

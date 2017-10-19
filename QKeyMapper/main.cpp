@@ -1,6 +1,10 @@
 #include <QApplication>
 #include "qkeymapper.h"
 
+#ifdef DEBUG_LOGOUT_ON
+#include "vld.h"
+#endif
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
