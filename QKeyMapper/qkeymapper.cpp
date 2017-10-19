@@ -111,7 +111,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Load & retrive file icon failure!!!";
+            qDebug() << "[LoadSetting]" << "Load & retrive file icon failure!!!";
 #endif
         }
     }
@@ -158,7 +158,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 {
     if (true == isMinimized()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!");
+        qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!";
 #endif
         hide();
     }
@@ -219,7 +219,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 m_KeyMapStatus = KEYMAP_MAPPING;
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "KeyMapStatus change (" << m_KeyMapStatus << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace().noquote() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
 #endif
             }
         }
@@ -229,7 +229,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 m_KeyMapStatus = KEYMAP_CHECKING;
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "KeyMapStatus change (" << m_KeyMapStatus << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
 #endif
             }
         }
@@ -265,7 +265,7 @@ void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windo
         m_MapProcessInfo.WindowIcon = windowicon;
     }
     else{
-        qDebug().nospace().noquote() << "setMapProcessInfo Error: filename(" << filename << "), " << "windowtitle(" << windowtitle << ")";
+        qDebug().nospace().noquote() << "[setMapProcessInfo]"<< " Info Error: filename(" << filename << "), " << "windowtitle(" << windowtitle << ")";
     }
 }
 
@@ -393,16 +393,16 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 
 #ifdef DEBUG_LOGOUT_ON
                     if (iconptr != NULL){
-                        qDebug().nospace().noquote() << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                        qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                     }
                     else{
-                        qDebug().nospace().noquote() << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                     }
 #endif
                 }
                 else{
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "(ProcessInfo.WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(ProcessInfo.WindowIcon NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
 #endif
                 }
             }
@@ -550,7 +550,7 @@ void QKeyMapper::on_keymapButton_clicked()
             m_KeyMapStatus = KEYMAP_CHECKING;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
+            qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
 #endif
         }
         else{
@@ -566,7 +566,7 @@ void QKeyMapper::on_keymapButton_clicked()
         m_KeyMapStatus = KEYMAP_IDLE;
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
+        qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
 #endif
     }
 
@@ -582,7 +582,7 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (QSystemTrayIcon::DoubleClick == reason){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "QKeyMapper::SystrayIconActivated() -> SystemTray double clicked: showNormal()!!";
+        qDebug() << "[SystrayIconActivated]" << "SystemTray double clicked: showNormal()!!";
 #endif
 
         showNormal();
@@ -628,13 +628,13 @@ void QKeyMapper::saveKeyMapSetting(void)
             }
             else{
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "FilePath is empty, unsaved.";
+                qDebug() << "[saveKeyMapSetting]" << "FilePath is empty, unsaved.";
 #endif
             }
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Unmatch display processinfo & stored processinfo.";
+            qDebug() << "[saveKeyMapSetting]" << "Unmatch display processinfo & stored processinfo.";
 #endif
         }
     }
@@ -705,7 +705,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
 
     if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "KeyMappingDataList Start >>>";
+        qDebug() << "[loadKeyMapSetting]" << " KeyMappingDataList Start >>>";
 #endif
         int rowindex = 0;
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
@@ -722,7 +722,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "KeyMappingDataList End   <<<";
+        qDebug() << "[loadKeyMapSetting]" << " KeyMappingDataList End   <<<";
 #endif
     }
 
