@@ -7,6 +7,7 @@ A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
 3. Push "KeyMappingStart" to start KeyMapping, then it will check ForegroundWindow's process name/title cyclically, KeyMapping function only take effect when ForegroundWindow's process name/title matched.
 3. Support add & delete KeyMapDataTable, when the KeyMap ComboBox has focus, push certain keyboardkey will set the ComboBox to the keyname you pressed.
 4. Save button will write KeyMapData & ProcessInfo to ini setting file, then it will load it at program startup.
+5. Use "SAO UI" font for static strings display.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_01.png)
