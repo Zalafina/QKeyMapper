@@ -10,6 +10,8 @@ static const int PROCESS_NAME_COLUMN = 0;
 static const int PROCESS_PID_COLUMN = 1;
 static const int PROCESS_TITLE_COLUMN = 2;
 
+static const int PROCESS_NAME_COLUMN_WIDTH_MAX = 200;
+
 static const int ORIGINAL_KEY_COLUMN = 0;
 static const int MAPPING_KEY_COLUMN = 1;
 
@@ -1380,6 +1382,10 @@ void QKeyMapper::refreshProcessInfoTable(void)
 
     ui->processinfoTable->sortItems(PROCESS_NAME_COLUMN);
     ui->processinfoTable->resizeColumnToContents(PROCESS_NAME_COLUMN);
+    if (ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN) > PROCESS_NAME_COLUMN_WIDTH_MAX){
+        ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, PROCESS_NAME_COLUMN_WIDTH_MAX);
+    }
+
     ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
 }
 
@@ -1718,8 +1724,8 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
 void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[KeyListComboBox]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
-    qDebug("[KeyListComboBox] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
+    qDebug() << "[KeyListComboBox_Press]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
+    qDebug("[KeyListComboBox_Press] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
 #endif
 
     V_KEYCODE vkeycode;
@@ -1764,7 +1770,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
         if ((keycodeString == QString("L-Win"))
                 || (keycodeString == QString("R-Win"))){
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[KeyListComboBox]" <<"Don't act on" << keycodeString;
+            qDebug() << "[KeyListComboBox_Press]" <<"Don't act on" << keycodeString;
 #endif
         }
         else{
@@ -1775,14 +1781,14 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
                 this->setCurrentText(keycodeString);
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[KeyListComboBox]" << "convert to VirtualKeyCodeMap:" << keycodeString;
+                qDebug() << "[KeyListComboBox_Press]" << "convert to VirtualKeyCodeMap:" << keycodeString;
 #endif
             }
         }
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[KeyListComboBox]" << "Unknown key not found in VirtualKeyCodeMap.";
+        qDebug() << "[KeyListComboBox_Press]" << "Unknown key not found in VirtualKeyCodeMap.";
 #endif
     }
 
