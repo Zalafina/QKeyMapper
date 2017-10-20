@@ -39,11 +39,20 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+#DEFINES += ADJUST_PRIVILEGES
+
 # Win x86 libs
 LIBS        += -L$$PWD/win_lib/x86
 LIBS        += User32.lib Psapi.lib
-#  Kernel32.Lib AdvAPI32.Lib
+#  Kernel32.Lib
 
+contains( DEFINES, ADJUST_PRIVILEGES ) {
+    LIBS    += AdvAPI32.Lib
+}
+
+
+# UAC for Administrator
+QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
 
 SOURCES     += \
     main.cpp \

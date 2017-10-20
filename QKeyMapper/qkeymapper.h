@@ -186,6 +186,11 @@ public:
     void setKeyUnHook(void);
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
+
+#ifdef ADJUST_PRIVILEGES
+    static BOOL EnableDebugPrivilege(void);
+    static BOOL AdjustPrivileges(void);
+#endif
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static HWND getHWND_byPID(DWORD dwProcessID);
