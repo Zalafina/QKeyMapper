@@ -1,6 +1,8 @@
 # Qt generate file types
 
 build-*/*
+build-*
+*-build-*
 QKeyMapper/*.pro.user
 QKeyMapper/*.pro.user.*
 QKeyMapper/*.moc
