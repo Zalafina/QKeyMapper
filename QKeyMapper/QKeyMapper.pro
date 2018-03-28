@@ -11,6 +11,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TEMPLATE = app
 
+include(qhotkey.pri)
+
 CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON
     message("Debug Build")

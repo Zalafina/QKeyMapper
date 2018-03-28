@@ -50,7 +50,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_ProcessInfoTableDelegate(NULL),
     m_KeyMappingDataTableDelegate(NULL),
     m_orikeyComboBox(new KeyListComboBox(this)),
-    m_mapkeyComboBox(new KeyListComboBox(this))
+    m_mapkeyComboBox(new KeyListComboBox(this)),
+    m_HotKey(new QHotkey(this))
 {
     ui->setupUi(this);
     initAddKeyComboBoxes();
@@ -138,6 +139,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 //    if (false == loadresult){
 //        QMessageBox::warning(this, tr("QKeyMapper"), tr("Load invalid keymapdata from ini file.\nReset to default values."));
 //    }
+
+    initHotKeySequence();
 }
 
 QKeyMapper::~QKeyMapper()
@@ -846,6 +849,21 @@ void QKeyMapper::on_keymapButton_clicked()
     }
 }
 
+void QKeyMapper::HotKeyActivated()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "HotKeyActivated() Called, is Hidden:" << isHidden();
+#endif
+    if (false == isHidden()){
+        hide();
+    }
+    else{
+        showNormal();
+        activateWindow();
+        raise();
+    }
+}
+
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (QSystemTrayIcon::DoubleClick == reason){
@@ -1190,6 +1208,14 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 #endif
+}
+
+void QKeyMapper::initHotKeySequence()
+{
+    connect( m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
+
+    QKeySequence hotkeysequence = QKeySequence::fromString("Ctrl+`");
+    m_HotKey->setShortcut(hotkeysequence, true);
 }
 
 void QKeyMapper::initVirtualKeyCodeMap(void)

@@ -17,6 +17,7 @@
 #include <QStyledItemDelegate>
 #include <QComboBox>
 #include <QKeyEvent>
+#include <QHotkey>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -210,6 +211,8 @@ public slots:
     void on_keymapButton_clicked();
 
 private slots:
+    void HotKeyActivated();
+
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
     void on_savemaplistButton_clicked();
@@ -227,6 +230,7 @@ private slots:
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
+    void initHotKeySequence(void);
     void initVirtualKeyCodeMap(void);
     void initProcessInfoTable(void);
     void refreshProcessInfoTable(void);
@@ -264,6 +268,7 @@ private:
     StyledDelegate *m_KeyMappingDataTableDelegate;
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
+    QHotkey *m_HotKey;
 };
 
 #endif // QLINKKEEPER_H
