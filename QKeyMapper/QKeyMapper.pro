@@ -17,10 +17,11 @@ CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON
     message("Debug Build")
 
-    VLD_PATH = $$PWD/../vld-2.5.1
-    INCLUDEPATH += $$VLD_PATH/include
-    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
-    LIBS += -L$$VLD_PATH/bin/Win32
+#    VLD_PATH = $$PWD/../vld-2.5.1
+#    INCLUDEPATH += $$VLD_PATH/include
+#    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
+#    LIBS += -L$$VLD_PATH/bin/Win32
+
 #    VLD_PATH = C:/Qt/vld-2.5.1
 #    INCLUDEPATH += $$VLD_PATH/include
 #    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
@@ -44,8 +45,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += ADJUST_PRIVILEGES
 
 # Win x86 libs
-LIBS        += -L$$PWD/win_lib/x86
-LIBS        += User32.lib Psapi.lib
+#LIBS        += -L$$PWD/win_lib/x86
+#LIBS        += User32.lib Psapi.lib
 #  Kernel32.Lib
 
 contains( DEFINES, ADJUST_PRIVILEGES ) {

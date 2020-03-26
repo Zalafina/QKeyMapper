@@ -1,12 +1,15 @@
-#include <QApplication>
+﻿#include <QApplication>
 #include "qkeymapper.h"
 
 #ifdef DEBUG_LOGOUT_ON
-#include "vld.h"
+//#include "vld.h"
 #endif
 
 int main(int argc, char *argv[])
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
     QApplication a(argc, argv);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
