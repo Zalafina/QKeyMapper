@@ -15,20 +15,26 @@ include(qhotkey.pri)
 
 CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON
-    message("Debug Build")
 
-#    VLD_PATH = $$PWD/../vld-2.5.1
-#    INCLUDEPATH += $$VLD_PATH/include
-#    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
-#    LIBS += -L$$VLD_PATH/bin/Win32
-
-#    VLD_PATH = C:/Qt/vld-2.5.1
-#    INCLUDEPATH += $$VLD_PATH/include
-#    LIBS += -L$$VLD_PATH/lib/Win32 -lvld
+    VLD_PATH = $$PWD/../vld-2.5.1
+    INCLUDEPATH += $$VLD_PATH/include
+    contains(DEFINES, WIN64) {
+        message("WIN64 Debug Build")
+        LIBS += -L$$VLD_PATH/lib/Win64 -lvld
+        LIBS += -L$$VLD_PATH/bin/Win64
+    } else {
+        message("WIN32 Debug Build")
+        LIBS += -L$$VLD_PATH/lib/Win32 -lvld
+        LIBS += -L$$VLD_PATH/bin/Win32
+    }
 }
 
 CONFIG(release, debug|release){
-    message("Release Build")
+    contains(DEFINES, WIN64) {
+        message("WIN64 Release Build")
+    } else {
+        message("WIN32 Release Build")
+    }
 }
 
 # The following define makes your compiler emit warnings if you use
@@ -44,10 +50,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 #DEFINES += ADJUST_PRIVILEGES
 
+contains(DEFINES, WIN64) {
+# Win x64 libs
+LIBS        += -L$$PWD/win_lib/x64
+} else {
 # Win x86 libs
-#LIBS        += -L$$PWD/win_lib/x86
-#LIBS        += User32.lib Psapi.lib
-#  Kernel32.Lib
+LIBS        += -L$$PWD/win_lib/x86
+}
+LIBS        += User32.lib Psapi.lib
 
 contains( DEFINES, ADJUST_PRIVILEGES ) {
     LIBS    += AdvAPI32.Lib
