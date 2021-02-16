@@ -1,4 +1,4 @@
-#include "qkeymapper.h"
+﻿#include "qkeymapper.h"
 #include "ui_qkeymapper.h"
 
 //static const uint WIN_TITLESTR_MAX = 200U;
@@ -34,8 +34,10 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
-QComboBox *QKeyMapper::orikeyComboBox_static = NULL;
-QComboBox *QKeyMapper::mapkeyComboBox_static = NULL;
+GetDeviceStateT QKeyMapper::FuncPtrGetDeviceState = Q_NULLPTR;
+GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
+QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
+QComboBox *QKeyMapper::mapkeyComboBox_static = Q_NULLPTR;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -43,12 +45,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMapStatus(KEYMAP_IDLE),
     m_CycleCheckTimer(this),
     m_MapProcessInfo(),
-    m_SysTrayIcon(NULL),
-    m_KeyHook(NULL),
+    m_SysTrayIcon(Q_NULLPTR),
+    m_KeyHook(Q_NULLPTR),
+    m_DirectInput(Q_NULLPTR),
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
-    m_ProcessInfoTableDelegate(NULL),
-    m_KeyMappingDataTableDelegate(NULL),
+    m_ProcessInfoTableDelegate(Q_NULLPTR),
+    m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
     m_HotKey(new QHotkey(this))
@@ -150,13 +153,13 @@ QKeyMapper::~QKeyMapper()
     delete ui;
 
     delete m_SysTrayIcon;
-    m_SysTrayIcon = NULL;
+    m_SysTrayIcon = Q_NULLPTR;
 
     delete m_ProcessInfoTableDelegate;
-    m_ProcessInfoTableDelegate = NULL;
+    m_ProcessInfoTableDelegate = Q_NULLPTR;
 
     delete m_KeyMappingDataTableDelegate;
-    m_KeyMappingDataTableDelegate = NULL;
+    m_KeyMappingDataTableDelegate = Q_NULLPTR;
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -171,7 +174,8 @@ void QKeyMapper::WindowStateChangedProc(void)
 
 void QKeyMapper::cycleCheckProcessProc(void)
 {
-    if (KEYMAP_IDLE != m_KeyMapStatus){
+    if (KEYMAP_IDLE != m_KeyMapStatus)
+    {
         bool checkresult = false;
         QString windowTitle;
         QString filename;
@@ -220,7 +224,8 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
         if (true == checkresult){
             if (KEYMAP_CHECKING == m_KeyMapStatus){
-                setKeyHook();
+                setKeyHook(hwnd);
+                //setDInputKeyHook(hwnd);
                 m_KeyMapStatus = KEYMAP_MAPPING;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -231,6 +236,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         else{
             if (KEYMAP_MAPPING == m_KeyMapStatus){
                 setKeyUnHook();
+                setDInputKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -244,17 +250,66 @@ void QKeyMapper::cycleCheckProcessProc(void)
     }
 }
 
-void QKeyMapper::setKeyHook(void)
+void QKeyMapper::setKeyHook(HWND hWnd)
 {
-    m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(NULL),0);
+    if(TRUE == IsWindowVisible(hWnd)){
+        m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook Started.";
+    }
+    else{
+        qDebug().nospace().noquote() << "[setKeyHook] " << "Error: Invisible Window Handle!";
+    }
 }
 
 void QKeyMapper::setKeyUnHook(void)
 {
-    if (m_KeyHook != NULL){
+    if (m_KeyHook != Q_NULLPTR){
         UnhookWindowsHookEx(m_KeyHook);
-        m_KeyHook = NULL;
+        m_KeyHook = Q_NULLPTR;
+        qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook Released.";
     }
+}
+
+void QKeyMapper::setDInputKeyHook(HWND hWnd)
+{
+    if(TRUE == IsWindowVisible(hWnd)){
+        m_DirectInput = Q_NULLPTR;
+        HRESULT hResult;
+        hResult = DirectInput8Create(GetModuleHandle(Q_NULLPTR), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
+        //hResult = DirectInput8Create((HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
+        if (DI_OK == hResult)
+        {
+            LPDIRECTINPUTDEVICE8 lpdiKeyboard;
+            hResult = m_DirectInput->CreateDevice(GUID_SysKeyboard, &lpdiKeyboard, Q_NULLPTR);
+            if (DI_OK == hResult)
+            {
+                FuncPtrGetDeviceState = (GetDeviceStateT)HookVTableFunction(lpdiKeyboard, hookGetDeviceState, 9);
+                FuncPtrGetDeviceData = (GetDeviceDataT)HookVTableFunction(lpdiKeyboard, hookGetDeviceData, 10);
+                qDebug().nospace().noquote() << "[DINPUT] " << "DirectInput Key Hook Started.";
+            }
+            else{
+                m_DirectInput->Release();
+                qDebug().noquote() << "[DINPUT]" << "Failed to Create Keyboard Device!";
+            }
+        }
+        else{
+            qDebug().noquote() << "[DINPUT]" << "Failed to acquire DirectInput handle";
+        }
+    }
+    else{
+        qDebug().nospace().noquote() << "[DINPUT] " << "Invisible window!";
+    }
+}
+
+void QKeyMapper::setDInputKeyUnHook(void)
+{
+    if (m_DirectInput != Q_NULLPTR){
+        m_DirectInput->Release();
+        m_DirectInput = Q_NULLPTR;
+        qDebug().nospace().noquote() << "[DINPUT] " << "DirectInput Key Hook Released.";
+    }
+    FuncPtrGetDeviceState = Q_NULLPTR;
+    FuncPtrGetDeviceData = Q_NULLPTR;
 }
 
 void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon)
@@ -290,7 +345,7 @@ BOOL QKeyMapper::AdjustPrivileges(void)
         if (GetLastError()==ERROR_CALL_NOT_IMPLEMENTED) return true;
         else return false;
     }
-    if (!LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid)) {
+    if (!LookupPrivilegeValue(Q_NULLPTR, SE_DEBUG_NAME, &luid)) {
         CloseHandle(hToken);
         return false;
     }
@@ -316,9 +371,9 @@ BOOL QKeyMapper::EnableDebugPrivilege(void)
   {
     TOKEN_PRIVILEGES tp;
     tp.PrivilegeCount=1;
-    LookupPrivilegeValue(NULL,SE_DEBUG_NAME,&tp.Privileges[0].Luid);
+    LookupPrivilegeValue(Q_NULLPTR,SE_DEBUG_NAME,&tp.Privileges[0].Luid);
     tp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
-    AdjustTokenPrivileges(hToken,FALSE,&tp,sizeof(tp),NULL,NULL);
+    AdjustTokenPrivileges(hToken,FALSE,&tp,sizeof(tp),Q_NULLPTR,Q_NULLPTR);
 
     fOk=(GetLastError()==ERROR_SUCCESS);
     CloseHandle(hToken);
@@ -338,7 +393,7 @@ void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
                                    FALSE, processID );
 
 #if 1
-    if (NULL != hProcess )
+    if (Q_NULLPTR != hProcess )
     {
         if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
         {
@@ -371,9 +426,9 @@ void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
 
 #else
     // Get the process name.
-    if (NULL != hProcess )
+    if (Q_NULLPTR != hProcess )
     {
-        GetModuleFileNameEx(hProcess, NULL, szProcessPath, MAX_PATH);
+        GetModuleFileNameEx(hProcess, Q_NULLPTR, szProcessPath, MAX_PATH);
         //GetModuleFileName(hProcess, szProcessName, MAX_PATH);
         processPathStr = QString::fromWCharArray(szProcessPath);
     }
@@ -396,7 +451,7 @@ void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
                                    PROCESS_VM_READ,
                                    FALSE, dwProcessId );
 
-    if (NULL != hProcess )
+    if (Q_NULLPTR != hProcess )
     {
         if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
         {
@@ -417,7 +472,7 @@ void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
 
 HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
 {
-    HWND hWnd = GetTopWindow(0);
+    HWND hWnd = GetTopWindow(Q_NULLPTR);
     while ( hWnd )
     {
         DWORD pid = 0;
@@ -437,7 +492,7 @@ HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
         }
         hWnd = ::GetNextWindow( hWnd , GW_HWNDNEXT);
     }
-    return NULL;
+    return Q_NULLPTR;
 }
 BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 {
@@ -480,7 +535,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             ProcessInfo.FilePath = ProcessPath;
 
             HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
-            if (iconptr != NULL){
+            if (iconptr != Q_NULLPTR){
                 ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
             }
             else{
@@ -496,7 +551,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
-                if (iconptr != NULL){
+                if (iconptr != Q_NULLPTR){
                     qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                 }
                 else{
@@ -555,7 +610,7 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
             ProcessInfo.FilePath = ProcessPath;
 
             HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
-            if (iconptr != NULL){
+            if (iconptr != Q_NULLPTR){
                 ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
             }
             else{
@@ -578,7 +633,7 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
                 static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
-                if (iconptr != NULL){
+                if (iconptr != Q_NULLPTR){
                     qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                 }
                 else{
@@ -613,7 +668,7 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     TCHAR           szDriveStr[500];
     TCHAR           szDrive[3];
     TCHAR           szDevName[100];
-    INT             cchDevName;
+    size_t          cchDevName;
     INT             i;
 
     if(!pszDosPath || !pszNtPath )
@@ -632,7 +687,7 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
             if(!QueryDosDevice(szDrive, szDevName, 100))
                 return FALSE;
 
-            cchDevName = lstrlen(szDevName);
+            cchDevName = (size_t)lstrlen(szDevName);
             if(_wcsnicmp(pszDosPath, szDevName, cchDevName) == 0)
             {
                 lstrcpy(pszNtPath, szDrive);
@@ -733,7 +788,7 @@ void QKeyMapper::EnumProcessFunction(void)
                     ProcessInfo.FilePath = ProcessPath;
 
                     HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
-                    if (iconptr != NULL){
+                    if (iconptr != Q_NULLPTR){
                         ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
                     }
                     else{
@@ -756,7 +811,7 @@ void QKeyMapper::EnumProcessFunction(void)
                         static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
-                        if (iconptr != NULL){
+                        if (iconptr != Q_NULLPTR){
                             qDebug().nospace().noquote() << "[EnumProcessFunction] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                         }
                         else{
@@ -923,6 +978,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             qDebug() << "[saveKeyMapSetting]" << "Unmatch display processinfo & stored processinfo.";
 #endif
         }
+
     }
     else{
         QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid KeyMap Data."));
@@ -1177,7 +1233,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
         return 1;
     }
     else{
-        return CallNextHookEx(NULL, nCode, wParam, lParam);
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
 #else
@@ -1206,8 +1262,93 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
         break;
     }
 
-    return CallNextHookEx(NULL, nCode, wParam, lParam);
+    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
 #endif
+}
+
+void *QKeyMapper::HookVTableFunction(void *pVTable, void *fnHookFunc, int nOffset)
+{
+    intptr_t ptrVtable = *((intptr_t*)pVTable); // Pointer to our chosen vtable
+    intptr_t ptrFunction = ptrVtable + sizeof(intptr_t) * nOffset; // The offset to the function (remember it's a zero indexed array with a size of four bytes)
+    intptr_t ptrOriginal = *((intptr_t*)ptrFunction); // Save original address
+
+    // Edit the memory protection so we can modify it
+    MEMORY_BASIC_INFORMATION mbi;
+    VirtualQuery((LPCVOID)ptrFunction, &mbi, sizeof(mbi));
+    VirtualProtect(mbi.BaseAddress, mbi.RegionSize, PAGE_EXECUTE_READWRITE, &mbi.Protect);
+
+    // Overwrite the old function with our new one
+    *((intptr_t*)ptrFunction) = (intptr_t)fnHookFunc;
+
+    // Restore the protection
+    VirtualProtect(mbi.BaseAddress, mbi.RegionSize, mbi.Protect, &mbi.Protect);
+
+    // Return the original function address incase we want to call it
+    return (void*)ptrOriginal;
+}
+
+HRESULT QKeyMapper::hookGetDeviceState(IDirectInputDevice8W *pThis, DWORD cbData, LPVOID lpvData)
+{
+    HRESULT result = FuncPtrGetDeviceState(pThis, cbData, lpvData);
+
+    if (result == DI_OK) {
+        if (cbData == 256){//caller is a keyboard
+            BYTE* keystate_array = (BYTE*)lpvData;
+            if  (keystate_array[DIK_W] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [W] Key Pressed.";
+            }
+            if  (keystate_array[DIK_S] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [S] Key Pressed.";
+            }
+            if  (keystate_array[DIK_A] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [A] Key Pressed.";
+            }
+            if  (keystate_array[DIK_D] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [D] Key Pressed.";
+            }
+        }
+    }
+
+    return result;
+}
+
+HRESULT QKeyMapper::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags)
+{
+    HRESULT result = FuncPtrGetDeviceData(pThis, cbObjectData, rgdod, pdwInOut, dwFlags);
+
+    if (result == DI_OK) {
+        for (DWORD i = 0; i < *pdwInOut; ++i) {
+            if (LOBYTE(rgdod[i].dwData) > 0) { //key down
+                if (rgdod[i].dwOfs == DIK_W) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [W] Key Down.";
+                }
+                else if (rgdod[i].dwOfs == DIK_S) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [S] Key Down.";
+                }
+                else if (rgdod[i].dwOfs == DIK_A) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [A] Key Down.";
+                }
+                else if (rgdod[i].dwOfs == DIK_D) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [D] Key Down.";
+                }
+            }
+            if (LOBYTE(rgdod[i].dwData) == 0) { //key up
+                if (rgdod[i].dwOfs == DIK_W) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [W] Key Up.";
+                }
+                else if (rgdod[i].dwOfs == DIK_S) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [S] Key Up.";
+                }
+                else if (rgdod[i].dwOfs == DIK_A) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [A] Key Up.";
+                }
+                else if (rgdod[i].dwOfs == DIK_D) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [D] Key Up.";
+                }
+            }
+        }
+    }
+    return result;
 }
 
 void QKeyMapper::initHotKeySequence()

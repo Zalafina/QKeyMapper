@@ -57,7 +57,7 @@ LIBS        += -L$$PWD/win_lib/x64
 # Win x86 libs
 LIBS        += -L$$PWD/win_lib/x86
 }
-LIBS        += User32.lib Psapi.lib
+LIBS        += User32.lib Psapi.lib dinput8.lib dxguid.lib
 
 contains( DEFINES, ADJUST_PRIVILEGES ) {
     LIBS    += AdvAPI32.Lib

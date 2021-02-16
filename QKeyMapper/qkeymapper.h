@@ -1,5 +1,5 @@
-#ifndef QLINKKEEPER_H
-#define QLINKKEEPER_H
+﻿#ifndef QKEYMAPPER_H
+#define QKEYMAPPER_H
 
 #include <QDialog>
 #include <QDebug>
@@ -26,6 +26,7 @@
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
+#include <dinput.h>
 
 namespace Ui {
 class QKeyMapper;
@@ -39,6 +40,9 @@ typedef struct
     QString FilePath;
     QIcon   WindowIcon;
 }MAP_PROCESSINFO;
+
+typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
+typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
 
 typedef struct MAP_KEYDATA
 {
@@ -85,7 +89,7 @@ class StyledDelegate : public QStyledItemDelegate
     Q_OBJECT
 
 public:
-    StyledDelegate(QWidget *parent = 0) : QStyledItemDelegate(parent) {}
+    StyledDelegate(QWidget *parent = Q_NULLPTR) : QStyledItemDelegate(parent) {}
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 };
@@ -97,7 +101,7 @@ class KeyListComboBox : public QComboBox
 public:
     explicit KeyListComboBox(QWidget *parent = Q_NULLPTR) : QComboBox(parent)
     {
-        if (parent != NULL){
+        if (parent != Q_NULLPTR){
             m_KeyMapper_ptr = parent;
         }
     }
@@ -114,7 +118,7 @@ class QKeyMapper : public QDialog
     Q_OBJECT
 
 public:
-    explicit QKeyMapper(QWidget *parent = 0);
+    explicit QKeyMapper(QWidget *parent = Q_NULLPTR);
     ~QKeyMapper();
 
     #define EXTENED_FLAG_TRUE   true
@@ -183,8 +187,11 @@ public:
     Q_INVOKABLE void WindowStateChangedProc(void);
     Q_INVOKABLE void cycleCheckProcessProc(void);
 
-    void setKeyHook(void);
+    void setKeyHook(HWND hWnd);
     void setKeyUnHook(void);
+
+    void setDInputKeyHook(HWND hWnd);
+    void setDInputKeyUnHook(void);
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
@@ -230,6 +237,10 @@ private slots:
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
+    static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
+    static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
+    static HRESULT WINAPI hookGetDeviceData(IDirectInputDevice8* pThis, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags);
+
     void initHotKeySequence(void);
     void initVirtualKeyCodeMap(void);
     void initProcessInfoTable(void);
@@ -251,6 +262,8 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QList<MAP_KEYDATA> KeyMappingDataList;
+    static GetDeviceStateT FuncPtrGetDeviceState;
+    static GetDeviceDataT FuncPtrGetDeviceData;
 
     static QComboBox *orikeyComboBox_static;
     static QComboBox *mapkeyComboBox_static;
@@ -262,6 +275,7 @@ private:
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     HHOOK m_KeyHook;
+    IDirectInput8* m_DirectInput;
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
     StyledDelegate *m_ProcessInfoTableDelegate;
@@ -271,4 +285,4 @@ private:
     QHotkey *m_HotKey;
 };
 
-#endif // QLINKKEEPER_H
+#endif // QKEYMAPPER_H
