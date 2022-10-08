@@ -1,4 +1,4 @@
-﻿#include "qkeymapper.h"
+#include "qkeymapper.h"
 #include "ui_qkeymapper.h"
 
 //static const uint WIN_TITLESTR_MAX = 200U;
@@ -938,22 +938,29 @@ void QKeyMapper::saveKeyMapSetting(void)
         QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
         settingFile.setIniCodec("UTF-8");
         QStringList original_keys;
-        QStringList mapping_keys;
+        QStringList mapping_keysList;
 
         if (KeyMappingDataList.size() > 0){
             for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
             {
                 original_keys << keymapdata.Original_Key;
-                mapping_keys  << keymapdata.Mapping_Key;
+                QString mappingkeys_str;
+                if (keymapdata.Mapping_Keys.size() == 1){
+                    mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
+                }
+                else {
+                    mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+                }
+                mapping_keysList  << mappingkeys_str;
             }
             settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
+            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
 
             settingFile.remove(CLEARALL);
         }
         else{
             settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keys  );
+            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(CLEARALL, QString("ClearList"));
         }
 
@@ -1014,7 +1021,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
                     for (const QString &ori_key : original_keys){
 
                         if ((true == VirtualKeyCodeMap.contains(ori_key))
-                                && (true == VirtualKeyCodeMap.contains(mapping_keys.at(loadindex)))){
+                                && (true == checkMappingkeyStr(mapping_keys.at(loadindex)))){
                             loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex)));
                         }
                         else{
@@ -1054,12 +1061,13 @@ bool QKeyMapper::loadKeyMapSetting(void)
         for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
         {
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(keymapdata.Mapping_Key));
+            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
 
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
+            qDebug() << "[loadKeyMapSetting]" << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
 #endif
         }
 
@@ -1088,6 +1096,20 @@ bool QKeyMapper::loadKeyMapSetting(void)
     else{
         return true;
     }
+}
+
+bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
+{
+    bool checkResult = true;
+    QStringList Mapping_Keys = mappingkeystr.split(SEPARATOR_STR);
+    for (const QString &mapping_key : Mapping_Keys){
+        if (false == VirtualKeyCodeMap.contains(mapping_key)){
+            checkResult = false;
+            break;
+        }
+    }
+
+    return checkResult;
 }
 
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
@@ -1189,26 +1211,34 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
             int findindex = findInKeyMappingDataList(keycodeString);
 
             if (findindex >=0){
-                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(findindex).Mapping_Key);
-                DWORD extenedkeyflag = 0;
-                if (true == map_vkeycode.ExtenedFlag){
-                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                }
-                else{
-                    extenedkeyflag = 0;
-                }
+                QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
+//                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(findindex).Mapping_Key);
+#if 0
+                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(mappingKeyList.at(0));
+#else
+                for (const QString &key : mappingKeyList){
+                    V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                    DWORD extenedkeyflag = 0;
+                    if (true == map_vkeycode.ExtenedFlag){
+                        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                    }
+                    else{
+                        extenedkeyflag = 0;
+                    }
 
-                if (WM_KEYDOWN == wParam){
-                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                    returnFlag = true;
+                    if (WM_KEYDOWN == wParam){
+                        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                        returnFlag = true;
+                    }
+                    else if (WM_KEYUP == wParam){
+                        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                        returnFlag = true;
+                    }
+                    else{
+                        // do nothing.
+                    }
                 }
-                else if (WM_KEYUP == wParam){
-                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                    returnFlag = true;
-                }
-                else{
-                    // do nothing.
-                }
+#endif
             }
         }
 
@@ -1592,7 +1622,7 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
     ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, ui->keymapdataTable->width()/2);
+    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, ui->keymapdataTable->width()/3);
     ui->keymapdataTable->verticalHeader()->setVisible(false);
     ui->keymapdataTable->verticalHeader()->setDefaultSectionSize(25);
     ui->keymapdataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -1800,15 +1830,38 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if ((true == VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText()))
             && (true == VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText()))){
         if (m_orikeyComboBox->currentText() != m_mapkeyComboBox->currentText()){
-
+            bool already_exist = false;
             int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
 
-            if (-1 == findindex){
-                KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText()));
+            if (findindex != -1){
+                if (KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
+                    already_exist = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
+#endif
+                }
+            }
 
+            if (false == already_exist){
+                if (findindex != -1){
+                    MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
+                    QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
+#endif
+                    mappingkeys_str = mappingkeys_str + " + " + m_mapkeyComboBox->currentText();
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
+#endif
+                    KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str));
+                }
+                else {
+                    KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText()));
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
 #endif
+                }
 
                 ui->keymapdataTable->clearContents();
                 ui->keymapdataTable->setRowCount(0);
@@ -1822,12 +1875,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
                     {
                         ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-                        ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(keymapdata.Mapping_Key));
+                        QString mappingkey_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+                        ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkey_str));
 
                         rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Key;
+                        qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
 #endif
                     }
 

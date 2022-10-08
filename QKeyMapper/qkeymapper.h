@@ -1,4 +1,4 @@
-﻿#ifndef QKEYMAPPER_H
+#ifndef QKEYMAPPER_H
 #define QKEYMAPPER_H
 
 #include <QDialog>
@@ -44,23 +44,25 @@ typedef struct
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
 
+#define SEPARATOR_STR   (" + ")
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;
-    QString Mapping_Key;
+    QStringList Mapping_Keys;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Key() {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys() {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkey)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys)
     {
         Original_Key = originalkey;
-        Mapping_Key = mappingkey;
+        Mapping_Keys = mappingkeys.split(SEPARATOR_STR);
     }
 
     bool operator==(const MAP_KEYDATA& other) const
     {
         return ((Original_Key == other.Original_Key)
-                && (Mapping_Key == other.Mapping_Key));
+                && (Mapping_Keys == other.Mapping_Keys));
     }
 }MAP_KEYDATA_st;
 
@@ -252,6 +254,7 @@ private:
 
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(void);
+    bool checkMappingkeyStr(const QString &mappingkeystr);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
     void setControlCustomFont(const QString &fontname);
