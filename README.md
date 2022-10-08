@@ -10,4 +10,4 @@ A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
 5. Use "SAO UI" font for static strings display.
 
 ## Screenshot
-![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_01.png)
+![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
