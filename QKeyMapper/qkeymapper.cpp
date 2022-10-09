@@ -1061,7 +1061,13 @@ bool QKeyMapper::loadKeyMapSetting(void)
         for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
         {
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+            QString mappingkeys_str;
+            if (keymapdata.Mapping_Keys.size() == 1) {
+                mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
+            }
+            else {
+                mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+            }
             ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
 
             rowindex += 1;
@@ -1849,7 +1855,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
 #endif
-                    mappingkeys_str = mappingkeys_str + " + " + m_mapkeyComboBox->currentText();
+                    mappingkeys_str = mappingkeys_str + SEPARATOR_STR + m_mapkeyComboBox->currentText();
 
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
@@ -1875,8 +1881,14 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
                     {
                         ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-                        QString mappingkey_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
-                        ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkey_str));
+                        QString mappingkeys_str;
+                        if (keymapdata.Mapping_Keys.size() == 1) {
+                            mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
+                        }
+                        else {
+                            mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+                        }
+                        ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
 
                         rowindex += 1;
 
