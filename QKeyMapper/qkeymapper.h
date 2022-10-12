@@ -265,6 +265,7 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QList<MAP_KEYDATA> KeyMappingDataList;
+    static QStringList pressedKeysList;
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
 

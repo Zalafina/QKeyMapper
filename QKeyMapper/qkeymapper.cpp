@@ -34,6 +34,7 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
+QStringList QKeyMapper::pressedKeysList = QStringList();
 GetDeviceStateT QKeyMapper::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
 QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
@@ -253,6 +254,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
     if(TRUE == IsWindowVisible(hWnd)){
+        pressedKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
         qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook Started.";
     }
@@ -264,6 +266,7 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 void QKeyMapper::setKeyUnHook(void)
 {
     if (m_KeyHook != Q_NULLPTR){
+        pressedKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
         m_KeyHook = Q_NULLPTR;
         qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook Released.";
@@ -1214,6 +1217,15 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     if (false == keycodeString.isEmpty()){
 
         if (pKeyBoard->scanCode != 0){
+            if (WM_KEYDOWN == wParam){
+                if (false == pressedKeysList.contains(keycodeString)){
+                    pressedKeysList.append(keycodeString);
+                }
+            }
+            else if (WM_KEYUP == wParam){
+                pressedKeysList.removeAll(keycodeString);
+            }
+
             int findindex = findInKeyMappingDataList(keycodeString);
 
             if (findindex >=0){
@@ -1223,6 +1235,12 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(mappingKeyList.at(0));
 #else
                 for (const QString &key : mappingKeyList){
+                    if (pressedKeysList.contains(key)){
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
+#endif
+                        continue;
+                    }
                     V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
                     DWORD extenedkeyflag = 0;
                     if (true == map_vkeycode.ExtenedFlag){
@@ -1249,13 +1267,25 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        if (WM_KEYDOWN == wParam){
-            qDebug("\"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+        if (pKeyBoard->scanCode != 0){
+            if (WM_KEYDOWN == wParam){
+                qDebug("RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+            }
+            else if (WM_KEYUP == wParam){
+                qDebug("RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+            }
+            else{
+            }
         }
-        else if (WM_KEYUP == wParam){
-            qDebug("\"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
-        }
-        else{
+        else {
+            if (WM_KEYDOWN == wParam){
+                qDebug("VirtualMapKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+            }
+            else if (WM_KEYUP == wParam){
+                qDebug("VirtualMapKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+            }
+            else{
+            }
         }
 #endif
     }
