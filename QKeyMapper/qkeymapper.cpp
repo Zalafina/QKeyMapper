@@ -1200,9 +1200,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 {
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
 
-#if 1
     bool returnFlag = false;
-
     V_KEYCODE vkeycode;
     vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
     if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
@@ -1214,7 +1212,8 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
 
-    if (false == keycodeString.isEmpty()){
+    if ((false == keycodeString.isEmpty())
+        && (WM_KEYDOWN == wParam || WM_KEYUP == wParam)){
 
         if (pKeyBoard->scanCode != 0){
             if (WM_KEYDOWN == wParam){
@@ -1230,39 +1229,67 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 
             if (findindex >=0){
                 QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
-//                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(KeyMappingDataList.at(findindex).Mapping_Key);
-#if 0
-                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(mappingKeyList.at(0));
-#else
-                for (const QString &key : mappingKeyList){
-                    if (pressedKeysList.contains(key)){
+                if (WM_KEYDOWN == wParam){
+                    for (const QString &key : mappingKeyList){
+                        if (pressedKeysList.contains(key)){
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
+                            qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
 #endif
-                        continue;
-                    }
-                    V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                    DWORD extenedkeyflag = 0;
-                    if (true == map_vkeycode.ExtenedFlag){
-                        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                    }
-                    else{
-                        extenedkeyflag = 0;
-                    }
+                            continue;
+                        }
+                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                        DWORD extenedkeyflag = 0;
+                        if (true == map_vkeycode.ExtenedFlag){
+                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                        }
+                        else{
+                            extenedkeyflag = 0;
+                        }
 
-                    if (WM_KEYDOWN == wParam){
-                        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                        returnFlag = true;
-                    }
-                    else if (WM_KEYUP == wParam){
-                        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                        returnFlag = true;
-                    }
-                    else{
-                        // do nothing.
+                        if (WM_KEYDOWN == wParam){
+                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                            returnFlag = true;
+                        }
+                        else if (WM_KEYUP == wParam){
+                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                            returnFlag = true;
+                        }
+                        else{
+                            // do nothing.
+                        }
                     }
                 }
+                else if (WM_KEYUP == wParam){
+                    for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
+                        QString key = (*it);
+                        if (pressedKeysList.contains(key)){
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
 #endif
+                            continue;
+                        }
+                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                        DWORD extenedkeyflag = 0;
+                        if (true == map_vkeycode.ExtenedFlag){
+                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                        }
+                        else{
+                            extenedkeyflag = 0;
+                        }
+
+                        if (WM_KEYDOWN == wParam){
+                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                            returnFlag = true;
+                        }
+                        else if (WM_KEYUP == wParam){
+                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                            returnFlag = true;
+                        }
+                        else{
+                            // do nothing.
+                        }
+                    }
+                }
             }
         }
 
@@ -1291,7 +1318,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("UnknownKey (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+        qDebug("UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags);
 #endif
     }
 
@@ -1301,35 +1328,6 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     else{
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
-
-#else
-    switch (pKeyBoard->vkCode)
-    {
-//    case VK_RETURN:
-//        if (WM_KEYDOWN == wParam){
-//            if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
-//                qDebug() << "Num Enter PressDown";
-//            }else{
-//                qDebug() << "Enter PressDown";
-//            }
-//        }
-//        else if (WM_KEYUP == wParam){
-//            if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
-//                qDebug() << "Num Enter ReleaseUp";
-//            }else{
-//                qDebug() << "Enter ReleaseUp";
-//            }
-//        }
-//        else{
-//            // do nothing.
-//        }
-//        break;
-    default:
-        break;
-    }
-
-    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-#endif
 }
 
 void *QKeyMapper::HookVTableFunction(void *pVTable, void *fnHookFunc, int nOffset)
