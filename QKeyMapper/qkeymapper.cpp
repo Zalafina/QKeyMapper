@@ -18,8 +18,8 @@ static const int MAPPING_KEY_COLUMN = 1;
 static const int DEFAULT_ICON_WIDTH = 64;
 static const int DEFAULT_ICON_HEIGHT = 64;
 
-static const QString DEFAULT_NAME("AWVSSAO.exe");
-static const QString DEFAULT_TITLE("Accel World vs. Sword Art Online");
+static const QString DEFAULT_NAME("ForzaHorizon4.exe");
+static QString DEFAULT_TITLE("Forza: Horizon 4");
 
 static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
 static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
@@ -62,6 +62,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     orikeyComboBox_static = m_orikeyComboBox;
     mapkeyComboBox_static = m_mapkeyComboBox;
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
+    QString defaultTitle;
+    defaultTitle.append(QChar(0x6781));
+    defaultTitle.append(QChar(0x9650));
+    defaultTitle.append(QChar(0x7ade));
+    defaultTitle.append(QChar(0x901f));
+    defaultTitle.append(QChar(0xff1a));
+    defaultTitle.append(QChar(0x5730));
+    defaultTitle.append(QChar(0x5e73));
+    defaultTitle.append(QChar(0x7ebf));
+    defaultTitle.append(QChar(0x0020));
+    defaultTitle.append(QChar(0x0034));
+    DEFAULT_TITLE = defaultTitle;
 
     if ((m_SAO_FontFamilyID != -1)
             && (false == m_SAO_FontName.isEmpty())){
