@@ -1051,13 +1051,11 @@ bool QKeyMapper::loadKeyMapSetting(void)
         }
 
         if (datavalidflag != (quint8)true){
-            KeyMappingDataList.append(MAP_KEYDATA("L-Shift",          "-_"            ));
-            KeyMappingDataList.append(MAP_KEYDATA("L-Ctrl",           "=+"            ));
-            KeyMappingDataList.append(MAP_KEYDATA("I",                "Up"            ));
-            KeyMappingDataList.append(MAP_KEYDATA("K",                "Down"          ));
-            KeyMappingDataList.append(MAP_KEYDATA("H",                "Left"          ));
-            KeyMappingDataList.append(MAP_KEYDATA("J",                "Right"         ));
-            KeyMappingDataList.append(MAP_KEYDATA("Tab",              "0)"            ));
+            KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}"      ));
+            KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{"      ));
+            KeyMappingDataList.append(MAP_KEYDATA("H",          "S"                 ));
+            KeyMappingDataList.append(MAP_KEYDATA("Space",      "S"                 ));
+            KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter"             ));
         }
         else{
             KeyMappingDataList = loadkeymapdata;
