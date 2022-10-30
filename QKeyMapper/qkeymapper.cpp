@@ -28,6 +28,8 @@ static const QString CLEARALL("KeyMapData/ClearAll");
 static const QString PROCESSINFO_FILENAME("ProcessInfo/FileName");
 static const QString PROCESSINFO_WINDOWTITLE("ProcessInfo/WindowTitle");
 static const QString PROCESSINFO_FILEPATH("ProcessInfo/FilePath");
+static const QString PROCESSINFO_FILENAME_CHECKED("ProcessInfo/FileNameChecked");
+static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo/WindowTitleChecked");
 
 static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
@@ -994,6 +996,9 @@ void QKeyMapper::saveKeyMapSetting(void)
                 qDebug() << "[saveKeyMapSetting]" << "FilePath is empty, unsaved.";
 #endif
             }
+
+            settingFile.setValue(PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
+            settingFile.setValue(PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -1106,6 +1111,32 @@ bool QKeyMapper::loadKeyMapSetting(void)
 
     if (true == settingFile.contains(PROCESSINFO_FILEPATH)){
         m_MapProcessInfo.FilePath = settingFile.value(PROCESSINFO_FILEPATH).toString();
+    }
+
+    if (true == settingFile.contains(PROCESSINFO_FILENAME_CHECKED)){
+        bool fileNameChecked = settingFile.value(PROCESSINFO_FILENAME_CHECKED).toBool();
+        if (true == fileNameChecked) {
+            ui->nameCheckBox->setChecked(true);
+        }
+        else {
+            ui->nameCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "FileNameChecked =" << fileNameChecked;
+#endif
+    }
+
+    if (true == settingFile.contains(PROCESSINFO_WINDOWTITLE_CHECKED)){
+        bool windowTitleChecked = settingFile.value(PROCESSINFO_WINDOWTITLE_CHECKED).toBool();
+        if (true == windowTitleChecked) {
+            ui->titleCheckBox->setChecked(true);
+        }
+        else {
+            ui->titleCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "WindowTitleChecked =" << windowTitleChecked;
+#endif
     }
 
     if (false == datavalidflag){
