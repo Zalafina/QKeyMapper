@@ -236,6 +236,10 @@ private slots:
 
     void on_clearallButton_clicked();
 
+    void on_moveupButton_clicked();
+
+    void on_movedownButton_clicked();
+
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
