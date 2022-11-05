@@ -36,7 +36,8 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
-QStringList QKeyMapper::pressedKeysList = QStringList();
+QStringList QKeyMapper::pressedRealKeysList = QStringList();
+QStringList QKeyMapper::pressedVirtualKeysList = QStringList();
 GetDeviceStateT QKeyMapper::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
 QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
@@ -271,7 +272,8 @@ void QKeyMapper::cycleCheckProcessProc(void)
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
     if(TRUE == IsWindowVisible(hWnd)){
-        pressedKeysList.clear();
+        pressedRealKeysList.clear();
+        pressedVirtualKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
         qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook Started.";
     }
@@ -283,7 +285,8 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 void QKeyMapper::setKeyUnHook(void)
 {
     if (m_KeyHook != Q_NULLPTR){
-        pressedKeysList.clear();
+        pressedRealKeysList.clear();
+        pressedVirtualKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
         m_KeyHook = Q_NULLPTR;
         qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook Released.";
@@ -1260,80 +1263,99 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
         && (WM_KEYDOWN == wParam || WM_KEYUP == wParam)){
 
         if (pKeyBoard->scanCode != 0){
-            if (WM_KEYDOWN == wParam){
-                if (false == pressedKeysList.contains(keycodeString)){
-                    pressedKeysList.append(keycodeString);
-                }
-            }
-            else if (WM_KEYUP == wParam){
-                pressedKeysList.removeAll(keycodeString);
-            }
-
-            int findindex = findInKeyMappingDataList(keycodeString);
-
-            if (findindex >=0){
-                QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
-                if (WM_KEYDOWN == wParam){
-                    for (const QString &key : mappingKeyList){
-                        if (pressedKeysList.contains(key)){
+            if (pressedVirtualKeysList.contains(keycodeString)){
+                returnFlag = true;
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
+                qDebug("VirtualKey \"%s\" is pressed down, skip real key %s !", keycodeString.toStdString().c_str(), wParam==WM_KEYDOWN?"KEYDOWN":"KEYUP");
 #endif
-                            continue;
-                        }
-                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                        DWORD extenedkeyflag = 0;
-                        if (true == map_vkeycode.ExtenedFlag){
-                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                        }
-                        else{
-                            extenedkeyflag = 0;
-                        }
+            }
 
-                        if (WM_KEYDOWN == wParam){
-                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                            returnFlag = true;
-                        }
-                        else if (WM_KEYUP == wParam){
-                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                            returnFlag = true;
-                        }
-                        else{
-                            // do nothing.
-                        }
+            if (false == returnFlag) {
+                if (WM_KEYDOWN == wParam){
+                    if (false == pressedRealKeysList.contains(keycodeString)){
+                        pressedRealKeysList.append(keycodeString);
                     }
                 }
                 else if (WM_KEYUP == wParam){
-                    for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
-                        QString key = (*it);
-                        if (pressedKeysList.contains(key)){
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
-#endif
-                            continue;
-                        }
-                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                        DWORD extenedkeyflag = 0;
-                        if (true == map_vkeycode.ExtenedFlag){
-                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                        }
-                        else{
-                            extenedkeyflag = 0;
-                        }
+                    pressedRealKeysList.removeAll(keycodeString);
+                }
 
-                        if (WM_KEYDOWN == wParam){
-                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                            returnFlag = true;
+                int findindex = findInKeyMappingDataList(keycodeString);
+
+                if (findindex >=0){
+                    QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
+                    if (WM_KEYDOWN == wParam){
+                        for (const QString &key : mappingKeyList){
+                            if (pressedRealKeysList.contains(key)){
+    #ifdef DEBUG_LOGOUT_ON
+                                qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
+    #endif
+                                continue;
+                            }
+                            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                            DWORD extenedkeyflag = 0;
+                            if (true == map_vkeycode.ExtenedFlag){
+                                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                            }
+                            else{
+                                extenedkeyflag = 0;
+                            }
+
+                            if (WM_KEYDOWN == wParam){
+                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                                returnFlag = true;
+                            }
+                            else if (WM_KEYUP == wParam){
+                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                                returnFlag = true;
+                            }
+                            else{
+                                // do nothing.
+                            }
                         }
-                        else if (WM_KEYUP == wParam){
-                            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                            returnFlag = true;
-                        }
-                        else{
-                            // do nothing.
+                    }
+                    else if (WM_KEYUP == wParam){
+                        for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
+                            QString key = (*it);
+                            if (pressedRealKeysList.contains(key)){
+    #ifdef DEBUG_LOGOUT_ON
+                                qDebug("\"%s\" is pressed down on keyboard, skip it!", key.toStdString().c_str());
+    #endif
+                                continue;
+                            }
+                            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                            DWORD extenedkeyflag = 0;
+                            if (true == map_vkeycode.ExtenedFlag){
+                                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                            }
+                            else{
+                                extenedkeyflag = 0;
+                            }
+
+                            if (WM_KEYDOWN == wParam){
+                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                                returnFlag = true;
+                            }
+                            else if (WM_KEYUP == wParam){
+                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                                returnFlag = true;
+                            }
+                            else{
+                                // do nothing.
+                            }
                         }
                     }
                 }
+            }
+        }
+        else {
+            if (WM_KEYDOWN == wParam){
+                if (false == pressedVirtualKeysList.contains(keycodeString)){
+                    pressedVirtualKeysList.append(keycodeString);
+                }
+            }
+            else if (WM_KEYUP == wParam){
+                pressedVirtualKeysList.removeAll(keycodeString);
             }
         }
 
@@ -1367,7 +1389,10 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     }
 
     if (true == returnFlag){
-        return 1;
+//#ifdef DEBUG_LOGOUT_ON
+//        qDebug("%s -> return TRUE", __func__);
+//#endif
+        return (LRESULT)TRUE;
     }
     else{
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
