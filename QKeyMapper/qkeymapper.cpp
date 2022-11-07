@@ -1299,19 +1299,9 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
 
-    if (true == QKeyMapper::disableWinKeyCheckBox_static->isChecked()) {
-        if ((WM_KEYDOWN == wParam)
-             || (WM_KEYUP == wParam)
-             || (WM_SYSKEYDOWN == wParam)
-             || (WM_SYSKEYUP == wParam)) {
-            if (("L-Win" == keycodeString)
-                || ("R-Win" == keycodeString)
-                || ("Application" == keycodeString)) {
-                qDebug("Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
-                return (LRESULT)TRUE;
-            }
-        }
-    }
+//#ifdef DEBUG_LOGOUT_ON
+//    qDebug("\"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
+//#endif
 
     if ((false == keycodeString.isEmpty())
         && (WM_KEYDOWN == wParam || WM_KEYUP == wParam)){
@@ -1347,6 +1337,34 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
             }
             else if (WM_KEYUP == wParam){
                 pressedRealKeysList.removeAll(keycodeString);
+            }
+
+            if (true == QKeyMapper::disableWinKeyCheckBox_static->isChecked()) {
+                if (WM_KEYDOWN == wParam) {
+                    if ("D" == keycodeString && pressedRealKeysList.contains("L-Win")) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("\"L-Win + D\" pressed!");
+#endif
+                        V_KEYCODE lwin_vkeycode = VirtualKeyCodeMap.value("L-Win");
+                        DWORD extenedkeyflag = 0;
+                        if (true == lwin_vkeycode.ExtenedFlag){
+                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                        }
+                        else{
+                            extenedkeyflag = 0;
+                        }
+                        keybd_event(lwin_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                    }
+                }
+                if ((WM_KEYDOWN == wParam)
+                     || (WM_KEYUP == wParam)) {
+                    if (("L-Win" == keycodeString)
+                        || ("R-Win" == keycodeString)
+                        || ("Application" == keycodeString)) {
+                        qDebug("Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
+                        returnFlag = true;
+                    }
+                }
             }
 
             if (WM_KEYUP == wParam){
