@@ -10,6 +10,7 @@ A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
 5. Use "SAO UI" font for static strings display.
 6. Press "Ctrl + `" to minimize the QKeyMapper to System tray.
 7. Mapping multi keys to the same original key will display mappingkeys as "A + B" to support multi key mapping.
+8. Disable Win Key checkbox could make Windows Key on the keyboard invalid in the game.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
