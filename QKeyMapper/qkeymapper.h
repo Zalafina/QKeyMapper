@@ -16,6 +16,7 @@
 #include <QFontDatabase>
 #include <QStyledItemDelegate>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QKeyEvent>
 #include <QHotkey>
 #include <windows.h>
@@ -276,6 +277,7 @@ public:
 
     static QComboBox *orikeyComboBox_static;
     static QComboBox *mapkeyComboBox_static;
+    static QCheckBox *disableWinKeyCheckBox_static;
 
 private:
     Ui::QKeyMapper *ui;

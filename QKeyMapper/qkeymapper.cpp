@@ -30,6 +30,7 @@ static const QString PROCESSINFO_WINDOWTITLE("ProcessInfo/WindowTitle");
 static const QString PROCESSINFO_FILEPATH("ProcessInfo/FilePath");
 static const QString PROCESSINFO_FILENAME_CHECKED("ProcessInfo/FileNameChecked");
 static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo/WindowTitleChecked");
+static const QString PROCESSINFO_DISABLEWINKEY_CHECKED("ProcessInfo/DisableWinKeyChecked");
 
 static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
@@ -42,6 +43,7 @@ GetDeviceStateT QKeyMapper::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
 QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
 QComboBox *QKeyMapper::mapkeyComboBox_static = Q_NULLPTR;
+QCheckBox *QKeyMapper::disableWinKeyCheckBox_static = Q_NULLPTR;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -64,6 +66,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initAddKeyComboBoxes();
     orikeyComboBox_static = m_orikeyComboBox;
     mapkeyComboBox_static = m_mapkeyComboBox;
+    disableWinKeyCheckBox_static = ui->disableWinKeyCheckBox;
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
     QString defaultTitle;
     defaultTitle.append(QChar(0x6781));
@@ -98,6 +101,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
+    ui->disableWinKeyCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::NoFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
 
@@ -195,12 +199,18 @@ void QKeyMapper::cycleCheckProcessProc(void)
 {
     if (KEYMAP_IDLE != m_KeyMapStatus)
     {
-        bool checkresult = false;
+        int checkresult = 0;
         QString windowTitle;
         QString filename;
         HWND hwnd = GetForegroundWindow();
         TCHAR titleBuffer[MAX_PATH];
         memset(titleBuffer, 0x00, sizeof(titleBuffer));
+        QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+
+        if ((false == ui->nameCheckBox->isChecked())
+            && (false == ui->titleCheckBox->isChecked())){
+            checkresult = 2;
+        }
 
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
         if (resultLength){
@@ -218,37 +228,42 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     && (true == ui->titleCheckBox->isChecked())){
                 if ((m_MapProcessInfo.FileName == filename)
                         && (m_MapProcessInfo.WindowTitle == windowTitle)){
-                    checkresult = true;
+                    checkresult = 1;
                 }
             }
             else if (true == ui->nameCheckBox->isChecked()){
                 if (m_MapProcessInfo.FileName == filename){
-                    checkresult = true;
+                    checkresult = 1;
                 }
             }
             else if (true == ui->titleCheckBox->isChecked()){
                 if (m_MapProcessInfo.WindowTitle == windowTitle){
-                    checkresult = true;
+                    checkresult = 1;
                 }
             }
             else{
-                checkresult = true;
+                // checkresult = 2;
             }
 
             if ((m_MapProcessInfo.FileName == filename)
                     && (m_MapProcessInfo.WindowTitle == windowTitle)){
-                checkresult = true;
+                checkresult = 1;
             }
         }
 
-        if (true == checkresult){
+        if (checkresult){
             if (KEYMAP_CHECKING == m_KeyMapStatus){
                 setKeyHook(hwnd);
                 //setDInputKeyHook(hwnd);
                 m_KeyMapStatus = KEYMAP_MAPPING;
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                if (1 == checkresult) {
+                    qDebug().nospace().noquote() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                }
+                else {
+                    qDebug().nospace().noquote() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ")";
+                }
 #endif
             }
         }
@@ -259,7 +274,12 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 m_KeyMapStatus = KEYMAP_CHECKING;
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                if (1 == checkresult) {
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                }
+                else {
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ")";
+                }
 #endif
             }
         }
@@ -889,6 +909,8 @@ void QKeyMapper::changeEvent(QEvent *event)
 
 void QKeyMapper::on_keymapButton_clicked()
 {
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+
     if (KEYMAP_IDLE == m_KeyMapStatus){
         if ((false == m_MapProcessInfo.FileName.isEmpty())
                 && (false == m_MapProcessInfo.WindowTitle.isEmpty())){
@@ -899,7 +921,7 @@ void QKeyMapper::on_keymapButton_clicked()
             m_KeyMapStatus = KEYMAP_CHECKING;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
+            qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "on_keymapButton_clicked()";
 #endif
         }
         else{
@@ -915,7 +937,7 @@ void QKeyMapper::on_keymapButton_clicked()
         m_KeyMapStatus = KEYMAP_IDLE;
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << m_KeyMapStatus << ") " << "on_keymapButton_clicked()";
+        qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "on_keymapButton_clicked()";
 #endif
     }
 
@@ -1005,6 +1027,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
             settingFile.setValue(PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
             settingFile.setValue(PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
+            settingFile.setValue(PROCESSINFO_DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -1145,6 +1168,19 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     }
 
+    if (true == settingFile.contains(PROCESSINFO_DISABLEWINKEY_CHECKED)){
+        bool disableWinKeyChecked = settingFile.value(PROCESSINFO_DISABLEWINKEY_CHECKED).toBool();
+        if (true == disableWinKeyChecked) {
+            ui->disableWinKeyCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableWinKeyCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "DisableWinKeyChecked =" << disableWinKeyChecked;
+#endif
+    }
+
     if (false == datavalidflag){
         QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
         return false;
@@ -1214,6 +1250,9 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(14);
+    ui->disableWinKeyCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -1258,6 +1297,20 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     }
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+
+    if (true == QKeyMapper::disableWinKeyCheckBox_static->isChecked()) {
+        if ((WM_KEYDOWN == wParam)
+             || (WM_KEYUP == wParam)
+             || (WM_SYSKEYDOWN == wParam)
+             || (WM_SYSKEYUP == wParam)) {
+            if (("L-Win" == keycodeString)
+                || ("R-Win" == keycodeString)
+                || ("Application" == keycodeString)) {
+                qDebug("Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
+                return (LRESULT)TRUE;
+            }
+        }
+    }
 
     if ((false == keycodeString.isEmpty())
         && (WM_KEYDOWN == wParam || WM_KEYUP == wParam)){
