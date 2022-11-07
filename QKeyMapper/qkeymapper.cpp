@@ -1340,22 +1340,22 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
             }
 
             if (true == QKeyMapper::disableWinKeyCheckBox_static->isChecked()) {
-                if (WM_KEYDOWN == wParam) {
-                    if ("D" == keycodeString && pressedRealKeysList.contains("L-Win")) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("\"L-Win + D\" pressed!");
-#endif
-                        V_KEYCODE lwin_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        DWORD extenedkeyflag = 0;
-                        if (true == lwin_vkeycode.ExtenedFlag){
-                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                        }
-                        else{
-                            extenedkeyflag = 0;
-                        }
-                        keybd_event(lwin_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                    }
-                }
+//                if (WM_KEYDOWN == wParam) {
+//                    if ("D" == keycodeString && pressedRealKeysList.contains("L-Win")) {
+//#ifdef DEBUG_LOGOUT_ON
+//                        qDebug("\"L-Win + D\" pressed!");
+//#endif
+//                        V_KEYCODE lwin_vkeycode = VirtualKeyCodeMap.value("L-Win");
+//                        DWORD extenedkeyflag = 0;
+//                        if (true == lwin_vkeycode.ExtenedFlag){
+//                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+//                        }
+//                        else{
+//                            extenedkeyflag = 0;
+//                        }
+//                        keybd_event(lwin_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+//                    }
+//                }
                 if ((WM_KEYDOWN == wParam)
                      || (WM_KEYUP == wParam)) {
                     if (("L-Win" == keycodeString)
