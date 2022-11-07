@@ -1259,6 +1259,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 {
     ui->nameCheckBox->setEnabled(status);
     ui->titleCheckBox->setEnabled(status);
+    ui->disableWinKeyCheckBox->setEnabled(status);
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
 
