@@ -2,7 +2,7 @@
 #include "ui_qkeymapper.h"
 
 //static const uint WIN_TITLESTR_MAX = 200U;
-static const uint CYCLE_CHECK_TIMEOUT = 1000U;
+static const uint CYCLE_CHECK_TIMEOUT = 500U;
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
 static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 2;
 
@@ -910,6 +910,7 @@ void QKeyMapper::changeEvent(QEvent *event)
 void QKeyMapper::on_keymapButton_clicked()
 {
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    bool startKeyMap = false;
 
     if (KEYMAP_IDLE == m_KeyMapStatus){
         if ((false == m_MapProcessInfo.FileName.isEmpty())
@@ -919,6 +920,7 @@ void QKeyMapper::on_keymapButton_clicked()
             m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
             ui->keymapButton->setText("KeyMappingStop");
             m_KeyMapStatus = KEYMAP_CHECKING;
+            startKeyMap = true;
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "on_keymapButton_clicked()";
@@ -946,6 +948,10 @@ void QKeyMapper::on_keymapButton_clicked()
     }
     else{
         changeControlEnableStatus(true);
+    }
+
+    if (true == startKeyMap) {
+        cycleCheckProcessProc();
     }
 }
 
