@@ -2276,51 +2276,46 @@ void QKeyMapper::on_addmapdataButton_clicked()
 {
     if ((true == VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText()))
             && (true == VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText()))){
-        if (m_orikeyComboBox->currentText() != m_mapkeyComboBox->currentText()){
-            bool already_exist = false;
-            int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
+        bool already_exist = false;
+        int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
 
-            if (findindex != -1){
-                if (KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
-                    already_exist = true;
+        if (findindex != -1){
+            if (KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
+                already_exist = true;
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
+                qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
 #endif
-                }
-            }
-
-            if (false == already_exist){
-                if (findindex != -1){
-                    MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
-                    QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
-#endif
-                    mappingkeys_str = mappingkeys_str + SEPARATOR_STR + m_mapkeyComboBox->currentText();
-
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
-#endif
-                    KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str, keymapdata.Burst));
-                }
-                else {
-                    KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText(), false));
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
-#endif
-                }
-
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-                refreshKeyMappingDataTable();
-            }
-            else{
-                QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
             }
         }
+
+        if (false == already_exist){
+            if (findindex != -1){
+                MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
+                QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
+#endif
+                mappingkeys_str = mappingkeys_str + SEPARATOR_STR + m_mapkeyComboBox->currentText();
+
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
+#endif
+                KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str, keymapdata.Burst));
+            }
+            else {
+                KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText(), false));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
+#endif
+            }
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+#endif
+            refreshKeyMappingDataTable();
+        }
         else{
-            QMessageBox::warning(this, tr("QKeyMapper"), tr("Should not mapping to the same key."));
+            QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
         }
     }
 }
