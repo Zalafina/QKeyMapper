@@ -2023,7 +2023,7 @@ void QKeyMapper::initKeyMappingDataTable(void)
 
     int original_key_width = ui->keymapdataTable->width()/5;
     int burst_mode_width = ui->keymapdataTable->width()/5 - 30;
-    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width;
+    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - 2;
     ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
     ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
     ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);

@@ -337,7 +337,7 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>800</x>
+     <x>810</x>
      <y>550</y>
      <width>121</width>
      <height>21</height>
@@ -704,7 +704,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>BurstPress</string>
+    <string>BurstPress </string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1093,7 +1093,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>BurstRelease</string>
+    <string>BurstRelease </string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
