@@ -4,7 +4,7 @@
 //static const uint WIN_TITLESTR_MAX = 200U;
 static const uint CYCLE_CHECK_TIMEOUT = 500U;
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
-static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 2;
+static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 3;
 
 static const int PROCESS_NAME_COLUMN = 0;
 static const int PROCESS_PID_COLUMN = 1;
@@ -14,6 +14,7 @@ static const int PROCESS_NAME_COLUMN_WIDTH_MAX = 200;
 
 static const int ORIGINAL_KEY_COLUMN = 0;
 static const int MAPPING_KEY_COLUMN = 1;
+static const int BURST_MODE_COLUMN = 2;
 
 static const int DEFAULT_ICON_WIDTH = 64;
 static const int DEFAULT_ICON_HEIGHT = 64;
@@ -23,6 +24,9 @@ static QString DEFAULT_TITLE("Forza: Horizon 4");
 
 static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
 static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
+static const QString KEYMAPDATA_BURST("KeyMapData/Burst");
+static const QString KEYMAPDATA_BURSTPRESS_TIME("KeyMapData/BurstPressTime");
+static const QString KEYMAPDATA_BURSTRELEASE_TIME("KeyMapData/BurstReleaseTime");
 static const QString CLEARALL("KeyMapData/ClearAll");
 
 static const QString PROCESSINFO_FILENAME("ProcessInfo/FileName");
@@ -44,6 +48,7 @@ GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
 QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
 QComboBox *QKeyMapper::mapkeyComboBox_static = Q_NULLPTR;
 QCheckBox *QKeyMapper::disableWinKeyCheckBox_static = Q_NULLPTR;
+QKeyMapper *QKeyMapper::selfPtr_static = Q_NULLPTR;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -60,13 +65,15 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
-    m_HotKey(new QHotkey(this))
+    m_HotKey(new QHotkey(this)),
+    m_BurstTimerMap()
 {
     ui->setupUi(this);
     initAddKeyComboBoxes();
     orikeyComboBox_static = m_orikeyComboBox;
     mapkeyComboBox_static = m_mapkeyComboBox;
     disableWinKeyCheckBox_static = ui->disableWinKeyCheckBox;
+    selfPtr_static = this;
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
     QString defaultTitle;
     defaultTitle.append(QChar(0x6781));
@@ -158,6 +165,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
+    QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(on_cellChanged(int,int)));
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
@@ -372,6 +380,11 @@ void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windo
         qDebug().nospace().noquote() << "[setMapProcessInfo]"<< " Info Error: filename(" << filename << "), " << "windowtitle(" << windowtitle << ")";
 #endif
     }
+}
+
+QKeyMapper *QKeyMapper::static_Ptr()
+{
+    return selfPtr_static;
 }
 
 #ifdef ADJUST_PRIVILEGES
@@ -765,6 +778,59 @@ int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
+void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
+{
+    int findindex = findInKeyMappingDataList(burstKey);
+
+    if (findindex >=0){
+        QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
+
+        for (const QString &key : mappingKeyList){
+            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+            DWORD extenedkeyflag = 0;
+            if (true == map_vkeycode.ExtenedFlag){
+                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+            }
+            else{
+                extenedkeyflag = 0;
+            }
+
+            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+        }
+    }
+}
+
+void QKeyMapper::sendBurstKeyUp(const QString &burstKey)
+{
+    int findindex = findInKeyMappingDataList(burstKey);
+
+    if (findindex >=0){
+        QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
+
+        for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
+            QString key = (*it);
+            if (pressedRealKeysList.contains(key)){
+                pressedVirtualKeysList.removeAll(key);
+//#ifdef DEBUG_LOGOUT_ON
+//                qDebug("%s : RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", __func__, key.toStdString().c_str(), key.toStdString().c_str());
+//                qDebug("%s : Remove \"%s\" in pressedVirtualKeysList.", __func__, key.toStdString().c_str());
+//#endif
+                continue;
+            }
+            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+            DWORD extenedkeyflag = 0;
+            if (true == map_vkeycode.ExtenedFlag){
+                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+            }
+            else{
+                extenedkeyflag = 0;
+            }
+
+            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+        }
+    }
+}
+
 void QKeyMapper::EnumProcessFunction(void)
 {
 #if 0
@@ -907,6 +973,32 @@ void QKeyMapper::changeEvent(QEvent *event)
     QDialog::changeEvent(event);
 }
 
+void QKeyMapper::timerEvent(QTimerEvent *event)
+{
+    int timerID = event->timerId();
+    QString burstKey = m_BurstTimerMap.key(timerID);
+
+    if (false == burstKey.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("timerEvent(): Key \"%s\" BurstTimer timeout.", burstKey.toStdString().c_str());
+#endif
+        sendBurstKeyDown(burstKey);
+
+        int burstpressTime = ui->burstpressComboBox->currentText().toInt();
+        QTimer::singleShot(burstpressTime, this, [&, burstKey](){
+            sendBurstKeyUp(burstKey);
+//#ifdef DEBUG_LOGOUT_ON
+//            qDebug("timerEvent(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
+//#endif
+        });
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("Could not find TimerID(%d) in BurstTimerMap!!!", timerID);
+#endif
+    }
+}
+
 void QKeyMapper::on_keymapButton_clicked()
 {
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
@@ -983,6 +1075,26 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
     }
 }
 
+void QKeyMapper::on_cellChanged(int row, int col)
+{
+    if (col == BURST_MODE_COLUMN) {
+        bool burst = false;
+        if (ui->keymapdataTable->item(row, col)->checkState() == Qt::Checked) {
+            burst = true;
+        }
+        else {
+            burst = false;
+        }
+
+        if (burst != KeyMappingDataList.at(row).Burst) {
+            KeyMappingDataList[row].Burst = burst;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[%s]: row(%d) burst changed to (%s)", __func__, row, burst == true?"ON":"OFF");
+#endif
+        }
+    }
+}
+
 void QKeyMapper::saveKeyMapSetting(void)
 {
     if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
@@ -990,6 +1102,9 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setIniCodec("UTF-8");
         QStringList original_keys;
         QStringList mapping_keysList;
+        QStringList burstList;
+        QString burstpressTimeString = ui->burstpressComboBox->currentText();
+        QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
 
         if (KeyMappingDataList.size() > 0){
             for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
@@ -1003,15 +1118,27 @@ void QKeyMapper::saveKeyMapSetting(void)
                     mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
                 }
                 mapping_keysList  << mappingkeys_str;
+                if (true == keymapdata.Burst) {
+                    burstList.append("ON");
+                }
+                else {
+                    burstList.append("OFF");
+                }
             }
             settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
+            settingFile.setValue(KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
+            settingFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
 
             settingFile.remove(CLEARALL);
         }
         else{
             settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
+            settingFile.setValue(KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
+            settingFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
             settingFile.setValue(CLEARALL, QString("ClearList"));
         }
 
@@ -1061,23 +1188,37 @@ bool QKeyMapper::loadKeyMapSetting(void)
     if (false == clearallcontainsflag){
         QStringList original_keys;
         QStringList mapping_keys;
+        QStringList burstStringList;
+        QList<bool> burstList;
         QList<MAP_KEYDATA> loadkeymapdata;
 
         if ((true == settingFile.contains(KEYMAPDATA_ORIGINALKEYS))
-                && (true == settingFile.contains(KEYMAPDATA_MAPPINGKEYS))){
-            original_keys = settingFile.value(KEYMAPDATA_ORIGINALKEYS).toStringList();
-            mapping_keys  = settingFile.value(KEYMAPDATA_MAPPINGKEYS ).toStringList();
+                && (true == settingFile.contains(KEYMAPDATA_MAPPINGKEYS))
+                && (true == settingFile.contains(KEYMAPDATA_BURST))){
+            original_keys   = settingFile.value(KEYMAPDATA_ORIGINALKEYS).toStringList();
+            mapping_keys    = settingFile.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
+            burstStringList = settingFile.value(KEYMAPDATA_BURST).toStringList();
 
-            if (original_keys.size() == mapping_keys.size()){
+            if ((original_keys.size() == mapping_keys.size())
+                    && (original_keys.size() == burstStringList.size())){
                 datavalidflag = true;
 
                 if (original_keys.size() > 0){
+                    for (const QString &burst : burstStringList){
+                        if (burst == "ON") {
+                            burstList.append(true);
+                        }
+                        else {
+                            burstList.append(false);
+                        }
+                    }
+
                     int loadindex = 0;
                     for (const QString &ori_key : original_keys){
 
                         if ((true == VirtualKeyCodeMap.contains(ori_key))
                                 && (true == checkMappingkeyStr(mapping_keys.at(loadindex)))){
-                            loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex)));
+                            loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex)));
                         }
                         else{
                             datavalidflag = false;
@@ -1091,11 +1232,11 @@ bool QKeyMapper::loadKeyMapSetting(void)
         }
 
         if (datavalidflag != (quint8)true){
-            KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}"      ));
-            KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{"      ));
-            KeyMappingDataList.append(MAP_KEYDATA("H",          "S"                 ));
-            KeyMappingDataList.append(MAP_KEYDATA("Space",      "S"                 ));
-            KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter"             ));
+            KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false));
+            KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false));
+            KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false));
+            KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false));
+            KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false));
         }
         else{
             KeyMappingDataList = loadkeymapdata;
@@ -1105,35 +1246,10 @@ bool QKeyMapper::loadKeyMapSetting(void)
         KeyMappingDataList.clear();
     }
 
-    if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << " KeyMappingDataList Start >>>";
+    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-        int rowindex = 0;
-        ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
-        for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-        {
-            ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-            QString mappingkeys_str;
-            if (keymapdata.Mapping_Keys.size() == 1) {
-                mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
-            }
-            else {
-                mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
-            }
-            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
-
-            rowindex += 1;
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
-#endif
-        }
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << " KeyMappingDataList End   <<<";
-#endif
-    }
+    refreshKeyMappingDataTable();
 
     if ((true == settingFile.contains(PROCESSINFO_FILENAME))
             && (true == settingFile.contains(PROCESSINFO_WINDOWTITLE))){
@@ -1171,6 +1287,26 @@ bool QKeyMapper::loadKeyMapSetting(void)
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "WindowTitleChecked =" << windowTitleChecked;
+#endif
+    }
+
+    if (true == settingFile.contains(KEYMAPDATA_BURSTPRESS_TIME)){
+        QString burstpressTimeString = settingFile.value(KEYMAPDATA_BURSTPRESS_TIME).toString();
+        if (false == burstpressTimeString.isEmpty()) {
+            ui->burstpressComboBox->setCurrentText(burstpressTimeString);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "BurstPressTime =" << burstpressTimeString;
+#endif
+    }
+
+    if (true == settingFile.contains(KEYMAPDATA_BURSTRELEASE_TIME)){
+        QString burstreleaseTimeString = settingFile.value(KEYMAPDATA_BURSTRELEASE_TIME).toString();
+        if (false == burstreleaseTimeString.isEmpty()) {
+            ui->burstreleaseComboBox->setCurrentText(burstreleaseTimeString);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "BurstReleaseTime =" << burstreleaseTimeString;
 #endif
     }
 
@@ -1253,6 +1389,10 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     ui->titleCheckBox->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
+    ui->burstpressLabel->setFont(customFont);
+    ui->burstpress_msLabel->setFont(customFont);
+    ui->burstreleaseLabel->setFont(customFont);
+    ui->burstrelease_msLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -1266,6 +1406,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->nameCheckBox->setEnabled(status);
     ui->titleCheckBox->setEnabled(status);
     ui->disableWinKeyCheckBox->setEnabled(status);
+    ui->burstpressComboBox->setEnabled(status);
+    ui->burstreleaseComboBox->setEnabled(status);
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
 
@@ -1282,6 +1424,49 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->processinfoTable->setEnabled(status);
     ui->keymapdataTable->setEnabled(status);
+}
+
+void QKeyMapper::startBurstTimer(QString burstKey)
+{
+    if (true == m_BurstTimerMap.contains(burstKey)) {
+        int existTimerID = m_BurstTimerMap.value(burstKey);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("Key \"%s\" BurstTimer(%d) already started!!!", burstKey.toStdString().c_str(), existTimerID);
+#endif
+        killTimer(existTimerID);
+    }
+    int burstpressTime = ui->burstpressComboBox->currentText().toInt();
+    int burstreleaseTime = ui->burstreleaseComboBox->currentText().toInt();
+    int burstTime = burstpressTime + burstreleaseTime;
+    int timerID = startTimer(burstTime, Qt::PreciseTimer);
+    m_BurstTimerMap.insert(burstKey, timerID);
+
+    QTimer::singleShot(burstpressTime, this, [&, burstKey](){
+        sendBurstKeyUp(burstKey);
+//#ifdef DEBUG_LOGOUT_ON
+//        qDebug("startBurstTimer(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
+//#endif
+    });
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("Key \"%s\" %s, Timer:%d, ID:%d", burstKey.toStdString().c_str(), __func__, burstTime, timerID);
+#endif
+}
+
+void QKeyMapper::stopBurstTimer(QString burstKey)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("Key \"%s\" %s", burstKey.toStdString().c_str(), __func__);
+#endif
+    if (true == m_BurstTimerMap.contains(burstKey)) {
+        int existTimerID = m_BurstTimerMap.value(burstKey);
+        killTimer(existTimerID);
+        m_BurstTimerMap.remove(burstKey);
+        sendBurstKeyUp(burstKey);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("Key \"%s\" BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
+#endif
+    }
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()
@@ -1336,13 +1521,23 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 #endif
 
         if (pKeyBoard->scanCode != 0){
+            int findindex = findInKeyMappingDataList(keycodeString);
+
             if (WM_KEYDOWN == wParam){
                 if (false == pressedRealKeysList.contains(keycodeString)){
+                    if (findindex >=0 && true == KeyMappingDataList.at(findindex).Burst) {
+                        QKeyMapper::static_Ptr()->startBurstTimer(keycodeString);
+                    }
                     pressedRealKeysList.append(keycodeString);
                 }
             }
             else if (WM_KEYUP == wParam){
-                pressedRealKeysList.removeAll(keycodeString);
+                if (true == pressedRealKeysList.contains(keycodeString)){
+                    if (findindex >=0 && true == KeyMappingDataList.at(findindex).Burst) {
+                        QKeyMapper::static_Ptr()->stopBurstTimer(keycodeString);
+                    }
+                    pressedRealKeysList.removeAll(keycodeString);
+                }
             }
 
             if (true == QKeyMapper::disableWinKeyCheckBox_static->isChecked()) {
@@ -1402,8 +1597,6 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
             }
 
             if (false == returnFlag) {
-                int findindex = findInKeyMappingDataList(keycodeString);
-
                 if (findindex >=0){
                     QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
                     if (WM_KEYDOWN == wParam){
@@ -1821,12 +2014,19 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->setFocusPolicy(Qt::NoFocus);
     ui->keymapdataTable->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
     ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << "Original Key"
-                                                                    << "Mapping Key" );
+                                                                    << "Mapping Key"
+                                                                    << "Burst");
 
     ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
     ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, ui->keymapdataTable->width()/3);
+
+    int original_key_width = ui->keymapdataTable->width()/5;
+    int burst_mode_width = ui->keymapdataTable->width()/5 - 30;
+    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width;
+    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
+    ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
     ui->keymapdataTable->verticalHeader()->setVisible(false);
     ui->keymapdataTable->verticalHeader()->setDefaultSectionSize(25);
     ui->keymapdataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -1975,6 +2175,49 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->addItems(keycodelist);
 }
 
+void QKeyMapper::refreshKeyMappingDataTable()
+{
+    ui->keymapdataTable->clearContents();
+    ui->keymapdataTable->setRowCount(0);
+
+    if (false == KeyMappingDataList.isEmpty()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "KeyMappingDataList Start >>>";
+#endif
+        int rowindex = 0;
+        ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
+        for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+        {
+            ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
+            QString mappingkeys_str;
+            if (keymapdata.Mapping_Keys.size() == 1) {
+                mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
+            }
+            else {
+                mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+            }
+            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
+            QTableWidgetItem *checkBox = new QTableWidgetItem();
+            if (keymapdata.Burst == true) {
+                checkBox->setCheckState(Qt::Checked);
+            }
+            else {
+                checkBox->setCheckState(Qt::Unchecked);
+            }
+            ui->keymapdataTable->setItem(rowindex, BURST_MODE_COLUMN    , checkBox);
+            rowindex += 1;
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
+#endif
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "KeyMappingDataList End   <<<";
+#endif
+    }
+}
+
 void QKeyMapper::on_refreshButton_clicked()
 {
     ui->processinfoTable->clearContents();
@@ -2058,47 +2301,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
-                    KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str));
+                    KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str, keymapdata.Burst));
                 }
                 else {
-                    KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText()));
+                    KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText(), false));
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
 #endif
                 }
 
-                ui->keymapdataTable->clearContents();
-                ui->keymapdataTable->setRowCount(0);
-
-                if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "KeyMappingDataList Start >>>";
+                qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-                    int rowindex = 0;
-                    ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
-                    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-                    {
-                        ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-                        QString mappingkeys_str;
-                        if (keymapdata.Mapping_Keys.size() == 1) {
-                            mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
-                        }
-                        else {
-                            mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
-                        }
-                        ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
-
-                        rowindex += 1;
-
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
-#endif
-                    }
-
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "KeyMappingDataList End   <<<";
-#endif
-                }
+                refreshKeyMappingDataTable();
             }
             else{
                 QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
@@ -2252,43 +2467,14 @@ void QKeyMapper::on_moveupButton_clicked()
 #endif
         KeyMappingDataList.move(currentrowindex, currentrowindex-1);
 
-        ui->keymapdataTable->clearContents();
-        ui->keymapdataTable->setRowCount(0);
-
-        if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "MoveUp:KeyMappingDataList Start >>>";
+        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-            int rowindex = 0;
-            ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
-            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-            {
-                ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-                QString mappingkeys_str;
-                if (keymapdata.Mapping_Keys.size() == 1) {
-                    mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
-                }
-                else {
-                    mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
-                }
-                ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
+        refreshKeyMappingDataTable();
 
-                rowindex += 1;
-
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
-#endif
-            }
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "MoveUp:KeyMappingDataList End   <<<";
-#endif
-
-            int reselectrow = currentrowindex - 1;
-            QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-            ui->keymapdataTable->setRangeSelected(selection, true);
-        }
-
+        int reselectrow = currentrowindex - 1;
+        QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+        ui->keymapdataTable->setRangeSelected(selection, true);
 
 #ifdef DEBUG_LOGOUT_ON
         if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){
@@ -2325,42 +2511,14 @@ void QKeyMapper::on_movedownButton_clicked()
 #endif
         KeyMappingDataList.move(currentrowindex, currentrowindex+1);
 
-        ui->keymapdataTable->clearContents();
-        ui->keymapdataTable->setRowCount(0);
-
-        if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "MoveDown:KeyMappingDataList Start >>>";
+        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-            int rowindex = 0;
-            ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
-            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-            {
-                ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
-                QString mappingkeys_str;
-                if (keymapdata.Mapping_Keys.size() == 1) {
-                    mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
-                }
-                else {
-                    mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
-                }
-                ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
+        refreshKeyMappingDataTable();
 
-                rowindex += 1;
-
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
-#endif
-            }
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "MoveDown:KeyMappingDataList End   <<<";
-#endif
-            int reselectrow = currentrowindex + 1;
-            QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-            ui->keymapdataTable->setRangeSelected(selection, true);
-        }
-
+        int reselectrow = currentrowindex + 1;
+        QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+        ui->keymapdataTable->setRangeSelected(selection, true);
 
 #ifdef DEBUG_LOGOUT_ON
         if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){

@@ -6,6 +6,7 @@
 #include <QMetaEnum>
 #include <QMessageBox>
 #include <QTimer>
+#include <QTimerEvent>
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QFileInfo>
@@ -51,19 +52,22 @@ typedef struct MAP_KEYDATA
 {
     QString Original_Key;
     QStringList Mapping_Keys;
+    bool Burst;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys() {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false) {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst)
     {
         Original_Key = originalkey;
         Mapping_Keys = mappingkeys.split(SEPARATOR_STR);
+        Burst = burst;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
     {
         return ((Original_Key == other.Original_Key)
-                && (Mapping_Keys == other.Mapping_Keys));
+                && (Mapping_Keys == other.Mapping_Keys)
+                && (Burst == other.Burst));
     }
 }MAP_KEYDATA_st;
 
@@ -202,6 +206,7 @@ public:
     static BOOL EnableDebugPrivilege(void);
     static BOOL AdjustPrivileges(void);
 #endif
+    static QKeyMapper *static_Ptr(void);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static HWND getHWND_byPID(DWORD dwProcessID);
@@ -209,6 +214,8 @@ public:
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findInKeyMappingDataList(const QString &keyname);
+    static void sendBurstKeyDown(const QString &burstKey);
+    static void sendBurstKeyUp(const QString &burstKey);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -216,6 +223,7 @@ public:
 
 protected:
     void changeEvent(QEvent *event);
+    void timerEvent(QTimerEvent *event) override;
 
 public slots:
     void on_keymapButton_clicked();
@@ -224,6 +232,8 @@ private slots:
     void HotKeyActivated();
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+
+    void on_cellChanged(int row, int col);
 
     void on_savemaplistButton_clicked();
 
@@ -256,6 +266,7 @@ private:
 
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
+    void refreshKeyMappingDataTable(void);
 
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(void);
@@ -265,6 +276,9 @@ private:
     void setControlCustomFont(const QString &fontname);
 
     void changeControlEnableStatus(bool status);
+
+    void startBurstTimer(QString burstKey);
+    void stopBurstTimer(QString burstKey);
 
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
@@ -278,6 +292,7 @@ public:
     static QComboBox *orikeyComboBox_static;
     static QComboBox *mapkeyComboBox_static;
     static QCheckBox *disableWinKeyCheckBox_static;
+    static QKeyMapper *selfPtr_static;
 
 private:
     Ui::QKeyMapper *ui;
@@ -294,6 +309,7 @@ private:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     QHotkey *m_HotKey;
+    QHash<QString, int> m_BurstTimerMap;
 };
 
 #endif // QKEYMAPPER_H
