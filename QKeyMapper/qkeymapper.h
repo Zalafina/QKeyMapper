@@ -215,7 +215,9 @@ public:
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findInKeyMappingDataList(const QString &keyname);
     static void sendBurstKeyDown(const QString &burstKey);
-    static void sendBurstKeyUp(const QString &burstKey);
+    static void sendBurstKeyUp(const QString &burstKey, bool stop);
+    static void sendSpecialVirtualKeyDown(const QString &virtualKey);
+    static void sendSpecialVirtualKeyUp(const QString &virtualKey);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);

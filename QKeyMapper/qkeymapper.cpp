@@ -800,7 +800,7 @@ void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
     }
 }
 
-void QKeyMapper::sendBurstKeyUp(const QString &burstKey)
+void QKeyMapper::sendBurstKeyUp(const QString &burstKey, bool stop)
 {
     int findindex = findInKeyMappingDataList(burstKey);
 
@@ -809,6 +809,15 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey)
 
         for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
             QString key = (*it);
+            if (true == stop) {
+                if (pressedRealKeysList.contains(key)){
+                    pressedVirtualKeysList.removeAll(key);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP at stopBurstTimer()!", key.toStdString().c_str(), key.toStdString().c_str());
+#endif
+                    continue;
+                }
+            }
             V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
             DWORD extenedkeyflag = 0;
             if (true == map_vkeycode.ExtenedFlag){
@@ -821,6 +830,34 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey)
             keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
         }
     }
+}
+
+void QKeyMapper::sendSpecialVirtualKeyDown(const QString &virtualKey)
+{
+    V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
+    DWORD extenedkeyflag = 0;
+    if (true == map_vkeycode.ExtenedFlag){
+        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+    }
+    else{
+        extenedkeyflag = 0;
+    }
+
+    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+}
+
+void QKeyMapper::sendSpecialVirtualKeyUp(const QString &virtualKey)
+{
+    V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
+    DWORD extenedkeyflag = 0;
+    if (true == map_vkeycode.ExtenedFlag){
+        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+    }
+    else{
+        extenedkeyflag = 0;
+    }
+
+    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
 }
 
 void QKeyMapper::EnumProcessFunction(void)
@@ -978,10 +1015,17 @@ void QKeyMapper::timerEvent(QTimerEvent *event)
 
         int burstpressTime = ui->burstpressComboBox->currentText().toInt();
         QTimer::singleShot(burstpressTime, this, [&, burstKey](){
-            sendBurstKeyUp(burstKey);
+            if (true == m_BurstTimerMap.contains(burstKey)) {
+                sendBurstKeyUp(burstKey, false);
 //#ifdef DEBUG_LOGOUT_ON
-//            qDebug("timerEvent(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
+//                qDebug("timerEvent(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
 //#endif
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("timerEvent():QTimer::singleShot() Key \"%s\" BurstPress timeout, but m_BurstTimerMap do not contains(\"%s\").", burstKey.toStdString().c_str(), burstKey.toStdString().c_str());
+#endif
+            }
         });
     }
     else {
@@ -1434,10 +1478,17 @@ void QKeyMapper::startBurstTimer(QString burstKey)
     m_BurstTimerMap.insert(burstKey, timerID);
 
     QTimer::singleShot(burstpressTime, this, [&, burstKey](){
-        sendBurstKeyUp(burstKey);
+        if (true == m_BurstTimerMap.contains(burstKey)) {
+            sendBurstKeyUp(burstKey, false);
 //#ifdef DEBUG_LOGOUT_ON
-//        qDebug("startBurstTimer(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
+//            qDebug("startBurstTimer(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
 //#endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("startBurstTimer():QTimer::singleShot() Key \"%s\" BurstPress timeout, but m_BurstTimerMap do not contains(\"%s\").", burstKey.toStdString().c_str(), burstKey.toStdString().c_str());
+#endif
+        }
     });
 
 #ifdef DEBUG_LOGOUT_ON
@@ -1454,10 +1505,20 @@ void QKeyMapper::stopBurstTimer(QString burstKey)
         int existTimerID = m_BurstTimerMap.value(burstKey);
         killTimer(existTimerID);
         m_BurstTimerMap.remove(burstKey);
-        sendBurstKeyUp(burstKey);
+        sendBurstKeyUp(burstKey, true);
 #ifdef DEBUG_LOGOUT_ON
         qDebug("Key \"%s\" BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
 #endif
+
+        for (const QString &key : pressedRealKeysList){
+            if ((burstKey != key)
+                    && (false == pressedVirtualKeysList.contains(key))) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("RealKey \"%s\" is still pressed down on keyboard at stopBurstTimer(), call sendSpecialVirtualKeyDown(\"%s\").", key.toStdString().c_str());
+#endif
+                sendSpecialVirtualKeyDown(key);
+            }
+        }
     }
 }
 
