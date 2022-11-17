@@ -809,14 +809,6 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey)
 
         for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
             QString key = (*it);
-            if (pressedRealKeysList.contains(key)){
-                pressedVirtualKeysList.removeAll(key);
-//#ifdef DEBUG_LOGOUT_ON
-//                qDebug("%s : RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", __func__, key.toStdString().c_str(), key.toStdString().c_str());
-//                qDebug("%s : Remove \"%s\" in pressedVirtualKeysList.", __func__, key.toStdString().c_str());
-//#endif
-                continue;
-            }
             V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
             DWORD extenedkeyflag = 0;
             if (true == map_vkeycode.ExtenedFlag){
@@ -1632,13 +1624,21 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                     else if (WM_KEYUP == wParam){
                         for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
                             QString key = (*it);
-                            if (pressedRealKeysList.contains(key)){
-                                pressedVirtualKeysList.removeAll(key);
+                            if ((KeyMappingDataList.at(findindex).Original_Key == key)
+                                    && (mappingKeyList.size() == 1)) {
 #ifdef DEBUG_LOGOUT_ON
-                                qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
-                                qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
+                                    qDebug("Mapping the same key, do not skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str());
 #endif
-                                continue;
+                            }
+                            else {
+                                if (pressedRealKeysList.contains(key)){
+                                    pressedVirtualKeysList.removeAll(key);
+#ifdef DEBUG_LOGOUT_ON
+                                    qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
+                                    qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
+#endif
+                                    continue;
+                                }
                             }
                             V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
                             DWORD extenedkeyflag = 0;
