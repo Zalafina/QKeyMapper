@@ -279,8 +279,8 @@ private:
 
     void changeControlEnableStatus(bool status);
 
-    void startBurstTimer(QString burstKey);
-    void stopBurstTimer(QString burstKey);
+    void startBurstTimer(QString burstKey, int mappingIndex);
+    void stopBurstTimer(QString burstKey, int mappingIndex);
 
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
