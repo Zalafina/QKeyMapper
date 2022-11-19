@@ -1,8 +1,7 @@
 # QKeyMapper
-在Win10和Win11下可以正常使用的键盘映射工具，使用Qt5 Widget + WinAPI开发。
-A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
+## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt5 Widget + WinAPI开发。
 
-## 具体功能
+### 具体功能
 1. 左侧显示当前正在运行的可见的窗口程序列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
 2. 鼠标左键双击左侧窗口程序列表的某一行可以将选定的窗口程序的可自行文件名和窗口标题设定到图标/文件名/窗口标题区域。
 3. 按下"KeyMappingStart"按钮可以开始执行键盘映射处理流程，映射工具会定时循环检测当前处于前台的窗口与设定的可自行文件名和窗口标题是否匹配，键盘映射功能可以只在前台窗口与当前进程可执行文件名和窗口标题都匹配的情况才生效，前台窗口不匹配的情况下键盘映射自动失效。
@@ -14,7 +13,9 @@ A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
 9. 加入了"Disable WIN Key"功能可以让键盘上的Windows按键在游戏中无效。
 10. 右侧键盘映射表中加入了连发(Burst)选择框，可以按照设定的连发按下时间(BurstPress)和连发抬起时间(BurstRelease)设定来反复发送映射表中的按键。
 
-## Feature details
+## A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
+
+### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
 2. Use mouse leftbutton doubleclick a row to select it to the Icon/FileName/WindowTitle area.
 3. Push "KeyMappingStart" to start KeyMapping, then it will check ForegroundWindow's process name/title cyclically, KeyMapping function only take effect when ForegroundWindow's process name/title matched.
