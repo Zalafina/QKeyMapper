@@ -1,4 +1,4 @@
-﻿#include <QApplication>
+#include <QApplication>
 #include "qkeymapper.h"
 
 #ifdef DEBUG_LOGOUT_ON
@@ -12,6 +12,10 @@ int main(int argc, char *argv[])
 #endif
     QApplication a(argc, argv);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
+
+#ifdef DEBUG_LOGOUT_ON
+    qSetMessagePattern("%{time [hh:mm:ss.zzz]} Message:%{message}");
+#endif
 
 #ifdef ADJUST_PRIVILEGES
 //    BOOL adjustresult = QKeyMapper::AdjustPrivileges();
