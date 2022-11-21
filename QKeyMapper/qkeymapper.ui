@@ -365,8 +365,11 @@
    <property name="focusPolicy">
     <enum>Qt::NoFocus</enum>
    </property>
+   <property name="currentText">
+    <string>40</string>
+   </property>
    <property name="currentIndex">
-    <number>19</number>
+    <number>31</number>
    </property>
    <item>
     <property name="text">
