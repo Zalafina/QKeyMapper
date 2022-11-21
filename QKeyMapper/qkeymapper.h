@@ -53,21 +53,26 @@ typedef struct MAP_KEYDATA
     QString Original_Key;
     QStringList Mapping_Keys;
     bool Burst;
+    bool Lock;
+    bool LockStatus;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false) {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false) {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock)
     {
         Original_Key = originalkey;
         Mapping_Keys = mappingkeys.split(SEPARATOR_STR);
         Burst = burst;
+        Lock = lock;
+        LockStatus = false;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
     {
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
-                && (Burst == other.Burst));
+                && (Burst == other.Burst)
+                && (Lock == other.Lock));
     }
 }MAP_KEYDATA_st;
 
@@ -269,6 +274,8 @@ private:
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
     void refreshKeyMappingDataTable(void);
+    void updateLockStatusDisplay(void);
+    void releaseAllLockKeys(void);
 
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(void);
@@ -288,6 +295,7 @@ public:
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
+    static QStringList pressedLockKeysList;
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
 

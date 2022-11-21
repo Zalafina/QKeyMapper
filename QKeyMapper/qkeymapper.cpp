@@ -4,7 +4,7 @@
 //static const uint WIN_TITLESTR_MAX = 200U;
 static const uint CYCLE_CHECK_TIMEOUT = 500U;
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
-static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 3;
+static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
 
 static const int PROCESS_NAME_COLUMN = 0;
 static const int PROCESS_PID_COLUMN = 1;
@@ -15,6 +15,7 @@ static const int PROCESS_NAME_COLUMN_WIDTH_MAX = 200;
 static const int ORIGINAL_KEY_COLUMN = 0;
 static const int MAPPING_KEY_COLUMN = 1;
 static const int BURST_MODE_COLUMN = 2;
+static const int LOCK_COLUMN = 3;
 
 static const int DEFAULT_ICON_WIDTH = 64;
 static const int DEFAULT_ICON_HEIGHT = 64;
@@ -25,6 +26,7 @@ static QString DEFAULT_TITLE("Forza: Horizon 4");
 static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
 static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
 static const QString KEYMAPDATA_BURST("KeyMapData/Burst");
+static const QString KEYMAPDATA_LOCK("KeyMapData/Lock");
 static const QString KEYMAPDATA_BURSTPRESS_TIME("KeyMapData/BurstPressTime");
 static const QString KEYMAPDATA_BURSTRELEASE_TIME("KeyMapData/BurstReleaseTime");
 static const QString CLEARALL("KeyMapData/ClearAll");
@@ -43,6 +45,7 @@ QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCO
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QStringList QKeyMapper::pressedRealKeysList = QStringList();
 QStringList QKeyMapper::pressedVirtualKeysList = QStringList();
+QStringList QKeyMapper::pressedLockKeysList = QStringList();
 GetDeviceStateT QKeyMapper::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
 QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
@@ -264,6 +267,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 setKeyHook(hwnd);
                 //setDInputKeyHook(hwnd);
                 m_KeyMapStatus = KEYMAP_MAPPING;
+                updateLockStatusDisplay();
 
 #ifdef DEBUG_LOGOUT_ON
                 if (1 == checkresult) {
@@ -280,6 +284,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 setKeyUnHook();
                 setDInputKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
+                updateLockStatusDisplay();
 
 #ifdef DEBUG_LOGOUT_ON
                 if (1 == checkresult) {
@@ -300,8 +305,10 @@ void QKeyMapper::cycleCheckProcessProc(void)
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
     if(TRUE == IsWindowVisible(hWnd)){
+        releaseAllLockKeys();
         pressedRealKeysList.clear();
         pressedVirtualKeysList.clear();
+        pressedLockKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
         qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook Started.";
     }
@@ -313,8 +320,10 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 void QKeyMapper::setKeyUnHook(void)
 {
     if (m_KeyHook != Q_NULLPTR){
+        releaseAllLockKeys();
         pressedRealKeysList.clear();
         pressedVirtualKeysList.clear();
+        pressedLockKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
         m_KeyHook = Q_NULLPTR;
         qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook Released.";
@@ -1048,6 +1057,7 @@ void QKeyMapper::on_keymapButton_clicked()
             m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
             ui->keymapButton->setText("KeyMappingStop");
             m_KeyMapStatus = KEYMAP_CHECKING;
+            updateLockStatusDisplay();
             startKeyMap = true;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -1065,6 +1075,7 @@ void QKeyMapper::on_keymapButton_clicked()
         ui->keymapButton->setText("KeyMappingStart");
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+        updateLockStatusDisplay();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "on_keymapButton_clicked()";
@@ -1129,6 +1140,22 @@ void QKeyMapper::on_cellChanged(int row, int col)
 #endif
         }
     }
+    else if (col == LOCK_COLUMN) {
+        bool lock = false;
+        if (ui->keymapdataTable->item(row, col)->checkState() == Qt::Checked) {
+            lock = true;
+        }
+        else {
+            lock = false;
+        }
+
+        if (lock != KeyMappingDataList.at(row).Lock) {
+            KeyMappingDataList[row].Lock = lock;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
+#endif
+        }
+    }
 }
 
 void QKeyMapper::saveKeyMapSetting(void)
@@ -1139,6 +1166,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList original_keys;
         QStringList mapping_keysList;
         QStringList burstList;
+        QStringList lockList;
         QString burstpressTimeString = ui->burstpressComboBox->currentText();
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
 
@@ -1160,10 +1188,17 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     burstList.append("OFF");
                 }
+                if (true == keymapdata.Lock) {
+                    lockList.append("ON");
+                }
+                else {
+                    lockList.append("OFF");
+                }
             }
             settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
 
@@ -1173,6 +1208,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
             settingFile.setValue(CLEARALL, QString("ClearList"));
@@ -1225,15 +1261,19 @@ bool QKeyMapper::loadKeyMapSetting(void)
         QStringList original_keys;
         QStringList mapping_keys;
         QStringList burstStringList;
+        QStringList lockStringList;
         QList<bool> burstList;
+        QList<bool> lockList;
         QList<MAP_KEYDATA> loadkeymapdata;
 
         if ((true == settingFile.contains(KEYMAPDATA_ORIGINALKEYS))
                 && (true == settingFile.contains(KEYMAPDATA_MAPPINGKEYS))
-                && (true == settingFile.contains(KEYMAPDATA_BURST))){
+                && (true == settingFile.contains(KEYMAPDATA_BURST))
+                && (true == settingFile.contains(KEYMAPDATA_LOCK))){
             original_keys   = settingFile.value(KEYMAPDATA_ORIGINALKEYS).toStringList();
             mapping_keys    = settingFile.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
             burstStringList = settingFile.value(KEYMAPDATA_BURST).toStringList();
+            lockStringList  = settingFile.value(KEYMAPDATA_LOCK).toStringList();
 
             if ((original_keys.size() == mapping_keys.size())
                     && (original_keys.size() == burstStringList.size())){
@@ -1249,12 +1289,21 @@ bool QKeyMapper::loadKeyMapSetting(void)
                         }
                     }
 
+                    for (const QString &lock : lockStringList){
+                        if (lock == "ON") {
+                            lockList.append(true);
+                        }
+                        else {
+                            lockList.append(false);
+                        }
+                    }
+
                     int loadindex = 0;
                     for (const QString &ori_key : original_keys){
 
                         if ((true == VirtualKeyCodeMap.contains(ori_key))
                                 && (true == checkMappingkeyStr(mapping_keys.at(loadindex)))){
-                            loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex)));
+                            loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
                         }
                         else{
                             datavalidflag = false;
@@ -1268,11 +1317,11 @@ bool QKeyMapper::loadKeyMapSetting(void)
         }
 
         if (datavalidflag != (quint8)true){
-            KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false));
-            KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false));
-            KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false));
-            KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false));
-            KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false));
+            KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false,  false));
+            KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false,  false));
+            KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false,  false));
+            KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false,  false));
+            KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false,  false));
         }
         else{
             KeyMappingDataList = loadkeymapdata;
@@ -1586,11 +1635,59 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                     }
                     pressedRealKeysList.append(keycodeString);
                 }
+
+                if (findindex >=0 && true == KeyMappingDataList.at(findindex).Lock) {
+                    if (true == pressedLockKeysList.contains(keycodeString)){
+                        KeyMappingDataList[findindex].LockStatus = false;
+                        pressedLockKeysList.removeAll(keycodeString);
+                        QKeyMapper::static_Ptr()->updateLockStatusDisplay();
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("Key \"%s\" KeyDown LockStatus -> OFF", keycodeString.toStdString().c_str());
+#endif
+                    }
+                    else {
+                        KeyMappingDataList[findindex].LockStatus = true;
+                        pressedLockKeysList.append(keycodeString);
+                        QKeyMapper::static_Ptr()->updateLockStatusDisplay();
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("Key \"%s\" KeyDown LockStatus -> ON", keycodeString.toStdString().c_str());
+#endif
+                    }
+                }
             }
             else if (WM_KEYUP == wParam){
                 if (true == pressedRealKeysList.contains(keycodeString)){
-                    if (findindex >=0 && true == KeyMappingDataList.at(findindex).Burst) {
-                        QKeyMapper::static_Ptr()->stopBurstTimer(keycodeString, findindex);
+                    if (findindex >=0) {
+                        if (true == KeyMappingDataList.at(findindex).Lock) {
+                            /* Lock ON &  Burst ON */
+                            if (true == KeyMappingDataList.at(findindex).Burst) {
+                                if (true == KeyMappingDataList.at(findindex).LockStatus) {
+                                    returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                                    qDebug("Lock ON & Burst ON -> Key \"%s\" LockStatus is ON, skip stopBurstTimer()!", keycodeString.toStdString().c_str());
+#endif
+                                }
+                                else {
+                                    QKeyMapper::static_Ptr()->stopBurstTimer(keycodeString, findindex);
+                                }
+                            }
+                            /* Lock ON &  Burst OFF */
+                            else {
+                                if (true == KeyMappingDataList.at(findindex).LockStatus) {
+                                    returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                                    qDebug("Lock ON & Burst OFF -> Key \"%s\" LockStatus is ON, skip KeyUp!", keycodeString.toStdString().c_str());
+#endif
+                                }
+                            }
+                        }
+                        else {
+                            /* Lock OFF &  Burst ON */
+                            if (true == KeyMappingDataList.at(findindex).Burst) {
+                                QKeyMapper::static_Ptr()->stopBurstTimer(keycodeString, findindex);
+                            }
+                            /* Lock OFF &  Burst OFF do nothing */
+                        }
                     }
                     pressedRealKeysList.removeAll(keycodeString);
                 }
@@ -1643,12 +1740,16 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                 }
             }
 
-            if (WM_KEYUP == wParam){
-                if (pressedVirtualKeysList.contains(keycodeString)){
-                    returnFlag = true;
+            if (WM_KEYUP == wParam && false == returnFlag){
+                if (findindex >=0 && (KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
+                }
+                else {
+                    if (pressedVirtualKeysList.contains(keycodeString)) {
+                        returnFlag = true;
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                        qDebug("VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
 #endif
+                    }
                 }
             }
 
@@ -2079,18 +2180,21 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
     ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << "Original Key"
                                                                     << "Mapping Key"
-                                                                    << "Burst");
+                                                                    << "Burst"
+                                                                    << "Lock");
 
     ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
     ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
     int original_key_width = ui->keymapdataTable->width()/5;
-    int burst_mode_width = ui->keymapdataTable->width()/5 - 30;
-    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - 2;
+    int burst_mode_width = ui->keymapdataTable->width()/5 - 35;
+    int lock_width = ui->keymapdataTable->width()/5 - 20;
+    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 2;
     ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
     ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
     ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
+    ui->keymapdataTable->setColumnWidth(LOCK_COLUMN, lock_width);
     ui->keymapdataTable->verticalHeader()->setVisible(false);
     ui->keymapdataTable->verticalHeader()->setDefaultSectionSize(25);
     ui->keymapdataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -2252,7 +2356,10 @@ void QKeyMapper::refreshKeyMappingDataTable()
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
         for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
         {
+            /* ORIGINAL_KEY_COLUMN */
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
+
+            /* MAPPING_KEY_COLUMN */
             QString mappingkeys_str;
             if (keymapdata.Mapping_Keys.size() == 1) {
                 mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
@@ -2261,14 +2368,27 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
             }
             ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
-            QTableWidgetItem *checkBox = new QTableWidgetItem();
+
+            /* BURST_MODE_COLUMN */
+            QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
             if (keymapdata.Burst == true) {
-                checkBox->setCheckState(Qt::Checked);
+                burstCheckBox->setCheckState(Qt::Checked);
             }
             else {
-                checkBox->setCheckState(Qt::Unchecked);
+                burstCheckBox->setCheckState(Qt::Unchecked);
             }
-            ui->keymapdataTable->setItem(rowindex, BURST_MODE_COLUMN    , checkBox);
+            ui->keymapdataTable->setItem(rowindex, BURST_MODE_COLUMN    , burstCheckBox);
+
+            /* LOCK_COLUMN */
+            QTableWidgetItem *lockCheckBox = new QTableWidgetItem();
+            if (keymapdata.Lock == true) {
+                lockCheckBox->setCheckState(Qt::Checked);
+            }
+            else {
+                lockCheckBox->setCheckState(Qt::Unchecked);
+            }
+            ui->keymapdataTable->setItem(rowindex, LOCK_COLUMN    , lockCheckBox);
+
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -2280,6 +2400,37 @@ void QKeyMapper::refreshKeyMappingDataTable()
         qDebug() << "KeyMappingDataList End   <<<";
 #endif
     }
+}
+
+void QKeyMapper::updateLockStatusDisplay()
+{
+    int rowindex = 0;
+    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+    {
+        if (m_KeyMapStatus == KEYMAP_MAPPING) {
+            if (keymapdata.Lock == true) {
+                if (keymapdata.LockStatus == true) {
+                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("ON");
+                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::magenta);
+                }
+                else {
+                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("OFF");
+                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
+                }
+            }
+        }
+        else {
+            ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText(QString());
+            ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
+        }
+
+        rowindex += 1;
+    }
+}
+
+void QKeyMapper::releaseAllLockKeys()
+{
+
 }
 
 void QKeyMapper::on_refreshButton_clicked()
@@ -2364,10 +2515,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
-                KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str, keymapdata.Burst));
+                KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
             }
             else {
-                KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText(), false));
+                KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText(), false, false));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
 #endif
