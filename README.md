@@ -13,6 +13,7 @@
 9. 加入了"Disable WIN Key"功能可以让键盘上的Windows按键在游戏中无效。
 10. 右侧键盘映射表中加入了连发(Burst)选择框，可以按照设定的连发按下时间(BurstPress)和连发抬起时间(BurstRelease)设定来反复发送映射表中的按键。
 11. 右侧键盘映射表中加入了锁定(Lock)选择框，选择后第一次按下对应的键盘初始按键后会保持此按键的按下状态，再次按下此键盘初始按键后接触锁定状态，支持与连发(Burst)选择框来组合使用，映射表中的Lock列的ON和OFF表示当前按键锁定状态。
+12. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始键盘映射，并且最小化到系统托盘。
 
 ## A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
 
@@ -25,9 +26,10 @@
 6. Use "SAO UI" font for static strings display.
 7. Press "Ctrl + `" to minimize the QKeyMapper to System tray.
 8. Mapping multi keys to the same original key will display mappingkeys as "A + B" to support multi key mapping.
-9. Disable Win Key checkbox could make Windows Key on the keyboard invalid in the game.
+9. "Disable Win Key" checkbox could make Windows Key on the keyboard invalid in the game.
 10. Burst checkbox could repeatly send mappingkeys by selected BurstPress and BurstRelease time.
 11. Lock checkbox could lock the original key as pressed status, next time the original key pressed will set LockStatus to OFF. Lock checkbox could work wiht Burst checkbox to Lock a key in burst mode. "Lock" column will display ON & OFF to show original key LockStatus.
+12. "Auto Start Mapping" checkbox could auto start mapping at program startup, and minimize it to System tray.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
