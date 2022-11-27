@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
 #ifdef DEBUG_LOGOUT_ON
-    qSetMessagePattern("%{time [hh:mm:ss.zzz]} Message:%{message}");
+    qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
 #endif
 
 #ifdef ADJUST_PRIVILEGES
@@ -33,7 +33,14 @@ int main(int argc, char *argv[])
     flags |= Qt::WindowCloseButtonHint;
     w.setWindowFlags(flags);
 
-    w.show();
+    if (true == w.getAutoStartMappingStatus()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Auto Start Mapping = TRUE, hide QKeyMapper window at startup.";
+#endif
+    }
+    else {
+        w.show();
+    }
 
     return a.exec();
 }

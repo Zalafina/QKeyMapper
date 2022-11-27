@@ -37,6 +37,7 @@ static const QString PROCESSINFO_FILEPATH("ProcessInfo/FilePath");
 static const QString PROCESSINFO_FILENAME_CHECKED("ProcessInfo/FileNameChecked");
 static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo/WindowTitleChecked");
 static const QString PROCESSINFO_DISABLEWINKEY_CHECKED("ProcessInfo/DisableWinKeyChecked");
+static const QString PROCESSINFO_AUTOSTARTMAPPING_CHECKED("ProcessInfo/AutoStartMappingChecked");
 
 static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
@@ -111,9 +112,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
-    ui->disableWinKeyCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::NoFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
+
+    m_SysTrayIcon = new QSystemTrayIcon(this);
+    m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
+    m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
+    m_SysTrayIcon->show();
 
     initKeyMappingDataTable();
     bool loadresult = loadKeyMapSetting();
@@ -160,11 +165,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
         }
     }
-
-    m_SysTrayIcon = new QSystemTrayIcon(this);
-    m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
-    m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
-    m_SysTrayIcon->show();
 
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
@@ -1002,6 +1002,16 @@ void QKeyMapper::EnumProcessFunction(void)
 
 }
 
+bool QKeyMapper::getAutoStartMappingStatus()
+{
+    if (true == ui->autoStartMappingCheckBox->isChecked()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void QKeyMapper::changeEvent(QEvent *event)
 {
     if(event->type()==QEvent::WindowStateChange)
@@ -1233,6 +1243,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
             settingFile.setValue(PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
             settingFile.setValue(PROCESSINFO_DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
+            settingFile.setValue(PROCESSINFO_AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -1408,11 +1419,28 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     }
 
+    bool autoStartMappingChecked = false;
+    if (true == settingFile.contains(PROCESSINFO_AUTOSTARTMAPPING_CHECKED)){
+        autoStartMappingChecked = settingFile.value(PROCESSINFO_AUTOSTARTMAPPING_CHECKED).toBool();
+        if (true == autoStartMappingChecked) {
+            ui->autoStartMappingCheckBox->setChecked(true);
+        }
+        else {
+            ui->autoStartMappingCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingChecked =" << autoStartMappingChecked;
+#endif
+    }
+
     if (false == datavalidflag){
         QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
         return false;
     }
     else{
+        if (true == autoStartMappingChecked) {
+            on_keymapButton_clicked();
+        }
         return true;
     }
 }
@@ -1484,6 +1512,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
 
     customFont.setPointSize(14);
     ui->disableWinKeyCheckBox->setFont(customFont);
+    ui->autoStartMappingCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -1491,6 +1520,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->nameCheckBox->setEnabled(status);
     ui->titleCheckBox->setEnabled(status);
     ui->disableWinKeyCheckBox->setEnabled(status);
+    ui->autoStartMappingCheckBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
     //ui->nameLineEdit->setEnabled(status);

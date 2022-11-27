@@ -338,7 +338,7 @@
    <property name="geometry">
     <rect>
      <x>810</x>
-     <y>550</y>
+     <y>555</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -1100,6 +1100,25 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="autoStartMappingCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>555</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Auto Start Mapping</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

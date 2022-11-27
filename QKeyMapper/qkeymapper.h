@@ -228,6 +228,8 @@ public:
     static void EnumProcessFunction(void);
     // unused enum all process function <<<
 
+    bool getAutoStartMappingStatus(void);
+
 protected:
     void changeEvent(QEvent *event);
     void timerEvent(QTimerEvent *event) override;
