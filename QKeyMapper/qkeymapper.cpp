@@ -1285,6 +1285,7 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         }
         else {
             settingSelectIndex = -1;
+            clearallcontainsflag = false;
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Startup loading do not contain setting select!";
 #endif
@@ -1316,7 +1317,7 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain SettingSelect";
+            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain SettingSelect";
 #endif
         }
     }
