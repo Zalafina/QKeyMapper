@@ -260,6 +260,8 @@ private slots:
 
     void on_movedownButton_clicked();
 
+    void on_settingselectComboBox_currentIndexChanged(int index);
+
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -280,7 +282,7 @@ private:
     void releaseAllLockKeys(void);
 
     void saveKeyMapSetting(void);
-    bool loadKeyMapSetting(void);
+    bool loadKeyMapSetting(int settingIndex);
     bool checkMappingkeyStr(const QString &mappingkeystr);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);

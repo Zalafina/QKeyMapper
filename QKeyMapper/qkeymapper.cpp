@@ -23,21 +23,24 @@ static const int DEFAULT_ICON_HEIGHT = 64;
 static const QString DEFAULT_NAME("ForzaHorizon4.exe");
 static QString DEFAULT_TITLE("Forza: Horizon 4");
 
-static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData/OriginalKeys");
-static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData/MappingKeys");
-static const QString KEYMAPDATA_BURST("KeyMapData/Burst");
-static const QString KEYMAPDATA_LOCK("KeyMapData/Lock");
-static const QString KEYMAPDATA_BURSTPRESS_TIME("KeyMapData/BurstPressTime");
-static const QString KEYMAPDATA_BURSTRELEASE_TIME("KeyMapData/BurstReleaseTime");
-static const QString CLEARALL("KeyMapData/ClearAll");
+static const QString SETTINGSELECT("SettingSelect");
 
-static const QString PROCESSINFO_FILENAME("ProcessInfo/FileName");
-static const QString PROCESSINFO_WINDOWTITLE("ProcessInfo/WindowTitle");
-static const QString PROCESSINFO_FILEPATH("ProcessInfo/FilePath");
-static const QString PROCESSINFO_FILENAME_CHECKED("ProcessInfo/FileNameChecked");
-static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo/WindowTitleChecked");
-static const QString PROCESSINFO_DISABLEWINKEY_CHECKED("ProcessInfo/DisableWinKeyChecked");
-static const QString PROCESSINFO_AUTOSTARTMAPPING_CHECKED("ProcessInfo/AutoStartMappingChecked");
+static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData_OriginalKeys");
+static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData_MappingKeys");
+static const QString KEYMAPDATA_BURST("KeyMapData_Burst");
+static const QString KEYMAPDATA_LOCK("KeyMapData_Lock");
+static const QString KEYMAPDATA_BURSTPRESS_TIME("KeyMapData_BurstPressTime");
+static const QString KEYMAPDATA_BURSTRELEASE_TIME("KeyMapData_BurstReleaseTime");
+static const QString CLEARALL("KeyMapData_ClearAll");
+
+static const QString PROCESSINFO_FILENAME("ProcessInfo_FileName");
+static const QString PROCESSINFO_WINDOWTITLE("ProcessInfo_WindowTitle");
+static const QString PROCESSINFO_FILEPATH("ProcessInfo_FilePath");
+static const QString PROCESSINFO_FILENAME_CHECKED("ProcessInfo_FileNameChecked");
+static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo_WindowTitleChecked");
+
+static const QString DISABLEWINKEY_CHECKED("DisableWinKeyChecked");
+static const QString AUTOSTARTMAPPING_CHECKED("AutoStartMappingChecked");
 
 static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
@@ -121,7 +124,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIcon->show();
 
     initKeyMappingDataTable();
-    bool loadresult = loadKeyMapSetting();
+    bool loadresult = loadKeyMapSetting(0);
     Q_UNUSED(loadresult);
 
     ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
@@ -1179,6 +1182,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QString burstpressTimeString = ui->burstpressComboBox->currentText();
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
+        int settingSelectIndex = ui->settingselectComboBox->currentIndex();
+
+        settingFile.setValue(SETTINGSELECT , settingSelectIndex);
+        QString settingSelIndexStr = QString::number(settingSelectIndex+1) + "/";
 
         if (KeyMappingDataList.size() > 0){
             for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
@@ -1205,34 +1212,34 @@ void QKeyMapper::saveKeyMapSetting(void)
                     lockList.append("OFF");
                 }
             }
-            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
-            settingFile.setValue(KEYMAPDATA_BURST , burstList  );
-            settingFile.setValue(KEYMAPDATA_LOCK , lockList  );
-            settingFile.setValue(KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
-            settingFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_LOCK , lockList  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
 
-            settingFile.remove(CLEARALL);
+            settingFile.remove(settingSelIndexStr+CLEARALL);
         }
         else{
-            settingFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
-            settingFile.setValue(KEYMAPDATA_BURST , burstList  );
-            settingFile.setValue(KEYMAPDATA_LOCK , lockList  );
-            settingFile.setValue(KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
-            settingFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
-            settingFile.setValue(CLEARALL, QString("ClearList"));
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_LOCK , lockList  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
+            settingFile.setValue(settingSelIndexStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+            settingFile.setValue(settingSelIndexStr+CLEARALL, QString("ClearList"));
         }
 
         if ((false == ui->nameLineEdit->text().isEmpty())
                 && (false == ui->titleLineEdit->text().isEmpty())
                 && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
                 && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
-            settingFile.setValue(PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
-            settingFile.setValue(PROCESSINFO_WINDOWTITLE, m_MapProcessInfo.WindowTitle);
+            settingFile.setValue(settingSelIndexStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
+            settingFile.setValue(settingSelIndexStr+PROCESSINFO_WINDOWTITLE, m_MapProcessInfo.WindowTitle);
 
             if (false == m_MapProcessInfo.FilePath.isEmpty()){
-                settingFile.setValue(PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
+                settingFile.setValue(settingSelIndexStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
             }
             else{
 #ifdef DEBUG_LOGOUT_ON
@@ -1240,10 +1247,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
             }
 
-            settingFile.setValue(PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
-            settingFile.setValue(PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
-            settingFile.setValue(PROCESSINFO_DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
-            settingFile.setValue(PROCESSINFO_AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
+            settingFile.setValue(settingSelIndexStr+PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
+            settingFile.setValue(settingSelIndexStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
+            settingFile.setValue(settingSelIndexStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
+            settingFile.setValue(settingSelIndexStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -1257,15 +1264,74 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 }
 
-bool QKeyMapper::loadKeyMapSetting(void)
+bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 {
     bool clearallcontainsflag = true;
+    bool selectSettingContainsFlag = false;
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
     settingFile.setIniCodec("UTF-8");
+    QString settingSelIndexStr;
 
-    if (false == settingFile.contains(CLEARALL)){
-        clearallcontainsflag = false;
+    int settingSelectIndex = -1;
+    if (0 == settingIndex) {
+        if (true == settingFile.contains(SETTINGSELECT)){
+            settingSelectIndex = settingFile.value(SETTINGSELECT).toInt();
+            ui->settingselectComboBox->setCurrentIndex(settingSelectIndex);
+            settingSelectIndex = settingSelectIndex + 1;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Startup load setting" << settingSelectIndex;
+#endif
+        }
+        else {
+            settingSelectIndex = -1;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Startup loading do not contain setting select!";
+#endif
+        }
+    }
+    else {
+        /* Select setting from combobox */
+        if (true == settingFile.contains(SETTINGSELECT)){
+            settingSelectIndex = settingIndex;
+            settingSelIndexStr = QString::number(settingSelectIndex) + "/";
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select Setting" << settingSelectIndex;
+#endif
+
+            if ((true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_ORIGINALKEYS))
+                    && (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_MAPPINGKEYS))
+                    && (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURST))
+                    && (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_LOCK))){
+                selectSettingContainsFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading contains Setting" << settingSelectIndex;
+#endif
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain Setting" << settingSelectIndex;
+#endif
+            }
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain SettingSelect";
+#endif
+        }
+    }
+
+    if (settingSelectIndex > 0) {
+        settingSelIndexStr = QString::number(settingSelectIndex) + "/";
+
+        if (0 == settingIndex || true == selectSettingContainsFlag) {
+            if (false == settingFile.contains(settingSelIndexStr+CLEARALL)){
+                clearallcontainsflag = false;
+            }
+        }
+    }
+    else {
+        settingSelIndexStr = QString();
     }
 
     if (false == clearallcontainsflag){
@@ -1277,14 +1343,14 @@ bool QKeyMapper::loadKeyMapSetting(void)
         QList<bool> lockList;
         QList<MAP_KEYDATA> loadkeymapdata;
 
-        if ((true == settingFile.contains(KEYMAPDATA_ORIGINALKEYS))
-                && (true == settingFile.contains(KEYMAPDATA_MAPPINGKEYS))
-                && (true == settingFile.contains(KEYMAPDATA_BURST))
-                && (true == settingFile.contains(KEYMAPDATA_LOCK))){
-            original_keys   = settingFile.value(KEYMAPDATA_ORIGINALKEYS).toStringList();
-            mapping_keys    = settingFile.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
-            burstStringList = settingFile.value(KEYMAPDATA_BURST).toStringList();
-            lockStringList  = settingFile.value(KEYMAPDATA_LOCK).toStringList();
+        if ((true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_ORIGINALKEYS))
+                && (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_MAPPINGKEYS))
+                && (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURST))
+                && (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_LOCK))){
+            original_keys   = settingFile.value(settingSelIndexStr+KEYMAPDATA_ORIGINALKEYS).toStringList();
+            mapping_keys    = settingFile.value(settingSelIndexStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
+            burstStringList = settingFile.value(settingSelIndexStr+KEYMAPDATA_BURST).toStringList();
+            lockStringList  = settingFile.value(settingSelIndexStr+KEYMAPDATA_LOCK).toStringList();
 
             if ((original_keys.size() == mapping_keys.size())
                     && (original_keys.size() == burstStringList.size())){
@@ -1347,21 +1413,21 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     refreshKeyMappingDataTable();
 
-    if ((true == settingFile.contains(PROCESSINFO_FILENAME))
-            && (true == settingFile.contains(PROCESSINFO_WINDOWTITLE))){
-        m_MapProcessInfo.FileName = settingFile.value(PROCESSINFO_FILENAME).toString();
-        m_MapProcessInfo.WindowTitle = settingFile.value(PROCESSINFO_WINDOWTITLE).toString();
+    if ((true == settingFile.contains(settingSelIndexStr+PROCESSINFO_FILENAME))
+            && (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_WINDOWTITLE))){
+        m_MapProcessInfo.FileName = settingFile.value(settingSelIndexStr+PROCESSINFO_FILENAME).toString();
+        m_MapProcessInfo.WindowTitle = settingFile.value(settingSelIndexStr+PROCESSINFO_WINDOWTITLE).toString();
 
         ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
         ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
     }
 
-    if (true == settingFile.contains(PROCESSINFO_FILEPATH)){
-        m_MapProcessInfo.FilePath = settingFile.value(PROCESSINFO_FILEPATH).toString();
+    if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_FILEPATH)){
+        m_MapProcessInfo.FilePath = settingFile.value(settingSelIndexStr+PROCESSINFO_FILEPATH).toString();
     }
 
-    if (true == settingFile.contains(PROCESSINFO_FILENAME_CHECKED)){
-        bool fileNameChecked = settingFile.value(PROCESSINFO_FILENAME_CHECKED).toBool();
+    if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_FILENAME_CHECKED)){
+        bool fileNameChecked = settingFile.value(settingSelIndexStr+PROCESSINFO_FILENAME_CHECKED).toBool();
         if (true == fileNameChecked) {
             ui->nameCheckBox->setChecked(true);
         }
@@ -1373,8 +1439,8 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     }
 
-    if (true == settingFile.contains(PROCESSINFO_WINDOWTITLE_CHECKED)){
-        bool windowTitleChecked = settingFile.value(PROCESSINFO_WINDOWTITLE_CHECKED).toBool();
+    if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_WINDOWTITLE_CHECKED)){
+        bool windowTitleChecked = settingFile.value(settingSelIndexStr+PROCESSINFO_WINDOWTITLE_CHECKED).toBool();
         if (true == windowTitleChecked) {
             ui->titleCheckBox->setChecked(true);
         }
@@ -1386,8 +1452,8 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     }
 
-    if (true == settingFile.contains(KEYMAPDATA_BURSTPRESS_TIME)){
-        QString burstpressTimeString = settingFile.value(KEYMAPDATA_BURSTPRESS_TIME).toString();
+    if (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME)){
+        QString burstpressTimeString = settingFile.value(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME).toString();
         if (false == burstpressTimeString.isEmpty()) {
             ui->burstpressComboBox->setCurrentText(burstpressTimeString);
         }
@@ -1396,8 +1462,8 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     }
 
-    if (true == settingFile.contains(KEYMAPDATA_BURSTRELEASE_TIME)){
-        QString burstreleaseTimeString = settingFile.value(KEYMAPDATA_BURSTRELEASE_TIME).toString();
+    if (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURSTRELEASE_TIME)){
+        QString burstreleaseTimeString = settingFile.value(settingSelIndexStr+KEYMAPDATA_BURSTRELEASE_TIME).toString();
         if (false == burstreleaseTimeString.isEmpty()) {
             ui->burstreleaseComboBox->setCurrentText(burstreleaseTimeString);
         }
@@ -1406,8 +1472,8 @@ bool QKeyMapper::loadKeyMapSetting(void)
 #endif
     }
 
-    if (true == settingFile.contains(PROCESSINFO_DISABLEWINKEY_CHECKED)){
-        bool disableWinKeyChecked = settingFile.value(PROCESSINFO_DISABLEWINKEY_CHECKED).toBool();
+    if (true == settingFile.contains(settingSelIndexStr+DISABLEWINKEY_CHECKED)){
+        bool disableWinKeyChecked = settingFile.value(settingSelIndexStr+DISABLEWINKEY_CHECKED).toBool();
         if (true == disableWinKeyChecked) {
             ui->disableWinKeyCheckBox->setChecked(true);
         }
@@ -1420,8 +1486,8 @@ bool QKeyMapper::loadKeyMapSetting(void)
     }
 
     bool autoStartMappingChecked = false;
-    if (true == settingFile.contains(PROCESSINFO_AUTOSTARTMAPPING_CHECKED)){
-        autoStartMappingChecked = settingFile.value(PROCESSINFO_AUTOSTARTMAPPING_CHECKED).toBool();
+    if (true == settingFile.contains(settingSelIndexStr+AUTOSTARTMAPPING_CHECKED)){
+        autoStartMappingChecked = settingFile.value(settingSelIndexStr+AUTOSTARTMAPPING_CHECKED).toBool();
         if (true == autoStartMappingChecked) {
             ui->autoStartMappingCheckBox->setChecked(true);
         }
@@ -1438,7 +1504,7 @@ bool QKeyMapper::loadKeyMapSetting(void)
         return false;
     }
     else{
-        if (true == autoStartMappingChecked) {
+        if ((true == autoStartMappingChecked) && (0 == settingIndex)) {
             on_keymapButton_clicked();
         }
         return true;
@@ -1506,6 +1572,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     ui->burstpress_msLabel->setFont(customFont);
     ui->burstreleaseLabel->setFont(customFont);
     ui->burstrelease_msLabel->setFont(customFont);
+    ui->settingselectLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -2764,6 +2831,24 @@ void QKeyMapper::on_movedownButton_clicked()
         if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){
             qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", ui->keymapdataTable->rowCount(), KeyMappingDataList.size());
         }
+#endif
+    }
+}
+
+void QKeyMapper::on_settingselectComboBox_currentIndexChanged(int index)
+{
+    int settingIndex = index + 1;
+
+    if (settingIndex > 0 ) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[settingselectComboBox] Change to Setting [%d]", settingIndex);
+#endif
+        bool loadresult = loadKeyMapSetting(settingIndex);
+        Q_UNUSED(loadresult);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[settingselectComboBox] Select settingIndex error [%d]", settingIndex);
 #endif
     }
 }
