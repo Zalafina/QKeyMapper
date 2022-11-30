@@ -127,48 +127,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     bool loadresult = loadKeyMapSetting(0);
     Q_UNUSED(loadresult);
 
-    ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
-    ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
-    if ((false == m_MapProcessInfo.FilePath.isEmpty())
-            && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
-        ui->nameLineEdit->setToolTip(m_MapProcessInfo.FilePath);
-
-        QFileIconProvider icon_provider;
-        QIcon fileicon = icon_provider.icon(QFileInfo(m_MapProcessInfo.FilePath));
-
-        if (false == fileicon.isNull()){
-            m_MapProcessInfo.WindowIcon = fileicon;
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[LoadSetting]" << "Icon availableSizes:" << fileicon.availableSizes();
-#endif
-            QSize selectedSize = QSize(0, 0);
-            for(const QSize &iconsize : fileicon.availableSizes()){
-                if ((iconsize.width() <= DEFAULT_ICON_WIDTH)
-                        && (iconsize.height() <= DEFAULT_ICON_HEIGHT)){
-                    selectedSize = iconsize;
-                }
-            }
-
-            if ((selectedSize.width() == 0)
-                    || (selectedSize.height() == 0)){
-                selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
-            }
-            QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
-            ui->iconLabel->setPixmap(IconPixmap);
-        }
-        else{
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[LoadSetting]" << "Load & retrive file icon failure!!!";
-#endif
-        }
-    }
-    else{
-        if ((DEFAULT_NAME == ui->nameLineEdit->text())
-                && (DEFAULT_TITLE == ui->titleLineEdit->text())){
-            ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
-        }
-    }
-
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
     QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(on_cellChanged(int,int)));
@@ -1422,10 +1380,20 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
         ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
     }
+    else {
+        ui->nameLineEdit->setText(QString());
+        ui->titleLineEdit->setText(QString());
+    }
 
     if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_FILEPATH)){
         m_MapProcessInfo.FilePath = settingFile.value(settingSelIndexStr+PROCESSINFO_FILEPATH).toString();
     }
+    else {
+        m_MapProcessInfo = MAP_PROCESSINFO();
+        ui->iconLabel->clear();
+    }
+
+    updateProcessInfoDisplay();
 
     if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_FILENAME_CHECKED)){
         bool fileNameChecked = settingFile.value(settingSelIndexStr+PROCESSINFO_FILENAME_CHECKED).toBool();
@@ -1438,6 +1406,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "FileNameChecked =" << fileNameChecked;
 #endif
+    }
+    else {
+        ui->nameCheckBox->setChecked(false);
     }
 
     if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_WINDOWTITLE_CHECKED)){
@@ -1452,6 +1423,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         qDebug() << "[loadKeyMapSetting]" << "WindowTitleChecked =" << windowTitleChecked;
 #endif
     }
+    else {
+        ui->titleCheckBox->setChecked(false);
+    }
 
     if (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME)){
         QString burstpressTimeString = settingFile.value(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME).toString();
@@ -1462,6 +1436,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         qDebug() << "[loadKeyMapSetting]" << "BurstPressTime =" << burstpressTimeString;
 #endif
     }
+    else {
+        ui->burstpressComboBox->setCurrentText(QString("40"));
+    }
 
     if (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURSTRELEASE_TIME)){
         QString burstreleaseTimeString = settingFile.value(settingSelIndexStr+KEYMAPDATA_BURSTRELEASE_TIME).toString();
@@ -1471,6 +1448,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "BurstReleaseTime =" << burstreleaseTimeString;
 #endif
+    }
+    else {
+        ui->burstreleaseComboBox->setCurrentText(QString("20"));
     }
 
     if (true == settingFile.contains(settingSelIndexStr+DISABLEWINKEY_CHECKED)){
@@ -1485,6 +1465,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         qDebug() << "[loadKeyMapSetting]" << "DisableWinKeyChecked =" << disableWinKeyChecked;
 #endif
     }
+    else {
+        ui->disableWinKeyCheckBox->setChecked(false);
+    }
 
     bool autoStartMappingChecked = false;
     if (true == settingFile.contains(settingSelIndexStr+AUTOSTARTMAPPING_CHECKED)){
@@ -1498,6 +1481,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingChecked =" << autoStartMappingChecked;
 #endif
+    }
+    else {
+        ui->autoStartMappingCheckBox->setChecked(false);
     }
 
     if (false == datavalidflag){
@@ -1591,6 +1577,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
+    ui->settingselectComboBox->setEnabled(status);
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
 
@@ -2268,6 +2255,51 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
         ui->processinfoTable->setItem(rowindex, 2, new QTableWidgetItem(processinfo.WindowTitle));
 
         rowindex += 1;
+    }
+}
+
+void QKeyMapper::updateProcessInfoDisplay()
+{
+    ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
+    ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
+    if ((false == m_MapProcessInfo.FilePath.isEmpty())
+            && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
+        ui->nameLineEdit->setToolTip(m_MapProcessInfo.FilePath);
+
+        QFileIconProvider icon_provider;
+        QIcon fileicon = icon_provider.icon(QFileInfo(m_MapProcessInfo.FilePath));
+
+        if (false == fileicon.isNull()){
+            m_MapProcessInfo.WindowIcon = fileicon;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[LoadSetting]" << "Icon availableSizes:" << fileicon.availableSizes();
+#endif
+            QSize selectedSize = QSize(0, 0);
+            for(const QSize &iconsize : fileicon.availableSizes()){
+                if ((iconsize.width() <= DEFAULT_ICON_WIDTH)
+                        && (iconsize.height() <= DEFAULT_ICON_HEIGHT)){
+                    selectedSize = iconsize;
+                }
+            }
+
+            if ((selectedSize.width() == 0)
+                    || (selectedSize.height() == 0)){
+                selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+            }
+            QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
+            ui->iconLabel->setPixmap(IconPixmap);
+        }
+        else{
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[LoadSetting]" << "Load & retrive file icon failure!!!";
+#endif
+        }
+    }
+    else{
+        if ((DEFAULT_NAME == ui->nameLineEdit->text())
+                && (DEFAULT_TITLE == ui->titleLineEdit->text())){
+            ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
+        }
     }
 }
 
