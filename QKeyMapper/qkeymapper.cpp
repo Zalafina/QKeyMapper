@@ -1236,6 +1236,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
 bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 {
+    bool loadDefault = false;
     bool clearallcontainsflag = true;
     bool selectSettingContainsFlag = false;
     quint8 datavalidflag = 0xFF;
@@ -1370,6 +1371,7 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
             KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false,  false));
             KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false,  false));
             KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false,  false));
+            loadDefault = true;
         }
         else{
             KeyMappingDataList = loadkeymapdata;
@@ -1405,6 +1407,10 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         ui->iconLabel->clear();
     }
 
+    if (true == loadDefault) {
+        setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
+    }
+
     updateProcessInfoDisplay();
 
     if (true == settingFile.contains(settingSelIndexStr+PROCESSINFO_FILENAME_CHECKED)){
@@ -1437,6 +1443,11 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
     }
     else {
         ui->titleCheckBox->setChecked(false);
+    }
+
+    if (true == loadDefault) {
+        ui->nameCheckBox->setChecked(true);
+        ui->titleCheckBox->setChecked(true);
     }
 
     if (true == settingFile.contains(settingSelIndexStr+KEYMAPDATA_BURSTPRESS_TIME)){
