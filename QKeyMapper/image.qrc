@@ -3,5 +3,7 @@
         <file alias="AppIcon.ico">image/my_icon.ico</file>
         <file alias="DefaultIcon.ico">image/ForzaHorizon4.ico</file>
         <file alias="AppIcon_Working.ico">image/my_icon_working.ico</file>
+        <file alias="AppIcon_Saber.ico">image/saber_icon.ico</file>
+        <file alias="AppIcon_Saber_Working.ico">image/saber_icon_working.ico</file>
     </qresource>
 </RCC>

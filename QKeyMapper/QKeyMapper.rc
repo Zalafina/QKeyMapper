@@ -5,7 +5,11 @@
 #endif
 
 // ICON
+#if defined(USE_SABER_ICON)
+IDI_ICON1       ICON      "image/saber_icon.ico"
+#else
 IDI_ICON1       ICON      "image/my_icon.ico"
+#endif
 
 // Version
 VS_VERSION_INFO VERSIONINFO

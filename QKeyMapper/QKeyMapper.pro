@@ -13,6 +13,8 @@ TEMPLATE = app
 
 include(qhotkey.pri)
 
+DEFINES += USE_SABER_ICON
+
 CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON
 
