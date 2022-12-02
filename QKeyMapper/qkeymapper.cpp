@@ -1021,11 +1021,23 @@ void QKeyMapper::on_keymapButton_clicked()
     bool startKeyMap = false;
 
     if (KEYMAP_IDLE == m_KeyMapStatus){
-        if ((false == m_MapProcessInfo.FileName.isEmpty())
-                && (false == m_MapProcessInfo.WindowTitle.isEmpty())){
+        bool fileNameCheckOK = true;
+        bool windowTitleCheckOK = true;
+        bool fileNameExist = !m_MapProcessInfo.FileName.isEmpty();
+        bool windowTitleExist = !m_MapProcessInfo.WindowTitle.isEmpty();
+
+        if (ui->nameCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+            fileNameCheckOK = false;
+        }
+
+        if (ui->titleCheckBox->checkState() == Qt::Checked && false == windowTitleExist) {
+            windowTitleCheckOK = false;
+        }
+
+        if (true == fileNameCheckOK && true == windowTitleCheckOK){
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
             m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
-            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.png"));
+            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.ico"));
             ui->keymapButton->setText("KeyMappingStop");
             m_KeyMapStatus = KEYMAP_CHECKING;
             updateLockStatusDisplay();
