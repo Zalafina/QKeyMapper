@@ -270,9 +270,10 @@ void QKeyMapper::cycleCheckProcessProc(void)
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
     if(TRUE == IsWindowVisible(hWnd)){
-        releaseAllLockKeys();
+        clearAllBurstTimersAndLockKeys();
         pressedRealKeysList.clear();
         pressedVirtualKeysList.clear();
+        m_BurstTimerMap.clear();
         pressedLockKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
         qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook Started.";
@@ -285,9 +286,10 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 void QKeyMapper::setKeyUnHook(void)
 {
     if (m_KeyHook != Q_NULLPTR){
-        releaseAllLockKeys();
+        clearAllBurstTimersAndLockKeys();
         pressedRealKeysList.clear();
         pressedVirtualKeysList.clear();
+        m_BurstTimerMap.clear();
         pressedLockKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
         m_KeyHook = Q_NULLPTR;
@@ -1067,7 +1069,6 @@ void QKeyMapper::on_keymapButton_clicked()
 #else
         m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
 #endif
-        m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
         ui->keymapButton->setText("KeyMappingStart");
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
@@ -2594,9 +2595,33 @@ void QKeyMapper::updateLockStatusDisplay()
     }
 }
 
-void QKeyMapper::releaseAllLockKeys()
+void QKeyMapper::clearAllBurstTimersAndLockKeys()
 {
+    QList<QString> burstKeys = m_BurstTimerMap.keys();
+    for (const QString &key : burstKeys) {
+        int timerID = m_BurstTimerMap.value(key, 0);
+        if (timerID > 0) {
+            int findindex = findInKeyMappingDataList(key);
+            if (findindex >= 0) {
+                if (true == KeyMappingDataList.at(findindex).Lock) {
+                    if (true == pressedLockKeysList.contains(key)){
+                        KeyMappingDataList[findindex].LockStatus = false;
+                        pressedLockKeysList.removeAll(key);
+//                        updateLockStatusDisplay();
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("clearAllBurstTimersAndLockKeys() : Key \"%s\" KeyDown LockStatus -> OFF", key.toStdString().c_str());
+#endif
+                    }
+                }
 
+                stopBurstTimer(key, findindex);
+            }
+        }
+    }
+
+    for (int index = 0; index < KeyMappingDataList.size(); index++) {
+        KeyMappingDataList[index].LockStatus = false;
+    }
 }
 
 void QKeyMapper::on_refreshButton_clicked()

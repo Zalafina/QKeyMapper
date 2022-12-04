@@ -280,7 +280,7 @@ private:
     void initAddKeyComboBoxes(void);
     void refreshKeyMappingDataTable(void);
     void updateLockStatusDisplay(void);
-    void releaseAllLockKeys(void);
+    void clearAllBurstTimersAndLockKeys(void);
 
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(int settingIndex);
