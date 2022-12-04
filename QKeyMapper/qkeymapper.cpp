@@ -20,6 +20,10 @@ static const int LOCK_COLUMN = 3;
 static const int DEFAULT_ICON_WIDTH = 64;
 static const int DEFAULT_ICON_HEIGHT = 64;
 
+static const int MOUSEWHEEL_SCROLL_NONE = 0;
+static const int MOUSEWHEEL_SCROLL_UP = 1;
+static const int MOUSEWHEEL_SCROLL_DOWN = 2;
+
 static const QString DEFAULT_NAME("ForzaHorizon4.exe");
 static QString DEFAULT_TITLE("Forza: Horizon 4");
 
@@ -46,6 +50,7 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
+QHash<QString, V_MOUSECODE> QKeyMapper::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QStringList QKeyMapper::pressedRealKeysList = QStringList();
 QStringList QKeyMapper::pressedVirtualKeysList = QStringList();
@@ -65,6 +70,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
     m_KeyHook(Q_NULLPTR),
+    m_MouseHook(Q_NULLPTR),
     m_DirectInput(Q_NULLPTR),
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
@@ -112,6 +118,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->movedownButton->setFont(QFont("SimSun", 16));
 
     initVirtualKeyCodeMap();
+    initVirtualMouseButtonMap();
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
@@ -276,7 +283,8 @@ void QKeyMapper::setKeyHook(HWND hWnd)
         m_BurstTimerMap.clear();
         pressedLockKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-        qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook Started.";
+//        m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook & Mouse Hook Started.";
     }
     else{
         qDebug().nospace().noquote() << "[setKeyHook] " << "Error: Invisible Window Handle!";
@@ -285,15 +293,17 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 
 void QKeyMapper::setKeyUnHook(void)
 {
-    if (m_KeyHook != Q_NULLPTR){
+    if (m_KeyHook != Q_NULLPTR /*&& m_MouseHook != Q_NULLPTR*/){
         clearAllBurstTimersAndLockKeys();
         pressedRealKeysList.clear();
         pressedVirtualKeysList.clear();
         m_BurstTimerMap.clear();
         pressedLockKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
+//        UnhookWindowsHookEx(m_MouseHook);
         m_KeyHook = Q_NULLPTR;
-        qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook Released.";
+        m_MouseHook = Q_NULLPTR;
+        qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook & Mouse Hook Released.";
     }
 }
 
@@ -762,16 +772,22 @@ void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
         QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
 
         for (const QString &key : mappingKeyList){
-            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-            DWORD extenedkeyflag = 0;
-            if (true == map_vkeycode.ExtenedFlag){
-                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
             }
-            else{
-                extenedkeyflag = 0;
-            }
+            else {
+                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == map_vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
 
-            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+            }
         }
     }
 }
@@ -794,46 +810,64 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey, bool stop)
                     continue;
                 }
             }
-            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-            DWORD extenedkeyflag = 0;
-            if (true == map_vkeycode.ExtenedFlag){
-                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
             }
-            else{
-                extenedkeyflag = 0;
-            }
+            else {
+                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == map_vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
 
-            keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+            }
         }
     }
 }
 
 void QKeyMapper::sendSpecialVirtualKeyDown(const QString &virtualKey)
 {
-    V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
-    DWORD extenedkeyflag = 0;
-    if (true == map_vkeycode.ExtenedFlag){
-        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+    if (true == VirtualMouseButtonMap.contains(virtualKey)) {
+        V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(virtualKey);
+        mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
     }
-    else{
-        extenedkeyflag = 0;
-    }
+    else {
+        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
+        DWORD extenedkeyflag = 0;
+        if (true == map_vkeycode.ExtenedFlag){
+            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+        }
+        else{
+            extenedkeyflag = 0;
+        }
 
-    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+    }
 }
 
 void QKeyMapper::sendSpecialVirtualKeyUp(const QString &virtualKey)
 {
-    V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
-    DWORD extenedkeyflag = 0;
-    if (true == map_vkeycode.ExtenedFlag){
-        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+    if (true == VirtualMouseButtonMap.contains(virtualKey)) {
+        V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(virtualKey);
+        mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
     }
-    else{
-        extenedkeyflag = 0;
-    }
+    else {
+        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
+        DWORD extenedkeyflag = 0;
+        if (true == map_vkeycode.ExtenedFlag){
+            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+        }
+        else{
+            extenedkeyflag = 0;
+        }
 
-    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+    }
 }
 
 void QKeyMapper::EnumProcessFunction(void)
@@ -1363,8 +1397,7 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 
                     int loadindex = 0;
                     for (const QString &ori_key : original_keys){
-
-                        if ((true == VirtualKeyCodeMap.contains(ori_key))
+                        if ((true == VirtualKeyCodeMap.contains(ori_key) || true == VirtualMouseButtonMap.contains(ori_key))
                                 && (true == checkMappingkeyStr(mapping_keys.at(loadindex)))){
                             loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
                         }
@@ -1540,7 +1573,8 @@ bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
     bool checkResult = true;
     QStringList Mapping_Keys = mappingkeystr.split(SEPARATOR_STR);
     for (const QString &mapping_key : Mapping_Keys){
-        if (false == VirtualKeyCodeMap.contains(mapping_key)){
+        if (false == VirtualKeyCodeMap.contains(mapping_key)
+            && false == VirtualMouseButtonMap.contains(mapping_key)){
             checkResult = false;
             break;
         }
@@ -1703,6 +1737,10 @@ void QKeyMapper::on_savemaplistButton_clicked()
 
 LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
+    if (nCode < 0) {
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    }
+
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
 
     bool returnFlag = false;
@@ -1886,25 +1924,41 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 //#endif
 //                                continue;
 //                            }
-                            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                            DWORD extenedkeyflag = 0;
-                            if (true == map_vkeycode.ExtenedFlag){
-                                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                            if (true == VirtualMouseButtonMap.contains(key)) {
+                                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                                if (WM_KEYDOWN == wParam){
+                                    mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
+                                    returnFlag = true;
+                                }
+                                else if (WM_KEYUP == wParam){
+                                    mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
+                                    returnFlag = true;
+                                }
+                                else{
+                                    // do nothing.
+                                }
                             }
-                            else{
-                                extenedkeyflag = 0;
-                            }
+                            else {
+                                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                                DWORD extenedkeyflag = 0;
+                                if (true == map_vkeycode.ExtenedFlag){
+                                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                                }
+                                else{
+                                    extenedkeyflag = 0;
+                                }
 
-                            if (WM_KEYDOWN == wParam){
-                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                                returnFlag = true;
-                            }
-                            else if (WM_KEYUP == wParam){
-                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                                returnFlag = true;
-                            }
-                            else{
-                                // do nothing.
+                                if (WM_KEYDOWN == wParam){
+                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                                    returnFlag = true;
+                                }
+                                else if (WM_KEYUP == wParam){
+                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                                    returnFlag = true;
+                                }
+                                else{
+                                    // do nothing.
+                                }
                             }
                         }
                     }
@@ -1927,25 +1981,42 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                                     continue;
                                 }
                             }
-                            V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                            DWORD extenedkeyflag = 0;
-                            if (true == map_vkeycode.ExtenedFlag){
-                                extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                            }
-                            else{
-                                extenedkeyflag = 0;
-                            }
 
-                            if (WM_KEYDOWN == wParam){
-                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                                returnFlag = true;
+                            if (true == VirtualMouseButtonMap.contains(key)) {
+                                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                                if (WM_KEYDOWN == wParam){
+                                    mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
+                                    returnFlag = true;
+                                }
+                                else if (WM_KEYUP == wParam){
+                                    mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
+                                    returnFlag = true;
+                                }
+                                else{
+                                    // do nothing.
+                                }
                             }
-                            else if (WM_KEYUP == wParam){
-                                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                                returnFlag = true;
-                            }
-                            else{
-                                // do nothing.
+                            else {
+                                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
+                                DWORD extenedkeyflag = 0;
+                                if (true == map_vkeycode.ExtenedFlag){
+                                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                                }
+                                else{
+                                    extenedkeyflag = 0;
+                                }
+
+                                if (WM_KEYDOWN == wParam){
+                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                                    returnFlag = true;
+                                }
+                                else if (WM_KEYUP == wParam){
+                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                                    returnFlag = true;
+                                }
+                                else{
+                                    // do nothing.
+                                }
                             }
                         }
                     }
@@ -1978,6 +2049,32 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
     else{
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
+}
+
+LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode < 0) {
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    }
+
+    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
+
+    if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
+        || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
+        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
+        || wParam == WM_MOUSEWHEEL) {
+        int wheel_scroll = MOUSEWHEEL_SCROLL_NONE;
+        if (WM_MOUSEWHEEL == wParam) {
+            if (pMouse->mouseData > 0) {
+                wheel_scroll = MOUSEWHEEL_SCROLL_UP;
+            }
+            else if (pMouse->mouseData < 0) {
+                wheel_scroll = MOUSEWHEEL_SCROLL_DOWN;
+            }
+        }
+    }
+
+    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
 }
 
 void *QKeyMapper::HookVTableFunction(void *pVTable, void *fnHookFunc, int nOffset)
@@ -2222,6 +2319,13 @@ void QKeyMapper::initVirtualKeyCodeMap(void)
     VirtualKeyCodeMap.insertMulti   ("Num 9",       V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_FALSE));   // 0x21
 }
 
+void QKeyMapper::initVirtualMouseButtonMap()
+{
+    VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP  ));   // Left Mouse Button
+    VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP ));   // Right Mouse Button
+    VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP));   // Middle Mouse Button
+}
+
 void QKeyMapper::initProcessInfoTable(void)
 {
     //ui->processinfoTable->setStyle(QStyleFactory::create("windows"));
@@ -2381,6 +2485,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 {
     QStringList keycodelist = QStringList() \
             << ""
+            << "L-Mouse"
+            << "R-Mouse"
+            << "M-Mouse"
             << "A"
             << "B"
             << "C"
@@ -2680,8 +2787,10 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
-    if ((true == VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText()))
-            && (true == VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText()))){
+    if ((true == VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText())
+            || true == VirtualMouseButtonMap.contains(m_orikeyComboBox->currentText()))
+        && (true == VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText())
+            || true == VirtualMouseButtonMap.contains(m_mapkeyComboBox->currentText()))){
         bool already_exist = false;
         int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
 

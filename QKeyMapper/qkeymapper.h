@@ -96,6 +96,26 @@ typedef struct V_KEYCODE
     }
 }V_KEYCODE_st;
 
+typedef struct V_MOUSECODE
+{
+    DWORD MouseDownCode;
+    DWORD MouseUpCode;
+
+    V_MOUSECODE() : MouseDownCode(0x0000), MouseUpCode(0x0000) {}
+
+    V_MOUSECODE(DWORD mousedowncode, DWORD mouseupcode)
+    {
+        MouseDownCode = mousedowncode;
+        MouseUpCode = mouseupcode;
+    }
+
+    bool operator==(const V_MOUSECODE& other) const
+    {
+        return ((MouseDownCode == other.MouseDownCode)
+                && (MouseUpCode == other.MouseUpCode));
+    }
+}V_MOUSECODE_st;
+
 class StyledDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
@@ -264,6 +284,7 @@ private slots:
 
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
     static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
@@ -271,6 +292,7 @@ private:
 
     void initHotKeySequence(void);
     void initVirtualKeyCodeMap(void);
+    void initVirtualMouseButtonMap(void);
     void initProcessInfoTable(void);
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
@@ -297,6 +319,7 @@ private:
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
+    static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
@@ -316,6 +339,7 @@ private:
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     HHOOK m_KeyHook;
+    HHOOK m_MouseHook;
     IDirectInput8* m_DirectInput;
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
