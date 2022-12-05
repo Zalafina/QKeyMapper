@@ -51,6 +51,7 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QHash<QString, V_KEYCODE> QKeyMapper::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
+QHash<WPARAM, QString> QKeyMapper::MouseButtonNameMap = QHash<WPARAM, QString>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QStringList QKeyMapper::pressedRealKeysList = QStringList();
 QStringList QKeyMapper::pressedVirtualKeysList = QStringList();
@@ -2062,16 +2063,33 @@ LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lPara
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
         || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
-        || wParam == WM_MOUSEWHEEL) {
-        int wheel_scroll = MOUSEWHEEL_SCROLL_NONE;
-        if (WM_MOUSEWHEEL == wParam) {
-            if (pMouse->mouseData > 0) {
-                wheel_scroll = MOUSEWHEEL_SCROLL_UP;
-            }
-            else if (pMouse->mouseData < 0) {
-                wheel_scroll = MOUSEWHEEL_SCROLL_DOWN;
-            }
+        /*|| wParam == WM_MOUSEWHEEL*/) {
+        if (true == MouseButtonNameMap.contains(wParam)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("\"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
+#endif
         }
+
+//        if (wParam == WM_MOUSEWHEEL) {
+//            int wheel_scroll = MOUSEWHEEL_SCROLL_NONE;
+//            if (pMouse->mouseData > 0) {
+//                wheel_scroll = MOUSEWHEEL_SCROLL_UP;
+//            }
+//            else if (pMouse->mouseData < 0) {
+//                wheel_scroll = MOUSEWHEEL_SCROLL_DOWN;
+//            }
+
+//            if (MOUSEWHEEL_SCROLL_UP == wheel_scroll) {
+//#ifdef DEBUG_LOGOUT_ON
+//                qDebug("MouseWheel Scroll Up");
+//#endif
+//            }
+//            else {
+//#ifdef DEBUG_LOGOUT_ON
+//                qDebug("MouseWheel Scroll Down");
+//#endif
+//            }
+//        }
     }
 
     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
@@ -2324,6 +2342,13 @@ void QKeyMapper::initVirtualMouseButtonMap()
     VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP  ));   // Left Mouse Button
     VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP ));   // Right Mouse Button
     VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP));   // Middle Mouse Button
+
+    MouseButtonNameMap.insert(WM_LBUTTONDOWN,   "L-Mouse Button Down");
+    MouseButtonNameMap.insert(WM_LBUTTONUP,     "L-Mouse Button Up");
+    MouseButtonNameMap.insert(WM_RBUTTONDOWN,   "R-Mouse Button Down");
+    MouseButtonNameMap.insert(WM_RBUTTONUP,     "R-Mouse Button Up");
+    MouseButtonNameMap.insert(WM_MBUTTONDOWN,   "M-Mouse Button Down");
+    MouseButtonNameMap.insert(WM_MBUTTONUP,     "M-Mouse Button Up");
 }
 
 void QKeyMapper::initProcessInfoTable(void)
@@ -2615,6 +2640,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
     m_orikeyComboBox->addItems(keycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
+
+    m_orikeyComboBox->removeItem(1);
+    m_orikeyComboBox->removeItem(2);
+    m_orikeyComboBox->removeItem(3);
 }
 
 void QKeyMapper::refreshKeyMappingDataTable()

@@ -320,6 +320,7 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
+    static QHash<WPARAM, QString> MouseButtonNameMap;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
