@@ -340,7 +340,9 @@ private:
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     HHOOK m_KeyHook;
+#ifdef SUPPORT_MOUSE_LL_HOOK
     HHOOK m_MouseHook;
+#endif
     IDirectInput8* m_DirectInput;
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;

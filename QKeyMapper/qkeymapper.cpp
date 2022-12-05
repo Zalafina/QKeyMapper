@@ -71,7 +71,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
     m_KeyHook(Q_NULLPTR),
+#ifdef SUPPORT_MOUSE_LL_HOOK
     m_MouseHook(Q_NULLPTR),
+#endif
     m_DirectInput(Q_NULLPTR),
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
@@ -284,7 +286,9 @@ void QKeyMapper::setKeyHook(HWND hWnd)
         m_BurstTimerMap.clear();
         pressedLockKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//        m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#ifdef SUPPORT_MOUSE_LL_HOOK
+        m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#endif
         qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook & Mouse Hook Started.";
     }
     else{
@@ -294,18 +298,23 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 
 void QKeyMapper::setKeyUnHook(void)
 {
-    if (m_KeyHook != Q_NULLPTR /*&& m_MouseHook != Q_NULLPTR*/){
+    if (m_KeyHook != Q_NULLPTR){
         clearAllBurstTimersAndLockKeys();
         pressedRealKeysList.clear();
         pressedVirtualKeysList.clear();
         m_BurstTimerMap.clear();
         pressedLockKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
-//        UnhookWindowsHookEx(m_MouseHook);
         m_KeyHook = Q_NULLPTR;
-        m_MouseHook = Q_NULLPTR;
         qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook & Mouse Hook Released.";
     }
+
+#ifdef SUPPORT_MOUSE_LL_HOOK
+    if (m_MouseHook != Q_NULLPTR) {
+        UnhookWindowsHookEx(m_MouseHook);
+        m_MouseHook = Q_NULLPTR;
+    }
+#endif
 }
 
 void QKeyMapper::setDInputKeyHook(HWND hWnd)
@@ -2058,16 +2067,16 @@ LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lPara
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
-    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
+//    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
 
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
         || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
         /*|| wParam == WM_MOUSEWHEEL*/) {
         if (true == MouseButtonNameMap.contains(wParam)) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("\"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//            qDebug("\"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
+//#endif
         }
 
 //        if (wParam == WM_MOUSEWHEEL) {
@@ -2638,12 +2647,12 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
     m_mapkeyComboBox->setGeometry(QRect(755, 390, 82, 22));
 
-    m_orikeyComboBox->addItems(keycodelist);
+    QStringList orikeycodelist = keycodelist;
+    orikeycodelist.removeOne("L-Mouse");
+    orikeycodelist.removeOne("R-Mouse");
+    orikeycodelist.removeOne("M-Mouse");
+    m_orikeyComboBox->addItems(orikeycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
-
-    m_orikeyComboBox->removeItem(1);
-    m_orikeyComboBox->removeItem(2);
-    m_orikeyComboBox->removeItem(3);
 }
 
 void QKeyMapper::refreshKeyMappingDataTable()
