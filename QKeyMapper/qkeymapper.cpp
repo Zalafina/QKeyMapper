@@ -24,6 +24,9 @@ static const int MOUSEWHEEL_SCROLL_NONE = 0;
 static const int MOUSEWHEEL_SCROLL_UP = 1;
 static const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
+static const int KEY_UP = 0;
+static const int KEY_DOWN = 1;
+
 static const QString DEFAULT_NAME("ForzaHorizon4.exe");
 static QString DEFAULT_TITLE("Forza: Horizon 4");
 
@@ -777,6 +780,30 @@ int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
+void QKeyMapper::sendKeyboardInput(quint8 keycode, int keyupdown, bool extenedflag)
+{
+    INPUT keyboard_input;
+    DWORD extenedkeyflag = 0;
+    if (true == extenedflag){
+        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+    }
+    else{
+        extenedkeyflag = 0;
+    }
+    keyboard_input.type = INPUT_KEYBOARD;
+    keyboard_input.ki.wScan = 0;
+    keyboard_input.ki.time = 0;
+    keyboard_input.ki.dwExtraInfo = 0;
+    keyboard_input.ki.wVk = keycode;
+    if (KEY_DOWN == keyupdown) {
+        keyboard_input.ki.dwFlags = extenedkeyflag | 0;
+    }
+    else {
+        keyboard_input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+    }
+    SendInput(1, &keyboard_input, sizeof(INPUT));
+}
+
 void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
 {
     int findindex = findInKeyMappingDataList(burstKey);
@@ -791,15 +818,7 @@ void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
             }
             else {
                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                DWORD extenedkeyflag = 0;
-                if (true == map_vkeycode.ExtenedFlag){
-                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                }
-                else{
-                    extenedkeyflag = 0;
-                }
-
-                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
             }
         }
     }
@@ -829,15 +848,7 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey, bool stop)
             }
             else {
                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                DWORD extenedkeyflag = 0;
-                if (true == map_vkeycode.ExtenedFlag){
-                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                }
-                else{
-                    extenedkeyflag = 0;
-                }
-
-                keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
             }
         }
     }
@@ -851,15 +862,7 @@ void QKeyMapper::sendSpecialVirtualKeyDown(const QString &virtualKey)
     }
     else {
         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
-        DWORD extenedkeyflag = 0;
-        if (true == map_vkeycode.ExtenedFlag){
-            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-        }
-        else{
-            extenedkeyflag = 0;
-        }
-
-        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+        sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
     }
 }
 
@@ -871,15 +874,7 @@ void QKeyMapper::sendSpecialVirtualKeyUp(const QString &virtualKey)
     }
     else {
         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
-        DWORD extenedkeyflag = 0;
-        if (true == map_vkeycode.ExtenedFlag){
-            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-        }
-        else{
-            extenedkeyflag = 0;
-        }
-
-        keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+        sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
     }
 }
 
@@ -1911,15 +1906,8 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("\"L-Win + D\" pressed!");
 #endif
-                        V_KEYCODE lwin_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        DWORD extenedkeyflag = 0;
-                        if (true == lwin_vkeycode.ExtenedFlag){
-                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                        }
-                        else{
-                            extenedkeyflag = 0;
-                        }
-                        keybd_event(lwin_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
+                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
+                        sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
                     }
                 }
 
@@ -1929,15 +1917,8 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("\"L-Win + D\" released by \"%s\" keyup!", keycodeString.toStdString().c_str());
 #endif
-                        V_KEYCODE lwin_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        DWORD extenedkeyflag = 0;
-                        if (true == lwin_vkeycode.ExtenedFlag){
-                            extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                        }
-                        else{
-                            extenedkeyflag = 0;
-                        }
-                        keybd_event(lwin_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
+                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
+                        sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
                     }
                 }
 
@@ -1992,25 +1973,8 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                             }
                             else {
                                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                                DWORD extenedkeyflag = 0;
-                                if (true == map_vkeycode.ExtenedFlag){
-                                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                                }
-                                else{
-                                    extenedkeyflag = 0;
-                                }
-
-                                if (WM_KEYDOWN == wParam){
-                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                                    returnFlag = true;
-                                }
-                                else if (WM_KEYUP == wParam){
-                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                                    returnFlag = true;
-                                }
-                                else{
-                                    // do nothing.
-                                }
+                                sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
+                                returnFlag = true;
                             }
                         }
                     }
@@ -2050,25 +2014,8 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                             }
                             else {
                                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                                DWORD extenedkeyflag = 0;
-                                if (true == map_vkeycode.ExtenedFlag){
-                                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                                }
-                                else{
-                                    extenedkeyflag = 0;
-                                }
-
-                                if (WM_KEYDOWN == wParam){
-                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | 0, 0);
-                                    returnFlag = true;
-                                }
-                                else if (WM_KEYUP == wParam){
-                                    keybd_event(map_vkeycode.KeyCode, 0, extenedkeyflag | KEYEVENTF_KEYUP, 0);
-                                    returnFlag = true;
-                                }
-                                else{
-                                    // do nothing.
-                                }
+                                sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
+                                returnFlag = true;
                             }
                         }
                     }

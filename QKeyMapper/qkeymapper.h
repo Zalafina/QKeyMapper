@@ -239,6 +239,7 @@ public:
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findInKeyMappingDataList(const QString &keyname);
+    static void sendKeyboardInput(quint8 keycode, int keyupdown, bool extenedflag);
     static void sendBurstKeyDown(const QString &burstKey);
     static void sendBurstKeyUp(const QString &burstKey, bool stop);
     static void sendSpecialVirtualKeyDown(const QString &virtualKey);
