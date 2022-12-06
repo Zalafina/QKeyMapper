@@ -15,6 +15,7 @@ include(qhotkey.pri)
 
 #DEFINES += USE_SABER_ICON
 #DEFINES += SUPPORT_MOUSE_LL_HOOK
+#DEFINES += SUPPORT_MOUSE_BUTTON
 
 CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON

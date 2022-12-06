@@ -352,6 +352,7 @@ private:
     KeyListComboBox *m_mapkeyComboBox;
     QHotkey *m_HotKey;
     QHash<QString, int> m_BurstTimerMap;
+    QHash<QString, int> m_BurstKeyUpTimerMap;
 };
 
 #endif // QKEYMAPPER_H
