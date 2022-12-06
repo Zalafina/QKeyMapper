@@ -780,11 +780,11 @@ int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
-void QKeyMapper::sendKeyboardInput(quint8 keycode, int keyupdown, bool extenedflag)
+void QKeyMapper::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
 {
     INPUT keyboard_input;
     DWORD extenedkeyflag = 0;
-    if (true == extenedflag){
+    if (true == vkeycode.ExtenedFlag){
         extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
     }
     else{
@@ -794,14 +794,19 @@ void QKeyMapper::sendKeyboardInput(quint8 keycode, int keyupdown, bool extenedfl
     keyboard_input.ki.wScan = 0;
     keyboard_input.ki.time = 0;
     keyboard_input.ki.dwExtraInfo = 0;
-    keyboard_input.ki.wVk = keycode;
+    keyboard_input.ki.wVk = vkeycode.KeyCode;
     if (KEY_DOWN == keyupdown) {
         keyboard_input.ki.dwFlags = extenedkeyflag | 0;
     }
     else {
         keyboard_input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
     }
-    SendInput(1, &keyboard_input, sizeof(INPUT));
+    UINT uSent = SendInput(1, &keyboard_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("sendKeyboardInput(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
 }
 
 void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
@@ -818,7 +823,7 @@ void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
             }
             else {
                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
+                sendKeyboardInput(map_vkeycode, KEY_DOWN);
             }
         }
     }
@@ -848,7 +853,7 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey, bool stop)
             }
             else {
                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
+                sendKeyboardInput(map_vkeycode, KEY_UP);
             }
         }
     }
@@ -862,7 +867,7 @@ void QKeyMapper::sendSpecialVirtualKeyDown(const QString &virtualKey)
     }
     else {
         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
-        sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
+        sendKeyboardInput(map_vkeycode, KEY_DOWN);
     }
 }
 
@@ -874,7 +879,7 @@ void QKeyMapper::sendSpecialVirtualKeyUp(const QString &virtualKey)
     }
     else {
         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
-        sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
+        sendKeyboardInput(map_vkeycode, KEY_UP);
     }
 }
 
@@ -1907,7 +1912,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                         qDebug("\"L-Win + D\" pressed!");
 #endif
                         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
+                        sendKeyboardInput(map_vkeycode, KEY_DOWN);
                     }
                 }
 
@@ -1918,7 +1923,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                         qDebug("\"L-Win + D\" released by \"%s\" keyup!", keycodeString.toStdString().c_str());
 #endif
                         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
+                        sendKeyboardInput(map_vkeycode, KEY_UP);
                     }
                 }
 
@@ -1973,7 +1978,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                             }
                             else {
                                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                                sendKeyboardInput(map_vkeycode.KeyCode, KEY_DOWN, map_vkeycode.ExtenedFlag);
+                                sendKeyboardInput(map_vkeycode, KEY_DOWN);
                                 returnFlag = true;
                             }
                         }
@@ -2014,7 +2019,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                             }
                             else {
                                 V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                                sendKeyboardInput(map_vkeycode.KeyCode, KEY_UP, map_vkeycode.ExtenedFlag);
+                                sendKeyboardInput(map_vkeycode, KEY_UP);
                                 returnFlag = true;
                             }
                         }
