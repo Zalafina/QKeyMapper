@@ -253,12 +253,21 @@ public:
 
     bool getAutoStartMappingStatus(void);
 
+signals:
+    void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+    void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+    void updateLockStatus_Signal(void);
+
 protected:
     void changeEvent(QEvent *event);
     void timerEvent(QTimerEvent *event) override;
 
 public slots:
     void on_keymapButton_clicked();
+
+    void startBurstTimer(const QString &burstKey, int mappingIndex);
+    void stopBurstTimer(const QString &burstKey, int mappingIndex);
+    void updateLockStatusDisplay(void);
 
 private slots:
     void HotKeyActivated();
@@ -304,7 +313,6 @@ private:
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
     void refreshKeyMappingDataTable(void);
-    void updateLockStatusDisplay(void);
     void clearAllBurstTimersAndLockKeys(void);
 
     void saveKeyMapSetting(void);
@@ -315,9 +323,6 @@ private:
     void setControlCustomFont(const QString &fontname);
 
     void changeControlEnableStatus(bool status);
-
-    void startBurstTimer(QString burstKey, int mappingIndex);
-    void stopBurstTimer(QString burstKey, int mappingIndex);
 
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
