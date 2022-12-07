@@ -2154,6 +2154,7 @@ LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lPara
     }
 
     LPARAM extraInfo = GetMessageExtraInfo();
+    Q_UNUSED(extraInfo);
 
 //    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
 
