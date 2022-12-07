@@ -240,6 +240,8 @@ public:
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findInKeyMappingDataList(const QString &keyname);
     static void sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown);
+    static void sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown);
+    static void sendInputKeys(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode);
     static void sendBurstKeyDown(const QString &burstKey);
     static void sendBurstKeyUp(const QString &burstKey, bool stop);
     static void sendSpecialVirtualKeyDown(const QString &virtualKey);

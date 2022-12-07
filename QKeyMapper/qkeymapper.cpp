@@ -27,6 +27,15 @@ static const int MOUSEWHEEL_SCROLL_DOWN = 2;
 static const int KEY_UP = 0;
 static const int KEY_DOWN = 1;
 
+static const int SENDMODE_HOOK          = 0;
+static const int SENDMODE_BURST_NORMAL  = 1;
+static const int SENDMODE_BURST_STOP    = 2;
+
+static const int SEND_INPUTS_MAX = 20;
+
+static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
+static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
+
 static const QString DEFAULT_NAME("ForzaHorizon4.exe");
 static QString DEFAULT_TITLE("Forza: Horizon 4");
 
@@ -793,7 +802,7 @@ void QKeyMapper::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
     keyboard_input.type = INPUT_KEYBOARD;
     keyboard_input.ki.wScan = 0;
     keyboard_input.ki.time = 0;
-    keyboard_input.ki.dwExtraInfo = 0;
+    keyboard_input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
     keyboard_input.ki.wVk = vkeycode.KeyCode;
     if (KEY_DOWN == keyupdown) {
         keyboard_input.ki.dwFlags = extenedkeyflag | 0;
@@ -809,23 +818,177 @@ void QKeyMapper::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
     }
 }
 
+void QKeyMapper::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
+{
+    INPUT mouse_input;
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = 0;
+    mouse_input.mi.dy = 0;
+    mouse_input.mi.mouseData = 0;
+    mouse_input.mi.time = 0;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+    if (KEY_DOWN == keyupdown) {
+        mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseDownCode;
+    }
+    else {
+        mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseUpCode;
+    }
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("sendMouseInput(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
+void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode)
+{
+    int keycount = inputKeys.size();
+    if (keycount <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("sendInputKeys(): no input keys, size error(%d)!!!", keycount);
+#endif
+        return;
+    }
+    else if (keycount > SEND_INPUTS_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("sendInputKeys(): too many input keys(%d)!!!", keycount);
+#endif
+        return;
+    }
+
+    int index = 0;
+    INPUT inputs[SEND_INPUTS_MAX] = { 0 };
+
+    if (KEY_UP == keyupdown) {
+        for(auto it = inputKeys.crbegin(); it != inputKeys.crend(); ++it) {
+            QString key = (*it);
+
+            /* special hook key process */
+            if (SENDMODE_HOOK == sendmode) {
+                if ((original_key == key) && (keycount == 1)) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("Mapping the same key, do not skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str());
+#endif
+                }
+                else {
+                    if (pressedRealKeysList.contains(key)){
+                        pressedVirtualKeysList.removeAll(key);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
+                        qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
+#endif
+                        continue;
+                    }
+                }
+            }
+            else if (SENDMODE_BURST_STOP == sendmode) {
+                if (pressedRealKeysList.contains(key)){
+                    pressedVirtualKeysList.removeAll(key);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("stopBurstTimer()->sendBurstKeyUp()->sendInputKeys(): RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
+#endif
+                    continue;
+                }
+            }
+
+            INPUT *input_p = &inputs[index];
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                input_p->type = INPUT_MOUSE;
+                input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                if (KEY_DOWN == keyupdown) {
+                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseDownCode;
+                }
+                else {
+                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseUpCode;
+                }
+            }
+            else if (true == VirtualKeyCodeMap.contains(key)) {
+                V_KEYCODE vkeycode = VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+                input_p->type = INPUT_KEYBOARD;
+                input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                input_p->ki.wVk = vkeycode.KeyCode;
+                if (KEY_DOWN == keyupdown) {
+                    input_p->ki.dwFlags = extenedkeyflag | 0;
+                }
+                else {
+                    input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                }
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+#endif
+            }
+            index++;
+        }
+    }
+    else {
+        for (const QString &key : inputKeys){
+            INPUT *input_p = &inputs[index];
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                input_p->type = INPUT_MOUSE;
+                input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                if (KEY_DOWN == keyupdown) {
+                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseDownCode;
+                }
+                else {
+                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseUpCode;
+                }
+            }
+            else if (true == VirtualKeyCodeMap.contains(key)) {
+                V_KEYCODE vkeycode = VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+                input_p->type = INPUT_KEYBOARD;
+                input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                input_p->ki.wVk = vkeycode.KeyCode;
+                if (KEY_DOWN == keyupdown) {
+                    input_p->ki.dwFlags = extenedkeyflag | 0;
+                }
+                else {
+                    input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                }
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+#endif
+            }
+            index++;
+        }
+    }
+
+    UINT uSent = SendInput(keycount, inputs, sizeof(INPUT));
+    if (uSent != keycount) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("sendInputKeys(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
 void QKeyMapper::sendBurstKeyDown(const QString &burstKey)
 {
     int findindex = findInKeyMappingDataList(burstKey);
 
     if (findindex >=0){
         QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
-
-        for (const QString &key : mappingKeyList){
-            if (true == VirtualMouseButtonMap.contains(key)) {
-                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
-                mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
-            }
-            else {
-                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                sendKeyboardInput(map_vkeycode, KEY_DOWN);
-            }
-        }
+        QString original_key = KeyMappingDataList.at(findindex).Original_Key;
+        sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURST_NORMAL);
     }
 }
 
@@ -835,27 +998,12 @@ void QKeyMapper::sendBurstKeyUp(const QString &burstKey, bool stop)
 
     if (findindex >=0){
         QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
-
-        for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
-            QString key = (*it);
-            if (true == stop) {
-                if (pressedRealKeysList.contains(key)){
-                    pressedVirtualKeysList.removeAll(key);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("stopBurstTimer()->sendBurstKeyUp() : RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
-#endif
-                    continue;
-                }
-            }
-            if (true == VirtualMouseButtonMap.contains(key)) {
-                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
-                mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
-            }
-            else {
-                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                sendKeyboardInput(map_vkeycode, KEY_UP);
-            }
+        QString original_key = KeyMappingDataList.at(findindex).Original_Key;
+        int sendmode = SENDMODE_BURST_NORMAL;
+        if (true == stop) {
+            sendmode = SENDMODE_BURST_STOP;
         }
+        sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
     }
 }
 
@@ -863,7 +1011,7 @@ void QKeyMapper::sendSpecialVirtualKeyDown(const QString &virtualKey)
 {
     if (true == VirtualMouseButtonMap.contains(virtualKey)) {
         V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(virtualKey);
-        mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
+        sendMouseInput(vmousecode, KEY_DOWN);
     }
     else {
         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
@@ -875,7 +1023,7 @@ void QKeyMapper::sendSpecialVirtualKeyUp(const QString &virtualKey)
 {
     if (true == VirtualMouseButtonMap.contains(virtualKey)) {
         V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(virtualKey);
-        mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
+        sendMouseInput(vmousecode, KEY_UP);
     }
     else {
         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
@@ -1729,14 +1877,14 @@ void QKeyMapper::startBurstTimer(QString burstKey, int mappingIndex)
     m_BurstKeyUpTimerMap.insert(burstKey, keyupTimerID);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("Key \"%s\" %s, Timer:%d, ID:%d", burstKey.toStdString().c_str(), __func__, burstTime, timerID);
+    qDebug("startBurstTimer(): Key \"%s\", Timer:%d, ID:%d", burstKey.toStdString().c_str(), burstTime, timerID);
 #endif
 }
 
 void QKeyMapper::stopBurstTimer(QString burstKey, int mappingIndex)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("Key \"%s\" %s", burstKey.toStdString().c_str(), __func__);
+    qDebug("stopBurstTimer(): Key \"%s\"", burstKey.toStdString().c_str());
 #endif
     if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
@@ -1833,6 +1981,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                     if (findindex >=0 && true == KeyMappingDataList.at(findindex).Burst) {
                         if (true == KeyMappingDataList.at(findindex).Lock) {
                             if (true == KeyMappingDataList.at(findindex).LockStatus) {
+                                returnFlag = true;
 #ifdef DEBUG_LOGOUT_ON
                                 qDebug("Lock ON & Burst ON(KeyDown) -> Key \"%s\" LockStatus is ON, skip startBurstTimer()!", keycodeString.toStdString().c_str());
 #endif
@@ -1954,75 +2103,14 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
             if (false == returnFlag) {
                 if (findindex >=0){
                     QStringList mappingKeyList = KeyMappingDataList.at(findindex).Mapping_Keys;
+                    QString original_key = KeyMappingDataList.at(findindex).Original_Key;
                     if (WM_KEYDOWN == wParam){
-                        for (const QString &key : mappingKeyList){
-//                            if (pressedRealKeysList.contains(key)){
-//#ifdef DEBUG_LOGOUT_ON
-//                                qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYDOWN!", key.toStdString().c_str(), key.toStdString().c_str());
-//#endif
-//                                continue;
-//                            }
-                            if (true == VirtualMouseButtonMap.contains(key)) {
-                                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
-                                if (WM_KEYDOWN == wParam){
-                                    mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
-                                    returnFlag = true;
-                                }
-                                else if (WM_KEYUP == wParam){
-                                    mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
-                                    returnFlag = true;
-                                }
-                                else{
-                                    // do nothing.
-                                }
-                            }
-                            else {
-                                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                                sendKeyboardInput(map_vkeycode, KEY_DOWN);
-                                returnFlag = true;
-                            }
-                        }
+                        sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                        returnFlag = true;
                     }
                     else if (WM_KEYUP == wParam){
-                        for(auto it = mappingKeyList.crbegin(); it != mappingKeyList.crend(); ++it) {
-                            QString key = (*it);
-                            if ((KeyMappingDataList.at(findindex).Original_Key == key)
-                                    && (mappingKeyList.size() == 1)) {
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug("Mapping the same key, do not skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str());
-#endif
-                            }
-                            else {
-                                if (pressedRealKeysList.contains(key)){
-                                    pressedVirtualKeysList.removeAll(key);
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
-                                    qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
-#endif
-                                    continue;
-                                }
-                            }
-
-                            if (true == VirtualMouseButtonMap.contains(key)) {
-                                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
-                                if (WM_KEYDOWN == wParam){
-                                    mouse_event(vmousecode.MouseDownCode, 0, 0, 0, 0);
-                                    returnFlag = true;
-                                }
-                                else if (WM_KEYUP == wParam){
-                                    mouse_event(vmousecode.MouseUpCode, 0, 0, 0, 0);
-                                    returnFlag = true;
-                                }
-                                else{
-                                    // do nothing.
-                                }
-                            }
-                            else {
-                                V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(key);
-                                sendKeyboardInput(map_vkeycode, KEY_UP);
-                                returnFlag = true;
-                            }
-                        }
+                        sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                        returnFlag = true;
                     }
                 }
             }
@@ -2046,7 +2134,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
 
     if (true == returnFlag){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("%s -> return TRUE", __func__);
+        qDebug("LowLevelKeyboardHookProc() -> return TRUE");
 #endif
         return (LRESULT)TRUE;
     }
@@ -2061,6 +2149,8 @@ LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lPara
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
+    LPARAM extraInfo = GetMessageExtraInfo();
+
 //    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
 
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
@@ -2068,9 +2158,14 @@ LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lPara
         || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
         /*|| wParam == WM_MOUSEWHEEL*/) {
         if (true == MouseButtonNameMap.contains(wParam)) {
-//#ifdef DEBUG_LOGOUT_ON
-//            qDebug("\"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
-//#endif
+#ifdef DEBUG_LOGOUT_ON
+            if(VIRTUAL_MOUSE_CLICK == extraInfo) {
+                qDebug("Virtual \"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
+            }
+            else {
+                qDebug("Real \"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
+            }
+#endif
         }
 
 //        if (wParam == WM_MOUSEWHEEL) {
@@ -2714,28 +2809,28 @@ void QKeyMapper::refreshKeyMappingDataTable()
 
 void QKeyMapper::updateLockStatusDisplay()
 {
-    int rowindex = 0;
-    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
-    {
-        if (m_KeyMapStatus == KEYMAP_MAPPING) {
-            if (keymapdata.Lock == true) {
-                if (keymapdata.LockStatus == true) {
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("ON");
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::magenta);
-                }
-                else {
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("OFF");
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
-                }
-            }
-        }
-        else {
-            ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText(QString());
-            ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
-        }
+//    int rowindex = 0;
+//    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+//    {
+//        if (m_KeyMapStatus == KEYMAP_MAPPING) {
+//            if (keymapdata.Lock == true) {
+//                if (keymapdata.LockStatus == true) {
+//                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("ON");
+//                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::magenta);
+//                }
+//                else {
+//                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("OFF");
+//                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
+//                }
+//            }
+//        }
+//        else {
+//            ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText(QString());
+//            ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
+//        }
 
-        rowindex += 1;
-    }
+//        rowindex += 1;
+//    }
 }
 
 void QKeyMapper::clearAllBurstTimersAndLockKeys()
@@ -2763,7 +2858,6 @@ void QKeyMapper::clearAllBurstTimersAndLockKeys()
                     if (true == pressedLockKeysList.contains(key)){
                         KeyMappingDataList[findindex].LockStatus = false;
                         pressedLockKeysList.removeAll(key);
-//                        updateLockStatusDisplay();
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("clearAllBurstTimersAndLockKeys() : Key \"%s\" KeyDown LockStatus -> OFF", key.toStdString().c_str());
 #endif
