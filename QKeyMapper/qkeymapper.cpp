@@ -832,10 +832,10 @@ void QKeyMapper::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
     mouse_input.mi.time = 0;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
     if (KEY_DOWN == keyupdown) {
-        mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseDownCode;
+        mouse_input.mi.dwFlags = vmousecode.MouseDownCode;
     }
     else {
-        mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseUpCode;
+        mouse_input.mi.dwFlags = vmousecode.MouseUpCode;
     }
     UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
     if (uSent != 1) {
@@ -902,10 +902,10 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
                 input_p->type = INPUT_MOUSE;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
                 if (KEY_DOWN == keyupdown) {
-                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseDownCode;
+                    input_p->mi.dwFlags = vmousecode.MouseDownCode;
                 }
                 else {
-                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseUpCode;
+                    input_p->mi.dwFlags = vmousecode.MouseUpCode;
                 }
             }
             else if (true == VirtualKeyCodeMap.contains(key)) {
@@ -943,10 +943,10 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
                 input_p->type = INPUT_MOUSE;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
                 if (KEY_DOWN == keyupdown) {
-                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseDownCode;
+                    input_p->mi.dwFlags = vmousecode.MouseDownCode;
                 }
                 else {
-                    input_p->mi.dwFlags = MOUSEEVENTF_ABSOLUTE | vmousecode.MouseUpCode;
+                    input_p->mi.dwFlags = vmousecode.MouseUpCode;
                 }
             }
             else if (true == VirtualKeyCodeMap.contains(key)) {
