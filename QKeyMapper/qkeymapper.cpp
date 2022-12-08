@@ -312,7 +312,7 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 #ifdef SUPPORT_MOUSE_LL_HOOK
         m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
 #endif
-        qDebug().nospace().noquote() << "[setKeyHook] " << "Normal Key Hook & Mouse Hook Started.";
+        qInfo("[setKeyHook] Normal Key Hook & Mouse Hook Started.");
     }
     else{
         qDebug().nospace().noquote() << "[setKeyHook] " << "Error: Invisible Window Handle!";
@@ -330,7 +330,7 @@ void QKeyMapper::setKeyUnHook(void)
         pressedLockKeysList.clear();
         UnhookWindowsHookEx(m_KeyHook);
         m_KeyHook = Q_NULLPTR;
-        qDebug().nospace().noquote() << "[setKeyUnHook] " << "Normal Key Hook & Mouse Hook Released.";
+        qInfo("[setKeyUnHook] Normal Key Hook & Mouse Hook Released.");
     }
 
 #ifdef SUPPORT_MOUSE_LL_HOOK
@@ -852,20 +852,6 @@ void QKeyMapper::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
         qDebug("sendMouseInput(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
-    else {
-        QString keycodeString = VirtualMouseButtonMap.key(vmousecode);
-        if (KEY_DOWN == keyupdown) {
-            if (false == pressedVirtualKeysList.contains(keycodeString)){
-                pressedVirtualKeysList.append(keycodeString);
-            }
-        }
-        else {
-            pressedVirtualKeysList.removeAll(keycodeString);
-        }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "sendMouseInput():" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
-#endif
-    }
 }
 
 void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode)
@@ -1017,24 +1003,6 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
     if (uSent != keycount) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("sendInputKeys(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
-#endif
-    }
-    else {
-        if (false == moustButtons.isEmpty()) {
-            for (const QString &keycodeString : moustButtons) {
-                if (KEY_DOWN == keyupdown) {
-                    if (false == pressedVirtualKeysList.contains(keycodeString)){
-                        pressedVirtualKeysList.append(keycodeString);
-                    }
-                }
-                else {
-                    pressedVirtualKeysList.removeAll(keycodeString);
-                }
-            }
-        }
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "sendInputKeys():" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
     }
 }
@@ -2221,46 +2189,54 @@ LRESULT QKeyMapper::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lPara
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
-    LPARAM extraInfo = GetMessageExtraInfo();
-    Q_UNUSED(extraInfo);
-
-//    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
+    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
 
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
-        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
-        /*|| wParam == WM_MOUSEWHEEL*/) {
+        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)) {
+        int keyupdown;
+        if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN) {
+            keyupdown = KEY_DOWN;
+        }
+        else {
+            keyupdown = KEY_UP;
+        }
+        ULONG_PTR extraInfo = pMouse->dwExtraInfo;
+        Q_UNUSED(extraInfo);
+
         if (true == MouseButtonNameMap.contains(wParam)) {
-#ifdef DEBUG_LOGOUT_ON
+            QString keycodeString = MouseButtonNameMap.value(wParam);
             if(VIRTUAL_MOUSE_CLICK == extraInfo) {
-                qDebug("Virtual \"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
+                if (KEY_DOWN == keyupdown) {
+                    if (false == pressedVirtualKeysList.contains(keycodeString)){
+                        pressedVirtualKeysList.append(keycodeString);
+                    }
+                }
+                else {
+                    pressedVirtualKeysList.removeAll(keycodeString);
+                }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("Virtual \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "LowLevelMouseHookProc():" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
+#endif
             }
             else {
-                qDebug("Real \"%s\"", MouseButtonNameMap.value(wParam).toStdString().c_str());
-            }
+                if (KEY_DOWN == wParam){
+                    if (false == pressedRealKeysList.contains(keycodeString)){
+                        pressedRealKeysList.append(keycodeString);
+                    }
+                }
+                else {
+                    pressedRealKeysList.removeAll(keycodeString);
+                }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
+            }
         }
-
-//        if (wParam == WM_MOUSEWHEEL) {
-//            int wheel_scroll = MOUSEWHEEL_SCROLL_NONE;
-//            if (pMouse->mouseData > 0) {
-//                wheel_scroll = MOUSEWHEEL_SCROLL_UP;
-//            }
-//            else if (pMouse->mouseData < 0) {
-//                wheel_scroll = MOUSEWHEEL_SCROLL_DOWN;
-//            }
-
-//            if (MOUSEWHEEL_SCROLL_UP == wheel_scroll) {
-//#ifdef DEBUG_LOGOUT_ON
-//                qDebug("MouseWheel Scroll Up");
-//#endif
-//            }
-//            else {
-//#ifdef DEBUG_LOGOUT_ON
-//                qDebug("MouseWheel Scroll Down");
-//#endif
-//            }
-//        }
     }
 
     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
@@ -2514,12 +2490,12 @@ void QKeyMapper::initVirtualMouseButtonMap()
     VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP ));   // Right Mouse Button
     VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP));   // Middle Mouse Button
 
-    MouseButtonNameMap.insert(WM_LBUTTONDOWN,   "L-Mouse Button Down");
-    MouseButtonNameMap.insert(WM_LBUTTONUP,     "L-Mouse Button Up");
-    MouseButtonNameMap.insert(WM_RBUTTONDOWN,   "R-Mouse Button Down");
-    MouseButtonNameMap.insert(WM_RBUTTONUP,     "R-Mouse Button Up");
-    MouseButtonNameMap.insert(WM_MBUTTONDOWN,   "M-Mouse Button Down");
-    MouseButtonNameMap.insert(WM_MBUTTONUP,     "M-Mouse Button Up");
+    MouseButtonNameMap.insert(WM_LBUTTONDOWN,   "L-Mouse");
+    MouseButtonNameMap.insert(WM_LBUTTONUP,     "L-Mouse");
+    MouseButtonNameMap.insert(WM_RBUTTONDOWN,   "R-Mouse");
+    MouseButtonNameMap.insert(WM_RBUTTONUP,     "R-Mouse");
+    MouseButtonNameMap.insert(WM_MBUTTONDOWN,   "M-Mouse");
+    MouseButtonNameMap.insert(WM_MBUTTONUP,     "M-Mouse");
 }
 
 void QKeyMapper::initProcessInfoTable(void)
