@@ -13,9 +13,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
-#ifdef DEBUG_LOGOUT_ON
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
-#endif
 
 #ifdef ADJUST_PRIVILEGES
 //    BOOL adjustresult = QKeyMapper::AdjustPrivileges();

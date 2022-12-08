@@ -74,6 +74,7 @@ QComboBox *QKeyMapper::orikeyComboBox_static = Q_NULLPTR;
 QComboBox *QKeyMapper::mapkeyComboBox_static = Q_NULLPTR;
 QCheckBox *QKeyMapper::disableWinKeyCheckBox_static = Q_NULLPTR;
 QKeyMapper *QKeyMapper::selfPtr_static = Q_NULLPTR;
+QMutex *QKeyMapper::sendinput_mutex = Q_NULLPTR;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -103,6 +104,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     mapkeyComboBox_static = m_mapkeyComboBox;
     disableWinKeyCheckBox_static = ui->disableWinKeyCheckBox;
     selfPtr_static = this;
+    sendinput_mutex = new QMutex(QMutex::Recursive);
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
     QString defaultTitle;
     defaultTitle.append(QChar(0x6781));
@@ -186,6 +188,9 @@ QKeyMapper::~QKeyMapper()
 
     delete m_KeyMappingDataTableDelegate;
     m_KeyMappingDataTableDelegate = Q_NULLPTR;
+
+    delete sendinput_mutex;
+    sendinput_mutex = Q_NULLPTR;
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -795,6 +800,8 @@ int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
 
 void QKeyMapper::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
 {
+    QMutexLocker locker(QKeyMapper::sendinput_mutex);
+
     INPUT keyboard_input;
     DWORD extenedkeyflag = 0;
     if (true == vkeycode.ExtenedFlag){
@@ -824,6 +831,8 @@ void QKeyMapper::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
 
 void QKeyMapper::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
 {
+    QMutexLocker locker(QKeyMapper::sendinput_mutex);
+
     INPUT mouse_input;
     mouse_input.type = INPUT_MOUSE;
     mouse_input.mi.dx = 0;
@@ -841,6 +850,20 @@ void QKeyMapper::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
     if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("sendMouseInput(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+    else {
+        QString keycodeString = VirtualMouseButtonMap.key(vmousecode);
+        if (KEY_DOWN == keyupdown) {
+            if (false == pressedVirtualKeysList.contains(keycodeString)){
+                pressedVirtualKeysList.append(keycodeString);
+            }
+        }
+        else {
+            pressedVirtualKeysList.removeAll(keycodeString);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "sendMouseInput():" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
     }
 }
@@ -861,7 +884,10 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
         return;
     }
 
+    QMutexLocker locker(QKeyMapper::sendinput_mutex);
+
     int index = 0;
+    QStringList moustButtons;
     INPUT inputs[SEND_INPUTS_MAX] = { 0 };
 
     if (KEY_UP == keyupdown) {
@@ -898,6 +924,11 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
 
             INPUT *input_p = &inputs[index];
             if (true == VirtualMouseButtonMap.contains(key)) {
+                if (false == pressedVirtualKeysList.contains(key)) {
+                    qCritical("sendInputKeys(): Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                }
+
+                moustButtons.append(key);
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input_p->type = INPUT_MOUSE;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
@@ -939,6 +970,11 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
         for (const QString &key : inputKeys){
             INPUT *input_p = &inputs[index];
             if (true == VirtualMouseButtonMap.contains(key)) {
+                if (true == pressedVirtualKeysList.contains(key)) {
+                    qCritical("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                }
+
+                moustButtons.append(key);
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input_p->type = INPUT_MOUSE;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
@@ -981,6 +1017,24 @@ void QKeyMapper::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &o
     if (uSent != keycount) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("sendInputKeys(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+    else {
+        if (false == moustButtons.isEmpty()) {
+            for (const QString &keycodeString : moustButtons) {
+                if (KEY_DOWN == keyupdown) {
+                    if (false == pressedVirtualKeysList.contains(keycodeString)){
+                        pressedVirtualKeysList.append(keycodeString);
+                    }
+                }
+                else {
+                    pressedVirtualKeysList.removeAll(keycodeString);
+                }
+            }
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "sendInputKeys():" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
     }
 }
@@ -1890,23 +1944,23 @@ void QKeyMapper::stopBurstTimer(const QString &burstKey, int mappingIndex)
 #ifdef DEBUG_LOGOUT_ON
     qDebug("stopBurstTimer(): Key \"%s\"", burstKey.toStdString().c_str());
 #endif
-    if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
-        int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("stopBurstTimer(): Key \"%s\" kill BurstKeyUpTimer(%d)", burstKey.toStdString().c_str(), existTimerID);
-#endif
-        killTimer(existTimerID);
-        m_BurstKeyUpTimerMap.remove(burstKey);
-    }
 
     if (true == m_BurstTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstTimerMap.value(burstKey);
         killTimer(existTimerID);
         m_BurstTimerMap.remove(burstKey);
-        sendBurstKeyUp(burstKey, true);
+
+        if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
+            sendBurstKeyUp(burstKey, true);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("stopBurstTimer(): Key \"%s\" BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
+            qDebug("stopBurstTimer(): sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
 #endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("stopBurstTimer(): Do not need to sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
+#endif
+        }
 
         QStringList mappingKeyList = KeyMappingDataList.at(mappingIndex).Mapping_Keys;
         for (const QString &key : pressedRealKeysList){
@@ -1919,6 +1973,15 @@ void QKeyMapper::stopBurstTimer(const QString &burstKey, int mappingIndex)
                 sendSpecialVirtualKeyDown(key);
             }
         }
+    }
+
+    if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
+        int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("stopBurstTimer(): Key \"%s\" kill BurstKeyUpTimer(%d)", burstKey.toStdString().c_str(), existTimerID);
+#endif
+        killTimer(existTimerID);
+        m_BurstKeyUpTimerMap.remove(burstKey);
     }
 }
 
@@ -2034,6 +2097,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                                 }
                                 else {
                                     emit QKeyMapper::static_Ptr()->stopBurstTimer_Signal(keycodeString, findindex);
+                                    returnFlag = true;
                                 }
                             }
                             /* Lock ON &  Burst OFF */
@@ -2050,6 +2114,7 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
                             /* Lock OFF &  Burst ON */
                             if (true == KeyMappingDataList.at(findindex).Burst) {
                                 emit QKeyMapper::static_Ptr()->stopBurstTimer_Signal(keycodeString, findindex);
+                                returnFlag = true;
                             }
                             /* Lock OFF &  Burst OFF do nothing */
                         }
@@ -2128,6 +2193,9 @@ LRESULT QKeyMapper::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lP
             else if (WM_KEYUP == wParam){
                 pressedVirtualKeysList.removeAll(keycodeString);
             }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "LowLevelKeyboardHookProc():" << (wParam == WM_KEYDOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
+#endif
         }
     }
     else{

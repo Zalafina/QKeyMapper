@@ -7,6 +7,8 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QTimerEvent>
+#include <QThread>
+#include <QMutex>
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QFileInfo>
@@ -340,6 +342,7 @@ public:
     static QComboBox *mapkeyComboBox_static;
     static QCheckBox *disableWinKeyCheckBox_static;
     static QKeyMapper *selfPtr_static;
+    static QMutex *sendinput_mutex;
 
 private:
     Ui::QKeyMapper *ui;
