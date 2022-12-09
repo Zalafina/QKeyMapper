@@ -31,6 +31,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_BurstKeyUpTimerMap()
 {
     qRegisterMetaType<HWND>("HWND");
+    qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
+    qRegisterMetaType<V_MOUSECODE>("V_MOUSECODE");
 
     Q_UNUSED(parent);
     sendinput_mutex = new QMutex(QMutex::Recursive);
@@ -40,6 +42,10 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     QObject::connect(this, SIGNAL(startBurstTimer_Signal(QString,int)), this, SLOT(startBurstTimer(QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(stopBurstTimer_Signal(QString,int)), this, SLOT(stopBurstTimer(QString,int)), Qt::QueuedConnection);
+
+    QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
 
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
@@ -56,7 +62,7 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
     m_instance = Q_NULLPTR;
 }
 
-void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
+void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
     QMutexLocker locker(sendinput_mutex);
 
@@ -87,7 +93,7 @@ void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown)
     }
 }
 
-void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
+void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE vmousecode, int keyupdown)
 {
     QMutexLocker locker(sendinput_mutex);
 
@@ -112,7 +118,7 @@ void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown)
     }
 }
 
-void QKeyMapper_Worker::sendInputKeys(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode)
+void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
     int keycount = inputKeys.size();
     if (keycount <= 0) {
@@ -635,7 +641,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         qDebug("\"L-Win + D\" pressed!");
 #endif
                         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        sendKeyboardInput(map_vkeycode, KEY_DOWN);
+                        QKeyMapper_Worker::getInstance()->sendKeyboardInput_Signal(map_vkeycode, KEY_DOWN);
                     }
                 }
 
@@ -646,7 +652,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         qDebug("\"L-Win + D\" released by \"%s\" keyup!", keycodeString.toStdString().c_str());
 #endif
                         V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        sendKeyboardInput(map_vkeycode, KEY_UP);
+                        QKeyMapper_Worker::getInstance()->sendKeyboardInput_Signal(map_vkeycode, KEY_UP);
                     }
                 }
 
@@ -679,11 +685,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                     if (WM_KEYDOWN == wParam){
-                        sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                        QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
                         returnFlag = true;
                     }
                     else if (WM_KEYUP == wParam){
-                        sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                        QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
                         returnFlag = true;
                     }
                 }

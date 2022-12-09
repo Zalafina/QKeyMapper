@@ -138,19 +138,25 @@ public:
     };
     Q_ENUM(VirtualKeyCode)
 
-    static void sendKeyboardInput(V_KEYCODE &vkeycode, int keyupdown);
-    static void sendMouseInput(V_MOUSECODE &vmousecode, int keyupdown);
-    static void sendInputKeys(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode);
-    static void sendBurstKeyDown(const QString &burstKey);
-    static void sendBurstKeyUp(const QString &burstKey, bool stop);
-    static void sendSpecialVirtualKeyDown(const QString &virtualKey);
-    static void sendSpecialVirtualKeyUp(const QString &virtualKey);
+public slots:
+    void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
+    void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
+    void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+
+public:
+    void sendBurstKeyDown(const QString &burstKey);
+    void sendBurstKeyUp(const QString &burstKey, bool stop);
+    void sendSpecialVirtualKeyDown(const QString &virtualKey);
+    void sendSpecialVirtualKeyUp(const QString &virtualKey);
 
 signals:
     void setKeyHook_Signal(HWND hWnd);
     void setKeyUnHook_Signal(void);
     void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+    void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
+    void sendMouseInput_Signal(V_MOUSECODE vmousecode, int keyupdown);
+    void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
