@@ -73,10 +73,12 @@ QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'
 
 SOURCES     += \
     main.cpp \
-    qkeymapper.cpp
+    qkeymapper.cpp \
+    qkeymapper_worker.cpp
 
 HEADERS     += \
-    qkeymapper.h
+    qkeymapper.h \
+    qkeymapper_worker.h
 
 FORMS       += \
     qkeymapper.ui

@@ -1,5 +1,6 @@
 #include <QApplication>
 #include "qkeymapper.h"
+#include "qkeymapper_worker.h"
 
 #ifdef DEBUG_LOGOUT_ON
 //#include "vld.h"
@@ -22,22 +23,31 @@ int main(int argc, char *argv[])
     BOOL adjustresult = QKeyMapper::EnableDebugPrivilege();
     qDebug() << "EnableDebugPrivilege Result:" << adjustresult;
 #endif
+    QThread::currentThread()->setObjectName("QKeyMapper");
 
-    QKeyMapper w;
+    QKeyMapper_Worker * const keymapper_worker = QKeyMapper_Worker::getInstance();
+    // Move Checksumer to a sub thread
+    QThread * const workerThread = new QThread();
+    keymapper_worker->moveToThread(workerThread);
+    workerThread->setObjectName("QKeyMapper_Worker");
+    QObject::connect(workerThread, SIGNAL(started()), keymapper_worker, SLOT(threadStarted()));
+    workerThread->start();
+
+    QKeyMapper * const w = QKeyMapper::getInstance();
 
     // Remove "?" Button from QDialog
     Qt::WindowFlags flags = Qt::Dialog;
     flags |= Qt::WindowMinimizeButtonHint;
     flags |= Qt::WindowCloseButtonHint;
-    w.setWindowFlags(flags);
+    w->setWindowFlags(flags);
 
-    if (true == w.getAutoStartMappingStatus()) {
+    if (true == w->getAutoStartMappingStatus()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "Auto Start Mapping = TRUE, hide QKeyMapper window at startup.";
 #endif
     }
     else {
-        w.show();
+        w->show();
     }
 
     return a.exec();
