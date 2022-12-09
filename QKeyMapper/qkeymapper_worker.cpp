@@ -774,9 +774,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("LowLevelMouseHookProc() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//                qDebug("LowLevelMouseHookProc() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+//#endif
             }
         }
     }
