@@ -177,7 +177,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             INPUT *input_p = &inputs[index];
             if (true == VirtualMouseButtonMap.contains(key)) {
                 if (false == pressedVirtualKeysList.contains(key)) {
-                    qCritical("sendInputKeys(): Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                    qWarning("sendInputKeys(): Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                    continue;
                 }
 
                 moustButtons.append(key);
@@ -192,6 +193,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                if (false == pressedVirtualKeysList.contains(key)) {
+                    qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                    continue;
+                }
+
                 V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
                 DWORD extenedkeyflag = 0;
                 if (true == vkeycode.ExtenedFlag){
@@ -223,7 +229,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             INPUT *input_p = &inputs[index];
             if (true == VirtualMouseButtonMap.contains(key)) {
                 if (true == pressedVirtualKeysList.contains(key)) {
-                    qCritical("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                    qWarning("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                    continue;
                 }
 
                 moustButtons.append(key);
@@ -238,6 +245,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                if (true == pressedVirtualKeysList.contains(key)) {
+                    qWarning("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                    continue;
+                }
+
                 V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
                 DWORD extenedkeyflag = 0;
                 if (true == vkeycode.ExtenedFlag){
