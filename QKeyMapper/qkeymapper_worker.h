@@ -142,6 +142,7 @@ public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void send_WINplusD(void);
 
 public:
     void sendBurstKeyDown(const QString &burstKey);
@@ -157,6 +158,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput_Signal(V_MOUSECODE vmousecode, int keyupdown);
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void send_WINplusD_Signal(void);
 
 protected:
     void timerEvent(QTimerEvent *event) override;

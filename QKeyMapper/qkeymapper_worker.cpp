@@ -12,6 +12,7 @@ static const int SEND_INPUTS_MAX = 20;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
+static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
 QKeyMapper_Worker *QKeyMapper_Worker::m_instance = Q_NULLPTR;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
@@ -46,6 +47,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
 
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
@@ -267,6 +269,34 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     if (uSent != keycount) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("sendInputKeys(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
+void QKeyMapper_Worker::send_WINplusD()
+{
+    QMutexLocker locker(sendinput_mutex);
+    INPUT inputs[3] = { 0 };
+
+    inputs[0].type = INPUT_KEYBOARD;
+    inputs[0].ki.dwExtraInfo = VIRTUAL_WIN_PLUS_D;
+    inputs[0].ki.wVk = VK_LWIN;
+    inputs[0].ki.dwFlags = KEYEVENTF_EXTENDEDKEY;
+
+    inputs[1].type = INPUT_KEYBOARD;
+    inputs[1].ki.dwExtraInfo = VIRTUAL_WIN_PLUS_D;
+    inputs[1].ki.wVk = VK_D;
+
+    inputs[2].type = INPUT_KEYBOARD;
+    inputs[2].ki.dwExtraInfo = VIRTUAL_WIN_PLUS_D;
+    inputs[2].ki.wVk = VK_LWIN;
+    inputs[2].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
+
+    UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+    if (uSent != ARRAYSIZE(inputs))
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("send_WINplusD(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
 }
@@ -509,6 +539,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     }
 
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
+    ULONG_PTR extraInfo = pKeyBoard->dwExtraInfo;
 
     bool returnFlag = false;
     V_KEYCODE vkeycode;
@@ -521,6 +552,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     }
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+
+    if (VIRTUAL_WIN_PLUS_D == extraInfo) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("Ignore extraInfo:VIRTUAL_WIN_PLUS_D(0x%08X) -> \"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", extraInfo, keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
+#endif
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    }
 
 //#ifdef DEBUG_LOGOUT_ON
 //    qDebug("\"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
@@ -640,19 +678,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("\"L-Win + D\" pressed!");
 #endif
-                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        QKeyMapper_Worker::getInstance()->sendKeyboardInput_Signal(map_vkeycode, KEY_DOWN);
-                    }
-                }
-
-                if (WM_KEYUP == wParam) {
-                    if (("D" == keycodeString && pressedRealKeysList.contains("L-Win"))
-                            || ("L-Win" == keycodeString && pressedRealKeysList.contains("D"))) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("\"L-Win + D\" released by \"%s\" keyup!", keycodeString.toStdString().c_str());
-#endif
-                        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value("L-Win");
-                        QKeyMapper_Worker::getInstance()->sendKeyboardInput_Signal(map_vkeycode, KEY_UP);
+                        QKeyMapper_Worker::getInstance()->send_WINplusD_Signal();
                     }
                 }
 
@@ -661,7 +687,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     if (("L-Win" == keycodeString)
                         || ("R-Win" == keycodeString)
                         || ("Application" == keycodeString)) {
+#ifdef DEBUG_LOGOUT_ON
                         qDebug("Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
+#endif
                         returnFlag = true;
                     }
                 }
@@ -745,7 +773,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             keyupdown = KEY_UP;
         }
         ULONG_PTR extraInfo = pMouse->dwExtraInfo;
-        Q_UNUSED(extraInfo);
 
         if (true == MouseButtonNameMap.contains(wParam)) {
             QString keycodeString = MouseButtonNameMap.value(wParam);
