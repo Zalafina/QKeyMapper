@@ -1784,11 +1784,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 {
     QStringList keycodelist = QStringList() \
             << ""
-#ifdef SUPPORT_MOUSE_BUTTON
             << "L-Mouse"
             << "R-Mouse"
             << "M-Mouse"
-#endif
             << "A"
             << "B"
             << "C"
@@ -1915,11 +1913,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->setGeometry(QRect(755, 390, 82, 22));
 
     QStringList orikeycodelist = keycodelist;
-#ifdef SUPPORT_MOUSE_BUTTON
-    orikeycodelist.removeOne("L-Mouse");
-    orikeycodelist.removeOne("R-Mouse");
-    orikeycodelist.removeOne("M-Mouse");
-#endif
     m_orikeyComboBox->addItems(orikeycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
 }

@@ -25,9 +25,7 @@ QMutex *QKeyMapper_Worker::sendinput_mutex = Q_NULLPTR;
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
-#ifdef SUPPORT_MOUSE_LL_HOOK
     m_MouseHook(Q_NULLPTR),
-#endif
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap()
 {
@@ -425,17 +423,16 @@ void QKeyMapper_Worker::threadStarted()
 
 void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 {
+    clearAllBurstTimersAndLockKeys();
+    pressedRealKeysList.clear();
+    pressedVirtualKeysList.clear();
+    m_BurstTimerMap.clear();
+    m_BurstKeyUpTimerMap.clear();
+    pressedLockKeysList.clear();
+
     if(TRUE == IsWindowVisible(hWnd)){
-        clearAllBurstTimersAndLockKeys();
-        pressedRealKeysList.clear();
-        pressedVirtualKeysList.clear();
-        m_BurstTimerMap.clear();
-        m_BurstKeyUpTimerMap.clear();
-        pressedLockKeysList.clear();
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef SUPPORT_MOUSE_LL_HOOK
         m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#endif
         qInfo("[setKeyHook] Normal Key Hook & Mouse Hook Started.");
     }
     else{
@@ -445,24 +442,23 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
 void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
-    if (m_KeyHook != Q_NULLPTR){
-        clearAllBurstTimersAndLockKeys();
-        pressedRealKeysList.clear();
-        pressedVirtualKeysList.clear();
-        m_BurstTimerMap.clear();
-        m_BurstKeyUpTimerMap.clear();
-        pressedLockKeysList.clear();
-        UnhookWindowsHookEx(m_KeyHook);
-        m_KeyHook = Q_NULLPTR;
-        qInfo("[setKeyUnHook] Normal Key Hook & Mouse Hook Released.");
-    }
+    clearAllBurstTimersAndLockKeys();
+    pressedRealKeysList.clear();
+    pressedVirtualKeysList.clear();
+    m_BurstTimerMap.clear();
+    m_BurstKeyUpTimerMap.clear();
+    pressedLockKeysList.clear();
 
-#ifdef SUPPORT_MOUSE_LL_HOOK
     if (m_MouseHook != Q_NULLPTR) {
         UnhookWindowsHookEx(m_MouseHook);
         m_MouseHook = Q_NULLPTR;
     }
-#endif
+
+    if (m_KeyHook != Q_NULLPTR){
+        UnhookWindowsHookEx(m_KeyHook);
+        m_KeyHook = Q_NULLPTR;
+        qInfo("[setKeyUnHook] Normal Key Hook & Mouse Hook Released.");
+    }
 }
 
 void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingIndex)
@@ -591,98 +587,26 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         }
         else {
             if (WM_KEYDOWN == wParam){
-                qDebug("VirtualMapKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_KEYUP == wParam){
-                qDebug("VirtualMapKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else{
             }
         }
 #endif
+        int keyupdown;
+        if (WM_KEYDOWN == wParam) {
+            keyupdown = KEY_DOWN;
+        }
+        else {
+            keyupdown = KEY_UP;
+        }
 
         if (pKeyBoard->scanCode != 0){
             int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
-
-            if (WM_KEYDOWN == wParam){
-                if (false == pressedRealKeysList.contains(keycodeString)){
-                    if (findindex >=0 && true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
-                        if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
-                            if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
-                                returnFlag = true;
-#ifdef DEBUG_LOGOUT_ON
-                                qDebug("Lock ON & Burst ON(KeyDown) -> Key \"%s\" LockStatus is ON, skip startBurstTimer()!", keycodeString.toStdString().c_str());
-#endif
-                            }
-                            else {
-                                emit QKeyMapper_Worker::getInstance()->startBurstTimer_Signal(keycodeString, findindex);
-                            }
-                        }
-                        else {
-                            emit QKeyMapper_Worker::getInstance()->startBurstTimer_Signal(keycodeString, findindex);
-                        }
-                    }
-                    pressedRealKeysList.append(keycodeString);
-                }
-
-                if (findindex >=0 && true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
-                    if (true == pressedLockKeysList.contains(keycodeString)){
-                        QKeyMapper::KeyMappingDataList[findindex].LockStatus = false;
-                        pressedLockKeysList.removeAll(keycodeString);
-                        emit QKeyMapper::getInstance()->updateLockStatus_Signal();
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("Key \"%s\" KeyDown LockStatus -> OFF", keycodeString.toStdString().c_str());
-#endif
-                    }
-                    else {
-                        QKeyMapper::KeyMappingDataList[findindex].LockStatus = true;
-                        pressedLockKeysList.append(keycodeString);
-                        emit QKeyMapper::getInstance()->updateLockStatus_Signal();
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("Key \"%s\" KeyDown LockStatus -> ON", keycodeString.toStdString().c_str());
-#endif
-                    }
-                }
-            }
-            else if (WM_KEYUP == wParam){
-                if (true == pressedRealKeysList.contains(keycodeString)){
-                    if (findindex >=0) {
-                        if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
-                            /* Lock ON &  Burst ON */
-                            if (true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
-                                if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
-                                    returnFlag = true;
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug("Lock ON & Burst ON(KeyUp) -> Key \"%s\" LockStatus is ON, skip stopBurstTimer()!", keycodeString.toStdString().c_str());
-#endif
-                                }
-                                else {
-                                    emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
-                                    returnFlag = true;
-                                }
-                            }
-                            /* Lock ON &  Burst OFF */
-                            else {
-                                if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
-                                    returnFlag = true;
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug("Lock ON & Burst OFF -> Key \"%s\" LockStatus is ON, skip KeyUp!", keycodeString.toStdString().c_str());
-#endif
-                                }
-                            }
-                        }
-                        else {
-                            /* Lock OFF &  Burst ON */
-                            if (true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
-                                emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
-                                returnFlag = true;
-                            }
-                            /* Lock OFF &  Burst OFF do nothing */
-                        }
-                    }
-                    pressedRealKeysList.removeAll(keycodeString);
-                }
-            }
+            returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
             if (true == QKeyMapper::getDisableWinKeyStatus()) {
                 if (WM_KEYDOWN == wParam) {
@@ -714,7 +638,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     if (pressedVirtualKeysList.contains(keycodeString)) {
                         returnFlag = true;
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                        qDebug("VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
 #endif
                     }
                 }
@@ -724,11 +648,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (findindex >=0){
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                    if (WM_KEYDOWN == wParam){
+                    if (KEY_DOWN == keyupdown){
                         QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
                         returnFlag = true;
                     }
-                    else if (WM_KEYUP == wParam){
+                    else { /* KEY_UP == keyupdown */
                         QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
                         returnFlag = true;
                     }
@@ -774,6 +698,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
     MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
 
+    bool returnFlag = false;
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
         || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)) {
@@ -789,6 +714,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         if (true == MouseButtonNameMap.contains(wParam)) {
             QString keycodeString = MouseButtonNameMap.value(wParam);
             if(VIRTUAL_MOUSE_CLICK == extraInfo) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("Virtual \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
+#endif
                 if (KEY_DOWN == keyupdown) {
                     if (false == pressedVirtualKeysList.contains(keycodeString)){
                         pressedVirtualKeysList.append(keycodeString);
@@ -797,30 +725,142 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 else {
                     pressedVirtualKeysList.removeAll(keycodeString);
                 }
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("Virtual \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
-#endif
             }
             else {
-                if (KEY_DOWN == wParam){
-                    if (false == pressedRealKeysList.contains(keycodeString)){
-                        pressedRealKeysList.append(keycodeString);
-                    }
-                }
-                else {
-                    pressedRealKeysList.removeAll(keycodeString);
-                }
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
-//#ifdef DEBUG_LOGOUT_ON
-//                qDebug("LowLevelMouseHookProc() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
-//#endif
+                int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+                returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+
+                if (KEY_UP == keyupdown && false == returnFlag){
+                    if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
+                    }
+                    else {
+                        if (pressedVirtualKeysList.contains(keycodeString)) {
+                            returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("Virtual \"%s\" is pressed down, skip Real \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+#endif
+                        }
+                    }
+                }
+
+                if (false == returnFlag) {
+                    if (findindex >=0){
+                        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                        if (KEY_DOWN == keyupdown){
+                            QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                            returnFlag = true;
+                        }
+                        else { /* KEY_UP == keyupdown */
+                            QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                            returnFlag = true;
+                        }
+                    }
+                }
             }
         }
     }
 
-    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    if (true == returnFlag){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("LowLevelMouseHookProc() -> return TRUE");
+#endif
+        return (LRESULT)TRUE;
+    }
+    else{
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    }
+}
+
+bool QKeyMapper_Worker::hookBurstAndLockProc(QString &keycodeString, int keyupdown)
+{
+    bool returnFlag = false;
+    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+
+    if (KEY_DOWN == keyupdown){
+        if (false == pressedRealKeysList.contains(keycodeString)){
+            if (findindex >=0 && true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
+                if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
+                    if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
+                        returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("hookBurstAndLockProc(): Lock ON & Burst ON(KEY_DOWN) -> Key \"%s\" LockStatus is ON, skip startBurstTimer()!", keycodeString.toStdString().c_str());
+#endif
+                    }
+                    else {
+                        emit QKeyMapper_Worker::getInstance()->startBurstTimer_Signal(keycodeString, findindex);
+                    }
+                }
+                else {
+                    emit QKeyMapper_Worker::getInstance()->startBurstTimer_Signal(keycodeString, findindex);
+                }
+            }
+            pressedRealKeysList.append(keycodeString);
+        }
+
+        if (findindex >=0 && true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
+            if (true == pressedLockKeysList.contains(keycodeString)){
+                QKeyMapper::KeyMappingDataList[findindex].LockStatus = false;
+                pressedLockKeysList.removeAll(keycodeString);
+                emit QKeyMapper::getInstance()->updateLockStatus_Signal();
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("hookBurstAndLockProc(): Key \"%s\" KeyDown LockStatus -> OFF", keycodeString.toStdString().c_str());
+#endif
+            }
+            else {
+                QKeyMapper::KeyMappingDataList[findindex].LockStatus = true;
+                pressedLockKeysList.append(keycodeString);
+                emit QKeyMapper::getInstance()->updateLockStatus_Signal();
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("hookBurstAndLockProc(): Key \"%s\" KeyDown LockStatus -> ON", keycodeString.toStdString().c_str());
+#endif
+            }
+        }
+    }
+    else {  /* KEY_UP == keyupdown */
+        if (true == pressedRealKeysList.contains(keycodeString)){
+            if (findindex >=0) {
+                if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
+                    /* Lock ON &  Burst ON */
+                    if (true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
+                        if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
+                            returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("hookBurstAndLockProc(): Lock ON & Burst ON(KEY_UP) -> Key \"%s\" LockStatus is ON, skip stopBurstTimer()!", keycodeString.toStdString().c_str());
+#endif
+                        }
+                        else {
+                            emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
+                            returnFlag = true;
+                        }
+                    }
+                    /* Lock ON &  Burst OFF */
+                    else {
+                        if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
+                            returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("hookBurstAndLockProc(): Lock ON & Burst OFF -> Key \"%s\" LockStatus is ON, skip KeyUp!", keycodeString.toStdString().c_str());
+#endif
+                        }
+                    }
+                }
+                else {
+                    /* Lock OFF &  Burst ON */
+                    if (true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
+                        emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
+                        returnFlag = true;
+                    }
+                    /* Lock OFF &  Burst OFF do nothing */
+                }
+            }
+            pressedRealKeysList.removeAll(keycodeString);
+        }
+    }
+
+    return returnFlag;
 }
 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()

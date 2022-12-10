@@ -174,6 +174,8 @@ private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
+    static bool hookBurstAndLockProc(QString &keycodeString, int keyupdown);
+
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void clearAllBurstTimersAndLockKeys(void);
@@ -191,9 +193,7 @@ public:
 private:
     static QKeyMapper_Worker *m_instance;
     HHOOK m_KeyHook;
-#ifdef SUPPORT_MOUSE_LL_HOOK
     HHOOK m_MouseHook;
-#endif
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
 };
