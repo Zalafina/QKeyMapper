@@ -529,9 +529,9 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     GetWindowThreadProcessId(hWnd, &dwProcessId);
 
     if(FALSE == IsWindowVisible(hWnd)){
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(Invisible window)" << " [PID:" << dwProcessId <<"]";
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(Invisible window)" << " [PID:" << dwProcessId <<"]";
+//#endif
         return TRUE;
     }
 
@@ -580,7 +580,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                     qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                 }
                 else{
-                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+//                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                 }
 #endif
             }
@@ -597,10 +597,10 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
         }
     }
     else{
-#ifdef DEBUG_LOGOUT_ON
-        WindowText = QString::fromWCharArray(titleBuffer);
-        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//        WindowText = QString::fromWCharArray(titleBuffer);
+//        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+//#endif
     }
 
     return TRUE;
@@ -662,7 +662,7 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
                     qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                 }
                 else{
-                    qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+//                    qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                 }
 #endif
             }
@@ -679,10 +679,10 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
         }
     }
     else{
-#ifdef DEBUG_LOGOUT_ON
-        WindowText = QString::fromWCharArray(titleBuffer);
-        qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//        WindowText = QString::fromWCharArray(titleBuffer);
+//        qDebug().nospace().noquote() << "[EnumChildWindowsProc] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+//#endif
     }
 
     return TRUE;
@@ -840,7 +840,7 @@ void QKeyMapper::EnumProcessFunction(void)
                             qDebug().nospace().noquote() << "[EnumProcessFunction] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                         }
                         else{
-                            qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+//                            qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
                         }
 #endif
                     }
@@ -857,10 +857,10 @@ void QKeyMapper::EnumProcessFunction(void)
                 }
             }
             else{
-#ifdef DEBUG_LOGOUT_ON
-                WindowText = QString::fromWCharArray(titleBuffer);
-                qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//                WindowText = QString::fromWCharArray(titleBuffer);
+//                qDebug().nospace().noquote() << "[EnumProcessFunction] " << "(WindowTitle empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+//#endif
             }
 
             bMore = Process32Next(hProcessSnap,&pe32);
