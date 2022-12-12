@@ -17,8 +17,8 @@ static const int MAPPING_KEY_COLUMN = 1;
 static const int BURST_MODE_COLUMN = 2;
 static const int LOCK_COLUMN = 3;
 
-static const int DEFAULT_ICON_WIDTH = 64;
-static const int DEFAULT_ICON_HEIGHT = 64;
+static const int DEFAULT_ICON_WIDTH = 48;
+static const int DEFAULT_ICON_HEIGHT = 48;
 
 static const int MOUSEWHEEL_SCROLL_NONE = 0;
 static const int MOUSEWHEEL_SCROLL_UP = 1;
@@ -1721,19 +1721,27 @@ void QKeyMapper::updateProcessInfoDisplay()
 
         if (false == fileicon.isNull()){
             m_MapProcessInfo.WindowIcon = fileicon;
+            QList<QSize> iconsizeList = fileicon.availableSizes();
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[LoadSetting]" << "Icon availableSizes:" << fileicon.availableSizes();
+            qDebug() << "[UpdateProcessInfo]" << "Icon availableSizes:" << iconsizeList;
 #endif
             QSize selectedSize = QSize(0, 0);
-            for(const QSize &iconsize : fileicon.availableSizes()){
-                if ((iconsize.width() <= DEFAULT_ICON_WIDTH)
-                        && (iconsize.height() <= DEFAULT_ICON_HEIGHT)){
+            for(auto it = iconsizeList.crbegin(); it != iconsizeList.crend(); ++it) {
+                const QSize iconsize = (*it);
+                if ((iconsize.width() > 0)
+                        && (iconsize.height() > 0)){
                     selectedSize = iconsize;
+                    break;
                 }
             }
 
-            if ((selectedSize.width() == 0)
-                    || (selectedSize.height() == 0)){
+            if (selectedSize == QSize(0, 0)){
+                selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+            }
+            else if (selectedSize.width() > DEFAULT_ICON_WIDTH || selectedSize.height() > DEFAULT_ICON_HEIGHT) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[UpdateProcessInfo]" << "Icon resize:" << selectedSize << "->" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+#endif
                 selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
             }
             QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
@@ -1748,6 +1756,9 @@ void QKeyMapper::updateProcessInfoDisplay()
     else{
         if ((DEFAULT_NAME == ui->nameLineEdit->text())
                 && (DEFAULT_TITLE == ui->titleLineEdit->text())){
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[LoadSetting]" << "Default icon availableSizes:" << m_MapProcessInfo.WindowIcon.availableSizes();
+#endif
             ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
         }
     }
@@ -2044,24 +2055,31 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                           ProcessPath,
                           fileicon);
 
+        QList<QSize> iconsizeList = fileicon.availableSizes();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[SelectProcessInfo]" << "Icon availableSizes:" << fileicon.availableSizes();
+        qDebug() << "[SelectProcessInfo]" << "Icon availableSizes:" << iconsizeList;
 #endif
         QSize selectedSize = QSize(0, 0);
-        for(const QSize &iconsize : fileicon.availableSizes()){
-            if ((iconsize.width() <= DEFAULT_ICON_WIDTH)
-                    && (iconsize.height() <= DEFAULT_ICON_HEIGHT)){
+        for(auto it = iconsizeList.crbegin(); it != iconsizeList.crend(); ++it) {
+            const QSize iconsize = (*it);
+            if ((iconsize.width() > 0)
+                    && (iconsize.height() > 0)){
                 selectedSize = iconsize;
+                break;
             }
         }
 
-        if ((selectedSize.width() == 0)
-                || (selectedSize.height() == 0)){
+        if (selectedSize == QSize(0, 0)){
+            selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+        }
+        else if (selectedSize.width() > DEFAULT_ICON_WIDTH || selectedSize.height() > DEFAULT_ICON_HEIGHT) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[SelectProcessInfo]" << "Icon resize:" << selectedSize << "->" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+#endif
             selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
         }
         QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
         ui->iconLabel->setPixmap(IconPixmap);
-
         ui->nameLineEdit->setToolTip(ProcessPath);
     }
 }
