@@ -89,8 +89,6 @@ public:
 
     static QKeyMapper *getInstance()
     {
-        if(m_instance == Q_NULLPTR)
-            m_instance = new QKeyMapper();
         return m_instance;
     }
 
@@ -207,9 +205,6 @@ private:
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
-    static QStringList pressedRealKeysList;
-    static QStringList pressedVirtualKeysList;
-    static QStringList pressedLockKeysList;
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
 

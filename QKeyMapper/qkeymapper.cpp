@@ -63,9 +63,6 @@ static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
-QStringList QKeyMapper::pressedRealKeysList = QStringList();
-QStringList QKeyMapper::pressedVirtualKeysList = QStringList();
-QStringList QKeyMapper::pressedLockKeysList = QStringList();
 GetDeviceStateT QKeyMapper::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper::FuncPtrGetDeviceData = Q_NULLPTR;
 
@@ -89,6 +86,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
+    m_instance = this;
     ui->setupUi(this);
     initAddKeyComboBoxes();
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
@@ -158,10 +156,19 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
 QKeyMapper::~QKeyMapper()
 {
-    setKeyUnHook();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "~QKeyMapper() called.";
+#endif
+
+    delete m_orikeyComboBox;
+    m_orikeyComboBox = Q_NULLPTR;
+    delete m_mapkeyComboBox;
+    m_mapkeyComboBox = Q_NULLPTR;
+
+    delete m_HotKey;
+    m_HotKey = Q_NULLPTR;
 
     delete ui;
-
     delete m_SysTrayIcon;
     m_SysTrayIcon = Q_NULLPTR;
 
@@ -170,9 +177,6 @@ QKeyMapper::~QKeyMapper()
 
     delete m_KeyMappingDataTableDelegate;
     m_KeyMappingDataTableDelegate = Q_NULLPTR;
-
-    delete m_instance;
-    m_instance = Q_NULLPTR;
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -888,7 +892,7 @@ bool QKeyMapper::getAutoStartMappingStatus()
 
 bool QKeyMapper::getDisableWinKeyStatus()
 {
-    if (true == m_instance->ui->disableWinKeyCheckBox->isChecked()) {
+    if (true == getInstance()->ui->disableWinKeyCheckBox->isChecked()) {
         return true;
     }
     else {
@@ -898,12 +902,12 @@ bool QKeyMapper::getDisableWinKeyStatus()
 
 int QKeyMapper::getBurstPressTime()
 {
-    return m_instance->ui->burstpressComboBox->currentText().toInt();
+    return getInstance()->ui->burstpressComboBox->currentText().toInt();
 }
 
 int QKeyMapper::getBurstReleaseTime()
 {
-    return m_instance->ui->burstreleaseComboBox->currentText().toInt();
+    return getInstance()->ui->burstreleaseComboBox->currentText().toInt();
 }
 
 void QKeyMapper::changeEvent(QEvent *event)
@@ -1257,6 +1261,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 
                     int loadindex = 0;
                     for (const QString &ori_key : original_keys){
+                        bool keyboardcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
+                        bool mousecontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
+                        bool checkmappingstr = checkMappingkeyStr(mapping_keys.at(loadindex));
                         if ((true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key) || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key))
                                 && (true == checkMappingkeyStr(mapping_keys.at(loadindex)))){
                             loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));

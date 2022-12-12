@@ -91,9 +91,8 @@ public:
 
     static QKeyMapper_Worker *getInstance()
     {
-        if(m_instance == Q_NULLPTR)
-            m_instance = new QKeyMapper_Worker();
-        return m_instance;
+        static QKeyMapper_Worker m_instance;
+        return &m_instance;
     }
 
     enum VirtualKeyCode
@@ -187,11 +186,9 @@ public:
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLockKeysList;
-
-    static QMutex *sendinput_mutex;
+    static QMutex sendinput_mutex;
 
 private:
-    static QKeyMapper_Worker *m_instance;
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
     QHash<QString, int> m_BurstTimerMap;

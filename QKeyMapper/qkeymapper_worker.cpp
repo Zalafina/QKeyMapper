@@ -14,14 +14,13 @@ static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
-QKeyMapper_Worker *QKeyMapper_Worker::m_instance = Q_NULLPTR;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
-QMutex *QKeyMapper_Worker::sendinput_mutex = Q_NULLPTR;
+QMutex QKeyMapper_Worker::sendinput_mutex(QMutex::Recursive);
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
@@ -34,7 +33,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     qRegisterMetaType<V_MOUSECODE>("V_MOUSECODE");
 
     Q_UNUSED(parent);
-    sendinput_mutex = new QMutex(QMutex::Recursive);
 
     QObject::connect(this, SIGNAL(setKeyHook_Signal(HWND)), this, SLOT(setWorkerKeyHook(HWND)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(setKeyUnHook_Signal()), this, SLOT(setWorkerKeyUnHook()), Qt::QueuedConnection);
@@ -53,18 +51,16 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
 QKeyMapper_Worker::~QKeyMapper_Worker()
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "~QKeyMapper_Worker() called.";
+#endif
+
     setWorkerKeyUnHook();
-
-    delete sendinput_mutex;
-    sendinput_mutex = Q_NULLPTR;
-
-    delete m_instance;
-    m_instance = Q_NULLPTR;
 }
 
 void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
-    QMutexLocker locker(sendinput_mutex);
+    QMutexLocker locker(&sendinput_mutex);
 
     INPUT keyboard_input;
     DWORD extenedkeyflag = 0;
@@ -95,7 +91,7 @@ void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 
 void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE vmousecode, int keyupdown)
 {
-    QMutexLocker locker(sendinput_mutex);
+    QMutexLocker locker(&sendinput_mutex);
 
     INPUT mouse_input;
     mouse_input.type = INPUT_MOUSE;
@@ -134,7 +130,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         return;
     }
 
-    QMutexLocker locker(sendinput_mutex);
+    QMutexLocker locker(&sendinput_mutex);
 
     int index = 0;
     QStringList moustButtons;
@@ -285,7 +281,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
 void QKeyMapper_Worker::send_WINplusD()
 {
-    QMutexLocker locker(sendinput_mutex);
+    QMutexLocker locker(&sendinput_mutex);
     INPUT inputs[3] = { 0 };
 
     inputs[0].type = INPUT_KEYBOARD;

@@ -33,21 +33,21 @@ int main(int argc, char *argv[])
     QObject::connect(workerThread, SIGNAL(started()), keymapper_worker, SLOT(threadStarted()));
     workerThread->start();
 
-    QKeyMapper * const w = QKeyMapper::getInstance();
+    QKeyMapper w;
 
     // Remove "?" Button from QDialog
     Qt::WindowFlags flags = Qt::Dialog;
     flags |= Qt::WindowMinimizeButtonHint;
     flags |= Qt::WindowCloseButtonHint;
-    w->setWindowFlags(flags);
+    w.setWindowFlags(flags);
 
-    if (true == w->getAutoStartMappingStatus()) {
+    if (true == w.getAutoStartMappingStatus()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "Auto Start Mapping = TRUE, hide QKeyMapper window at startup.";
 #endif
     }
     else {
-        w->show();
+        w.show();
     }
 
     return a.exec();
