@@ -1261,15 +1261,18 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 
                     int loadindex = 0;
                     for (const QString &ori_key : original_keys){
-                        bool keyboardcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
-                        bool mousecontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
+                        bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
+                        bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool checkmappingstr = checkMappingkeyStr(mapping_keys.at(loadindex));
-                        if ((true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key) || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key))
-                                && (true == checkMappingkeyStr(mapping_keys.at(loadindex)))){
+                        if ((true == keyboardmapcontains || true == mousemapcontains)
+                                && (true == checkmappingstr)){
                             loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
                         }
                         else{
                             datavalidflag = false;
+#ifdef DEBUG_LOGOUT_ON
+                            qWarning("loadKeyMapSetting(): Invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", checkmappingstr?"true":"false");
+#endif
                             break;
                         }
 
