@@ -21,10 +21,14 @@ QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
 QMutex QKeyMapper_Worker::sendinput_mutex(QMutex::Recursive);
+GetDeviceStateT QKeyMapper_Worker::FuncPtrGetDeviceState = Q_NULLPTR;
+GetDeviceDataT QKeyMapper_Worker::FuncPtrGetDeviceData = Q_NULLPTR;
+int QKeyMapper_Worker::dinput_timerid = 0;
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
     m_MouseHook(Q_NULLPTR),
+    m_DirectInput(Q_NULLPTR),
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap()
 {
@@ -434,6 +438,8 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     else{
         qWarning("[setKeyHook] Error: Invisible Window Handle!!!");
     }
+
+//    setWorkerDInputKeyHook(hWnd);
 }
 
 void QKeyMapper_Worker::setWorkerKeyUnHook()
@@ -455,6 +461,58 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
         m_KeyHook = Q_NULLPTR;
         qInfo("[setKeyUnHook] Normal Key Hook & Mouse Hook Released.");
     }
+
+//    setWorkerDInputKeyUnHook();
+}
+
+void QKeyMapper_Worker::setWorkerDInputKeyHook(HWND hWnd)
+{
+    if(TRUE == IsWindowVisible(hWnd)){
+        m_DirectInput = Q_NULLPTR;
+        HRESULT hResult;
+//        hResult = DirectInput8Create(GetModuleHandle(Q_NULLPTR), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
+        QString process_name("bot_vice.exe");
+//        HMODULE hModule = GetModuleHandle(process_name.toStdWString().c_str());
+        HMODULE hModule = GetModuleHandle(Q_NULLPTR);
+//        hResult = DirectInput8Create((HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
+        hResult = DirectInput8Create(hModule, DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
+        if (DI_OK == hResult)
+        {
+            LPDIRECTINPUTDEVICE8 lpdiKeyboard;
+            hResult = m_DirectInput->CreateDevice(GUID_SysKeyboard, &lpdiKeyboard, Q_NULLPTR);
+            if (DI_OK == hResult)
+            {
+                FuncPtrGetDeviceState = (GetDeviceStateT)HookVTableFunction(lpdiKeyboard, hookGetDeviceState, 9);
+                FuncPtrGetDeviceData = (GetDeviceDataT)HookVTableFunction(lpdiKeyboard, hookGetDeviceData, 10);
+//                dinput_timerid = startTimer(300, Qt::PreciseTimer);
+                qDebug().nospace().noquote() << "[DINPUT] " << "DirectInput Key Hook Started.";
+            }
+            else{
+                m_DirectInput->Release();
+                m_DirectInput = Q_NULLPTR;
+                FuncPtrGetDeviceState = Q_NULLPTR;
+                FuncPtrGetDeviceData = Q_NULLPTR;
+                qDebug().noquote() << "[DINPUT]" << "Failed to Create Keyboard Device!";
+            }
+        }
+        else{
+            qDebug().noquote() << "[DINPUT]" << "Failed to acquire DirectInput handle";
+        }
+    }
+    else{
+        qDebug().nospace().noquote() << "[DINPUT] " << "Invisible window!";
+    }
+}
+
+void QKeyMapper_Worker::setWorkerDInputKeyUnHook()
+{
+    if (m_DirectInput != Q_NULLPTR){
+        m_DirectInput->Release();
+        m_DirectInput = Q_NULLPTR;
+        qDebug().nospace().noquote() << "[DINPUT] " << "DirectInput Key Hook Released.";
+    }
+    FuncPtrGetDeviceState = Q_NULLPTR;
+    FuncPtrGetDeviceData = Q_NULLPTR;
 }
 
 void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingIndex)
@@ -857,6 +915,97 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(QString &keycodeString, int keyupdo
     }
 
     return returnFlag;
+}
+
+void *QKeyMapper_Worker::HookVTableFunction(void *pVTable, void *fnHookFunc, int nOffset)
+{
+    intptr_t ptrVtable = *((intptr_t*)pVTable); // Pointer to our chosen vtable
+    intptr_t ptrFunction = ptrVtable + sizeof(intptr_t) * nOffset; // The offset to the function (remember it's a zero indexed array with a size of four bytes)
+    intptr_t ptrOriginal = *((intptr_t*)ptrFunction); // Save original address
+
+    // Edit the memory protection so we can modify it
+    MEMORY_BASIC_INFORMATION mbi;
+    VirtualQuery((LPCVOID)ptrFunction, &mbi, sizeof(mbi));
+    VirtualProtect(mbi.BaseAddress, mbi.RegionSize, PAGE_EXECUTE_READWRITE, &mbi.Protect);
+
+    // Overwrite the old function with our new one
+    *((intptr_t*)ptrFunction) = (intptr_t)fnHookFunc;
+
+    // Restore the protection
+    VirtualProtect(mbi.BaseAddress, mbi.RegionSize, mbi.Protect, &mbi.Protect);
+
+    // Return the original function address incase we want to call it
+    return (void*)ptrOriginal;
+}
+
+HRESULT QKeyMapper_Worker::hookGetDeviceState(IDirectInputDevice8W *pThis, DWORD cbData, LPVOID lpvData)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("hookGetDeviceState() Called");
+#endif
+    HRESULT result = FuncPtrGetDeviceState(pThis, cbData, lpvData);
+
+    if (result == DI_OK) {
+        if (cbData == 256){//caller is a keyboard
+            BYTE* keystate_array = (BYTE*)lpvData;
+            if  (keystate_array[DIK_W] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [W] Key Pressed.";
+            }
+            if  (keystate_array[DIK_S] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [S] Key Pressed.";
+            }
+            if  (keystate_array[DIK_A] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [A] Key Pressed.";
+            }
+            if  (keystate_array[DIK_D] & 0x80){
+                qDebug().noquote() << "[DINPUT] hookGetDeviceData: [D] Key Pressed.";
+            }
+        }
+    }
+
+    return result;
+}
+
+HRESULT QKeyMapper_Worker::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("hookGetDeviceData() Called");
+#endif
+    HRESULT result = FuncPtrGetDeviceData(pThis, cbObjectData, rgdod, pdwInOut, dwFlags);
+
+    if (result == DI_OK) {
+        for (DWORD i = 0; i < *pdwInOut; ++i) {
+            if (LOBYTE(rgdod[i].dwData) > 0) { //key down
+                if (rgdod[i].dwOfs == DIK_W) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [W] Key Down.";
+                }
+                else if (rgdod[i].dwOfs == DIK_S) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [S] Key Down.";
+                }
+                else if (rgdod[i].dwOfs == DIK_A) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [A] Key Down.";
+                }
+                else if (rgdod[i].dwOfs == DIK_D) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [D] Key Down.";
+                }
+            }
+            if (LOBYTE(rgdod[i].dwData) == 0) { //key up
+                if (rgdod[i].dwOfs == DIK_W) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [W] Key Up.";
+                }
+                else if (rgdod[i].dwOfs == DIK_S) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [S] Key Up.";
+                }
+                else if (rgdod[i].dwOfs == DIK_A) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [A] Key Up.";
+                }
+                else if (rgdod[i].dwOfs == DIK_D) {
+                    qDebug().noquote() << "[DINPUT] hookGetDeviceData: [D] Key Up.";
+                }
+            }
+        }
+    }
+    return result;
 }
 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()

@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QHash>
 #include <QMutex>
+#include <dinput.h>
 
 class QKeyMapper;
 
@@ -81,6 +82,9 @@ typedef struct V_MOUSECODE
                 && (MouseUpCode == other.MouseUpCode));
     }
 }V_MOUSECODE_st;
+
+typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
+typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
 
 class QKeyMapper_Worker : public QObject
 {
@@ -166,6 +170,8 @@ public slots:
     void threadStarted(void);
     void setWorkerKeyHook(HWND hWnd);
     void setWorkerKeyUnHook(void);
+    void setWorkerDInputKeyHook(HWND hWnd);
+    void setWorkerDInputKeyUnHook(void);
     void startBurstTimer(const QString &burstKey, int mappingIndex);
     void stopBurstTimer(const QString &burstKey, int mappingIndex);
 
@@ -174,6 +180,10 @@ private:
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
     static bool hookBurstAndLockProc(QString &keycodeString, int keyupdown);
+
+    static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
+    static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
+    static HRESULT WINAPI hookGetDeviceData(IDirectInputDevice8* pThis, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags);
 
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
@@ -187,10 +197,14 @@ public:
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLockKeysList;
     static QMutex sendinput_mutex;
+    static GetDeviceStateT FuncPtrGetDeviceState;
+    static GetDeviceDataT FuncPtrGetDeviceData;
+    static int dinput_timerid;
 
 private:
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
+    IDirectInput8* m_DirectInput;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
 };

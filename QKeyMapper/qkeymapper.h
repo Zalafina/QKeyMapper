@@ -30,7 +30,6 @@
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
-#include <dinput.h>
 
 #include "qkeymapper_worker.h"
 
@@ -46,9 +45,6 @@ typedef struct
     QString FilePath;
     QIcon   WindowIcon;
 }MAP_PROCESSINFO;
-
-typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
-typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
 
 class StyledDelegate : public QStyledItemDelegate
 {
@@ -116,9 +112,6 @@ public:
     void setKeyHook(HWND hWnd);
     void setKeyUnHook(void);
 
-    void setDInputKeyHook(HWND hWnd);
-    void setDInputKeyUnHook(void);
-
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
 #ifdef ADJUST_PRIVILEGES
@@ -179,10 +172,6 @@ private slots:
     void on_settingselectComboBox_currentIndexChanged(int index);
 
 private:
-    static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
-    static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
-    static HRESULT WINAPI hookGetDeviceData(IDirectInputDevice8* pThis, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags);
-
     void initHotKeySequence(void);
     void initProcessInfoTable(void);
     void refreshProcessInfoTable(void);
@@ -205,8 +194,6 @@ private:
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
-    static GetDeviceStateT FuncPtrGetDeviceState;
-    static GetDeviceDataT FuncPtrGetDeviceData;
 
 private:
     static QKeyMapper *m_instance;
@@ -215,7 +202,6 @@ private:
     QTimer m_CycleCheckTimer;
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
-    IDirectInput8* m_DirectInput;
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
     StyledDelegate *m_ProcessInfoTableDelegate;
