@@ -7,9 +7,10 @@ class QHotkeyPrivateMac : public QHotkeyPrivate
 {
 public:
 	// QAbstractNativeEventFilter interface
-	bool nativeEventFilter(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
+	bool nativeEventFilter(const QByteArray &eventType, void *message, _NATIVE_EVENT_RESULT *result) override;
 
-	static OSStatus hotkeyEventHandler(EventHandlerCallRef nextHandler, EventRef event, void* data);
+	static OSStatus hotkeyPressEventHandler(EventHandlerCallRef nextHandler, EventRef event, void* data);
+	static OSStatus hotkeyReleaseEventHandler(EventHandlerCallRef nextHandler, EventRef event, void* data);
 
 protected:
 	// QHotkeyPrivate interface
@@ -24,14 +25,19 @@ private:
 };
 NATIVE_INSTANCE(QHotkeyPrivateMac)
 
+bool QHotkeyPrivate::isPlatformSupported()
+{
+	return true;
+}
+
 bool QHotkeyPrivateMac::isHotkeyHandlerRegistered = false;
 QHash<QHotkey::NativeShortcut, EventHotKeyRef> QHotkeyPrivateMac::hotkeyRefs;
 
-bool QHotkeyPrivateMac::nativeEventFilter(const QByteArray &eventType, void *message, long *result)
+bool QHotkeyPrivateMac::nativeEventFilter(const QByteArray &eventType, void *message, _NATIVE_EVENT_RESULT *result)
 {
-	Q_UNUSED(eventType);
-	Q_UNUSED(message);
-	Q_UNUSED(result);
+	Q_UNUSED(eventType)
+	Q_UNUSED(message)
+	Q_UNUSED(result)
 	return false;
 }
 
@@ -128,7 +134,7 @@ quint32 QHotkeyPrivateMac::nativeKeycode(Qt::Key keycode, bool &ok)
 	UTF16Char ch = keycode;
 
 	CFDataRef currentLayoutData;
-	TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
+	TISInputSourceRef currentKeyboard = TISCopyCurrentASCIICapableKeyboardLayoutInputSource();
 
 	if (currentKeyboard == NULL)
 		return 0;
@@ -198,10 +204,15 @@ bool QHotkeyPrivateMac::registerShortcut(QHotkey::NativeShortcut shortcut)
 {
 	if (!this->isHotkeyHandlerRegistered)
 	{
-		EventTypeSpec eventSpec;
-		eventSpec.eventClass = kEventClassKeyboard;
-		eventSpec.eventKind = kEventHotKeyPressed;
-		InstallApplicationEventHandler(&QHotkeyPrivateMac::hotkeyEventHandler, 1, &eventSpec, NULL, NULL);
+		EventTypeSpec pressEventSpec;
+		pressEventSpec.eventClass = kEventClassKeyboard;
+		pressEventSpec.eventKind = kEventHotKeyPressed;
+		InstallApplicationEventHandler(&QHotkeyPrivateMac::hotkeyPressEventHandler, 1, &pressEventSpec, NULL, NULL);
+
+		EventTypeSpec releaseEventSpec;
+		releaseEventSpec.eventClass = kEventClassKeyboard;
+		releaseEventSpec.eventKind = kEventHotKeyReleased;
+		InstallApplicationEventHandler(&QHotkeyPrivateMac::hotkeyReleaseEventHandler, 1, &releaseEventSpec, NULL, NULL);
 	}
 
 	EventHotKeyID hkeyID;
@@ -216,8 +227,7 @@ bool QHotkeyPrivateMac::registerShortcut(QHotkey::NativeShortcut shortcut)
 										  0,
 										  &eventRef);
 	if (status != noErr) {
-		qCWarning(logQHotkey) << "Failed to register hotkey. Error:"
-							  << status;
+		error = QString::number(status);
 		return false;
 	} else {
 		this->hotkeyRefs.insert(shortcut, eventRef);
@@ -230,8 +240,7 @@ bool QHotkeyPrivateMac::unregisterShortcut(QHotkey::NativeShortcut shortcut)
 	EventHotKeyRef eventRef = QHotkeyPrivateMac::hotkeyRefs.value(shortcut);
 	OSStatus status = UnregisterEventHotKey(eventRef);
 	if (status != noErr) {
-		qCWarning(logQHotkey) << "Failed to unregister hotkey. Error:"
-							  << status;
+		error = QString::number(status);
 		return false;
 	} else {
 		this->hotkeyRefs.remove(shortcut);
@@ -239,7 +248,7 @@ bool QHotkeyPrivateMac::unregisterShortcut(QHotkey::NativeShortcut shortcut)
 	}
 }
 
-OSStatus QHotkeyPrivateMac::hotkeyEventHandler(EventHandlerCallRef nextHandler, EventRef event, void* data)
+OSStatus QHotkeyPrivateMac::hotkeyPressEventHandler(EventHandlerCallRef nextHandler, EventRef event, void* data)
 {
 	Q_UNUSED(nextHandler);
 	Q_UNUSED(data);
@@ -255,6 +264,27 @@ OSStatus QHotkeyPrivateMac::hotkeyEventHandler(EventHandlerCallRef nextHandler, 
 						  NULL,
 						  &hkeyID);
 		hotkeyPrivate->activateShortcut({hkeyID.signature, hkeyID.id});
+	}
+
+	return noErr;
+}
+
+OSStatus QHotkeyPrivateMac::hotkeyReleaseEventHandler(EventHandlerCallRef nextHandler, EventRef event, void* data)
+{
+	Q_UNUSED(nextHandler);
+	Q_UNUSED(data);
+
+	if (GetEventClass(event) == kEventClassKeyboard &&
+		GetEventKind(event) == kEventHotKeyReleased) {
+		EventHotKeyID hkeyID;
+		GetEventParameter(event,
+											kEventParamDirectObject,
+											typeEventHotKeyID,
+											NULL,
+											sizeof(EventHotKeyID),
+											NULL,
+											&hkeyID);
+		hotkeyPrivate->releaseShortcut({hkeyID.signature, hkeyID.id});
 	}
 
 	return noErr;

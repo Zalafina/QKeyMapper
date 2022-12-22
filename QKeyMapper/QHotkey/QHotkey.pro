@@ -2,11 +2,11 @@ TEMPLATE = lib
 win32: CONFIG += dll
 
 TARGET = QHotkey
-VERSION = 1.2.1
+VERSION = 1.5.0
 
 include(../qhotkey.pri)
 
-DEFINES += QHOTKEY_LIB QHOTKEY_LIB_BUILD
+DEFINES += QHOTKEY_SHARED QHOTKEY_LIBRARY
 
 # use INSTALL_ROOT to modify the install location
 headers.files = $$PUBLIC_HEADERS
