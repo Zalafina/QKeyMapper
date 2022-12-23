@@ -8,13 +8,14 @@
 #include <QTimer>
 #include <QTimerEvent>
 #include <QThread>
-#include <QMutex>
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QFileInfo>
 #include <QFileIconProvider>
 #include <QHash>
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
+#endif
 #include <QStyleFactory>
 #include <QFontDatabase>
 #include <QStyledItemDelegate>

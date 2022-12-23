@@ -5,7 +5,11 @@
 #include <QObject>
 #include <QThread>
 #include <QHash>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QRecursiveMutex>
+#else
 #include <QMutex>
+#endif
 #include <dinput.h>
 
 class QKeyMapper;
@@ -190,13 +194,21 @@ private:
     void clearAllBurstTimersAndLockKeys(void);
 
 public:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static QMultiHash<QString, V_KEYCODE> VirtualKeyCodeMap;
+#else
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
+#endif
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QHash<WPARAM, QString> MouseButtonNameMap;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLockKeysList;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static QRecursiveMutex sendinput_mutex;
+#else
     static QMutex sendinput_mutex;
+#endif
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
     static int dinput_timerid;

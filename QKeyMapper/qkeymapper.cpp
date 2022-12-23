@@ -514,7 +514,11 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 
             HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
             if (iconptr != Q_NULLPTR){
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                ProcessInfo.WindowIcon = QIcon(QPixmap::fromImage(QImage::fromHICON(iconptr)));
+#else
                 ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+#endif
             }
             else{
                 QFileIconProvider icon_provider;
@@ -589,7 +593,11 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
 
             HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
             if (iconptr != Q_NULLPTR){
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                ProcessInfo.WindowIcon = QIcon(QPixmap::fromImage(QImage::fromHICON(iconptr)));
+#else
                 ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+#endif
             }
             else{
                 QFileIconProvider icon_provider;
@@ -767,7 +775,11 @@ void QKeyMapper::EnumProcessFunction(void)
 
                     HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
                     if (iconptr != Q_NULLPTR){
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                        ProcessInfo.WindowIcon = QIcon(QPixmap::fromImage(QImage::fromHICON(iconptr)));
+#else
                         ProcessInfo.WindowIcon = QIcon(QtWin::fromHICON(iconptr));
+#endif
                     }
                     else{
                         QFileIconProvider icon_provider;
@@ -1010,7 +1022,9 @@ void QKeyMapper::saveKeyMapSetting(void)
 {
     if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
         QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         settingFile.setIniCodec("UTF-8");
+#endif
         QStringList original_keys;
         QStringList mapping_keysList;
         QStringList burstList;
@@ -1106,7 +1120,9 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
     bool selectSettingContainsFlag = false;
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settingFile.setIniCodec("UTF-8");
+#endif
     QString settingSelIndexStr;
 
     int settingSelectIndex = -1;

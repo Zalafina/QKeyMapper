@@ -5,8 +5,7 @@
 #-------------------------------------------------
 
 QT  += core gui
-QT  += winextras
-
+lessThan(QT_MAJOR_VERSION, 6): QT += winextras
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TEMPLATE = app
