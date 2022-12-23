@@ -1610,25 +1610,33 @@ void QKeyMapper::updateProcessInfoDisplay()
             qDebug() << "[UpdateProcessInfo]" << "Icon availableSizes:" << iconsizeList;
 #endif
             QSize selectedSize = QSize(0, 0);
-            for(auto it = iconsizeList.crbegin(); it != iconsizeList.crend(); ++it) {
-                const QSize iconsize = (*it);
-                if ((iconsize.width() > 0)
-                        && (iconsize.height() > 0)){
+            QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+            for(const QSize &iconsize : fileicon.availableSizes()){
+                if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
+                        && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
                     selectedSize = iconsize;
                     break;
                 }
+                selectedSize_previous = iconsize;
             }
 
             if (selectedSize == QSize(0, 0)){
-                selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[UpdateProcessInfo]" << "No available icon size, use previous icon size:" << selectedSize_previous;
+#endif
+                selectedSize = selectedSize_previous;
             }
             else if (selectedSize.width() > DEFAULT_ICON_WIDTH || selectedSize.height() > DEFAULT_ICON_HEIGHT) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[UpdateProcessInfo]" << "Icon resize:" << selectedSize << "->" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+                qDebug() << "[UpdateProcessInfo]" << "Icon size larger than default, use previous icon size:" << selectedSize_previous;
 #endif
-                selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+                selectedSize = selectedSize_previous;
             }
             QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[UpdateProcessInfo]" << "Pixmap devicePixelRatio is" << IconPixmap.devicePixelRatio();
+//            IconPixmap.save("selecticon.png");
+#endif
             ui->iconLabel->setPixmap(IconPixmap);
         }
         else{
@@ -1944,25 +1952,33 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         qDebug() << "[SelectProcessInfo]" << "Icon availableSizes:" << iconsizeList;
 #endif
         QSize selectedSize = QSize(0, 0);
-        for(auto it = iconsizeList.crbegin(); it != iconsizeList.crend(); ++it) {
-            const QSize iconsize = (*it);
-            if ((iconsize.width() > 0)
-                    && (iconsize.height() > 0)){
+        QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+        for(const QSize &iconsize : fileicon.availableSizes()){
+            if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
+                    && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
                 selectedSize = iconsize;
                 break;
             }
+            selectedSize_previous = iconsize;
         }
 
         if (selectedSize == QSize(0, 0)){
-            selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[SelectProcessInfo]" << "No available icon size, use previous icon size:" << selectedSize_previous;
+#endif
+            selectedSize = selectedSize_previous;
         }
         else if (selectedSize.width() > DEFAULT_ICON_WIDTH || selectedSize.height() > DEFAULT_ICON_HEIGHT) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[SelectProcessInfo]" << "Icon resize:" << selectedSize << "->" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+            qDebug() << "[SelectProcessInfo]" << "Icon size larger than default, use previous icon size:" << selectedSize_previous;
 #endif
-            selectedSize = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
+            selectedSize = selectedSize_previous;
         }
         QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[SelectProcessInfo]" << "Pixmap devicePixelRatio is" << IconPixmap.devicePixelRatio();
+//        IconPixmap.save("selecticon.png");
+#endif
         ui->iconLabel->setPixmap(IconPixmap);
         ui->nameLineEdit->setToolTip(ProcessPath);
     }
