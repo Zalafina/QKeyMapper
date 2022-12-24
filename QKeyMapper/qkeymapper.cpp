@@ -1632,6 +1632,9 @@ void QKeyMapper::updateProcessInfoDisplay()
 #endif
                 selectedSize = selectedSize_previous;
             }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[UpdateProcessInfo]" << "Icon selectedSize is" << selectedSize;
+#endif
             QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[UpdateProcessInfo]" << "Pixmap devicePixelRatio is" << IconPixmap.devicePixelRatio();
@@ -1974,6 +1977,9 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
             selectedSize = selectedSize_previous;
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[SelectProcessInfo]" << "Icon selectedSize is" << selectedSize;
+#endif
         QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[SelectProcessInfo]" << "Pixmap devicePixelRatio is" << IconPixmap.devicePixelRatio();
