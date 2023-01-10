@@ -1,5 +1,5 @@
 # QKeyMapper
-## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt5 Widget + WinAPI开发。
+## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本。
 
 ### 具体功能
 1. 左侧显示当前正在运行的可见的窗口程序列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
@@ -17,7 +17,7 @@
 13. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
 14. 增加了支持将鼠标左键&右键&中键与键盘按键进行互相映射。
 
-## A keyboard remap tool of Qt5 Widget + WinAPI which could working under Win10.
+## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
 
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
