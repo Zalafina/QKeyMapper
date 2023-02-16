@@ -172,8 +172,6 @@ private slots:
 
     void on_settingselectComboBox_currentIndexChanged(int index);
 
-    void on_autoStartupCheckBox_stateChanged(int state);
-
 private:
     void initHotKeySequence(void);
     void initProcessInfoTable(void);

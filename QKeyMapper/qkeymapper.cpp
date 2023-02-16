@@ -57,7 +57,6 @@ static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo_WindowTitleChe
 
 static const QString DISABLEWINKEY_CHECKED("DisableWinKeyChecked");
 static const QString AUTOSTARTMAPPING_CHECKED("AutoStartMappingChecked");
-static const QString AUTOSTARTUP_CHECKED("AutoStartupChecked");
 
 static const QString SAO_FONTFILENAME(":/sao_ui.otf");
 
@@ -1034,8 +1033,20 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
         int settingSelectIndex = ui->settingselectComboBox->currentIndex();
 
-        settingFile.setValue(SETTINGSELECT , settingSelectIndex);
-        QString settingSelIndexStr = QString::number(settingSelectIndex+1) + "/";
+        QString settingSelIndexStr;
+        if ((false == ui->nameLineEdit->text().isEmpty())
+                && (false == ui->titleLineEdit->text().isEmpty())
+                && (true == ui->nameCheckBox->isChecked())
+                && (true == ui->titleCheckBox->isChecked())
+                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
+            settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
+            settingSelIndexStr = m_MapProcessInfo.FileName + "/";
+        }
+        else {
+            settingFile.setValue(SETTINGSELECT , settingSelectIndex);
+            settingSelIndexStr = QString::number(settingSelectIndex+1) + "/";
+        }
 
         if (KeyMappingDataList.size() > 0){
             for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
@@ -1101,7 +1112,6 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(settingSelIndexStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
             settingFile.setValue(settingSelIndexStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
             settingFile.setValue(settingSelIndexStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
-            settingFile.setValue(settingSelIndexStr+AUTOSTARTUP_CHECKED, ui->autoStartupCheckBox->isChecked());
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -1129,7 +1139,21 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
 
     int settingSelectIndex = -1;
     if (0 == settingIndex) {
+        QStringList groups = settingFile.childGroups();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
+#endif
+        for (const QString &group : groups){
+            if (group.endsWith(".exe")) {
+                qDebug() << "[loadKeyMapSetting] Setting select add ->" << group;
+            }
+        }
+
         if (true == settingFile.contains(SETTINGSELECT)){
+            QVariant settingSelect = settingFile.value(SETTINGSELECT);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting] Setting select typeName ->" << settingSelect.typeName();
+#endif
             settingSelectIndex = settingFile.value(SETTINGSELECT).toInt();
             ui->settingselectComboBox->setCurrentIndex(settingSelectIndex);
             settingSelectIndex = settingSelectIndex + 1;
@@ -1397,23 +1421,6 @@ bool QKeyMapper::loadKeyMapSetting(int settingIndex)
         ui->autoStartMappingCheckBox->setChecked(false);
     }
 
-    bool autoStartupChecked = false;
-    if (true == settingFile.contains(settingSelIndexStr+AUTOSTARTUP_CHECKED)){
-        autoStartupChecked = settingFile.value(settingSelIndexStr+AUTOSTARTUP_CHECKED).toBool();
-        if (true == autoStartupChecked) {
-            ui->autoStartupCheckBox->setChecked(true);
-        }
-        else {
-            ui->autoStartupCheckBox->setChecked(false);
-        }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "AutoStartupChecked =" << autoStartupChecked;
-#endif
-    }
-    else {
-        ui->autoStartupCheckBox->setChecked(false);
-    }
-
     if (false == datavalidflag){
         QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
         return false;
@@ -1496,7 +1503,6 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     customFont.setPointSize(14);
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
-    ui->autoStartupCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -1505,7 +1511,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->titleCheckBox->setEnabled(status);
     ui->disableWinKeyCheckBox->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
-    ui->autoStartupCheckBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
@@ -2280,21 +2285,4 @@ void QKeyMapper::on_settingselectComboBox_currentIndexChanged(int index)
         qDebug("[settingselectComboBox] Select settingIndex error [%d]", settingIndex);
 #endif
     }
-}
-
-void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[autoStartupCheckBox] Auto Startup checkbox changed to ->" << Qt::CheckState(state);
-#endif
-#ifdef Q_OS_WIN
-    QSettings bootUpSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
-    QString app_path = QCoreApplication::applicationFilePath();
-    app_path.replace("/","\\");
-    if (Qt::Checked == state) {
-        bootUpSettings.setValue("QKeyMapper", app_path);
-    } else {
-        bootUpSettings.remove("QKeyMapper");
-    }
-#endif
 }

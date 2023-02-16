@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>980</width>
-    <height>640</height>
+    <height>630</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>980</width>
-    <height>640</height>
+    <height>630</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>980</width>
-    <height>640</height>
+    <height>630</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -337,8 +337,8 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>550</y>
+     <x>650</x>
+     <y>590</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -1105,8 +1105,8 @@
   <widget class="QCheckBox" name="autoStartMappingCheckBox">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>575</y>
+     <x>360</x>
+     <y>570</y>
      <width>151</width>
      <height>21</height>
     </rect>
@@ -1138,52 +1138,52 @@
    </property>
    <item>
     <property name="text">
-     <string>Setting  1</string>
+     <string>CustomSetting  1</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  2</string>
+     <string>CustomSetting  2</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  3</string>
+     <string>CustomSetting  3</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  4</string>
+     <string>CustomSetting  4</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  5</string>
+     <string>CustomSetting  5</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  6</string>
+     <string>CustomSetting  6</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  7</string>
+     <string>CustomSetting  7</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  8</string>
+     <string>CustomSetting  8</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting  9</string>
+     <string>CustomSetting  9</string>
     </property>
    </item>
    <item>
     <property name="text">
-     <string>Setting 10</string>
+     <string>CustomSetting 10</string>
     </property>
    </item>
   </widget>
@@ -1201,25 +1201,6 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="autoStartupCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>600</y>
-     <width>151</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Auto Startup</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
    </property>
   </widget>
  </widget>
