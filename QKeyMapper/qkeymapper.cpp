@@ -2284,5 +2284,17 @@ void QKeyMapper::on_settingselectComboBox_currentIndexChanged(int index)
 
 void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
 {
-
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[autoStartupCheckBox] Auto Startup checkbox changed to ->" << Qt::CheckState(state);
+#endif
+#ifdef Q_OS_WIN
+    QSettings bootUpSettings("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    QString app_path = QCoreApplication::applicationFilePath();
+    app_path.replace("/","\\");
+    if (Qt::Checked == state) {
+        bootUpSettings.setValue("QKeyMapper", app_path);
+    } else {
+        bootUpSettings.remove("QKeyMapper");
+    }
+#endif
 }
