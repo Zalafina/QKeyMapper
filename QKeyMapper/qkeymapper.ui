@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>980</width>
-    <height>600</height>
+    <height>640</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>980</width>
-    <height>600</height>
+    <height>640</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>980</width>
-    <height>600</height>
+    <height>640</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -337,8 +337,8 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>640</x>
-     <y>560</y>
+     <x>460</x>
+     <y>550</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -1105,8 +1105,8 @@
   <widget class="QCheckBox" name="autoStartMappingCheckBox">
    <property name="geometry">
     <rect>
-     <x>450</x>
-     <y>560</y>
+     <x>460</x>
+     <y>575</y>
      <width>151</width>
      <height>21</height>
     </rect>
@@ -1124,9 +1124,9 @@
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
-     <x>865</x>
+     <x>705</x>
      <y>560</y>
-     <width>91</width>
+     <width>251</width>
      <height>22</height>
     </rect>
    </property>
@@ -1190,7 +1190,7 @@
   <widget class="QLabel" name="settingselectLabel">
    <property name="geometry">
     <rect>
-     <x>770</x>
+     <x>610</x>
      <y>560</y>
      <width>91</width>
      <height>22</height>
@@ -1201,6 +1201,25 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="autoStartupCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>460</x>
+     <y>600</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Auto Startup</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>
