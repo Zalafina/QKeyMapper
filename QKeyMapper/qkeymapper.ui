@@ -337,7 +337,7 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>650</x>
+     <x>630</x>
      <y>590</y>
      <width>121</width>
      <height>21</height>
@@ -1105,7 +1105,7 @@
   <widget class="QCheckBox" name="autoStartMappingCheckBox">
    <property name="geometry">
     <rect>
-     <x>360</x>
+     <x>340</x>
      <y>570</y>
      <width>151</width>
      <height>21</height>
@@ -1134,58 +1134,8 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>-1</number>
    </property>
-   <item>
-    <property name="text">
-     <string>CustomSetting  1</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  2</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  3</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  4</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  5</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  6</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  7</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  8</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting  9</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CustomSetting 10</string>
-    </property>
-   </item>
   </widget>
   <widget class="QLabel" name="settingselectLabel">
    <property name="geometry">
