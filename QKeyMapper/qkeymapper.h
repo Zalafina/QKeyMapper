@@ -170,7 +170,7 @@ private slots:
 
     void on_movedownButton_clicked();
 
-    void on_settingselectComboBox_currentIndexChanged(int index);
+    void on_settingselectComboBox_textActivated(const QString &text);
 
 private:
     void initHotKeySequence(void);
@@ -184,7 +184,7 @@ private:
     void refreshKeyMappingDataTable(void);
 
     void saveKeyMapSetting(void);
-    bool loadKeyMapSetting(int settingIndex);
+    bool loadKeyMapSetting(const QString &settingtext);
     bool checkMappingkeyStr(const QString &mappingkeystr);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);

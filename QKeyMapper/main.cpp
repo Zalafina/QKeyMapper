@@ -8,12 +8,26 @@
 
 int main(int argc, char *argv[])
 {
+    int nScreenWidth = ::GetSystemMetrics(SM_CXSCREEN);
+    HWND hwd = ::GetDesktopWindow();
+    HDC hdc = ::GetDC(hwd);
+    int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
+    double dWidth = (double)width;
+    double dScreenWidth = (double)nScreenWidth;
+    double scale = dWidth / dScreenWidth;
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
 #elif (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    qputenv("QT_SCALE_FACTOR", "1.25");
 #endif
+    if (scale < 1.10) {
+        qDebug() << "Original screen scale ->" << scale << ", set QT_SCALE_FACTOR to 1.5";
+        qputenv("QT_SCALE_FACTOR", "1.5");
+    }
+    else {
+        qDebug() << "Original screen scale ->" << scale << ", do not need to set QT_SCALE_FACTOR";
+    }
 
     QApplication a(argc, argv);
     QApplication::setStyle(QStyleFactory::create("Fusion"));
