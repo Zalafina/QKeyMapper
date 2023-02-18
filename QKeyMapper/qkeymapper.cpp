@@ -1033,7 +1033,46 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QString burstpressTimeString = ui->burstpressComboBox->currentText();
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
-        int settingSelectIndex = ui->settingselectComboBox->currentIndex();
+
+        if ((false == ui->nameLineEdit->text().isEmpty())
+                && (false == ui->titleLineEdit->text().isEmpty())
+                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
+                && (m_MapProcessInfo.FilePath.isEmpty() != true)) {
+            /* Valid save setting information */
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[saveKeyMapSetting]" << "m_MapProcessInfo is Null, setting unsaved.";
+#endif
+            return;
+        }
+
+        QStringList groups = settingFile.childGroups();
+        QStringList validgroups_customsetting;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
+#endif
+
+        for (const QString &group : groups){
+            if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)) {
+                validgroups_customsetting.append(group);
+            }
+        }
+
+        int customSettingIndex;
+        if (validgroups_customsetting.size() > 0) {
+            QString lastgroup = validgroups_customsetting.last();
+            QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMSETTING);
+            customSettingIndex = lastNumberStr.toInt() + 1;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[saveKeyMapSetting] Last custom setting index ->" << lastNumberStr.toInt();
+            qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customSettingIndex;
+#endif
+        }
+        else {
+            customSettingIndex = 1;
+        }
 
         QString saveSettingSelectStr;
         if ((false == ui->nameLineEdit->text().isEmpty())
@@ -1046,8 +1085,9 @@ void QKeyMapper::saveKeyMapSetting(void)
             saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
         }
         else {
-            settingFile.setValue(SETTINGSELECT , settingSelectIndex);
-            saveSettingSelectStr = QString::number(settingSelectIndex+1) + "/";
+            saveSettingSelectStr = GROUPNAME_CUSTOMSETTING + QString::number(customSettingIndex);
+            settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+            saveSettingSelectStr = saveSettingSelectStr + "/";
         }
 
         if (KeyMappingDataList.size() > 0){
@@ -1350,7 +1390,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         else{
                             datavalidflag = false;
 #ifdef DEBUG_LOGOUT_ON
-                            qWarning("loadKeyMapSetting(): Invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", checkmappingstr?"true":"false");
+                            qWarning("[loadKeyMapSetting] Invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", checkmappingstr?"true":"false");
 #endif
                             break;
                         }
@@ -1378,7 +1418,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+    qDebug() << "[loadKeyMapSetting]" << "refreshKeyMappingDataTable()";
 #endif
     refreshKeyMappingDataTable();
 
@@ -2366,6 +2406,35 @@ void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[settingselectComboBox] Select setting text error ->" << text;
 #endif
+    }
+}
+
+
+void QKeyMapper::on_removeSettingButton_clicked()
+{
+    QString settingSelectStr = ui->settingselectComboBox->currentText();
+    if (true == settingSelectStr.isEmpty()) {
+        return;
+    }
+
+    int currentSettingIndex = ui->settingselectComboBox->currentIndex();
+    QString currentSettingText;
+    QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+    QStringList groups = settingFile.childGroups();
+    if (groups.contains(settingSelectStr)) {
+        settingFile.remove(settingSelectStr);
+        ui->settingselectComboBox->removeItem(currentSettingIndex);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[removeSetting] Remove setting select ->" << settingSelectStr;
+#endif
+        currentSettingText = ui->settingselectComboBox->currentText();
+        if (false == currentSettingText.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[removeSetting] Change to Setting ->" << currentSettingText;
+#endif
+            bool loadresult = loadKeyMapSetting(currentSettingText);
+            Q_UNUSED(loadresult);
+        }
     }
 }
 

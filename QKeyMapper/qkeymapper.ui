@@ -337,7 +337,7 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>640</x>
+     <x>585</x>
      <y>590</y>
      <width>121</width>
      <height>21</height>
@@ -1124,7 +1124,7 @@
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
-     <x>705</x>
+     <x>650</x>
      <y>560</y>
      <width>251</width>
      <height>22</height>
@@ -1140,7 +1140,7 @@
   <widget class="QLabel" name="settingselectLabel">
    <property name="geometry">
     <rect>
-     <x>610</x>
+     <x>555</x>
      <y>560</y>
      <width>91</width>
      <height>22</height>
@@ -1151,6 +1151,25 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="removeSettingButton">
+   <property name="geometry">
+    <rect>
+     <x>910</x>
+     <y>562</y>
+     <width>50</width>
+     <height>18</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::TabFocus</enum>
+   </property>
+   <property name="text">
+    <string>Remove</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

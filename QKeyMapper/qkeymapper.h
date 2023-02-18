@@ -172,6 +172,8 @@ private slots:
 
     void on_settingselectComboBox_textActivated(const QString &text);
 
+    void on_removeSettingButton_clicked();
+
 private:
     void initHotKeySequence(void);
     void initProcessInfoTable(void);
