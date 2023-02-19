@@ -35,7 +35,7 @@
 12. "Auto Start Mapping" checkbox could auto start mapping at program startup, and minimize it to System tray.
 13. Add "SelectSetting" combobox to support multi settings selection, could save upto 10 different settings, and switch them by "SelectSetting" combobox.
 14. Add support mouse left&right&middle button to mapping with keyborad keys.
-15. v1.3.0 start to support save multi different program's keymap settings to "keymapdata.ini" config file. If "Auto Start Mapping" is checked for the keymap setting, it will check foreground window's executable file name to match saved program keymap settings in "keymapdata.ini" config file automatically. If there is a matched keymap setting, it will load this setting and start key mapping at "KeyMappingStart" state automatically.
+15. v1.3.0 start to support save multi different program's keymap settings to "keymapdata.ini" config file. If "Auto Start Mapping" is checked for the keymap setting, it will check foreground window's executable file name to match saved program keymap settings in "keymapdata.ini" config file automatically at "KeyMappingStart" state. If there is a matched keymap setting, it will load this setting and start key mapping automatically.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
