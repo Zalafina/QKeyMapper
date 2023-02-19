@@ -1036,26 +1036,14 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString burstpressTimeString = ui->burstpressComboBox->currentText();
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
 
-        if ((false == ui->nameLineEdit->text().isEmpty())
-                && (false == ui->titleLineEdit->text().isEmpty())
-                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
-                && (m_MapProcessInfo.FilePath.isEmpty() != true)) {
-            /* Valid save setting information */
-        }
-        else {
-#ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[saveKeyMapSetting]" << "m_MapProcessInfo is Null, setting unsaved.";
-#endif
-            return;
-        }
-
         QString saveSettingSelectStr;
         QString cursettingSelectStr = ui->settingselectComboBox->currentText();
 
         if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
                 && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
             saveSettingSelectStr = cursettingSelectStr;
+            settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+            saveSettingSelectStr = saveSettingSelectStr + "/";
         }
         else {
             QStringList groups = settingFile.childGroups();
@@ -1098,7 +1086,8 @@ void QKeyMapper::saveKeyMapSetting(void)
                     && (true == ui->nameCheckBox->isChecked())
                     && (true == ui->titleCheckBox->isChecked())
                     && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                    && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
+                    && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
+                    && (m_MapProcessInfo.FilePath.isEmpty() != true)){
                 settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
                 saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
             }
