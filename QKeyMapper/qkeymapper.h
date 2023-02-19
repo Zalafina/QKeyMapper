@@ -185,6 +185,7 @@ private:
     void initAddKeyComboBoxes(void);
     void refreshKeyMappingDataTable(void);
 
+    bool checkSaveSettings(const QString &executablename);
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(const QString &settingtext);
     bool checkMappingkeyStr(const QString &mappingkeystr);
@@ -200,6 +201,7 @@ public:
 
 private:
     static QKeyMapper *m_instance;
+    static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
     quint8 m_KeyMapStatus;
     QTimer m_CycleCheckTimer;

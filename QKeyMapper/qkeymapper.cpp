@@ -33,38 +33,38 @@ static const int SENDMODE_BURST_STOP    = 2;
 
 static const int SEND_INPUTS_MAX = 20;
 
-static const int CUSTOMSETTING_INDEX_MAX = 20;
+static const int CUSTOMSETTING_INDEX_MAX = 30;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
-static const QString DEFAULT_NAME("ForzaHorizon4.exe");
-static QString DEFAULT_TITLE("Forza: Horizon 4");
+static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 
-static const QString SETTINGSELECT("SettingSelect");
-static const QString GROUPNAME_EXECUTABLE_SUFFIX(".exe");
-static const QString GROUPNAME_CUSTOMSETTING("CustomSetting ");
+static const char *SETTINGSELECT = "SettingSelect";
+static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
+static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
 
-static const QString KEYMAPDATA_ORIGINALKEYS("KeyMapData_OriginalKeys");
-static const QString KEYMAPDATA_MAPPINGKEYS("KeyMapData_MappingKeys");
-static const QString KEYMAPDATA_BURST("KeyMapData_Burst");
-static const QString KEYMAPDATA_LOCK("KeyMapData_Lock");
-static const QString KEYMAPDATA_BURSTPRESS_TIME("KeyMapData_BurstPressTime");
-static const QString KEYMAPDATA_BURSTRELEASE_TIME("KeyMapData_BurstReleaseTime");
-static const QString CLEARALL("KeyMapData_ClearAll");
+static const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
+static const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
+static const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
+static const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
+static const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
+static const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
+static const char *CLEARALL = "KeyMapData_ClearAll";
 
-static const QString PROCESSINFO_FILENAME("ProcessInfo_FileName");
-static const QString PROCESSINFO_WINDOWTITLE("ProcessInfo_WindowTitle");
-static const QString PROCESSINFO_FILEPATH("ProcessInfo_FilePath");
-static const QString PROCESSINFO_FILENAME_CHECKED("ProcessInfo_FileNameChecked");
-static const QString PROCESSINFO_WINDOWTITLE_CHECKED("ProcessInfo_WindowTitleChecked");
+static const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
+static const char *PROCESSINFO_WINDOWTITLE = "ProcessInfo_WindowTitle";
+static const char *PROCESSINFO_FILEPATH = "ProcessInfo_FilePath";
+static const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
+static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
 
-static const QString DISABLEWINKEY_CHECKED("DisableWinKeyChecked");
-static const QString AUTOSTARTMAPPING_CHECKED("AutoStartMappingChecked");
+static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
+static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 
-static const QString SAO_FONTFILENAME(":/sao_ui.otf");
+static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
+QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 
@@ -217,6 +217,18 @@ void QKeyMapper::cycleCheckProcessProc(void)
             if (false == windowTitle.isEmpty() && false == ProcessPath.isEmpty()){
                 QFileInfo fileinfo(ProcessPath);
                 filename = fileinfo.fileName();
+            }
+
+            if (filename.isEmpty() != true) {
+                bool savecheckresult = checkSaveSettings(filename);
+                if (savecheckresult && KEYMAP_CHECKING == m_KeyMapStatus) {
+                    checkresult = 1;
+                    bool loadresult = loadKeyMapSetting(filename);
+                    Q_UNUSED(loadresult);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Executablename match saved setting -> [" << filename << "], load setting.";
+#endif
+                }
             }
 
             if ((true == ui->nameCheckBox->isChecked())
@@ -1022,6 +1034,36 @@ void QKeyMapper::on_cellChanged(int row, int col)
     }
 }
 
+bool QKeyMapper::checkSaveSettings(const QString &executablename)
+{
+    bool checkresult = false;
+    QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+    QStringList groups = settingFile.childGroups();
+
+    if (groups.contains(executablename)) {
+#if 0
+        QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+        if (curSettingSelectStr == executablename) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[checkSaveSettings]" << "Current setting select is already the same ->" << executablename;
+#endif
+            return false;
+        }
+#endif
+
+        QString settingSelectStr = executablename + "/";
+        bool autoStartMappingChecked = false;
+        if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
+            autoStartMappingChecked = settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toBool();
+            if (true == autoStartMappingChecked) {
+                checkresult = true;
+            }
+        }
+    }
+
+    return checkresult;
+}
+
 void QKeyMapper::saveKeyMapSetting(void)
 {
     if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
@@ -1084,19 +1126,19 @@ void QKeyMapper::saveKeyMapSetting(void)
             if ((false == ui->nameLineEdit->text().isEmpty())
                     && (false == ui->titleLineEdit->text().isEmpty())
                     && (true == ui->nameCheckBox->isChecked())
-                    && (true == ui->titleCheckBox->isChecked())
+                    /*&& (true == ui->titleCheckBox->isChecked())*/
                     && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                    && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
+                    /*&& (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)*/
                     && (m_MapProcessInfo.FilePath.isEmpty() != true)){
                 settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
                 saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
             }
             else {
                 if (customSettingIndex < 10) {
-                    saveSettingSelectStr = GROUPNAME_CUSTOMSETTING + " " + QString::number(customSettingIndex);
+                    saveSettingSelectStr = QString(GROUPNAME_CUSTOMSETTING) + " " + QString::number(customSettingIndex);
                 }
                 else {
-                    saveSettingSelectStr = GROUPNAME_CUSTOMSETTING + QString::number(customSettingIndex);
+                    saveSettingSelectStr = QString(GROUPNAME_CUSTOMSETTING) + QString::number(customSettingIndex);
                 }
                 settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
                 saveSettingSelectStr = saveSettingSelectStr + "/";
@@ -1204,6 +1246,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QString settingSelectStr;
 
     ui->settingselectComboBox->clear();
+    ui->settingselectComboBox->addItem(QString());
     QStringList groups = settingFile.childGroups();
     QStringList validgroups;
     QStringList validgroups_fullmatch;
@@ -1662,6 +1705,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->addmapdataButton->setEnabled(status);
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
+    ui->removeSettingButton->setEnabled(status);
 
     ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
@@ -2100,6 +2144,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
         ui->nameLineEdit->setText(ui->processinfoTable->item(index.row(), 0)->text());
         ui->titleLineEdit->setText(ui->processinfoTable->item(index.row(), 2)->text());
+        ui->settingselectComboBox->setCurrentText(QString());
 
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
         QString ProcessPath;
