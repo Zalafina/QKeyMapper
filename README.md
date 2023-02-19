@@ -13,9 +13,10 @@
 9. 加入了"Disable WIN Key"功能可以让键盘上的Windows按键在游戏中无效。
 10. 右侧键盘映射表中加入了连发(Burst)选择框，可以按照设定的连发按下时间(BurstPress)和连发抬起时间(BurstRelease)设定来反复发送映射表中的按键。
 11. 右侧键盘映射表中加入了锁定(Lock)选择框，选择后第一次按下对应的键盘初始按键后会保持此按键的按下状态，再次按下此键盘初始按键后接触锁定状态，支持与连发(Burst)选择框来组合使用，映射表中的Lock列的ON和OFF表示当前按键锁定状态。
-12. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始键盘映射，并且最小化到系统托盘。
+12. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始键盘映射，并且最小化到系统托盘, 。
 13. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
 14. 增加了支持将鼠标左键&右键&中键与键盘按键进行互相映射。
+15. v1.3.0版本开始支持"SaveMapData"可以将多个程序的不同键盘映射配置都保存到"keymapdata.ini"文件中。如果配置了"Auto Start Mapping"功能，那么在"KeyMappingStart"状态下会根据当前前台窗口的进程可执行文件名进行自动匹配切换到对应的键盘映射配置。
 
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
 
@@ -34,6 +35,7 @@
 12. "Auto Start Mapping" checkbox could auto start mapping at program startup, and minimize it to System tray.
 13. Add "SelectSetting" combobox to support multi settings selection, could save upto 10 different settings, and switch them by "SelectSetting" combobox.
 14. Add support mouse left&right&middle button to mapping with keyborad keys.
+15. v1.3.0 start to support save multi different program's keymap settings to "keymapdata.ini" config file. If "Auto Start Mapping" is checked for the keymap setting, it will check foreground window's executable file name to match saved program keymap settings in "keymapdata.ini" config file automatically. If there is a matched keymap setting, it will load this setting and start key mapping at "KeyMappingStart" state automatically.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
