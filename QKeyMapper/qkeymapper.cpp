@@ -33,6 +33,8 @@ static const int SENDMODE_BURST_STOP    = 2;
 
 static const int SEND_INPUTS_MAX = 20;
 
+static const int CUSTOMSETTING_INDEX_MAX = 20;
+
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
@@ -1048,46 +1050,68 @@ void QKeyMapper::saveKeyMapSetting(void)
             return;
         }
 
-        QStringList groups = settingFile.childGroups();
-        QStringList validgroups_customsetting;
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
-#endif
-
-        for (const QString &group : groups){
-            if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)) {
-                validgroups_customsetting.append(group);
-            }
-        }
-
-        int customSettingIndex;
-        if (validgroups_customsetting.size() > 0) {
-            QString lastgroup = validgroups_customsetting.last();
-            QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMSETTING);
-            customSettingIndex = lastNumberStr.toInt() + 1;
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[saveKeyMapSetting] Last custom setting index ->" << lastNumberStr.toInt();
-            qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customSettingIndex;
-#endif
-        }
-        else {
-            customSettingIndex = 1;
-        }
-
         QString saveSettingSelectStr;
-        if ((false == ui->nameLineEdit->text().isEmpty())
-                && (false == ui->titleLineEdit->text().isEmpty())
-                && (true == ui->nameCheckBox->isChecked())
-                && (true == ui->titleCheckBox->isChecked())
-                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
-            settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
-            saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
+        QString cursettingSelectStr = ui->settingselectComboBox->currentText();
+
+        if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+                && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
+            saveSettingSelectStr = cursettingSelectStr;
         }
         else {
-            saveSettingSelectStr = GROUPNAME_CUSTOMSETTING + QString::number(customSettingIndex);
-            settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
-            saveSettingSelectStr = saveSettingSelectStr + "/";
+            QStringList groups = settingFile.childGroups();
+            QStringList validgroups_customsetting;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
+#endif
+
+            for (const QString &group : groups){
+                if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+                        && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
+                    validgroups_customsetting.append(group);
+                }
+            }
+
+            int customSettingIndex;
+            if (validgroups_customsetting.size() > 0) {
+                QString lastgroup = validgroups_customsetting.last();
+                QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMSETTING);
+
+                if (lastNumberStr.toInt() >= CUSTOMSETTING_INDEX_MAX) {
+                    QString message = "Too big custom setting number " + lastNumberStr + ", please remove some custom settings!";
+                    QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                    return;
+                }
+                else {
+                    customSettingIndex = lastNumberStr.toInt() + 1;
+                }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[saveKeyMapSetting] Last custom setting index ->" << lastNumberStr.toInt();
+                qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customSettingIndex;
+#endif
+            }
+            else {
+                customSettingIndex = 1;
+            }
+
+            if ((false == ui->nameLineEdit->text().isEmpty())
+                    && (false == ui->titleLineEdit->text().isEmpty())
+                    && (true == ui->nameCheckBox->isChecked())
+                    && (true == ui->titleCheckBox->isChecked())
+                    && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                    && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
+                settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
+                saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
+            }
+            else {
+                if (customSettingIndex < 10) {
+                    saveSettingSelectStr = GROUPNAME_CUSTOMSETTING + " " + QString::number(customSettingIndex);
+                }
+                else {
+                    saveSettingSelectStr = GROUPNAME_CUSTOMSETTING + QString::number(customSettingIndex);
+                }
+                settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+                saveSettingSelectStr = saveSettingSelectStr + "/";
+            }
         }
 
         if (KeyMappingDataList.size() > 0){
@@ -1222,7 +1246,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     for (const QString &group : groups){
         bool valid_setting = false;
-        if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)) {
+        if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+                && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
             valid_setting = true;
         }
 
