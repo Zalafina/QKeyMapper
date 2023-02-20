@@ -39,6 +39,7 @@ static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
+static const char *CONFIG_FILENAME = "keymapdata.ini";
 
 static const char *SETTINGSELECT = "SettingSelect";
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
@@ -1037,7 +1038,7 @@ void QKeyMapper::on_cellChanged(int row, int col)
 bool QKeyMapper::checkSaveSettings(const QString &executablename)
 {
     bool checkresult = false;
-    QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
 
     if (groups.contains(executablename)) {
@@ -1067,7 +1068,7 @@ bool QKeyMapper::checkSaveSettings(const QString &executablename)
 void QKeyMapper::saveKeyMapSetting(void)
 {
     if (ui->keymapdataTable->rowCount() == KeyMappingDataList.size()){
-        QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+        QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         settingFile.setIniCodec("UTF-8");
 #endif
@@ -1239,7 +1240,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     bool clearallcontainsflag = true;
     bool selectSettingContainsFlag = false;
     quint8 datavalidflag = 0xFF;
-    QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settingFile.setIniCodec("UTF-8");
 #endif
@@ -2478,7 +2479,7 @@ void QKeyMapper::on_removeSettingButton_clicked()
 
     int currentSettingIndex = ui->settingselectComboBox->currentIndex();
     QString currentSettingText;
-    QSettings settingFile(QString("keymapdata.ini"), QSettings::IniFormat);
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
     if (groups.contains(settingSelectStr)) {
         settingFile.remove(settingSelectStr);

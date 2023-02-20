@@ -8,6 +8,10 @@
 
 int main(int argc, char *argv[])
 {
+    if (QDir::currentPath() != QCoreApplication::applicationDirPath()) {
+        QDir::setCurrent(QCoreApplication::applicationDirPath());
+    }
+
     int nScreenWidth = ::GetSystemMetrics(SM_CXSCREEN);
     HWND hwd = ::GetDesktopWindow();
     HDC hdc = ::GetDC(hwd);

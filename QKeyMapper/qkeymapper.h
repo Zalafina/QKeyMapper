@@ -23,6 +23,7 @@
 #include <QCheckBox>
 #include <QKeyEvent>
 #include <QHotkey>
+#include <QDir>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
