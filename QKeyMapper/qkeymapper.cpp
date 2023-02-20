@@ -2512,7 +2512,7 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
 
         std::wstring operate = QString("runas").toStdWString();
         std::wstring executable = QString("schtasks").toStdWString();
-        std::wstring argument = QString("/create /sc onlogon /rl highest /tn QKeyMapper /tr " + QCoreApplication::applicationFilePath()).toStdWString();
+        std::wstring argument = QString("/create /f /sc onlogon /rl highest /tn QKeyMapper /tr " + QCoreApplication::applicationFilePath()).toStdWString();
         int ret = (int)ShellExecute(NULL, operate.c_str(), executable.c_str(), argument.c_str(), NULL, SW_SHOWNORMAL);
         if(ret > 32) {
 #ifdef DEBUG_LOGOUT_ON
