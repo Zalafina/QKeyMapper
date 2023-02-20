@@ -42,6 +42,7 @@ static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 
 static const char *SETTINGSELECT = "SettingSelect";
+static const char *AUTO_STARTUP = "AutoStartup";
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
 static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
 
@@ -1685,6 +1686,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     customFont.setPointSize(14);
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
+    ui->autoStartupCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -2494,6 +2496,51 @@ void QKeyMapper::on_removeSettingButton_clicked()
 #endif
             bool loadresult = loadKeyMapSetting(currentSettingText);
             Q_UNUSED(loadresult);
+        }
+    }
+}
+
+
+void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[autoStartup] Auto startup state changed ->" << (Qt::CheckState)state;
+#endif
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    if (Qt::Checked == state) {
+        settingFile.setValue(AUTO_STARTUP , true);
+
+        std::wstring operate = QString("runas").toStdWString();
+        std::wstring executable = QString("schtasks").toStdWString();
+        std::wstring argument = QString("/create /sc onlogon /rl highest /tn QKeyMapper /tr " + QCoreApplication::applicationFilePath()).toStdWString();
+        int ret = (int)ShellExecute(NULL, operate.c_str(), executable.c_str(), argument.c_str(), NULL, SW_SHOWNORMAL);
+        if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[autoStartup] schtasks create success ->" << ret;
+#endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[autoStartup] schtasks create failed!!! ->" << ret;
+#endif
+        }
+    }
+    else {
+        settingFile.setValue(AUTO_STARTUP , false);
+
+        std::wstring operate = QString("runas").toStdWString();
+        std::wstring executable = QString("schtasks").toStdWString();
+        std::wstring argument = QString("/delete /f /tn QKeyMapper").toStdWString();
+        int ret = (int)ShellExecute(NULL, operate.c_str(), executable.c_str(), argument.c_str(), NULL, SW_SHOWNORMAL);
+        if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[autoStartup] schtasks delete success ->" << ret;
+#endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[autoStartup] schtasks delete failed!!! ->" << ret;
+#endif
         }
     }
 }

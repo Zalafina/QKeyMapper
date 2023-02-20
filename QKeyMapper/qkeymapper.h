@@ -24,6 +24,7 @@
 #include <QKeyEvent>
 #include <QHotkey>
 #include <QDir>
+#include <QProcess>
 #include <windows.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
@@ -174,6 +175,8 @@ private slots:
     void on_settingselectComboBox_textActivated(const QString &text);
 
     void on_removeSettingButton_clicked();
+
+    void on_autoStartupCheckBox_stateChanged(int state);
 
 private:
     void initHotKeySequence(void);
