@@ -2150,6 +2150,13 @@ void QKeyMapper::updateLockStatusDisplay()
     }
 }
 
+void QKeyMapper::raiseQKeyMapperWindow()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[raiseQKeyMapperWindow]" << "Secondary QKeyMapper Instances started.";
+#endif
+}
+
 void QKeyMapper::on_refreshButton_clicked()
 {
     ui->processinfoTable->clearContents();

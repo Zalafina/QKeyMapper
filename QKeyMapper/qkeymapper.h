@@ -149,6 +149,8 @@ public slots:
 
     void updateLockStatusDisplay(void);
 
+    void raiseQKeyMapperWindow(void);
+
 private slots:
     void HotKeyActivated();
 

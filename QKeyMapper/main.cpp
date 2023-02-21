@@ -89,6 +89,8 @@ int main(int argc, char *argv[])
 
     QKeyMapper w;
 
+    QObject::connect(&app, &SingleApplication::showUp, &w, &QKeyMapper::raiseQKeyMapperWindow);
+
     // Remove "?" Button from QDialog
     Qt::WindowFlags flags = Qt::Dialog;
     flags |= Qt::WindowMinimizeButtonHint;
