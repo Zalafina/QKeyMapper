@@ -2150,12 +2150,17 @@ void QKeyMapper::updateLockStatusDisplay()
     }
 }
 
+#ifdef SINGLE_APPLICATION
 void QKeyMapper::raiseQKeyMapperWindow()
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[raiseQKeyMapperWindow]" << "Secondary QKeyMapper Instances started.";
 #endif
+    showNormal();
+    activateWindow();
+    raise();
 }
+#endif
 
 void QKeyMapper::on_refreshButton_clicked()
 {

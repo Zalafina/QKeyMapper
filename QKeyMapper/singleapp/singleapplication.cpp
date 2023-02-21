@@ -5,6 +5,9 @@
 #include <QtCore/QSharedMemory>
 #include <QtNetwork/QLocalSocket>
 #include <QtNetwork/QLocalServer>
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#include <QRegularExpression>
+#endif
 
 #ifdef Q_OS_UNIX
     #include <signal.h>
@@ -188,7 +191,12 @@ SingleApplication::SingleApplication( int &argc, char *argv[], uint8_t secondary
     }
 
     QString serverName = app_t::organizationName() + app_t::applicationName();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static QRegularExpression reg = QRegularExpression("[^\\w\\-. ]");
+    serverName.replace( reg, "" );
+#else
     serverName.replace( QRegExp("[^\\w\\-. ]"), "" );
+#endif
 
     // Guarantee thread safe behaviour with a shared memory block. Also by
     // attaching to it and deleting it we make sure that the memory i deleted

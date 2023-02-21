@@ -149,7 +149,9 @@ public slots:
 
     void updateLockStatusDisplay(void);
 
+#ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
+#endif
 
 private slots:
     void HotKeyActivated();

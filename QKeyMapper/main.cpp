@@ -89,7 +89,9 @@ int main(int argc, char *argv[])
 
     QKeyMapper w;
 
+#ifdef SINGLE_APPLICATION
     QObject::connect(&app, &SingleApplication::showUp, &w, &QKeyMapper::raiseQKeyMapperWindow);
+#endif
 
     // Remove "?" Button from QDialog
     Qt::WindowFlags flags = Qt::Dialog;
