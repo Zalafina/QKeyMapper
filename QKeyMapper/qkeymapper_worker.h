@@ -94,7 +94,7 @@ class QKeyMapper_Worker : public QObject
 {
     Q_OBJECT
 public:
-    explicit QKeyMapper_Worker(QObject *parent = nullptr);
+    explicit QKeyMapper_Worker(QObject *parent = Q_NULLPTR);
     ~QKeyMapper_Worker();
 
     static QKeyMapper_Worker *getInstance()

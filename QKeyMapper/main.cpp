@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QDir>
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 
@@ -16,8 +17,8 @@ int main(int argc, char *argv[])
     HWND hwd = ::GetDesktopWindow();
     HDC hdc = ::GetDC(hwd);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
-    double dWidth = (double)width;
-    double dScreenWidth = (double)nScreenWidth;
+    double dWidth = static_cast<double>(width);
+    double dScreenWidth = static_cast<double>(nScreenWidth);
     double scale = dWidth / dScreenWidth;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -26,11 +27,28 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
     if (scale < 1.10) {
-        qDebug() << "Original screen scale ->" << scale << ", set QT_SCALE_FACTOR to 1.5";
-        qputenv("QT_SCALE_FACTOR", "1.5");
+        if (dWidth >= 3840) {
+            qputenv("QT_SCALE_FACTOR", "1.5");
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "Set QT_SCALE_FACTOR to [1.5] for screen width ->" << dWidth;
+#endif
+        }
+        else if (dWidth >= 2560) {
+            qputenv("QT_SCALE_FACTOR", "1.25");
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "Set QT_SCALE_FACTOR to [1.25] for screen width ->" << dWidth;
+#endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "Do not set QT_SCALE_FACTOR for screen width ->" << dWidth;
+#endif
+        }
     }
     else {
-        qDebug() << "Original screen scale ->" << scale << ", do not need to set QT_SCALE_FACTOR";
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Original screen scale ->" << scale << "," << "Screen width ->" << dWidth << ", do not need to set QT_SCALE_FACTOR.";
+#endif
     }
 
     QApplication a(argc, argv);

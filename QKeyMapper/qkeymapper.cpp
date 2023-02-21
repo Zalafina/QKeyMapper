@@ -1245,6 +1245,26 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settingFile.setIniCodec("UTF-8");
 #endif
+
+    if (true == settingFile.contains(AUTO_STARTUP)){
+        bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
+        if (true == autostartupChecked) {
+            ui->autoStartupCheckBox->setChecked(true);
+        }
+        else {
+            ui->autoStartupCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Auto Startup Checkbox ->" << autostartupChecked;
+#endif
+    }
+    else {
+        ui->autoStartupCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains AutoStartup, AutoStartup set to Unchecked.";
+#endif
+    }
+
     QString settingSelectStr;
 
     ui->settingselectComboBox->clear();
@@ -1695,6 +1715,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->titleCheckBox->setEnabled(status);
     ui->disableWinKeyCheckBox->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
+    ui->autoStartupCheckBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
@@ -2513,7 +2534,8 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
         std::wstring operate = QString("runas").toStdWString();
         std::wstring executable = QString("schtasks").toStdWString();
         std::wstring argument = QString("/create /f /sc onlogon /rl highest /tn QKeyMapper /tr " + QCoreApplication::applicationFilePath()).toStdWString();
-        int ret = (int)ShellExecute(NULL, operate.c_str(), executable.c_str(), argument.c_str(), NULL, SW_SHOWNORMAL);
+        HINSTANCE ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+        INT64 ret = (INT64)ret_instance;
         if(ret > 32) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[autoStartup] schtasks create success ->" << ret;
@@ -2531,7 +2553,8 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
         std::wstring operate = QString("runas").toStdWString();
         std::wstring executable = QString("schtasks").toStdWString();
         std::wstring argument = QString("/delete /f /tn QKeyMapper").toStdWString();
-        int ret = (int)ShellExecute(NULL, operate.c_str(), executable.c_str(), argument.c_str(), NULL, SW_SHOWNORMAL);
+        HINSTANCE ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+        INT64 ret = (INT64)ret_instance;
         if(ret > 32) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[autoStartup] schtasks delete success ->" << ret;
