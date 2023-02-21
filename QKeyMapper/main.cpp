@@ -56,10 +56,15 @@ int main(int argc, char *argv[])
 
 #ifdef SINGLE_APPLICATION
     QApplication::setApplicationName("QKeyMapper");
+    QApplication::setOrganizationName("AsukaVoV");
     SingleApplication app(argc, argv);
 #else
     QApplication app(argc, argv);
 #endif
+
+    if (QDir::currentPath() != QCoreApplication::applicationDirPath()) {
+        QDir::setCurrent(QCoreApplication::applicationDirPath());
+    }
 
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
