@@ -16,7 +16,10 @@
 12. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始键盘映射，并且最小化到系统托盘, 。
 13. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
 14. 增加了支持将鼠标左键&右键&中键与键盘按键进行互相映射。
-15. v1.3.0版本开始支持"SaveMapData"可以将多个程序的不同键盘映射配置都保存到"keymapdata.ini"文件中。如果配置了"Auto Start Mapping"功能，那么在"KeyMappingStart"状态下会根据当前前台窗口的进程可执行文件名进行自动匹配切换到对应的键盘映射配置。
+15. v1.3.0 -> 版本开始支持"SaveMapData"可以将多个程序的不同键盘映射配置都保存到"keymapdata.ini"文件中。如果配置了"Auto Start Mapping"功能，那么在"KeyMappingStart"状态下会根据当前前台窗口的进程可执行文件名进行自动匹配切换到对应的键盘映射配置。
+16. v1.3.1 -> "Auto Startup"勾选框可以让QKeyMapper键盘映射程序在Windows用户登录的时候自动启动，配合"Auto Start Mapping"勾选框开机启动后可以自动最小化到系统托盘图标，取消勾选框则取消开机登录自动启动。
+17. v1.3.1 -> 加入单例进程支持，只能同时运行一个QKeyMapper程序, 运行第二个QKeyMapper程序时会将第一个运行的实例程序窗口显示到前台。
+
 
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
 
@@ -35,7 +38,9 @@
 12. "Auto Start Mapping" checkbox could auto start mapping at program startup, and minimize it to System tray.
 13. Add "SelectSetting" combobox to support multi settings selection, could save upto 10 different settings, and switch them by "SelectSetting" combobox.
 14. Add support mouse left&right&middle button to mapping with keyborad keys.
-15. v1.3.0 start to support save multi different program's keymap settings to "keymapdata.ini" config file. If "Auto Start Mapping" is checked for the keymap setting, it will check foreground window's executable file name to match saved program keymap settings in "keymapdata.ini" config file automatically at "KeyMappingStart" state. If there is a matched keymap setting, it will load this setting and start key mapping automatically.
+15. v1.3.0 -> Start to support save multi different program's keymap settings to "keymapdata.ini" config file. If "Auto Start Mapping" is checked for the keymap setting, it will check foreground window's executable file name to match saved program keymap settings in "keymapdata.ini" config file automatically at "KeyMappingStart" state. If there is a matched keymap setting, it will load this setting and start key mapping automatically.
+16. v1.3.1 -> "Auto Startup" checkbox could launch QKeyMapper program at Windows user logon, it could work with "Auto Start Mapping" checkbox.
+17. v1.3.1 -> Add SingleApplication support, there could be only one QKeyMapper program instance at the same time. Launch second QKeyMapper program will only bring first QKeyMapper instance to Forgeground Window.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
