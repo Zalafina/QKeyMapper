@@ -2,6 +2,9 @@
 #include <QDir>
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
+#ifdef SINGLE_APPLICATION
+#include "singleapp/singleapplication.h"
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
 //#include "vld.h"
@@ -51,7 +54,13 @@ int main(int argc, char *argv[])
 #endif
     }
 
-    QApplication a(argc, argv);
+#ifdef SINGLE_APPLICATION
+    QApplication::setApplicationName("QKeyMapper");
+    SingleApplication app(argc, argv);
+#else
+    QApplication app(argc, argv);
+#endif
+
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
@@ -90,5 +99,5 @@ int main(int argc, char *argv[])
         w.show();
     }
 
-    return a.exec();
+    return app.exec();
 }

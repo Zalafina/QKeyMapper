@@ -13,8 +13,8 @@ IDI_ICON1       ICON      "image/my_icon.ico"
 
 // Version
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,3,0,0
- PRODUCTVERSION 1,3,0,0
+ FILEVERSION 1,3,1,0
+ PRODUCTVERSION 1,3,1,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -31,12 +31,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "https://github.com/Zalafina/QKeyMapper"
             VALUE "FileDescription", "QKeyMapper"
-            VALUE "FileVersion", "1.3.0.0"
+            VALUE "FileVersion", "1.3.1.0"
             VALUE "InternalName", "QKeyMapper"
-            VALUE "LegalCopyright", "Copyright (c) 2022, AsukaVoV"
+            VALUE "LegalCopyright", "Copyright (c) 2023, AsukaVoV"
             VALUE "OriginalFilename", "QKeyMapper.exe"
             VALUE "ProductName", "QKeyMapper"
-            VALUE "ProductVersion", "1.3.0.0"
+            VALUE "ProductVersion", "1.3.1.0"
         END
     END
     BLOCK "VarFileInfo"

@@ -14,6 +14,12 @@ include(qhotkey.pri)
 
 #DEFINES += USE_SABER_ICON
 
+DEFINES += SINGLE_APPLICATION
+
+contains( DEFINES, SINGLE_APPLICATION ) {
+    QT += network
+}
+
 CONFIG(debug, debug|release){
     DEFINES += DEBUG_LOGOUT_ON
 
@@ -77,6 +83,16 @@ SOURCES     += \
 HEADERS     += \
     qkeymapper.h \
     qkeymapper_worker.h
+
+contains( DEFINES, SINGLE_APPLICATION ) {
+    message("SINGLE_APPLICATION Defined!")
+
+    SOURCES +=  \
+        singleapp/singleapplication.cpp
+
+    HEADERS +=  \
+        singleapp/singleapplication.h
+}
 
 FORMS       += \
     qkeymapper.ui
