@@ -16,7 +16,9 @@ include(qhotkey.pri)
 
 DEFINES += SINGLE_APPLICATION
 
-contains( DEFINES, SINGLE_APPLICATION ) {
+DEFINES += LOGOUT_TOFILE
+
+contains(DEFINES, SINGLE_APPLICATION) {
     DEFINES += QAPPLICATION_CLASS=QApplication
     QT += network
 }
@@ -43,6 +45,10 @@ CONFIG(release, debug|release){
     } else {
         message("WIN32 Release Build")
     }
+}
+
+contains(DEFINES, LOGOUT_TOFILE) {
+    DEFINES += DEBUG_LOGOUT_ON
 }
 
 # The following define makes your compiler emit warnings if you use
