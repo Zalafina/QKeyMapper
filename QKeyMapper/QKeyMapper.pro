@@ -16,9 +16,8 @@ include(qhotkey.pri)
 
 DEFINES += SINGLE_APPLICATION
 
-DEFINES += QAPPLICATION_CLASS=QApplication
-
 contains( DEFINES, SINGLE_APPLICATION ) {
+    DEFINES += QAPPLICATION_CLASS=QApplication
     QT += network
 }
 
