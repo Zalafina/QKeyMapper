@@ -194,6 +194,7 @@ private:
     void refreshKeyMappingDataTable(void);
 
     bool checkSaveSettings(const QString &executablename);
+    bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(const QString &settingtext);
     bool checkMappingkeyStr(const QString &mappingkeystr);

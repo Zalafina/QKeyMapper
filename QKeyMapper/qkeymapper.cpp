@@ -223,15 +223,58 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
             if (filename.isEmpty() != true) {
                 bool savecheckresult = checkSaveSettings(filename);
+
                 if (savecheckresult && KEYMAP_CHECKING == m_KeyMapStatus) {
-                    QString curSettingSelectStr = ui->settingselectComboBox->currentText();
-                    if (curSettingSelectStr != filename) {
+                    bool needtoload = false;
+                    QVariant nameChecked_Var;
+                    QVariant titleChecked_Var;
+                    QVariant fileName_Var;
+                    QVariant windowTitle_Var;
+                    bool nameChecked = false;
+                    bool titleChecked = false;
+                    QString readFileName;
+                    QString readWindowTitle;
+
+                    if (readSaveSettingData(filename, PROCESSINFO_FILENAME_CHECKED, nameChecked_Var)) {
+                        nameChecked = nameChecked_Var.toBool();
+                    }
+                    if (readSaveSettingData(filename, PROCESSINFO_WINDOWTITLE_CHECKED, titleChecked_Var)) {
+                        titleChecked = titleChecked_Var.toBool();
+                    }
+                    if (readSaveSettingData(filename, PROCESSINFO_FILENAME, fileName_Var)) {
+                        readFileName = fileName_Var.toString();
+                    }
+                    if (readSaveSettingData(filename, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
+                        readWindowTitle = windowTitle_Var.toString();
+                    }
+
+                    if ((true == nameChecked)
+                            && (true == titleChecked)){
+                        if ((filename == readFileName)
+                                && (windowTitle == readWindowTitle)){
+                            needtoload = true;
+                        }
+                    }
+                    else if (true == nameChecked){
+                        if (filename == readFileName){
+                            needtoload = true;
+                        }
+                    }
+                    else if (true == titleChecked){
+                        if (windowTitle == windowTitle){
+                            needtoload = true;
+                        }
+                    }
+
+                    if (needtoload) {
+                        QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+                        if (curSettingSelectStr != filename) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Saved setting matched, load -> [" << filename << "]";
+                            qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Setting Check Matched! Load setting -> [" << filename << "]";
 #endif
-                        checkresult = 1;
-                        bool loadresult = loadKeyMapSetting(filename);
-                        Q_UNUSED(loadresult)
+                            bool loadresult = loadKeyMapSetting(filename);
+                            Q_UNUSED(loadresult)
+                        }
                     }
                 }
             }
@@ -1067,6 +1110,19 @@ bool QKeyMapper::checkSaveSettings(const QString &executablename)
     }
 
     return checkresult;
+}
+
+bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata)
+{
+    bool readresult = false;
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QString setting_key = group + "/" + key;
+    if (true == settingFile.contains(setting_key)){
+        settingdata = settingFile.value(setting_key);
+        readresult = true;
+    }
+
+    return readresult;
 }
 
 void QKeyMapper::saveKeyMapSetting(void)
