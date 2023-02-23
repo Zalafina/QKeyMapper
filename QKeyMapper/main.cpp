@@ -5,13 +5,67 @@
 #ifdef SINGLE_APPLICATION
 #include "singleapp/singleapplication.h"
 #endif
+#ifdef LOGOUT_TOFILE
+#include <QDateTime>
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
 //#include "vld.h"
 #endif
 
+#ifdef LOGOUT_TOFILE
+static QMutex *logfile_mutex = Q_NULLPTR;
+void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    Q_UNUSED(context)
+    logfile_mutex->lock();
+
+    QString level;
+    switch(type)
+    {
+    case QtDebugMsg:
+        level = QString("[D]");
+        break;
+
+    case QtInfoMsg:
+        level = QString("[I]");
+        break;
+
+    case QtWarningMsg:
+        level = QString("[W]");
+        break;
+
+    case QtCriticalMsg:
+        level = QString("[E]");
+        break;
+
+    case QtFatalMsg:
+        level = QString("[F]");
+    }
+
+//    QString context_info = QString("File:(%1) Line:(%2)").arg(QString(context.file)).arg(context.line);
+    QString current_date_time = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
+    QString current_date = QString("[%1]").arg(current_date_time);
+    QString message = QString("%1%2 %3").arg(current_date).arg(level).arg(msg);
+
+    QFile file("log.txt");
+    file.open(QIODevice::WriteOnly | QIODevice::Append);
+    QTextStream text_stream(&file);
+    text_stream << message << endl;
+    file.flush();
+    file.close();
+
+    fprintf(stderr, "%s\n", message.toLocal8Bit().constData());
+
+    logfile_mutex->unlock();
+}
+#endif
+
 int main(int argc, char *argv[])
 {
+    qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
+
     int nScreenWidth = ::GetSystemMetrics(SM_CXSCREEN);
     HWND hwd = ::GetDesktopWindow();
     HDC hdc = ::GetDC(hwd);
@@ -62,9 +116,12 @@ int main(int argc, char *argv[])
         QDir::setCurrent(QCoreApplication::applicationDirPath());
     }
 
-    QApplication::setStyle(QStyleFactory::create("Fusion"));
+#ifdef LOGOUT_TOFILE
+    logfile_mutex = new QMutex();
+    qInstallMessageHandler(outputMessage);
+#endif
 
-    qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
+    QApplication::setStyle(QStyleFactory::create("Fusion"));
 
 #ifdef ADJUST_PRIVILEGES
 //    BOOL adjustresult = QKeyMapper::AdjustPrivileges();
@@ -104,5 +161,11 @@ int main(int argc, char *argv[])
         w.show();
     }
 
-    return app.exec();
+    int ret = app.exec();
+
+#ifdef LOGOUT_TOFILE
+    delete logfile_mutex;
+#endif
+
+    return ret;
 }
