@@ -7,6 +7,7 @@
 #endif
 #ifdef LOGOUT_TOFILE
 #include <QDateTime>
+#include <QTextStream>
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -52,7 +53,7 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
     QFile file("log.txt");
     file.open(QIODevice::WriteOnly | QIODevice::Append);
     QTextStream text_stream(&file);
-    text_stream << message << endl;
+    text_stream << message << "\r\n";
     file.flush();
     file.close();
 
