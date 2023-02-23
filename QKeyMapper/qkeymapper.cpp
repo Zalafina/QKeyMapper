@@ -275,6 +275,11 @@ void QKeyMapper::cycleCheckProcessProc(void)
                             bool loadresult = loadKeyMapSetting(filename);
                             Q_UNUSED(loadresult)
                         }
+                        else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[cycleCheckProcessProc]" << "Current setting select is already the same ->" << curSettingSelectStr;
+#endif
+                        }
                     }
                 }
             }
