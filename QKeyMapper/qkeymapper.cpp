@@ -224,12 +224,15 @@ void QKeyMapper::cycleCheckProcessProc(void)
             if (filename.isEmpty() != true) {
                 bool savecheckresult = checkSaveSettings(filename);
                 if (savecheckresult && KEYMAP_CHECKING == m_KeyMapStatus) {
-                    checkresult = 1;
-                    bool loadresult = loadKeyMapSetting(filename);
-                    Q_UNUSED(loadresult);
+                    QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+                    if (curSettingSelectStr != filename) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Executablename match saved setting -> [" << filename << "], load setting.";
+                        qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Saved setting matched, load -> [" << filename << "]";
 #endif
+                        checkresult = 1;
+                        bool loadresult = loadKeyMapSetting(filename);
+                        Q_UNUSED(loadresult)
+                    }
                 }
             }
 
@@ -1334,7 +1337,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 qDebug() << "[loadKeyMapSetting] Setting select name ->" << settingSelectStr;
 #endif
             }
-            ui->settingselectComboBox->setCurrentText(settingSelectStr);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Startup load setting" << settingSelectStr;
 #endif
@@ -1374,7 +1376,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 qDebug() << "[loadKeyMapSetting] Setting select name ->" << settingSelectStr;
 #endif
             }
-            ui->settingselectComboBox->setCurrentText(settingSelectStr);
+
             if (false == settingSelectStr.contains("/")) {
                 settingSelectStr = settingSelectStr + "/";
             }
@@ -1631,6 +1633,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     else{
         if ((true == autoStartMappingChecked) && (true == settingtext.isEmpty())) {
             on_keymapButton_clicked();
+        }
+
+        if (settingSelectStr.isEmpty() != true) {
+            settingSelectStr = settingSelectStr.remove("/");
+            ui->settingselectComboBox->setCurrentText(settingSelectStr);
         }
         return true;
     }

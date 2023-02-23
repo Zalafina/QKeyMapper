@@ -56,7 +56,10 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
     file.flush();
     file.close();
 
+#ifdef QT_NO_DEBUG
+#else
     fprintf(stderr, "%s\n", message.toLocal8Bit().constData());
+#endif
 
     logfile_mutex->unlock();
 }
