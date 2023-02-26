@@ -2,7 +2,7 @@
 #include "ui_qkeymapper.h"
 
 //static const uint WIN_TITLESTR_MAX = 200U;
-static const uint CYCLE_CHECK_TIMEOUT = 500U;
+static const uint CYCLE_CHECK_TIMEOUT = 100U;
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
 static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
 
@@ -1813,19 +1813,25 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
 void QKeyMapper::extractSoundFiles()
 {
-    QFile soundFileStartQRC(SOUNDFILE_START_QRC);
     QFile soundFileStartLocal(SOUNDFILE_START);
-
-    if (soundFileStartQRC.exists()){
+    if (false == soundFileStartLocal.exists()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[extractSoundFiles]" << "QRC sound file QKeyMapper.wav exist";
+        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapper.wav do not exist";
 #endif
-        if (false == soundFileStartLocal.exists()){
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapper.wav do not exist";
-#endif
+        QFile soundFileStartQRC(SOUNDFILE_START_QRC);
+        if (soundFileStartQRC.exists()){
             soundFileStartQRC.copy(SOUNDFILE_START);
         }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[extractSoundFiles]" << "QRC sound file QKeyMapper.wav do not exist!!!";
+#endif
+        }
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapper.wav already exist";
+#endif
     }
 }
 
