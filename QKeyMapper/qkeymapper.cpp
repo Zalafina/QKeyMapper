@@ -284,7 +284,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
                             qDebug() << "[cycleCheckProcessProc]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
                         }
-                        playStartSound();
                     }
                 }
             }
@@ -318,6 +317,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
         if (checkresult){
             if (KEYMAP_CHECKING == m_KeyMapStatus){
+                playStartSound();
                 setKeyHook(hwnd);
                 m_KeyMapStatus = KEYMAP_MAPPING;
                 emit updateLockStatus_Signal();
