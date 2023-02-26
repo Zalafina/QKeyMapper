@@ -73,6 +73,7 @@ LIBS        += -L$$PWD/win_lib/x86
 }
 LIBS        += User32.lib Psapi.lib dinput8.lib dxguid.lib
 LIBS        += Gdi32.Lib
+LIBS        += WinMM.Lib
 
 contains( DEFINES, ADJUST_PRIVILEGES ) {
     LIBS    += AdvAPI32.Lib

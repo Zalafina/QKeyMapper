@@ -204,6 +204,8 @@ private:
 
     void changeControlEnableStatus(bool status);
 
+    void playStartSound();
+
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;

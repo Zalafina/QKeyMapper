@@ -65,6 +65,8 @@ static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 
 static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
+static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
+
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
@@ -280,6 +282,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                             qDebug() << "[cycleCheckProcessProc]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
                         }
+                        playStartSound();
                     }
                 }
             }
@@ -1804,6 +1807,15 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->processinfoTable->setEnabled(status);
     ui->keymapdataTable->setEnabled(status);
+}
+
+void QKeyMapper::playStartSound()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[playStartSound]" << "Play \"Start.wav\" sound file.";
+#endif
+    std::wstring startSound = QString(SOUNDFILE_START).toStdWString();
+    PlaySound(startSound.c_str(), NULL/*AfxGetInstanceHandle()*/, SND_FILENAME|SND_ASYNC);
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()
