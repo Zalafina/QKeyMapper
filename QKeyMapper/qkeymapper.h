@@ -204,6 +204,7 @@ private:
 
     void changeControlEnableStatus(bool status);
 
+    void extractSoundFiles();
     void playStartSound();
 
 public:

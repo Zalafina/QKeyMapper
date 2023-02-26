@@ -107,7 +107,8 @@ FORMS       += \
 
 RESOURCES   += \
     image.qrc \
-    font.qrc
+    font.qrc \
+    sound.qrc
 
 RC_FILE     += \
     QKeyMapper.rc

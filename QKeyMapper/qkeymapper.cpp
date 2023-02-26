@@ -65,6 +65,7 @@ static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 
 static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
+static const char *SOUNDFILE_START_QRC = ":/QKeyMapperStart.wav";
 static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
@@ -93,6 +94,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_instance = this;
     ui->setupUi(this);
+    extractSoundFiles();
     initAddKeyComboBoxes();
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
     QString defaultTitle;
@@ -1809,13 +1811,40 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->keymapdataTable->setEnabled(status);
 }
 
+void QKeyMapper::extractSoundFiles()
+{
+    QFile soundFileStartQRC(SOUNDFILE_START_QRC);
+    QFile soundFileStartLocal(SOUNDFILE_START);
+
+    if (soundFileStartQRC.exists()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractSoundFiles]" << "QRC sound file QKeyMapper.wav exist";
+#endif
+        if (false == soundFileStartLocal.exists()){
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapper.wav do not exist";
+#endif
+            soundFileStartQRC.copy(SOUNDFILE_START);
+        }
+    }
+}
+
 void QKeyMapper::playStartSound()
 {
+    QFile soundFileStartLocal(SOUNDFILE_START);
+
+    if (soundFileStartLocal.exists()){
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[playStartSound]" << "Play \"Start.wav\" sound file.";
+        qDebug() << "[playStartSound]" << "Play sound file ->" << SOUNDFILE_START;
 #endif
-    std::wstring startSound = QString(SOUNDFILE_START).toStdWString();
-    PlaySound(startSound.c_str(), NULL/*AfxGetInstanceHandle()*/, SND_FILENAME|SND_ASYNC);
+        std::wstring startSound = QString(SOUNDFILE_START).toStdWString();
+        PlaySound(startSound.c_str(), NULL/*AfxGetInstanceHandle()*/, SND_FILENAME|SND_ASYNC);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[playStartSound]" << "Sound file do not exist ->" << SOUNDFILE_START;
+#endif
+    }
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()
