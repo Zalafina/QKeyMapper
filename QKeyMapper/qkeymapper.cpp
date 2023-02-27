@@ -133,11 +133,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
-#ifdef USE_SABER_ICON
-    m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Saber.ico"));
-#else
-    m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
-#endif
+    m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
     m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
     m_SysTrayIcon->show();
 
@@ -320,6 +316,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 playStartSound();
                 setKeyHook(hwnd);
                 m_KeyMapStatus = KEYMAP_MAPPING;
+                updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -336,6 +333,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
             if (KEYMAP_MAPPING == m_KeyMapStatus){
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
+                updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -979,14 +977,9 @@ void QKeyMapper::on_keymapButton_clicked()
 
         if (true == fileNameCheckOK && true == windowTitleCheckOK){
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
-            m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
-#ifdef USE_SABER_ICON
-            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Saber_Working.ico"));
-#else
-            m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Working.ico"));
-#endif
             ui->keymapButton->setText("KeyMappingStop");
             m_KeyMapStatus = KEYMAP_CHECKING;
+            updateSystemTrayDisplay();
             emit updateLockStatus_Signal();
             startKeyMap = true;
 
@@ -1001,11 +994,7 @@ void QKeyMapper::on_keymapButton_clicked()
     else{
         m_CycleCheckTimer.stop();
         m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
-#ifdef USE_SABER_ICON
-        m_SysTrayIcon->setIcon(QIcon(":/AppIcon_Saber.ico"));
-#else
-        m_SysTrayIcon->setIcon(QIcon(":/AppIcon.ico"));
-#endif
+        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
         ui->keymapButton->setText("KeyMappingStart");
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
@@ -2003,6 +1992,18 @@ void QKeyMapper::updateProcessInfoDisplay()
 #endif
             ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
         }
+    }
+}
+
+void QKeyMapper::updateSystemTrayDisplay()
+{
+    if (KEYMAP_CHECKING == m_KeyMapStatus) {
+        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_checking.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(Checking : " + m_MapProcessInfo.FileName + ")");
+    }
+    else if (KEYMAP_MAPPING == m_KeyMapStatus) {
+        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
     }
 }
 

@@ -1,9 +1,8 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="AppIcon.ico">image/my_icon.ico</file>
         <file alias="DefaultIcon.ico">image/ForzaHorizon4.ico</file>
-        <file alias="AppIcon_Working.ico">image/my_icon_working.ico</file>
-        <file alias="AppIcon_Saber.ico">image/saber_icon.ico</file>
-        <file alias="AppIcon_Saber_Working.ico">image/saber_icon_working.ico</file>
+        <file alias="QKeyMapper.ico">image/QKeyMapper.ico</file>
+        <file alias="QKeyMapper_checking.ico">image/QKeyMapper_checking.ico</file>
+        <file alias="QKeyMapper_mapping.ico">image/QKeyMapper_mapping.ico</file>
     </qresource>
 </RCC>

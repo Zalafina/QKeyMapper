@@ -188,6 +188,7 @@ private:
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
+    void updateSystemTrayDisplay(void);
 
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
