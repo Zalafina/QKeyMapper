@@ -2,7 +2,7 @@
 #include "ui_qkeymapper.h"
 
 //static const uint WIN_TITLESTR_MAX = 200U;
-static const uint CYCLE_CHECK_TIMEOUT = 100U;
+static const uint CYCLE_CHECK_TIMEOUT = 300U;
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
 static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
 
