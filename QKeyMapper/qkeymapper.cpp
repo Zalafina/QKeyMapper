@@ -1761,6 +1761,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     ui->burstreleaseLabel->setFont(customFont);
     ui->burstrelease_msLabel->setFont(customFont);
     ui->settingselectLabel->setFont(customFont);
+    ui->removeSettingButton->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
