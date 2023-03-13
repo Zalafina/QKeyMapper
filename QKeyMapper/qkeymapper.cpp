@@ -1048,14 +1048,19 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 
 void QKeyMapper::on_cellChanged(int row, int col)
 {
-    if (col == BURST_MODE_COLUMN || col == LOCK_COLUMN) {
+    if ((col == BURST_MODE_COLUMN || col == LOCK_COLUMN)
+            && ui->keymapdataTable->item(row, col)->checkState() == Qt::Checked) {
         if (KeyMappingDataList[row].Mapping_Keys.size() > 1) {
             KeyMappingDataList[row].Burst = false;
             KeyMappingDataList[row].Lock = false;
-            ui->keymapdataTable->item(row, BURST_MODE_COLUMN)->setCheckState(Qt::Unchecked);
-            ui->keymapdataTable->item(row, LOCK_COLUMN)->setCheckState(Qt::Unchecked);
+            QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
+            burstCheckBox->setCheckState(Qt::Unchecked);
+            ui->keymapdataTable->setItem(row, BURST_MODE_COLUMN    , burstCheckBox);
+            QTableWidgetItem *lockCheckBox = new QTableWidgetItem();
+            lockCheckBox->setCheckState(Qt::Unchecked);
+            ui->keymapdataTable->setItem(row, LOCK_COLUMN    , lockCheckBox);
 
-            QString message = "Mapping key sequence do not support Burst or Lock mode!";
+            QString message = "Key sequence with \"→\" do not support Burst or Lock mode!";
             QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) could not set burst or lock for key sequence(%d)", __func__, row, KeyMappingDataList[row].Mapping_Keys.size());
@@ -1226,13 +1231,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
             {
                 original_keys << keymapdata.Original_Key;
-                QString mappingkeys_str;
-                if (keymapdata.Mapping_Keys.size() == 1){
-                    mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
-                }
-                else {
-                    mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_PLUS);
-                }
+                QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
                 mapping_keysList  << mappingkeys_str;
                 if (true == keymapdata.Burst) {
                     burstList.append("ON");
@@ -1718,7 +1717,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
 {
     bool checkResult = true;
-    QStringList Mapping_Keys = mappingkeystr.split(SEPARATOR_PLUS);
+    static QRegularExpression regexp("\\s[+→]\\s");
+    QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
     for (const QString &mapping_key : Mapping_Keys){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)){
@@ -2219,13 +2219,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
 
             /* MAPPING_KEY_COLUMN */
-            QString mappingkeys_str;
-            if (keymapdata.Mapping_Keys.size() == 1) {
-                mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
-            }
-            else {
-                mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_PLUS);
-            }
+            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
             ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
 
             /* BURST_MODE_COLUMN */
@@ -2383,6 +2377,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
         if (findindex != -1){
             if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
+                    && false == ui->nextarrowCheckBox->isChecked()
                     && KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
                 already_exist = true;
 #ifdef DEBUG_LOGOUT_ON
