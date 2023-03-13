@@ -339,7 +339,7 @@
     <rect>
      <x>585</x>
      <y>590</y>
-     <width>121</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>
@@ -1186,6 +1186,25 @@
    </property>
    <property name="text">
     <string>Auto Startup</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="nextarrowCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>920</x>
+     <y>391</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>→</string>
    </property>
    <property name="checked">
     <bool>false</bool>

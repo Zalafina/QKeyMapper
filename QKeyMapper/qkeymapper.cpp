@@ -125,6 +125,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->moveupButton->setFont(QFont("SimSun", 14));
     ui->movedownButton->setFont(QFont("SimSun", 16));
+    ui->nextarrowCheckBox->setFont(QFont("SimSun", 14));
 
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
@@ -1047,6 +1048,22 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 
 void QKeyMapper::on_cellChanged(int row, int col)
 {
+    if (col == BURST_MODE_COLUMN || col == LOCK_COLUMN) {
+        if (KeyMappingDataList[row].Mapping_Keys.size() > 1) {
+            KeyMappingDataList[row].Burst = false;
+            KeyMappingDataList[row].Lock = false;
+            ui->keymapdataTable->item(row, BURST_MODE_COLUMN)->setCheckState(Qt::Unchecked);
+            ui->keymapdataTable->item(row, LOCK_COLUMN)->setCheckState(Qt::Unchecked);
+
+            QString message = "Mapping key sequence do not support Burst or Lock mode!";
+            QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[%s]: row(%d) could not set burst or lock for key sequence(%d)", __func__, row, KeyMappingDataList[row].Mapping_Keys.size());
+#endif
+            return;
+        }
+    }
+
     if (col == BURST_MODE_COLUMN) {
         bool burst = false;
         if (ui->keymapdataTable->item(row, col)->checkState() == Qt::Checked) {
@@ -1214,7 +1231,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
                 }
                 else {
-                    mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+                    mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_PLUS);
                 }
                 mapping_keysList  << mappingkeys_str;
                 if (true == keymapdata.Burst) {
@@ -1701,7 +1718,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
 {
     bool checkResult = true;
-    QStringList Mapping_Keys = mappingkeystr.split(SEPARATOR_STR);
+    QStringList Mapping_Keys = mappingkeystr.split(SEPARATOR_PLUS);
     for (const QString &mapping_key : Mapping_Keys){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)){
@@ -1793,6 +1810,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
     ui->removeSettingButton->setEnabled(status);
+    ui->moveupButton->setEnabled(status);
+    ui->movedownButton->setEnabled(status);
+    ui->nextarrowCheckBox->setEnabled(status);
 
     ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
@@ -2204,7 +2224,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 mappingkeys_str = keymapdata.Mapping_Keys.constFirst();
             }
             else {
-                mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+                mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_PLUS);
             }
             ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
 
@@ -2362,7 +2382,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
         int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
 
         if (findindex != -1){
-            if (KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
+            if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
+                    && KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
                 already_exist = true;
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
@@ -2373,11 +2394,16 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (false == already_exist){
             if (findindex != -1){
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
-                QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_STR);
+                QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
 #endif
-                mappingkeys_str = mappingkeys_str + SEPARATOR_STR + m_mapkeyComboBox->currentText();
+                if (ui->nextarrowCheckBox->isChecked()) {
+                    mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + m_mapkeyComboBox->currentText();
+                }
+                else {
+                    mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + m_mapkeyComboBox->currentText();
+                }
 
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "mappingkeys_str after add:" << mappingkeys_str;

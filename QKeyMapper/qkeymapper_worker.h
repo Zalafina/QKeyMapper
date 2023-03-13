@@ -17,7 +17,8 @@ class QKeyMapper;
 #define EXTENED_FLAG_TRUE   true
 #define EXTENED_FLAG_FALSE  false
 
-#define SEPARATOR_STR   (" + ")
+#define SEPARATOR_PLUS          (" + ")
+#define SEPARATOR_NEXTARROW     (" → ")
 
 typedef struct MAP_KEYDATA
 {
@@ -32,7 +33,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock)
     {
         Original_Key = originalkey;
-        Mapping_Keys = mappingkeys.split(SEPARATOR_STR);
+        Mapping_Keys = mappingkeys.split(SEPARATOR_NEXTARROW);
         Burst = burst;
         Lock = lock;
         LockStatus = false;
