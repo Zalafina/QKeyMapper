@@ -31,8 +31,6 @@ static const int SENDMODE_HOOK          = 0;
 static const int SENDMODE_BURST_NORMAL  = 1;
 static const int SENDMODE_BURST_STOP    = 2;
 
-static const int SEND_INPUTS_MAX = 20;
-
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;

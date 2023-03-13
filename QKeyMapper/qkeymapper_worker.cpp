@@ -8,7 +8,8 @@ static const int SENDMODE_HOOK          = 0;
 static const int SENDMODE_BURST_NORMAL  = 1;
 static const int SENDMODE_BURST_STOP    = 2;
 
-static const int SEND_INPUTS_MAX = 20;
+static const int SEND_INPUTS_MAX = 100;
+static const int KEY_SEQUENCE_MAX = 8;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
@@ -135,9 +136,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
         return;
     }
-    else if (keycount > SEND_INPUTS_MAX) {
+    else if (keycount > KEY_SEQUENCE_MAX) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("sendInputKeys(): too many input keys(%d)!!!", keycount);
+        qWarning("sendInputKeys(): Key sequence is too long(%d)!!!", keycount);
 #endif
         return;
     }
@@ -149,6 +150,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     INPUT inputs[SEND_INPUTS_MAX] = { 0 };
 
     if (KEY_UP == keyupdown) {
+        if (keycount > 1) {
+            return;
+        }
+
         for(auto it = inputKeys.crbegin(); it != inputKeys.crend(); ++it) {
             QString key = (*it);
 
@@ -231,55 +236,64 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         }
     }
     else {
-        for (const QString &key : inputKeys){
-            INPUT *input_p = &inputs[index];
-            if (true == VirtualMouseButtonMap.contains(key)) {
-                if (true == pressedVirtualKeysList.contains(key)) {
-                    qWarning("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
-                    continue;
-                }
+        if (1 == keycount) {
+            QString mappingKeys = inputKeys.constFirst();
+            for (const QString &key : mappingKeys){
+                INPUT *input_p = &inputs[index];
+                if (true == VirtualMouseButtonMap.contains(key)) {
+                    if (true == pressedVirtualKeysList.contains(key)) {
+                        qWarning("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                        continue;
+                    }
 
-                moustButtons.append(key);
-                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
-                input_p->type = INPUT_MOUSE;
-                input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
-                if (KEY_DOWN == keyupdown) {
-                    input_p->mi.dwFlags = vmousecode.MouseDownCode;
+                    moustButtons.append(key);
+                    V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                    input_p->type = INPUT_MOUSE;
+                    input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                    if (KEY_DOWN == keyupdown) {
+                        input_p->mi.dwFlags = vmousecode.MouseDownCode;
+                    }
+                    else {
+                        input_p->mi.dwFlags = vmousecode.MouseUpCode;
+                    }
+                }
+                else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                    if (true == pressedVirtualKeysList.contains(key)) {
+                        qWarning("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                        continue;
+                    }
+
+                    V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+                    DWORD extenedkeyflag = 0;
+                    if (true == vkeycode.ExtenedFlag){
+                        extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                    }
+                    else{
+                        extenedkeyflag = 0;
+                    }
+                    input_p->type = INPUT_KEYBOARD;
+                    input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                    input_p->ki.wVk = vkeycode.KeyCode;
+                    if (KEY_DOWN == keyupdown) {
+                        input_p->ki.dwFlags = extenedkeyflag | 0;
+                    }
+                    else {
+                        input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                    }
                 }
                 else {
-                    input_p->mi.dwFlags = vmousecode.MouseUpCode;
-                }
-            }
-            else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-                if (true == pressedVirtualKeysList.contains(key)) {
-                    qWarning("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
-                    continue;
-                }
-
-                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
-                DWORD extenedkeyflag = 0;
-                if (true == vkeycode.ExtenedFlag){
-                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
-                }
-                else{
-                    extenedkeyflag = 0;
-                }
-                input_p->type = INPUT_KEYBOARD;
-                input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
-                input_p->ki.wVk = vkeycode.KeyCode;
-                if (KEY_DOWN == keyupdown) {
-                    input_p->ki.dwFlags = extenedkeyflag | 0;
-                }
-                else {
-                    input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
-                }
-            }
-            else {
 #ifdef DEBUG_LOGOUT_ON
-                qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+                    qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
 #endif
+                }
+                index++;
             }
-            index++;
+        }
+        /* keycount > 1 */
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[sendInputKeys] " << "Key Sequence [" << inputKeys << "]";
+#endif
         }
     }
 
@@ -676,7 +690,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("\"L-Win + D\" pressed!");
 #endif
-                        QKeyMapper_Worker::getInstance()->send_WINplusD_Signal();
+                        emit QKeyMapper_Worker::getInstance()->send_WINplusD_Signal();
                     }
                 }
 
@@ -711,11 +725,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                     if (KEY_DOWN == keyupdown){
-                        QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
                         returnFlag = true;
                     }
                     else { /* KEY_UP == keyupdown */
-                        QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
                         returnFlag = true;
                     }
                 }
@@ -813,11 +827,11 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                         QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                         if (KEY_DOWN == keyupdown){
-                            QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
                             returnFlag = true;
                         }
                         else { /* KEY_UP == keyupdown */
-                            QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
                             returnFlag = true;
                         }
                     }
