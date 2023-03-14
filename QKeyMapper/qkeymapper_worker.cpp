@@ -8,7 +8,7 @@ static const int SENDMODE_HOOK          = 0;
 static const int SENDMODE_BURST_NORMAL  = 1;
 static const int SENDMODE_BURST_STOP    = 2;
 
-static const int SEND_INPUTS_MAX = 100;
+static const int SEND_INPUTS_MAX = 30;
 static const int KEY_SEQUENCE_MAX = 8;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
@@ -311,6 +311,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[sendInputKeys] " << "Key Sequence [" << inputKeys << "]";
 #endif
+            keycount = makeKeySequenceInputarray(inputKeys, inputs);
         }
     }
 
@@ -1264,4 +1265,18 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
     for (int index = 0; index < QKeyMapper::KeyMappingDataList.size(); index++) {
         QKeyMapper::KeyMappingDataList[index].LockStatus = false;
     }
+}
+
+int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array)
+{
+    int keycount = 0;
+
+    for (const QString &keyseq : qAsConst(keyseq_list)){
+        QStringList mappingKeys = keyseq.split(SEPARATOR_PLUS);
+        for (const QString &key : qAsConst(mappingKeys)){
+            keycount++;
+        }
+    }
+
+    return keycount;
 }

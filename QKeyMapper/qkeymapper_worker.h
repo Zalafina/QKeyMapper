@@ -193,6 +193,8 @@ private:
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void clearAllBurstTimersAndLockKeys(void);
+public:
+    int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 
 public:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

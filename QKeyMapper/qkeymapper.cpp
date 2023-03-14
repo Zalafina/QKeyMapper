@@ -2620,6 +2620,15 @@ void QKeyMapper::on_movedownButton_clicked()
             qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", ui->keymapdataTable->rowCount(), KeyMappingDataList.size());
         }
 #endif
+
+        static const int SEND_INPUTS_MAX = 30;
+        int keycount = 0;
+        INPUT inputs[SEND_INPUTS_MAX] = { 0 };
+        QStringList mappingKeyList = KeyMappingDataList.at(reselectrow).Mapping_Keys;
+        keycount = QKeyMapper_Worker::getInstance()->makeKeySequenceInputarray(mappingKeyList, inputs);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("makeKeySequenceInputarray() -> keycount = %d", keycount);
+#endif
     }
 }
 
