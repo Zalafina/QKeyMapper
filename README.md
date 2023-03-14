@@ -20,7 +20,7 @@
 16. v1.3.1 -> "Auto Startup"勾选框可以让QKeyMapper键盘映射程序在Windows用户登录的时候自动启动，配合"Auto Start Mapping"勾选框开机启动后可以自动最小化到系统托盘图标，取消勾选框则取消开机登录自动启动。
 17. v1.3.1 -> 加入单例进程支持，只能同时运行一个QKeyMapper程序, 运行第二个QKeyMapper程序时会将第一个运行的实例程序窗口显示到前台。
 18. v1.3.2 -> 在"KeyMappingStart"(循环检测)状态下，如果检测到到前台窗口与当前SelectSetting的键盘映射配置设定一致时候会播放一个音效提示进入到键盘映射生效状态。
-19. v1.3.3 -> 再ADD按键右侧增加了"»"勾选框，用于添加按键序列，例如: Ctrl + X 之后 Ctrl + S，设置后效果参考README中显示的截图。
+19. v1.3.3 -> 在ADD按键右侧增加了"»"勾选框，用于添加按键序列，例如: Ctrl + X 之后 Ctrl + S，设置后效果参考README中显示的截图。
 
 
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
