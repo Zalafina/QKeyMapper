@@ -159,7 +159,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
         if (keycount >= SEND_INPUTS_MAX) {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning("sendInputKeys(): Too many keys(%d) in key sequence!!!", keycount);
+            qWarning("sendInputKeys(): Too many keys(%d) to mapping!!!", keycount);
 #endif
             return;
         }
@@ -251,7 +251,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
             if (keycount >= SEND_INPUTS_MAX) {
 #ifdef DEBUG_LOGOUT_ON
-                qWarning("sendInputKeys(): Too many keys(%d) in key sequence!!!", keycount);
+                qWarning("sendInputKeys(): Too many keys(%d) to mapping!!!", keycount);
 #endif
                 return;
             }
@@ -308,10 +308,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         }
         /* key_sequence_count > 1 */
         else {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[sendInputKeys] " << "Key Sequence [" << inputKeys << "]";
-#endif
             keycount = makeKeySequenceInputarray(inputKeys, inputs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[sendInputKeys] " << "Key Sequence [" << inputKeys << "]," << "keycount =" << keycount;
+#endif
         }
     }
 
@@ -1269,12 +1269,90 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
 
 int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array)
 {
+    int index = 0;
     int keycount = 0;
+    INPUT *input_p = Q_NULLPTR;
 
     for (const QString &keyseq : qAsConst(keyseq_list)){
         QStringList mappingKeys = keyseq.split(SEPARATOR_PLUS);
         for (const QString &key : qAsConst(mappingKeys)){
-            keycount++;
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+
+                input_p = &input_array[index];
+                input_p->type = INPUT_MOUSE;
+                input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                input_p->mi.dwFlags = vmousecode.MouseDownCode;
+                keycount++;
+                index++;
+            }
+            else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+
+                input_p = &input_array[index];
+                input_p->type = INPUT_KEYBOARD;
+                input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                input_p->ki.wVk = vkeycode.KeyCode;
+                input_p->ki.dwFlags = extenedkeyflag | 0;
+                keycount++;
+                index++;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("makeKeySequenceInputarray(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+#endif
+            }
+
+            if (keycount >= SEND_INPUTS_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning() << "makeKeySequenceInputarray():" << "Too many keys" << keycount << "in key sequence [" << keyseq << "]";
+#endif
+                return 0;
+            }
+        }
+
+        for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
+            QString key = (*it);
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+
+                input_p = &input_array[index];
+                input_p->type = INPUT_MOUSE;
+                input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                input_p->mi.dwFlags = vmousecode.MouseUpCode;
+                keycount++;
+                index++;
+            }
+            else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+
+                input_p = &input_array[index];
+                input_p->type = INPUT_KEYBOARD;
+                input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                input_p->ki.wVk = vkeycode.KeyCode;
+                input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                keycount++;
+                index++;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("makeKeySequenceInputarray(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+#endif
+            }
         }
     }
 
