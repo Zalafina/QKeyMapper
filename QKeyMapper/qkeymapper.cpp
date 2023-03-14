@@ -1056,7 +1056,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             lockCheckBox->setCheckState(Qt::Unchecked);
             ui->keymapdataTable->setItem(row, LOCK_COLUMN    , lockCheckBox);
 
-            QString message = "Key sequence with ~ do not support Burst or Lock mode!";
+            QString message = "Key sequence with \"»\" do not support Burst or Lock mode!";
             QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) could not set burst or lock for key sequence(%d)", __func__, row, KeyMappingDataList[row].Mapping_Keys.size());
@@ -1713,7 +1713,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
 {
     bool checkResult = true;
-    static QRegularExpression regexp("\\s[+~]\\s");
+    static QRegularExpression regexp("\\s[+»]\\s");
     QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)

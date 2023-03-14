@@ -403,7 +403,8 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
 void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 {
     int timerID = event->timerId();
-    if (true == std::find(m_BurstKeyUpTimerMap.cbegin(), m_BurstKeyUpTimerMap.cend(), timerID)) {
+    auto it = std::find(m_BurstKeyUpTimerMap.cbegin(), m_BurstKeyUpTimerMap.cend(), timerID);
+    if (it != m_BurstKeyUpTimerMap.cend()) {
         QString burstKey = m_BurstKeyUpTimerMap.key(timerID);
         if (false == burstKey.isEmpty()) {
             killTimer(timerID);

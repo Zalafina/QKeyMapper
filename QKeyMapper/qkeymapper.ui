@@ -1204,7 +1204,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string> ~ </string>
+    <string> » </string>
    </property>
    <property name="checked">
     <bool>false</bool>
