@@ -129,16 +129,16 @@ void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE vmousecode, int keyupdown)
 
 void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
-    int keycount = inputKeys.size();
-    if (keycount <= 0) {
+    int key_sequence_count = inputKeys.size();
+    if (key_sequence_count <= 0) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("sendInputKeys(): no input keys, size error(%d)!!!", keycount);
+        qWarning("sendInputKeys(): no input keys, size error(%d)!!!", key_sequence_count);
 #endif
         return;
     }
-    else if (keycount > KEY_SEQUENCE_MAX) {
+    else if (key_sequence_count > KEY_SEQUENCE_MAX) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("sendInputKeys(): Key sequence is too long(%d)!!!", keycount);
+        qWarning("sendInputKeys(): Too many key sequence(%d)!!!", key_sequence_count);
 #endif
         return;
     }
@@ -146,15 +146,25 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     QMutexLocker locker(&sendinput_mutex);
 
     int index = 0;
-    QStringList moustButtons;
+    int keycount = 0;
     INPUT inputs[SEND_INPUTS_MAX] = { 0 };
 
     if (KEY_UP == keyupdown) {
-        if (keycount > 1) {
+        if (key_sequence_count > 1) {
             return;
         }
 
-        for(auto it = inputKeys.crbegin(); it != inputKeys.crend(); ++it) {
+        QStringList mappingKeys = inputKeys.constFirst().split(SEPARATOR_PLUS);
+        keycount = mappingKeys.size();
+
+        if (keycount >= SEND_INPUTS_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("sendInputKeys(): Too many keys(%d) in key sequence!!!", keycount);
+#endif
+            return;
+        }
+
+        for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
 
             /* special hook key process */
@@ -192,7 +202,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     continue;
                 }
 
-                moustButtons.append(key);
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input_p->type = INPUT_MOUSE;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
@@ -236,9 +245,18 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         }
     }
     else {
-        if (1 == keycount) {
-            QString mappingKeys = inputKeys.constFirst();
-            for (const QString &key : mappingKeys){
+        if (1 == key_sequence_count) {
+            QStringList mappingKeys = inputKeys.constFirst().split(SEPARATOR_PLUS);
+            keycount = mappingKeys.size();
+
+            if (keycount >= SEND_INPUTS_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("sendInputKeys(): Too many keys(%d) in key sequence!!!", keycount);
+#endif
+                return;
+            }
+
+            for (const QString &key : qAsConst(mappingKeys)){
                 INPUT *input_p = &inputs[index];
                 if (true == VirtualMouseButtonMap.contains(key)) {
                     if (true == pressedVirtualKeysList.contains(key)) {
@@ -246,7 +264,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         continue;
                     }
 
-                    moustButtons.append(key);
                     V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                     input_p->type = INPUT_MOUSE;
                     input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
@@ -289,7 +306,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 index++;
             }
         }
-        /* keycount > 1 */
+        /* key_sequence_count > 1 */
         else {
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[sendInputKeys] " << "Key Sequence [" << inputKeys << "]";
@@ -386,8 +403,7 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
 void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 {
     int timerID = event->timerId();
-
-    if (true == m_BurstKeyUpTimerMap.values().contains(timerID)) {
+    if (true == std::find(m_BurstKeyUpTimerMap.cbegin(), m_BurstKeyUpTimerMap.cend(), timerID)) {
         QString burstKey = m_BurstKeyUpTimerMap.key(timerID);
         if (false == burstKey.isEmpty()) {
             killTimer(timerID);

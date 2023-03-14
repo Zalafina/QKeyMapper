@@ -158,7 +158,7 @@ private slots:
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
-    void on_cellChanged(int row, int col);
+    void cellChanged_slot(int row, int col);
 
     void on_savemaplistButton_clicked();
 

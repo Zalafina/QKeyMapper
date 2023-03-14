@@ -123,7 +123,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->moveupButton->setFont(QFont("SimSun", 14));
     ui->movedownButton->setFont(QFont("SimSun", 16));
-    ui->nextarrowCheckBox->setFont(QFont("SimSun", 14));
 
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
@@ -142,7 +141,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
-    QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(on_cellChanged(int,int)));
+    QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(cellChanged_slot(int,int)));
 
     QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
 
@@ -764,11 +763,10 @@ int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
-    bool keymapdatacontainsflag = false;
-    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
         if (keymapdata.Original_Key == keyname){
-            keymapdatacontainsflag = true;
             returnindex = keymapdataindex;
             break;
         }
@@ -1044,7 +1042,7 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
     }
 }
 
-void QKeyMapper::on_cellChanged(int row, int col)
+void QKeyMapper::cellChanged_slot(int row, int col)
 {
     if ((col == BURST_MODE_COLUMN || col == LOCK_COLUMN)
             && ui->keymapdataTable->item(row, col)->checkState() == Qt::Checked) {
@@ -1058,7 +1056,7 @@ void QKeyMapper::on_cellChanged(int row, int col)
             lockCheckBox->setCheckState(Qt::Unchecked);
             ui->keymapdataTable->setItem(row, LOCK_COLUMN    , lockCheckBox);
 
-            QString message = "Key sequence with \"→\" do not support Burst or Lock mode!";
+            QString message = "Key sequence with ~ do not support Burst or Lock mode!";
             QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) could not set burst or lock for key sequence(%d)", __func__, row, KeyMappingDataList[row].Mapping_Keys.size());
@@ -1174,7 +1172,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
 #endif
 
-            for (const QString &group : groups){
+            for (const QString &group : qAsConst(groups)){
                 if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
                         && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
                     validgroups_customsetting.append(group);
@@ -1226,7 +1224,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         if (KeyMappingDataList.size() > 0){
-            for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+            for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
             {
                 original_keys << keymapdata.Original_Key;
                 QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
@@ -1348,7 +1346,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
 #endif
-    for (const QString &group : groups){
+    for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
         if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive)) {
             QString tempSettingSelectStr = group + "/";
@@ -1370,7 +1368,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
     }
 
-    for (const QString &group : groups){
+    for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
         if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
                 && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
@@ -1510,7 +1508,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 datavalidflag = true;
 
                 if (original_keys.size() > 0){
-                    for (const QString &burst : burstStringList){
+                    for (const QString &burst : qAsConst(burstStringList)){
                         if (burst == "ON") {
                             burstList.append(true);
                         }
@@ -1519,7 +1517,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         }
                     }
 
-                    for (const QString &lock : lockStringList){
+                    for (const QString &lock : qAsConst(lockStringList)){
                         if (lock == "ON") {
                             lockList.append(true);
                         }
@@ -1529,7 +1527,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
 
                     int loadindex = 0;
-                    for (const QString &ori_key : original_keys){
+                    for (const QString &ori_key : qAsConst(original_keys)){
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool checkmappingstr = checkMappingkeyStr(mapping_keys.at(loadindex));
@@ -1715,9 +1713,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
 {
     bool checkResult = true;
-    static QRegularExpression regexp("\\s[+→]\\s");
+    static QRegularExpression regexp("\\s[+~]\\s");
     QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
-    for (const QString &mapping_key : Mapping_Keys){
+    for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)){
             checkResult = false;
@@ -1777,6 +1775,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     ui->burstrelease_msLabel->setFont(customFont);
     ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
+    ui->nextarrowCheckBox->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -1966,7 +1965,7 @@ void QKeyMapper::updateProcessInfoDisplay()
 #endif
             QSize selectedSize = QSize(0, 0);
             QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
-            for(const QSize &iconsize : fileicon.availableSizes()){
+            for(const QSize &iconsize : qAsConst(iconsizeList)){
                 if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
                         && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
                     selectedSize = iconsize;
@@ -2211,7 +2210,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
 #endif
         int rowindex = 0;
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
-        for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+        for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
         {
             /* ORIGINAL_KEY_COLUMN */
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
@@ -2256,7 +2255,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
 void QKeyMapper::updateLockStatusDisplay()
 {
     int rowindex = 0;
-    for (const MAP_KEYDATA &keymapdata : KeyMappingDataList)
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
         if (m_KeyMapStatus == KEYMAP_MAPPING) {
             if (keymapdata.Lock == true) {
@@ -2330,7 +2329,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
         QSize selectedSize = QSize(0, 0);
         QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
-        for(const QSize &iconsize : fileicon.availableSizes()){
+        for(const QSize &iconsize : qAsConst(iconsizeList)){
             if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
                     && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
                 selectedSize = iconsize;

@@ -18,7 +18,7 @@ class QKeyMapper;
 #define EXTENED_FLAG_FALSE  false
 
 #define SEPARATOR_PLUS          (" + ")
-#define SEPARATOR_NEXTARROW     (" → ")
+#define SEPARATOR_NEXTARROW     (" ~ ")
 
 typedef struct MAP_KEYDATA
 {
