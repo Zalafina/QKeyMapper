@@ -403,8 +403,9 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
 void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 {
     int timerID = event->timerId();
-    auto it = std::find(m_BurstKeyUpTimerMap.cbegin(), m_BurstKeyUpTimerMap.cend(), timerID);
-    if (it != m_BurstKeyUpTimerMap.cend()) {
+    auto it_burst_timer_keyup = std::find(m_BurstKeyUpTimerMap.cbegin(), m_BurstKeyUpTimerMap.cend(), timerID);
+    auto it_burst_timer = std::find(m_BurstTimerMap.cbegin(), m_BurstTimerMap.cend(), timerID);
+    if (it_burst_timer_keyup != m_BurstKeyUpTimerMap.cend()) {
         QString burstKey = m_BurstKeyUpTimerMap.key(timerID);
         if (false == burstKey.isEmpty()) {
             killTimer(timerID);
@@ -420,7 +421,7 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 #endif
         }
     }
-    else if (true == m_BurstTimerMap.values().contains(timerID)) {
+    else if (it_burst_timer != m_BurstTimerMap.cend()) {
         QString burstKey = m_BurstTimerMap.key(timerID);
         if (false == burstKey.isEmpty()) {
 //#ifdef DEBUG_LOGOUT_ON
@@ -510,7 +511,7 @@ void QKeyMapper_Worker::setWorkerDInputKeyHook(HWND hWnd)
         m_DirectInput = Q_NULLPTR;
         HRESULT hResult;
 //        hResult = DirectInput8Create(GetModuleHandle(Q_NULLPTR), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
-        QString process_name("bot_vice.exe");
+//        QString process_name("bot_vice.exe");
 //        HMODULE hModule = GetModuleHandle(process_name.toStdWString().c_str());
         HMODULE hModule = GetModuleHandle(Q_NULLPTR);
 //        hResult = DirectInput8Create((HINSTANCE)GetWindowLong(hWnd, GWLP_HINSTANCE), DIRECTINPUT_VERSION, IID_IDirectInput8, (LPVOID*)&m_DirectInput, Q_NULLPTR);
@@ -610,8 +611,8 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 #endif
         }
 
-        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(mappingIndex).Mapping_Keys;
-        for (const QString &key : pressedRealKeysList){
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(mappingIndex).Mapping_Keys.constFirst().split(SEPARATOR_PLUS);
+        for (const QString &key : qAsConst(pressedRealKeysList)){
             if ((true == mappingKeyList.contains(key))
                 && (burstKey != key)
                 && (false == pressedVirtualKeysList.contains(key))) {
@@ -1227,7 +1228,7 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
 void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
 {
     QList<QString> burstKeyUpKeys = m_BurstKeyUpTimerMap.keys();
-    for (const QString &key : burstKeyUpKeys) {
+    for (const QString &key : qAsConst(burstKeyUpKeys)) {
         int timerID = m_BurstTimerMap.value(key, 0);
         if (timerID > 0) {
             killTimer(timerID);
@@ -1240,7 +1241,7 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
     }
 
     QList<QString> burstKeys = m_BurstTimerMap.keys();
-    for (const QString &key : burstKeys) {
+    for (const QString &key : qAsConst(burstKeys)) {
         int timerID = m_BurstTimerMap.value(key, 0);
         if (timerID > 0) {
             int findindex = QKeyMapper::findInKeyMappingDataList(key);
