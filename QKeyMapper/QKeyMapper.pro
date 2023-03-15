@@ -112,4 +112,5 @@ RC_FILE     += \
     QKeyMapper.rc
 
 DISTFILES   += \
-    QKeyMapper.rc
+    QKeyMapper.rc \
+    ../README.md
