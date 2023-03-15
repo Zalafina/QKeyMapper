@@ -72,19 +72,22 @@ typedef struct V_MOUSECODE
 {
     DWORD MouseDownCode;
     DWORD MouseUpCode;
+    DWORD MouseXButton;
 
-    V_MOUSECODE() : MouseDownCode(0x0000), MouseUpCode(0x0000) {}
+    V_MOUSECODE() : MouseDownCode(0x0000), MouseUpCode(0x0000), MouseXButton(0x0000) {}
 
-    V_MOUSECODE(DWORD mousedowncode, DWORD mouseupcode)
+    V_MOUSECODE(DWORD mousedowncode, DWORD mouseupcode, DWORD mousexbutton)
     {
         MouseDownCode = mousedowncode;
         MouseUpCode = mouseupcode;
+        MouseXButton = mousexbutton;
     }
 
     bool operator==(const V_MOUSECODE& other) const
     {
         return ((MouseDownCode == other.MouseDownCode)
-                && (MouseUpCode == other.MouseUpCode));
+                && (MouseUpCode == other.MouseUpCode)
+                && (MouseXButton == other.MouseXButton));
     }
 }V_MOUSECODE_st;
 

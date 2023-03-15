@@ -206,6 +206,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input_p->type = INPUT_MOUSE;
+                input_p->mi.mouseData = vmousecode.MouseXButton;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
                 if (KEY_DOWN == keyupdown) {
                     input_p->mi.dwFlags = vmousecode.MouseDownCode;
@@ -268,6 +269,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
                     V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                     input_p->type = INPUT_MOUSE;
+                    input_p->mi.mouseData = vmousecode.MouseXButton;
                     input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
                     if (KEY_DOWN == keyupdown) {
                         input_p->mi.dwFlags = vmousecode.MouseDownCode;
@@ -1236,11 +1238,11 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
 
 void QKeyMapper_Worker::initVirtualMouseButtonMap()
 {
-    VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP  ));   // Left Mouse Button
-    VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP ));   // Right Mouse Button
-    VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP));   // Middle Mouse Button
-    VirtualMouseButtonMap.insert("X1-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP));        // X1 Mouse Button
-    VirtualMouseButtonMap.insert("X2-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP));        // X2 Mouse Button
+    VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP,     0           )); // Left Mouse Button
+    VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP,    0           )); // Right Mouse Button
+    VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP,   0           )); // Middle Mouse Button
+    VirtualMouseButtonMap.insert("X1-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON1    )); // X1 Mouse Button
+    VirtualMouseButtonMap.insert("X2-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // X2 Mouse Button
 
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "L-Mouse");
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "L-Mouse");
@@ -1309,6 +1311,7 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
 
                 input_p = &input_array[index];
                 input_p->type = INPUT_MOUSE;
+                input_p->mi.mouseData = vmousecode.MouseXButton;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
                 input_p->mi.dwFlags = vmousecode.MouseDownCode;
                 keycount++;
@@ -1353,6 +1356,7 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
 
                 input_p = &input_array[index];
                 input_p->type = INPUT_MOUSE;
+                input_p->mi.mouseData = vmousecode.MouseXButton;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
                 input_p->mi.dwFlags = vmousecode.MouseUpCode;
                 keycount++;
