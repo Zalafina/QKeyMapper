@@ -796,15 +796,18 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     bool returnFlag = false;
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
-        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)) {
+        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
+        || (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP)) {
         int keyupdown;
-        if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN) {
+        if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || wParam == WM_XBUTTONDOWN) {
             keyupdown = KEY_DOWN;
         }
         else {
             keyupdown = KEY_UP;
         }
         ULONG_PTR extraInfo = pMouse->dwExtraInfo;
+        DWORD temp_mouseData = pMouse->mouseData;
+        DWORD temp_flags = pMouse->flags;
 
         if (true == MouseButtonNameMap.contains(wParam)) {
             QString keycodeString = MouseButtonNameMap.value(wParam);
@@ -824,6 +827,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             else {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
+                qDebug("temp_mouseData :0x%08X, extraInfo :0x%08X", temp_mouseData, extraInfo);
 #endif
                 int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
@@ -1217,6 +1221,7 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP  ));   // Left Mouse Button
     VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP ));   // Right Mouse Button
     VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP));   // Middle Mouse Button
+    VirtualMouseButtonMap.insert("X-Mouse",     V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP));        // X Mouse Button
 
     MouseButtonNameMap.insert(WM_LBUTTONDOWN,   "L-Mouse");
     MouseButtonNameMap.insert(WM_LBUTTONUP,     "L-Mouse");
@@ -1224,6 +1229,8 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     MouseButtonNameMap.insert(WM_RBUTTONUP,     "R-Mouse");
     MouseButtonNameMap.insert(WM_MBUTTONDOWN,   "M-Mouse");
     MouseButtonNameMap.insert(WM_MBUTTONUP,     "M-Mouse");
+    MouseButtonNameMap.insert(WM_XBUTTONDOWN,   "X-Mouse");
+    MouseButtonNameMap.insert(WM_XBUTTONUP,     "X-Mouse");
 }
 
 void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
