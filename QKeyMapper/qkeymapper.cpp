@@ -2069,6 +2069,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "L-Mouse"
             << "R-Mouse"
             << "M-Mouse"
+            << "X1-Mouse"
+            << "X2-Mouse"
             << "A"
             << "B"
             << "C"

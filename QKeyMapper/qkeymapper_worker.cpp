@@ -4,6 +4,8 @@
 static const int KEY_UP = 0;
 static const int KEY_DOWN = 1;
 
+static const WORD XBUTTON_NONE = 0x0000;
+
 static const int SENDMODE_HOOK          = 0;
 static const int SENDMODE_BURST_NORMAL  = 1;
 static const int SENDMODE_BURST_STOP    = 2;
@@ -637,7 +639,7 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-    if (nCode < 0) {
+    if (nCode != HC_ACTION) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
@@ -787,7 +789,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
 LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-    if (nCode < 0) {
+    if (nCode != HC_ACTION) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
@@ -798,22 +800,39 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
         || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
         || (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP)) {
+        ULONG_PTR extraInfo = pMouse->dwExtraInfo;
+        DWORD mousedata = pMouse->mouseData;
         int keyupdown;
+        WPARAM wParam_X;
         if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || wParam == WM_XBUTTONDOWN) {
             keyupdown = KEY_DOWN;
         }
         else {
             keyupdown = KEY_UP;
         }
-        ULONG_PTR extraInfo = pMouse->dwExtraInfo;
-        DWORD temp_mouseData = pMouse->mouseData;
-        DWORD temp_flags = pMouse->flags;
+        if (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP) {
+            WORD xbutton = GET_XBUTTON_WPARAM(mousedata);
+            if ( xbutton == XBUTTON1 ) {
+                wParam_X = MAKELONG(wParam, XBUTTON1);
+            }
+            else if ( xbutton == XBUTTON2 ) {
+                wParam_X = MAKELONG(wParam, XBUTTON2);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[LowLevelMouseHookProc] Unsupport Mouse XButton -> 0x%04X", xbutton);
+#endif
+            }
+        }
+        else {
+            wParam_X = MAKELONG(wParam, XBUTTON_NONE);
+        }
 
-        if (true == MouseButtonNameMap.contains(wParam)) {
-            QString keycodeString = MouseButtonNameMap.value(wParam);
+        if (true == MouseButtonNameMap.contains(wParam_X)) {
+            QString keycodeString = MouseButtonNameMap.value(wParam_X);
             if(VIRTUAL_MOUSE_CLICK == extraInfo) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("Virtual \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
+                qDebug("Virtual \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
                 if (KEY_DOWN == keyupdown) {
                     if (false == pressedVirtualKeysList.contains(keycodeString)){
@@ -826,8 +845,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
-                qDebug("temp_mouseData :0x%08X, extraInfo :0x%08X", temp_mouseData, extraInfo);
+                qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
                 int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
@@ -1221,16 +1239,19 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP  ));   // Left Mouse Button
     VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP ));   // Right Mouse Button
     VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP));   // Middle Mouse Button
-    VirtualMouseButtonMap.insert("X-Mouse",     V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP));        // X Mouse Button
+    VirtualMouseButtonMap.insert("X1-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP));        // X1 Mouse Button
+    VirtualMouseButtonMap.insert("X2-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP));        // X2 Mouse Button
 
-    MouseButtonNameMap.insert(WM_LBUTTONDOWN,   "L-Mouse");
-    MouseButtonNameMap.insert(WM_LBUTTONUP,     "L-Mouse");
-    MouseButtonNameMap.insert(WM_RBUTTONDOWN,   "R-Mouse");
-    MouseButtonNameMap.insert(WM_RBUTTONUP,     "R-Mouse");
-    MouseButtonNameMap.insert(WM_MBUTTONDOWN,   "M-Mouse");
-    MouseButtonNameMap.insert(WM_MBUTTONUP,     "M-Mouse");
-    MouseButtonNameMap.insert(WM_XBUTTONDOWN,   "X-Mouse");
-    MouseButtonNameMap.insert(WM_XBUTTONUP,     "X-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "L-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "L-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_RBUTTONDOWN,  XBUTTON_NONE),   "R-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_RBUTTONUP,    XBUTTON_NONE),   "R-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_MBUTTONDOWN,  XBUTTON_NONE),   "M-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_MBUTTONUP,    XBUTTON_NONE),   "M-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON1    ),   "X1-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON1    ),   "X1-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON2    ),   "X2-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON2    ),   "X2-Mouse");
 }
 
 void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
