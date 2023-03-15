@@ -10,9 +10,6 @@ static const int SENDMODE_HOOK          = 0;
 static const int SENDMODE_BURST_NORMAL  = 1;
 static const int SENDMODE_BURST_STOP    = 2;
 
-static const int SEND_INPUTS_MAX = 30;
-static const int KEY_SEQUENCE_MAX = 8;
-
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
@@ -140,7 +137,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     }
     else if (key_sequence_count > KEY_SEQUENCE_MAX) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("sendInputKeys(): Too many key sequence(%d)!!!", key_sequence_count);
+        qWarning("sendInputKeys(): Key sequence is too long(%d)!!!", key_sequence_count);
 #endif
         return;
     }

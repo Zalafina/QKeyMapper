@@ -2388,6 +2388,11 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (false == already_exist){
             if (findindex != -1){
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
+                if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
+                    QString message = QString("Key sequence mapping to \"%1\" is too long!").arg(m_orikeyComboBox->currentText());
+                    QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                    return;
+                }
                 QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
@@ -2623,7 +2628,6 @@ void QKeyMapper::on_movedownButton_clicked()
         }
 #endif
 
-//        static const int SEND_INPUTS_MAX = 30;
 //        int keycount = 0;
 //        INPUT inputs[SEND_INPUTS_MAX] = { 0 };
 //        QStringList mappingKeyList = KeyMappingDataList.at(reselectrow).Mapping_Keys;

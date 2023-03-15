@@ -20,6 +20,9 @@ class QKeyMapper;
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
 
+#define SEND_INPUTS_MAX     (30)
+#define KEY_SEQUENCE_MAX    (8)
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;
