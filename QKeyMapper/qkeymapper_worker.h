@@ -199,6 +199,7 @@ private:
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void clearAllBurstTimersAndLockKeys(void);
+    void collectExchangeKeysList(void);
 public:
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 
@@ -213,6 +214,7 @@ public:
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLockKeysList;
+    static QStringList exchangeKeysList;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex sendinput_mutex;
 #else

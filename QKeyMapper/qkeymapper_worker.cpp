@@ -24,6 +24,7 @@ QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QSt
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
+QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QRecursiveMutex QKeyMapper_Worker::sendinput_mutex = QRecursiveMutex();
 #else
@@ -174,23 +175,33 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
                 }
                 else {
-                    if (pressedRealKeysList.contains(key)){
-                        pressedVirtualKeysList.removeAll(key);
+                    if (exchangeKeysList.contains(key)){
+                        /* Exchange keys do not skip send mapping VirtualKey */
+                    }
+                    else {
+                        if (pressedRealKeysList.contains(key)){
+                            pressedVirtualKeysList.removeAll(key);
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
-                        qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
+                            qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
+                            qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
 #endif
-                        continue;
+                            continue;
+                        }
                     }
                 }
             }
             else if (SENDMODE_BURST_STOP == sendmode) {
-                if (pressedRealKeysList.contains(key)){
-                    pressedVirtualKeysList.removeAll(key);
+                if (exchangeKeysList.contains(key)){
+                    /* Exchange keys do not skip send mapping VirtualKey */
+                }
+                else {
+                    if (pressedRealKeysList.contains(key)){
+                        pressedVirtualKeysList.removeAll(key);
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("stopBurstTimer()->sendBurstKeyUp()->sendInputKeys(): RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
+                        qDebug("stopBurstTimer()->sendBurstKeyUp()->sendInputKeys(): RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
 #endif
-                    continue;
+                        continue;
+                    }
                 }
             }
 
@@ -471,6 +482,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
+    collectExchangeKeysList();
 
     if(TRUE == IsWindowVisible(hWnd)){
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
@@ -492,6 +504,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
+    exchangeKeysList.clear();
 
     if (m_MouseHook != Q_NULLPTR) {
         UnhookWindowsHookEx(m_MouseHook);
@@ -1291,6 +1304,38 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
 
     for (int index = 0; index < QKeyMapper::KeyMappingDataList.size(); index++) {
         QKeyMapper::KeyMappingDataList[index].LockStatus = false;
+    }
+}
+
+void QKeyMapper_Worker::collectExchangeKeysList()
+{
+    exchangeKeysList.clear();
+
+    QStringList singlemapping_original_keys;
+    QStringList singlemapping_keys;
+    QHash<QString, QString> singlemapping_keymap;
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
+    {
+        if (keymapdata.Mapping_Keys.size() == 1)
+        {
+            singlemapping_keymap.insert(keymapdata.Original_Key, keymapdata.Mapping_Keys.constFirst());
+        }
+    }
+
+    if (false == singlemapping_keymap.isEmpty())
+    {
+        for (const QString &key : singlemapping_keymap.keys())
+        {
+            if (singlemapping_keymap.values().contains(key)) {
+                exchangeKeysList.append(key);
+            }
+        }
+#ifdef DEBUG_LOGOUT_ON
+        if (false == exchangeKeysList.isEmpty())
+        {
+            qDebug() << "exchangeKeysList -> " << exchangeKeysList;
+        }
+#endif
     }
 }
 
