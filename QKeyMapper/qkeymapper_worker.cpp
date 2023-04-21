@@ -1311,8 +1311,6 @@ void QKeyMapper_Worker::collectExchangeKeysList()
 {
     exchangeKeysList.clear();
 
-    QStringList singlemapping_original_keys;
-    QStringList singlemapping_keys;
     QHash<QString, QString> singlemapping_keymap;
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
@@ -1326,7 +1324,8 @@ void QKeyMapper_Worker::collectExchangeKeysList()
     {
         for (const QString &key : singlemapping_keymap.keys())
         {
-            if (singlemapping_keymap.values().contains(key)) {
+            if (singlemapping_keymap.value(singlemapping_keymap.value(key)) == key)
+            {
                 exchangeKeysList.append(key);
             }
         }
