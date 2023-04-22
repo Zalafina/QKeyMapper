@@ -3,6 +3,7 @@
 build-*/*
 build-*
 *-build-*
+.vscode/
 QKeyMapper/*.pro.user
 QKeyMapper/*.pro.user.*
 QKeyMapper/*.moc
