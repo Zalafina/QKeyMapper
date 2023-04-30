@@ -84,10 +84,10 @@ void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
         extenedkeyflag = 0;
     }
     keyboard_input.type = INPUT_KEYBOARD;
-    keyboard_input.ki.wScan = 0;
     keyboard_input.ki.time = 0;
     keyboard_input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
     keyboard_input.ki.wVk = vkeycode.KeyCode;
+    keyboard_input.ki.wScan = MapVirtualKey(keyboard_input.ki.wVk, MAPVK_VK_TO_VSC);
     if (KEY_DOWN == keyupdown) {
         keyboard_input.ki.dwFlags = extenedkeyflag | 0;
     }
@@ -240,6 +240,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 input_p->type = INPUT_KEYBOARD;
                 input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
                 input_p->ki.wVk = vkeycode.KeyCode;
+                input_p->ki.wScan = MapVirtualKey(input_p->ki.wVk, MAPVK_VK_TO_VSC);
+//#ifdef DEBUG_LOGOUT_ON
+//                qDebug("sendInputKeys(): Key Up -> \"%s\", wScan->0x%08X", key.toStdString().c_str(), input_p->ki.wScan);
+//#endif
                 if (KEY_DOWN == keyupdown) {
                     input_p->ki.dwFlags = extenedkeyflag | 0;
                 }
@@ -303,6 +307,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     input_p->type = INPUT_KEYBOARD;
                     input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
                     input_p->ki.wVk = vkeycode.KeyCode;
+                    input_p->ki.wScan = MapVirtualKey(input_p->ki.wVk, MAPVK_VK_TO_VSC);
+//#ifdef DEBUG_LOGOUT_ON
+//                    qDebug("sendInputKeys(): Key Down -> \"%s\", wScan->0x%08X", key.toStdString().c_str(), input_p->ki.wScan);
+//#endif
                     if (KEY_DOWN == keyupdown) {
                         input_p->ki.dwFlags = extenedkeyflag | 0;
                     }
@@ -343,15 +351,18 @@ void QKeyMapper_Worker::send_WINplusD()
     inputs[0].type = INPUT_KEYBOARD;
     inputs[0].ki.dwExtraInfo = VIRTUAL_WIN_PLUS_D;
     inputs[0].ki.wVk = VK_LWIN;
+    inputs[0].ki.wScan = MapVirtualKey(inputs[0].ki.wVk, MAPVK_VK_TO_VSC);
     inputs[0].ki.dwFlags = KEYEVENTF_EXTENDEDKEY;
 
     inputs[1].type = INPUT_KEYBOARD;
     inputs[1].ki.dwExtraInfo = VIRTUAL_WIN_PLUS_D;
     inputs[1].ki.wVk = VK_D;
+    inputs[1].ki.wScan = MapVirtualKey(inputs[1].ki.wVk, MAPVK_VK_TO_VSC);
 
     inputs[2].type = INPUT_KEYBOARD;
     inputs[2].ki.dwExtraInfo = VIRTUAL_WIN_PLUS_D;
     inputs[2].ki.wVk = VK_LWIN;
+    inputs[2].ki.wScan = MapVirtualKey(inputs[2].ki.wVk, MAPVK_VK_TO_VSC);
     inputs[2].ki.dwFlags = KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP;
 
     UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
@@ -684,7 +695,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     if ((false == keycodeString.isEmpty())
         && (WM_KEYDOWN == wParam || WM_KEYUP == wParam)){
 #ifdef DEBUG_LOGOUT_ON
-        if (pKeyBoard->scanCode != 0){
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
             if (WM_KEYDOWN == wParam){
                 qDebug("RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
@@ -713,7 +724,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        if (pKeyBoard->scanCode != 0){
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
             int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
             returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
@@ -1372,6 +1383,7 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
                 input_p->type = INPUT_KEYBOARD;
                 input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
                 input_p->ki.wVk = vkeycode.KeyCode;
+                input_p->ki.wScan = MapVirtualKey(input_p->ki.wVk, MAPVK_VK_TO_VSC);
                 input_p->ki.dwFlags = extenedkeyflag | 0;
                 keycount++;
                 index++;
@@ -1417,6 +1429,7 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
                 input_p->type = INPUT_KEYBOARD;
                 input_p->ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
                 input_p->ki.wVk = vkeycode.KeyCode;
+                input_p->ki.wScan = MapVirtualKey(input_p->ki.wVk, MAPVK_VK_TO_VSC);
                 input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 keycount++;
                 index++;
