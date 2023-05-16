@@ -318,30 +318,38 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
-                if (1 == checkresult) {
-                    qDebug().nospace().noquote() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
-                }
-                else {
-                    qDebug().nospace().noquote() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ")";
-                }
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
 #endif
             }
         }
         else{
             if (KEYMAP_MAPPING == m_KeyMapStatus){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
+#endif
+
+                /* Add for mouse2joystick_Custom_CEMU.exe Bug Fix >>> */
+                if (filename == "mouse2joystick_Custom_CEMU.exe"
+                    && windowTitle == "Controller"
+                    && ui->titleCheckBox->isChecked() != true
+                    && ui->nameCheckBox->isChecked() == true
+                    && m_MapProcessInfo.FileName == "Cemu.exe") {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Cemu.exe -> Controller(mouse2joystick_Custom_CEMU.exe)";
+#endif
+                    return;
+                }
+                /* Add for mouse2joystick_Custom_CEMU.exe Bug Fix <<< */
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
-
-#ifdef DEBUG_LOGOUT_ON
-                if (1 == checkresult) {
-                    qDebug().nospace() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
-                }
-                else {
-                    qDebug().nospace() << "[cycleCheckProcessProc]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ")";
-                }
-#endif
             }
         }
     }
