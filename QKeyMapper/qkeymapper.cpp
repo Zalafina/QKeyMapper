@@ -309,6 +309,8 @@ void QKeyMapper::cycleCheckProcessProc(void)
             }
         }
 
+        bool isAltTabWindow = IsAltTabWindow(hwnd);
+
         if (checkresult){
             if (KEYMAP_CHECKING == m_KeyMapStatus){
                 playStartSound();
@@ -318,7 +320,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << "), " << "IsAltTabWindow -> " << isAltTabWindow;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
@@ -328,7 +330,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         else{
             if (KEYMAP_MAPPING == m_KeyMapStatus){
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << "), " << "IsAltTabWindow -> " << isAltTabWindow;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
@@ -337,15 +339,19 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 /* Add for mouse2joystick_Custom_CEMU.exe Bug Fix >>> */
                 if (filename == "mouse2joystick_Custom_CEMU.exe"
                     && windowTitle == "Controller"
-                    && ui->titleCheckBox->isChecked() != true
-                    && ui->nameCheckBox->isChecked() == true
-                    && m_MapProcessInfo.FileName == "Cemu.exe") {
+                    && m_MapProcessInfo.FileName == "Cemu.exe"
+                    && false == isAltTabWindow) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Cemu.exe -> Controller(mouse2joystick_Custom_CEMU.exe)";
+                    bool isVisibleWindow = IsVisibleWindow(hwnd);
+                    Q_UNUSED(isVisibleWindow);
+                    for (int loop = 0; loop < 10; loop++) {
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Cemu.exe -> Controller(mouse2joystick_Custom_CEMU.exe)(isVisibleWindow == false)";
+                    }
 #endif
                     return;
                 }
                 /* Add for mouse2joystick_Custom_CEMU.exe Bug Fix <<< */
+
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 updateSystemTrayDisplay();
@@ -550,6 +556,75 @@ HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
     }
     return Q_NULLPTR;
 }
+
+BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
+{
+    //  It must be a visible Window
+    if (!IsWindowVisible(hWnd))
+        return FALSE;
+
+    //  It must not be a Tool bar window
+    WINDOWINFO winInfo;
+    winInfo.cbSize = sizeof(WINDOWINFO);
+    if (GetWindowInfo(hWnd, &winInfo)) {
+        if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
+            return false;
+
+        //  It must not be a cloaked window
+        BOOL isCloaked = TRUE;
+        HRESULT hr = DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
+        if (SUCCEEDED(hr)) {
+            return isCloaked == FALSE;
+        }
+        else {
+            return FALSE;
+        }
+    }
+    else {
+        return FALSE;
+    }
+}
+
+BOOL QKeyMapper::IsVisibleWindow(HWND hWnd)
+{
+    //  It must be a visible Window
+    if (!IsWindowVisible(hWnd)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[IsVisibleWindow] " << "IsWindowVisible() -> FALSE";
+#endif
+        return FALSE;
+    }
+
+    //  It must not be a Tool bar window
+    WINDOWINFO winInfo;
+    winInfo.cbSize = sizeof(WINDOWINFO);
+    if (GetWindowInfo(hWnd, &winInfo)) {
+        if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[IsVisibleWindow] " << "WS_EX_TOOLWINDOW -> MATCH";
+#endif
+            return false;
+        }
+
+        //  It must not be a cloaked window
+        BOOL isCloaked = TRUE;
+        HRESULT hr = DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
+        if (SUCCEEDED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[IsVisibleWindow] " << "isCloaked -> " << (isCloaked == TRUE);
+#endif
+
+            return isCloaked == FALSE;
+        }
+        else {
+            return FALSE;
+        }
+    }
+    else {
+        return FALSE;
+    }
+}
+
 BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 {
     //EnumChildWindows(hWnd, (WNDENUMPROC)QKeyMapper::EnumChildWindowsProc, 0);
@@ -608,15 +683,13 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             }
 
             if (ProcessInfo.WindowIcon.isNull() != true){
-                static_ProcessInfoList.append(ProcessInfo);
+                BOOL isVisibleWindow = IsAltTabWindow(hWnd);
+                if (TRUE == isVisibleWindow) {
+                    static_ProcessInfoList.append(ProcessInfo);
+                }
 
 #ifdef DEBUG_LOGOUT_ON
-                if (iconptr != Q_NULLPTR){
-                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-                }
-                else{
-//                    qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(HICON pointer NULL)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
-                }
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << "), " << "IsAltTabWindow -> " << (isVisibleWindow == TRUE);
 #endif
             }
             else{
