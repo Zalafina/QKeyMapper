@@ -185,6 +185,8 @@ private slots:
 
     void on_autoStartupCheckBox_stateChanged(int state);
 
+    void on_languageComboBox_currentIndexChanged(int index);
+
 private:
     void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -196,6 +198,9 @@ private:
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
     void refreshKeyMappingDataTable(void);
+    void reloadUILanguage(void);
+    void setUILanguage_Chinese(void);
+    void setUILanguage_English(void);
 
     bool checkSaveSettings(const QString &executablename);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
@@ -204,7 +209,11 @@ private:
     bool checkMappingkeyStr(const QString &mappingkeystr);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
+#ifdef USE_SAOFONT
     void setControlCustomFont(const QString &fontname);
+#endif
+    void setControlFontEnglish(void);
+    void setControlFontChinese(void);
 
     void changeControlEnableStatus(bool status);
 
@@ -223,8 +232,10 @@ private:
     QTimer m_CycleCheckTimer;
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
+#ifdef USE_SAOFONT
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
+#endif
     StyledDelegate *m_ProcessInfoTableDelegate;
     StyledDelegate *m_KeyMappingDataTableDelegate;
     KeyListComboBox *m_orikeyComboBox;

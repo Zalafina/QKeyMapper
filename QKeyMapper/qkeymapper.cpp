@@ -27,6 +27,9 @@ static const int MOUSEWHEEL_SCROLL_DOWN = 2;
 static const int KEY_UP = 0;
 static const int KEY_DOWN = 1;
 
+static const int LANGUAGE_CHINESE = 0;
+static const int LANGUAGE_ENGLISH = 1;
+
 static const int SENDMODE_HOOK          = 0;
 static const int SENDMODE_BURST_NORMAL  = 1;
 static const int SENDMODE_BURST_STOP    = 2;
@@ -39,6 +42,7 @@ static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 
+static const char *LANGUAGE_INDEX = "LanguageIndex";
 static const char *SETTINGSELECT = "SettingSelect";
 static const char *AUTO_STARTUP = "AutoStartup";
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
@@ -66,6 +70,64 @@ static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 static const char *SOUNDFILE_START_QRC = ":/QKeyMapperStart.wav";
 static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
 
+static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
+static const char *FONTNAME_CHINESE = "NSimSun";
+
+static const char *REFRESHBUTTON_CHINESE = "刷新";
+static const char *KEYMAPBUTTON_CHINESE = "开始按键映射";
+static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
+static const char *DELETEONEBUTTON_CHINESE = "删除单行";
+static const char *CLEARALLBUTTON_CHINESE = "全部清除";
+static const char *ADDMAPDATABUTTON_CHINESE = "添加";
+static const char *NAMECHECKBOX_CHINESE = "文件名";
+static const char *TITLECHECKBOX_CHINESE = "标题";
+static const char *ORIKEYLABEL_CHINESE = "原始按键";
+static const char *MAPKEYLABEL_CHINESE = "映射按键";
+static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
+static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
+static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
+static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
+static const char *SETTINGSELECTLABEL_CHINESE = "设定选择";
+static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
+static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
+static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动开始映射";
+static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
+static const char *PROCESSINFOTABLE_COL1_CHINESE = "文件名";
+static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
+static const char *PROCESSINFOTABLE_COL3_CHINESE = "标题";
+static const char *KEYMAPDATATABLE_COL1_CHINESE = "原始按键";
+static const char *KEYMAPDATATABLE_COL2_CHINESE = "映射按键";
+static const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
+static const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
+
+static const char *REFRESHBUTTON_ENGLISH = "Refresh";
+static const char *KEYMAPBUTTON_ENGLISH = "KeyMappingStart";
+static const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
+static const char *DELETEONEBUTTON_ENGLISH = "Delete One";
+static const char *CLEARALLBUTTON_ENGLISH = "Clear All";
+static const char *ADDMAPDATABUTTON_ENGLISH = "ADD";
+static const char *NAMECHECKBOX_ENGLISH = "Name";
+static const char *TITLECHECKBOX_ENGLISH = "Title";
+static const char *ORIKEYLABEL_ENGLISH = "OriKey";
+static const char *MAPKEYLABEL_ENGLISH = "MapKey";
+static const char *BURSTPRESSLABEL_ENGLISH = "BurstPress";
+static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
+static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
+static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
+static const char *SETTINGSELECTLABEL_ENGLISH = "SettingSelect";
+static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
+static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
+static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "Auto Start Mapping";
+static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
+static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
+static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
+static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Title";
+static const char *KEYMAPDATATABLE_COL1_ENGLISH = "Original Key";
+static const char *KEYMAPDATATABLE_COL2_ENGLISH = "Mapping Key";
+static const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
+static const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
+
+
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
@@ -78,8 +140,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CycleCheckTimer(this),
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
+#ifdef USE_SAOFONT
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
+#endif
     m_ProcessInfoTableDelegate(Q_NULLPTR),
     m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
@@ -94,7 +158,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     extractSoundFiles();
     initAddKeyComboBoxes();
+#ifdef USE_SAOFONT
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
+#endif
     QString defaultTitle;
     defaultTitle.append(QChar(0x6781));
     defaultTitle.append(QChar(0x9650));
@@ -108,10 +174,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     defaultTitle.append(QChar(0x0034));
     DEFAULT_TITLE = defaultTitle;
 
+#ifdef USE_SAOFONT
     if ((m_SAO_FontFamilyID != -1)
             && (false == m_SAO_FontName.isEmpty())){
         setControlCustomFont(m_SAO_FontName);
     }
+#endif
 
     // set QTableWidget selected background-color
     setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
@@ -138,6 +206,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initKeyMappingDataTable();
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
+    reloadUILanguage();
+    ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
 
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
@@ -1239,6 +1309,14 @@ void QKeyMapper::saveKeyMapSetting(void)
 
         QString saveSettingSelectStr;
         QString cursettingSelectStr = ui->settingselectComboBox->currentText();
+        int languageIndex = ui->languageComboBox->currentIndex();
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_ENGLISH);
+        }
+        else {
+            settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
+        }
 
         if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
                 && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
@@ -1396,6 +1474,19 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settingFile.setIniCodec("UTF-8");
 #endif
+
+    if (true == settingFile.contains(LANGUAGE_INDEX)){
+        int languageIndex = settingFile.value(LANGUAGE_INDEX).toInt();
+        if (languageIndex >= 0 && languageIndex < ui->languageComboBox->count()) {
+            ui->languageComboBox->setCurrentIndex(languageIndex);
+        }
+        else {
+            ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
+        }
+    }
+    else {
+        ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
+    }
 
     if (true == settingFile.contains(AUTO_STARTUP)){
         bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
@@ -1833,16 +1924,17 @@ void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid
     fontFile.close();
 }
 
+#ifdef USE_SAOFONT
 void QKeyMapper::setControlCustomFont(const QString &fontname)
 {
     QFont customFont(fontname);
 
-    customFont.setPointSize(20);
+    customFont.setPointSize(18);
     ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
-    customFont.setPointSize(12);
+    customFont.setPointSize(11);
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->addmapdataButton->setFont(customFont);
@@ -1861,7 +1953,76 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
-    customFont.setPointSize(14);
+    customFont.setPointSize(12);
+    ui->disableWinKeyCheckBox->setFont(customFont);
+    ui->autoStartMappingCheckBox->setFont(customFont);
+    ui->autoStartupCheckBox->setFont(customFont);
+}
+#endif
+
+void QKeyMapper::setControlFontEnglish()
+{
+    QFont customFont(FONTNAME_ENGLISH);
+
+    customFont.setPointSize(18);
+    ui->refreshButton->setFont(customFont);
+    ui->keymapButton->setFont(customFont);
+    ui->savemaplistButton->setFont(customFont);
+
+    customFont.setPointSize(11);
+    ui->deleteoneButton->setFont(customFont);
+    ui->clearallButton->setFont(customFont);
+    ui->addmapdataButton->setFont(customFont);
+    ui->nameCheckBox->setFont(customFont);
+    ui->titleCheckBox->setFont(customFont);
+    ui->orikeyLabel->setFont(customFont);
+    ui->mapkeyLabel->setFont(customFont);
+    ui->burstpressLabel->setFont(customFont);
+    ui->burstpress_msLabel->setFont(customFont);
+    ui->burstreleaseLabel->setFont(customFont);
+    ui->burstrelease_msLabel->setFont(customFont);
+    ui->settingselectLabel->setFont(customFont);
+    ui->removeSettingButton->setFont(customFont);
+    ui->nextarrowCheckBox->setFont(customFont);
+
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(12);
+    ui->disableWinKeyCheckBox->setFont(customFont);
+    ui->autoStartMappingCheckBox->setFont(customFont);
+    ui->autoStartupCheckBox->setFont(customFont);
+}
+
+void QKeyMapper::setControlFontChinese()
+{
+    QFont customFont(FONTNAME_CHINESE, 18, QFont::Bold);
+
+    customFont.setPointSize(18);
+    ui->refreshButton->setFont(customFont);
+    ui->keymapButton->setFont(customFont);
+    ui->savemaplistButton->setFont(customFont);
+
+    customFont.setPointSize(11);
+    ui->deleteoneButton->setFont(customFont);
+    ui->clearallButton->setFont(customFont);
+    ui->addmapdataButton->setFont(customFont);
+    ui->nameCheckBox->setFont(customFont);
+    ui->titleCheckBox->setFont(customFont);
+    ui->orikeyLabel->setFont(customFont);
+    ui->mapkeyLabel->setFont(customFont);
+    ui->burstpressLabel->setFont(customFont);
+    ui->burstpress_msLabel->setFont(customFont);
+    ui->burstreleaseLabel->setFont(customFont);
+    ui->burstrelease_msLabel->setFont(customFont);
+    ui->settingselectLabel->setFont(customFont);
+    ui->removeSettingButton->setFont(customFont);
+    ui->nextarrowCheckBox->setFont(customFont);
+
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(12);
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
@@ -1874,6 +2035,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->disableWinKeyCheckBox->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
+    ui->languageComboBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
@@ -1959,9 +2121,9 @@ void QKeyMapper::initProcessInfoTable(void)
     //ui->processinfoTable->setStyle(QStyleFactory::create("windows"));
     ui->processinfoTable->setFocusPolicy(Qt::NoFocus);
     ui->processinfoTable->setColumnCount(PROCESSINFO_TABLE_COLUMN_COUNT);
-    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << "Name"
-                                                                    << "PID"
-                                                                    << "Title" );
+//    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << "Name"
+//                                                                    << "PID"
+//                                                                    << "Title" );
 
     ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
     ui->processinfoTable->horizontalHeader()->setHighlightSections(false);
@@ -2111,10 +2273,10 @@ void QKeyMapper::initKeyMappingDataTable(void)
     //ui->keymapdataTable->setStyle(QStyleFactory::create("windows"));
     ui->keymapdataTable->setFocusPolicy(Qt::NoFocus);
     ui->keymapdataTable->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
-    ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << "Original Key"
-                                                                    << "Mapping Key"
-                                                                    << "Burst"
-                                                                    << "Lock");
+//    ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << "Original Key"
+//                                                                    << "Mapping Key"
+//                                                                    << "Burst"
+//                                                                    << "Lock");
 
     ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
@@ -2333,6 +2495,85 @@ void QKeyMapper::refreshKeyMappingDataTable()
         qDebug() << "KeyMappingDataList End   <<<";
 #endif
     }
+}
+
+void QKeyMapper::reloadUILanguage()
+{
+    int languageIndex = ui->languageComboBox->currentIndex();
+
+    if (LANGUAGE_ENGLISH == languageIndex) {
+        setUILanguage_English();
+    }
+    else {
+        setUILanguage_Chinese();
+    }
+
+}
+
+void QKeyMapper::setUILanguage_Chinese()
+{
+    setControlFontChinese();
+
+    ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
+    ui->keymapButton->setText(KEYMAPBUTTON_CHINESE);
+    ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
+    ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
+    ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
+    ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
+    ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
+    ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
+    ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
+    ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
+    ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
+    ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
+    ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
+    ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
+    ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
+    ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
+    ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
+    ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
+    ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
+
+    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
+                                                                  << PROCESSINFOTABLE_COL2_CHINESE
+                                                                  << PROCESSINFOTABLE_COL3_CHINESE );
+    ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_CHINESE
+                                                                 << KEYMAPDATATABLE_COL2_CHINESE
+                                                                 << KEYMAPDATATABLE_COL3_CHINESE
+                                                                 << KEYMAPDATATABLE_COL4_CHINESE);
+}
+
+void QKeyMapper::setUILanguage_English()
+{
+    setControlFontEnglish();
+
+    ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
+    ui->keymapButton->setText(KEYMAPBUTTON_ENGLISH);
+    ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
+    ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
+    ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
+    ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
+    ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
+    ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
+    ui->orikeyLabel->setText(ORIKEYLABEL_ENGLISH);
+    ui->mapkeyLabel->setText(MAPKEYLABEL_ENGLISH);
+    ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
+    ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
+    ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
+    ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
+    ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
+    ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
+    ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
+    ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
+    ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
+
+    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
+                                                                  << PROCESSINFOTABLE_COL2_ENGLISH
+                                                                  << PROCESSINFOTABLE_COL3_ENGLISH );
+    ui->keymapdataTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_ENGLISH
+                                                                 << KEYMAPDATATABLE_COL2_ENGLISH
+                                                                 << KEYMAPDATATABLE_COL3_ENGLISH
+                                                                 << KEYMAPDATATABLE_COL4_ENGLISH);
 }
 
 void QKeyMapper::updateLockStatusDisplay()
@@ -2809,5 +3050,22 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
 #endif
         }
     }
+}
+
+
+void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
+{
+    reloadUILanguage();
+
+#ifdef DEBUG_LOGOUT_ON
+    QString languageStr;
+    if (LANGUAGE_ENGLISH == index) {
+        languageStr = "English";
+    }
+    else {
+        languageStr = "Chinese";
+    }
+    qDebug() << "[Language] Language changed ->" << languageStr;
+#endif
 }
 

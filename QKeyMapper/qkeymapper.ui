@@ -66,7 +66,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>SaveMapData</string>
+    <string>SaveSetting</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -214,7 +214,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Original</string>
+    <string>OriKey</string>
    </property>
   </widget>
   <widget class="QLabel" name="mapkeyLabel">
@@ -227,7 +227,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Mapping</string>
+    <string>MapKey</string>
    </property>
   </widget>
   <widget class="QPushButton" name="deleteoneButton">
@@ -1175,9 +1175,9 @@
   <widget class="QCheckBox" name="autoStartupCheckBox">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>130</x>
      <y>570</y>
-     <width>151</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
@@ -1209,6 +1209,35 @@
    <property name="checked">
     <bool>false</bool>
    </property>
+  </widget>
+  <widget class="QComboBox" name="languageComboBox">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>570</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string>中文</string>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <item>
+    <property name="text">
+     <string>中文</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>English</string>
+    </property>
+   </item>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>

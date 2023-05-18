@@ -15,6 +15,7 @@ include(qhotkey.pri)
 DEFINES += SINGLE_APPLICATION
 
 #DEFINES += LOGOUT_TOFILE
+#DEFINES += USE_SAOFONT
 
 contains(DEFINES, SINGLE_APPLICATION) {
     DEFINES += QAPPLICATION_CLASS=QApplication
@@ -106,8 +107,11 @@ FORMS       += \
 
 RESOURCES   += \
     image.qrc \
-    font.qrc \
     sound.qrc
+
+contains( DEFINES, USE_SAOFONT ) {
+RESOURCES   += font.qrc
+}
 
 RC_FILE     += \
     QKeyMapper.rc
