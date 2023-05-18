@@ -3055,6 +3055,7 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
 
 void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
 {
+    Q_UNUSED(index);
     reloadUILanguage();
 
 #ifdef DEBUG_LOGOUT_ON
