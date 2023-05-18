@@ -22,6 +22,7 @@
 18. v1.3.2 -> 在"KeyMappingStart"(循环检测)状态下，如果检测到到前台窗口与当前SelectSetting的键盘映射配置设定一致时候会播放一个音效提示进入到键盘映射生效状态。
 19. v1.3.3 -> 在ADD按键右侧增加了"»"勾选框，用于添加按键序列，例如: Ctrl + X 之后 Ctrl + S，设置后效果参考README中显示的截图。
 20. v1.3.3 -> 按键列表中添加了对鼠标侧键XButton1和XButton2的支持。
+21. v1.3.5 -> 添加中文界面，可以使用语言切换下拉列表进行中英文界面切换。
 
 
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
@@ -47,6 +48,7 @@
 18. v1.3.2 -> When it is detected that the foreground window is matched with the current SelectSetting's mapping configuration at the "KeyMappingStart"(Cycle Checking) state, a sound effect will be played to prompt that keymapping is actived.
 19. v1.3.3 -> Add a checkbox "»" next to the "ADD" button, which is used to add a key sequence, such as "Ctrl+X" then "Ctrl+S". The effect after setting can be seen in the screenshot displayed in the README.
 20. v1.3.3 -> Add Mouse XButton1 & XButton2 to key list for the support of mouse side buttons.
+21. v1.3.5 -> Add Chinese UI, use language select checkbox to change UI language between Chinese and English.
 
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
