@@ -425,49 +425,81 @@ void QKeyMapper::cycleCheckProcessProc(void)
             }
         }
 
-        bool isAltTabWindow = IsAltTabWindow(hwnd);
+        bool isVisibleWindow = IsWindowVisible(hwnd);
+        bool isExToolWindow = false;
+        bool isCloakedWindow = false;
+
+        WINDOWINFO winInfo;
+        winInfo.cbSize = sizeof(WINDOWINFO);
+        if (GetWindowInfo(hwnd, &winInfo)) {
+            if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
+                isExToolWindow = true;
+        }
+
+        BOOL isCloaked = FALSE;
+        HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
+        if (SUCCEEDED(hr)) {
+            if (TRUE == isCloaked) {
+                isCloakedWindow = true;
+            }
+            else {
+                isCloakedWindow = false;
+            }
+        }
+        else {
+            isCloakedWindow = false;
+        }
+
+        /* Skip inVisibleWidow & ToolbarWindow >>> */
+        bool isToolbarWindow = false;
+        if (false == filename.isEmpty()
+            && false == windowTitle.isEmpty()
+            && true == isVisibleWindow
+            && false == isCloakedWindow
+            && true == isExToolWindow) {
+            isToolbarWindow = true;
+        }
+        /* Skip inVisibleWidow & ToolbarWindow <<< */
 
         if (checkresult){
             if (KEYMAP_CHECKING == m_KeyMapStatus){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isCloakedWindow =" << isCloakedWindow << "," << " isExToolWindow =" << isExToolWindow;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
+#endif
+                if (isToolbarWindow) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_MAPPING)";
+#endif
+                    return;
+                }
                 playStartSound();
                 setKeyHook(hwnd);
                 m_KeyMapStatus = KEYMAP_MAPPING;
                 updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
-
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << "), " << "IsAltTabWindow -> " << isAltTabWindow;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
-#endif
             }
         }
         else{
             if (KEYMAP_MAPPING == m_KeyMapStatus){
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << "), " << "IsAltTabWindow -> " << isAltTabWindow;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isCloakedWindow =" << isCloakedWindow << "," << " isExToolWindow =" << isExToolWindow;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
 #endif
-
-                /* Add for mouse2joystick_Custom_CEMU.exe Bug Fix >>> */
-                if (filename == "mouse2joystick_Custom_CEMU.exe"
-                    && windowTitle == "Controller"
-                    && m_MapProcessInfo.FileName == "Cemu.exe"
-                    && false == isAltTabWindow) {
+                if (isToolbarWindow) {
 #ifdef DEBUG_LOGOUT_ON
-                    bool isVisibleWindow = IsVisibleWindow(hwnd);
-                    Q_UNUSED(isVisibleWindow);
-                    for (int loop = 0; loop < 10; loop++) {
-                        qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Cemu.exe -> Controller(mouse2joystick_Custom_CEMU.exe)(isVisibleWindow == false)";
-                    }
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_CHECKING)";
 #endif
                     return;
                 }
-                /* Add for mouse2joystick_Custom_CEMU.exe Bug Fix <<< */
-
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 updateSystemTrayDisplay();
