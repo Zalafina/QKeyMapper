@@ -51,4 +51,5 @@
 21. v1.3.5 -> Add Chinese UI, use language select checkbox to change UI language between Chinese and English.
 
 ## Screenshot
+![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png)
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
