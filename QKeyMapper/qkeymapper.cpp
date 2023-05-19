@@ -36,6 +36,10 @@ static const int SENDMODE_BURST_STOP    = 2;
 
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
+static const int UI_SCALE_NORMAL = 0;
+static const int UI_SCALE_2K_PERCENT_100 = 1;
+static const int UI_SCALE_4K_PERCENT_100 = 2;
+
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
@@ -124,8 +128,8 @@ static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
 static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Title";
-static const char *KEYMAPDATATABLE_COL1_ENGLISH = "Original Key";
-static const char *KEYMAPDATATABLE_COL2_ENGLISH = "Mapping Key";
+static const char *KEYMAPDATATABLE_COL1_ENGLISH = "OriginalKey";
+static const char *KEYMAPDATATABLE_COL2_ENGLISH = "MappingKey";
 static const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
 static const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
 
@@ -150,7 +154,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
-    m_HotKey(new QHotkey(this))
+    m_HotKey(new QHotkey(this)),
+    m_UI_Scale(UI_SCALE_NORMAL)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -175,6 +180,17 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     defaultTitle.append(QChar(0x0020));
     defaultTitle.append(QChar(0x0034));
     DEFAULT_TITLE = defaultTitle;
+
+    QByteArray scale_factor = qgetenv("QT_SCALE_FACTOR");
+    if (scale_factor == QByteArray("1.5")) {
+        m_UI_Scale = UI_SCALE_4K_PERCENT_100;
+    }
+    else if (scale_factor == QByteArray("1.25")) {
+        m_UI_Scale = UI_SCALE_2K_PERCENT_100;
+    }
+    else {
+        m_UI_Scale = UI_SCALE_NORMAL;
+    }
 
 #ifdef USE_SAOFONT
     if ((m_SAO_FontFamilyID != -1)
@@ -209,7 +225,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
     reloadUILanguage();
-    ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
+    resetFontSize();
 
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
@@ -1976,12 +1992,22 @@ void QKeyMapper::setControlFontEnglish()
 {
     QFont customFont(FONTNAME_ENGLISH);
 
-    customFont.setPointSize(18);
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        customFont.setPointSize(14);
+    }
+    else {
+        customFont.setPointSize(18);
+    }
     ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
-    customFont.setPointSize(11);
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        customFont.setPointSize(9);
+    }
+    else {
+        customFont.setPointSize(11);
+    }
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->addmapdataButton->setFont(customFont);
@@ -2000,7 +2026,12 @@ void QKeyMapper::setControlFontEnglish()
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
-    customFont.setPointSize(12);
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        customFont.setPointSize(10);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
@@ -2010,12 +2041,22 @@ void QKeyMapper::setControlFontChinese()
 {
     QFont customFont(FONTNAME_CHINESE, 18, QFont::Bold);
 
-    customFont.setPointSize(18);
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        customFont.setPointSize(16);
+    }
+    else {
+        customFont.setPointSize(18);
+    }
     ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
-    customFont.setPointSize(11);
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        customFont.setPointSize(9);
+    }
+    else {
+        customFont.setPointSize(11);
+    }
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->addmapdataButton->setFont(customFont);
@@ -2034,7 +2075,12 @@ void QKeyMapper::setControlFontChinese()
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
-    customFont.setPointSize(12);
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        customFont.setPointSize(10);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
@@ -2597,6 +2643,63 @@ void QKeyMapper::setUILanguage_English()
                                                                  << KEYMAPDATATABLE_COL2_ENGLISH
                                                                  << KEYMAPDATATABLE_COL3_ENGLISH
                                                                  << KEYMAPDATATABLE_COL4_ENGLISH);
+}
+
+void QKeyMapper::resetFontSize()
+{
+    ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
+
+    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale) {
+        QFontInfo fontinfo = ui->nameLineEdit->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->nameLineEdit->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->titleLineEdit->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->titleLineEdit->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->languageComboBox->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->languageComboBox->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->burstpressComboBox->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->burstpressComboBox->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->burstreleaseComboBox->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->burstreleaseComboBox->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = m_orikeyComboBox->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            m_orikeyComboBox->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = m_mapkeyComboBox->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            m_mapkeyComboBox->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->settingselectComboBox->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->settingselectComboBox->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->processinfoTable->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->processinfoTable->setFont(QFont(fontinfo.family(), 10));
+        }
+
+        fontinfo = ui->keymapdataTable->fontInfo();
+        if (fontinfo.pointSize() > 10) {
+            ui->keymapdataTable->setFont(QFont(fontinfo.family(), 10));
+        }
+    }
 }
 
 void QKeyMapper::updateLockStatusDisplay()

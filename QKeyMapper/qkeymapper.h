@@ -201,6 +201,7 @@ private:
     void reloadUILanguage(void);
     void setUILanguage_Chinese(void);
     void setUILanguage_English(void);
+    void resetFontSize(void);
 
     bool checkSaveSettings(const QString &executablename);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
@@ -241,6 +242,7 @@ private:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     QHotkey *m_HotKey;
+    int m_UI_Scale;
 };
 
 #endif // QKEYMAPPER_H
