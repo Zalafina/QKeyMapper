@@ -1925,7 +1925,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
         return false;
     }
-    else{
+    else {
+        ui->nameLineEdit->setCursorPosition(0);
+        ui->titleLineEdit->setCursorPosition(0);
         if ((true == autoStartMappingChecked) && (true == settingtext.isEmpty())) {
             on_keymapButton_clicked();
         }
@@ -2020,31 +2022,21 @@ void QKeyMapper::setControlFontEnglish()
 {
     QFont customFont(FONTNAME_ENGLISH);
 
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(14);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(18);
     }
     else {
-        customFont.setPointSize(18);
+        customFont.setPointSize(14);
     }
     ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(9);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(11);
     }
     else {
-        customFont.setPointSize(11);
+        customFont.setPointSize(9);
     }
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
@@ -2064,16 +2056,11 @@ void QKeyMapper::setControlFontEnglish()
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(10);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(12);
     }
     else {
-        customFont.setPointSize(12);
+        customFont.setPointSize(10);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
@@ -2084,31 +2071,21 @@ void QKeyMapper::setControlFontChinese()
 {
     QFont customFont(FONTNAME_CHINESE, 18, QFont::Bold);
 
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(16);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(18);
     }
     else {
-        customFont.setPointSize(18);
+        customFont.setPointSize(14);
     }
     ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(9);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(11);
     }
     else {
-        customFont.setPointSize(11);
+        customFont.setPointSize(9);
     }
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
@@ -2128,16 +2105,11 @@ void QKeyMapper::setControlFontChinese()
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(10);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(12);
     }
     else {
-        customFont.setPointSize(12);
+        customFont.setPointSize(10);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);

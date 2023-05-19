@@ -78,20 +78,17 @@ int main(int argc, char *argv[])
     double dScreenWidth = static_cast<double>(nScreenWidth);
     double scale = dWidth / dScreenWidth;
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
-#elif (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-#endif
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "Original QT_SCALE_FACTOR ->" << qgetenv("QT_SCALE_FACTOR");
 #endif
+
+    bool Flag_4K = false;
 
     if (scale < 1.10) {
         if (dWidth >= 3840) {
             qputenv("QT_SCALE_FACTOR", "1.5");
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.0");
+            Flag_4K = true;
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Set QT_SCALE_FACTOR to [1.5] for screen width ->" << dWidth;
 #endif
@@ -113,6 +110,7 @@ int main(int argc, char *argv[])
     }
     else if (1.24 <= scale &&  scale <= 1.26) {
         if (dWidth >= 3840) {
+            Flag_4K = true;
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.25");
         }
         else if (dWidth >= 2560) {
@@ -124,6 +122,7 @@ int main(int argc, char *argv[])
     }
     else if (1.49 <= scale &&  scale <= 1.51) {
         if (dWidth >= 3840) {
+            Flag_4K = true;
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.5");
         }
         else if (dWidth >= 2560) {
@@ -138,6 +137,17 @@ int main(int argc, char *argv[])
         qDebug() << "Original screen scale ->" << scale << "," << "Screen width ->" << dWidth << ", do not need to set QT_SCALE_FACTOR.";
 #endif
     }
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    if (Flag_4K == true) {
+        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Ceil);
+    }
+    else {
+        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+    }
+#elif (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
 
 #ifdef SINGLE_APPLICATION
     QApplication::setApplicationName("QKeyMapper");
