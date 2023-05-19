@@ -79,27 +79,58 @@ int main(int argc, char *argv[])
     double scale = dWidth / dScreenWidth;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Round);
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #elif (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "Original QT_SCALE_FACTOR ->" << qgetenv("QT_SCALE_FACTOR");
+#endif
+
     if (scale < 1.10) {
         if (dWidth >= 3840) {
             qputenv("QT_SCALE_FACTOR", "1.5");
+            qputenv("WINDOWS_SCALE_FACTOR", "4K_1.0");
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Set QT_SCALE_FACTOR to [1.5] for screen width ->" << dWidth;
 #endif
         }
         else if (dWidth >= 2560) {
             qputenv("QT_SCALE_FACTOR", "1.25");
+            qputenv("WINDOWS_SCALE_FACTOR", "2K_1.0");
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Set QT_SCALE_FACTOR to [1.25] for screen width ->" << dWidth;
 #endif
         }
         else {
+            qputenv("QT_SCALE_FACTOR", "1");
+            qputenv("WINDOWS_SCALE_FACTOR", "1K_1.0");
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Do not set QT_SCALE_FACTOR for screen width ->" << dWidth;
+            qDebug() << "set QT_SCALE_FACTOR to [1] for screen width ->" << dWidth;
 #endif
+        }
+    }
+    else if (scale == 1.25) {
+        if (dWidth >= 3840) {
+            qputenv("WINDOWS_SCALE_FACTOR", "4K_1.25");
+        }
+        else if (dWidth >= 2560) {
+            qputenv("WINDOWS_SCALE_FACTOR", "2K_1.25");
+        }
+        else {
+            qputenv("WINDOWS_SCALE_FACTOR", "1K_1.25");
+        }
+    }
+    else if (scale == 1.5) {
+        if (dWidth >= 3840) {
+            qputenv("WINDOWS_SCALE_FACTOR", "4K_1.5");
+        }
+        else if (dWidth >= 2560) {
+            qputenv("WINDOWS_SCALE_FACTOR", "2K_1.5");
+        }
+        else {
+            qputenv("WINDOWS_SCALE_FACTOR", "1K_1.5");
         }
     }
     else {

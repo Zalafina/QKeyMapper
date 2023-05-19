@@ -37,8 +37,15 @@ static const int SENDMODE_BURST_STOP    = 2;
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
 static const int UI_SCALE_NORMAL = 0;
-static const int UI_SCALE_2K_PERCENT_100 = 1;
-static const int UI_SCALE_4K_PERCENT_100 = 2;
+static const int UI_SCALE_1K_PERCENT_100 = 1;
+static const int UI_SCALE_1K_PERCENT_125 = 2;
+static const int UI_SCALE_1K_PERCENT_150 = 3;
+static const int UI_SCALE_2K_PERCENT_100 = 4;
+static const int UI_SCALE_2K_PERCENT_125 = 5;
+static const int UI_SCALE_2K_PERCENT_150 = 6;
+static const int UI_SCALE_4K_PERCENT_100 = 7;
+static const int UI_SCALE_4K_PERCENT_125 = 8;
+static const int UI_SCALE_4K_PERCENT_150 = 9;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
@@ -181,12 +188,33 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     defaultTitle.append(QChar(0x0034));
     DEFAULT_TITLE = defaultTitle;
 
-    QByteArray scale_factor = qgetenv("QT_SCALE_FACTOR");
-    if (scale_factor == QByteArray("1.5")) {
+    QByteArray win_scale_factor = qgetenv("WINDOWS_SCALE_FACTOR");
+    if (win_scale_factor == QByteArray("4K_1.0")) {
         m_UI_Scale = UI_SCALE_4K_PERCENT_100;
     }
-    else if (scale_factor == QByteArray("1.25")) {
+    else if (win_scale_factor == QByteArray("2K_1.0")) {
         m_UI_Scale = UI_SCALE_2K_PERCENT_100;
+    }
+    else if (win_scale_factor == QByteArray("1K_1.0")) {
+        m_UI_Scale = UI_SCALE_1K_PERCENT_100;
+    }
+    else if (win_scale_factor == QByteArray("1K_1.25")) {
+        m_UI_Scale = UI_SCALE_1K_PERCENT_125;
+    }
+    else if (win_scale_factor == QByteArray("1K_1.5")) {
+        m_UI_Scale = UI_SCALE_1K_PERCENT_150;
+    }
+    else if (win_scale_factor == QByteArray("2K_1.25")) {
+        m_UI_Scale = UI_SCALE_2K_PERCENT_125;
+    }
+    else if (win_scale_factor == QByteArray("2K_1.5")) {
+        m_UI_Scale = UI_SCALE_2K_PERCENT_150;
+    }
+    else if (win_scale_factor == QByteArray("4K_1.25")) {
+        m_UI_Scale = UI_SCALE_4K_PERCENT_125;
+    }
+    else if (win_scale_factor == QByteArray("4K_1.5")) {
+        m_UI_Scale = UI_SCALE_4K_PERCENT_150;
     }
     else {
         m_UI_Scale = UI_SCALE_NORMAL;
