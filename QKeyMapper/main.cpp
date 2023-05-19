@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 #endif
         }
     }
-    else if (scale == 1.25) {
+    else if (1.24 <= scale &&  scale <= 1.26) {
         if (dWidth >= 3840) {
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.25");
         }
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
             qputenv("WINDOWS_SCALE_FACTOR", "1K_1.25");
         }
     }
-    else if (scale == 1.5) {
+    else if (1.49 <= scale &&  scale <= 1.51) {
         if (dWidth >= 3840) {
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.5");
         }
