@@ -74,7 +74,8 @@ static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
 static const char *REFRESHBUTTON_CHINESE = "刷新";
-static const char *KEYMAPBUTTON_CHINESE = "开始按键映射";
+static const char *KEYMAPBUTTON_START_CHINESE = "开始按键映射";
+static const char *KEYMAPBUTTON_STOP_CHINESE = "停止按键映射";
 static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
 static const char *DELETEONEBUTTON_CHINESE = "删除单行";
 static const char *CLEARALLBUTTON_CHINESE = "全部清除";
@@ -101,7 +102,8 @@ static const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
 static const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
-static const char *KEYMAPBUTTON_ENGLISH = "KeyMappingStart";
+static const char *KEYMAPBUTTON_START_ENGLISH = "KeyMappingStart";
+static const char *KEYMAPBUTTON_STOP_ENGLISH = "KeyMappingStop";
 static const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
 static const char *DELETEONEBUTTON_ENGLISH = "Delete One";
 static const char *CLEARALLBUTTON_ENGLISH = "Clear All";
@@ -1125,7 +1127,12 @@ void QKeyMapper::on_keymapButton_clicked()
 
         if (true == fileNameCheckOK && true == windowTitleCheckOK){
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
-            ui->keymapButton->setText("KeyMappingStop");
+            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                ui->keymapButton->setText(KEYMAPBUTTON_STOP_ENGLISH);
+            }
+            else {
+                ui->keymapButton->setText(KEYMAPBUTTON_STOP_CHINESE);
+            }
             m_KeyMapStatus = KEYMAP_CHECKING;
             updateSystemTrayDisplay();
             emit updateLockStatus_Signal();
@@ -1143,7 +1150,12 @@ void QKeyMapper::on_keymapButton_clicked()
         m_CycleCheckTimer.stop();
         m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
         m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
-        ui->keymapButton->setText("KeyMappingStart");
+        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+            ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
+        }
+        else {
+            ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
+        }
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
         emit updateLockStatus_Signal();
@@ -2514,8 +2526,14 @@ void QKeyMapper::setUILanguage_Chinese()
 {
     setControlFontChinese();
 
+    if (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING == m_KeyMapStatus) {
+        ui->keymapButton->setText(KEYMAPBUTTON_STOP_CHINESE);
+    }
+    else {
+        ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
+    }
+
     ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
-    ui->keymapButton->setText(KEYMAPBUTTON_CHINESE);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
     ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
@@ -2547,8 +2565,13 @@ void QKeyMapper::setUILanguage_English()
 {
     setControlFontEnglish();
 
+    if (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING == m_KeyMapStatus) {
+        ui->keymapButton->setText(KEYMAPBUTTON_STOP_ENGLISH);
+    }
+    else {
+        ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
+    }
     ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
-    ui->keymapButton->setText(KEYMAPBUTTON_ENGLISH);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
