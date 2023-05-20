@@ -498,10 +498,14 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     if(TRUE == IsWindowVisible(hWnd)){
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
         m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#ifdef DEBUG_LOGOUT_ON
         qInfo("[setKeyHook] Normal Key Hook & Mouse Hook Started.");
+#endif
     }
     else{
+#ifdef DEBUG_LOGOUT_ON
         qWarning("[setKeyHook] Error: Invisible Window Handle!!!");
+#endif
     }
 
 //    setWorkerDInputKeyHook(hWnd);
@@ -525,7 +529,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     if (m_KeyHook != Q_NULLPTR){
         UnhookWindowsHookEx(m_KeyHook);
         m_KeyHook = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
         qInfo("[setKeyUnHook] Normal Key Hook & Mouse Hook Released.");
+#endif
     }
 
 //    setWorkerDInputKeyUnHook();

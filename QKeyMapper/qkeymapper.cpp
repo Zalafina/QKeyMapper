@@ -1976,7 +1976,11 @@ bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
 {
     bool checkResult = true;
     static QRegularExpression regexp("\\s[+»]\\s");
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
+#else
+    QStringList Mapping_Keys = mappingkeystr.split(regexp, QString::SkipEmptyParts);
+#endif
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)){

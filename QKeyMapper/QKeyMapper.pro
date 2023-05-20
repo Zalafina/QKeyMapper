@@ -17,6 +17,17 @@ DEFINES += SINGLE_APPLICATION
 #DEFINES += LOGOUT_TOFILE
 #DEFINES += USE_SAOFONT
 
+lessThan(QT_MAJOR_VERSION, 6) {
+    message("Qt5 Version")
+    win32-msvc*: {
+        QMAKE_CFLAGS *= /utf-8
+        QMAKE_CXXFLAGS *= /utf-8
+    }
+}
+else {
+    message("Qt6 Version")
+}
+
 contains(DEFINES, SINGLE_APPLICATION) {
     DEFINES += QAPPLICATION_CLASS=QApplication
     QT += network
