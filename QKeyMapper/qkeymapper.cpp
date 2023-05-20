@@ -831,9 +831,30 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             }
 
             if (ProcessInfo.WindowIcon.isNull() != true){
-                BOOL isVisibleWindow = IsAltTabWindow(hWnd);
-                if (TRUE == isVisibleWindow) {
+                BOOL isVisibleWindow = TRUE;
+                bool isWin10Above = false;
+                QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
+                if (osVersion >= QOperatingSystemVersion::Windows10) {
+                    isWin10Above = true;
+                }
+                else {
+                    isWin10Above = false;
+                }
+
+                if (isWin10Above) {
+                    isVisibleWindow = IsAltTabWindow(hWnd);
+                    if (TRUE == isVisibleWindow) {
+                        static_ProcessInfoList.append(ProcessInfo);
+                    }
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[EnumWindowsProc] Windows version Win10 and above.";
+#endif
+                }
+                else {
                     static_ProcessInfoList.append(ProcessInfo);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[EnumWindowsProc] Windows version lower than Win10 (Win8.1/Win8/Win7...)";
+#endif
                 }
 
 #ifdef DEBUG_LOGOUT_ON
