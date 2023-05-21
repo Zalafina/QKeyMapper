@@ -30,7 +30,7 @@
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
 ---------------
 ### If the Qt6 version could not be used under Win7, please download the Qt5 version.
-### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
+### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/en-us/download/confirmation.aspx?id=48145
 ---------------
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
