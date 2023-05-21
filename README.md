@@ -1,9 +1,9 @@
 # QKeyMapper
+---------------
 ## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本。
-注意使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。
-VC++ 2015 64位运行库，微软下载网址：
-https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
-
+### Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
+### 注意使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
+---------------
 ### 具体功能
 1. 左侧显示当前正在运行的可见的窗口程序列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
 2. 鼠标左键双击左侧窗口程序列表的某一行可以将选定的窗口程序的可自行文件名和窗口标题设定到图标/文件名/窗口标题区域。
@@ -26,13 +26,12 @@ https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
 19. v1.3.3 -> 在ADD按键右侧增加了"»"勾选框，用于添加按键序列，例如: Ctrl + X 之后 Ctrl + S，设置后效果参考README中显示的截图。
 20. v1.3.3 -> 按键列表中添加了对鼠标侧键XButton1和XButton2的支持。
 21. v1.3.5 -> 添加中文界面，可以使用语言切换下拉列表进行中英文界面切换，适配4K/2K/1K分辨率。
-
-
+---------------
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
-Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.
-VC++ 2015 64-bit Runtime, Microsoft download link:
-https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
-
+---------------
+### If the Qt6 version could not be used under Win7, please download the Qt5 version.
+### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
+---------------
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
 2. Use mouse leftbutton doubleclick a row to select it to the Icon/FileName/WindowTitle area.
@@ -55,7 +54,7 @@ https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
 19. v1.3.3 -> Add a checkbox "»" next to the "ADD" button, which is used to add a key sequence, such as "Ctrl+X" then "Ctrl+S". The effect after setting can be seen in the screenshot displayed in the README.
 20. v1.3.3 -> Add Mouse XButton1 & XButton2 to key list for the support of mouse side buttons.
 21. v1.3.5 -> Add Chinese UI, use language select checkbox to change UI language between Chinese and English. Adapt to different resolutions(4K/2K/1K).
-
+---------------
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png)
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
