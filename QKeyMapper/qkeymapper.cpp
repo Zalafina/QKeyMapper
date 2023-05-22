@@ -699,11 +699,17 @@ BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
     WINDOWINFO winInfo;
     winInfo.cbSize = sizeof(WINDOWINFO);
     if (GetWindowInfo(hWnd, &winInfo)) {
-        if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0) {
+        if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
             return FALSE;
+
+        //  It must not be a cloaked window
+        BOOL isCloaked = FALSE;
+        HRESULT hr = DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
+        if (SUCCEEDED(hr)) {
+            return isCloaked == FALSE;
         }
         else {
-            return TRUE;
+            return FALSE;
         }
     }
     else {
