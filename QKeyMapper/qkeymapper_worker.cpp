@@ -23,6 +23,7 @@ QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QSt
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
+QHash<QString, QString> QKeyMapper_Worker::pressedDirectMappingKeysMap = QHash<QString, QString>();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -338,6 +339,26 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
                 index++;
             }
+
+            if (1 == keycount) {
+                QString mappingkey = mappingKeys.constFirst();
+                if (KEY_DOWN == keyupdown) {
+                    pressedDirectMappingKeysMap.insert(original_key, mappingkey);
+                }
+                else {
+                    pressedDirectMappingKeysMap.remove(original_key);
+                }
+#ifdef DEBUG_LOGOUT_ON
+                QString keyupdownstr;
+                if (KEY_DOWN == keyupdown) {
+                    keyupdownstr = "KeyDown";
+                }
+                else {
+                    keyupdownstr = "KeyUp";
+                }
+                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping " << keyupdownstr << " -> original_key[" << original_key << "], " << "mappingKey[" << mappingKeys.constFirst() << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
+#endif
+            }
         }
         /* key_sequence_count > 1 */
         else {
@@ -503,6 +524,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
+    pressedDirectMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
@@ -539,6 +561,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
+    pressedDirectMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
@@ -724,6 +747,14 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     if ((false == keycodeString.isEmpty())
         && (WM_KEYDOWN == wParam || WM_KEYUP == wParam || WM_SYSKEYDOWN == wParam || WM_SYSKEYUP == wParam)){
 #ifdef DEBUG_LOGOUT_ON
+        if ("H" == keycodeString) {
+            if (WM_KEYDOWN == wParam) {
+                qDebug("RealKey: H KeyDown");
+            }
+            else {
+                qDebug("RealKey: H KeyUp");
+            }
+        }
         if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
             if (WM_KEYDOWN == wParam){
                 qDebug("RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);

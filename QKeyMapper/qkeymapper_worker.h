@@ -213,6 +213,7 @@ public:
     static QHash<WPARAM, QString> MouseButtonNameMap;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
+    static QHash<QString, QString> pressedDirectMappingKeysMap;
     static QStringList pressedLockKeysList;
     static QStringList exchangeKeysList;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
