@@ -31,7 +31,6 @@
 #include <Psapi.h>
 #include <tchar.h>
 #include <string.h>
-#include <dwmapi.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
@@ -127,7 +126,6 @@ public:
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static HWND getHWND_byPID(DWORD dwProcessID);
     static BOOL IsAltTabWindow(HWND hWnd);
-    static BOOL IsVisibleWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);

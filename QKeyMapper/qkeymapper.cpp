@@ -427,7 +427,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
         bool isVisibleWindow = IsWindowVisible(hwnd);
         bool isExToolWindow = false;
-        bool isCloakedWindow = false;
 
         WINDOWINFO winInfo;
         winInfo.cbSize = sizeof(WINDOWINFO);
@@ -436,26 +435,11 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 isExToolWindow = true;
         }
 
-        BOOL isCloaked = FALSE;
-        HRESULT hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
-        if (SUCCEEDED(hr)) {
-            if (TRUE == isCloaked) {
-                isCloakedWindow = true;
-            }
-            else {
-                isCloakedWindow = false;
-            }
-        }
-        else {
-            isCloakedWindow = false;
-        }
-
         /* Skip inVisibleWidow & ToolbarWindow >>> */
         bool isToolbarWindow = false;
         if (false == filename.isEmpty()
             && false == windowTitle.isEmpty()
             && true == isVisibleWindow
-            && false == isCloakedWindow
             && true == isExToolWindow) {
             isToolbarWindow = true;
         }
@@ -468,7 +452,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isCloakedWindow =" << isCloakedWindow << "," << " isExToolWindow =" << isExToolWindow;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
 #endif
                 if (isToolbarWindow) {
@@ -491,7 +475,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isCloakedWindow =" << isCloakedWindow << "," << " isExToolWindow =" << isExToolWindow;
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
 #endif
                 if (isToolbarWindow) {
@@ -715,57 +699,11 @@ BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
     WINDOWINFO winInfo;
     winInfo.cbSize = sizeof(WINDOWINFO);
     if (GetWindowInfo(hWnd, &winInfo)) {
-        if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
-            return false;
-
-        //  It must not be a cloaked window
-        BOOL isCloaked = TRUE;
-        HRESULT hr = DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
-        if (SUCCEEDED(hr)) {
-            return isCloaked == FALSE;
-        }
-        else {
-            return FALSE;
-        }
-    }
-    else {
-        return FALSE;
-    }
-}
-
-BOOL QKeyMapper::IsVisibleWindow(HWND hWnd)
-{
-    //  It must be a visible Window
-    if (!IsWindowVisible(hWnd)) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[IsVisibleWindow] " << "IsWindowVisible() -> FALSE";
-#endif
-        return FALSE;
-    }
-
-    //  It must not be a Tool bar window
-    WINDOWINFO winInfo;
-    winInfo.cbSize = sizeof(WINDOWINFO);
-    if (GetWindowInfo(hWnd, &winInfo)) {
         if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[IsVisibleWindow] " << "WS_EX_TOOLWINDOW -> MATCH";
-#endif
-            return false;
-        }
-
-        //  It must not be a cloaked window
-        BOOL isCloaked = TRUE;
-        HRESULT hr = DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, &isCloaked, sizeof(BOOL));
-        if (SUCCEEDED(hr)) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[IsVisibleWindow] " << "isCloaked -> " << (isCloaked == TRUE);
-#endif
-
-            return isCloaked == FALSE;
+            return FALSE;
         }
         else {
-            return FALSE;
+            return TRUE;
         }
     }
     else {
