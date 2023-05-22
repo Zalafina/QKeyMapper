@@ -227,6 +227,10 @@ public:
 private:
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
+#ifdef QT_DEBUG
+    bool m_LowLevelKeyboardHook_Enable;
+    bool m_LowLevelMouseHook_Enable;
+#endif
     IDirectInput8* m_DirectInput;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
