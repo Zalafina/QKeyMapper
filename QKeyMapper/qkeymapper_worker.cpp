@@ -178,6 +178,22 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             return;
         }
 
+        if (1 == keycount) {
+            QString mappingkey = mappingKeys.constFirst();
+            pressedDirectMappingKeysMap.remove(original_key);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping KeyUp -> original_key[" << original_key << "], " << "mappingKey[" << mappingKeys.constFirst() << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
+#endif
+            QList<QString> remainDirectKeys = pressedDirectMappingKeysMap.values();
+            if (remainDirectKeys.contains(mappingkey)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping still remain mappingKey[" << mappingkey << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
+                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping skip KeyUp -> original_key[" << original_key << "], " << "mappingKey[" << mappingkey << "]";
+#endif
+                return;
+            }
+        }
+
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
 
@@ -285,6 +301,14 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 return;
             }
 
+            if (1 == keycount) {
+                QString mappingkey = mappingKeys.constFirst();
+                pressedDirectMappingKeysMap.insert(original_key, mappingkey);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping KeyDown -> original_key[" << original_key << "], " << "mappingKey[" << mappingKeys.constFirst() << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
+#endif
+            }
+
             for (const QString &key : qAsConst(mappingKeys)){
                 INPUT *input_p = &inputs[index];
                 if (true == VirtualMouseButtonMap.contains(key)) {
@@ -338,26 +362,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
                 }
                 index++;
-            }
-
-            if (1 == keycount) {
-                QString mappingkey = mappingKeys.constFirst();
-                if (KEY_DOWN == keyupdown) {
-                    pressedDirectMappingKeysMap.insert(original_key, mappingkey);
-                }
-                else {
-                    pressedDirectMappingKeysMap.remove(original_key);
-                }
-#ifdef DEBUG_LOGOUT_ON
-                QString keyupdownstr;
-                if (KEY_DOWN == keyupdown) {
-                    keyupdownstr = "KeyDown";
-                }
-                else {
-                    keyupdownstr = "KeyUp";
-                }
-                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping " << keyupdownstr << " -> original_key[" << original_key << "], " << "mappingKey[" << mappingKeys.constFirst() << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
-#endif
             }
         }
         /* key_sequence_count > 1 */
