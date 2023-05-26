@@ -23,7 +23,7 @@ QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QSt
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
-QHash<QString, QString> QKeyMapper_Worker::pressedDirectMappingKeysMap = QHash<QString, QString>();
+QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -178,24 +178,21 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             return;
         }
 
-        if (1 == keycount) {
-            QString mappingkey = mappingKeys.constFirst();
-            pressedDirectMappingKeysMap.remove(original_key);
+        pressedMappingKeysMap.remove(original_key);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping KeyUp -> original_key[" << original_key << "], " << "mappingKey[" << mappingKeys.constFirst() << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
+        qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
-            QList<QString> remainDirectKeys = pressedDirectMappingKeysMap.values();
-            if (remainDirectKeys.contains(mappingkey)) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping still remain mappingKey[" << mappingkey << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
-                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping skip KeyUp -> original_key[" << original_key << "], " << "mappingKey[" << mappingkey << "]";
-#endif
-                return;
-            }
-        }
 
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
+
+            if (isPressedMappingKeysContains(key)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys still remain Key[ " << key << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+                qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys skip KeyUp[ " << key << " ]" << " -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]";
+#endif
+                continue;
+            }
 
             /* special hook key process */
             if (SENDMODE_HOOK == sendmode) {
@@ -252,6 +249,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 else {
                     input_p->mi.dwFlags = vmousecode.MouseUpCode;
                 }
+                index++;
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (false == pressedVirtualKeysList.contains(key)) {
@@ -280,13 +278,13 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 else {
                     input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
+                index++;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
                 qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
 #endif
             }
-            index++;
         }
     }
     else {
@@ -301,13 +299,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 return;
             }
 
-            if (1 == keycount) {
-                QString mappingkey = mappingKeys.constFirst();
-                pressedDirectMappingKeysMap.insert(original_key, mappingkey);
+            pressedMappingKeysMap.insert(original_key, mappingKeys);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendInputKeys] DirectMapping KeyDown -> original_key[" << original_key << "], " << "mappingKey[" << mappingKeys.constFirst() << "]" << " : pressedDirectMappingKeysMap -> " << pressedDirectMappingKeysMap;
+            qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
-            }
 
             for (const QString &key : qAsConst(mappingKeys)){
                 INPUT *input_p = &inputs[index];
@@ -327,6 +322,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     else {
                         input_p->mi.dwFlags = vmousecode.MouseUpCode;
                     }
+                    index++;
                 }
                 else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                     if (true == pressedVirtualKeysList.contains(key)) {
@@ -355,13 +351,13 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     else {
                         input_p->ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
+                    index++;
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
                     qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
 #endif
                 }
-                index++;
             }
         }
         /* key_sequence_count > 1 */
@@ -528,7 +524,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
-    pressedDirectMappingKeysMap.clear();
+    pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
@@ -565,7 +561,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
-    pressedDirectMappingKeysMap.clear();
+    pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
@@ -1421,6 +1417,24 @@ void QKeyMapper_Worker::collectExchangeKeysList()
         }
 #endif
     }
+}
+
+bool QKeyMapper_Worker::isPressedMappingKeysContains(QString &key)
+{
+    bool result = false;
+
+    QList<QStringList> remainPressedMappingKeys = pressedMappingKeysMap.values();
+
+    for (const QStringList &mappingkeys : qAsConst(remainPressedMappingKeys)){
+        for (const QString &mapkey : qAsConst(mappingkeys)){
+            if (mapkey == key) {
+                result = true;
+                break;
+            }
+        }
+    }
+
+    return result;
 }
 
 int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array)

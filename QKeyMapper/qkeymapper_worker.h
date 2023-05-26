@@ -200,6 +200,7 @@ private:
     void initVirtualMouseButtonMap(void);
     void clearAllBurstTimersAndLockKeys(void);
     void collectExchangeKeysList(void);
+    bool isPressedMappingKeysContains(QString &key);
 public:
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 
@@ -213,7 +214,7 @@ public:
     static QHash<WPARAM, QString> MouseButtonNameMap;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
-    static QHash<QString, QString> pressedDirectMappingKeysMap;
+    static QHash<QString, QStringList> pressedMappingKeysMap;
     static QStringList pressedLockKeysList;
     static QStringList exchangeKeysList;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
