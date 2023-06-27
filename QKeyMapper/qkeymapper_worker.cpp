@@ -202,34 +202,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
                 }
                 else {
-                    if (exchangeKeysList.contains(key)){
-                        /* Exchange keys do not skip send mapping VirtualKey */
-                    }
-                    else {
-                        if (pressedRealKeysList.contains(key)){
-                            pressedVirtualKeysList.removeAll(key);
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug("RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
-                            qDebug("Remove \"%s\" in pressedVirtualKeysList.", key.toStdString().c_str());
-#endif
-                            continue;
-                        }
-                    }
                 }
             }
             else if (SENDMODE_BURST_STOP == sendmode) {
-                if (exchangeKeysList.contains(key)){
-                    /* Exchange keys do not skip send mapping VirtualKey */
-                }
-                else {
-                    if (pressedRealKeysList.contains(key)){
-                        pressedVirtualKeysList.removeAll(key);
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("stopBurstTimer()->sendBurstKeyUp()->sendInputKeys(): RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", key.toStdString().c_str(), key.toStdString().c_str());
-#endif
-                        continue;
-                    }
-                }
             }
 
             INPUT *input_p = &inputs[index];
@@ -735,7 +710,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
     if (VIRTUAL_WIN_PLUS_D == extraInfo) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("Ignore extraInfo:VIRTUAL_WIN_PLUS_D(0x%08X) -> \"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", extraInfo, keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
+        qDebug("[LowLevelKeyboardHookProc] Ignore extraInfo:VIRTUAL_WIN_PLUS_D(0x%08X) -> \"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", extraInfo, keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
 #endif
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
@@ -747,42 +722,34 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     if ((false == keycodeString.isEmpty())
         && (WM_KEYDOWN == wParam || WM_KEYUP == wParam || WM_SYSKEYDOWN == wParam || WM_SYSKEYUP == wParam)){
 #ifdef DEBUG_LOGOUT_ON
-        if ("H" == keycodeString) {
-            if (WM_KEYDOWN == wParam) {
-                qDebug("RealKey: H KeyDown");
-            }
-            else {
-                qDebug("RealKey: H KeyUp");
-            }
-        }
         if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
             if (WM_KEYDOWN == wParam){
-                qDebug("RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_KEYUP == wParam){
-                qDebug("RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_SYSKEYDOWN == wParam){
-                qDebug("RealKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_SYSKEYUP == wParam){
-                qDebug("RealKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else{
             }
         }
         else {
             if (WM_KEYDOWN == wParam){
-                qDebug("VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_KEYUP == wParam){
-                qDebug("VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_SYSKEYDOWN == wParam){
-                qDebug("VirtualKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else if (WM_SYSKEYUP == wParam){
-                qDebug("VirtualKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
             }
             else{
             }
@@ -804,7 +771,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (KEY_DOWN == keyupdown) {
                     if ("D" == keycodeString && pressedRealKeysList.contains("L-Win")) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("\"L-Win + D\" pressed!");
+                        qDebug("[LowLevelKeyboardHookProc] \"L-Win + D\" pressed!");
 #endif
                         emit QKeyMapper_Worker::getInstance()->send_WINplusD_Signal();
                     }
@@ -814,7 +781,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     || ("R-Win" == keycodeString)
                     || ("Application" == keycodeString)) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
+                    qDebug("[LowLevelKeyboardHookProc] Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
 #endif
                     returnFlag = true;
                 }
@@ -827,7 +794,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     if (pressedVirtualKeysList.contains(keycodeString)) {
                         returnFlag = true;
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                        qDebug("[LowLevelKeyboardHookProc] VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
 #endif
                     }
                 }
@@ -856,22 +823,30 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
             /* KEY_UP == keyupdown */
             else {
+                int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+                if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+#endif
+                    returnFlag = true;
+                }
+
                 pressedVirtualKeysList.removeAll(keycodeString);
             }
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "LowLevelKeyboardHookProc():" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
+            qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
         }
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags);
+        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags);
 #endif
     }
 
     if (true == returnFlag){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("LowLevelKeyboardHookProc() -> return TRUE");
+        qDebug("[LowLevelKeyboardHookProc] return TRUE");
 #endif
         return (LRESULT)TRUE;
     }
