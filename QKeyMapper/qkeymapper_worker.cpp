@@ -646,6 +646,7 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 #ifdef DEBUG_LOGOUT_ON
     qDebug("stopBurstTimer(): Key \"%s\"", burstKey.toStdString().c_str());
 #endif
+    Q_UNUSED(mappingIndex);
 
     if (true == m_BurstTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstTimerMap.value(burstKey);
@@ -662,18 +663,6 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 #ifdef DEBUG_LOGOUT_ON
             qDebug("stopBurstTimer(): Do not need to sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
 #endif
-        }
-
-        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(mappingIndex).Mapping_Keys.constFirst().split(SEPARATOR_PLUS);
-        for (const QString &key : qAsConst(pressedRealKeysList)){
-            if ((true == mappingKeyList.contains(key))
-                && (burstKey != key)
-                && (false == pressedVirtualKeysList.contains(key))) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("stopBurstTimer() : RealKey \"%s\" is still pressed down on keyboard, call sendSpecialVirtualKeyDown(\"%s\").", key.toStdString().c_str(), key.toStdString().c_str());
-#endif
-                sendSpecialVirtualKeyDown(key);
-            }
         }
     }
 
