@@ -50,6 +50,7 @@ static const int UI_SCALE_4K_PERCENT_150 = 9;
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
+static const char *VERSION_INFO = "1.3.5";
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 
@@ -172,6 +173,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     extractSoundFiles();
     initAddKeyComboBoxes();
+
+    QString title = windowTitle();
+    QString title_withversion = title + " " + VERSION_INFO;
+    setWindowTitle(title_withversion);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "QKeyMapper() -> WindowTitle with Version:" << title_withversion;
+#endif
+
 #ifdef USE_SAOFONT
     loadFontFile(SAO_FONTFILENAME, m_SAO_FontFamilyID, m_SAO_FontName);
 #endif
