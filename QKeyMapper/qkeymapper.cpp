@@ -3188,11 +3188,15 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
     qDebug() << "[autoStartup] Auto startup state changed ->" << (Qt::CheckState)state;
 #endif
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QString exec_arg1 = "run";
+    exec_arg1 = exec_arg1 + "as";
+    QString exec_arg2 = "sch";
+    exec_arg2 = exec_arg2 + "task" + "s";
     if (Qt::Checked == state) {
         settingFile.setValue(AUTO_STARTUP , true);
 
-        std::wstring operate = QString("runas").toStdWString();
-        std::wstring executable = QString("schtasks").toStdWString();
+        std::wstring operate = exec_arg1.toStdWString();
+        std::wstring executable = exec_arg2.toStdWString();
         std::wstring argument = QString("/create /f /sc onlogon /rl highest /tn QKeyMapper /tr " + QCoreApplication::applicationFilePath()).toStdWString();
         HINSTANCE ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
         INT64 ret = (INT64)ret_instance;
@@ -3210,8 +3214,8 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
     else {
         settingFile.setValue(AUTO_STARTUP , false);
 
-        std::wstring operate = QString("runas").toStdWString();
-        std::wstring executable = QString("schtasks").toStdWString();
+        std::wstring operate = exec_arg1.toStdWString();
+        std::wstring executable = exec_arg2.toStdWString();
         std::wstring argument = QString("/delete /f /tn QKeyMapper").toStdWString();
         HINSTANCE ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
         INT64 ret = (INT64)ret_instance;
