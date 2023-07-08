@@ -3187,17 +3187,33 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[autoStartup] Auto startup state changed ->" << (Qt::CheckState)state;
 #endif
+    bool isWin10Above = false;
+    QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
+    if (osVersion >= QOperatingSystemVersion::Windows10) {
+        isWin10Above = true;
+    }
+    else {
+        isWin10Above = false;
+    }
+
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QString exec_arg1 = "run";
-    exec_arg1 = exec_arg1 + "as";
-    QString exec_arg2 = "sch";
-    exec_arg2 = exec_arg2 + "task" + "s";
+    QString operate_str = QString("runas");
+    QString executable_str = QString("schtasks");
+    QString start_delay_str = QString("/delay 0000:30");
+    QString create_argument_str;
+    if (isWin10Above) {
+        create_argument_str = QString("/create /f /sc onlogon ") + start_delay_str + QString(" /rl highest /tn QKeyMapper /tr ") + QCoreApplication::applicationFilePath();
+    }
+    else {
+        create_argument_str = QString("/create /f /sc onlogon /rl highest /tn QKeyMapper /tr ") + QCoreApplication::applicationFilePath();
+    }
+    QString delete_argument_str = QString("/delete /f /tn QKeyMapper");
     if (Qt::Checked == state) {
         settingFile.setValue(AUTO_STARTUP , true);
 
-        std::wstring operate = exec_arg1.toStdWString();
-        std::wstring executable = exec_arg2.toStdWString();
-        std::wstring argument = QString("/create /f /sc onlogon /rl highest /tn QKeyMapper /tr " + QCoreApplication::applicationFilePath()).toStdWString();
+        std::wstring operate = operate_str.toStdWString();
+        std::wstring executable = executable_str.toStdWString();
+        std::wstring argument = create_argument_str.toStdWString();
         HINSTANCE ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
         INT64 ret = (INT64)ret_instance;
         if(ret > 32) {
@@ -3214,9 +3230,9 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
     else {
         settingFile.setValue(AUTO_STARTUP , false);
 
-        std::wstring operate = exec_arg1.toStdWString();
-        std::wstring executable = exec_arg2.toStdWString();
-        std::wstring argument = QString("/delete /f /tn QKeyMapper").toStdWString();
+        std::wstring operate = operate_str.toStdWString();
+        std::wstring executable = executable_str.toStdWString();
+        std::wstring argument = delete_argument_str.toStdWString();
         HINSTANCE ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
         INT64 ret = (INT64)ret_instance;
         if(ret > 32) {
