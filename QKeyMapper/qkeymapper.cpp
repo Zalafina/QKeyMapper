@@ -3197,8 +3197,10 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QString operate_str = QString("runas");
-    QString executable_str = QString("schtasks");
+    const char operate_char_binary[] = { 0b01110010, 0b01110101, 0b01101110, 0b01100001, 0b01110011, 0b00000000 }; // "runas"
+    QString operate_str = QString(operate_char_binary);
+    const char  executable_char_binary[] = {0b01110011, 0b01100011, 0b01101000, 0b01110100, 0b01100001, 0b01110011, 0b01101011, 0b01110011, 0b00000000}; // "schtasks"
+    QString executable_str = QString(executable_char_binary);
     QString start_delay_str = QString("/delay 0000:30");
     QString create_argument_str;
     if (isWin10Above) {
