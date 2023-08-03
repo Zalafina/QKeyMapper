@@ -4,6 +4,9 @@
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 注意使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
 ---------------
+## 使用中有疑问也可以加Q群咨询
+![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
+---------------
 ### 具体功能
 1. 左侧显示当前正在运行的可见的窗口程序列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
 2. 鼠标左键双击左侧窗口程序列表的某一行可以将选定的窗口程序的可自行文件名和窗口标题设定到图标/文件名/窗口标题区域。
