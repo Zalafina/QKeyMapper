@@ -29,6 +29,7 @@
 19. v1.3.3 -> 在ADD按键右侧增加了"»"勾选框，用于添加按键序列，例如: Ctrl + X 之后 Ctrl + S，设置后效果参考README中显示的截图。
 20. v1.3.3 -> 按键列表中添加了对鼠标侧键XButton1和XButton2的支持。
 21. v1.3.5 -> 添加中文界面，可以使用语言切换下拉列表进行中英文界面切换，适配4K/2K/1K分辨率。
+22. v1.3.5(Build 20230805) -> 添加可以直接在任意状态下切换映射开始和停止的快捷键，按下"Ctrl + F6"快捷键，无论在前台或者托盘显示状态都可以在开始映射和停止映射状态之间立即切换。
 ---------------
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6, v1.2.8 and later Releases will build by Qt6.
 ---------------
@@ -57,6 +58,7 @@
 19. v1.3.3 -> Add a checkbox "»" next to the "ADD" button, which is used to add a key sequence, such as "Ctrl+X" then "Ctrl+S". The effect after setting can be seen in the screenshot displayed in the README.
 20. v1.3.3 -> Add Mouse XButton1 & XButton2 to key list for the support of mouse side buttons.
 21. v1.3.5 -> Add Chinese UI, use language select checkbox to change UI language between Chinese and English. Adapt to different resolutions(4K/2K/1K).
+22. v1.3.5(Build 20230805) -> Added a shortcut key that allows you to switch the mapping start and stop states directly in any state. Press the "Ctrl + F6" shortcut key, and you can immediately switch between the mapping start and stop states whether in the foreground or in the tray display state.
 ---------------
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png)
