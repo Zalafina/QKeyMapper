@@ -1500,14 +1500,15 @@ void QKeyMapper::saveKeyMapSetting(void)
 
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
-            settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
-            settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[saveKeyMapSetting]" << "Unmatch display processinfo & stored processinfo.";
 #endif
         }
+
+        settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
+        settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
 
         const QString savedSettingName = saveSettingSelectStr.remove("/");
         bool loadresult = loadKeyMapSetting(savedSettingName);
