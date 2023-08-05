@@ -163,6 +163,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
     m_HotKey(new QHotkey(this)),
+    m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -293,6 +294,8 @@ QKeyMapper::~QKeyMapper()
 
     delete m_HotKey;
     m_HotKey = Q_NULLPTR;
+    delete m_HotKey_StartStop;
+    m_HotKey_StartStop = Q_NULLPTR;
 
     delete ui;
     delete m_SysTrayIcon;
@@ -1240,6 +1243,16 @@ void QKeyMapper::HotKeyActivated()
         activateWindow();
         raise();
     }
+}
+
+void QKeyMapper::HotKeyStartStopActivated()
+{
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "HotKeyStartStopActivated() Called, KeyMapStatus:" << keymapstatusEnum.valueToKey(m_KeyMapStatus);
+#endif
+
+    on_keymapButton_clicked();
 }
 
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
@@ -2215,9 +2228,12 @@ void QKeyMapper::on_savemaplistButton_clicked()
 void QKeyMapper::initHotKeySequence()
 {
     connect( m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
-
     QKeySequence hotkeysequence = QKeySequence::fromString("Ctrl+`");
     m_HotKey->setShortcut(hotkeysequence, true);
+
+    connect( m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
+    QKeySequence hotkeysequence_startstop = QKeySequence::fromString("Ctrl+F6");
+    m_HotKey_StartStop->setShortcut(hotkeysequence_startstop, true);
 }
 
 void QKeyMapper::initProcessInfoTable(void)

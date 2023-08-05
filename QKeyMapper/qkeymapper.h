@@ -159,6 +159,8 @@ public slots:
 private slots:
     void HotKeyActivated();
 
+    void HotKeyStartStopActivated();
+
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
     void cellChanged_slot(int row, int col);
@@ -242,6 +244,7 @@ private:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     QHotkey *m_HotKey;
+    QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
 };
 
