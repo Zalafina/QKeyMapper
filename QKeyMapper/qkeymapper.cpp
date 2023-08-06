@@ -109,7 +109,7 @@ static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动开始映射";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
-static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射切换快捷键";
+static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "文件名";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
 static const char *PROCESSINFOTABLE_COL3_CHINESE = "标题";
@@ -3171,8 +3171,9 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
         return;
     }
 
-    QKeyCombination keyComb = keySeq[0];
     QKeySequence setKeySeq;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QKeyCombination keyComb = keySeq[0];
     if (keyComb.key() == Qt::Key_Backspace || keyComb.key() == Qt::Key_Delete)
     {
         setKeySeq = QKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
@@ -3180,6 +3181,16 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
     else {
         setKeySeq = QKeySequence(keyComb);
     }
+#else
+    int keyComb = keySeq[0];
+    if (keyComb == Qt::Key_Backspace || keyComb == Qt::Key_Delete)
+    {
+        setKeySeq = QKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
+    }
+    else {
+        setKeySeq = QKeySequence(keyComb);
+    }
+#endif
 
     QString keyseqEditStr = setKeySeq.toString();
     if (false == keyseqEditStr.isEmpty()) {
