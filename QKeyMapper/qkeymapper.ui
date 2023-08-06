@@ -1245,6 +1245,22 @@
     </property>
    </item>
   </widget>
+  <widget class="QLabel" name="mappingswitchkeyLabel">
+   <property name="geometry">
+    <rect>
+     <x>265</x>
+     <y>590</y>
+     <width>111</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>MappingSwitchKey</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1276,6 +1292,7 @@
   <zorder>nextarrowCheckBox</zorder>
   <zorder>languageComboBox</zorder>
   <zorder>nameCheckBox</zorder>
+  <zorder>mappingswitchkeyLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

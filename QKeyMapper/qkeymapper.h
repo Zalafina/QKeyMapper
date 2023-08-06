@@ -23,6 +23,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QKeyEvent>
+#include <QKeySequenceEdit>
 #include <QHotkey>
 #include <QDir>
 #include <QProcess>
@@ -79,6 +80,23 @@ protected:
 private:
     QWidget *m_KeyMapper_ptr;
 };
+
+class KeySequenceEditOnlyOne : public QKeySequenceEdit
+{
+    Q_OBJECT
+
+public:
+    explicit KeySequenceEditOnlyOne(QWidget *parent = Q_NULLPTR) : QKeySequenceEdit(parent)
+    {
+    }
+
+signals:
+    void keySeqEditChanged_Signal(const QKeySequence &keysequence);
+
+protected:
+    virtual void keyPressEvent(QKeyEvent* pEvent);
+};
+
 
 class QKeyMapper : public QDialog
 {
@@ -161,6 +179,10 @@ private slots:
 
     void HotKeyStartStopActivated();
 
+    void onKeySequenceChanged(const QKeySequence &keysequence);
+
+    void onKeySequenceEditingFinished();
+
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
     void cellChanged_slot(int row, int col);
@@ -199,6 +221,8 @@ private:
 
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
+    void initMappingSwitchKeySeqEdit(void);
+    void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
     void refreshKeyMappingDataTable(void);
     void reloadUILanguage(void);
     void setUILanguage_Chinese(void);
@@ -243,6 +267,8 @@ private:
     StyledDelegate *m_KeyMappingDataTableDelegate;
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
+    KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
+    QString m_mappingswitchKeySeqStr;
     QHotkey *m_HotKey;
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
