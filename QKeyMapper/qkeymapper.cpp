@@ -483,10 +483,22 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
 #endif
                 if (isToolbarWindow) {
+                    /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
+                    if (filename == "explorer.exe"
+                        && windowTitle == "Program Manager"
+                        && isVisibleWindow == true
+                        && isExToolWindow == true) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_MAPPING)";
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Do not skip ToolbarWindow \"explorer.exe -> Program Manager\" of KeyMapStatus(KEYMAP_MAPPING)";
 #endif
-                    return;
+                    }
+                    /* Add for "explorer.exe -> Program Manager" Bug Fix <<< */
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_MAPPING)";
+#endif
+                        return;
+                    }
                 }
                 playStartSound();
                 setKeyHook(hwnd);
@@ -506,10 +518,22 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
 #endif
                 if (isToolbarWindow) {
+                    /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
+                    if (filename == "explorer.exe"
+                        && windowTitle == "Program Manager"
+                        && isVisibleWindow == true
+                        && isExToolWindow == true) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_CHECKING)";
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Do not skip ToolbarWindow \"explorer.exe -> Program Manager\" of KeyMapStatus(KEYMAP_CHECKING)";
 #endif
-                    return;
+                    }
+                    /* Add for "explorer.exe -> Program Manager" Bug Fix <<< */
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_CHECKING)";
+#endif
+                        return;
+                    }
                 }
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
