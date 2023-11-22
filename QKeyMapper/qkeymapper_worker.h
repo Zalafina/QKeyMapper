@@ -10,7 +10,6 @@
 #else
 #include <QMutex>
 #endif
-//#include <MMSystem.h>
 #include <QJoysticks.h>
 #include <dinput.h>
 
