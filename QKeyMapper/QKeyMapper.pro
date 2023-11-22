@@ -11,6 +11,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TEMPLATE = app
 
 include(qhotkey.pri)
+include(QJoysticks/QJoysticks.pri)
 
 DEFINES += SINGLE_APPLICATION
 

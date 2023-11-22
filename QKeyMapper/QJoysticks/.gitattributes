@@ -1,0 +1,3 @@
+doc/* linguist-documentation
+lib/* linguist-vendored
+etc/* linguist-vendored

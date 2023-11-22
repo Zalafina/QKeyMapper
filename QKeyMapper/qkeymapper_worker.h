@@ -10,6 +10,8 @@
 #else
 #include <QMutex>
 #endif
+//#include <MMSystem.h>
+#include <QJoysticks.h>
 #include <dinput.h>
 
 class QKeyMapper;
@@ -181,10 +183,15 @@ public slots:
     void threadStarted(void);
     void setWorkerKeyHook(HWND hWnd);
     void setWorkerKeyUnHook(void);
+    void setWorkerJoystickCaptureStart(HWND hWnd);
+    void setWorkerJoystickCaptureStop(void);
     void setWorkerDInputKeyHook(HWND hWnd);
     void setWorkerDInputKeyUnHook(void);
     void startBurstTimer(const QString &burstKey, int mappingIndex);
     void stopBurstTimer(const QString &burstKey, int mappingIndex);
+    void onJoystickPOVEvent(const QJoystickPOVEvent &e);
+    void onJoystickAxisEvent(const QJoystickAxisEvent &e);
+    void onJoystickButtonEvent(const QJoystickButtonEvent &e);
 
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
@@ -229,6 +236,7 @@ public:
 private:
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
+    bool m_JoystickCapture;
 #ifdef QT_DEBUG
     bool m_LowLevelKeyboardHook_Enable;
     bool m_LowLevelMouseHook_Enable;

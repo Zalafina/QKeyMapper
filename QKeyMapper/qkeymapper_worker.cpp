@@ -38,6 +38,7 @@ int QKeyMapper_Worker::dinput_timerid = 0;
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
     m_MouseHook(Q_NULLPTR),
+    m_JoystickCapture(false),
 #ifdef QT_DEBUG
     m_LowLevelKeyboardHook_Enable(true),
     m_LowLevelMouseHook_Enable(true),
@@ -62,6 +63,12 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
+
+    /* Connect QJoysticks Signals */
+    QJoysticks *instance = QJoysticks::getInstance();
+    QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
+    QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
+    QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
 
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
@@ -517,6 +524,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
         m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
         m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
 #endif
+        setWorkerJoystickCaptureStart(hWnd);
 
 #ifdef DEBUG_LOGOUT_ON
         qInfo("[setKeyHook] Normal Key Hook & Mouse Hook Started.");
@@ -555,7 +563,20 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #endif
     }
 
-//    setWorkerDInputKeyUnHook();
+    setWorkerJoystickCaptureStop();
+
+    //    setWorkerDInputKeyUnHook();
+}
+
+void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
+{
+    Q_UNUSED(hWnd);
+    m_JoystickCapture = true;
+}
+
+void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
+{
+    m_JoystickCapture = false;
 }
 
 void QKeyMapper_Worker::setWorkerDInputKeyHook(HWND hWnd)
@@ -674,6 +695,30 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
         killTimer(existTimerID);
         m_BurstKeyUpTimerMap.remove(burstKey);
     }
+}
+
+void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
+{
+    Q_UNUSED(e);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
+#endif
+}
+
+void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
+{
+    Q_UNUSED(e);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
+#endif
+}
+
+void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
+{
+    Q_UNUSED(e);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
+#endif
 }
 
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)

@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/QJoysticks">
+        <file>SDL/Database.txt</file>
+        <file>SDL/GenericMappings/Linux.txt</file>
+        <file>SDL/GenericMappings/OSX.txt</file>
+        <file>SDL/GenericMappings/Windows.txt</file>
+    </qresource>
+</RCC>
