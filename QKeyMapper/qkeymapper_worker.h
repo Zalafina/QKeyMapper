@@ -11,7 +11,9 @@
 #include <QMutex>
 #endif
 #include <QJoysticks.h>
+#ifdef DINPUT_TEST
 #include <dinput.h>
+#endif
 
 class QKeyMapper;
 
@@ -95,8 +97,10 @@ typedef struct V_MOUSECODE
     }
 }V_MOUSECODE_st;
 
+#ifdef DINPUT_TEST
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
+#endif
 
 class QKeyMapper_Worker : public QObject
 {
@@ -153,6 +157,52 @@ public:
     };
     Q_ENUM(VirtualKeyCode)
 
+    enum JoystickButtonCode
+    {
+        JOYSTICK_BUTTON_0 = 0,
+        JOYSTICK_BUTTON_1,
+        JOYSTICK_BUTTON_2,
+        JOYSTICK_BUTTON_3,
+        JOYSTICK_BUTTON_4,
+        JOYSTICK_BUTTON_5,
+        JOYSTICK_BUTTON_6,
+        JOYSTICK_BUTTON_7,
+        JOYSTICK_BUTTON_8,
+        JOYSTICK_BUTTON_9,
+        JOYSTICK_BUTTON_10,
+        JOYSTICK_BUTTON_11,
+        JOYSTICK_BUTTON_12,
+    };
+    Q_ENUM(JoystickButtonCode)
+
+    enum JoystickDPadCode
+    {
+        JOYSTICK_DPAD_UP = 0,
+        JOYSTICK_DPAD_DOWN,
+        JOYSTICK_DPAD_LEFT,
+        JOYSTICK_DPAD_RIGHT,
+        JOYSTICK_DPAD_L_UP,
+        JOYSTICK_DPAD_L_DOWN,
+        JOYSTICK_DPAD_R_UP,
+        JOYSTICK_DPAD_R_DOWN,
+        JOYSTICK_DPAD_RELEASE
+    };
+    Q_ENUM(JoystickDPadCode)
+
+    enum JoystickLStickCode
+    {
+        JOYSTICK_LS_UP = 0,
+        JOYSTICK_LS_DOWN,
+        JOYSTICK_LS_LEFT,
+        JOYSTICK_LS_RIGHT,
+        JOYSTICK_LS_L_UP,
+        JOYSTICK_LS_L_DOWN,
+        JOYSTICK_LS_R_UP,
+        JOYSTICK_LS_R_DOWN,
+        JOYSTICK_LS_RELEASE
+    };
+    Q_ENUM(JoystickLStickCode)
+
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
@@ -184,13 +234,19 @@ public slots:
     void setWorkerKeyUnHook(void);
     void setWorkerJoystickCaptureStart(HWND hWnd);
     void setWorkerJoystickCaptureStop(void);
+#ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);
     void setWorkerDInputKeyUnHook(void);
+#endif
     void startBurstTimer(const QString &burstKey, int mappingIndex);
     void stopBurstTimer(const QString &burstKey, int mappingIndex);
     void onJoystickPOVEvent(const QJoystickPOVEvent &e);
     void onJoystickAxisEvent(const QJoystickAxisEvent &e);
     void onJoystickButtonEvent(const QJoystickButtonEvent &e);
+
+    void checkJoystickButtons(const QJoystickButtonEvent &e);
+    void checkJoystickPOV(const QJoystickPOVEvent &e);
+    void checkJoystickAxis(const QJoystickAxisEvent &e);
 
 private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
@@ -198,12 +254,16 @@ private:
 
     static bool hookBurstAndLockProc(QString &keycodeString, int keyupdown);
 
+    bool JoyStickKeysProc(QString &keycodeString, int keyupdown);
+#ifdef DINPUT_TEST
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
     static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
     static HRESULT WINAPI hookGetDeviceData(IDirectInputDevice8* pThis, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags);
+#endif
 
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
+    void initJoystickKeyMap(void);
     void clearAllBurstTimersAndLockKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
@@ -228,9 +288,11 @@ public:
 #else
     static QMutex sendinput_mutex;
 #endif
+#ifdef DINPUT_TEST
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
     static int dinput_timerid;
+#endif
 
 private:
     HHOOK m_KeyHook;
@@ -240,9 +302,14 @@ private:
     bool m_LowLevelKeyboardHook_Enable;
     bool m_LowLevelMouseHook_Enable;
 #endif
+#ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;
+#endif
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
+    QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
+    QHash<JoystickDPadCode, QString> m_JoystickDPadMap;
+    QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
 };
 
 #endif // QKEYMAPPER_WORKER_H

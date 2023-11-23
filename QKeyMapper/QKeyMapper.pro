@@ -17,6 +17,7 @@ DEFINES += SINGLE_APPLICATION
 
 #DEFINES += LOGOUT_TOFILE
 #DEFINES += USE_SAOFONT
+#DEFINES += DINPUT_TEST
 
 lessThan(QT_MAJOR_VERSION, 6) {
     message("Qt5 Version")
@@ -82,10 +83,13 @@ LIBS        += -L$$PWD/win_lib/x64
 # Win x86 libs
 LIBS        += -L$$PWD/win_lib/x86
 }
-LIBS        += User32.lib Psapi.lib dinput8.lib dxguid.lib
+LIBS        += User32.lib Psapi.lib dxguid.lib
 LIBS        += Gdi32.Lib
 LIBS        += WinMM.Lib
 LIBS        += dwmapi.lib
+contains( DEFINES, DINPUT_TEST ) {
+    LIBS    += dinput8.lib
+}
 
 contains( DEFINES, ADJUST_PRIVILEGES ) {
     LIBS    += AdvAPI32.Lib

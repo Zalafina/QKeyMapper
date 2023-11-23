@@ -31,9 +31,11 @@ QRecursiveMutex QKeyMapper_Worker::sendinput_mutex = QRecursiveMutex();
 #else
 QMutex QKeyMapper_Worker::sendinput_mutex(QMutex::Recursive);
 #endif
+#ifdef DINPUT_TEST
 GetDeviceStateT QKeyMapper_Worker::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper_Worker::FuncPtrGetDeviceData = Q_NULLPTR;
 int QKeyMapper_Worker::dinput_timerid = 0;
+#endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
@@ -43,9 +45,14 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_LowLevelKeyboardHook_Enable(true),
     m_LowLevelMouseHook_Enable(true),
 #endif
+#ifdef DINPUT_TEST
     m_DirectInput(Q_NULLPTR),
+#endif
     m_BurstTimerMap(),
-    m_BurstKeyUpTimerMap()
+    m_BurstKeyUpTimerMap(),
+    m_JoystickButtonMap(),
+    m_JoystickDPadMap(),
+    m_JoystickLStickMap()
 {
     qRegisterMetaType<HWND>("HWND");
     qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
@@ -579,6 +586,7 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
     m_JoystickCapture = false;
 }
 
+#ifdef DINPUT_TEST
 void QKeyMapper_Worker::setWorkerDInputKeyHook(HWND hWnd)
 {
     if(TRUE == IsWindowVisible(hWnd)){
@@ -628,6 +636,7 @@ void QKeyMapper_Worker::setWorkerDInputKeyUnHook()
     FuncPtrGetDeviceState = Q_NULLPTR;
     FuncPtrGetDeviceData = Q_NULLPTR;
 }
+#endif
 
 void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingIndex)
 {
@@ -700,25 +709,62 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
 {
     Q_UNUSED(e);
+    if (m_JoystickCapture) {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
+        qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
 #endif
+        checkJoystickPOV(e);
+    }
 }
 
 void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 {
     Q_UNUSED(e);
+    if (m_JoystickCapture) {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
+        qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
+        checkJoystickAxis(e);
+    }
 }
 
 void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 {
     Q_UNUSED(e);
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
-#endif
+    if (m_JoystickCapture) {
+        checkJoystickButtons(e);
+    }
+}
+
+void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
+{
+    JoystickButtonCode buttonCode = (JoystickButtonCode)e.button;
+
+    if (m_JoystickButtonMap.contains(buttonCode)) {
+        bool pressed = e.pressed;
+        QString keycodeString = m_JoystickButtonMap.value(buttonCode);
+        int keyupdown;
+        if (pressed) {
+            keyupdown = KEY_DOWN;
+        }
+        else {
+            keyupdown = KEY_UP;
+        }
+
+        bool returnFlag;
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown);
+        Q_UNUSED(returnFlag);
+    }
+}
+
+void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
+{
+
+}
+
+void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
+{
+
 }
 
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -1082,6 +1128,13 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(QString &keycodeString, int keyupdo
     return returnFlag;
 }
 
+bool QKeyMapper_Worker::JoyStickKeysProc(QString &keycodeString, int keyupdown)
+{
+    bool returnFlag = false;
+    return returnFlag;
+}
+
+#ifdef DINPUT_TEST
 void *QKeyMapper_Worker::HookVTableFunction(void *pVTable, void *fnHookFunc, int nOffset)
 {
     intptr_t ptrVtable = *((intptr_t*)pVTable); // Pointer to our chosen vtable
@@ -1172,6 +1225,7 @@ HRESULT QKeyMapper_Worker::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD 
     }
     return result;
 }
+#endif
 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()
 {
@@ -1338,22 +1392,60 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
 
 void QKeyMapper_Worker::initVirtualMouseButtonMap()
 {
-    VirtualMouseButtonMap.insert("L-Mouse",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP,     0           )); // Left Mouse Button
-    VirtualMouseButtonMap.insert("R-Mouse",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP,    0           )); // Right Mouse Button
-    VirtualMouseButtonMap.insert("M-Mouse",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP,   0           )); // Middle Mouse Button
-    VirtualMouseButtonMap.insert("X1-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON1    )); // X1 Mouse Button
-    VirtualMouseButtonMap.insert("X2-Mouse",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // X2 Mouse Button
+    VirtualMouseButtonMap.insert("Mouse-L",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP,     0           )); // Left Mouse Button
+    VirtualMouseButtonMap.insert("Mouse-R",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP,    0           )); // Right Mouse Button
+    VirtualMouseButtonMap.insert("Mouse-M",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP,   0           )); // Middle Mouse Button
+    VirtualMouseButtonMap.insert("Mouse-X1",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON1    )); // X1 Mouse Button
+    VirtualMouseButtonMap.insert("Mouse-X2",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // X2 Mouse Button
 
-    MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "L-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "L-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_RBUTTONDOWN,  XBUTTON_NONE),   "R-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_RBUTTONUP,    XBUTTON_NONE),   "R-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_MBUTTONDOWN,  XBUTTON_NONE),   "M-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_MBUTTONUP,    XBUTTON_NONE),   "M-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON1    ),   "X1-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON1    ),   "X1-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON2    ),   "X2-Mouse");
-    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON2    ),   "X2-Mouse");
+    MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "Mouse-L");
+    MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "Mouse-L");
+    MouseButtonNameMap.insert(MAKELONG(WM_RBUTTONDOWN,  XBUTTON_NONE),   "Mouse-R");
+    MouseButtonNameMap.insert(MAKELONG(WM_RBUTTONUP,    XBUTTON_NONE),   "Mouse-R");
+    MouseButtonNameMap.insert(MAKELONG(WM_MBUTTONDOWN,  XBUTTON_NONE),   "Mouse-M");
+    MouseButtonNameMap.insert(MAKELONG(WM_MBUTTONUP,    XBUTTON_NONE),   "Mouse-M");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON1    ),   "Mouse-X1");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON1    ),   "Mouse-X1");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON2    ),   "Mouse-X2");
+    MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON2    ),   "Mouse-X2");
+}
+void QKeyMapper_Worker::initJoystickKeyMap()
+{
+    /* Joystick Buttons Map */
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A)"                   );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_1,       "Joy-Key2(B)"                   );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_2,       "Joy-Key3(X)"                   );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_3,       "Joy-Key4(Y)"                   );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_4,       "Joy-Key5(LB)"                  );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_5,       "Joy-Key6(RB)"                  );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_6,       "Joy-Key7(Back)"                );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_7,       "Joy-Key8(Start)"               );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_8,       "Joy-Key9(LS-Click)"            );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_9,       "Joy-Key10(RS-Click)"           );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_10,      "Joy-Key11(LT)"                 );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_11,      "Joy-Key12(RT)"                 );
+
+    /* Joystick DPad Direction Map */
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_UP,          "Joy-DPad-Up"                   );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_DOWN,        "Joy-DPad-Down"                 );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_LEFT,        "Joy-DPad-Left"                 );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_RIGHT,       "Joy-DPad-Right"                );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_L_UP,        "Joy-DPad-Left,Joy-DPad-Up"     );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_L_DOWN,      "Joy-DPad-Left,Joy-DPad-Down"   );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_R_UP,        "Joy-DPad-Right,Joy-DPad-Up"    );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_R_DOWN,      "Joy-DPad-Right,Joy-DPad-Down"  );
+    m_JoystickDPadMap.insert(JOYSTICK_DPAD_RELEASE,     "Joy-DPad-Release"              );
+
+    /* Joystick Left-Stick Direction Map */
+    m_JoystickLStickMap.insert(JOYSTICK_LS_UP,          "Joy-LS-Up"                     );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_DOWN,        "Joy-LS-Down"                   );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_LEFT,        "Joy-LS-Left"                   );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_RIGHT,       "Joy-LS-Right"                  );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_L_UP,        "Joy-LS-Left,Joy-LS-Up"         );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_L_DOWN,      "Joy-LS-Left,Joy-LS-Down"       );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_R_UP,        "Joy-LS-Right,Joy-LS-Up"        );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_R_DOWN,      "Joy-LS-Right,Joy-LS-Down"      );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_RELEASE,     "Joy-LS-Release"                );
 }
 
 void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
