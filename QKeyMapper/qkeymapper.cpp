@@ -1863,8 +1863,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     for (const QString &ori_key : qAsConst(original_keys)){
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
+                        bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
                         bool checkmappingstr = checkMappingkeyStr(mapping_keys.at(loadindex));
-                        if ((true == keyboardmapcontains || true == mousemapcontains)
+                        if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                                 && (true == checkmappingstr)){
                             loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
                         }
@@ -2692,6 +2693,14 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->setGeometry(QRect(755, 390, 82, 22));
 
     QStringList orikeycodelist = keycodelist;
+
+    /* Remove Joy Keys from MappingKey ComboBox >>> */
+    QStringList joycodelist = orikeycodelist.filter("Joy");
+    for (const QString &joystr : qAsConst(joycodelist)){
+        keycodelist.removeOne(joystr);
+    }
+    /* Remove Joy Keys from MappingKey ComboBox <<< */
+
     m_orikeyComboBox->addItems(orikeycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
 }
@@ -3029,7 +3038,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 void QKeyMapper::on_addmapdataButton_clicked()
 {
     if ((true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText())
-            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_orikeyComboBox->currentText()))
+            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_orikeyComboBox->currentText())
+            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(m_orikeyComboBox->currentText()))
         && (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText())
             || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_mapkeyComboBox->currentText()))){
         bool already_exist = false;

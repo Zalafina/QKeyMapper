@@ -278,6 +278,7 @@ public:
 #endif
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QHash<WPARAM, QString> MouseButtonNameMap;
+    static QHash<QString, int> JoyStickKeyMap;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QHash<QString, QStringList> pressedMappingKeysMap;

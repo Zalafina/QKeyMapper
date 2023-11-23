@@ -21,6 +21,7 @@ QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, 
 #endif
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
+QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
@@ -79,6 +80,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
+    initJoystickKeyMap();
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
@@ -759,12 +761,12 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
 
 void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 {
-
+    Q_UNUSED(e);
 }
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
-
+    Q_UNUSED(e);
 }
 
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -1131,6 +1133,41 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(QString &keycodeString, int keyupdo
 bool QKeyMapper_Worker::JoyStickKeysProc(QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
+
+#ifdef DEBUG_LOGOUT_ON
+    if (KEY_DOWN == keyupdown){
+        qDebug("[JoyStickKeysProc] RealKey: \"%s\" (0x%02X) KeyDown", keycodeString.toStdString().c_str());
+    }
+    else if (KEY_UP == keyupdown){
+        qDebug("[JoyStickKeysProc] RealKey: \"%s\" (0x%02X) KeyUp", keycodeString.toStdString().c_str());
+    }
+    else {
+        /* Do Nothing */
+    }
+#endif
+
+    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+    returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+
+    if (false == returnFlag) {
+        if (findindex >=0){
+            QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+            QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+            if (KEY_DOWN == keyupdown){
+                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                returnFlag = true;
+            }
+            else { /* KEY_UP == keyupdown */
+                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                returnFlag = true;
+            }
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[JoyStickKeysProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedRealKeysList -> " << pressedRealKeysList;
+#endif
+
     return returnFlag;
 }
 
@@ -1411,6 +1448,31 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
 }
 void QKeyMapper_Worker::initJoystickKeyMap()
 {
+    /* Joystick Buttons */
+    JoyStickKeyMap.insert("Joy-Key1(A)"                   ,   (int)JOYSTICK_BUTTON_0          );
+    JoyStickKeyMap.insert("Joy-Key2(B)"                   ,   (int)JOYSTICK_BUTTON_1          );
+    JoyStickKeyMap.insert("Joy-Key3(X)"                   ,   (int)JOYSTICK_BUTTON_2          );
+    JoyStickKeyMap.insert("Joy-Key4(Y)"                   ,   (int)JOYSTICK_BUTTON_3          );
+    JoyStickKeyMap.insert("Joy-Key5(LB)"                  ,   (int)JOYSTICK_BUTTON_4          );
+    JoyStickKeyMap.insert("Joy-Key6(RB)"                  ,   (int)JOYSTICK_BUTTON_5          );
+    JoyStickKeyMap.insert("Joy-Key7(Back)"                ,   (int)JOYSTICK_BUTTON_6          );
+    JoyStickKeyMap.insert("Joy-Key8(Start)"               ,   (int)JOYSTICK_BUTTON_7          );
+    JoyStickKeyMap.insert("Joy-Key9(LS-Click)"            ,   (int)JOYSTICK_BUTTON_8          );
+    JoyStickKeyMap.insert("Joy-Key10(RS-Click)"           ,   (int)JOYSTICK_BUTTON_9          );
+    JoyStickKeyMap.insert("Joy-Key11(LT)"                 ,   (int)JOYSTICK_BUTTON_10         );
+    JoyStickKeyMap.insert("Joy-Key12(RT)"                 ,   (int)JOYSTICK_BUTTON_11         );
+    /* Joystick DPad Direction */
+    JoyStickKeyMap.insert("Joy-DPad-Up"                   ,   (int)JOYSTICK_DPAD_UP           );
+    JoyStickKeyMap.insert("Joy-DPad-Down"                 ,   (int)JOYSTICK_DPAD_DOWN         );
+    JoyStickKeyMap.insert("Joy-DPad-Left"                 ,   (int)JOYSTICK_DPAD_LEFT         );
+    JoyStickKeyMap.insert("Joy-DPad-Right"                ,   (int)JOYSTICK_DPAD_RIGHT        );
+    /* Joystick Left-Stick Direction */
+    JoyStickKeyMap.insert("Joy-LS-Up"                     ,   (int)JOYSTICK_LS_UP             );
+    JoyStickKeyMap.insert("Joy-LS-Down"                   ,   (int)JOYSTICK_LS_DOWN           );
+    JoyStickKeyMap.insert("Joy-LS-Left"                   ,   (int)JOYSTICK_LS_LEFT           );
+    JoyStickKeyMap.insert("Joy-LS-Right"                  ,   (int)JOYSTICK_LS_RIGHT          );
+
+
     /* Joystick Buttons Map */
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A)"                   );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_1,       "Joy-Key2(B)"                   );
