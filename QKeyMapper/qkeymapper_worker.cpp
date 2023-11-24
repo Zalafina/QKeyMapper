@@ -20,6 +20,16 @@ static const int JOYSTICK_POV_ANGLE_L_DOWN  = 225;
 static const int JOYSTICK_POV_ANGLE_R_UP    = 45;
 static const int JOYSTICK_POV_ANGLE_R_DOWN  = 135;
 
+static const int JOYSTICK_AXIS_LS_VERTICAL      = 0;
+static const int JOYSTICK_AXIS_LS_HORIZONTAL    = 1;
+static const int JOYSTICK_AXIS_RS_VERTICAL      = 2;
+static const int JOYSTICK_AXIS_RS_HORIZONTAL    = 3;
+static const int JOYSTICK_AXIS_LT_BUTTON        = 4;
+static const int JOYSTICK_AXIS_RT_BUTTON        = 5;
+
+static const qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD      = 0.2;
+static const qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD    = 0.5;
+
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
@@ -822,7 +832,31 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
-    Q_UNUSED(e);
+    if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
+        /* LT Button & RT Button */
+        if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
+            if (pressedRealKeysList.contains(m_JoystickButtonMap.value(JOYSTICK_BUTTON_10))) {
+                /* LT Button is already Pressed */
+            }
+            else {
+                /* LT Button has been Released */
+            }
+        }
+        else { /* JOYSTICK_AXIS_RT_BUTTON == e.axis */
+            if (pressedRealKeysList.contains(m_JoystickButtonMap.value(JOYSTICK_BUTTON_11))) {
+                /* RT Button is already Pressed */
+            }
+            else {
+                /* RT Button has been Released */
+            }
+        }
+    }
+    else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis || JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
+        /* Left-Stick direction process */
+    }
+    else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis || JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
+        /* Right-Stick direction process */
+    }
 }
 
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
