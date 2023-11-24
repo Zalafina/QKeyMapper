@@ -177,29 +177,29 @@ public:
 
     enum JoystickDPadCode
     {
-        JOYSTICK_DPAD_UP = 0,
+        JOYSTICK_DPAD_RELEASE = 0,
+        JOYSTICK_DPAD_UP,
         JOYSTICK_DPAD_DOWN,
         JOYSTICK_DPAD_LEFT,
         JOYSTICK_DPAD_RIGHT,
         JOYSTICK_DPAD_L_UP,
         JOYSTICK_DPAD_L_DOWN,
         JOYSTICK_DPAD_R_UP,
-        JOYSTICK_DPAD_R_DOWN,
-        JOYSTICK_DPAD_RELEASE
+        JOYSTICK_DPAD_R_DOWN
     };
     Q_ENUM(JoystickDPadCode)
 
     enum JoystickLStickCode
     {
-        JOYSTICK_LS_UP = 0,
+        JOYSTICK_LS_RELEASE = 0,
+        JOYSTICK_LS_UP,
         JOYSTICK_LS_DOWN,
         JOYSTICK_LS_LEFT,
         JOYSTICK_LS_RIGHT,
         JOYSTICK_LS_L_UP,
         JOYSTICK_LS_L_DOWN,
         JOYSTICK_LS_R_UP,
-        JOYSTICK_LS_R_DOWN,
-        JOYSTICK_LS_RELEASE
+        JOYSTICK_LS_R_DOWN
     };
     Q_ENUM(JoystickLStickCode)
 
@@ -252,9 +252,9 @@ private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-    static bool hookBurstAndLockProc(QString &keycodeString, int keyupdown);
+    static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
 
-    bool JoyStickKeysProc(QString &keycodeString, int keyupdown, QString &joystickName);
+    bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
 #ifdef DINPUT_TEST
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
     static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
@@ -311,6 +311,7 @@ private:
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
     QHash<JoystickDPadCode, QString> m_JoystickDPadMap;
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
+    QHash<int, JoystickDPadCode> m_JoystickPOVMap;
 };
 
 #endif // QKEYMAPPER_WORKER_H
