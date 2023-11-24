@@ -2515,7 +2515,7 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
     ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
-    int original_key_width = ui->keymapdataTable->width()/5;
+    int original_key_width = ui->keymapdataTable->width()/4;
     int burst_mode_width = ui->keymapdataTable->width()/5 - 35;
     int lock_width = ui->keymapdataTable->width()/5 - 20;
     int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 2;
@@ -2688,9 +2688,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Num Enter";
 
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
-    m_orikeyComboBox->setGeometry(QRect(607, 390, 82, 22));
+    m_orikeyComboBox->setGeometry(QRect(627, 390, 82, 22));
     m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
-    m_mapkeyComboBox->setGeometry(QRect(755, 390, 82, 22));
+    m_mapkeyComboBox->setGeometry(QRect(815, 390, 82, 22));
 
     QStringList orikeycodelist = keycodelist;
 

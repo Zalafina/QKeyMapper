@@ -740,9 +740,13 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 
 void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
 {
+    if (e.joystick == Q_NULLPTR)
+        return;
+
     JoystickButtonCode buttonCode = (JoystickButtonCode)e.button;
 
     if (m_JoystickButtonMap.contains(buttonCode)) {
+        QString joystickName = e.joystick->name;
         bool pressed = e.pressed;
         QString keycodeString = m_JoystickButtonMap.value(buttonCode);
         int keyupdown;
@@ -754,7 +758,7 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
         }
 
         bool returnFlag;
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
         Q_UNUSED(returnFlag);
     }
 }
@@ -1130,16 +1134,16 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(QString &keycodeString, int keyupdo
     return returnFlag;
 }
 
-bool QKeyMapper_Worker::JoyStickKeysProc(QString &keycodeString, int keyupdown)
+bool QKeyMapper_Worker::JoyStickKeysProc(QString &keycodeString, int keyupdown, QString &joystickName)
 {
     bool returnFlag = false;
 
 #ifdef DEBUG_LOGOUT_ON
     if (KEY_DOWN == keyupdown){
-        qDebug("[JoyStickKeysProc] RealKey: \"%s\" (0x%02X) KeyDown", keycodeString.toStdString().c_str());
+        qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyDown -> [%s]", keycodeString.toStdString().c_str(), joystickName.toStdString().c_str());
     }
     else if (KEY_UP == keyupdown){
-        qDebug("[JoyStickKeysProc] RealKey: \"%s\" (0x%02X) KeyUp", keycodeString.toStdString().c_str());
+        qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyUp -> [%s]", keycodeString.toStdString().c_str(), joystickName.toStdString().c_str());
     }
     else {
         /* Do Nothing */

@@ -254,7 +254,7 @@ private:
 
     static bool hookBurstAndLockProc(QString &keycodeString, int keyupdown);
 
-    bool JoyStickKeysProc(QString &keycodeString, int keyupdown);
+    bool JoyStickKeysProc(QString &keycodeString, int keyupdown, QString &joystickName);
 #ifdef DINPUT_TEST
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
     static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
