@@ -721,29 +721,29 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
 {
-    Q_UNUSED(e);
+//#ifdef DEBUG_LOGOUT_ON
+//    qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
+//#endif
     if (m_JoystickCapture) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
-#endif
         checkJoystickPOV(e);
     }
 }
 
 void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 {
-    Q_UNUSED(e);
-    if (m_JoystickCapture) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
+    qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
+    if (m_JoystickCapture) {
         checkJoystickAxis(e);
     }
 }
 
 void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 {
-    Q_UNUSED(e);
+//#ifdef DEBUG_LOGOUT_ON
+//    qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
+//#endif
     if (m_JoystickCapture) {
         checkJoystickButtons(e);
     }
@@ -791,78 +791,32 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
         QStringList joydpadpressedlist = pressedRealKeysList.filter("Joy-DPad");
         QStringList joydpadNeedtoRelease = joydpadpressedlist;
+        bool returnFlag;
         if (KEY_DOWN == keyupdown) {
             QString keycodeString = m_JoystickDPadMap.value(dpadCode);
-            if (keycodeString.contains(",")) {
-                QStringList tempDpadCodeStringList = keycodeString.split(',');
-                for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
-                    bool returnFlag;
-                    returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick->name);
-                    Q_UNUSED(returnFlag);
-                }
+            QStringList tempDpadCodeStringList = keycodeString.split(',');
+
+            for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
+                joydpadNeedtoRelease.removeAll(dpadcodestr);
             }
-            else {
-                bool returnFlag;
-                returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+
+            for (const QString &dpadcodestr : qAsConst(joydpadNeedtoRelease)) {
+                returnFlag = JoyStickKeysProc(dpadcodestr, KEY_UP, e.joystick->name);
+                Q_UNUSED(returnFlag);
+            }
+
+            for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
+                returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick->name);
                 Q_UNUSED(returnFlag);
             }
         }
         else {
             joydpadpressedlist = pressedRealKeysList.filter("Joy-DPad");
             for (const QString &joydpadstr : qAsConst(joydpadpressedlist)){
-                bool returnFlag;
                 returnFlag = JoyStickKeysProc(joydpadstr, keyupdown, e.joystick->name);
                 Q_UNUSED(returnFlag);
             }
         }
-
-//        if (dpadCode != m_JoystickLastDPadCode) {
-//            int keyupdown = KEY_UP;
-//            QString keycodeString;
-//            QString keycodeString_DPadRelease = m_JoystickDPadMap.value(JOYSTICK_DPAD_RELEASE);
-//            if (JOYSTICK_DPAD_RELEASE == m_JoystickLastDPadCode) {
-//                /* Normal Key Down */
-//                keyupdown = KEY_DOWN;
-//            }
-//            else if (m_JoystickLastDPadCode != JOYSTICK_DPAD_RELEASE && dpadCode == JOYSTICK_DPAD_RELEASE) {
-//                /* Normal Key Up */
-//                keyupdown = KEY_UP;
-//            }
-//            else if (m_JoystickLastDPadCode != JOYSTICK_DPAD_RELEASE && dpadCode != JOYSTICK_DPAD_RELEASE) {
-//                /* Key Pressed Changed */
-//                keyupdown = KEY_DOWN;
-//            }
-//            else {
-//                /* Abnormal KeyChange ??? */
-//            }
-
-//            if (KEY_DOWN == keyupdown) {
-//                keycodeString = m_JoystickDPadMap.value(dpadCode);
-//                if (keycodeString.contains(",")) {
-//                    QStringList tempDpadCodeStringList = keycodeString.split(',');
-//                    for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
-//                        bool returnFlag;
-//                        returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick->name);
-//                        Q_UNUSED(returnFlag);
-//                    }
-//                }
-//                else {
-//                    bool returnFlag;
-//                    returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
-//                    Q_UNUSED(returnFlag);
-//                }
-//            }
-//            else {
-//                QStringList joydpadpressedlist = pressedRealKeysList.filter("Joy-DPad");
-//                for (const QString &joydpadstr : qAsConst(joydpadpressedlist)){
-//                    bool returnFlag;
-//                    returnFlag = JoyStickKeysProc(joydpadstr, keyupdown, e.joystick->name);
-//                    Q_UNUSED(returnFlag);
-//                }
-//            }
-
-//            m_JoystickLastDPadCode = dpadCode;
-//        }
     }
 }
 
