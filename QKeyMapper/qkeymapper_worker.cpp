@@ -92,6 +92,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     qRegisterMetaType<HWND>("HWND");
     qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
     qRegisterMetaType<V_MOUSECODE>("V_MOUSECODE");
+    qRegisterMetaType<QJoystickPOVEvent>("QJoystickPOVEvent");
+    qRegisterMetaType<QJoystickAxisEvent>("QJoystickAxisEvent");
+    qRegisterMetaType<QJoystickButtonEvent>("QJoystickButtonEvent");
 
     Q_UNUSED(parent);
 
