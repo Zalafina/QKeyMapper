@@ -50,7 +50,7 @@ static const int UI_SCALE_4K_PERCENT_150 = 9;
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
-static const char *VERSION_INFO = "1.3.5";
+static const char *VERSION_INFO = "1.3.6";
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 
@@ -1864,10 +1864,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                        bool checkmappingstr = checkMappingkeyStr(mapping_keys.at(loadindex));
+                        QString appendOriKey = ori_key;
+                        if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
+                            appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
+                            mousemapcontains = true;
+                        }
+                        bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
+
                         if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                                 && (true == checkmappingstr)){
-                            loadkeymapdata.append(MAP_KEYDATA(ori_key, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
+                            loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
                         }
                         else{
                             datavalidflag = false;
@@ -2061,8 +2067,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 }
 
-bool QKeyMapper::checkMappingkeyStr(const QString &mappingkeystr)
+bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 {
+    QStringList mouseNameConvertList = QKeyMapper_Worker::MouseButtonNameConvertMap.keys();
+    for (const QString &mousekey : qAsConst(mouseNameConvertList)){
+        mappingkeystr.replace(mousekey, QKeyMapper_Worker::MouseButtonNameConvertMap.value(mousekey));
+    }
+
     bool checkResult = true;
     static QRegularExpression regexp("\\s[+»]\\s");
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -2551,6 +2562,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-LS-Down"
             << "Joy-LS-Left"
             << "Joy-LS-Right"
+            << "Joy-RS-Up"
+            << "Joy-RS-Down"
+            << "Joy-RS-Left"
+            << "Joy-RS-Right"
             << "Joy-DPad-Up"
             << "Joy-DPad-Down"
             << "Joy-DPad-Left"

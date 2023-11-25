@@ -233,7 +233,7 @@ private:
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(const QString &settingtext);
-    bool checkMappingkeyStr(const QString &mappingkeystr);
+    bool checkMappingkeyStr(QString &mappingkeystr);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT

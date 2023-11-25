@@ -194,13 +194,19 @@ public:
         JOYSTICK_LS_UP,
         JOYSTICK_LS_DOWN,
         JOYSTICK_LS_LEFT,
-        JOYSTICK_LS_RIGHT,
-        JOYSTICK_LS_L_UP,
-        JOYSTICK_LS_L_DOWN,
-        JOYSTICK_LS_R_UP,
-        JOYSTICK_LS_R_DOWN
+        JOYSTICK_LS_RIGHT
     };
     Q_ENUM(JoystickLStickCode)
+
+    enum JoystickRStickCode
+    {
+        JOYSTICK_RS_RELEASE = 0,
+        JOYSTICK_RS_UP,
+        JOYSTICK_RS_DOWN,
+        JOYSTICK_RS_LEFT,
+        JOYSTICK_RS_RIGHT
+    };
+    Q_ENUM(JoystickRStickCode)
 
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
@@ -248,6 +254,13 @@ public slots:
     void checkJoystickAxis(const QJoystickAxisEvent &e);
 
 private:
+    void joystickLTRTButtonProc(const QJoystickAxisEvent &e);
+    void joystickLSVerticalProc(const QJoystickAxisEvent &e);
+    void joystickLSHorizontalProc(const QJoystickAxisEvent &e);
+    void joystickRSVerticalProc(const QJoystickAxisEvent &e);
+    void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
+
+private:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -277,6 +290,7 @@ public:
 #endif
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QHash<WPARAM, QString> MouseButtonNameMap;
+    static QHash<QString, QString> MouseButtonNameConvertMap;
     static QHash<QString, int> JoyStickKeyMap;
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
@@ -310,6 +324,7 @@ private:
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
     QHash<JoystickDPadCode, QString> m_JoystickDPadMap;
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
+    QHash<JoystickRStickCode, QString> m_JoystickRStickMap;
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
 };
 

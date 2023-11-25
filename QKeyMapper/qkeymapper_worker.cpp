@@ -1,6 +1,7 @@
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 
+static const int KEY_INIT = -1;
 static const int KEY_UP = 0;
 static const int KEY_DOWN = 1;
 
@@ -20,15 +21,25 @@ static const int JOYSTICK_POV_ANGLE_L_DOWN  = 225;
 static const int JOYSTICK_POV_ANGLE_R_UP    = 45;
 static const int JOYSTICK_POV_ANGLE_R_DOWN  = 135;
 
-static const int JOYSTICK_AXIS_LS_VERTICAL      = 0;
-static const int JOYSTICK_AXIS_LS_HORIZONTAL    = 1;
-static const int JOYSTICK_AXIS_RS_VERTICAL      = 2;
-static const int JOYSTICK_AXIS_RS_HORIZONTAL    = 3;
+static const int JOYSTICK_AXIS_LS_HORIZONTAL    = 0;
+static const int JOYSTICK_AXIS_LS_VERTICAL      = 1;
+static const int JOYSTICK_AXIS_RS_HORIZONTAL    = 2;
+static const int JOYSTICK_AXIS_RS_VERTICAL      = 3;
 static const int JOYSTICK_AXIS_LT_BUTTON        = 4;
 static const int JOYSTICK_AXIS_RT_BUTTON        = 5;
 
-static const qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD      = 0.2;
+static const qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD      = 0.15;
 static const qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD    = 0.5;
+
+static const qreal JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD                = -0.5;
+static const qreal JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD              = 0.5;
+static const qreal JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD       = -0.15;
+static const qreal JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD       = 0.15;
+
+static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD            = -0.5;
+static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD           = 0.5;
+static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
+static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
@@ -41,6 +52,7 @@ QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, 
 #endif
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
+QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
@@ -74,6 +86,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_JoystickButtonMap(),
     m_JoystickDPadMap(),
     m_JoystickLStickMap(),
+    m_JoystickRStickMap(),
     m_JoystickPOVMap()
 {
     qRegisterMetaType<HWND>("HWND");
@@ -741,9 +754,9 @@ void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 {
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//    qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
+//#endif
     if (m_JoystickCapture) {
         checkJoystickAxis(e);
     }
@@ -833,29 +846,402 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
-        /* LT Button & RT Button */
-        if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
-            if (pressedRealKeysList.contains(m_JoystickButtonMap.value(JOYSTICK_BUTTON_10))) {
-                /* LT Button is already Pressed */
-            }
-            else {
-                /* LT Button has been Released */
+        joystickLTRTButtonProc(e);
+    }
+    else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis) {
+        joystickLSVerticalProc(e);
+    }
+    else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
+        joystickLSHorizontalProc(e);
+    }
+    else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
+        joystickRSVerticalProc(e);
+    }
+    else if (JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
+        joystickRSHorizontalProc(e);
+    }
+}
+
+void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
+{
+    int keyupdown = KEY_INIT;
+    QString keycodeString;
+    /* LT Button & RT Button */
+    if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
+        keycodeString = m_JoystickButtonMap.value(JOYSTICK_BUTTON_10);
+        if (pressedRealKeysList.contains(keycodeString)) {
+            /* LT Button is already Pressed */
+            if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
+                keyupdown = KEY_UP;
             }
         }
-        else { /* JOYSTICK_AXIS_RT_BUTTON == e.axis */
-            if (pressedRealKeysList.contains(m_JoystickButtonMap.value(JOYSTICK_BUTTON_11))) {
-                /* RT Button is already Pressed */
-            }
-            else {
-                /* RT Button has been Released */
+        else {
+            /* LT Button has been Released */
+            if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD) {
+                keyupdown = KEY_DOWN;
             }
         }
     }
-    else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis || JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
-        /* Left-Stick direction process */
+    else { /* JOYSTICK_AXIS_RT_BUTTON == e.axis */
+        keycodeString = m_JoystickButtonMap.value(JOYSTICK_BUTTON_11);
+        if (pressedRealKeysList.contains(keycodeString)) {
+            /* RT Button is already Pressed */
+            if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
+                keyupdown = KEY_UP;
+            }
+        }
+        else {
+            /* RT Button has been Released */
+            if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD) {
+                keyupdown = KEY_DOWN;
+            }
+        }
     }
-    else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis || JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
-        /* Right-Stick direction process */
+
+    if (KEY_UP == keyupdown || KEY_DOWN == keyupdown) {
+        bool returnFlag;
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        Q_UNUSED(returnFlag);
+    }
+}
+
+void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
+{
+    if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD
+        || e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD
+        || (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
+         && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD)) {
+        /* range to process */
+    }
+    else {
+        return;
+    }
+
+    /* Left-Stick Vertical Process */
+    int keyupdown = KEY_INIT;
+    QString keycodeString;
+
+    QString keycodeString_LS_Up = m_JoystickLStickMap.value(JOYSTICK_LS_UP);
+    QString keycodeString_LS_Down = m_JoystickLStickMap.value(JOYSTICK_LS_DOWN);
+    bool ls_Up_Pressed = false;
+    bool ls_Down_Pressed = false;
+    bool returnFlag;
+    if (pressedRealKeysList.contains(keycodeString_LS_Up)) {
+        ls_Up_Pressed = true;
+    }
+    if (pressedRealKeysList.contains(keycodeString_LS_Down)) {
+        ls_Down_Pressed = true;
+    }
+
+    if (ls_Up_Pressed || ls_Down_Pressed) {
+        /* Left-Stick Vertical Up or Down changed to Release */
+        if (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD) {
+            keyupdown = KEY_UP;
+        }
+        /* Left-Stick Vertical Up changed to Down */
+        else if (ls_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+            /* Need to send Left-Stick Vertical Up Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Left-Stick Vertical Up Release first <<< */
+            keycodeString = keycodeString_LS_Down;
+            keyupdown = KEY_DOWN;
+        }
+        /* Left-Stick Vertical Down changed to Up */
+        else if (ls_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+            /* Need to send Left-Stick Vertical Down Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Left-Stick Vertical Down Release first <<< */
+            keycodeString = keycodeString_LS_Up;
+            keyupdown = KEY_DOWN;
+        }
+    }
+    else {
+        /* Left-Stick Vertical Release change to Down  */
+        if (e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+            keycodeString = keycodeString_LS_Down;
+            keyupdown = KEY_DOWN;
+        }
+        /* Left-Stick Vertical Release change to Up  */
+        else if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+            keycodeString = keycodeString_LS_Up;
+            keyupdown = KEY_DOWN;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown) {
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        Q_UNUSED(returnFlag);
+    }
+    else if (KEY_UP == keyupdown){
+        if (ls_Up_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+        if (ls_Down_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+    }
+    else {
+        /* Stick State not changed */
+    }
+}
+
+void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
+{
+    if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD
+        || e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD
+        || (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD)) {
+        /* range to process */
+    }
+    else {
+        return;
+    }
+
+    /* Left-Stick Horizontal Process */
+    int keyupdown = KEY_INIT;
+    QString keycodeString;
+
+    QString keycodeString_LS_Left = m_JoystickLStickMap.value(JOYSTICK_LS_LEFT);
+    QString keycodeString_LS_Right = m_JoystickLStickMap.value(JOYSTICK_LS_RIGHT);
+    bool ls_Left_Pressed = false;
+    bool ls_Right_Pressed = false;
+    bool returnFlag;
+    if (pressedRealKeysList.contains(keycodeString_LS_Left)) {
+        ls_Left_Pressed = true;
+    }
+    if (pressedRealKeysList.contains(keycodeString_LS_Right)) {
+        ls_Right_Pressed = true;
+    }
+
+    if (ls_Left_Pressed || ls_Right_Pressed) {
+        /* Left-Stick Horizontal Left or Right changed to Release */
+        if (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD) {
+            keyupdown = KEY_UP;
+        }
+        /* Left-Stick Horizontal Left changed to Right */
+        else if (ls_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+            /* Need to send Left-Stick Horizontal Left Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Left-Stick Horizontal Left Release first <<< */
+            keycodeString = keycodeString_LS_Right;
+            keyupdown = KEY_DOWN;
+        }
+        /* Left-Stick Horizontal Right changed to Left */
+        else if (ls_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+            /* Need to send Left-Stick Horizontal Right Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Left-Stick Horizontal Right Release first <<< */
+            keycodeString = keycodeString_LS_Left;
+            keyupdown = KEY_DOWN;
+        }
+    }
+    else {
+        /* Left-Stick Horizontal Release change to Right  */
+        if (e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+            keycodeString = keycodeString_LS_Right;
+            keyupdown = KEY_DOWN;
+        }
+        /* Left-Stick Horizontal Release change to Left  */
+        else if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+            keycodeString = keycodeString_LS_Left;
+            keyupdown = KEY_DOWN;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown) {
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        Q_UNUSED(returnFlag);
+    }
+    else if (KEY_UP == keyupdown){
+        if (ls_Left_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+        if (ls_Right_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+    }
+    else {
+        /* Stick State not changed */
+    }
+}
+
+void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
+{
+    if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD
+        || e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD
+        || (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD)) {
+        /* range to process */
+    }
+    else {
+        return;
+    }
+
+    /* Right-Stick Vertical Process */
+    int keyupdown = KEY_INIT;
+    QString keycodeString;
+
+    QString keycodeString_RS_Up = m_JoystickRStickMap.value(JOYSTICK_RS_UP);
+    QString keycodeString_RS_Down = m_JoystickRStickMap.value(JOYSTICK_RS_DOWN);
+    bool rs_Up_Pressed = false;
+    bool rs_Down_Pressed = false;
+    bool returnFlag;
+    if (pressedRealKeysList.contains(keycodeString_RS_Up)) {
+        rs_Up_Pressed = true;
+    }
+    if (pressedRealKeysList.contains(keycodeString_RS_Down)) {
+        rs_Down_Pressed = true;
+    }
+
+    if (rs_Up_Pressed || rs_Down_Pressed) {
+        /* Right-Stick Vertical Up or Down changed to Release */
+        if (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD) {
+            keyupdown = KEY_UP;
+        }
+        /* Right-Stick Vertical Up changed to Down */
+        else if (rs_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+            /* Need to send Right-Stick Vertical Up Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Right-Stick Vertical Up Release first <<< */
+            keycodeString = keycodeString_RS_Down;
+            keyupdown = KEY_DOWN;
+        }
+        /* Right-Stick Vertical Down changed to Up */
+        else if (rs_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+            /* Need to send Right-Stick Vertical Down Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Right-Stick Vertical Down Release first <<< */
+            keycodeString = keycodeString_RS_Up;
+            keyupdown = KEY_DOWN;
+        }
+    }
+    else {
+        /* Right-Stick Vertical Release change to Down  */
+        if (e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+            keycodeString = keycodeString_RS_Down;
+            keyupdown = KEY_DOWN;
+        }
+        /* Right-Stick Vertical Release change to Up  */
+        else if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+            keycodeString = keycodeString_RS_Up;
+            keyupdown = KEY_DOWN;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown) {
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        Q_UNUSED(returnFlag);
+    }
+    else if (KEY_UP == keyupdown){
+        if (rs_Up_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+        if (rs_Down_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+    }
+    else {
+        /* Stick State not changed */
+    }
+}
+
+void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
+{
+    if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD
+        || e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD
+        || (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD)) {
+        /* range to process */
+    }
+    else {
+        return;
+    }
+
+    /* Right-Stick Horizontal Process */
+    int keyupdown = KEY_INIT;
+    QString keycodeString;
+
+    QString keycodeString_RS_Left = m_JoystickRStickMap.value(JOYSTICK_RS_LEFT);
+    QString keycodeString_RS_Right = m_JoystickRStickMap.value(JOYSTICK_RS_RIGHT);
+    bool rs_Left_Pressed = false;
+    bool rs_Right_Pressed = false;
+    bool returnFlag;
+    if (pressedRealKeysList.contains(keycodeString_RS_Left)) {
+        rs_Left_Pressed = true;
+    }
+    if (pressedRealKeysList.contains(keycodeString_RS_Right)) {
+        rs_Right_Pressed = true;
+    }
+
+    if (rs_Left_Pressed || rs_Right_Pressed) {
+        /* Right-Stick Horizontal Left or Right changed to Release */
+        if (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
+            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD) {
+            keyupdown = KEY_UP;
+        }
+        /* Right-Stick Horizontal Left changed to Right */
+        else if (rs_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+            /* Need to send Right-Stick Horizontal Left Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Right-Stick Horizontal Left Release first <<< */
+            keycodeString = keycodeString_RS_Right;
+            keyupdown = KEY_DOWN;
+        }
+        /* Right-Stick Horizontal Right changed to Left */
+        else if (rs_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+            /* Need to send Right-Stick Horizontal Right Release first >>> */
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+            /* Need to send Right-Stick Horizontal Right Release first <<< */
+            keycodeString = keycodeString_RS_Left;
+            keyupdown = KEY_DOWN;
+        }
+    }
+    else {
+        /* Right-Stick Horizontal Release change to Right  */
+        if (e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+            keycodeString = keycodeString_RS_Right;
+            keyupdown = KEY_DOWN;
+        }
+        /* Right-Stick Horizontal Release change to Left  */
+        else if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+            keycodeString = keycodeString_RS_Left;
+            keyupdown = KEY_DOWN;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown) {
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        Q_UNUSED(returnFlag);
+    }
+    else if (KEY_UP == keyupdown){
+        if (rs_Left_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+        if (rs_Right_Pressed) {
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick->name);
+            Q_UNUSED(returnFlag);
+        }
+    }
+    else {
+        /* Stick State not changed */
     }
 }
 
@@ -1222,6 +1608,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
 
 bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName)
 {
+    Q_UNUSED(joystickName);
     bool returnFlag = false;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -1535,6 +1922,12 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON1    ),   "Mouse-X1");
     MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON2    ),   "Mouse-X2");
     MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON2    ),   "Mouse-X2");
+
+    MouseButtonNameConvertMap.insert("L-Mouse",     "Mouse-L"   );
+    MouseButtonNameConvertMap.insert("R-Mouse",     "Mouse-R"   );
+    MouseButtonNameConvertMap.insert("M-Mouse",     "Mouse-M"   );
+    MouseButtonNameConvertMap.insert("X1-Mouse",    "Mouse-X1"  );
+    MouseButtonNameConvertMap.insert("X2-Mouse",    "Mouse-X2"  );
 }
 void QKeyMapper_Worker::initJoystickKeyMap()
 {
@@ -1561,6 +1954,11 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-LS-Down"                   ,   (int)JOYSTICK_LS_DOWN           );
     JoyStickKeyMap.insert("Joy-LS-Left"                   ,   (int)JOYSTICK_LS_LEFT           );
     JoyStickKeyMap.insert("Joy-LS-Right"                  ,   (int)JOYSTICK_LS_RIGHT          );
+    /* Joystick Right-Stick Direction */
+    JoyStickKeyMap.insert("Joy-RS-Up"                     ,   (int)JOYSTICK_RS_UP             );
+    JoyStickKeyMap.insert("Joy-RS-Down"                   ,   (int)JOYSTICK_RS_DOWN           );
+    JoyStickKeyMap.insert("Joy-RS-Left"                   ,   (int)JOYSTICK_RS_LEFT           );
+    JoyStickKeyMap.insert("Joy-RS-Right"                  ,   (int)JOYSTICK_RS_RIGHT          );
 
 
     /* Joystick Buttons Map */
@@ -1586,18 +1984,18 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickDPadMap.insert(JOYSTICK_DPAD_L_DOWN,      "Joy-DPad-Left,Joy-DPad-Down"   );
     m_JoystickDPadMap.insert(JOYSTICK_DPAD_R_UP,        "Joy-DPad-Right,Joy-DPad-Up"    );
     m_JoystickDPadMap.insert(JOYSTICK_DPAD_R_DOWN,      "Joy-DPad-Right,Joy-DPad-Down"  );
-    m_JoystickDPadMap.insert(JOYSTICK_DPAD_RELEASE,     "Joy-DPad-Release"              );
 
     /* Joystick Left-Stick Direction Map */
     m_JoystickLStickMap.insert(JOYSTICK_LS_UP,          "Joy-LS-Up"                     );
     m_JoystickLStickMap.insert(JOYSTICK_LS_DOWN,        "Joy-LS-Down"                   );
     m_JoystickLStickMap.insert(JOYSTICK_LS_LEFT,        "Joy-LS-Left"                   );
     m_JoystickLStickMap.insert(JOYSTICK_LS_RIGHT,       "Joy-LS-Right"                  );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_L_UP,        "Joy-LS-Left,Joy-LS-Up"         );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_L_DOWN,      "Joy-LS-Left,Joy-LS-Down"       );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_R_UP,        "Joy-LS-Right,Joy-LS-Up"        );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_R_DOWN,      "Joy-LS-Right,Joy-LS-Down"      );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_RELEASE,     "Joy-LS-Release"                );
+
+    /* Joystick Right-Stick Direction Map */
+    m_JoystickRStickMap.insert(JOYSTICK_RS_UP,          "Joy-RS-Up"                     );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_DOWN,        "Joy-RS-Down"                   );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_LEFT,        "Joy-RS-Left"                   );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_RIGHT,       "Joy-RS-Right"                  );
 
     /* Joystick POV Angle Map */
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_RELEASE, JOYSTICK_DPAD_RELEASE           );
