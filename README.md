@@ -2,8 +2,8 @@
 ---------------
 ## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本。
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
-### 注意使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
-### 1.3.6版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
+### 注意: 使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
+### 注意: 1.3.6版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
 ---------------
 ## 使用中有疑问也可以加Q群咨询
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
@@ -38,6 +38,7 @@
 ---------------
 ### Qt6 version is recommended for Win10 and Win11 OS, and the provision of Qt5 version is only for compatibility with Win7 OS. If the Qt6 version could not be used under Win7, please download the Qt5 version for it.
 ### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/en-us/download/confirmation.aspx?id=48145
+### Note: Version 1.3.6 has changed the names of mouse buttons stored in the ini configuration file. If you select settings stored before version 1.3.6 that include mouse buttons, there may be loading errors. If the error tolerance handling added by the software does not take effect, you can try to manually replace L-Mouse, R-Mouse, M-Mouse, X1-Mouse, X2-Mouse with Mouse-L, Mouse-R, Mouse-M, Mouse-X1, Mouse-X2 in the ini file.
 ---------------
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
