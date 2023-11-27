@@ -43,6 +43,7 @@ static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
+static const ULONG_PTR VIRTUAL_MOUSE_MOVE = 0xBFBCBFBC;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -190,6 +191,28 @@ void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE vmousecode, int keyupdown)
     if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("sendMouseInput(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
+void QKeyMapper_Worker::sendMouseMove(int x, int y)
+{
+    QMutexLocker locker(&sendinput_mutex);
+
+    INPUT mouse_input;
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = x * (65535 / GetSystemMetrics(SM_CXSCREEN)); // x being coordinate in pixels
+    mouse_input.mi.dy = y * (65535 / GetSystemMetrics(SM_CYSCREEN)); // y being coordinate in pixels
+    mouse_input.mi.mouseData = 0;
+    mouse_input.mi.time = 0;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE;
+//    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("sendMouseMove(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
 }
