@@ -6,7 +6,7 @@
 ### 注意: 1.3.6版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
 ---------------
 ## 使用教学视频请点击下方图片
-<img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png" width = 50%>(https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
+[![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://player.bilibili.com/player.html?aid=683633468&bvid=BV1jS4y1w7SW&cid=711074429&page=1)
 ---------------
 ## 使用中有疑问也可以加Q群咨询
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
