@@ -1308,32 +1308,32 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
         if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
             if (WM_KEYDOWN == wParam){
-                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else if (WM_KEYUP == wParam){
-                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else if (WM_SYSKEYDOWN == wParam){
-                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else if (WM_SYSKEYUP == wParam){
-                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else{
             }
         }
         else {
             if (WM_KEYDOWN == wParam){
-                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else if (WM_KEYUP == wParam){
-                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else if (WM_SYSKEYDOWN == wParam){
-                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else if (WM_SYSKEYUP == wParam){
-                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags);
+                qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
             }
             else{
             }
@@ -1424,7 +1424,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags);
+        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X), ExtenedFlag(%s)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
 #endif
     }
 
@@ -1928,6 +1928,18 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insertMulti   ("Num 8",       V_KEYCODE(VK_UP,            EXTENED_FLAG_FALSE));   // 0x26
     VirtualKeyCodeMap.insertMulti   ("Num 9",       V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_FALSE));   // 0x21
 #endif
+
+    // MultiMedia keys
+    VirtualKeyCodeMap.insert        ("Vol Mute",            V_KEYCODE(VK_VOLUME_MUTE,       EXTENED_FLAG_TRUE));   // 0xAD
+    VirtualKeyCodeMap.insert        ("Vol Down",            V_KEYCODE(VK_VOLUME_DOWN,       EXTENED_FLAG_TRUE));   // 0xAE
+    VirtualKeyCodeMap.insert        ("Vol Up",              V_KEYCODE(VK_VOLUME_UP,         EXTENED_FLAG_TRUE));   // 0xAF
+    VirtualKeyCodeMap.insert        ("Media Next",          V_KEYCODE(VK_MEDIA_NEXT_TRACK,  EXTENED_FLAG_TRUE));   // 0xB0
+    VirtualKeyCodeMap.insert        ("Media Prev",          V_KEYCODE(VK_MEDIA_PREV_TRACK,  EXTENED_FLAG_TRUE));   // 0xB1
+    VirtualKeyCodeMap.insert        ("Media Stop",          V_KEYCODE(VK_MEDIA_STOP,        EXTENED_FLAG_TRUE));   // 0xB2
+    VirtualKeyCodeMap.insert        ("Media PlayPause",     V_KEYCODE(VK_MEDIA_PLAY_PAUSE,  EXTENED_FLAG_TRUE));   // 0xB3
+
+    // PowerState keys
+//    VirtualKeyCodeMap.insert        ("Sleep",               V_KEYCODE(VK_SLEEP,             EXTENED_FLAG_TRUE));   // 0x5F
 }
 
 void QKeyMapper_Worker::initVirtualMouseButtonMap()

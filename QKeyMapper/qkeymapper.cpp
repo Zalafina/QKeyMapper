@@ -2700,7 +2700,15 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Num 7"
             << "Num 8"
             << "Num 9"
-            << "Num Enter";
+            << "Num Enter"
+            << "Vol Mute"
+            << "Vol Down"
+            << "Vol Up"
+            << "Media Next"
+            << "Media Prev"
+            << "Media Stop"
+            << "Media PlayPause";
+//            << "Sleep";
 
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
     m_orikeyComboBox->setGeometry(QRect(627, 390, 82, 22));
