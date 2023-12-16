@@ -11,6 +11,9 @@
 #include <QMutex>
 #endif
 #include <QJoysticks.h>
+#ifdef VIGEM_CLIENT_SUPPORT
+#include <ViGEm/Client.h>
+#endif
 #ifdef DINPUT_TEST
 #include <dinput.h>
 #endif
@@ -221,6 +224,18 @@ public:
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
     void sendSpecialVirtualKeyUp(const QString &virtualKey);
 
+#ifdef VIGEM_CLIENT_SUPPORT
+public:
+    static int ViGEmClient_Alloc(void);
+    static int ViGEmClient_Connect(void);
+    static int ViGEmClient_Add(void);
+    static void ViGEmClient_Remove(void);
+    static void ViGEmClient_Disconnect(void);
+    static void ViGEmClient_Free(void);
+
+    static void ViGEmClient_SendJoyStickInput(const QString &joystickInput);
+#endif
+
 signals:
     void setKeyHook_Signal(HWND hWnd);
     void setKeyUnHook_Signal(void);
@@ -307,6 +322,10 @@ public:
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
     static int dinput_timerid;
+#endif
+#ifdef VIGEM_CLIENT_SUPPORT
+    static VIGEM_API PVIGEM_CLIENT s_ViGEmClient;
+    static VIGEM_API PVIGEM_TARGET s_ViGEmTarget;
 #endif
 
 private:

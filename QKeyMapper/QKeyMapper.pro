@@ -18,6 +18,7 @@ DEFINES += SINGLE_APPLICATION
 #DEFINES += LOGOUT_TOFILE
 #DEFINES += USE_SAOFONT
 #DEFINES += DINPUT_TEST
+#DEFINES += VIGEM_CLIENT_SUPPORT
 
 lessThan(QT_MAJOR_VERSION, 6) {
     message("Qt5 Version")
@@ -90,6 +91,26 @@ LIBS        += dwmapi.lib
 LIBS        += SDL2.lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
+}
+
+contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
+    contains(DEFINES, WIN64) {
+    # ViGEmClient x64 dll library
+    LIBS        += -L$$PWD/ViGEm/lib/x64
+    } else {
+    # ViGEmClient x86 dll library
+    LIBS        += -L$$PWD/ViGEm/lib/x86
+    }
+
+    LIBS    += ViGEmClient.lib
+    LIBS    += SetupAPI.Lib
+
+    INCLUDEPATH += $$PWD/ViGEm/include
+
+    HEADERS     += \
+        ViGEm\include\ViGEm\Client.h \
+        ViGEm\include\ViGEm\Common.h \
+        ViGEm\include\ViGEm\Util.h
 }
 
 contains( DEFINES, ADJUST_PRIVILEGES ) {
