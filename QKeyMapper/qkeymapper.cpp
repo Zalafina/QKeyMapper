@@ -109,6 +109,7 @@ static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动开始映射";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟摇杆";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "文件名";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
@@ -138,6 +139,7 @@ static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "Auto Start Mapping";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Enable Virtual Joystick";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
@@ -1878,7 +1880,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         else{
                             datavalidflag = false;
 #ifdef DEBUG_LOGOUT_ON
-                            qWarning("[loadKeyMapSetting] Invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", checkmappingstr?"true":"false");
+                            qWarning("[loadKeyMapSetting] Invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), joystickmapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", joystickmapcontains?"true":"false", checkmappingstr?"true":"false");
 #endif
                             break;
                         }
@@ -2083,7 +2085,8 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
-            && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)){
+            && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
+            && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)){
             checkResult = false;
             break;
         }
@@ -2202,6 +2205,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+    ui->enableVirtualJoystickCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -2252,6 +2256,7 @@ void QKeyMapper::setControlFontChinese()
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+    ui->enableVirtualJoystickCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -2261,6 +2266,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->disableWinKeyCheckBox->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
+    ui->enableVirtualJoystickCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
@@ -2558,30 +2564,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Mouse-M"
             << "Mouse-X1"
             << "Mouse-X2"
-            << "Joy-LS-Up"
-            << "Joy-LS-Down"
-            << "Joy-LS-Left"
-            << "Joy-LS-Right"
-            << "Joy-RS-Up"
-            << "Joy-RS-Down"
-            << "Joy-RS-Left"
-            << "Joy-RS-Right"
-            << "Joy-DPad-Up"
-            << "Joy-DPad-Down"
-            << "Joy-DPad-Left"
-            << "Joy-DPad-Right"
-            << "Joy-Key1(A)"
-            << "Joy-Key2(B)"
-            << "Joy-Key3(X)"
-            << "Joy-Key4(Y)"
-            << "Joy-Key5(LB)"
-            << "Joy-Key6(RB)"
-            << "Joy-Key7(Back)"
-            << "Joy-Key8(Start)"
-            << "Joy-Key9(LS-Click)"
-            << "Joy-Key10(RS-Click)"
-            << "Joy-Key11(LT)"
-            << "Joy-Key12(RT)"
             << "A"
             << "B"
             << "C"
@@ -2707,8 +2689,58 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Media Next"
             << "Media Prev"
             << "Media Stop"
-            << "Media PlayPause";
-//            << "Sleep";
+            << "Media PlayPause"
+            << "Joy-LS-Up"
+            << "Joy-LS-Down"
+            << "Joy-LS-Left"
+            << "Joy-LS-Right"
+            << "Joy-RS-Up"
+            << "Joy-RS-Down"
+            << "Joy-RS-Left"
+            << "Joy-RS-Right"
+            << "Joy-DPad-Up"
+            << "Joy-DPad-Down"
+            << "Joy-DPad-Left"
+            << "Joy-DPad-Right"
+            << "Joy-Key1(A)"
+            << "Joy-Key2(B)"
+            << "Joy-Key3(X)"
+            << "Joy-Key4(Y)"
+            << "Joy-Key5(LB)"
+            << "Joy-Key6(RB)"
+            << "Joy-Key7(Back)"
+            << "Joy-Key8(Start)"
+            << "Joy-Key9(LS-Click)"
+            << "Joy-Key10(RS-Click)"
+            << "Joy-Key11(LT)"
+            << "Joy-Key12(RT)"
+#ifdef VIGEM_CLIENT_SUPPORT
+            << "vJoy-LS-Up"
+            << "vJoy-LS-Down"
+            << "vJoy-LS-Left"
+            << "vJoy-LS-Right"
+            << "vJoy-RS-Up"
+            << "vJoy-RS-Down"
+            << "vJoy-RS-Left"
+            << "vJoy-RS-Right"
+            << "vJoy-DPad-Up"
+            << "vJoy-DPad-Down"
+            << "vJoy-DPad-Left"
+            << "vJoy-DPad-Right"
+            << "vJoy-Key1(A)"
+            << "vJoy-Key2(B)"
+            << "vJoy-Key3(X)"
+            << "vJoy-Key4(Y)"
+            << "vJoy-Key5(LB)"
+            << "vJoy-Key6(RB)"
+            << "vJoy-Key7(Back)"
+            << "vJoy-Key8(Start)"
+            << "vJoy-Key9(LS-Click)"
+            << "vJoy-Key10(RS-Click)"
+            << "vJoy-Key11(LT)"
+            << "vJoy-Key12(RT)"
+#endif
+            ;
 
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
     m_orikeyComboBox->setGeometry(QRect(627, 390, 82, 22));
@@ -2718,10 +2750,23 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QStringList orikeycodelist = keycodelist;
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
-    QStringList joycodelist = orikeycodelist.filter("Joy");
-    for (const QString &joystr : qAsConst(joycodelist)){
+    QRegularExpression re_Joy("^Joy-");
+    QStringList JoyStrlist = orikeycodelist.filter(re_Joy);
+
+    // Remove Strings start with "Joy-" from mapkeyComboBox
+    for (const QString &joystr : qAsConst(JoyStrlist)){
         keycodelist.removeOne(joystr);
     }
+
+#ifdef VIGEM_CLIENT_SUPPORT
+    QRegularExpression re_vjoy("^vJoy-");
+    QStringList vJoyStrlist = orikeycodelist.filter(re_vjoy);
+
+    // Remove Strings start with "vJoy-" from orikeyComboBox
+    for (const QString &joystr : qAsConst(vJoyStrlist)){
+        orikeycodelist.removeOne(joystr);
+    }
+#endif
     /* Remove Joy Keys from MappingKey ComboBox <<< */
 
     m_orikeyComboBox->addItems(orikeycodelist);
@@ -2835,6 +2880,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
+    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
@@ -2874,6 +2920,7 @@ void QKeyMapper::setUILanguage_English()
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
+    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
@@ -3064,7 +3111,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
             || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_orikeyComboBox->currentText())
             || true == QKeyMapper_Worker::JoyStickKeyMap.contains(m_orikeyComboBox->currentText()))
         && (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText())
-            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_mapkeyComboBox->currentText()))){
+            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_mapkeyComboBox->currentText())
+            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(m_mapkeyComboBox->currentText()))){
         bool already_exist = false;
         int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
 
@@ -3499,6 +3547,24 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
         languageStr = "Chinese";
     }
     qDebug() << "[Language] Language changed ->" << languageStr;
+#endif
+}
+
+
+void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[EnableVirtualJoystick] Enable Virtual Joystick state changed ->" << (Qt::CheckState)state;
+#endif
+
+#ifdef VIGEM_CLIENT_SUPPORT
+    if (Qt::Checked == state) {
+        QKeyMapper_Worker::ViGEmClient_Add();
+    }
+    else {
+        QKeyMapper_Worker::ViGEmClient_Remove();
+    }
 #endif
 }
 

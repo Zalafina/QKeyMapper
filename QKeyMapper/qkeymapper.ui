@@ -343,7 +343,7 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>655</x>
+     <x>55</x>
      <y>590</y>
      <width>161</width>
      <height>21</height>
@@ -1261,6 +1261,25 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QCheckBox" name="enableVirtualJoystickCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>590</y>
+     <width>161</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Enable Virtual Joystick</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1293,6 +1312,7 @@
   <zorder>languageComboBox</zorder>
   <zorder>nameCheckBox</zorder>
   <zorder>mappingswitchkeyLabel</zorder>
+  <zorder>enableVirtualJoystickCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

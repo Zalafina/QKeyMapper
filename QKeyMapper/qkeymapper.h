@@ -211,6 +211,8 @@ private slots:
 
     void on_languageComboBox_currentIndexChanged(int index);
 
+    void on_enableVirtualJoystickCheckBox_stateChanged(int state);
+
 private:
     void initHotKeySequence(void);
     void initProcessInfoTable(void);
