@@ -86,6 +86,7 @@ int QKeyMapper_Worker::dinput_timerid = 0;
 VIGEM_API PVIGEM_CLIENT QKeyMapper_Worker::s_ViGEmClient = Q_NULLPTR;
 VIGEM_API PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
 XUSB_REPORT QKeyMapper_Worker::s_ViGEmTarget_Report = XUSB_REPORT();
+QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
@@ -139,8 +140,14 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
 #ifdef VIGEM_CLIENT_SUPPORT
     initViGEmKeyMap();
-    (void)ViGEmClient_Alloc();
-    (void)ViGEmClient_Connect();
+    int retval_alloc = ViGEmClient_Alloc();
+    int retval_connect = ViGEmClient_Connect();
+
+    if (retval_alloc !=0 || retval_connect !=0) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+#endif
+    }
 #endif
 
 #ifdef QT_DEBUG
@@ -578,6 +585,7 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
 
         if (!VIGEM_SUCCESS(retval))
         {
+            s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_FAILED;
 #ifdef DEBUG_LOGOUT_ON
             qWarning("[ViGEmClient_Connect] ViGEm Bus connection failed with error code: 0x%08X", retval);
 #endif
@@ -592,6 +600,8 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
     qDebug() << "[ViGEmClient]" << "ViGEmClient Connect() Success.";
 #endif
 
+    s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_SUCCESS;
+
     return 0;
 }
 
@@ -600,6 +610,13 @@ int QKeyMapper_Worker::ViGEmClient_Add()
     if (s_ViGEmClient == Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[ViGEmClient_Add]" << "Null Pointer s_ViGEmClient!!!";
+#endif
+        return -1;
+    }
+
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[ViGEmClient_Add]" << "ViGEmClient ConnectState is not Success!!! ->" << s_ViGEmClient_ConnectState;
 #endif
         return -1;
     }

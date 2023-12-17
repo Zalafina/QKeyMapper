@@ -213,6 +213,10 @@ private slots:
 
     void on_enableVirtualJoystickCheckBox_stateChanged(int state);
 
+    void on_installViGEmBusButton_clicked();
+
+    void on_uninstallViGEmBusButton_clicked();
+
 private:
     void initHotKeySequence(void);
     void initProcessInfoTable(void);

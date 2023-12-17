@@ -1280,6 +1280,44 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QPushButton" name="installViGEmBusButton">
+   <property name="geometry">
+    <rect>
+     <x>720</x>
+     <y>590</y>
+     <width>121</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Install ViGEmBus</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="uninstallViGEmBusButton">
+   <property name="geometry">
+    <rect>
+     <x>870</x>
+     <y>590</y>
+     <width>121</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Uninstall ViGEmBus</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1313,6 +1351,8 @@
   <zorder>nameCheckBox</zorder>
   <zorder>mappingswitchkeyLabel</zorder>
   <zorder>enableVirtualJoystickCheckBox</zorder>
+  <zorder>installViGEmBusButton</zorder>
+  <zorder>uninstallViGEmBusButton</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

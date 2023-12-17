@@ -211,6 +211,16 @@ public:
     };
     Q_ENUM(JoystickRStickCode)
 
+#ifdef VIGEM_CLIENT_SUPPORT
+    enum ViGEmClient_ConnectState
+    {
+        VIGEMCLIENT_DISCONNECTED = 0,
+        VIGEMCLIENT_CONNECT_SUCCESS,
+        VIGEMCLIENT_CONNECT_FAILED,
+    };
+    Q_ENUM(ViGEmClient_ConnectState)
+#endif
+
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
@@ -333,6 +343,7 @@ public:
 #ifdef VIGEM_CLIENT_SUPPORT
     static VIGEM_API PVIGEM_CLIENT s_ViGEmClient;
     static VIGEM_API PVIGEM_TARGET s_ViGEmTarget;
+    static ViGEmClient_ConnectState s_ViGEmClient_ConnectState;
     static XUSB_REPORT s_ViGEmTarget_Report;
 #endif
 

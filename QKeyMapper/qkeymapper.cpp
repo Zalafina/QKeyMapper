@@ -270,6 +270,19 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
     m_SysTrayIcon->show();
 
+#ifdef VIGEM_CLIENT_SUPPORT
+    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+
+    if (retval_alloc !=0 || retval_connect !=0) {
+        ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+#endif
+    }
+#endif
+
     initKeyMappingDataTable();
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
@@ -3560,11 +3573,42 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 
 #ifdef VIGEM_CLIENT_SUPPORT
     if (Qt::Checked == state) {
-        QKeyMapper_Worker::ViGEmClient_Add();
+        int retval = QKeyMapper_Worker::ViGEmClient_Add();
+
+        if (retval != 0) {
+            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[EnableVirtualJoystick] Enable Virtual Joystick failed!!!";
+#endif
+        }
     }
     else {
         QKeyMapper_Worker::ViGEmClient_Remove();
     }
+#endif
+}
+
+
+void QKeyMapper::on_installViGEmBusButton_clicked()
+{
+#ifdef VIGEM_CLIENT_SUPPORT
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "Install ViGEm Bus.";
+#endif
+
+#endif
+}
+
+
+void QKeyMapper::on_uninstallViGEmBusButton_clicked()
+{
+#ifdef VIGEM_CLIENT_SUPPORT
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "Uninstall ViGEm Bus.";
+#endif
+
 #endif
 }
 
