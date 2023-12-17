@@ -233,7 +233,8 @@ public:
     static void ViGEmClient_Disconnect(void);
     static void ViGEmClient_Free(void);
 
-    static void ViGEmClient_SendJoyStickInput(const QString &joystickInput);
+    static void ViGEmClient_PressButton(const QString &joystickButton);
+    static void ViGEmClient_ReleaseButton(const QString &joystickButton);
 #endif
 
 signals:
@@ -292,6 +293,9 @@ private:
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void initJoystickKeyMap(void);
+#ifdef VIGEM_CLIENT_SUPPORT
+    void initViGEmKeyMap(void);
+#endif
     void clearAllBurstTimersAndLockKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
@@ -308,6 +312,9 @@ public:
     static QHash<WPARAM, QString> MouseButtonNameMap;
     static QHash<QString, QString> MouseButtonNameConvertMap;
     static QHash<QString, int> JoyStickKeyMap;
+#ifdef VIGEM_CLIENT_SUPPORT
+    static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
+#endif
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QHash<QString, QStringList> pressedMappingKeysMap;
@@ -326,6 +333,7 @@ public:
 #ifdef VIGEM_CLIENT_SUPPORT
     static VIGEM_API PVIGEM_CLIENT s_ViGEmClient;
     static VIGEM_API PVIGEM_TARGET s_ViGEmTarget;
+    static XUSB_REPORT s_ViGEmTarget_Report;
 #endif
 
 private:

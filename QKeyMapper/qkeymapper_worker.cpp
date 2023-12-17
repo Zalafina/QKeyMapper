@@ -55,6 +55,9 @@ QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QSt
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
 QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
+#ifdef VIGEM_CLIENT_SUPPORT
+QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, XUSB_BUTTON>();
+#endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
@@ -73,6 +76,7 @@ int QKeyMapper_Worker::dinput_timerid = 0;
 #ifdef VIGEM_CLIENT_SUPPORT
 VIGEM_API PVIGEM_CLIENT QKeyMapper_Worker::s_ViGEmClient = Q_NULLPTR;
 VIGEM_API PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
+XUSB_REPORT QKeyMapper_Worker::s_ViGEmTarget_Report = XUSB_REPORT();
 #endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
@@ -125,6 +129,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initJoystickKeyMap();
 
 #ifdef VIGEM_CLIENT_SUPPORT
+    initViGEmKeyMap();
     (void)ViGEmClient_Alloc();
     (void)ViGEmClient_Connect();
 #endif
@@ -536,6 +541,10 @@ int QKeyMapper_Worker::ViGEmClient_Alloc()
         return -1;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[ViGEmClient]" << "ViGEmClient Alloc() Success.";
+#endif
+
     return 0;
 }
 
@@ -552,6 +561,13 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
             return -1;
         }
     }
+    else {
+        return -1;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[ViGEmClient]" << "ViGEmClient Connect() Success.";
+#endif
 
     return 0;
 }
@@ -583,6 +599,10 @@ int QKeyMapper_Worker::ViGEmClient_Add()
         return -1;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[ViGEmClient]" << "ViGEmClient Target-Add() Success.";
+#endif
+
     return 0;
 }
 
@@ -595,6 +615,9 @@ void QKeyMapper_Worker::ViGEmClient_Remove()
         vigem_target_remove(s_ViGEmClient, s_ViGEmTarget);
         vigem_target_free(s_ViGEmTarget);
         s_ViGEmTarget = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[ViGEmClient]" << "ViGEmClient Target-Remove() Success.";
+#endif
     }
 }
 
@@ -602,6 +625,10 @@ void QKeyMapper_Worker::ViGEmClient_Disconnect()
 {
     if (s_ViGEmClient != Q_NULLPTR) {
         vigem_disconnect(s_ViGEmClient);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[ViGEmClient]" << "ViGEmClient Disconnect() Success.";
+#endif
     }
 }
 
@@ -609,41 +636,55 @@ void QKeyMapper_Worker::ViGEmClient_Free()
 {
     if (s_ViGEmClient != Q_NULLPTR) {
         vigem_free(s_ViGEmClient);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[ViGEmClient]" << "ViGEmClient Free() Success.";
+#endif
     }
 }
 
-void QKeyMapper_Worker::ViGEmClient_SendJoyStickInput(const QString &joystickInput)
+void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
 {
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
-        //
-        // The XINPUT_GAMEPAD structure is identical to the XUSB_REPORT structure
-        // so we can simply take it "as-is" and cast it.
-        //
-        // Call this function on every input state change e.g. in a loop polling
-        // another joystick or network device or thermometer or... you get the idea.
-        //
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[ViGEmClient]" << " Joystick Button Press [" << joystickButton << "]";
+#endif
+        if (ViGEmButtonMap.contains(joystickButton)) {
+            VIGEM_API VIGEM_ERROR error;
+            XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
 
-        if (JoyStickKeyMap.contains(joystickInput) || joystickInput == "Joy-Release") {
-            XUSB_REPORT report;
-            XUSB_REPORT_INIT(&report);
+            s_ViGEmTarget_Report.wButtons = s_ViGEmTarget_Report.wButtons | button;
 
-            if (joystickInput == "Joy-Key1(A)") {
-                report.wButtons = XUSB_GAMEPAD_A; // Press Button A
+            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+            if (error != VIGEM_ERROR_NONE) {
+                qDebug("[ViGEmClient] Button Press Return code: 0x%08X", error);
             }
-            else if (joystickInput == "Joy-Key1(B)") {
-                report.wButtons = XUSB_GAMEPAD_B; // Press Button B
-            }
-            else if (joystickInput == "Joy-Key1(X)") {
-                report.wButtons = XUSB_GAMEPAD_X; // Press Button X
-            }
-            else if (joystickInput == "Joy-Key1(Y)") {
-                report.wButtons = XUSB_GAMEPAD_Y; // Press Button Y
-            }
-            else if (joystickInput == "Joy-Release") {
-                report.wButtons = 0; // Release Buttons
-            }
+#endif
+        }
+    }
+}
 
-            vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, report);
+void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
+{
+    if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[ViGEmClient]" << " Joystick Button Release [" << joystickButton << "]";
+#endif
+        if (ViGEmButtonMap.contains(joystickButton)) {
+            VIGEM_API VIGEM_ERROR error;
+            XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
+
+            s_ViGEmTarget_Report.wButtons = s_ViGEmTarget_Report.wButtons & ~button;
+
+            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+            if (error != VIGEM_ERROR_NONE) {
+                qDebug("[ViGEmClient] Button Release Return code: 0x%08X", error);
+            }
+#endif
         }
     }
 }
@@ -1467,6 +1508,41 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
             else{
             }
+
+#ifdef VIGEM_CLIENT_SUPPORT
+            if ("Up" == keycodeString) {
+                if (WM_KEYDOWN == wParam) {
+                    ViGEmClient_PressButton("Joy-Key5(LB)");
+                }
+                else {
+                    ViGEmClient_ReleaseButton("Joy-Key5(LB)");
+                }
+            }
+            else if ("Down" == keycodeString) {
+                if (WM_KEYDOWN == wParam) {
+                    ViGEmClient_PressButton("Joy-Key6(RB)");
+                }
+                else {
+                    ViGEmClient_ReleaseButton("Joy-Key6(RB)");
+                }
+            }
+            else if ("Left" == keycodeString) {
+                if (WM_KEYDOWN == wParam) {
+                    ViGEmClient_PressButton("Joy-Key7(Back)");
+                }
+                else {
+                    ViGEmClient_ReleaseButton("Joy-Key7(Back)");
+                }
+            }
+            else if ("Right" == keycodeString) {
+                if (WM_KEYDOWN == wParam) {
+                    ViGEmClient_PressButton("Joy-Key8(Start)");
+                }
+                else {
+                    ViGEmClient_ReleaseButton("Joy-Key8(Start)");
+                }
+            }
+#endif
         }
         else {
             if (WM_KEYDOWN == wParam){
@@ -1494,40 +1570,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         }
 
         if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
-#ifdef VIGEM_CLIENT_SUPPORT
-            if ("I" == keycodeString) {
-                if (keyupdown = KEY_DOWN) {
-                    ViGEmClient_SendJoyStickInput("Joy-Key1(A)");
-                }
-                else {
-                    ViGEmClient_SendJoyStickInput("Joy-Release");
-                }
-            }
-            else if ("O" == keycodeString) {
-                if (keyupdown = KEY_DOWN) {
-                    ViGEmClient_SendJoyStickInput("Joy-Key1(B)");
-                }
-                else {
-                    ViGEmClient_SendJoyStickInput("Joy-Release");
-                }
-            }
-            else if ("K" == keycodeString) {
-                if (keyupdown = KEY_DOWN) {
-                    ViGEmClient_SendJoyStickInput("Joy-Key1(X)");
-                }
-                else {
-                    ViGEmClient_SendJoyStickInput("Joy-Release");
-                }
-            }
-            else if ("L" == keycodeString) {
-                if (keyupdown = KEY_DOWN) {
-                    ViGEmClient_SendJoyStickInput("Joy-Key1(Y)");
-                }
-                else {
-                    ViGEmClient_SendJoyStickInput("Joy-Release");
-                }
-            }
-#endif
             int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
             returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
@@ -2226,6 +2268,41 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_UP,    JOYSTICK_DPAD_R_UP              );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
 }
+
+#ifdef VIGEM_CLIENT_SUPPORT
+void QKeyMapper_Worker::initViGEmKeyMap()
+{
+    /* ViGEm Virtual Joystick Buttons */
+    ViGEmButtonMap.insert("Joy-Key1(A)"                   ,   XUSB_GAMEPAD_A                );
+    ViGEmButtonMap.insert("Joy-Key2(B)"                   ,   XUSB_GAMEPAD_B                );
+    ViGEmButtonMap.insert("Joy-Key3(X)"                   ,   XUSB_GAMEPAD_X                );
+    ViGEmButtonMap.insert("Joy-Key4(Y)"                   ,   XUSB_GAMEPAD_Y                );
+    ViGEmButtonMap.insert("Joy-Key5(LB)"                  ,   XUSB_GAMEPAD_LEFT_SHOULDER    );
+    ViGEmButtonMap.insert("Joy-Key6(RB)"                  ,   XUSB_GAMEPAD_RIGHT_SHOULDER   );
+    ViGEmButtonMap.insert("Joy-Key7(Back)"                ,   XUSB_GAMEPAD_BACK             );
+    ViGEmButtonMap.insert("Joy-Key8(Start)"               ,   XUSB_GAMEPAD_START            );
+    ViGEmButtonMap.insert("Joy-Key9(LS-Click)"            ,   XUSB_GAMEPAD_LEFT_THUMB       );
+    ViGEmButtonMap.insert("Joy-Key10(RS-Click)"           ,   XUSB_GAMEPAD_RIGHT_THUMB      );
+    /* ViGEm Virtual Joystick DPad Direction */
+    ViGEmButtonMap.insert("Joy-DPad-Up"                   ,   XUSB_GAMEPAD_DPAD_UP          );
+    ViGEmButtonMap.insert("Joy-DPad-Down"                 ,   XUSB_GAMEPAD_DPAD_DOWN        );
+    ViGEmButtonMap.insert("Joy-DPad-Left"                 ,   XUSB_GAMEPAD_DPAD_LEFT        );
+    ViGEmButtonMap.insert("Joy-DPad-Right"                ,   XUSB_GAMEPAD_DPAD_RIGHT       );
+
+//    ViGEmButtonMap.insert("Joy-Key11(LT)"                 ,   XUSB_GAMEPAD_LEFT_THUMB       );
+//    ViGEmButtonMap.insert("Joy-Key12(RT)"                 ,   XUSB_GAMEPAD_RIGHT_THUMB      );
+//    /* Joystick Left-Stick Direction */
+//    JoyStickKeyMap.insert("Joy-LS-Up"                     ,   (int)JOYSTICK_LS_UP             );
+//    JoyStickKeyMap.insert("Joy-LS-Down"                   ,   (int)JOYSTICK_LS_DOWN           );
+//    JoyStickKeyMap.insert("Joy-LS-Left"                   ,   (int)JOYSTICK_LS_LEFT           );
+//    JoyStickKeyMap.insert("Joy-LS-Right"                  ,   (int)JOYSTICK_LS_RIGHT          );
+//    /* Joystick Right-Stick Direction */
+//    JoyStickKeyMap.insert("Joy-RS-Up"                     ,   (int)JOYSTICK_RS_UP             );
+//    JoyStickKeyMap.insert("Joy-RS-Down"                   ,   (int)JOYSTICK_RS_DOWN           );
+//    JoyStickKeyMap.insert("Joy-RS-Left"                   ,   (int)JOYSTICK_RS_LEFT           );
+//    JoyStickKeyMap.insert("Joy-RS-Right"                  ,   (int)JOYSTICK_RS_RIGHT          );
+}
+#endif
 
 void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
 {
