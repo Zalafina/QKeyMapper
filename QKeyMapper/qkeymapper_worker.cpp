@@ -672,17 +672,20 @@ void QKeyMapper_Worker::ViGEmClient_Disconnect()
         qDebug() << "[ViGEmClient]" << "ViGEmClient Disconnect() Success.";
 #endif
     }
+    s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 }
 
 void QKeyMapper_Worker::ViGEmClient_Free()
 {
     if (s_ViGEmClient != Q_NULLPTR) {
         vigem_free(s_ViGEmClient);
+        s_ViGEmClient = Q_NULLPTR;
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[ViGEmClient]" << "ViGEmClient Free() Success.";
 #endif
     }
+    s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 }
 
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)

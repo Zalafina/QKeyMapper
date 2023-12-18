@@ -253,6 +253,14 @@ private:
     void extractSoundFiles();
     void playStartSound();
 
+#ifdef VIGEM_CLIENT_SUPPORT
+    void updateViGEmBusLabelDisplay(void);
+    int installViGEmBusDriver(void);
+    int uninstallViGEmBusDriver(void);
+public slots:
+    Q_INVOKABLE void reconnectViGEmClient(void);
+#endif
+
 public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;

@@ -105,7 +105,11 @@ static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
 static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 static const char *SETTINGSELECTLABEL_CHINESE = "设定选择";
+static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
+static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
+static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus驱动";
+static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus驱动";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动开始映射";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
@@ -135,7 +139,11 @@ static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 static const char *SETTINGSELECTLABEL_ENGLISH = "SettingSelect";
+static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmBus Unavailable";
+static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmBus Available";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
+static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "Install ViGEmBus";
+static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "Auto Start Mapping";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
@@ -273,8 +281,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #ifdef VIGEM_CLIENT_SUPPORT
     int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+    Q_UNUSED(retval_alloc);
+    Q_UNUSED(retval_connect);
 
-    if (retval_alloc !=0 || retval_connect !=0) {
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
         ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
 #ifdef DEBUG_LOGOUT_ON
@@ -2210,6 +2220,16 @@ void QKeyMapper::setControlFontEnglish()
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(10);
+    }
+    else {
+        customFont.setPointSize(9);
+    }
+    ui->installViGEmBusButton->setFont(customFont);
+    ui->uninstallViGEmBusButton->setFont(customFont);
+    ui->enableVirtualJoystickCheckBox->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
     }
     else {
@@ -2218,7 +2238,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
-    ui->enableVirtualJoystickCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -2254,6 +2273,8 @@ void QKeyMapper::setControlFontChinese()
     ui->burstrelease_msLabel->setFont(customFont);
     ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
+    ui->installViGEmBusButton->setFont(customFont);
+    ui->uninstallViGEmBusButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
 
@@ -2300,6 +2321,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
     ui->removeSettingButton->setEnabled(status);
+    ui->installViGEmBusButton->setEnabled(status);
+    ui->uninstallViGEmBusButton->setEnabled(status);
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
     ui->nextarrowCheckBox->setEnabled(status);
@@ -2355,6 +2378,197 @@ void QKeyMapper::playStartSound()
 #endif
     }
 }
+
+#ifdef VIGEM_CLIENT_SUPPORT
+void QKeyMapper::updateViGEmBusLabelDisplay()
+{
+    int languageIndex = ui->languageComboBox->currentIndex();
+
+    if (LANGUAGE_ENGLISH == languageIndex) {
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH);
+        }
+        else {
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH);
+        }
+    }
+    else {
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE);
+        }
+        else {
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE);
+        }
+    }
+}
+
+int QKeyMapper::installViGEmBusDriver()
+{
+    QString operate_str = QString("runas");
+    QString executable_str = QString("ViGEmBusDriver\\nefconw.exe");
+    QString remove_old_devnode1_argument_str = QString("--remove-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
+    QString remove_old_devnode2_argument_str = QString("--remove-device-node --hardware-id Root\\ViGEmBus --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
+    QString create_devnode_argument_str = QString("--create-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
+    QString install_argument_str = QString("--install-driver --inf-path \"ViGEmBusDriver\\ViGEmBus.inf\"");
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* ViGEMBus Remove Old Device Node 1 */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = remove_old_devnode1_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove Old ViGEmBus Device Node 1 Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove Old ViGEmBus Device Node 1 Failed!!! ->" << ret;
+#endif
+    }
+
+    /* ViGEMBus Remove Old Device Node 2 */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = remove_old_devnode2_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove Old ViGEmBus Device Node 2 Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove Old ViGEmBus Device Node 2 Failed!!! ->" << ret;
+#endif
+    }
+
+    /* ViGEMBus Create Device Node */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = create_devnode_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Create ViGEmBus Device Node Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Create ViGEmBus Device Node Failed!!! ->" << ret;
+#endif
+    }
+
+
+    /* ViGEMBus Install Inf Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = install_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Install ViGEmBus INF Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Install ViGEmBus INF Driver Failed!!! ->" << ret;
+#endif
+    }
+
+    return 0;
+}
+
+int QKeyMapper::uninstallViGEmBusDriver()
+{
+    QString operate_str = QString("runas");
+    QString executable_str = QString("ViGEmBusDriver\\nefconw.exe");
+    QString remove_devnode_argument_str = QString("--remove-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
+    QString uninstall_argument_str = QString("--uninstall-driver --inf-path \"ViGEmBusDriver\\ViGEmBus.inf\"");
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* ViGEMBus Uninstall Inf Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = uninstall_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Failed!!! ->" << ret;
+#endif
+    }
+
+    /* ViGEMBus Remove Device Node */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = remove_devnode_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Failed!!! ->" << ret;
+#endif
+    }
+
+    return 0;
+}
+
+void QKeyMapper::reconnectViGEmClient()
+{
+    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+    Q_UNUSED(retval_connect);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[reconnectViGEmClient]" << "ViGEmClient Connect State ->" << QKeyMapper_Worker::s_ViGEmClient_ConnectState;
+#endif
+
+    updateViGEmBusLabelDisplay();
+
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
+        ui->enableVirtualJoystickCheckBox->setEnabled(true);
+    }
+    else {
+        ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    }
+}
+#endif
 
 void QKeyMapper::on_savemaplistButton_clicked()
 {
@@ -2862,6 +3076,9 @@ void QKeyMapper::reloadUILanguage()
         setUILanguage_Chinese();
     }
 
+#ifdef VIGEM_CLIENT_SUPPORT
+    updateViGEmBusLabelDisplay();
+#endif
 }
 
 void QKeyMapper::setUILanguage_Chinese()
@@ -2890,6 +3107,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
+    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
+    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
@@ -2915,6 +3134,7 @@ void QKeyMapper::setUILanguage_English()
     else {
         ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
     }
+
     ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
@@ -2930,6 +3150,8 @@ void QKeyMapper::setUILanguage_English()
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
+    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
+    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
@@ -3597,6 +3819,18 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
     qDebug() << "Install ViGEm Bus.";
 #endif
 
+    if (QKeyMapper_Worker::s_ViGEmClient == Q_NULLPTR) {
+        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+        if (retval_alloc != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[on_installViGEmBusButton_clicked] ViGEmClient Alloc Failed!!! -> retval_alloc(%d)", retval_alloc);
+#endif
+        }
+    }
+
+    (void)installViGEmBusDriver();
+
+    QTimer::singleShot(5000, this, SLOT(reconnectViGEmClient()));
 #endif
 }
 
@@ -3609,6 +3843,15 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     qDebug() << "Uninstall ViGEm Bus.";
 #endif
 
+    QKeyMapper_Worker::ViGEmClient_Remove();
+    QKeyMapper_Worker::ViGEmClient_Disconnect();
+    QKeyMapper_Worker::ViGEmClient_Free();
+
+    updateViGEmBusLabelDisplay();
+    ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+    ui->enableVirtualJoystickCheckBox->setEnabled(false);
+
+    (void)uninstallViGEmBusDriver();
 #endif
 }
 

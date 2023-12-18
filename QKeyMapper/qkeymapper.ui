@@ -1264,9 +1264,9 @@
   <widget class="QCheckBox" name="enableVirtualJoystickCheckBox">
    <property name="geometry">
     <rect>
-     <x>560</x>
+     <x>530</x>
      <y>590</y>
-     <width>161</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -1283,9 +1283,9 @@
   <widget class="QPushButton" name="installViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>660</x>
      <y>590</y>
-     <width>121</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
@@ -1302,9 +1302,9 @@
   <widget class="QPushButton" name="uninstallViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>870</x>
+     <x>780</x>
      <y>590</y>
-     <width>121</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
@@ -1316,6 +1316,28 @@
    </property>
    <property name="autoDefault">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ViGEmBusStatusLabel">
+   <property name="geometry">
+    <rect>
+     <x>900</x>
+     <y>590</y>
+     <width>121</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::WinPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
   </widget>
   <zorder>keymapButton</zorder>
@@ -1353,6 +1375,7 @@
   <zorder>enableVirtualJoystickCheckBox</zorder>
   <zorder>installViGEmBusButton</zorder>
   <zorder>uninstallViGEmBusButton</zorder>
+  <zorder>ViGEmBusStatusLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
