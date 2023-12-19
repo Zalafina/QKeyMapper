@@ -621,6 +621,12 @@ int QKeyMapper_Worker::ViGEmClient_Add()
         return -1;
     }
 
+    if (s_ViGEmTarget != Q_NULLPTR && vigem_target_is_attached(s_ViGEmTarget)) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[ViGEmClient_Add]" << "ViGEmTarget is already Attached!!!";
+#endif
+    }
+
     s_ViGEmTarget = vigem_target_x360_alloc();
 
     //
@@ -633,6 +639,7 @@ int QKeyMapper_Worker::ViGEmClient_Add()
     //
     if (!VIGEM_SUCCESS(pir))
     {
+        s_ViGEmTarget = Q_NULLPTR;
 #ifdef DEBUG_LOGOUT_ON
         qWarning("[ViGEmClient_Add] Target plugin failed with error code: 0x%08X", pir);
 #endif

@@ -343,9 +343,9 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>55</x>
+     <x>80</x>
      <y>590</y>
-     <width>161</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>

@@ -48,7 +48,7 @@ static const int UI_SCALE_4K_PERCENT_125 = 8;
 static const int UI_SCALE_4K_PERCENT_150 = 9;
 
 #ifdef VIGEM_CLIENT_SUPPORT
-static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 1000;
+static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 3000;
 #endif
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
@@ -64,6 +64,7 @@ static const char *MAPPINGSWITCH_KEYSEQ_DEFAULT   = "Ctrl+F6";
 static const char *LANGUAGE_INDEX = "LanguageIndex";
 static const char *SETTINGSELECT = "SettingSelect";
 static const char *AUTO_STARTUP = "AutoStartup";
+static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
 static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
 
@@ -308,6 +309,17 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Q_UNUSED(loadresult);
     reloadUILanguage();
     resetFontSize();
+
+#ifdef VIGEM_CLIENT_SUPPORT
+//    if (ui->enableVirtualJoystickCheckBox->checkState() == Qt::Checked) {
+//        int retval_add = QKeyMapper_Worker::ViGEmClient_Add();
+
+//        if (retval_add != 0 || QKeyMapper_Worker::s_ViGEmTarget == Q_NULLPTR) {
+//            QKeyMapper_Worker::ViGEmClient_Remove();
+//            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+//        }
+//    }
+#endif
 
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
@@ -1709,6 +1721,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
 
+    if (true == settingFile.contains(VIRTUALJOYSTICK_ENABLE)){
+        bool virtualjoystickenableChecked = settingFile.value(VIRTUALJOYSTICK_ENABLE).toBool();
+        if (true == virtualjoystickenableChecked) {
+            ui->enableVirtualJoystickCheckBox->setChecked(true);
+        }
+        else {
+            ui->enableVirtualJoystickCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Virtual Joystick Enable Checkbox ->" << virtualjoystickenableChecked;
+#endif
+    }
+    else {
+        ui->enableVirtualJoystickCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualJoystickEnable, VirtualJoystickEnable set to Unchecked.";
+#endif
+    }
+
     QString settingSelectStr;
 
     ui->settingselectComboBox->clear();
@@ -2324,7 +2355,7 @@ void QKeyMapper::setControlFontChinese()
     ui->autoStartupCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(12);
+        customFont.setPointSize(11);
     }
     else {
         customFont.setPointSize(9);
@@ -2799,9 +2830,9 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
     int original_key_width = ui->keymapdataTable->width()/4;
-    int burst_mode_width = ui->keymapdataTable->width()/5 - 35;
-    int lock_width = ui->keymapdataTable->width()/5 - 20;
-    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 2;
+    int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
+    int lock_width = ui->keymapdataTable->width()/5 - 40;
+    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
     ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
     ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
     ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
@@ -3209,13 +3240,6 @@ void QKeyMapper::setUILanguage_English()
 void QKeyMapper::resetFontSize()
 {
     ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
-    ui->nameLineEdit->setFont(QFont("Arial", 9));
-    ui->titleLineEdit->setFont(QFont("Arial", 9));
-    ui->languageComboBox->setFont(QFont("Arial", 9));
-    m_orikeyComboBox->setFont(QFont("Arial", 9));
-    m_mapkeyComboBox->setFont(QFont("Arial", 9));
-    ui->settingselectComboBox->setFont(QFont("Arial", 9));
-    m_mappingswitchKeySeqEdit->setFont(QFont("Arial", 9));
 
     if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
         || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
@@ -3224,55 +3248,32 @@ void QKeyMapper::resetFontSize()
         || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
         || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
 
-//        QFontInfo fontinfo = ui->nameLineEdit->fontInfo();
-//        if (fontinfo.pointSize() > 10) {
-//            ui->nameLineEdit->setFont(QFont(fontinfo.family(), 10));
-//        }
+        ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
 
-//        fontinfo = ui->titleLineEdit->fontInfo();
-//        if (fontinfo.pointSize() > 10) {
-//            ui->titleLineEdit->setFont(QFont(fontinfo.family(), 10));
-//        }
+        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 10));
+        ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 10));
+    }
+    else {
+        ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 10));
+        ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 10));
+        ui->languageComboBox->setFont(QFont("Microsoft YaHei", 10));
+        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 10));
+        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 10));
+        m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 10));
 
-//        QFontInfo fontinfo = ui->languageComboBox->fontInfo();
-//        if (fontinfo.pointSize() > 10) {
-//            ui->languageComboBox->setFont(QFont(fontinfo.family(), 10));
-//        }
-
-        QFontInfo fontinfo = ui->burstpressComboBox->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->burstpressComboBox->setFont(QFont(fontinfo.family(), 10));
-        }
-
-        fontinfo = ui->burstreleaseComboBox->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->burstreleaseComboBox->setFont(QFont(fontinfo.family(), 10));
-        }
-
-//        fontinfo = m_orikeyComboBox->fontInfo();
-//        if (fontinfo.pointSize() > 10) {
-//            m_orikeyComboBox->setFont(QFont(fontinfo.family(), 10));
-//        }
-
-//        fontinfo = m_mapkeyComboBox->fontInfo();
-//        if (fontinfo.pointSize() > 10) {
-//            m_mapkeyComboBox->setFont(QFont(fontinfo.family(), 10));
-//        }
-
-        fontinfo = ui->settingselectComboBox->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->settingselectComboBox->setFont(QFont(fontinfo.family(), 10));
-        }
-
-        fontinfo = ui->processinfoTable->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->processinfoTable->setFont(QFont(fontinfo.family(), 10));
-        }
-
-        fontinfo = ui->keymapdataTable->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->keymapdataTable->setFont(QFont(fontinfo.family(), 10));
-        }
+        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 10));
+        ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 10));
     }
 }
 
@@ -3841,6 +3842,9 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 #endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
+    bool checked = false;
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
     if (Qt::Checked == state) {
         int retval = QKeyMapper_Worker::ViGEmClient_Add();
 
@@ -3850,9 +3854,20 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
             qWarning() << "[EnableVirtualJoystick] Enable Virtual Joystick failed!!!";
 #endif
         }
+        else {
+            checked = true;
+        }
     }
     else {
         QKeyMapper_Worker::ViGEmClient_Remove();
+        checked = false;
+    }
+
+    if (true == checked && QKeyMapper_Worker::s_ViGEmTarget != Q_NULLPTR) {
+        settingFile.setValue(VIRTUALJOYSTICK_ENABLE , true);
+    }
+    else {
+        settingFile.setValue(VIRTUALJOYSTICK_ENABLE , false);
     }
 #endif
 }
