@@ -310,17 +310,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     reloadUILanguage();
     resetFontSize();
 
-#ifdef VIGEM_CLIENT_SUPPORT
-//    if (ui->enableVirtualJoystickCheckBox->checkState() == Qt::Checked) {
-//        int retval_add = QKeyMapper_Worker::ViGEmClient_Add();
-
-//        if (retval_add != 0 || QKeyMapper_Worker::s_ViGEmTarget == Q_NULLPTR) {
-//            QKeyMapper_Worker::ViGEmClient_Remove();
-//            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
-//        }
-//    }
-#endif
-
     QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
     QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(cellChanged_slot(int,int)));
@@ -2580,24 +2569,6 @@ int QKeyMapper::uninstallViGEmBusDriver()
     HINSTANCE ret_instance;
     INT64 ret;
 
-    /* ViGEMBus Uninstall Inf Driver */
-    operate = operate_str.toStdWString();
-    executable = executable_str.toStdWString();
-    argument = uninstall_argument_str.toStdWString();
-
-    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
-    ret = (INT64)ret_instance;
-    if(ret > 32) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Success. ->" << ret;
-#endif
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Failed!!! ->" << ret;
-#endif
-    }
-
     /* ViGEMBus Remove Device Node */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
@@ -2613,6 +2584,24 @@ int QKeyMapper::uninstallViGEmBusDriver()
     else {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Failed!!! ->" << ret;
+#endif
+    }
+
+    /* ViGEMBus Uninstall Inf Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = uninstall_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Failed!!! ->" << ret;
 #endif
     }
 

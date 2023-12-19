@@ -625,6 +625,7 @@ int QKeyMapper_Worker::ViGEmClient_Add()
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[ViGEmClient_Add]" << "ViGEmTarget is already Attached!!!";
 #endif
+        return 0;
     }
 
     s_ViGEmTarget = vigem_target_x360_alloc();
