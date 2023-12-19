@@ -47,6 +47,8 @@ static const int UI_SCALE_4K_PERCENT_100 = 7;
 static const int UI_SCALE_4K_PERCENT_125 = 8;
 static const int UI_SCALE_4K_PERCENT_150 = 9;
 
+static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 1000;
+
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
@@ -3830,7 +3832,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
 
     (void)installViGEmBusDriver();
 
-    QTimer::singleShot(5000, this, SLOT(reconnectViGEmClient()));
+    QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
 #endif
 }
 
