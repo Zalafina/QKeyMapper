@@ -1,9 +1,10 @@
 # QKeyMapper
 ---------------
-## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231125)新增游戏手柄按键支持。
+## 在Win10和Win11下可以正常使用的键盘映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231219)新增游戏手柄按键和虚拟游戏手柄支持。
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 注意: 使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
-### 注意: 1.3.6版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
+### 注意: v1.3.6(Build 20231125)版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
+### 注意: v1.3.6(Build 20231219)版本新添加的虚拟游戏手柄功能需要安装ViGEmBus驱动，反复安装和卸载ViGEmBus驱动后尝试启用/关闭虚拟游戏手柄有蓝屏系统重启风险，请慎重使用此功能(来回折腾导致蓝屏系统重启不要怪我)。如果软件上的"安装ViGEmBus"按钮无法正常安装驱动，也可以使用软件压缩包中附带的"ViGEmBus_1.22.0_x64_x86_arm64.exe" 驱动安装程序自己手动安装 ViGEmBus驱动。
 ---------------
 ## 使用教学视频请点击下方图片
 [![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
@@ -36,12 +37,14 @@
 22. v1.3.5(Build 20230805) -> 添加可以直接在任意状态下切换映射开始和停止的快捷键，按下"Ctrl + F6"快捷键，无论在前台或者托盘显示状态都可以在开始映射和停止映射状态之间立即切换。
 23. v1.3.5(Build 20230806) -> 切换映射开始和停止的快捷键，可以通过KeySequenceEdit控件进行自定义设置，鼠标点击KeySequenceEdit控件后按下想要设置的快捷键，此自定义快捷键设置每个配置可以保存设置不同值。
 24. v1.3.6(Build 20231125) -> 添加了将游戏手柄按键作为原始按键映射到键盘按键的功能，原始按键列表中选择"Joy"开头的按键，映射按键选择想触发的键盘按键即可。
+25. v1.3.6(Build 20231219) -> 添加了虚拟手柄功能(通过ViGEmBus实现)，点击"安装ViGEmBus"，显示绿色字"ViGEmBus可用"之后，勾选"启用虚拟手柄"，之后可以将键盘按键映射到"vJoy"开头的虚拟手柄按键。
 ---------------
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6，v1.2.8 and later Releases will build by Qt6，v1.3.6(Build 20231125) add joystick keys support.
 ---------------
 ### Qt6 version is recommended for Win10 and Win11 OS, and the provision of Qt5 version is only for compatibility with Win7 OS. If the Qt6 version could not be used under Win7, please download the Qt5 version for it.
 ### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/en-us/download/confirmation.aspx?id=48145
 ### Note: Version 1.3.6 has changed the names of mouse buttons stored in the ini configuration file. If you select settings stored before version 1.3.6 that include mouse buttons, there may be loading errors. If the error tolerance handling added by the software does not take effect, you can try to manually replace L-Mouse, R-Mouse, M-Mouse, X1-Mouse, X2-Mouse with Mouse-L, Mouse-R, Mouse-M, Mouse-X1, Mouse-X2 in the ini file.
+### Note: The newly added virtual gamepad feature in version v1.3.6(Build 20231219) requires the installation of the ViGEmBus driver. Repeatedly installing and uninstalling the ViGEmBus driver and attempting to enable/disable the virtual gamepad carries a risk of a blue screen system restart, so please use this feature with caution (don't blame me for blue screen system restarts caused by back and forth tinkering). If the "Install ViGEmBus" button in the software cannot install the driver normally, you can also manually install the ViGEmBus driver using the "ViGEmBus_1.22.0_x64_x86_arm64.exe" driver installer included in the software package.
 ---------------
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
@@ -68,6 +71,7 @@
 22. v1.3.5(Build 20230805) -> Added a shortcut key that allows you to switch the mapping start and stop states directly in any state. Press the "Ctrl + F6" shortcut key, and you can immediately switch between the mapping start and stop states whether in the foreground or in the tray display state.
 23. v1.3.5(Build 20230806) -> The shortcut key for switching the mapping start and stop states can be customized through the KeySequenceEdit control. After clicking the KeySequenceEdit control with the mouse, press the desired shortcut key to set it. This custom shortcut key setting can save different values for each configuration.
 24. v1.3.6(Build 20231125) -> Added the feature to map gamepad buttons as original keys to keyboard keys. Select the keys starting with "Joy" from the original key list, and choose the keyboard key you want to trigger as the mapped key from the mapping key list.
+25. v1.3.6(Build 20231219) -> Added virtual gamepad functionality (implemented through ViGEmBus). Click "Install ViGEmBus", and once the green text "ViGEmBus Available" appears, check "Enable Virtual Gamepad". After that, you can map keyboard keys to virtual gamepad keys starting with "vJoy".
 ---------------
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
