@@ -47,7 +47,9 @@ static const int UI_SCALE_4K_PERCENT_100 = 7;
 static const int UI_SCALE_4K_PERCENT_125 = 8;
 static const int UI_SCALE_4K_PERCENT_150 = 9;
 
+#ifdef VIGEM_CLIENT_SUPPORT
 static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 1000;
+#endif
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
@@ -110,8 +112,8 @@ static const char *SETTINGSELECTLABEL_CHINESE = "设定选择";
 static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
 static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
-static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus驱动";
-static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus驱动";
+static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
+static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动开始映射";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
@@ -149,7 +151,7 @@ static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "Auto Start Mapping";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Enable Virtual Joystick";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Joystick";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
@@ -293,6 +295,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
 #endif
     }
+#else
+    ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+    ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    ui->installViGEmBusButton->setEnabled(false);
+    ui->uninstallViGEmBusButton->setEnabled(false);
+    ui->ViGEmBusStatusLabel->setEnabled(false);
 #endif
 
     initKeyMappingDataTable();
@@ -324,6 +332,12 @@ QKeyMapper::~QKeyMapper()
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper() called.";
+#endif
+
+#ifdef VIGEM_CLIENT_SUPPORT
+    QKeyMapper_Worker::ViGEmClient_Remove();
+    QKeyMapper_Worker::ViGEmClient_Disconnect();
+    QKeyMapper_Worker::ViGEmClient_Free();
 #endif
 
     delete m_orikeyComboBox;
@@ -2216,7 +2230,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
-    ui->mappingswitchkeyLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -2225,21 +2238,30 @@ void QKeyMapper::setControlFontEnglish()
         customFont.setPointSize(10);
     }
     else {
-        customFont.setPointSize(9);
+        customFont.setPointSize(8);
     }
+    ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
+    ui->ViGEmBusStatusLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
     }
     else {
-        customFont.setPointSize(10);
+        customFont.setPointSize(8);
     }
-    ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(10);
+    }
+    else {
+        customFont.setPointSize(8);
+    }
+    ui->disableWinKeyCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -2275,13 +2297,22 @@ void QKeyMapper::setControlFontChinese()
     ui->burstrelease_msLabel->setFont(customFont);
     ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
-    ui->installViGEmBusButton->setFont(customFont);
-    ui->uninstallViGEmBusButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
-    ui->mappingswitchkeyLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(11);
+    }
+    else {
+        customFont.setPointSize(8);
+    }
+    ui->mappingswitchkeyLabel->setFont(customFont);
+    ui->installViGEmBusButton->setFont(customFont);
+    ui->uninstallViGEmBusButton->setFont(customFont);
+    ui->enableVirtualJoystickCheckBox->setFont(customFont);
+    ui->ViGEmBusStatusLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -2289,10 +2320,16 @@ void QKeyMapper::setControlFontChinese()
     else {
         customFont.setPointSize(10);
     }
-    ui->disableWinKeyCheckBox->setFont(customFont);
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
-    ui->enableVirtualJoystickCheckBox->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(12);
+    }
+    else {
+        customFont.setPointSize(9);
+    }
+    ui->disableWinKeyCheckBox->setFont(customFont);
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -3172,6 +3209,13 @@ void QKeyMapper::setUILanguage_English()
 void QKeyMapper::resetFontSize()
 {
     ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
+    ui->nameLineEdit->setFont(QFont("Arial", 9));
+    ui->titleLineEdit->setFont(QFont("Arial", 9));
+    ui->languageComboBox->setFont(QFont("Arial", 9));
+    m_orikeyComboBox->setFont(QFont("Arial", 9));
+    m_mapkeyComboBox->setFont(QFont("Arial", 9));
+    ui->settingselectComboBox->setFont(QFont("Arial", 9));
+    m_mappingswitchKeySeqEdit->setFont(QFont("Arial", 9));
 
     if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
         || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
@@ -3179,22 +3223,23 @@ void QKeyMapper::resetFontSize()
         || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
         || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
         || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-        QFontInfo fontinfo = ui->nameLineEdit->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->nameLineEdit->setFont(QFont(fontinfo.family(), 10));
-        }
 
-        fontinfo = ui->titleLineEdit->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->titleLineEdit->setFont(QFont(fontinfo.family(), 10));
-        }
+//        QFontInfo fontinfo = ui->nameLineEdit->fontInfo();
+//        if (fontinfo.pointSize() > 10) {
+//            ui->nameLineEdit->setFont(QFont(fontinfo.family(), 10));
+//        }
 
-        fontinfo = ui->languageComboBox->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            ui->languageComboBox->setFont(QFont(fontinfo.family(), 10));
-        }
+//        fontinfo = ui->titleLineEdit->fontInfo();
+//        if (fontinfo.pointSize() > 10) {
+//            ui->titleLineEdit->setFont(QFont(fontinfo.family(), 10));
+//        }
 
-        fontinfo = ui->burstpressComboBox->fontInfo();
+//        QFontInfo fontinfo = ui->languageComboBox->fontInfo();
+//        if (fontinfo.pointSize() > 10) {
+//            ui->languageComboBox->setFont(QFont(fontinfo.family(), 10));
+//        }
+
+        QFontInfo fontinfo = ui->burstpressComboBox->fontInfo();
         if (fontinfo.pointSize() > 10) {
             ui->burstpressComboBox->setFont(QFont(fontinfo.family(), 10));
         }
@@ -3204,15 +3249,15 @@ void QKeyMapper::resetFontSize()
             ui->burstreleaseComboBox->setFont(QFont(fontinfo.family(), 10));
         }
 
-        fontinfo = m_orikeyComboBox->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            m_orikeyComboBox->setFont(QFont(fontinfo.family(), 10));
-        }
+//        fontinfo = m_orikeyComboBox->fontInfo();
+//        if (fontinfo.pointSize() > 10) {
+//            m_orikeyComboBox->setFont(QFont(fontinfo.family(), 10));
+//        }
 
-        fontinfo = m_mapkeyComboBox->fontInfo();
-        if (fontinfo.pointSize() > 10) {
-            m_mapkeyComboBox->setFont(QFont(fontinfo.family(), 10));
-        }
+//        fontinfo = m_mapkeyComboBox->fontInfo();
+//        if (fontinfo.pointSize() > 10) {
+//            m_mapkeyComboBox->setFont(QFont(fontinfo.family(), 10));
+//        }
 
         fontinfo = ui->settingselectComboBox->fontInfo();
         if (fontinfo.pointSize() > 10) {

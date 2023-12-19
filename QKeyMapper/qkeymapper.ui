@@ -1283,7 +1283,7 @@
   <widget class="QPushButton" name="installViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>660</x>
+     <x>640</x>
      <y>590</y>
      <width>101</width>
      <height>21</height>
@@ -1302,9 +1302,9 @@
   <widget class="QPushButton" name="uninstallViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>780</x>
+     <x>760</x>
      <y>590</y>
-     <width>101</width>
+     <width>111</width>
      <height>21</height>
     </rect>
    </property>
@@ -1321,9 +1321,9 @@
   <widget class="QLabel" name="ViGEmBusStatusLabel">
    <property name="geometry">
     <rect>
-     <x>900</x>
+     <x>890</x>
      <y>590</y>
-     <width>121</width>
+     <width>141</width>
      <height>21</height>
     </rect>
    </property>
