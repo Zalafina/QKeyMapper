@@ -37,7 +37,7 @@
 22. v1.3.5(Build 20230805) -> 添加可以直接在任意状态下切换映射开始和停止的快捷键，按下"Ctrl + F6"快捷键，无论在前台或者托盘显示状态都可以在开始映射和停止映射状态之间立即切换。
 23. v1.3.5(Build 20230806) -> 切换映射开始和停止的快捷键，可以通过KeySequenceEdit控件进行自定义设置，鼠标点击KeySequenceEdit控件后按下想要设置的快捷键，此自定义快捷键设置每个配置可以保存设置不同值。
 24. v1.3.6(Build 20231125) -> 添加了将游戏手柄按键作为原始按键映射到键盘按键的功能，原始按键列表中选择"Joy"开头的按键，映射按键选择想触发的键盘按键即可。
-25. v1.3.6(Build 20231220) -> 添加了虚拟手柄功能(通过ViGEmBus实现)，点击"安装ViGEmBus"，显示绿色字"ViGEmBus可用"之后，勾选"启用虚拟手柄"，之后可以将键盘按键映射到"vJoy"开头的虚拟手柄按键。
+25. v1.3.6(Build 20231220) -> 添加了虚拟游戏手柄功能(通过ViGEmBus实现)，点击"安装ViGEmBus"，显示绿色字"ViGEmBus可用"之后，勾选"启用虚拟手柄"，之后可以将键盘按键映射到"vJoy"开头的虚拟手柄按键。
 ---------------
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6，v1.2.8 and later Releases will build by Qt6，v1.3.6(Build 20231125) add joystick keys support.
 ---------------
