@@ -3266,29 +3266,29 @@ void QKeyMapper::resetFontSize()
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 8));
-        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 8));
+        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
 
         ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 10));
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 10));
-        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 8));
-        ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 8));
+        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
+        ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
     }
     else {
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 10));
         ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 10));
         ui->languageComboBox->setFont(QFont("Microsoft YaHei", 10));
-        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 8));
-        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 8));
+        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 10));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 10));
 
         ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 10));
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 10));
-        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 8));
-        ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 8));
+        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
+        ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
     }
 }
 
