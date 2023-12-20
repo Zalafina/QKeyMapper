@@ -761,10 +761,27 @@ void QKeyMapper_Worker::ViGEmClient_Free()
 
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().noquote().nospace() << "[ViGEmClient]" << " Joystick Button Press [" << joystickButton << "]";
 #endif
+
+        if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[ViGEmClient_PressButton] ViGEmClient is not Connected(%d)!!! -> [0x%08X]", s_ViGEmClient_ConnectState, s_ViGEmClient);
+#endif
+            return;
+        }
+
+        if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[ViGEmClient_PressButton] ViGEmTarget is not Attached!!! -> [0x%08X]", s_ViGEmTarget);
+#endif
+            return;
+        }
+
         bool updateFlag = false;
         if (ViGEmButtonMap.contains(joystickButton)) {
             XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
@@ -833,10 +850,27 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
 
 void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().noquote().nospace() << "[ViGEmClient]" << " Joystick Button Release [" << joystickButton << "]";
 #endif
+
+        if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[ViGEmClient_ReleaseButton] ViGEmClient is not Connected(%d)!!! -> [0x%08X]", s_ViGEmClient_ConnectState, s_ViGEmClient);
+#endif
+            return;
+        }
+
+        if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[ViGEmClient_ReleaseButton] ViGEmTarget is not Attached!!! -> [0x%08X]", s_ViGEmTarget);
+#endif
+            return;
+        }
+
         bool updateFlag = false;
         if (ViGEmButtonMap.contains(joystickButton)) {
             XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);

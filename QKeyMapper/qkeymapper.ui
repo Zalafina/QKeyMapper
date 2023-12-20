@@ -207,7 +207,7 @@
   <widget class="QLabel" name="orikeyLabel">
    <property name="geometry">
     <rect>
-     <x>560</x>
+     <x>530</x>
      <y>390</y>
      <width>61</width>
      <height>22</height>
@@ -223,7 +223,7 @@
   <widget class="QLabel" name="mapkeyLabel">
    <property name="geometry">
     <rect>
-     <x>750</x>
+     <x>720</x>
      <y>390</y>
      <width>61</width>
      <height>22</height>
