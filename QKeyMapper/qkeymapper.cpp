@@ -335,12 +335,6 @@ QKeyMapper::~QKeyMapper()
     qDebug() << "~QKeyMapper() called.";
 #endif
 
-#ifdef VIGEM_CLIENT_SUPPORT
-    QKeyMapper_Worker::ViGEmClient_Remove();
-    QKeyMapper_Worker::ViGEmClient_Disconnect();
-    QKeyMapper_Worker::ViGEmClient_Free();
-#endif
-
     delete m_orikeyComboBox;
     m_orikeyComboBox = Q_NULLPTR;
     delete m_mapkeyComboBox;

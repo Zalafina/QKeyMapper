@@ -341,10 +341,15 @@ public:
     static int dinput_timerid;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
-    static VIGEM_API PVIGEM_CLIENT s_ViGEmClient;
-    static VIGEM_API PVIGEM_TARGET s_ViGEmTarget;
+    static PVIGEM_CLIENT s_ViGEmClient;
+    static PVIGEM_TARGET s_ViGEmTarget;
     static ViGEmClient_ConnectState s_ViGEmClient_ConnectState;
     static XUSB_REPORT s_ViGEmTarget_Report;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static QRecursiveMutex s_ViGEmClient_Mutex;
+#else
+    static QMutex s_ViGEmClient_Mutex;
+#endif
 #endif
 
 private:

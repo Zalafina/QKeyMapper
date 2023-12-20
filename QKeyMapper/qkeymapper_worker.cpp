@@ -83,10 +83,15 @@ GetDeviceDataT QKeyMapper_Worker::FuncPtrGetDeviceData = Q_NULLPTR;
 int QKeyMapper_Worker::dinput_timerid = 0;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
-VIGEM_API PVIGEM_CLIENT QKeyMapper_Worker::s_ViGEmClient = Q_NULLPTR;
-VIGEM_API PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
+PVIGEM_CLIENT QKeyMapper_Worker::s_ViGEmClient = Q_NULLPTR;
+PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
 XUSB_REPORT QKeyMapper_Worker::s_ViGEmTarget_Report = XUSB_REPORT();
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
+#else
+QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
+#endif
 #endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
@@ -140,14 +145,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
 #ifdef VIGEM_CLIENT_SUPPORT
     initViGEmKeyMap();
-    int retval_alloc = ViGEmClient_Alloc();
-    int retval_connect = ViGEmClient_Connect();
-
-    if (retval_alloc !=0 || retval_connect !=0) {
-#ifdef DEBUG_LOGOUT_ON
-        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
-#endif
-    }
 #endif
 
 #ifdef QT_DEBUG
@@ -169,6 +166,7 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
     setWorkerKeyUnHook();
 
 #ifdef VIGEM_CLIENT_SUPPORT
+    (void)ViGEmClient_Remove();
     (void)ViGEmClient_Disconnect();
     (void)ViGEmClient_Free();
 #endif
@@ -561,6 +559,15 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper_Worker::ViGEmClient_Alloc()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
+    if (s_ViGEmClient != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[ViGEmClient_Alloc] ViGEmClient is already Alloced!!! -> [0x%08X]", s_ViGEmClient);
+#endif
+        return 0;
+    }
+
     s_ViGEmClient = vigem_alloc();
 
     if (s_ViGEmClient == nullptr)
@@ -572,7 +579,7 @@ int QKeyMapper_Worker::ViGEmClient_Alloc()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[ViGEmClient]" << "ViGEmClient Alloc() Success.";
+    qDebug("[ViGEmClient_Alloc] ViGEmClient Alloc() Success. -> [0x%08X]", s_ViGEmClient);
 #endif
 
     return 0;
@@ -580,6 +587,8 @@ int QKeyMapper_Worker::ViGEmClient_Alloc()
 
 int QKeyMapper_Worker::ViGEmClient_Connect()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient != Q_NULLPTR) {
         const auto retval = vigem_connect(s_ViGEmClient);
 
@@ -597,7 +606,7 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[ViGEmClient]" << "ViGEmClient Connect() Success.";
+    qDebug("[ViGEmClient_Connect] ViGEmClient Connect() Success. -> [0x%08X]", s_ViGEmClient);
 #endif
 
     s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_SUCCESS;
@@ -607,6 +616,8 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
 
 int QKeyMapper_Worker::ViGEmClient_Add()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient == Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[ViGEmClient_Add]" << "Null Pointer s_ViGEmClient!!!";
@@ -623,12 +634,19 @@ int QKeyMapper_Worker::ViGEmClient_Add()
 
     if (s_ViGEmTarget != Q_NULLPTR && vigem_target_is_attached(s_ViGEmTarget)) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning() << "[ViGEmClient_Add]" << "ViGEmTarget is already Attached!!!";
+        qWarning("[ViGEmClient_Add] ViGEmTarget is already Attached!!! -> [0x%08X]", s_ViGEmTarget);
 #endif
         return 0;
     }
 
     s_ViGEmTarget = vigem_target_x360_alloc();
+
+    if (s_ViGEmTarget == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[ViGEmClient_Add] ViGEmTarget Alloc failed with NULLPTR!!!");
+#endif
+        return -1;
+    }
 
     //
     // Add client to the bus, this equals a plug-in event
@@ -647,37 +665,80 @@ int QKeyMapper_Worker::ViGEmClient_Add()
         return -1;
     }
 
+    ULONG index = 255;
+    ULONG user_index = 255;
+    VIGEM_ERROR error;
+    Q_UNUSED(index);
+    Q_UNUSED(error);
+    if (s_ViGEmTarget != Q_NULLPTR) {
+        index = vigem_target_get_index(s_ViGEmTarget);
+        error = vigem_target_x360_get_user_index(s_ViGEmClient, s_ViGEmTarget, &user_index);
+        if (error == VIGEM_ERROR_NONE) {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[ViGEmClient]" << "ViGEmClient Target-Add() Success.";
+            qDebug("[ViGEmClient_Add] ViGEmTarget Add Success, index(%lu), user_index(%lu). -> [0x%08X]", index, user_index, s_ViGEmTarget);
 #endif
+        }
+        else {
+            return -1;
+        }
+    }
+    else {
+        return -1;
+    }
 
     return 0;
 }
 
 void QKeyMapper_Worker::ViGEmClient_Remove()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
-        //
-        // We're done with this pad, free resources (this disconnects the virtual device)
-        //
-        XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
-        (void)vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
-        vigem_target_remove(s_ViGEmClient, s_ViGEmTarget);
-        vigem_target_free(s_ViGEmTarget);
-        s_ViGEmTarget = Q_NULLPTR;
+        if (s_ViGEmClient_ConnectState == VIGEMCLIENT_CONNECT_SUCCESS && vigem_target_is_attached(s_ViGEmTarget)) {
+            XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
+            VIGEM_ERROR error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+
+            if (error == VIGEM_ERROR_NONE) {
+                error = vigem_target_remove(s_ViGEmClient, s_ViGEmTarget);
+                if (error == VIGEM_ERROR_NONE) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[ViGEmClient]" << "ViGEmClient Target-Remove() Success.";
+                    qDebug("[ViGEmClient_Remove] ViGEmTarget Remove Success. -> [0x%08X]", s_ViGEmTarget);
 #endif
+                    vigem_target_free(s_ViGEmTarget);
+                    s_ViGEmTarget = Q_NULLPTR;
+                }
+                else {
+                    s_ViGEmTarget = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
+                    qWarning("[ViGEmClient_Remove] ViGEmTarget Remove failed!!!, Error=0x%08X -> [0x%08X]", error, s_ViGEmTarget);
+#endif
+                }
+            }
+            else {
+                s_ViGEmTarget = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[ViGEmClient_Remove] ViGEmTarget Reset Buttons failed!!!, Error=0x%08X -> [0x%08X]", error, s_ViGEmTarget);
+#endif
+            }
+        }
+        else {
+            s_ViGEmTarget = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[ViGEmClient_Remove]" << "ViGEmClient ConnectState or ViGEmTarget AttachState error!!! ->" << "ConnectState =" << s_ViGEmClient_ConnectState << ", Attached =" << vigem_target_is_attached(s_ViGEmTarget);
+#endif
+        }
     }
 }
 
 void QKeyMapper_Worker::ViGEmClient_Disconnect()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient != Q_NULLPTR) {
         vigem_disconnect(s_ViGEmClient);
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[ViGEmClient]" << "ViGEmClient Disconnect() Success.";
+        qDebug() << "[ViGEmClient_Disconnect]" << "ViGEmClient Disconnect() Success.";
 #endif
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
@@ -685,12 +746,14 @@ void QKeyMapper_Worker::ViGEmClient_Disconnect()
 
 void QKeyMapper_Worker::ViGEmClient_Free()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient != Q_NULLPTR) {
         vigem_free(s_ViGEmClient);
         s_ViGEmClient = Q_NULLPTR;
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[ViGEmClient]" << "ViGEmClient Free() Success.";
+        qDebug() << "[ViGEmClient_Disconnect]" << "ViGEmClient Free() Success.";
 #endif
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
@@ -756,7 +819,7 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
         }
 
         if (updateFlag) {
-            VIGEM_API VIGEM_ERROR error;
+            VIGEM_ERROR error;
             error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
@@ -828,7 +891,7 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
         }
 
         if (updateFlag) {
-            VIGEM_API VIGEM_ERROR error;
+            VIGEM_ERROR error;
             error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
