@@ -595,6 +595,7 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
         if (!VIGEM_SUCCESS(retval))
         {
             s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_FAILED;
+            emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
 #ifdef DEBUG_LOGOUT_ON
             qWarning("[ViGEmClient_Connect] ViGEm Bus connection failed with error code: 0x%08X", retval);
 #endif
@@ -610,6 +611,7 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
 #endif
 
     s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_SUCCESS;
+    emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
 
     return 0;
 }
@@ -742,6 +744,7 @@ void QKeyMapper_Worker::ViGEmClient_Disconnect()
 #endif
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
+    emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
 }
 
 void QKeyMapper_Worker::ViGEmClient_Free()
@@ -757,6 +760,14 @@ void QKeyMapper_Worker::ViGEmClient_Free()
 #endif
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
+    emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
+}
+
+QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::ViGEmClient_getConnectState()
+{
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
+    return s_ViGEmClient_ConnectState;
 }
 
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)

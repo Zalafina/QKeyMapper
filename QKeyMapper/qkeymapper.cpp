@@ -48,7 +48,7 @@ static const int UI_SCALE_4K_PERCENT_125 = 8;
 static const int UI_SCALE_4K_PERCENT_150 = 9;
 
 #ifdef VIGEM_CLIENT_SUPPORT
-static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 3000;
+static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 #endif
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
@@ -299,13 +299,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         Q_UNUSED(retval_alloc);
         Q_UNUSED(retval_connect);
 
-        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
-            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
-            ui->enableVirtualJoystickCheckBox->setEnabled(false);
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
             qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
 #endif
         }
+
+        updateViGEmBusLabelDisplay();
     }
     else {
         ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -346,6 +346,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onKeySequenceEditingFinished);
 
     QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
+#ifdef VIGEM_CLIENT_SUPPORT
+    QObject::connect(this, SIGNAL(updateViGEmBusStatus_Signal()), this, SLOT(updateViGEmBusLabelDisplay()));
+#endif
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
@@ -2461,32 +2464,6 @@ void QKeyMapper::playStartSound()
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-void QKeyMapper::updateViGEmBusLabelDisplay()
-{
-    int languageIndex = ui->languageComboBox->currentIndex();
-
-    if (LANGUAGE_ENGLISH == languageIndex) {
-        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
-            ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH);
-        }
-        else {
-            ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH);
-        }
-    }
-    else {
-        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
-            ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE);
-        }
-        else {
-            ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE);
-        }
-    }
-}
-
 int QKeyMapper::installViGEmBusDriver()
 {
     QString operate_str = QString("runas");
@@ -2630,18 +2607,48 @@ int QKeyMapper::uninstallViGEmBusDriver()
     return 0;
 }
 
+void QKeyMapper::updateViGEmBusLabelDisplay()
+{
+    int languageIndex = ui->languageComboBox->currentIndex();
+
+    if (LANGUAGE_ENGLISH == languageIndex) {
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+            ui->installViGEmBusButton->setEnabled(false);
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH);
+        }
+        else {
+            ui->installViGEmBusButton->setEnabled(true);
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH);
+        }
+    }
+    else {
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+            ui->installViGEmBusButton->setEnabled(false);
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE);
+        }
+        else {
+            ui->installViGEmBusButton->setEnabled(true);
+            ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
+            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE);
+        }
+    }
+}
+
 void QKeyMapper::reconnectViGEmClient()
 {
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
     Q_UNUSED(retval_connect);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[reconnectViGEmClient]" << "ViGEmClient Connect State ->" << QKeyMapper_Worker::s_ViGEmClient_ConnectState;
+    qDebug() << "[reconnectViGEmClient]" << "ViGEmClient Connect State ->" << QKeyMapper_Worker::ViGEmClient_getConnectState();
 #endif
 
-    updateViGEmBusLabelDisplay();
+    emit updateViGEmBusStatus_Signal();
 
-    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
         ui->enableVirtualJoystickCheckBox->setEnabled(true);
     }
     else {
@@ -3168,7 +3175,7 @@ void QKeyMapper::reloadUILanguage()
     }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    updateViGEmBusLabelDisplay();
+    emit updateViGEmBusStatus_Signal();
 #endif
 }
 
@@ -3930,7 +3937,7 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     QKeyMapper_Worker::ViGEmClient_Disconnect();
     QKeyMapper_Worker::ViGEmClient_Free();
 
-    updateViGEmBusLabelDisplay();
+    emit updateViGEmBusStatus_Signal();
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
 

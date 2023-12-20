@@ -161,6 +161,9 @@ public:
 
 signals:
     void updateLockStatus_Signal(void);
+#ifdef VIGEM_CLIENT_SUPPORT
+    void updateViGEmBusStatus_Signal(void);
+#endif
 
 protected:
     void changeEvent(QEvent *event);
@@ -254,10 +257,10 @@ private:
     void playStartSound();
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    void updateViGEmBusLabelDisplay(void);
     int installViGEmBusDriver(void);
     int uninstallViGEmBusDriver(void);
 public slots:
+    void updateViGEmBusLabelDisplay(void);
     Q_INVOKABLE void reconnectViGEmClient(void);
 #endif
 

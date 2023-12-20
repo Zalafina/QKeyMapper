@@ -243,6 +243,8 @@ public:
     static void ViGEmClient_Disconnect(void);
     static void ViGEmClient_Free(void);
 
+    static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
+
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
 #endif
