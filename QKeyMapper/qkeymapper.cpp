@@ -102,7 +102,7 @@ static const char *DELETEONEBUTTON_CHINESE = "删除单行";
 static const char *CLEARALLBUTTON_CHINESE = "全部清除";
 static const char *ADDMAPDATABUTTON_CHINESE = "添加";
 static const char *NAMECHECKBOX_CHINESE = "文件名";
-static const char *TITLECHECKBOX_CHINESE = "标题";
+static const char *TITLECHECKBOX_CHINESE = "窗口标题";
 static const char *ORIKEYLABEL_CHINESE = "原始按键";
 static const char *MAPKEYLABEL_CHINESE = "映射按键";
 static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
@@ -122,7 +122,7 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "文件名";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
-static const char *PROCESSINFOTABLE_COL3_CHINESE = "标题";
+static const char *PROCESSINFOTABLE_COL3_CHINESE = "窗口标题";
 static const char *KEYMAPDATATABLE_COL1_CHINESE = "原始按键";
 static const char *KEYMAPDATATABLE_COL2_CHINESE = "映射按键";
 static const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
@@ -156,7 +156,7 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Gamepad";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
-static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Title";
+static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Window Title";
 static const char *KEYMAPDATATABLE_COL1_ENGLISH = "OriginalKey";
 static const char *KEYMAPDATATABLE_COL2_ENGLISH = "MappingKey";
 static const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
@@ -2737,11 +2737,17 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
             continue;
         }
 #endif
+        QTableWidgetItem *filename_TableItem = new QTableWidgetItem(processinfo.WindowIcon, processinfo.FileName);
+        filename_TableItem->setToolTip(processinfo.FileName);
+        ui->processinfoTable->setItem(rowindex, 0, filename_TableItem);
 
-        ui->processinfoTable->setItem(rowindex, 0, new QTableWidgetItem(processinfo.WindowIcon, processinfo.FileName));
-        ui->processinfoTable->setItem(rowindex, 1, new QTableWidgetItem(processinfo.PID));
+        QTableWidgetItem *pid_TableItem = new QTableWidgetItem(processinfo.PID);
+        ui->processinfoTable->setItem(rowindex, 1, pid_TableItem);
         //ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        ui->processinfoTable->setItem(rowindex, 2, new QTableWidgetItem(processinfo.WindowTitle));
+
+        QTableWidgetItem *windowtitle_TableItem = new QTableWidgetItem(processinfo.WindowTitle);
+        windowtitle_TableItem->setToolTip(processinfo.WindowTitle);
+        ui->processinfoTable->setItem(rowindex, 2, windowtitle_TableItem);
 
         rowindex += 1;
     }
@@ -2840,7 +2846,7 @@ void QKeyMapper::initKeyMappingDataTable(void)
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
     ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
-    int original_key_width = ui->keymapdataTable->width()/4;
+    int original_key_width = ui->keymapdataTable->width()/4 - 15;
     int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
     int lock_width = ui->keymapdataTable->width()/5 - 40;
     int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
@@ -3051,9 +3057,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             ;
 
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
-    m_orikeyComboBox->setGeometry(QRect(597, 390, 122, 22));
+    m_orikeyComboBox->setGeometry(QRect(587, 390, 122, 22));
     m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
-    m_mapkeyComboBox->setGeometry(QRect(785, 390, 122, 22));
+    m_mapkeyComboBox->setGeometry(QRect(775, 390, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
 
@@ -3271,22 +3277,22 @@ void QKeyMapper::resetFontSize()
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
 
-        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 10));
-        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
         ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
     }
     else {
-        ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 10));
-        ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 10));
-        ui->languageComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 10));
-        m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 10));
+        ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
 
-        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 10));
-        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 10));
+        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
         ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
     }
