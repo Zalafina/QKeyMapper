@@ -284,17 +284,40 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIcon->show();
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
-    Q_UNUSED(retval_alloc);
-    Q_UNUSED(retval_connect);
+    bool isWin10Above = false;
+    QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
+    if (osVersion >= QOperatingSystemVersion::Windows10) {
+        isWin10Above = true;
+    }
+    else {
+        isWin10Above = false;
+    }
 
-    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
+    if (isWin10Above) {
+        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+        int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+        Q_UNUSED(retval_alloc);
+        Q_UNUSED(retval_connect);
+
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::s_ViGEmClient_ConnectState) {
+            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+            ui->enableVirtualJoystickCheckBox->setEnabled(false);
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+#endif
+        }
+    }
+    else {
         ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
-#ifdef DEBUG_LOGOUT_ON
-        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
-#endif
+        ui->installViGEmBusButton->setEnabled(false);
+        ui->uninstallViGEmBusButton->setEnabled(false);
+        ui->ViGEmBusStatusLabel->setEnabled(false);
+
+        ui->enableVirtualJoystickCheckBox->setVisible(false);
+        ui->installViGEmBusButton->setVisible(false);
+        ui->uninstallViGEmBusButton->setVisible(false);
+        ui->ViGEmBusStatusLabel->setVisible(false);
     }
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -302,6 +325,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->installViGEmBusButton->setEnabled(false);
     ui->uninstallViGEmBusButton->setEnabled(false);
     ui->ViGEmBusStatusLabel->setEnabled(false);
+
+    ui->enableVirtualJoystickCheckBox->setVisible(false);
+    ui->installViGEmBusButton->setVisible(false);
+    ui->uninstallViGEmBusButton->setVisible(false);
+    ui->ViGEmBusStatusLabel->setVisible(false);
 #endif
 
     initKeyMappingDataTable();
