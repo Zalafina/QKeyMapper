@@ -1,0 +1,116 @@
+; Virtual Gamepad Emulation Framework - Windows kernel-mode bus driver
+; 
+; BSD 3-Clause License
+; 
+; Copyright (c) 2018-2022, Nefarius Software Solutions e.U. and Contributors
+; All rights reserved.
+; 
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+; 
+; 1. Redistributions of source code must retain the above copyright notice, this
+;    list of conditions and the following disclaimer.
+; 
+; 2. Redistributions in binary form must reproduce the above copyright notice,
+;    this list of conditions and the following disclaimer in the documentation
+;    and/or other materials provided with the distribution.
+; 
+; 3. Neither the name of the copyright holder nor the names of its
+;    contributors may be used to endorse or promote products derived from
+;    this software without specific prior written permission.
+; 
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+; FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+; DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+; SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+; CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+; OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%ManufacturerName%
+CatalogFile=ViGEmBus.cat
+DriverVer = 08/30/2022,1.21.442.0
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+ViGEmBus_Device_CoInstaller_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %DiskName%,,,
+
+[SourceDisksFiles]
+ViGEmBus.sys = 1,,
+;
+
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64,NTx86,NTARM64
+
+[Standard.NTamd64]
+%ViGEmBus.DeviceDesc%=ViGEmBus_Device, Nefarius\ViGEmBus\Gen1
+
+[Standard.NTx86]
+%ViGEmBus.DeviceDesc%=ViGEmBus_Device, Nefarius\ViGEmBus\Gen1
+
+[Standard.NTARM64]
+%ViGEmBus.DeviceDesc%=ViGEmBus_Device, Nefarius\ViGEmBus\Gen1
+
+[ViGEmBus_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+ViGEmBus.sys
+
+;-------------- Service installation
+[ViGEmBus_Device.NT.Services]
+AddService = ViGEmBus,%SPSVCINST_ASSOCSERVICE%, ViGEmBus_Service_Inst
+
+; -------------- ViGEmBus driver install sections
+[ViGEmBus_Service_Inst]
+DisplayName    = %ViGEmBus.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 1               ; SERVICE_SYSTEM_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\ViGEmBus.sys
+
+;
+;--- ViGEmBus_Device Coinstaller installation ------
+;
+
+[ViGEmBus_Device.NT.CoInstallers]
+AddReg=ViGEmBus_Device_CoInstaller_AddReg
+CopyFiles=ViGEmBus_Device_CoInstaller_CopyFiles
+
+[ViGEmBus_Device_CoInstaller_AddReg]
+;
+
+
+[ViGEmBus_Device_CoInstaller_CopyFiles]
+;
+
+
+[ViGEmBus_Device.NT.Wdf]
+KmdfService =  ViGEmBus, ViGEmBus_wdfsect
+[ViGEmBus_wdfsect]
+KmdfLibraryVersion = 1.15
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Nefarius Software Solutions e.U."
+DiskName = "Nefarius ViGEmBus Installation Disk"
+ViGEmBus.DeviceDesc = "Nefarius Virtual Gamepad Emulation Bus"
+ViGEmBus.SVCDESC = "Nefarius Virtual Gamepad Emulation Service"
+
