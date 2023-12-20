@@ -3107,11 +3107,15 @@ void QKeyMapper::refreshKeyMappingDataTable()
         for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
         {
             /* ORIGINAL_KEY_COLUMN */
-            ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , new QTableWidgetItem(keymapdata.Original_Key));
+            QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
+            ori_TableItem->setToolTip(keymapdata.Original_Key);
+            ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , ori_TableItem);
 
             /* MAPPING_KEY_COLUMN */
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , new QTableWidgetItem(mappingkeys_str));
+            QTableWidgetItem *mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
+            mapping_TableItem->setToolTip(mappingkeys_str);
+            ui->keymapdataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , mapping_TableItem);
 
             /* BURST_MODE_COLUMN */
             QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
