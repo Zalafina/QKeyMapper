@@ -1326,7 +1326,9 @@ void QKeyMapper::on_keymapButton_clicked()
     }
     else{
         changeControlEnableStatus(true);
+#ifdef VIGEM_CLIENT_SUPPORT
         emit updateViGEmBusStatus_Signal();
+#endif
     }
 
     if (true == startKeyMap) {
