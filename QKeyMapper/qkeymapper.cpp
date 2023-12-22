@@ -1480,14 +1480,14 @@ void QKeyMapper::on_orikeyComboBox_currentTextChanged(const QString &text)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
 #endif
-        m_mapkeyComboBox->setCurrentText(VJOY_STR_MOUSE2LS);
+        m_mapkeyComboBox->setCurrentText(QString());
         m_mapkeyComboBox->setEnabled(false);
     }
     else if (VJOY_STR_MOUSE2RS == text) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
 #endif
-        m_mapkeyComboBox->setCurrentText(VJOY_STR_MOUSE2RS);
+        m_mapkeyComboBox->setCurrentText(QString());
         m_mapkeyComboBox->setEnabled(false);
     }
     else {
@@ -2423,7 +2423,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     if (true == status
         && (m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2LS
          || m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2RS)) {
-        m_mapkeyComboBox->setCurrentText(m_orikeyComboBox->currentText());
+        m_mapkeyComboBox->setCurrentText(QString());
         m_mapkeyComboBox->setEnabled(false);
     }
     else {
