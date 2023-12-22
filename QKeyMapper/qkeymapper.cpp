@@ -3454,19 +3454,25 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
-    if ((true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(m_orikeyComboBox->currentText())
-            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_orikeyComboBox->currentText())
-            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(m_orikeyComboBox->currentText()))
-        && (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(m_mapkeyComboBox->currentText())
-            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(m_mapkeyComboBox->currentText())
-            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(m_mapkeyComboBox->currentText()))){
+    QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
+    QString currentMapKeyComboBoxText = m_mapkeyComboBox->currentText();
+    if ((true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(currentOriKeyComboBoxText)
+            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(currentOriKeyComboBoxText)
+            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(currentOriKeyComboBoxText))
+        && (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(currentMapKeyComboBoxText)
+            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(currentMapKeyComboBoxText)
+            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(currentMapKeyComboBoxText)
+            || false == m_mapkeyComboBox->isEnabled())){
         bool already_exist = false;
-        int findindex = findInKeyMappingDataList(m_orikeyComboBox->currentText());
+        int findindex = findInKeyMappingDataList(currentOriKeyComboBoxText);
 
         if (findindex != -1){
-            if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
+            if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText) {
+                already_exist = true;
+            }
+            else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
                     && false == ui->nextarrowCheckBox->isChecked()
-                    && KeyMappingDataList.at(findindex).Mapping_Keys.contains(m_mapkeyComboBox->currentText()) == true){
+                    && KeyMappingDataList.at(findindex).Mapping_Keys.contains(currentMapKeyComboBoxText) == true){
                 already_exist = true;
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
@@ -3478,7 +3484,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             if (findindex != -1){
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
                 if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
-                    QString message = QString("Key sequence mapping to \"%1\" is too long!").arg(m_orikeyComboBox->currentText());
+                    QString message = QString("Key sequence mapping to \"%1\" is too long!").arg(currentOriKeyComboBoxText);
                     QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
                     return;
                 }
@@ -3487,21 +3493,24 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
 #endif
                 if (ui->nextarrowCheckBox->isChecked()) {
-                    mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + m_mapkeyComboBox->currentText();
+                    mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + currentMapKeyComboBoxText;
                 }
                 else {
-                    mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + m_mapkeyComboBox->currentText();
+                    mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + currentMapKeyComboBoxText;
                 }
 
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
-                KeyMappingDataList.replace(findindex, MAP_KEYDATA(m_orikeyComboBox->currentText(), mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
+                KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyComboBoxText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
             }
             else {
-                KeyMappingDataList.append(MAP_KEYDATA(m_orikeyComboBox->currentText(), m_mapkeyComboBox->currentText(), false, false));
+                if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText) {
+                    currentMapKeyComboBoxText = currentOriKeyComboBoxText;
+                }
+                KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyComboBoxText, currentMapKeyComboBoxText, false, false));
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Add keymapdata :" << m_orikeyComboBox->currentText() << "to" << m_mapkeyComboBox->currentText();
+                qDebug() << "Add keymapdata :" << currentOriKeyComboBoxText << "to" << currentMapKeyComboBoxText;
 #endif
             }
 

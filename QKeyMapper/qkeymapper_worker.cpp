@@ -2487,6 +2487,9 @@ void QKeyMapper_Worker::initJoystickKeyMap()
 void QKeyMapper_Worker::initViGEmKeyMap()
 {
     /* Virtual Joystick Buttons */
+    JoyStickKeyMap.insert(VJOY_STR_MOUSE2LS             ,   (int)JOYSTICK_LS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_STR_MOUSE2RS             ,   (int)JOYSTICK_RS_MOUSE      );
+
     JoyStickKeyMap.insert("vJoy-Key1(A)"                ,   (int)JOYSTICK_BUTTON_0      );
     JoyStickKeyMap.insert("vJoy-Key2(B)"                ,   (int)JOYSTICK_BUTTON_1      );
     JoyStickKeyMap.insert("vJoy-Key3(X)"                ,   (int)JOYSTICK_BUTTON_2      );

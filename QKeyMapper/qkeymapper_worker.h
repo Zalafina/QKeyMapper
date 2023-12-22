@@ -197,7 +197,8 @@ public:
         JOYSTICK_LS_UP,
         JOYSTICK_LS_DOWN,
         JOYSTICK_LS_LEFT,
-        JOYSTICK_LS_RIGHT
+        JOYSTICK_LS_RIGHT,
+        JOYSTICK_LS_MOUSE
     };
     Q_ENUM(JoystickLStickCode)
 
@@ -207,7 +208,8 @@ public:
         JOYSTICK_RS_UP,
         JOYSTICK_RS_DOWN,
         JOYSTICK_RS_LEFT,
-        JOYSTICK_RS_RIGHT
+        JOYSTICK_RS_RIGHT,
+        JOYSTICK_RS_MOUSE
     };
     Q_ENUM(JoystickRStickCode)
 
