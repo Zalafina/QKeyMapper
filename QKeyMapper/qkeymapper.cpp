@@ -3155,6 +3155,11 @@ void QKeyMapper::refreshKeyMappingDataTable()
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
         for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
         {
+            bool mouse2joystick = false;
+            if (keymapdata.Original_Key == VJOY_STR_MOUSE2LS || keymapdata.Original_Key == VJOY_STR_MOUSE2RS) {
+                mouse2joystick = true;
+            }
+
             /* ORIGINAL_KEY_COLUMN */
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
             ori_TableItem->setToolTip(keymapdata.Original_Key);
@@ -3174,6 +3179,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
             else {
                 burstCheckBox->setCheckState(Qt::Unchecked);
             }
+            if (mouse2joystick) {
+                burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
+            }
             ui->keymapdataTable->setItem(rowindex, BURST_MODE_COLUMN    , burstCheckBox);
 
             /* LOCK_COLUMN */
@@ -3183,6 +3191,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
             }
             else {
                 lockCheckBox->setCheckState(Qt::Unchecked);
+            }
+            if (mouse2joystick) {
+                lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
             ui->keymapdataTable->setItem(rowindex, LOCK_COLUMN    , lockCheckBox);
 
@@ -3467,7 +3478,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         int findindex = findInKeyMappingDataList(currentOriKeyComboBoxText);
 
         if (findindex != -1){
-            if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText) {
+            if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
                 already_exist = true;
             }
             else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
@@ -3505,7 +3516,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyComboBoxText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
             }
             else {
-                if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText) {
+                if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
                     currentMapKeyComboBoxText = currentOriKeyComboBoxText;
                 }
                 KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyComboBoxText, currentMapKeyComboBoxText, false, false));
