@@ -1121,10 +1121,10 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Auto Start Mapping</string>
+    <string>AutoMappingMinimize</string>
    </property>
-   <property name="checked">
-    <bool>false</bool>
+   <property name="tristate">
+    <bool>true</bool>
    </property>
   </widget>
   <widget class="QComboBox" name="settingselectComboBox">

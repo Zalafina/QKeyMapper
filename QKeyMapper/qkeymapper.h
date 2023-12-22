@@ -154,7 +154,7 @@ public:
     static void EnumProcessFunction(void);
     // unused enum all process function <<<
 
-    bool getAutoStartMappingStatus(void);
+    Qt::CheckState getAutoStartMappingStatus(void);
     static bool getDisableWinKeyStatus(void);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);

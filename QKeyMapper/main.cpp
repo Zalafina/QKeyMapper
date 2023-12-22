@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     flags |= Qt::WindowCloseButtonHint;
     w.setWindowFlags(flags);
 
-    if (true == w.getAutoStartMappingStatus()) {
+    if (w.getAutoStartMappingStatus() != Qt::Unchecked) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "Auto Start Mapping = TRUE, hide QKeyMapper window at startup.";
 #endif

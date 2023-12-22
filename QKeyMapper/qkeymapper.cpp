@@ -102,7 +102,7 @@ static const char *DELETEONEBUTTON_CHINESE = "删除单行";
 static const char *CLEARALLBUTTON_CHINESE = "全部清除";
 static const char *ADDMAPDATABUTTON_CHINESE = "添加";
 static const char *NAMECHECKBOX_CHINESE = "文件名";
-static const char *TITLECHECKBOX_CHINESE = "窗口标题";
+static const char *TITLECHECKBOX_CHINESE = "标题";
 static const char *ORIKEYLABEL_CHINESE = "原始按键";
 static const char *MAPKEYLABEL_CHINESE = "映射按键";
 static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
@@ -116,7 +116,7 @@ static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
 static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
-static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动开始映射";
+static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
@@ -150,7 +150,7 @@ static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "Install ViGEmBus";
 static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
-static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "Auto Start Mapping";
+static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Gamepad";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
@@ -1228,14 +1228,9 @@ void QKeyMapper::EnumProcessFunction(void)
 
 }
 
-bool QKeyMapper::getAutoStartMappingStatus()
+Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
 {
-    if (true == ui->autoStartMappingCheckBox->isChecked()) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return ui->autoStartMappingCheckBox->checkState();
 }
 
 bool QKeyMapper::getDisableWinKeyStatus()
@@ -1669,7 +1664,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
-        settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->isChecked());
+        settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
 
         if (m_mappingswitchKeySeqStr.isEmpty()) {
             m_mappingswitchKeySeqStr = QString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
@@ -2105,21 +2100,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->disableWinKeyCheckBox->setChecked(false);
     }
 
-    bool autoStartMappingChecked = false;
+    Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
     if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
-        autoStartMappingChecked = settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toBool();
-        if (true == autoStartMappingChecked) {
-            ui->autoStartMappingCheckBox->setChecked(true);
-        }
-        else {
-            ui->autoStartMappingCheckBox->setChecked(false);
-        }
+        autoStartMappingCheckState = (Qt::CheckState)settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toInt();
+        ui->autoStartMappingCheckBox->setCheckState(autoStartMappingCheckState);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingChecked =" << autoStartMappingChecked;
+        qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingCheckState =" << autoStartMappingCheckState;
 #endif
     }
     else {
-        ui->autoStartMappingCheckBox->setChecked(false);
+        ui->autoStartMappingCheckBox->setCheckState(Qt::Unchecked);
     }
 
     QString loadedmappingswitchKeySeqStr;
@@ -2144,7 +2134,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     else {
         ui->nameLineEdit->setCursorPosition(0);
         ui->titleLineEdit->setCursorPosition(0);
-        if ((true == autoStartMappingChecked) && (true == settingtext.isEmpty())) {
+        if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
             on_keymapButton_clicked();
         }
 
