@@ -94,6 +94,9 @@ static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
+static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
+static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
+
 static const char *REFRESHBUTTON_CHINESE = "刷新";
 static const char *KEYMAPBUTTON_START_CHINESE = "开始按键映射";
 static const char *KEYMAPBUTTON_STOP_CHINESE = "停止按键映射";
@@ -350,6 +353,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, SIGNAL(updateViGEmBusStatus_Signal()), this, SLOT(updateViGEmBusLabelDisplay()));
+    QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::on_orikeyComboBox_currentTextChanged);
 #endif
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
@@ -1470,6 +1474,27 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     }
 }
 
+void QKeyMapper::on_orikeyComboBox_currentTextChanged(const QString &text)
+{
+    if (VJOY_STR_MOUSE2LS == text) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
+#endif
+        m_mapkeyComboBox->setCurrentText(VJOY_STR_MOUSE2LS);
+        m_mapkeyComboBox->setEnabled(false);
+    }
+    else if (VJOY_STR_MOUSE2RS == text) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
+#endif
+        m_mapkeyComboBox->setCurrentText(VJOY_STR_MOUSE2RS);
+        m_mapkeyComboBox->setEnabled(false);
+    }
+    else {
+        m_mapkeyComboBox->setEnabled(true);
+    }
+}
+
 bool QKeyMapper::checkSaveSettings(const QString &executablename)
 {
     bool checkresult = false;
@@ -2394,7 +2419,16 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->orikeyLabel->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
-    m_mapkeyComboBox->setEnabled(status);
+
+    if (true == status
+        && (m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2LS
+         || m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2RS)) {
+        m_mapkeyComboBox->setCurrentText(m_orikeyComboBox->currentText());
+        m_mapkeyComboBox->setEnabled(false);
+    }
+    else {
+        m_mapkeyComboBox->setEnabled(status);
+    }
     ui->addmapdataButton->setEnabled(status);
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
@@ -3007,31 +3041,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Media Prev"
             << "Media Stop"
             << "Media PlayPause"
-            << "Joy-LS-Up"
-            << "Joy-LS-Down"
-            << "Joy-LS-Left"
-            << "Joy-LS-Right"
-            << "Joy-RS-Up"
-            << "Joy-RS-Down"
-            << "Joy-RS-Left"
-            << "Joy-RS-Right"
-            << "Joy-DPad-Up"
-            << "Joy-DPad-Down"
-            << "Joy-DPad-Left"
-            << "Joy-DPad-Right"
-            << "Joy-Key1(A)"
-            << "Joy-Key2(B)"
-            << "Joy-Key3(X)"
-            << "Joy-Key4(Y)"
-            << "Joy-Key5(LB)"
-            << "Joy-Key6(RB)"
-            << "Joy-Key7(Back)"
-            << "Joy-Key8(Start)"
-            << "Joy-Key9(LS-Click)"
-            << "Joy-Key10(RS-Click)"
-            << "Joy-Key11(LT)"
-            << "Joy-Key12(RT)"
 #ifdef VIGEM_CLIENT_SUPPORT
+            << VJOY_STR_MOUSE2LS
+            << VJOY_STR_MOUSE2RS
             << "vJoy-LS-Up"
             << "vJoy-LS-Down"
             << "vJoy-LS-Left"
@@ -3057,6 +3069,30 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-Key11(LT)"
             << "vJoy-Key12(RT)"
 #endif
+            << "Joy-LS-Up"
+            << "Joy-LS-Down"
+            << "Joy-LS-Left"
+            << "Joy-LS-Right"
+            << "Joy-RS-Up"
+            << "Joy-RS-Down"
+            << "Joy-RS-Left"
+            << "Joy-RS-Right"
+            << "Joy-DPad-Up"
+            << "Joy-DPad-Down"
+            << "Joy-DPad-Left"
+            << "Joy-DPad-Right"
+            << "Joy-Key1(A)"
+            << "Joy-Key2(B)"
+            << "Joy-Key3(X)"
+            << "Joy-Key4(Y)"
+            << "Joy-Key5(LB)"
+            << "Joy-Key6(RB)"
+            << "Joy-Key7(Back)"
+            << "Joy-Key8(Start)"
+            << "Joy-Key9(LS-Click)"
+            << "Joy-Key10(RS-Click)"
+            << "Joy-Key11(LT)"
+            << "Joy-Key12(RT)"
             ;
 
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
@@ -3067,6 +3103,20 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QStringList orikeycodelist = keycodelist;
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
+#ifdef VIGEM_CLIENT_SUPPORT
+    QRegularExpression re_vjoy("^vJoy-");
+    QStringList vJoyStrlist = orikeycodelist.filter(re_vjoy);
+    vJoyStrlist.removeOne(VJOY_STR_MOUSE2LS);
+    vJoyStrlist.removeOne(VJOY_STR_MOUSE2RS);
+
+    // Remove Strings start with "vJoy-" from orikeyComboBox
+    for (const QString &joystr : qAsConst(vJoyStrlist)){
+        orikeycodelist.removeOne(joystr);
+    }
+    keycodelist.removeOne("vJoy-Mouse2LS");
+    keycodelist.removeOne("vJoy-Mouse2RS");
+#endif
+
     QRegularExpression re_Joy("^Joy-");
     QStringList JoyStrlist = orikeycodelist.filter(re_Joy);
 
@@ -3074,16 +3124,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     for (const QString &joystr : qAsConst(JoyStrlist)){
         keycodelist.removeOne(joystr);
     }
-
-#ifdef VIGEM_CLIENT_SUPPORT
-    QRegularExpression re_vjoy("^vJoy-");
-    QStringList vJoyStrlist = orikeycodelist.filter(re_vjoy);
-
-    // Remove Strings start with "vJoy-" from orikeyComboBox
-    for (const QString &joystr : qAsConst(vJoyStrlist)){
-        orikeycodelist.removeOne(joystr);
-    }
-#endif
     /* Remove Joy Keys from MappingKey ComboBox <<< */
 
     m_orikeyComboBox->addItems(orikeycodelist);
@@ -3940,4 +3980,3 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     (void)uninstallViGEmBusDriver();
 #endif
 }
-

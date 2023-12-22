@@ -190,6 +190,8 @@ private slots:
 
     void cellChanged_slot(int row, int col);
 
+    void on_orikeyComboBox_currentTextChanged(const QString &text);
+
     void on_savemaplistButton_clicked();
 
     void on_refreshButton_clicked();
