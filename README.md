@@ -38,6 +38,7 @@
 23. v1.3.5(Build 20230806) -> 切换映射开始和停止的快捷键，可以通过KeySequenceEdit控件进行自定义设置，鼠标点击KeySequenceEdit控件后按下想要设置的快捷键，此自定义快捷键设置每个配置可以保存设置不同值。
 24. v1.3.6(Build 20231125) -> 添加了将游戏手柄按键作为原始按键映射到键盘按键的功能，原始按键列表中选择"Joy"开头的按键，映射按键选择想触发的键盘按键即可。
 25. v1.3.6(Build 20231220) -> 添加了虚拟游戏手柄功能(通过ViGEmBus实现)，点击"安装ViGEmBus"，显示绿色字"ViGEmBus可用"之后，勾选"启用虚拟手柄"，之后可以将键盘按键映射到"vJoy"开头的虚拟手柄按键。
+25. v1.3.6(Build 20231223) -> 添加了通过鼠标控制虚拟游戏手柄左/右摇杆的功能(Mouse2Joystick)，通过在映射表中添加"vJoy-Mouse2LS"或"vJoy-Mouse2RS"来使用。
 ---------------
 ## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6，v1.2.8 and later Releases will build by Qt6，v1.3.6(Build 20231125) add joystick keys support.
 ---------------
@@ -72,6 +73,7 @@
 23. v1.3.5(Build 20230806) -> The shortcut key for switching the mapping start and stop states can be customized through the KeySequenceEdit control. After clicking the KeySequenceEdit control with the mouse, press the desired shortcut key to set it. This custom shortcut key setting can save different values for each configuration.
 24. v1.3.6(Build 20231125) -> Added the feature to map gamepad buttons as original keys to keyboard keys. Select the keys starting with "Joy" from the original key list, and choose the keyboard key you want to trigger as the mapped key from the mapping key list.
 25. v1.3.6(Build 20231220) -> Added virtual gamepad functionality (implemented through ViGEmBus). Click "Install ViGEmBus", and once the green text "ViGEmBus Available" appears, check "Enable Virtual Gamepad". After that, you can map keyboard keys to virtual gamepad keys starting with "vJoy".
+26. v1.3.6(Build 20231223) -> Added the feature to control the virtual gamepad's left/right stick via the mouse (Mouse2Joystick). This can be used by adding "vJoy-Mouse2LS" or "vJoy-Mouse2RS" to the mapping table.
 ---------------
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
