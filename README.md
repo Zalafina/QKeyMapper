@@ -4,7 +4,7 @@
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 注意: 使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
 ### 注意: v1.3.6(Build 20231125)版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
-### 注意: v1.3.6(Build 20231220)版本新添加的虚拟游戏手柄功能需要安装ViGEmBus驱动，频繁的反复安装和卸载ViGEmBus驱动有导致系统蓝屏重启风险，请慎重使用，避免反复安装和卸载驱动。如果软件上的"安装ViGEmBus"按钮无法正常安装驱动，也可以使用软件压缩包中附带的"ViGEmBus_1.22.0_x64_x86_arm64.exe" 驱动安装程序自己手动安装 ViGEmBus驱动。
+### 注意: v1.3.6(Build 20231220)版本新添加的虚拟游戏手柄功能需要安装ViGEmBus驱动，频繁的反复安装和卸载ViGEmBus驱动有导致系统蓝屏重启风险，请谨慎使用，避免反复安装和卸载驱动。如果软件上的"安装ViGEmBus"按钮无法正常安装驱动，也可以使用软件压缩包中附带的"ViGEmBus_1.22.0_x64_x86_arm64.exe" 驱动安装程序自己手动安装 ViGEmBus驱动。
 ---------------
 ## 使用教学视频请点击下方图片
 [![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
