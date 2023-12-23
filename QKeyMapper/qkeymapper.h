@@ -192,7 +192,9 @@ private slots:
 
     void cellChanged_slot(int row, int col);
 
+#ifdef VIGEM_CLIENT_SUPPORT
     void on_orikeyComboBox_currentTextChanged(const QString &text);
+#endif
 
     void on_savemaplistButton_clicked();
 

@@ -233,7 +233,9 @@ public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
     void sendMouseMove(int x, int y);
+#ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int x, int y);
+#endif
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void send_WINplusD(void);
 
@@ -268,7 +270,9 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput_Signal(V_MOUSECODE vmousecode, int keyupdown);
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+#ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int point_x, int point_y);
+#endif
     void send_WINplusD_Signal(void);
 
 protected:

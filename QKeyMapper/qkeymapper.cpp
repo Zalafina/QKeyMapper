@@ -68,7 +68,9 @@ static const char *MAPPINGSWITCH_KEYSEQ_DEFAULT   = "Ctrl+F6";
 static const char *LANGUAGE_INDEX = "LanguageIndex";
 static const char *SETTINGSELECT = "SettingSelect";
 static const char *AUTO_STARTUP = "AutoStartup";
+#ifdef VIGEM_CLIENT_SUPPORT
 static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
+#endif
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
 static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
 
@@ -78,8 +80,10 @@ static const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 static const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 static const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 static const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
+#ifdef VIGEM_CLIENT_SUPPORT
 static const char *KEYMAPDATA_X_SENSITIVITY = "KeyMapData_vJoyXSensitivity";
 static const char *KEYMAPDATA_Y_SENSITIVITY = "KeyMapData_vJoyYSensitivity";
+#endif
 static const char *CLEARALL = "KeyMapData_ClearAll";
 
 static const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
@@ -100,8 +104,10 @@ static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
+#ifdef VIGEM_CLIENT_SUPPORT
 static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
+#endif
 
 static const char *REFRESHBUTTON_CHINESE = "刷新";
 static const char *KEYMAPBUTTON_START_CHINESE = "开始按键映射";
@@ -119,17 +125,10 @@ static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
 static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 static const char *SETTINGSELECTLABEL_CHINESE = "设定";
-static const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
-static const char *VJOYYSENSLABEL_CHINESE = "Y轴灵敏度";
-static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
-static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
-static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
-static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "文件名";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
@@ -138,6 +137,15 @@ static const char *KEYMAPDATATABLE_COL1_CHINESE = "原始按键";
 static const char *KEYMAPDATATABLE_COL2_CHINESE = "映射按键";
 static const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
 static const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
+#ifdef VIGEM_CLIENT_SUPPORT
+static const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
+static const char *VJOYYSENSLABEL_CHINESE = "Y轴灵敏度";
+static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
+static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
+static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
+static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
+#endif
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
 static const char *KEYMAPBUTTON_START_ENGLISH = "KeyMappingStart";
@@ -155,17 +163,10 @@ static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
-static const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
-static const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
-static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmBus Unavailable";
-static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmBus Available";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
-static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "Install ViGEmBus";
-static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Gamepad";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
@@ -174,7 +175,15 @@ static const char *KEYMAPDATATABLE_COL1_ENGLISH = "OriginalKey";
 static const char *KEYMAPDATATABLE_COL2_ENGLISH = "MappingKey";
 static const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
 static const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
-
+#ifdef VIGEM_CLIENT_SUPPORT
+static const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
+static const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
+static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmBus Unavailable";
+static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmBus Available";
+static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "Install ViGEmBus";
+static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Gamepad";
+#endif
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
@@ -356,6 +365,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->installViGEmBusButton->setVisible(false);
     ui->uninstallViGEmBusButton->setVisible(false);
     ui->ViGEmBusStatusLabel->setVisible(false);
+    ui->vJoyXSensSpinBox->setVisible(false);
+    ui->vJoyYSensSpinBox->setVisible(false);
+    ui->vJoyXSensLabel->setVisible(false);
+    ui->vJoyYSensLabel->setVisible(false);
 #endif
 
     initKeyMappingDataTable();
@@ -1505,6 +1518,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     }
 }
 
+#ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper::on_orikeyComboBox_currentTextChanged(const QString &text)
 {
     if (VJOY_STR_MOUSE2LS == text) {
@@ -1525,6 +1539,7 @@ void QKeyMapper::on_orikeyComboBox_currentTextChanged(const QString &text)
         m_mapkeyComboBox->setEnabled(true);
     }
 }
+#endif
 
 bool QKeyMapper::checkSaveSettings(const QString &executablename)
 {
@@ -1582,8 +1597,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QString burstpressTimeString = ui->burstpressComboBox->currentText();
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
+#ifdef VIGEM_CLIENT_SUPPORT
         int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
         int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
+#endif
 
         QString saveSettingSelectStr;
         QString cursettingSelectStr = ui->settingselectComboBox->currentText();
@@ -1685,8 +1702,10 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+#ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
+#endif
 
             settingFile.remove(saveSettingSelectStr+CLEARALL);
         }
@@ -1697,8 +1716,10 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+#ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
+#endif
 
             settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
         }
@@ -1798,6 +1819,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
 
+#ifdef VIGEM_CLIENT_SUPPORT
     if (true == settingFile.contains(VIRTUALJOYSTICK_ENABLE)){
         bool virtualjoystickenableChecked = settingFile.value(VIRTUALJOYSTICK_ENABLE).toBool();
         if (true == virtualjoystickenableChecked) {
@@ -1816,6 +1838,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualJoystickEnable, VirtualJoystickEnable set to Unchecked.";
 #endif
     }
+#endif
 
     QString settingSelectStr;
 
@@ -2149,6 +2172,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->burstreleaseComboBox->setCurrentText(QString("20"));
     }
 
+#ifdef VIGEM_CLIENT_SUPPORT
     if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_X_SENSITIVITY)){
         int vJoy_X_Sensitivity = settingFile.value(settingSelectStr+KEYMAPDATA_X_SENSITIVITY).toInt();
         ui->vJoyXSensSpinBox->setValue(vJoy_X_Sensitivity);
@@ -2170,6 +2194,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     else {
         ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     }
+#endif
 
     if (true == settingFile.contains(settingSelectStr+DISABLEWINKEY_CHECKED)){
         bool disableWinKeyChecked = settingFile.value(settingSelectStr+DISABLEWINKEY_CHECKED).toBool();
@@ -2484,6 +2509,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
 
+#ifdef VIGEM_CLIENT_SUPPORT
     if (true == status
         && (m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2LS
          || m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2RS)) {
@@ -2493,10 +2519,16 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     else {
         m_mapkeyComboBox->setEnabled(status);
     }
+#else
+    m_mapkeyComboBox->setEnabled(status);
+#endif
+
     ui->addmapdataButton->setEnabled(status);
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
     ui->removeSettingButton->setEnabled(status);
+
+#ifdef VIGEM_CLIENT_SUPPORT
     if (false == status) {
         ui->enableVirtualJoystickCheckBox->setEnabled(status);
         ui->installViGEmBusButton->setEnabled(status);
@@ -2506,6 +2538,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->vJoyYSensLabel->setEnabled(status);
     ui->vJoyXSensSpinBox->setEnabled(status);
     ui->vJoyYSensSpinBox->setEnabled(status);
+#endif
+
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
     ui->nextarrowCheckBox->setEnabled(status);
@@ -3223,10 +3257,12 @@ void QKeyMapper::refreshKeyMappingDataTable()
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
         for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
         {
+#ifdef VIGEM_CLIENT_SUPPORT
             bool mouse2joystick = false;
             if (keymapdata.Original_Key == VJOY_STR_MOUSE2LS || keymapdata.Original_Key == VJOY_STR_MOUSE2RS) {
                 mouse2joystick = true;
             }
+#endif
 
             /* ORIGINAL_KEY_COLUMN */
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
@@ -3247,9 +3283,11 @@ void QKeyMapper::refreshKeyMappingDataTable()
             else {
                 burstCheckBox->setCheckState(Qt::Unchecked);
             }
+#ifdef VIGEM_CLIENT_SUPPORT
             if (mouse2joystick) {
                 burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
+#endif
             ui->keymapdataTable->setItem(rowindex, BURST_MODE_COLUMN    , burstCheckBox);
 
             /* LOCK_COLUMN */
@@ -3260,9 +3298,11 @@ void QKeyMapper::refreshKeyMappingDataTable()
             else {
                 lockCheckBox->setCheckState(Qt::Unchecked);
             }
+#ifdef VIGEM_CLIENT_SUPPORT
             if (mouse2joystick) {
                 lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
+#endif
             ui->keymapdataTable->setItem(rowindex, LOCK_COLUMN    , lockCheckBox);
 
             rowindex += 1;
@@ -3319,16 +3359,18 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
-    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
-    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
-    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
-    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
-    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
+#ifdef VIGEM_CLIENT_SUPPORT
+    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
+    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
+    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
+    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
+    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+#endif
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
                                                                   << PROCESSINFOTABLE_COL2_CHINESE
@@ -3364,16 +3406,18 @@ void QKeyMapper::setUILanguage_English()
     ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
-    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
-    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
-    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
-    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
-    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
+#ifdef VIGEM_CLIENT_SUPPORT
+    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
+    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
+    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
+    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
+    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
+#endif
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
                                                                   << PROCESSINFOTABLE_COL2_ENGLISH
@@ -3556,17 +3600,23 @@ void QKeyMapper::on_addmapdataButton_clicked()
         int findindex = findInKeyMappingDataList(currentOriKeyComboBoxText);
 
         if (findindex != -1){
+#ifdef VIGEM_CLIENT_SUPPORT
             if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
                 already_exist = true;
             }
-            else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
+            else {
+#endif
+                if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
                     && false == ui->nextarrowCheckBox->isChecked()
                     && KeyMappingDataList.at(findindex).Mapping_Keys.contains(currentMapKeyComboBoxText) == true){
-                already_exist = true;
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
-#endif
+                    already_exist = true;
+    #ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
+    #endif
+                }
+#ifdef VIGEM_CLIENT_SUPPORT
             }
+#endif
         }
 
         if (false == already_exist){
@@ -3594,9 +3644,11 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyComboBoxText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
             }
             else {
+#ifdef VIGEM_CLIENT_SUPPORT
                 if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
                     currentMapKeyComboBoxText = currentOriKeyComboBoxText;
                 }
+#endif
                 KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyComboBoxText, currentMapKeyComboBoxText, false, false));
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "Add keymapdata :" << currentOriKeyComboBoxText << "to" << currentMapKeyComboBoxText;

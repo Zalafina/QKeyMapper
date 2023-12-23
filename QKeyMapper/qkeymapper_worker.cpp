@@ -140,7 +140,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
+#ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, SIGNAL(onMouseMove_Signal(int,int)), this, SLOT(onMouseMove(int,int)), Qt::QueuedConnection);
+#endif
     QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
 
     /* Connect QJoysticks Signals */
@@ -260,6 +262,7 @@ void QKeyMapper_Worker::sendMouseMove(int x, int y)
     }
 }
 
+#ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::onMouseMove(int x, int y)
 {
 //#ifdef DEBUG_LOGOUT_ON
@@ -271,6 +274,7 @@ void QKeyMapper_Worker::onMouseMove(int x, int y)
 
     ViGEmClient_Mouse2JoystickUpdate(s_Mouse2vJoy_delta.x(), s_Mouse2vJoy_delta.y());
 }
+#endif
 
 void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
@@ -2059,6 +2063,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             }
         }
     }
+#ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
         s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
         s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
@@ -2067,6 +2072,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
         emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
     }
+#endif
 
     if (true == returnFlag){
 #ifdef DEBUG_LOGOUT_ON
