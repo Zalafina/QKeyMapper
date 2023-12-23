@@ -105,6 +105,12 @@ typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbDat
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
 #endif
 
+// https://stackoverflow.com/a/4609795
+template <typename T>
+int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 class QKeyMapper_Worker : public QObject
 {
     Q_OBJECT
@@ -227,6 +233,7 @@ public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
     void sendMouseMove(int x, int y);
+    void onMouseMove(int x, int y);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void send_WINplusD(void);
 
@@ -249,6 +256,8 @@ public:
 
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
+
+    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
 #endif
 
 signals:
@@ -259,6 +268,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput_Signal(V_MOUSECODE vmousecode, int keyupdown);
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void onMouseMove_Signal(int point_x, int point_y);
     void send_WINplusD_Signal(void);
 
 protected:
@@ -354,6 +364,8 @@ public:
 #else
     static QMutex s_ViGEmClient_Mutex;
 #endif
+    static QPoint s_Mouse2vJoy_delta;
+    static QPoint s_Mouse2vJoy_prev;
 #endif
 
 private:

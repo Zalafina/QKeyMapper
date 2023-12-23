@@ -51,8 +51,10 @@ static const SHORT XINPUT_THUMB_MAX     = 32767;
 
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
-static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 36;
-static const int VIRTUAL_JOYSTICK_UPDATE_FREQUENCY = 10;
+static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
+
+static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
+static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
 #endif
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
@@ -97,6 +99,8 @@ QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
 #else
 QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
 #endif
+QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
+QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 #endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
@@ -136,6 +140,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(onMouseMove_Signal(int,int)), this, SLOT(onMouseMove(int,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
 
     /* Connect QJoysticks Signals */
@@ -253,6 +258,18 @@ void QKeyMapper_Worker::sendMouseMove(int x, int y)
         qDebug("sendMouseMove(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
+}
+
+void QKeyMapper_Worker::onMouseMove(int x, int y)
+{
+//#ifdef DEBUG_LOGOUT_ON
+//    qDebug() << "[onMouseMove]" << "Mouse Move -> Delta X =" << s_Mouse2vJoy_delta.x() << ", Delta Y = " << s_Mouse2vJoy_delta.y();
+//#endif
+
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+
+    ViGEmClient_Mouse2JoystickUpdate(s_Mouse2vJoy_delta.x(), s_Mouse2vJoy_delta.y());
 }
 
 void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
@@ -950,6 +967,71 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
             }
 #endif
         }
+    }
+}
+
+void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y)
+{
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return;
+    }
+
+    if (s_ViGEmClient == Q_NULLPTR || s_ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+
+    if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    bool leftJoystickUpdate = false;
+    bool rightJoystickUpdate = false;
+
+    int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2LS);
+    if (findMouse2LSindex >=0){
+        leftJoystickUpdate = true;
+    }
+
+    int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2RS);
+    if (findMouse2RSindex >=0){
+        rightJoystickUpdate = true;
+    }
+
+    if (leftJoystickUpdate || rightJoystickUpdate) {
+        QMutexLocker locker(&s_ViGEmClient_Mutex);
+        int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
+        int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
+
+        // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
+        double x = -std::exp((-1.0 / vJoy_X_Sensitivity) * std::abs(delta_x)) + 1.0;
+        double y = -std::exp((-1.0 / vJoy_Y_Sensitivity) * std::abs(delta_y)) + 1.0;
+        // take the sign into account, expanding the range to (-1, 1)
+        x *= sign(delta_x);
+        y *= -sign(delta_y);
+        // XInput joystick coordinates are signed shorts, so convert to (-32767, 32767)
+        short leftX = (short)(32767.0 * x);
+        short rightX = leftX;
+        short leftY = (short)(32767.0 * y);
+        short rightY = leftY;
+        // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" <<<
+
+        if (leftJoystickUpdate) {
+            s_ViGEmTarget_Report.sThumbLX = leftX;
+            s_ViGEmTarget_Report.sThumbLY = leftY;
+        }
+        if (rightJoystickUpdate) {
+            s_ViGEmTarget_Report.sThumbRX = rightX;
+            s_ViGEmTarget_Report.sThumbRY = rightY;
+        }
+
+        VIGEM_ERROR error;
+        error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+        Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+        if (error != VIGEM_ERROR_NONE) {
+            qDebug("[ViGEmClient_Mouse2JoystickUpdate] Mouse2Joystick Update ErrorCode: 0x%08X", error);
+        }
+#endif
     }
 }
 #endif
@@ -1977,6 +2059,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             }
         }
     }
+    else if (wParam == WM_MOUSEMOVE) {
+        s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
+        s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
+
+        s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
+        s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
+        emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
+    }
 
     if (true == returnFlag){
 #ifdef DEBUG_LOGOUT_ON
@@ -2492,8 +2582,8 @@ void QKeyMapper_Worker::initJoystickKeyMap()
 void QKeyMapper_Worker::initViGEmKeyMap()
 {
     /* Virtual Joystick Buttons */
-    JoyStickKeyMap.insert("vJoy-Mouse2LS"               ,   (int)JOYSTICK_LS_MOUSE      );
-    JoyStickKeyMap.insert("vJoy-Mouse2RS"               ,   (int)JOYSTICK_RS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_STR_MOUSE2LS             ,   (int)JOYSTICK_LS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_STR_MOUSE2RS             ,   (int)JOYSTICK_RS_MOUSE      );
 
     JoyStickKeyMap.insert("vJoy-Key1(A)"                ,   (int)JOYSTICK_BUTTON_0      );
     JoyStickKeyMap.insert("vJoy-Key2(B)"                ,   (int)JOYSTICK_BUTTON_1      );

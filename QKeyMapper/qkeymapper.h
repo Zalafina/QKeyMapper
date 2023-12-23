@@ -158,6 +158,8 @@ public:
     static bool getDisableWinKeyStatus(void);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);
+    static int getvJoyXSensitivity(void);
+    static int getvJoyYSensitivity(void);
 
 signals:
     void updateLockStatus_Signal(void);

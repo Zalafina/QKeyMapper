@@ -52,7 +52,7 @@ static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
-static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 36;
+static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 #endif
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
@@ -1274,6 +1274,16 @@ int QKeyMapper::getBurstPressTime()
 int QKeyMapper::getBurstReleaseTime()
 {
     return getInstance()->ui->burstreleaseComboBox->currentText().toInt();
+}
+
+int QKeyMapper::getvJoyXSensitivity()
+{
+    return getInstance()->ui->vJoyXSensSpinBox->value();
+}
+
+int QKeyMapper::getvJoyYSensitivity()
+{
+    return getInstance()->ui->vJoyYSensSpinBox->value();
 }
 
 void QKeyMapper::changeEvent(QEvent *event)
@@ -3759,7 +3769,7 @@ void QKeyMapper::on_moveupButton_clicked()
 {
     int currentrowindex = -1;
     QList<QTableWidgetItem*> items = ui->keymapdataTable->selectedItems();
-    if (false == items.empty() && items.size() == KEYMAPPINGDATA_TABLE_COLUMN_COUNT) {
+    if (false == items.empty() && items.size() > 0) {
         QTableWidgetItem* selectedItem = items.at(0);
         currentrowindex = ui->keymapdataTable->row(selectedItem);
 #ifdef DEBUG_LOGOUT_ON
@@ -3801,7 +3811,7 @@ void QKeyMapper::on_movedownButton_clicked()
 {
     int currentrowindex = -1;
     QList<QTableWidgetItem*> items = ui->keymapdataTable->selectedItems();
-    if (false == items.empty() && items.size() == KEYMAPPINGDATA_TABLE_COLUMN_COUNT) {
+    if (false == items.empty() && items.size() > 0) {
         QTableWidgetItem* selectedItem = items.at(0);
         currentrowindex = ui->keymapdataTable->row(selectedItem);
 #ifdef DEBUG_LOGOUT_ON
