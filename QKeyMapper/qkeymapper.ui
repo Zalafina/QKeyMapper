@@ -47,10 +47,7 @@
     <string>KeyMappingStart</string>
    </property>
    <property name="autoDefault">
-    <bool>true</bool>
-   </property>
-   <property name="default">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="savemaplistButton">
@@ -1130,9 +1127,9 @@
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
-     <x>641</x>
+     <x>690</x>
      <y>545</y>
-     <width>291</width>
+     <width>271</width>
      <height>22</height>
     </rect>
    </property>
@@ -1146,14 +1143,14 @@
   <widget class="QLabel" name="settingselectLabel">
    <property name="geometry">
     <rect>
-     <x>521</x>
+     <x>645</x>
      <y>545</y>
-     <width>111</width>
+     <width>41</width>
      <height>22</height>
     </rect>
    </property>
    <property name="text">
-    <string>SettingSelect </string>
+    <string>Setting</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1162,7 +1159,7 @@
   <widget class="QPushButton" name="removeSettingButton">
    <property name="geometry">
     <rect>
-     <x>940</x>
+     <x>969</x>
      <y>546</y>
      <width>61</width>
      <height>20</height>
@@ -1266,7 +1263,7 @@
     <rect>
      <x>530</x>
      <y>590</y>
-     <width>131</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
@@ -1274,7 +1271,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Enable Virtual Joystick</string>
+    <string>Virtual Gamepad</string>
    </property>
    <property name="checked">
     <bool>false</bool>
@@ -1340,6 +1337,64 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QSpinBox" name="vJoyXSensSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>590</x>
+     <y>535</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="vJoyYSensSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>590</x>
+     <y>565</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="vJoyXSensLabel">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>535</y>
+     <width>76</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X Sensitivity</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="vJoyYSensLabel">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>565</y>
+     <width>76</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Y Sensitivity</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1376,6 +1431,10 @@
   <zorder>installViGEmBusButton</zorder>
   <zorder>uninstallViGEmBusButton</zorder>
   <zorder>ViGEmBusStatusLabel</zorder>
+  <zorder>vJoyXSensSpinBox</zorder>
+  <zorder>vJoyYSensSpinBox</zorder>
+  <zorder>vJoyXSensLabel</zorder>
+  <zorder>vJoyYSensLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

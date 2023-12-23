@@ -49,6 +49,10 @@ static const int UI_SCALE_4K_PERCENT_150 = 9;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
+
+static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
+static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
+static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 36;
 #endif
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
@@ -74,6 +78,8 @@ static const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 static const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 static const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 static const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
+static const char *KEYMAPDATA_X_SENSITIVITY = "KeyMapData_vJoyXSensitivity";
+static const char *KEYMAPDATA_Y_SENSITIVITY = "KeyMapData_vJoyYSensitivity";
 static const char *CLEARALL = "KeyMapData_ClearAll";
 
 static const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
@@ -112,7 +118,9 @@ static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
 static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
 static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
-static const char *SETTINGSELECTLABEL_CHINESE = "设定选择";
+static const char *SETTINGSELECTLABEL_CHINESE = "设定";
+static const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
+static const char *VJOYYSENSLABEL_CHINESE = "Y轴灵敏度";
 static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
 static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
@@ -146,7 +154,9 @@ static const char *BURSTPRESSLABEL_ENGLISH = "BurstPress";
 static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
-static const char *SETTINGSELECTLABEL_ENGLISH = "SettingSelect";
+static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
+static const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
+static const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
 static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmBus Unavailable";
 static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmBus Available";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
@@ -287,6 +297,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIcon->show();
 
 #ifdef VIGEM_CLIENT_SUPPORT
+    ui->vJoyXSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
+    ui->vJoyYSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
+    ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+
     bool isWin10Above = false;
     QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
     if (osVersion >= QOperatingSystemVersion::Windows10) {
@@ -318,11 +333,15 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->installViGEmBusButton->setEnabled(false);
         ui->uninstallViGEmBusButton->setEnabled(false);
         ui->ViGEmBusStatusLabel->setEnabled(false);
+        ui->vJoyXSensSpinBox->setEnabled(false);
+        ui->vJoyYSensSpinBox->setEnabled(false);
 
         ui->enableVirtualJoystickCheckBox->setVisible(false);
         ui->installViGEmBusButton->setVisible(false);
         ui->uninstallViGEmBusButton->setVisible(false);
         ui->ViGEmBusStatusLabel->setVisible(false);
+        ui->vJoyXSensSpinBox->setVisible(false);
+        ui->vJoyYSensSpinBox->setVisible(false);
     }
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -1551,6 +1570,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QString burstpressTimeString = ui->burstpressComboBox->currentText();
         QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
+        int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
+        int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
 
         QString saveSettingSelectStr;
         QString cursettingSelectStr = ui->settingselectComboBox->currentText();
@@ -1652,6 +1673,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_X_SENSITIVITY , vJoy_X_Sensitivity  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
 
             settingFile.remove(saveSettingSelectStr+CLEARALL);
         }
@@ -1662,6 +1685,9 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_X_SENSITIVITY , vJoy_X_Sensitivity  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
+
             settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
         }
 
@@ -2111,6 +2137,28 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->burstreleaseComboBox->setCurrentText(QString("20"));
     }
 
+    if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_X_SENSITIVITY)){
+        int vJoy_X_Sensitivity = settingFile.value(settingSelectStr+KEYMAPDATA_X_SENSITIVITY).toInt();
+        ui->vJoyXSensSpinBox->setValue(vJoy_X_Sensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "vJoy X Sensitivity =" << vJoy_X_Sensitivity;
+#endif
+    }
+    else {
+        ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_Y_SENSITIVITY)){
+        int vJoy_Y_Sensitivity = settingFile.value(settingSelectStr+KEYMAPDATA_Y_SENSITIVITY).toInt();
+        ui->vJoyYSensSpinBox->setValue(vJoy_Y_Sensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "vJoy Y Sensitivity =" << vJoy_Y_Sensitivity;
+#endif
+    }
+    else {
+        ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    }
+
     if (true == settingFile.contains(settingSelectStr+DISABLEWINKEY_CHECKED)){
         bool disableWinKeyChecked = settingFile.value(settingSelectStr+DISABLEWINKEY_CHECKED).toBool();
         if (true == disableWinKeyChecked) {
@@ -2310,6 +2358,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
+    ui->vJoyXSensLabel->setFont(customFont);
+    ui->vJoyYSensLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -2378,6 +2428,8 @@ void QKeyMapper::setControlFontChinese()
     ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
+    ui->vJoyXSensLabel->setFont(customFont);
+    ui->vJoyYSensLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -2438,6 +2490,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->installViGEmBusButton->setEnabled(status);
     }
     ui->uninstallViGEmBusButton->setEnabled(status);
+    ui->vJoyXSensSpinBox->setEnabled(status);
+    ui->vJoyYSensSpinBox->setEnabled(status);
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
     ui->nextarrowCheckBox->setEnabled(status);
@@ -3251,6 +3305,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
+    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
+    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
     ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
@@ -3294,6 +3350,8 @@ void QKeyMapper::setUILanguage_English()
     ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
+    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
+    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
     ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
@@ -3335,6 +3393,9 @@ void QKeyMapper::resetFontSize()
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
         ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
+
+        ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
     }
     else {
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -3349,6 +3410,9 @@ void QKeyMapper::resetFontSize()
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
         ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
+
+        ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
     }
 }
 
