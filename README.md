@@ -4,7 +4,7 @@
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 注意: 使用时需要 Visual C++ Redistributable for Visual Studio 2015 64位运行库。<br>VC++ 2015 64位运行库，微软下载网址：<br>https://www.microsoft.com/zh-cn/download/confirmation.aspx?id=48145
 ### 注意: v1.3.6(Build 20231125)版本修改了鼠标按键存储在ini配置文件中的名称，设定选择1.3.6版本之前存储的带有鼠标按键的设定有可能会提出加载出错，如果软件自己加入的容错处理未生效，可以尝试手动在ini文件中将L-Mouse、R-Mouse、M-Mouse、X1-Mouse、X2-Mouse替换为Mouse-L、Mouse-R、Mouse-M、Mouse-X1、Mouse-X2
-### 注意: v1.3.6(Build 20231220)版本新添加的虚拟游戏手柄功能需要安装ViGEmBus驱动，反复安装和卸载ViGEmBus驱动后尝试启用/关闭虚拟游戏手柄有蓝屏系统重启风险，请慎重使用此功能(来回折腾导致蓝屏系统重启不要怪我)。如果软件上的"安装ViGEmBus"按钮无法正常安装驱动，也可以使用软件压缩包中附带的"ViGEmBus_1.22.0_x64_x86_arm64.exe" 驱动安装程序自己手动安装 ViGEmBus驱动。
+### 注意: v1.3.6(Build 20231220)版本新添加的虚拟游戏手柄功能需要安装ViGEmBus驱动，频繁的反复安装和卸载ViGEmBus驱动有导致系统蓝屏重启风险，请慎重使用，避免反复安装和卸载驱动。如果软件上的"安装ViGEmBus"按钮无法正常安装驱动，也可以使用软件压缩包中附带的"ViGEmBus_1.22.0_x64_x86_arm64.exe" 驱动安装程序自己手动安装 ViGEmBus驱动。
 ---------------
 ## 使用教学视频请点击下方图片
 [![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
@@ -45,7 +45,7 @@
 ### Qt6 version is recommended for Win10 and Win11 OS, and the provision of Qt5 version is only for compatibility with Win7 OS. If the Qt6 version could not be used under Win7, please download the Qt5 version for it.
 ### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/en-us/download/confirmation.aspx?id=48145
 ### Note: Version 1.3.6 has changed the names of mouse buttons stored in the ini configuration file. If you select settings stored before version 1.3.6 that include mouse buttons, there may be loading errors. If the error tolerance handling added by the software does not take effect, you can try to manually replace L-Mouse, R-Mouse, M-Mouse, X1-Mouse, X2-Mouse with Mouse-L, Mouse-R, Mouse-M, Mouse-X1, Mouse-X2 in the ini file.
-### Note: The newly added virtual gamepad feature in version v1.3.6(Build 20231220) requires the installation of the ViGEmBus driver. Repeatedly installing and uninstalling the ViGEmBus driver and attempting to enable/disable the virtual gamepad carries a risk of a blue screen system restart, so please use this feature with caution (don't blame me for blue screen system restarts caused by back and forth tinkering). If the "Install ViGEmBus" button in the software cannot install the driver normally, you can also manually install the ViGEmBus driver using the "ViGEmBus_1.22.0_x64_x86_arm64.exe" driver installer included in the software package.
+### Note: The newly added virtual game controller feature in version v1.3.6(Build 20231220) requires the installation of the ViGEmBus driver. Frequent installation and uninstallation of the ViGEmBus driver may lead to system blue screen restart risks, so please use it with caution and avoid repeated installation and uninstallation of the driver. If the "Install ViGEmBus" button on the software cannot install the driver normally, you can also manually install the ViGEmBus driver using the "ViGEmBus_1.22.0_x64_x86_arm64.exe" driver installer included in the software zip package.
 ---------------
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
