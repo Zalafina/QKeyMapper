@@ -342,6 +342,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->ViGEmBusStatusLabel->setVisible(false);
         ui->vJoyXSensSpinBox->setVisible(false);
         ui->vJoyYSensSpinBox->setVisible(false);
+        ui->vJoyXSensLabel->setVisible(false);
+        ui->vJoyYSensLabel->setVisible(false);
     }
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -2500,6 +2502,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->installViGEmBusButton->setEnabled(status);
     }
     ui->uninstallViGEmBusButton->setEnabled(status);
+    ui->vJoyXSensLabel->setEnabled(status);
+    ui->vJoyYSensLabel->setEnabled(status);
     ui->vJoyXSensSpinBox->setEnabled(status);
     ui->vJoyYSensSpinBox->setEnabled(status);
     ui->moveupButton->setEnabled(status);
