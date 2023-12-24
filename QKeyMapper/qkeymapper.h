@@ -226,6 +226,8 @@ private slots:
 
     void on_uninstallViGEmBusButton_clicked();
 
+    void on_lockCursorCheckBox_stateChanged(int state);
+
 private:
     void initHotKeySequence(void);
     void initProcessInfoTable(void);

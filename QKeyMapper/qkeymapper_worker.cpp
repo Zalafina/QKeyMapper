@@ -1103,6 +1103,38 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
 #endif
     }
 }
+
+void QKeyMapper_Worker::ViGEmClient_GamepadReset()
+{
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return;
+    }
+
+    if (s_ViGEmClient == Q_NULLPTR || s_ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+
+    if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    s_ViGEmTarget_Report.wButtons = 0;
+    s_ViGEmTarget_Report.bLeftTrigger = 0;
+    s_ViGEmTarget_Report.bRightTrigger = 0;
+    s_ViGEmTarget_Report.sThumbLX = 0;
+    s_ViGEmTarget_Report.sThumbLY = 0;
+    s_ViGEmTarget_Report.sThumbRX = 0;
+    s_ViGEmTarget_Report.sThumbRY = 0;
+
+    VIGEM_ERROR error;
+    error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+    if (error != VIGEM_ERROR_NONE) {
+        qDebug("[ViGEmClient_GamepadReset] GamepadReset Update ErrorCode: 0x%08X", error);
+    }
+#endif
+}
 #endif
 
 void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
@@ -1181,6 +1213,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
+    ViGEmClient_GamepadReset();
 
     if(TRUE == IsWindowVisible(hWnd)){
         if (ViGEmClient_checkMouse2JoystickEnabled()) {
@@ -1237,6 +1270,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
+    ViGEmClient_GamepadReset();
 
     if (m_MouseHook != Q_NULLPTR) {
         UnhookWindowsHookEx(m_MouseHook);
@@ -2165,9 +2199,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #endif
 
     if (true == returnFlag){
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("LowLevelMouseHookProc() -> return TRUE");
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//        qDebug("LowLevelMouseHookProc() -> return TRUE");
+//#endif
         return (LRESULT)TRUE;
     }
     else{

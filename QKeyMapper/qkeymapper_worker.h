@@ -262,6 +262,7 @@ public:
 
     static bool ViGEmClient_checkMouse2JoystickEnabled(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
+    void ViGEmClient_GamepadReset(void);
 #endif
 
 signals:

@@ -145,6 +145,7 @@ static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
 static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
 static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
+static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定鼠标光标";
 #endif
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -183,6 +184,7 @@ static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmBus Available";
 static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "Install ViGEmBus";
 static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Gamepad";
+static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
@@ -346,6 +348,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->vJoyYSensSpinBox->setEnabled(false);
 
         ui->enableVirtualJoystickCheckBox->setVisible(false);
+        ui->lockCursorCheckBox->setVisible(false);
         ui->installViGEmBusButton->setVisible(false);
         ui->uninstallViGEmBusButton->setVisible(false);
         ui->ViGEmBusStatusLabel->setVisible(false);
@@ -357,11 +360,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    ui->lockCursorCheckBox->setEnabled(false);
     ui->installViGEmBusButton->setEnabled(false);
     ui->uninstallViGEmBusButton->setEnabled(false);
     ui->ViGEmBusStatusLabel->setEnabled(false);
 
     ui->enableVirtualJoystickCheckBox->setVisible(false);
+    ui->lockCursorCheckBox->setVisible(false);
     ui->installViGEmBusButton->setVisible(false);
     ui->uninstallViGEmBusButton->setVisible(false);
     ui->ViGEmBusStatusLabel->setVisible(false);
@@ -2394,6 +2399,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->installViGEmBusButton->setFont(customFont);
     ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
+    ui->lockCursorCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
@@ -2464,6 +2470,7 @@ void QKeyMapper::setControlFontChinese()
     ui->installViGEmBusButton->setFont(customFont);
     ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
+    ui->lockCursorCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
@@ -2538,6 +2545,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->vJoyYSensLabel->setEnabled(status);
     ui->vJoyXSensSpinBox->setEnabled(status);
     ui->vJoyYSensSpinBox->setEnabled(status);
+    ui->lockCursorCheckBox->setEnabled(status);
 #endif
 
     ui->moveupButton->setEnabled(status);
@@ -3366,6 +3374,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
+    ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
     ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
@@ -3413,6 +3422,7 @@ void QKeyMapper::setUILanguage_English()
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
+    ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_ENGLISH);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
     ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
@@ -4128,5 +4138,12 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
 
     (void)uninstallViGEmBusDriver();
+#endif
+}
+
+void QKeyMapper::on_lockCursorCheckBox_stateChanged(int state)
+{
+#ifdef VIGEM_CLIENT_SUPPORT
+
 #endif
 }

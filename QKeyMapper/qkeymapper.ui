@@ -1395,6 +1395,25 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QCheckBox" name="lockCursorCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>510</y>
+     <width>101</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Lock Cursor</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1435,6 +1454,7 @@
   <zorder>vJoyYSensSpinBox</zorder>
   <zorder>vJoyXSensLabel</zorder>
   <zorder>vJoyYSensLabel</zorder>
+  <zorder>lockCursorCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
