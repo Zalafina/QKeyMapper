@@ -219,7 +219,7 @@ void QKeyMapper_Worker::sendMouseInput(V_MOUSECODE vmousecode, int keyupdown)
 {
     QMutexLocker locker(&sendinput_mutex);
 
-    INPUT mouse_input;
+    INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
     mouse_input.mi.dx = 0;
     mouse_input.mi.dy = 0;
@@ -258,6 +258,37 @@ void QKeyMapper_Worker::sendMouseMove(int x, int y)
     if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("sendMouseMove(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
+void QKeyMapper_Worker::setMouseToScreenCenter(void)
+{
+    QMutexLocker locker(&sendinput_mutex);
+
+    // Get screen dimensions
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    // Calculate the coordinates for the center of the screen
+    int centerX = screenWidth / 2;
+    int centerY = screenHeight / 2;
+
+    // Initialize INPUT structure
+    INPUT mouse_input = { 0 };
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = (centerX * (65536 / screenWidth));
+    mouse_input.mi.dy = (centerY * (65536 / screenHeight));
+    mouse_input.mi.mouseData = 0;
+    mouse_input.mi.time = 0;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+
+    // Send the mouse_input event
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("setMouseToScreenCenter(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
 }
@@ -974,6 +1005,41 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
     }
 }
 
+bool QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnabled()
+{
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return false;
+    }
+
+    if (s_ViGEmClient == Q_NULLPTR || s_ViGEmTarget == Q_NULLPTR) {
+        return false;
+    }
+
+    if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+        return false;
+    }
+
+    bool mouse2joy_enabled = false;
+    bool leftJoystickUpdate = false;
+    bool rightJoystickUpdate = false;
+
+    int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2LS);
+    if (findMouse2LSindex >=0){
+        leftJoystickUpdate = true;
+    }
+
+    int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2RS);
+    if (findMouse2RSindex >=0){
+        rightJoystickUpdate = true;
+    }
+
+    if (leftJoystickUpdate || rightJoystickUpdate) {
+        mouse2joy_enabled = true;
+    }
+
+    return mouse2joy_enabled;
+}
+
 void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y)
 {
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
@@ -1002,7 +1068,6 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     }
 
     if (leftJoystickUpdate || rightJoystickUpdate) {
-        QMutexLocker locker(&s_ViGEmClient_Mutex);
         int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
         int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
 
@@ -1112,7 +1177,25 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedLockKeysList.clear();
     collectExchangeKeysList();
 
+    s_Mouse2vJoy_delta.rx() = 0;
+    s_Mouse2vJoy_delta.ry() = 0;
+    s_Mouse2vJoy_prev.rx() = 0;
+    s_Mouse2vJoy_prev.ry() = 0;
+
     if(TRUE == IsWindowVisible(hWnd)){
+        if (ViGEmClient_checkMouse2JoystickEnabled()) {
+            setMouseToScreenCenter();
+
+            POINT pt;
+            if (GetCursorPos(&pt)) {
+                s_Mouse2vJoy_prev.rx() = pt.x;
+                s_Mouse2vJoy_prev.ry() = pt.y;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[setWorkerKeyHook] Centered Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+#endif
+            }
+        }
+
 #ifdef QT_DEBUG
         if (m_LowLevelKeyboardHook_Enable) {
             m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
@@ -1127,12 +1210,12 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
         setWorkerJoystickCaptureStart(hWnd);
 
 #ifdef DEBUG_LOGOUT_ON
-        qInfo("[setKeyHook] Normal Key Hook & Mouse Hook Started.");
+        qInfo("[setWorkerKeyHook] Normal Key Hook & Mouse Hook Started.");
 #endif
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("[setKeyHook] Error: Invisible Window Handle!!!");
+        qWarning("[setWorkerKeyHook] Error: Invisible Window Handle!!!");
 #endif
     }
 
@@ -1150,6 +1233,11 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
+    s_Mouse2vJoy_delta.rx() = 0;
+    s_Mouse2vJoy_delta.ry() = 0;
+    s_Mouse2vJoy_prev.rx() = 0;
+    s_Mouse2vJoy_prev.ry() = 0;
+
     if (m_MouseHook != Q_NULLPTR) {
         UnhookWindowsHookEx(m_MouseHook);
         m_MouseHook = Q_NULLPTR;
@@ -1164,7 +1252,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     }
 
     setWorkerJoystickCaptureStop();
-
     //    setWorkerDInputKeyUnHook();
 }
 
@@ -2066,11 +2153,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
         s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
-        s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
-
         s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
-        s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
+
         emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
+        returnFlag = true;
+
+        /* Mouse Cursor has been lock to Screen Center, do no need to update Prev mouse position */
+//        s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
+//        s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
     }
 #endif
 

@@ -70,13 +70,14 @@ int main(int argc, char *argv[])
 {
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
 
-    int nScreenWidth = ::GetSystemMetrics(SM_CXSCREEN);
-    HWND hwd = ::GetDesktopWindow();
-    HDC hdc = ::GetDC(hwd);
+    int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+//    HWND hwd = GetDesktopWindow();
+    HDC hdc = GetDC(NULL);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
     double dWidth = static_cast<double>(width);
     double dScreenWidth = static_cast<double>(nScreenWidth);
     double scale = dWidth / dScreenWidth;
+    ReleaseDC(NULL, hdc);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "Original QT_SCALE_FACTOR ->" << qgetenv("QT_SCALE_FACTOR");

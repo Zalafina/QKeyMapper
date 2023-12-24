@@ -233,6 +233,7 @@ public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
     void sendMouseMove(int x, int y);
+    void setMouseToScreenCenter(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int x, int y);
 #endif
@@ -259,6 +260,7 @@ public:
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
 
+    static bool ViGEmClient_checkMouse2JoystickEnabled(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
 #endif
 
