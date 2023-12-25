@@ -56,6 +56,8 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 
+static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
+
 static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
 #endif
@@ -104,7 +106,7 @@ QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
 #endif
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
-bool QKeyMapper_Worker::s_Mouse2vJoy_Enabled = false;
+QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 #endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
@@ -117,6 +119,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #endif
 #ifdef DINPUT_TEST
     m_DirectInput(Q_NULLPTR),
+#endif
+#ifdef VIGEM_CLIENT_SUPPORT
+    m_Mouse2vJoyResetTimer(this),
 #endif
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap(),
@@ -144,10 +149,14 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, SIGNAL(onMouseMove_Signal(int,int)), this, SLOT(onMouseMove(int,int)), Qt::QueuedConnection);
+
+    m_Mouse2vJoyResetTimer.setTimerType(Qt::PreciseTimer);
+    m_Mouse2vJoyResetTimer.setSingleShot(true);
+    QObject::connect(&m_Mouse2vJoyResetTimer, SIGNAL(timeout()), this, SLOT(onMouse2vJoyResetTimeout()));
 #endif
-    QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
 
     /* Connect QJoysticks Signals */
     QJoysticks *instance = QJoysticks::getInstance();
@@ -331,6 +340,15 @@ void QKeyMapper_Worker::onMouseMove(int x, int y)
     Q_UNUSED(y);
 
     ViGEmClient_Mouse2JoystickUpdate(s_Mouse2vJoy_delta.x(), s_Mouse2vJoy_delta.y());
+}
+
+void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
+{
+    ViGEmClient_JoysticksReset();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onMouse2vJoyResetTimeout]" << "Reset the Joysticks to Release Center State.";
+#endif
 }
 #endif
 
@@ -1032,21 +1050,21 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
     }
 }
 
-bool QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnabled()
+QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnableState()
 {
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
-        return false;
+        return MOUSE2VJOY_NONE;
     }
 
     if (s_ViGEmClient == Q_NULLPTR || s_ViGEmTarget == Q_NULLPTR) {
-        return false;
+        return MOUSE2VJOY_NONE;
     }
 
     if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
-        return false;
+        return MOUSE2VJOY_NONE;
     }
 
-    bool mouse2joy_enabled = false;
+    Mouse2vJoyState mouse2joy_enablestate = MOUSE2VJOY_NONE;
     bool leftJoystickUpdate = false;
     bool rightJoystickUpdate = false;
 
@@ -1060,11 +1078,17 @@ bool QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnabled()
         rightJoystickUpdate = true;
     }
 
-    if (leftJoystickUpdate || rightJoystickUpdate) {
-        mouse2joy_enabled = true;
+    if (leftJoystickUpdate && rightJoystickUpdate) {
+        mouse2joy_enablestate = MOUSE2VJOY_BOTH;
+    }
+    else if (leftJoystickUpdate) {
+        mouse2joy_enablestate = MOUSE2VJOY_LEFT;
+    }
+    else if (rightJoystickUpdate) {
+        mouse2joy_enablestate = MOUSE2VJOY_RIGHT;
     }
 
-    return mouse2joy_enabled;
+    return mouse2joy_enablestate;
 }
 
 void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y)
@@ -1123,6 +1147,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         VIGEM_ERROR error;
         error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
         Q_UNUSED(error);
+        m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
 #ifdef DEBUG_LOGOUT_ON
         if (error != VIGEM_ERROR_NONE) {
             qDebug("[ViGEmClient_Mouse2JoystickUpdate] Mouse2Joystick Update ErrorCode: 0x%08X", error);
@@ -1152,6 +1177,49 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset()
     s_ViGEmTarget_Report.sThumbLY = 0;
     s_ViGEmTarget_Report.sThumbRX = 0;
     s_ViGEmTarget_Report.sThumbRY = 0;
+
+    VIGEM_ERROR error;
+    error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+    if (error != VIGEM_ERROR_NONE) {
+        qDebug("[ViGEmClient_GamepadReset] GamepadReset Update ErrorCode: 0x%08X", error);
+    }
+#endif
+}
+
+void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
+{
+    if (MOUSE2VJOY_NONE == s_Mouse2vJoy_EnableState) {
+        return;
+    }
+
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return;
+    }
+
+    if (s_ViGEmClient == Q_NULLPTR || s_ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+
+    if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    if (MOUSE2VJOY_LEFT == s_Mouse2vJoy_EnableState) {
+        s_ViGEmTarget_Report.sThumbLX = 0;
+        s_ViGEmTarget_Report.sThumbLY = 0;
+    }
+    else if (MOUSE2VJOY_RIGHT == s_Mouse2vJoy_EnableState) {
+        s_ViGEmTarget_Report.sThumbRX = 0;
+        s_ViGEmTarget_Report.sThumbRY = 0;
+    }
+    else {
+        s_ViGEmTarget_Report.sThumbLX = 0;
+        s_ViGEmTarget_Report.sThumbLY = 0;
+        s_ViGEmTarget_Report.sThumbRX = 0;
+        s_ViGEmTarget_Report.sThumbRY = 0;
+    }
 
     VIGEM_ERROR error;
     error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
@@ -1241,15 +1309,10 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
     ViGEmClient_GamepadReset();
-    if (ViGEmClient_checkMouse2JoystickEnabled()) {
-        s_Mouse2vJoy_Enabled = true;
-    }
-    else {
-        s_Mouse2vJoy_Enabled = false;
-    }
+    s_Mouse2vJoy_EnableState = ViGEmClient_checkMouse2JoystickEnableState();
 
     if(TRUE == IsWindowVisible(hWnd)){
-        if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_Enabled) {
+        if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
             setMouseToScreenBottomRight();
 
             POINT pt;
@@ -1315,7 +1378,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     setWorkerJoystickCaptureStop();
     //    setWorkerDInputKeyUnHook();
 
-    if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_Enabled) {
+    if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
         setMouseToScreenCenter();
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[setWorkerKeyUnHook] Set Mouse Cursor Back to ScreenCenter.");
@@ -1327,7 +1390,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
     ViGEmClient_GamepadReset();
-    s_Mouse2vJoy_Enabled = false;
+    s_Mouse2vJoy_EnableState = MOUSE2VJOY_NONE;
 }
 
 void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
@@ -2230,7 +2293,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 //#ifdef DEBUG_LOGOUT_ON
 //        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
 //#endif
-        if (s_Mouse2vJoy_Enabled) {
+        if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
             s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
             s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
 

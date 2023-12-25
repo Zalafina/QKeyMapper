@@ -5,6 +5,9 @@
 #include <QObject>
 #include <QThread>
 #include <QHash>
+#ifdef VIGEM_CLIENT_SUPPORT
+#include <QTimer>
+#endif
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 #include <QRecursiveMutex>
 #else
@@ -227,6 +230,15 @@ public:
         VIGEMCLIENT_CONNECT_FAILED,
     };
     Q_ENUM(ViGEmClient_ConnectState)
+
+    enum Mouse2vJoyState
+    {
+        MOUSE2VJOY_NONE,
+        MOUSE2VJOY_LEFT,
+        MOUSE2VJOY_RIGHT,
+        MOUSE2VJOY_BOTH
+    };
+    Q_ENUM(Mouse2vJoyState)
 #endif
 
 public slots:
@@ -237,6 +249,7 @@ public slots:
     void setMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int x, int y);
+    void onMouse2vJoyResetTimeout(void);
 #endif
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void send_WINplusD(void);
@@ -261,9 +274,10 @@ public:
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
 
-    static bool ViGEmClient_checkMouse2JoystickEnabled(void);
+    static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
     void ViGEmClient_GamepadReset(void);
+    void ViGEmClient_JoysticksReset(void);
 #endif
 
 signals:
@@ -374,7 +388,7 @@ public:
 #endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
-    static bool s_Mouse2vJoy_Enabled;
+    static Mouse2vJoyState s_Mouse2vJoy_EnableState;
 #endif
 
 private:
@@ -387,6 +401,9 @@ private:
 #endif
 #ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;
+#endif
+#ifdef VIGEM_CLIENT_SUPPORT
+    QTimer m_Mouse2vJoyResetTimer;
 #endif
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
