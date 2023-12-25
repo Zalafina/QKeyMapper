@@ -157,4 +157,4 @@ RC_FILE     += \
 
 DISTFILES   += \
     QKeyMapper.rc \
-    ../README.md
+    ../README*.md
