@@ -324,6 +324,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 
     if (isWin10Above) {
+        ui->vJoyXSensSpinBox->setEnabled(false);
+        ui->vJoyYSensSpinBox->setEnabled(false);
+        ui->vJoyXSensLabel->setEnabled(false);
+        ui->vJoyYSensLabel->setEnabled(false);
+        ui->lockCursorCheckBox->setEnabled(false);
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
 
         int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
@@ -2571,11 +2576,14 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->installViGEmBusButton->setEnabled(status);
     }
     ui->uninstallViGEmBusButton->setEnabled(status);
-    ui->vJoyXSensLabel->setEnabled(status);
-    ui->vJoyYSensLabel->setEnabled(status);
-    ui->vJoyXSensSpinBox->setEnabled(status);
-    ui->vJoyYSensSpinBox->setEnabled(status);
-    ui->lockCursorCheckBox->setEnabled(status);
+
+    if (false == status || ui->enableVirtualJoystickCheckBox->isChecked()) {
+        ui->vJoyXSensLabel->setEnabled(status);
+        ui->vJoyYSensLabel->setEnabled(status);
+        ui->vJoyXSensSpinBox->setEnabled(status);
+        ui->vJoyYSensSpinBox->setEnabled(status);
+        ui->lockCursorCheckBox->setEnabled(status);
+    }
 #endif
 
     ui->moveupButton->setEnabled(status);
@@ -4118,9 +4126,21 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     }
 
     if (true == checked && QKeyMapper_Worker::s_ViGEmTarget != Q_NULLPTR) {
+        ui->vJoyXSensSpinBox->setEnabled(true);
+        ui->vJoyYSensSpinBox->setEnabled(true);
+        ui->vJoyXSensLabel->setEnabled(true);
+        ui->vJoyYSensLabel->setEnabled(true);
+        ui->lockCursorCheckBox->setEnabled(true);
+
         settingFile.setValue(VIRTUALJOYSTICK_ENABLE , true);
     }
     else {
+        ui->vJoyXSensSpinBox->setEnabled(false);
+        ui->vJoyYSensSpinBox->setEnabled(false);
+        ui->vJoyXSensLabel->setEnabled(false);
+        ui->vJoyYSensLabel->setEnabled(false);
+        ui->lockCursorCheckBox->setEnabled(false);
+
         settingFile.setValue(VIRTUALJOYSTICK_ENABLE , false);
     }
 #endif
