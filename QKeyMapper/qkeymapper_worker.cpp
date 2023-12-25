@@ -101,6 +101,7 @@ QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
 #endif
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
+bool QKeyMapper_Worker::s_Mouse2vJoy_Enabled = false;
 #endif
 
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
@@ -1214,9 +1215,15 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
     ViGEmClient_GamepadReset();
+    if (ViGEmClient_checkMouse2JoystickEnabled()) {
+        s_Mouse2vJoy_Enabled = true;
+    }
+    else {
+        s_Mouse2vJoy_Enabled = false;
+    }
 
     if(TRUE == IsWindowVisible(hWnd)){
-        if (ViGEmClient_checkMouse2JoystickEnabled()) {
+        if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_Enabled) {
             setMouseToScreenCenter();
 
             POINT pt;
@@ -1271,6 +1278,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
     ViGEmClient_GamepadReset();
+    s_Mouse2vJoy_Enabled = false;
 
     if (m_MouseHook != Q_NULLPTR) {
         UnhookWindowsHookEx(m_MouseHook);
@@ -2186,15 +2194,20 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 #ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
-        s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
-        s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
+        if (s_Mouse2vJoy_Enabled) {
+            s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
+            s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
 
-        emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
-        returnFlag = true;
+            if (QKeyMapper::getLockCursorStatus()) {
+                returnFlag = true;
+            }
+            else {
+                s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
+                s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
+            }
 
-        /* Mouse Cursor has been lock to Screen Center, do no need to update Prev mouse position */
-//        s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
-//        s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
+            emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
+        }
     }
 #endif
 

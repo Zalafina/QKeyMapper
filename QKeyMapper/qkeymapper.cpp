@@ -81,8 +81,9 @@ static const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 static const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 static const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
 #ifdef VIGEM_CLIENT_SUPPORT
-static const char *KEYMAPDATA_X_SENSITIVITY = "KeyMapData_vJoyXSensitivity";
-static const char *KEYMAPDATA_Y_SENSITIVITY = "KeyMapData_vJoyYSensitivity";
+static const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
+static const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
+static const char *MOUSE2VJOY_LOCKCURSOR = "Mouse2vJoy_LockCursor";
 #endif
 static const char *CLEARALL = "KeyMapData_ClearAll";
 
@@ -145,7 +146,7 @@ static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
 static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
 static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
-static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定鼠标光标";
+static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -1306,6 +1307,16 @@ int QKeyMapper::getvJoyYSensitivity()
     return getInstance()->ui->vJoyYSensSpinBox->value();
 }
 
+bool QKeyMapper::getLockCursorStatus()
+{
+    if (true == getInstance()->ui->lockCursorCheckBox->isChecked()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void QKeyMapper::changeEvent(QEvent *event)
 {
     if(event->type()==QEvent::WindowStateChange)
@@ -1708,8 +1719,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
 #ifdef VIGEM_CLIENT_SUPPORT
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_X_SENSITIVITY , vJoy_X_Sensitivity  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
+            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
+            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
 #endif
 
             settingFile.remove(saveSettingSelectStr+CLEARALL);
@@ -1722,8 +1733,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
 #ifdef VIGEM_CLIENT_SUPPORT
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_X_SENSITIVITY , vJoy_X_Sensitivity  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
+            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
+            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
 #endif
 
             settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
@@ -1756,6 +1767,9 @@ void QKeyMapper::saveKeyMapSetting(void)
 
         settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
         settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
+#ifdef VIGEM_CLIENT_SUPPORT
+        settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
+#endif
 
         if (m_mappingswitchKeySeqStr.isEmpty()) {
             m_mappingswitchKeySeqStr = QString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
@@ -2178,8 +2192,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_X_SENSITIVITY)){
-        int vJoy_X_Sensitivity = settingFile.value(settingSelectStr+KEYMAPDATA_X_SENSITIVITY).toInt();
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_X_SENSITIVITY)){
+        int vJoy_X_Sensitivity = settingFile.value(settingSelectStr+MOUSE2VJOY_X_SENSITIVITY).toInt();
         ui->vJoyXSensSpinBox->setValue(vJoy_X_Sensitivity);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "vJoy X Sensitivity =" << vJoy_X_Sensitivity;
@@ -2189,8 +2203,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     }
 
-    if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_Y_SENSITIVITY)){
-        int vJoy_Y_Sensitivity = settingFile.value(settingSelectStr+KEYMAPDATA_Y_SENSITIVITY).toInt();
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_Y_SENSITIVITY)){
+        int vJoy_Y_Sensitivity = settingFile.value(settingSelectStr+MOUSE2VJOY_Y_SENSITIVITY).toInt();
         ui->vJoyYSensSpinBox->setValue(vJoy_Y_Sensitivity);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "vJoy Y Sensitivity =" << vJoy_Y_Sensitivity;
@@ -2198,6 +2212,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     else {
         ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_LOCKCURSOR)){
+        bool lockCursorChecked = settingFile.value(settingSelectStr+MOUSE2VJOY_LOCKCURSOR).toBool();
+        if (true == lockCursorChecked) {
+            ui->lockCursorCheckBox->setChecked(true);
+        }
+        else {
+            ui->lockCursorCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "LockCursorChecked =" << lockCursorChecked;
+#endif
+    }
+    else {
+        ui->lockCursorCheckBox->setChecked(false);
     }
 #endif
 
@@ -4138,12 +4168,5 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
 
     (void)uninstallViGEmBusDriver();
-#endif
-}
-
-void QKeyMapper::on_lockCursorCheckBox_stateChanged(int state)
-{
-#ifdef VIGEM_CLIENT_SUPPORT
-
 #endif
 }

@@ -373,6 +373,7 @@ public:
 #endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
+    static bool s_Mouse2vJoy_Enabled;
 #endif
 
 private:

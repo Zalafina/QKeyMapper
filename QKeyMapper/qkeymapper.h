@@ -160,6 +160,7 @@ public:
     static int getBurstReleaseTime(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
+    static bool getLockCursorStatus(void);
 
 signals:
     void updateLockStatus_Signal(void);
@@ -225,8 +226,6 @@ private slots:
     void on_installViGEmBusButton_clicked();
 
     void on_uninstallViGEmBusButton_clicked();
-
-    void on_lockCursorCheckBox_stateChanged(int state);
 
 private:
     void initHotKeySequence(void);
