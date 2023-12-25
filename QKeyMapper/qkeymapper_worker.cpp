@@ -41,6 +41,9 @@ static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD           = 0.
 static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
 static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
 
+static const int MOUSE_CURSOR_BOTTOMRIGHT_X = 65535;
+static const int MOUSE_CURSOR_BOTTOMRIGHT_Y = 65535;
+
 #ifdef VIGEM_CLIENT_SUPPORT
 static const BYTE XINPUT_TRIGGER_MIN     = 0;
 static const BYTE XINPUT_TRIGGER_MAX     = 255;
@@ -294,15 +297,15 @@ void QKeyMapper_Worker::setMouseToScreenCenter(void)
     }
 }
 
-void QKeyMapper_Worker::setMouseToScreenTopLeft()
+void QKeyMapper_Worker::setMouseToScreenBottomRight()
 {
     QMutexLocker locker(&sendinput_mutex);
 
     // Initialize INPUT structure
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
-    mouse_input.mi.dx = 0;
-    mouse_input.mi.dy = 0;
+    mouse_input.mi.dx = MOUSE_CURSOR_BOTTOMRIGHT_X;
+    mouse_input.mi.dy = MOUSE_CURSOR_BOTTOMRIGHT_Y;
     mouse_input.mi.mouseData = 0;
     mouse_input.mi.time = 0;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
@@ -312,7 +315,7 @@ void QKeyMapper_Worker::setMouseToScreenTopLeft()
     UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
     if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("setMouseToScreenTopLeft(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+        qDebug("setMouseToScreenBottomRight(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
 }
@@ -1247,7 +1250,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
     if(TRUE == IsWindowVisible(hWnd)){
         if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_Enabled) {
-            setMouseToScreenTopLeft();
+            setMouseToScreenBottomRight();
 
             POINT pt;
             if (GetCursorPos(&pt)) {
@@ -1296,13 +1299,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
-    s_Mouse2vJoy_delta.rx() = 0;
-    s_Mouse2vJoy_delta.ry() = 0;
-    s_Mouse2vJoy_prev.rx() = 0;
-    s_Mouse2vJoy_prev.ry() = 0;
-    ViGEmClient_GamepadReset();
-    s_Mouse2vJoy_Enabled = false;
-
     if (m_MouseHook != Q_NULLPTR) {
         UnhookWindowsHookEx(m_MouseHook);
         m_MouseHook = Q_NULLPTR;
@@ -1318,6 +1314,20 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     setWorkerJoystickCaptureStop();
     //    setWorkerDInputKeyUnHook();
+
+    if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_Enabled) {
+        setMouseToScreenCenter();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setWorkerKeyUnHook] Set Mouse Cursor Back to ScreenCenter.");
+#endif
+    }
+
+    s_Mouse2vJoy_delta.rx() = 0;
+    s_Mouse2vJoy_delta.ry() = 0;
+    s_Mouse2vJoy_prev.rx() = 0;
+    s_Mouse2vJoy_prev.ry() = 0;
+    ViGEmClient_GamepadReset();
+    s_Mouse2vJoy_Enabled = false;
 }
 
 void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
