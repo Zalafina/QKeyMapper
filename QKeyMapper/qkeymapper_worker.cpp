@@ -294,6 +294,29 @@ void QKeyMapper_Worker::setMouseToScreenCenter(void)
     }
 }
 
+void QKeyMapper_Worker::setMouseToScreenTopLeft()
+{
+    QMutexLocker locker(&sendinput_mutex);
+
+    // Initialize INPUT structure
+    INPUT mouse_input = { 0 };
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = 0;
+    mouse_input.mi.dy = 0;
+    mouse_input.mi.mouseData = 0;
+    mouse_input.mi.time = 0;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+
+    // Send the mouse_input event
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("setMouseToScreenTopLeft(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::onMouseMove(int x, int y)
 {
@@ -1224,7 +1247,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
     if(TRUE == IsWindowVisible(hWnd)){
         if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_Enabled) {
-            setMouseToScreenCenter();
+            setMouseToScreenTopLeft();
 
             POINT pt;
             if (GetCursorPos(&pt)) {
@@ -2194,6 +2217,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 #ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
+//#ifdef DEBUG_LOGOUT_ON
+//        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
+//#endif
         if (s_Mouse2vJoy_Enabled) {
             s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
             s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();

@@ -234,6 +234,7 @@ public slots:
     void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
     void sendMouseMove(int x, int y);
     void setMouseToScreenCenter(void);
+    void setMouseToScreenTopLeft(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int x, int y);
 #endif
