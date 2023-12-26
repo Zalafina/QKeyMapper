@@ -251,6 +251,7 @@ public slots:
     void onMouseMove(int x, int y);
     void onMouse2vJoyResetTimeout(void);
 #endif
+    void onMouseWheel(int wheel_updown);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void send_WINplusD(void);
 
@@ -285,12 +286,15 @@ signals:
     void setKeyUnHook_Signal(void);
     void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+#if 0
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseInput_Signal(V_MOUSECODE vmousecode, int keyupdown);
+#endif
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int point_x, int point_y);
 #endif
+    void onMouseWheel_Signal(int wheel_updown);
     void send_WINplusD_Signal(void);
 
 protected:

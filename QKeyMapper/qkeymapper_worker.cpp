@@ -5,6 +5,9 @@ static const int KEY_INIT = -1;
 static const int KEY_UP = 0;
 static const int KEY_DOWN = 1;
 
+static const int MOUSE_WHEEL_UP = 1;
+static const int MOUSE_WHEEL_DOWN = 2;
+
 static const WORD XBUTTON_NONE = 0x0000;
 
 static const int SENDMODE_HOOK          = 0;
@@ -62,9 +65,13 @@ static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
 #endif
 
+static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
+static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
+
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const ULONG_PTR VIRTUAL_MOUSE_MOVE = 0xBFBCBFBC;
+static const ULONG_PTR VIRTUAL_MOUSE_WHEEL = 0xEBFAEBFA;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -146,10 +153,13 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(startBurstTimer_Signal(QString,int)), this, SLOT(startBurstTimer(QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(stopBurstTimer_Signal(QString,int)), this, SLOT(stopBurstTimer(QString,int)), Qt::QueuedConnection);
 
+#if 0
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseInput_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseInput(V_MOUSECODE,int)), Qt::QueuedConnection);
+#endif
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, SIGNAL(onMouseMove_Signal(int,int)), this, SLOT(onMouseMove(int,int)), Qt::QueuedConnection);
 
@@ -351,6 +361,20 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 #endif
 }
 #endif
+
+void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
+{
+    if (MOUSE_WHEEL_UP == wheel_updown) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onMouseWheel]" << "Mouse Wheel Up";
+#endif
+    }
+    else if (MOUSE_WHEEL_DOWN == wheel_updown) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onMouseWheel]" << "Mouse Wheel Down";
+#endif
+    }
+}
 
 void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
@@ -2202,14 +2226,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 
     MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
+    ULONG_PTR extraInfo = pMouse->dwExtraInfo;
+    DWORD mousedata = pMouse->mouseData;
 
     bool returnFlag = false;
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
         || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
         || (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP)) {
-        ULONG_PTR extraInfo = pMouse->dwExtraInfo;
-        DWORD mousedata = pMouse->mouseData;
         int keyupdown;
         WPARAM wParam_X;
         if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || wParam == WM_XBUTTONDOWN) {
@@ -2238,7 +2262,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (true == MouseButtonNameMap.contains(wParam_X)) {
             QString keycodeString = MouseButtonNameMap.value(wParam_X);
-            if(VIRTUAL_MOUSE_CLICK == extraInfo) {
+            if (VIRTUAL_MOUSE_CLICK == extraInfo) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Virtual \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
@@ -2288,24 +2312,106 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             }
         }
     }
+    else if (wParam == WM_MOUSEWHEEL) {
+        short zDelta = GET_WHEEL_DELTA_WPARAM(mousedata);
+
+        if (zDelta != 0) {
+#ifdef MOUSE_VERBOSE_LOG
+            qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel -> Delta =" << zDelta;
+#endif
+            short delta_abs = std::abs(zDelta);
+            if (delta_abs >= WHEEL_DELTA) {
+                bool wheel_up_found = false;
+                bool wheel_down_found = false;
+                bool send_wheel_keys = false;
+                int findindex = -1;
+
+                int findWheelUpindex = QKeyMapper::findInKeyMappingDataList(MOUSE_STR_WHEEL_UP);
+                if (findWheelUpindex >=0){
+                    wheel_up_found = true;
+                }
+
+                int findWheelDownindex = QKeyMapper::findInKeyMappingDataList(MOUSE_STR_WHEEL_DOWN);
+                if (findWheelDownindex >=0){
+                    wheel_down_found = true;
+                }
+
+                if (wheel_up_found || wheel_down_found) {
+                    if (wheel_up_found && zDelta > 0) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << "Send Mouse Wheel Up Mapping Keys";
+#endif
+                        send_wheel_keys = true;
+                        findindex = findWheelUpindex;
+                    }
+                    else if (wheel_down_found && zDelta < 0) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << "Send Mouse Wheel Down Mapping Keys";
+#endif
+                        send_wheel_keys = true;
+                        findindex = findWheelDownindex;
+                    }
+
+                    if (send_wheel_keys) {
+                        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_HOOK);
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_HOOK);
+                        returnFlag = true;
+                    }
+                }
+            }
+        }
+
+#if 0
+        if (zDelta > 0)
+        {
+            short delta_abs = std::abs(zDelta);
+
+            if (delta_abs >= WHEEL_DELTA) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel Up -> Delta =" << zDelta;
+#endif
+                int findindex = QKeyMapper::findInKeyMappingDataList(MOUSE_WHEEL_UP);
+
+                emit QKeyMapper_Worker::getInstance()->onMouseWheel_Signal(MOUSE_WHEEL_UP);
+            }
+        }
+        else if (zDelta < 0)
+        {
+            short delta_abs = std::abs(zDelta);
+
+            if (delta_abs >= WHEEL_DELTA) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel Down -> Delta =" << zDelta;
+#endif
+
+                emit QKeyMapper_Worker::getInstance()->onMouseWheel_Signal(MOUSE_WHEEL_DOWN);
+            }
+        }
+#endif
+    }
 #ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
-//#ifdef DEBUG_LOGOUT_ON
-//        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
-//#endif
-        if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-            s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
-            s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
+#ifdef MOUSE_VERBOSE_LOG
+        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
+#endif
 
-            if (QKeyMapper::getLockCursorStatus()) {
-                returnFlag = true;
-            }
-            else {
-                s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
-                s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
-            }
+        if (extraInfo != VIRTUAL_MOUSE_MOVE) {
+            if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
+                s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
+                s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
 
-            emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
+                if (QKeyMapper::getLockCursorStatus()) {
+                    returnFlag = true;
+                }
+                else {
+                    s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
+                    s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
+                }
+
+                emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
+            }
         }
     }
 #endif
@@ -2718,11 +2824,13 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
 
 void QKeyMapper_Worker::initVirtualMouseButtonMap()
 {
-    VirtualMouseButtonMap.insert("Mouse-L",     V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP,     0           )); // Left Mouse Button
-    VirtualMouseButtonMap.insert("Mouse-R",     V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP,    0           )); // Right Mouse Button
-    VirtualMouseButtonMap.insert("Mouse-M",     V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP,   0           )); // Middle Mouse Button
-    VirtualMouseButtonMap.insert("Mouse-X1",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON1    )); // X1 Mouse Button
-    VirtualMouseButtonMap.insert("Mouse-X2",    V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // X2 Mouse Button
+    VirtualMouseButtonMap.insert("Mouse-L",             V_MOUSECODE(MOUSEEVENTF_LEFTDOWN,       MOUSEEVENTF_LEFTUP,     0           )); // Mouse Button Left
+    VirtualMouseButtonMap.insert("Mouse-R",             V_MOUSECODE(MOUSEEVENTF_RIGHTDOWN,      MOUSEEVENTF_RIGHTUP,    0           )); // Mouse Button Right
+    VirtualMouseButtonMap.insert("Mouse-M",             V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP,   0           )); // Mouse Button Middle
+    VirtualMouseButtonMap.insert("Mouse-X1",            V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON1    )); // Mouse Button X1
+    VirtualMouseButtonMap.insert("Mouse-X2",            V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // Mouse Button X2
+    VirtualMouseButtonMap.insert(MOUSE_STR_WHEEL_UP,    V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Up
+    VirtualMouseButtonMap.insert(MOUSE_STR_WHEEL_DOWN,  V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Down
 
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "Mouse-L");
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "Mouse-L");

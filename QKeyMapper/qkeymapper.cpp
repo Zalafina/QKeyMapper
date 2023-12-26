@@ -110,6 +110,9 @@ static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
 #endif
 
+static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
+static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
+
 static const char *REFRESHBUTTON_CHINESE = "刷新";
 static const char *KEYMAPBUTTON_START_CHINESE = "开始按键映射";
 static const char *KEYMAPBUTTON_STOP_CHINESE = "停止按键映射";
@@ -3063,6 +3066,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Mouse-M"
             << "Mouse-X1"
             << "Mouse-X2"
+            << "Mouse-WheelUp"
+            << "Mouse-WheelDown"
             << "A"
             << "B"
             << "C"
