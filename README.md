@@ -9,7 +9,7 @@
 ## 使用教学视频请点击下方图片
 [![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
 ---------------
-## 使用中有疑问也可以加Q群咨询
+## 使用中有疑问也可以加Q群咨询 (群号: 906963961)
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
