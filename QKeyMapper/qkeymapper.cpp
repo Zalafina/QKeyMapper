@@ -1487,6 +1487,7 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 
 void QKeyMapper::cellChanged_slot(int row, int col)
 {
+#if 0
     if ((col == BURST_MODE_COLUMN || col == LOCK_COLUMN)
             && ui->keymapdataTable->item(row, col)->checkState() == Qt::Checked) {
         if (KeyMappingDataList[row].Mapping_Keys.size() > 1) {
@@ -1507,6 +1508,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             return;
         }
     }
+#endif
 
     if (col == BURST_MODE_COLUMN) {
         bool burst = false;
@@ -3308,12 +3310,20 @@ void QKeyMapper::refreshKeyMappingDataTable()
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
         for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
         {
+            bool disable_burstandlock = false;
+
 #ifdef VIGEM_CLIENT_SUPPORT
-            bool mouse2joystick = false;
             if (keymapdata.Original_Key == VJOY_STR_MOUSE2LS || keymapdata.Original_Key == VJOY_STR_MOUSE2RS) {
-                mouse2joystick = true;
+                disable_burstandlock = true;
             }
 #endif
+            if (keymapdata.Original_Key == MOUSE_STR_WHEEL_UP || keymapdata.Original_Key == MOUSE_STR_WHEEL_DOWN) {
+                disable_burstandlock = true;
+            }
+
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                disable_burstandlock = true;
+            }
 
             /* ORIGINAL_KEY_COLUMN */
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
@@ -3334,8 +3344,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
             else {
                 burstCheckBox->setCheckState(Qt::Unchecked);
             }
+
 #ifdef VIGEM_CLIENT_SUPPORT
-            if (mouse2joystick) {
+            if (disable_burstandlock) {
                 burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
 #endif
@@ -3349,8 +3360,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
             else {
                 lockCheckBox->setCheckState(Qt::Unchecked);
             }
+
 #ifdef VIGEM_CLIENT_SUPPORT
-            if (mouse2joystick) {
+            if (disable_burstandlock) {
                 lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
 #endif
