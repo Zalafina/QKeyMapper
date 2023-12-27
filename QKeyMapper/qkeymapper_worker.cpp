@@ -8,6 +8,8 @@ static const int KEY_DOWN = 1;
 static const int MOUSE_WHEEL_UP = 1;
 static const int MOUSE_WHEEL_DOWN = 2;
 
+static const int MOUSE_WHEEL_KEYUP_WAITTIME = 20;
+
 static const WORD XBUTTON_NONE = 0x0000;
 
 static const int SENDMODE_HOOK          = 0;
@@ -159,7 +161,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #endif
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(sendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
+#if 0
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
+#endif
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, SIGNAL(onMouseMove_Signal(int,int)), this, SLOT(onMouseMove(int,int)), Qt::QueuedConnection);
 
@@ -403,6 +407,12 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
 
 void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
+    if (original_key == MOUSE_STR_WHEEL_UP || original_key == MOUSE_STR_WHEEL_DOWN) {
+        if (KEY_UP == keyupdown) {
+            QThread::msleep(MOUSE_WHEEL_KEYUP_WAITTIME);
+        }
+    }
+
     int key_sequence_count = inputKeys.size();
     if (key_sequence_count <= 0) {
 #ifdef DEBUG_LOGOUT_ON

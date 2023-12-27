@@ -295,7 +295,9 @@ signals:
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int point_x, int point_y);
 #endif
+#if 0
     void onMouseWheel_Signal(int wheel_updown);
+#endif
     void send_WINplusD_Signal(void);
 
 protected:
