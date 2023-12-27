@@ -243,8 +243,9 @@ public:
 
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
-    void sendMouseInput(V_MOUSECODE vmousecode, int keyupdown);
+    void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
     void sendMouseMove(int x, int y);
+    void sendMouseWheel(int wheel_updown);
     void setMouseToScreenCenter(void);
     void setMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -288,7 +289,7 @@ signals:
     void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
 #if 0
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
-    void sendMouseInput_Signal(V_MOUSECODE vmousecode, int keyupdown);
+    void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
 #ifdef VIGEM_CLIENT_SUPPORT
