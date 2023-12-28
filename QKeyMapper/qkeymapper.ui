@@ -189,7 +189,7 @@
    <property name="geometry">
     <rect>
      <x>920</x>
-     <y>390</y>
+     <y>380</y>
      <width>60</width>
      <height>23</height>
     </rect>
@@ -208,7 +208,7 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>390</y>
+     <y>380</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -224,7 +224,7 @@
    <property name="geometry">
     <rect>
      <x>710</x>
-     <y>390</y>
+     <y>380</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -240,7 +240,7 @@
    <property name="geometry">
     <rect>
      <x>620</x>
-     <y>430</y>
+     <y>445</y>
      <width>121</width>
      <height>25</height>
     </rect>
@@ -259,7 +259,7 @@
    <property name="geometry">
     <rect>
      <x>810</x>
-     <y>430</y>
+     <y>445</y>
      <width>121</width>
      <height>25</height>
     </rect>
@@ -363,7 +363,7 @@
    <property name="geometry">
     <rect>
      <x>935</x>
-     <y>475</y>
+     <y>480</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -707,7 +707,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>475</y>
+     <y>480</y>
      <width>111</width>
      <height>22</height>
     </rect>
@@ -723,7 +723,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>475</y>
+     <y>480</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -739,7 +739,7 @@
    <property name="geometry">
     <rect>
      <x>935</x>
-     <y>505</y>
+     <y>510</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -1080,7 +1080,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>505</y>
+     <y>510</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -1096,7 +1096,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>505</y>
+     <y>510</y>
      <width>111</width>
      <height>22</height>
     </rect>
@@ -1201,7 +1201,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>391</y>
+     <y>380</y>
      <width>51</width>
      <height>21</height>
     </rect>
@@ -1417,6 +1417,51 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QSpinBox" name="waitTimeSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>775</x>
+     <y>410</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="waitTimeLabel">
+   <property name="geometry">
+    <rect>
+     <x>710</x>
+     <y>410</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>⏱</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="waitTime_msLabel">
+   <property name="geometry">
+    <rect>
+     <x>825</x>
+     <y>410</y>
+     <width>31</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ms</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1458,6 +1503,9 @@
   <zorder>vJoyXSensLabel</zorder>
   <zorder>vJoyYSensLabel</zorder>
   <zorder>lockCursorCheckBox</zorder>
+  <zorder>waitTimeSpinBox</zorder>
+  <zorder>waitTimeLabel</zorder>
+  <zorder>waitTime_msLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

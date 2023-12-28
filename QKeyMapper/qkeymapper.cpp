@@ -36,6 +36,9 @@ static const int SENDMODE_BURST_STOP    = 2;
 
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
+static const int MAPPING_WAITTIME_MIN = 0;
+static const int MAPPING_WAITTIME_MAX = 1000;
+
 static const int UI_SCALE_NORMAL = 0;
 static const int UI_SCALE_1K_PERCENT_100 = 1;
 static const int UI_SCALE_1K_PERCENT_125 = 2;
@@ -105,10 +108,8 @@ static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
-#ifdef VIGEM_CLIENT_SUPPORT
 static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
-#endif
 
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
@@ -128,6 +129,8 @@ static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
 static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
 static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
+static const char *WAITTIME_CHINESE = SEPARATOR_WAITTIME;
+static const char *WAITTIME_MSLABEL_CHINESE = "毫秒";
 static const char *SETTINGSELECTLABEL_CHINESE = "设定";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
@@ -167,6 +170,8 @@ static const char *BURSTPRESSLABEL_ENGLISH = "BurstPress";
 static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
+static const char *WAITTIME_ENGLISH = SEPARATOR_WAITTIME;
+static const char *WAITTIME_MSLABEL_ENGLISH = "ms";
 static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
@@ -305,6 +310,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::NoFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
+
+    ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
@@ -2320,7 +2327,8 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
-            && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)){
+            && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+            && false == mapping_key.contains(SEPARATOR_WAITTIME)){
             checkResult = false;
             break;
         }
@@ -2425,6 +2433,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
+    ui->waitTimeLabel->setFont(customFont);
+    ui->waitTime_msLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -2496,6 +2506,8 @@ void QKeyMapper::setControlFontChinese()
     ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
+    ui->waitTimeLabel->setFont(customFont);
+    ui->waitTime_msLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -2549,6 +2561,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->burstpress_msLabel->setEnabled(status);
     ui->burstreleaseLabel->setEnabled(status);
     ui->burstrelease_msLabel->setEnabled(status);
+    ui->waitTimeLabel->setEnabled(status);
+    ui->waitTime_msLabel->setEnabled(status);
+    ui->waitTimeSpinBox->setEnabled(status);
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
 
@@ -3250,10 +3265,11 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key12(RT)"
             ;
 
+    int top = ui->orikeyLabel->y();
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
-    m_orikeyComboBox->setGeometry(QRect(587, 390, 122, 22));
+    m_orikeyComboBox->setGeometry(QRect(587, top, 122, 22));
     m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
-    m_mapkeyComboBox->setGeometry(QRect(775, 390, 122, 22));
+    m_mapkeyComboBox->setGeometry(QRect(775, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
 
@@ -3322,6 +3338,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
             }
 
             if (keymapdata.Mapping_Keys.size() > 1) {
+                disable_burstandlock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(SEPARATOR_WAITTIME)) {
                 disable_burstandlock = true;
             }
 
@@ -3421,6 +3440,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
     ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
+    ui->waitTimeLabel->setText(WAITTIME_CHINESE);
+    ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
@@ -3469,6 +3490,8 @@ void QKeyMapper::setUILanguage_English()
     ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
     ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
+    ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
+    ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
@@ -3511,6 +3534,7 @@ void QKeyMapper::resetFontSize()
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
         ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
@@ -3528,6 +3552,7 @@ void QKeyMapper::resetFontSize()
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
         ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
@@ -3654,80 +3679,76 @@ void QKeyMapper::on_addmapdataButton_clicked()
 {
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
     QString currentMapKeyComboBoxText = m_mapkeyComboBox->currentText();
-    if ((true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(currentOriKeyComboBoxText)
-            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(currentOriKeyComboBoxText)
-            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(currentOriKeyComboBoxText))
-        && (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(currentMapKeyComboBoxText)
-            || true == QKeyMapper_Worker::VirtualMouseButtonMap.contains(currentMapKeyComboBoxText)
-            || true == QKeyMapper_Worker::JoyStickKeyMap.contains(currentMapKeyComboBoxText)
-            || false == m_mapkeyComboBox->isEnabled())){
-        bool already_exist = false;
-        int findindex = findInKeyMappingDataList(currentOriKeyComboBoxText);
 
-        if (findindex != -1){
-#ifdef VIGEM_CLIENT_SUPPORT
-            if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
+    bool already_exist = false;
+    int findindex = findInKeyMappingDataList(currentOriKeyComboBoxText);
+
+    if (findindex != -1){
+        if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
+            already_exist = true;
+        }
+        else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
+                && false == ui->nextarrowCheckBox->isChecked()
+                && KeyMappingDataList.at(findindex).Mapping_Keys.contains(currentMapKeyComboBoxText) == true){
                 already_exist = true;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
+#endif
+        }
+    }
+
+    if (false == already_exist){
+        if (findindex != -1){
+            MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
+            if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
+                QString message = QString("Key sequence mapping to \"%1\" is too long!").arg(currentOriKeyComboBoxText);
+                QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                return;
+            }
+            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
+#endif
+            if (ui->nextarrowCheckBox->isChecked()) {
+                mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + currentMapKeyComboBoxText;
             }
             else {
-#endif
-                if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
-                    && false == ui->nextarrowCheckBox->isChecked()
-                    && KeyMappingDataList.at(findindex).Mapping_Keys.contains(currentMapKeyComboBoxText) == true){
-                    already_exist = true;
-    #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
-    #endif
+                int waitTime = ui->waitTimeSpinBox->value();
+                if (waitTime > 0) {
+                    currentMapKeyComboBoxText = QString::number(waitTime) + QString(SEPARATOR_WAITTIME) + currentMapKeyComboBoxText;
                 }
-#ifdef VIGEM_CLIENT_SUPPORT
+                mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + currentMapKeyComboBoxText;
             }
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
+            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyComboBoxText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
         }
-
-        if (false == already_exist){
-            if (findindex != -1){
-                MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
-                if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
-                    QString message = QString("Key sequence mapping to \"%1\" is too long!").arg(currentOriKeyComboBoxText);
-                    QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
-                    return;
-                }
-                QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
-#endif
-                if (ui->nextarrowCheckBox->isChecked()) {
-                    mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + currentMapKeyComboBoxText;
-                }
-                else {
-                    mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + currentMapKeyComboBoxText;
-                }
-
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
-#endif
-                KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyComboBoxText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
+        else {
+            if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
+                currentMapKeyComboBoxText = currentOriKeyComboBoxText;
             }
             else {
-#ifdef VIGEM_CLIENT_SUPPORT
-                if (VJOY_STR_MOUSE2LS == currentOriKeyComboBoxText || VJOY_STR_MOUSE2RS == currentOriKeyComboBoxText) {
-                    currentMapKeyComboBoxText = currentOriKeyComboBoxText;
+                int waitTime = ui->waitTimeSpinBox->value();
+                if (waitTime > 0) {
+                    currentMapKeyComboBoxText = QString::number(waitTime) + QString(SEPARATOR_WAITTIME) + currentMapKeyComboBoxText;
                 }
-#endif
-                KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyComboBoxText, currentMapKeyComboBoxText, false, false));
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "Add keymapdata :" << currentOriKeyComboBoxText << "to" << currentMapKeyComboBoxText;
-#endif
             }
 
+            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyComboBoxText, currentMapKeyComboBoxText, false, false));
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+            qDebug() << "Add keymapdata :" << currentOriKeyComboBoxText << "to" << currentMapKeyComboBoxText;
 #endif
-            refreshKeyMappingDataTable();
         }
-        else{
-            QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
-        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+#endif
+        refreshKeyMappingDataTable();
+    }
+    else{
+        QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
     }
 }
 

@@ -28,6 +28,7 @@ class QKeyMapper;
 
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
+#define SEPARATOR_WAITTIME     ("⏱")
 
 #define SEND_INPUTS_MAX     (30)
 #define KEY_SEQUENCE_MAX    (8)
@@ -254,6 +255,7 @@ public slots:
 #endif
     void onMouseWheel(int wheel_updown);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void sendInputKeysWithWaitTime(QStringList mappingKeys, int keyupdown, QString original_key);
     void send_WINplusD(void);
 
 public:

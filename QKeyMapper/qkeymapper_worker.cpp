@@ -10,6 +10,9 @@ static const int MOUSE_WHEEL_DOWN = 2;
 
 static const int MOUSE_WHEEL_KEYUP_WAITTIME = 20;
 
+static const int MAPPING_WAITTIME_MIN = 0;
+static const int MAPPING_WAITTIME_MAX = 1000;
+
 static const WORD XBUTTON_NONE = 0x0000;
 
 static const int SENDMODE_HOOK          = 0;
@@ -62,10 +65,11 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 
 static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
+#endif
 
 static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
-#endif
+
 
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
@@ -215,7 +219,7 @@ void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
     QMutexLocker locker(&sendinput_mutex);
 
-    INPUT keyboard_input;
+    INPUT keyboard_input = { 0 };
     DWORD extenedkeyflag = 0;
     if (true == vkeycode.ExtenedFlag){
         extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
@@ -453,6 +457,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
 
+        if (inputKeys.constFirst().contains(SEPARATOR_WAITTIME)) {
+            sendInputKeysWithWaitTime(mappingKeys, keyupdown, original_key);
+            return;
+        }
+
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
 
@@ -562,6 +571,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
 
+            if (inputKeys.constFirst().contains(SEPARATOR_WAITTIME)) {
+                sendInputKeysWithWaitTime(mappingKeys, keyupdown, original_key);
+                return;
+            }
+
             for (const QString &key : qAsConst(mappingKeys)){
                 INPUT *input_p = &inputs[index];
                 if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
@@ -651,6 +665,157 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #ifdef DEBUG_LOGOUT_ON
             qDebug("sendInputKeys(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
+        }
+    }
+}
+
+void QKeyMapper_Worker::sendInputKeysWithWaitTime(QStringList mappingKeys, int keyupdown, QString original_key)
+{
+    if (KEY_UP == keyupdown) {
+        for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
+            QString key = (*it);
+
+//            int waitTime = 0;
+//            if (key.contains(SEPARATOR_WAITTIME)) {
+//                waitTime = key.split(SEPARATOR_WAITTIME).first().toInt();
+//                if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
+//                    QThread::msleep(waitTime);
+//                }
+//            }
+
+            if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeysWithWaitTime] Do no need to send [" << key << "]" << " at KEY_UP";
+#endif
+                continue;
+            }
+
+            if (isPressedMappingKeysContains(key)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeysWithWaitTime] pressedMappingKeys still remain Key[ " << key << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+                qDebug().nospace().noquote() << "[sendInputKeysWithWaitTime] pressedMappingKeys skip KeyUp[ " << key << " ]" << " -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]";
+#endif
+                continue;
+            }
+
+            if (true == VirtualMouseButtonMap.contains(key)) {
+                if (false == pressedVirtualKeysList.contains(key)) {
+                    qWarning("[sendInputKeysWithWaitTime] Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                    continue;
+                }
+
+                QMutexLocker locker(&sendinput_mutex);
+                INPUT input = { 0 };
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                input.type = INPUT_MOUSE;
+                input.mi.mouseData = vmousecode.MouseXButton;
+                input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                input.mi.dwFlags = vmousecode.MouseUpCode;
+                SendInput(1, &input, sizeof(INPUT));
+            }
+#ifdef VIGEM_CLIENT_SUPPORT
+            else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
+                ViGEmClient_ReleaseButton(key);
+            }
+#endif
+            else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                if (false == pressedVirtualKeysList.contains(key)) {
+                    qWarning("[sendInputKeysWithWaitTime] Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                    continue;
+                }
+
+                INPUT input = { 0 };
+                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+                input.type = INPUT_KEYBOARD;
+                input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                input.ki.wVk = vkeycode.KeyCode;
+                input.ki.wScan = MapVirtualKey(input.ki.wVk, MAPVK_VK_TO_VSC);
+                input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                SendInput(1, &input, sizeof(INPUT));
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[sendInputKeysWithWaitTime] VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+#endif
+            }
+        }
+    }
+    else {  /* KEY_DOWN */
+        for (const QString &key : qAsConst(mappingKeys)){
+            int waitTime = 0;
+            if (key.contains(SEPARATOR_WAITTIME)) {
+                waitTime = key.split(SEPARATOR_WAITTIME).first().toInt();
+                if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
+                    QThread::msleep(waitTime);
+                }
+            }
+
+            if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+                INPUT input = { 0 };
+                input.type = INPUT_MOUSE;
+                input.mi.dwExtraInfo = VIRTUAL_MOUSE_WHEEL;
+                input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+                if (key == MOUSE_STR_WHEEL_UP) {
+                    input.mi.mouseData = WHEEL_DELTA;
+                }
+                else {
+                    input.mi.mouseData = -WHEEL_DELTA;
+                }
+                SendInput(1, &input, sizeof(INPUT));
+            }
+            else if (true == VirtualMouseButtonMap.contains(key)) {
+                if (true == pressedVirtualKeysList.contains(key)) {
+                    qWarning("[sendInputKeysWithWaitTime] Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                    continue;
+                }
+
+                INPUT input = { 0 };
+                V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
+                input.type = INPUT_MOUSE;
+                input.mi.mouseData = vmousecode.MouseXButton;
+                input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                input.mi.dwFlags = vmousecode.MouseDownCode;
+                SendInput(1, &input, sizeof(INPUT));
+            }
+#ifdef VIGEM_CLIENT_SUPPORT
+            else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
+                ViGEmClient_PressButton(key);
+            }
+#endif
+            else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                if (true == pressedVirtualKeysList.contains(key)) {
+                    qWarning("[sendInputKeysWithWaitTime] Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+                    continue;
+                }
+
+                INPUT input = { 0 };
+                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+                DWORD extenedkeyflag = 0;
+                if (true == vkeycode.ExtenedFlag){
+                    extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
+                }
+                else{
+                    extenedkeyflag = 0;
+                }
+                input.type = INPUT_KEYBOARD;
+                input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+                input.ki.wVk = vkeycode.KeyCode;
+                input.ki.wScan = MapVirtualKey(input.ki.wVk, MAPVK_VK_TO_VSC);
+                input.ki.dwFlags = extenedkeyflag | 0;
+                SendInput(1, &input, sizeof(INPUT));
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[sendInputKeysWithWaitTime] VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
+#endif
+            }
         }
     }
 }
