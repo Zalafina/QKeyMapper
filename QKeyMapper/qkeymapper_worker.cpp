@@ -671,17 +671,18 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
 void QKeyMapper_Worker::sendInputKeysWithWaitTime(QStringList mappingKeys, int keyupdown, QString original_key)
 {
+    QMutexLocker locker(&sendinput_mutex);
+
     if (KEY_UP == keyupdown) {
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
 
-//            int waitTime = 0;
-//            if (key.contains(SEPARATOR_WAITTIME)) {
-//                waitTime = key.split(SEPARATOR_WAITTIME).first().toInt();
-//                if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
-//                    QThread::msleep(waitTime);
-//                }
-//            }
+            int waitTime = 0;
+            if (key.contains(SEPARATOR_WAITTIME)) {
+                QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
+                waitTime = waitTimeKeyList.first().toInt();
+                key = waitTimeKeyList.last();
+            }
 
             if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
 #ifdef DEBUG_LOGOUT_ON
@@ -704,7 +705,6 @@ void QKeyMapper_Worker::sendInputKeysWithWaitTime(QStringList mappingKeys, int k
                     continue;
                 }
 
-                QMutexLocker locker(&sendinput_mutex);
                 INPUT input = { 0 };
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input.type = INPUT_MOUSE;
@@ -745,13 +745,20 @@ void QKeyMapper_Worker::sendInputKeysWithWaitTime(QStringList mappingKeys, int k
                 qWarning("[sendInputKeysWithWaitTime] VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
 #endif
             }
+
+            if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
+                QThread::msleep(waitTime);
+            }
         }
     }
     else {  /* KEY_DOWN */
-        for (const QString &key : qAsConst(mappingKeys)){
+        for (const QString &keyStr : qAsConst(mappingKeys)){
+            QString key = keyStr;
             int waitTime = 0;
             if (key.contains(SEPARATOR_WAITTIME)) {
-                waitTime = key.split(SEPARATOR_WAITTIME).first().toInt();
+                QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
+                waitTime = waitTimeKeyList.first().toInt();
+                key = waitTimeKeyList.last();
                 if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
                     QThread::msleep(waitTime);
                 }
