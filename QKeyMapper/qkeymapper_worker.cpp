@@ -466,6 +466,13 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
                 waitTime = waitTimeKeyList.first().toInt();
                 key = waitTimeKeyList.last();
+
+                if (it + 1 == mappingKeys.crend()) {
+                    waitTime = 0;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] Last key of KEY_UP, do no need wait time";
+#endif
+                }
             }
 
             if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
