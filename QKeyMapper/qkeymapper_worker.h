@@ -255,7 +255,6 @@ public slots:
 #endif
     void onMouseWheel(int wheel_updown);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
-    void sendInputKeysWithWaitTime(QStringList mappingKeys, int keyupdown, QString original_key);
     void send_WINplusD(void);
 
 public:
