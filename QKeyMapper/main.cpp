@@ -178,8 +178,15 @@ int main(int argc, char *argv[])
 #endif
     QThread::currentThread()->setObjectName("QKeyMapper");
 
+    QKeyMapper_Hook_Proc * const keymapper_hook_proc = QKeyMapper_Hook_Proc::getInstance();
+    // Move Hook Process to a sub thread
+    QThread * const hookprocThread = new QThread();
+    keymapper_hook_proc->moveToThread(hookprocThread);
+    hookprocThread->setObjectName("QKeyMapper_Hook_Proc");
+    hookprocThread->start();
+
     QKeyMapper_Worker * const keymapper_worker = QKeyMapper_Worker::getInstance();
-    // Move Checksumer to a sub thread
+    // Move Worker to a sub thread
     QThread * const workerThread = new QThread();
     keymapper_worker->moveToThread(workerThread);
     workerThread->setObjectName("QKeyMapper_Worker");

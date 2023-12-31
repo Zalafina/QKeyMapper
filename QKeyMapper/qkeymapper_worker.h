@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QThread>
 #include <QHash>
+#include <QThreadPool>
+#include <QWaitCondition>
 #ifdef VIGEM_CLIENT_SUPPORT
 #include <QTimer>
 #endif
@@ -254,6 +256,7 @@ public slots:
     void onMouse2vJoyResetTimeout(void);
 #endif
     void onMouseWheel(int wheel_updown);
+    void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void send_WINplusD(void);
 
@@ -331,12 +334,13 @@ private:
     void joystickRSVerticalProc(const QJoystickAxisEvent &e);
     void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
 
-private:
+public:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
     static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
 
+private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
 #ifdef DINPUT_TEST
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
@@ -402,6 +406,10 @@ public:
 private:
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
+    QRunnable *m_sendInputTask;
+    QWaitCondition m_sendInputStopCondition;
+    QMutex m_sendInputStopMutex;
+    bool m_sendInputStopFlag;
     bool m_JoystickCapture;
 #ifdef QT_DEBUG
     bool m_LowLevelKeyboardHook_Enable;
@@ -420,6 +428,38 @@ private:
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
     QHash<JoystickRStickCode, QString> m_JoystickRStickMap;
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
+};
+
+class QKeyMapper_Hook_Proc : public QObject
+{
+    Q_OBJECT
+public:
+    static QKeyMapper_Hook_Proc *getInstance()
+    {
+        static QKeyMapper_Hook_Proc m_instance;
+        return &m_instance;
+    }
+
+signals:
+    void setKeyHook_Signal(HWND hWnd);
+    void setKeyUnHook_Signal(void);
+
+public slots:
+    void onSetHookProcKeyHook(HWND hWnd);
+    void onSetHookProcKeyUnHook(void);
+
+public:
+
+    static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
+
+#ifdef QT_DEBUG
+    static bool s_LowLevelKeyboardHook_Enable;
+    static bool s_LowLevelMouseHook_Enable;
+#endif
+
+    static HHOOK s_KeyHook;
+    static HHOOK s_MouseHook;
 };
 
 #endif // QKEYMAPPER_WORKER_H

@@ -30,10 +30,6 @@ static const int KEY_DOWN = 1;
 static const int LANGUAGE_CHINESE = 0;
 static const int LANGUAGE_ENGLISH = 1;
 
-static const int SENDMODE_HOOK          = 0;
-static const int SENDMODE_BURST_NORMAL  = 1;
-static const int SENDMODE_BURST_STOP    = 2;
-
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
 static const int MAPPING_WAITTIME_MIN = 0;
