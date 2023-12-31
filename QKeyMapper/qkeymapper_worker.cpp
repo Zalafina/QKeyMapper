@@ -447,9 +447,10 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
     qDebug() << "[onSendInputKeys] QThreadPool wait for task Done ->" << waitfordone;
 #endif
 
-    m_sendInputTask = QRunnable::create([this, inputKeys, keyupdown, original_key, sendmode]() {
-        sendInputKeys(inputKeys, keyupdown, original_key, sendmode);
-    });
+//    m_sendInputTask = QRunnable::create([this, inputKeys, keyupdown, original_key, sendmode]() {
+//        sendInputKeys(inputKeys, keyupdown, original_key, sendmode);
+//    });
+    m_sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, sendmode);
     QThreadPool::globalInstance()->start(m_sendInputTask);
 }
 

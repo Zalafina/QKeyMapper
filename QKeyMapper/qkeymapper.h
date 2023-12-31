@@ -194,7 +194,7 @@ private slots:
     void cellChanged_slot(int row, int col);
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    void on_orikeyComboBox_currentTextChanged(const QString &text);
+    void OrikeyComboBox_currentTextChangedSlot(const QString &text);
 #endif
 
     void on_savemaplistButton_clicked();
@@ -213,7 +213,11 @@ private slots:
 
     void on_movedownButton_clicked();
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     void on_settingselectComboBox_textActivated(const QString &text);
+#else
+    void on_settingselectComboBox_currentTextChanged(const QString &text);
+#endif
 
     void on_removeSettingButton_clicked();
 
@@ -296,6 +300,7 @@ private:
     QHotkey *m_HotKey;
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
+    bool loadSetting_flag;
 };
 
 #endif // QKEYMAPPER_H

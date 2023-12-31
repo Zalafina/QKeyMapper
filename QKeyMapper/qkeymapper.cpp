@@ -216,7 +216,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_mappingswitchKeySeqStr(),
     m_HotKey(new QHotkey(this)),
     m_HotKey_StartStop(new QHotkey(this)),
-    m_UI_Scale(UI_SCALE_NORMAL)
+    m_UI_Scale(UI_SCALE_NORMAL),
+    loadSetting_flag(false)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -389,8 +390,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 
     initKeyMappingDataTable();
+    loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
+    loadSetting_flag = false;
     reloadUILanguage();
     resetFontSize();
 
@@ -404,7 +407,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, SIGNAL(updateViGEmBusStatus_Signal()), this, SLOT(updateViGEmBusLabelDisplay()));
-    QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::on_orikeyComboBox_currentTextChanged);
+    QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
@@ -537,8 +540,10 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Setting Check Matched! Load setting -> [" << filename << "]";
 #endif
+                            loadSetting_flag = true;
                             bool loadresult = loadKeyMapSetting(filename);
                             Q_UNUSED(loadresult)
+                            loadSetting_flag = false;
                         }
                         else {
 #ifdef DEBUG_LOGOUT_ON
@@ -1548,7 +1553,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-void QKeyMapper::on_orikeyComboBox_currentTextChanged(const QString &text)
+void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 {
     if (VJOY_STR_MOUSE2LS == text) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1792,8 +1797,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqStr);
 
         const QString savedSettingName = saveSettingSelectStr.remove("/");
+        loadSetting_flag = true;
         bool loadresult = loadKeyMapSetting(savedSettingName);
         Q_UNUSED(loadresult);
+        loadSetting_flag = false;
 #ifdef DEBUG_LOGOUT_ON
         if (true == loadresult) {
             qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << savedSettingName;
@@ -3997,22 +4004,57 @@ void QKeyMapper::on_movedownButton_clicked()
     }
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
 {
+    if (loadSetting_flag) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_settingselectComboBox_textActivated] Loading Setting not finished!";
+#endif
+        return;
+    }
+
     if (false == text.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[settingselectComboBox] Change to Setting ->" << text;
+        qDebug() << "[on_settingselectComboBox_textActivated] Change to Setting ->" << text;
 #endif
+        loadSetting_flag = true;
         bool loadresult = loadKeyMapSetting(text);
         Q_UNUSED(loadresult);
+        loadSetting_flag = false;
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[settingselectComboBox] Select setting text error ->" << text;
+        qDebug() << "[on_settingselectComboBox_textActivated] Select setting text error ->" << text;
 #endif
     }
 }
+#else
+void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text)
+{
+    if (loadSetting_flag) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_settingselectComboBox_currentTextChanged] Loading Setting not finished!";
+#endif
+        return;
+    }
 
+    if (false == text.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_settingselectComboBox_currentTextChanged] Change to Setting ->" << text;
+#endif
+        loadSetting_flag = true;
+        bool loadresult = loadKeyMapSetting(text);
+        Q_UNUSED(loadresult);
+        loadSetting_flag = false;
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_settingselectComboBox_currentTextChanged] Select setting text error ->" << text;
+#endif
+    }
+}
+#endif
 
 void QKeyMapper::on_removeSettingButton_clicked()
 {
@@ -4036,8 +4078,10 @@ void QKeyMapper::on_removeSettingButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[removeSetting] Change to Setting ->" << currentSettingText;
 #endif
+            loadSetting_flag = true;
             bool loadresult = loadKeyMapSetting(currentSettingText);
             Q_UNUSED(loadresult);
+            loadSetting_flag = false;
         }
     }
 }

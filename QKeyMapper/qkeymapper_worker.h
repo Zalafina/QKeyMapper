@@ -430,6 +430,26 @@ private:
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
 };
 
+class SendInputTask : public QRunnable
+{
+public:
+    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode)
+        : m_inputKeys(inputKeys), m_keyupdown(keyupdown), m_original_key(original_key), m_sendmode(sendmode)
+    {
+    }
+
+    void run() override
+    {
+        QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode);
+    }
+
+private:
+    QStringList m_inputKeys;
+    int m_keyupdown;
+    QString m_original_key;
+    int m_sendmode;
+};
+
 class QKeyMapper_Hook_Proc : public QObject
 {
     Q_OBJECT
