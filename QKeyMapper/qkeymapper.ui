@@ -163,9 +163,6 @@
      <height>20</height>
     </rect>
    </property>
-   <property name="readOnly">
-    <bool>true</bool>
-   </property>
   </widget>
   <widget class="QTableWidget" name="keymapdataTable">
    <property name="geometry">

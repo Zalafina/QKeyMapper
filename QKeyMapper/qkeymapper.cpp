@@ -305,8 +305,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
-    ui->nameLineEdit->setFocusPolicy(Qt::NoFocus);
-    ui->titleLineEdit->setFocusPolicy(Qt::NoFocus);
+    ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
 
@@ -519,7 +519,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     if ((true == nameChecked)
                             && (true == titleChecked)){
                         if ((filename == readFileName)
-                                && (windowTitle == readWindowTitle)){
+                                && (windowTitle == readWindowTitle || windowTitle.contains(readWindowTitle))){
                             needtoload = true;
                         }
                     }
@@ -557,7 +557,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
             if ((true == ui->nameCheckBox->isChecked())
                     && (true == ui->titleCheckBox->isChecked())){
                 if ((m_MapProcessInfo.FileName == filename)
-                        && (m_MapProcessInfo.WindowTitle == windowTitle)){
+                        && (m_MapProcessInfo.WindowTitle == windowTitle || windowTitle.contains(m_MapProcessInfo.WindowTitle))){
                     checkresult = 1;
                 }
             }
@@ -576,7 +576,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
             }
 
             if ((m_MapProcessInfo.FileName == filename)
-                    && (m_MapProcessInfo.WindowTitle == windowTitle)){
+                    && (m_MapProcessInfo.WindowTitle == windowTitle || windowTitle.contains(m_MapProcessInfo.WindowTitle))){
                 checkresult = 1;
             }
         }
