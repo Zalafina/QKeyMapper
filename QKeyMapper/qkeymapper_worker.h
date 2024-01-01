@@ -279,6 +279,7 @@ public:
 
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
+    static void ViGEmClient_CheckJoysticksReportData(void);
 
     static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
@@ -375,6 +376,10 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
+#ifdef VIGEM_CLIENT_SUPPORT
+    static QStringList pressedvJoyLStickKeys;
+    static QStringList pressedvJoyRStickKeys;
+#endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QStringList pressedLockKeysList;
     static QStringList exchangeKeysList;

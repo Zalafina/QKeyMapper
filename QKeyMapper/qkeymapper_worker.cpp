@@ -93,6 +93,10 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
+#ifdef VIGEM_CLIENT_SUPPORT
+QStringList QKeyMapper_Worker::pressedvJoyLStickKeys = QStringList();
+QStringList QKeyMapper_Worker::pressedvJoyRStickKeys = QStringList();
+#endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
@@ -1115,40 +1119,42 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
             }
             updateFlag = true;
         }
-        else if (joystickButton.contains("vJoy-LS-")) {
+        else if (joystickButton.startsWith("vJoy-LS-")) {
             if (joystickButton == "vJoy-LS-Up") {
-                s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MAX;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-LS-Down") {
-                s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MIN;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-LS-Left") {
-                s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_MIN;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-LS-Right") {
-                s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_MAX;
                 updateFlag = true;
             }
+
+            if (updateFlag) {
+                pressedvJoyLStickKeys.append(joystickButton);
+                ViGEmClient_CheckJoysticksReportData();
+            }
         }
-        else if (joystickButton.contains("vJoy-RS-")) {
+        else if (joystickButton.startsWith("vJoy-RS-")) {
             if (joystickButton == "vJoy-RS-Up") {
-                s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MAX;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-RS-Down") {
-                s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MIN;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-RS-Left") {
-                s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MIN;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-RS-Right") {
-                s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MAX;
                 updateFlag = true;
+            }
+
+            if (updateFlag) {
+                pressedvJoyRStickKeys.append(joystickButton);
+                ViGEmClient_CheckJoysticksReportData();
             }
         }
 
@@ -1204,40 +1210,42 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
             }
             updateFlag = true;
         }
-        else if (joystickButton.contains("vJoy-LS-")) {
+        else if (joystickButton.startsWith("vJoy-LS-")) {
             if (joystickButton == "vJoy-LS-Up") {
-                s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-LS-Down") {
-                s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-LS-Left") {
-                s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-LS-Right") {
-                s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
+
+            if (updateFlag) {
+                pressedvJoyLStickKeys.removeAll(joystickButton);
+                ViGEmClient_CheckJoysticksReportData();
+            }
         }
-        else if (joystickButton.contains("vJoy-RS-")) {
+        else if (joystickButton.startsWith("vJoy-RS-")) {
             if (joystickButton == "vJoy-RS-Up") {
-                s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-RS-Down") {
-                s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-RS-Left") {
-                s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
             }
             else if (joystickButton == "vJoy-RS-Right") {
-                s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_RELEASE;
                 updateFlag = true;
+            }
+
+            if (updateFlag) {
+                pressedvJoyRStickKeys.removeAll(joystickButton);
+                ViGEmClient_CheckJoysticksReportData();
             }
         }
 
@@ -1250,6 +1258,45 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
                 qDebug("[ViGEmClient] Button Release Return code: 0x%08X", error);
             }
 #endif
+        }
+    }
+}
+
+void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[ViGEmClient_CheckJoysticksReportData] vJoyLSPressedKeys ->" << pressedvJoyLStickKeys;
+    qDebug() << "[ViGEmClient_CheckJoysticksReportData] vJoyRSPressedKeys ->" << pressedvJoyRStickKeys;
+#endif
+
+    // Reset thumb values
+    s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_RELEASE;
+    s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_RELEASE;
+    s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_RELEASE;
+    s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
+
+    // Update thumb values based on pressed keys
+    for (const QString &key : pressedvJoyLStickKeys) {
+        if (key == "vJoy-LS-Up") {
+            s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MAX;
+        } else if (key == "vJoy-LS-Down") {
+            s_ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MIN;
+        } else if (key == "vJoy-LS-Left") {
+            s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_MIN;
+        } else if (key == "vJoy-LS-Right") {
+            s_ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_MAX;
+        }
+    }
+
+    for (const QString &key : pressedvJoyRStickKeys) {
+        if (key == "vJoy-RS-Up") {
+            s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MAX;
+        } else if (key == "vJoy-RS-Down") {
+            s_ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MIN;
+        } else if (key == "vJoy-RS-Left") {
+            s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MIN;
+        } else if (key == "vJoy-RS-Right") {
+            s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MAX;
         }
     }
 }
@@ -1425,6 +1472,8 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
         s_ViGEmTarget_Report.sThumbRY = 0;
     }
 
+    ViGEmClient_CheckJoysticksReportData();
+
     VIGEM_ERROR error;
     error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
     Q_UNUSED(error);
@@ -1512,6 +1561,8 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
+    pressedvJoyLStickKeys.clear();
+    pressedvJoyRStickKeys.clear();
     ViGEmClient_GamepadReset();
     s_Mouse2vJoy_EnableState = ViGEmClient_checkMouse2JoystickEnableState();
 
@@ -1598,6 +1649,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
     s_Mouse2vJoy_prev.ry() = 0;
+    pressedvJoyLStickKeys.clear();
+    pressedvJoyRStickKeys.clear();
     ViGEmClient_GamepadReset();
     s_Mouse2vJoy_EnableState = MOUSE2VJOY_NONE;
 }
