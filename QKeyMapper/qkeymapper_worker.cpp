@@ -1557,6 +1557,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedLockKeysList.clear();
     collectExchangeKeysList();
 
+#ifdef VIGEM_CLIENT_SUPPORT
     s_Mouse2vJoy_delta.rx() = 0;
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
@@ -1565,8 +1566,10 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedvJoyRStickKeys.clear();
     ViGEmClient_GamepadReset();
     s_Mouse2vJoy_EnableState = ViGEmClient_checkMouse2JoystickEnableState();
+#endif
 
     if(TRUE == IsWindowVisible(hWnd)){
+#ifdef VIGEM_CLIENT_SUPPORT
         if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
             setMouseToScreenBottomRight();
 
@@ -1579,6 +1582,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #endif
             }
         }
+#endif
 
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
 //#ifdef QT_DEBUG
@@ -1638,6 +1642,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     setWorkerJoystickCaptureStop();
     //    setWorkerDInputKeyUnHook();
 
+#ifdef VIGEM_CLIENT_SUPPORT
     if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
         setMouseToScreenCenter();
 #ifdef DEBUG_LOGOUT_ON
@@ -1653,6 +1658,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedvJoyRStickKeys.clear();
     ViGEmClient_GamepadReset();
     s_Mouse2vJoy_EnableState = MOUSE2VJOY_NONE;
+#endif
 }
 
 void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
