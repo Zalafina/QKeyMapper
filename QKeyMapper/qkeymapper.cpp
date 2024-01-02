@@ -100,6 +100,8 @@ static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
 static const char *SOUNDFILE_START_QRC = ":/QKeyMapperStart.wav";
 static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
+static const char *SOUNDFILE_STOP_QRC = ":/QKeyMapperStop.wav";
+static const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
 
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
@@ -664,6 +666,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         return;
                     }
                 }
+                playStopSound();
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 updateSystemTrayDisplay();
@@ -1391,6 +1394,9 @@ void QKeyMapper::on_keymapButton_clicked()
         }
         else {
             ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
+        }
+        if (KEYMAP_MAPPING == m_KeyMapStatus) {
+            playStopSound();
         }
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
@@ -2628,7 +2634,7 @@ void QKeyMapper::extractSoundFiles()
     QFile soundFileStartLocal(SOUNDFILE_START);
     if (false == soundFileStartLocal.exists()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapper.wav do not exist";
+        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapperStart.wav do not exist";
 #endif
         QFile soundFileStartQRC(SOUNDFILE_START_QRC);
         if (soundFileStartQRC.exists()){
@@ -2636,13 +2642,34 @@ void QKeyMapper::extractSoundFiles()
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[extractSoundFiles]" << "QRC sound file QKeyMapper.wav do not exist!!!";
+            qWarning() << "[extractSoundFiles]" << "QRC sound file QKeyMapperStart.wav do not exist!!!";
 #endif
         }
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapper.wav already exist";
+        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapperStart.wav already exist";
+#endif
+    }
+
+    QFile soundFileStopLocal(SOUNDFILE_STOP);
+    if (false == soundFileStopLocal.exists()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapperStop.wav do not exist";
+#endif
+        QFile soundFileStopQRC(SOUNDFILE_STOP_QRC);
+        if (soundFileStopQRC.exists()){
+            soundFileStopQRC.copy(SOUNDFILE_STOP);
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[extractSoundFiles]" << "QRC sound file QKeyMapperStop.wav do not exist!!!";
+#endif
+        }
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractSoundFiles]" << "Local sound file QKeyMapperStop.wav already exist";
 #endif
     }
 }
@@ -2661,6 +2688,24 @@ void QKeyMapper::playStartSound()
     else {
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[playStartSound]" << "Sound file do not exist ->" << SOUNDFILE_START;
+#endif
+    }
+}
+
+void QKeyMapper::playStopSound()
+{
+    QFile soundFileStopLocal(SOUNDFILE_STOP);
+
+    if (soundFileStopLocal.exists()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[playStopSound]" << "Play sound file ->" << SOUNDFILE_STOP;
+#endif
+        std::wstring stopSound = QString(SOUNDFILE_STOP).toStdWString();
+        PlaySound(stopSound.c_str(), NULL/*AfxGetInstanceHandle()*/, SND_FILENAME|SND_ASYNC);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[playStopSound]" << "Sound file do not exist ->" << SOUNDFILE_STOP;
 #endif
     }
 }

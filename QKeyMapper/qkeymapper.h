@@ -266,6 +266,7 @@ private:
 
     void extractSoundFiles();
     void playStartSound();
+    void playStopSound();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     int installViGEmBusDriver(void);

@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file alias="QKeyMapperStart.wav">sound/QKeyMapperStart.wav</file>
+        <file alias="QKeyMapperStop.wav">sound/QKeyMapperStop.wav</file>
     </qresource>
 </RCC>
