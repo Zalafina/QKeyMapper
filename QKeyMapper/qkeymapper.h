@@ -201,6 +201,10 @@ private slots:
 
     void onMappingSwitchKeySequenceEditingFinished();
 
+    void onOriginalKeySequenceChanged(const QKeySequence &keysequence);
+
+    void onOriginalKeySequenceEditingFinished();
+
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
     void cellChanged_slot(int row, int col);
@@ -255,6 +259,7 @@ private:
     void initAddKeyComboBoxes(void);
     void initMappingSwitchKeySeqEdit(void);
     void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
+    void initOriginalKeySeqEdit(void);
     void refreshKeyMappingDataTable(void);
     void reloadUILanguage(void);
     void setUILanguage_Chinese(void);
@@ -309,6 +314,7 @@ private:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
+    KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     QHotkey *m_HotKey;
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;

@@ -32,6 +32,8 @@ class QKeyMapper;
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME     ("⏱")
 
+#define PREFIX_KEYSEQUENCE     ("→")
+
 #define SEND_INPUTS_MAX     (30)
 #define KEY_SEQUENCE_MAX    (8)
 

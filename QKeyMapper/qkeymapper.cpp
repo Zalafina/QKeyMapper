@@ -61,8 +61,9 @@ static const char *VERSION_INFO = "1.3.6";
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 
-static const char *DISPLAYSWITCH_KEYSEQ           = "Ctrl+`";
-static const char *MAPPINGSWITCH_KEYSEQ_DEFAULT   = "Ctrl+F6";
+static const char *DISPLAYSWITCH_KEYSEQ         = "Ctrl+`";
+static const char *MAPPINGSWITCH_KEYSEQ_DEFAULT = "Ctrl+F6";
+static const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_KEYSEQUENCE;
 
 static const char *LANGUAGE_INDEX = "LanguageIndex";
 static const char *SETTINGSELECT = "SettingSelect";
@@ -122,6 +123,7 @@ static const char *ADDMAPDATABUTTON_CHINESE = "添加";
 static const char *NAMECHECKBOX_CHINESE = "文件名";
 static const char *TITLECHECKBOX_CHINESE = "标题";
 static const char *ORIKEYLABEL_CHINESE = "原始按键";
+static const char *ORIKEYSEQLABEL_CHINESE = "原始组合键";
 static const char *MAPKEYLABEL_CHINESE = "映射按键";
 static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
 static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
@@ -163,6 +165,7 @@ static const char *ADDMAPDATABUTTON_ENGLISH = "ADD";
 static const char *NAMECHECKBOX_ENGLISH = "Name";
 static const char *TITLECHECKBOX_ENGLISH = "Title";
 static const char *ORIKEYLABEL_ENGLISH = "OriKey";
+static const char *ORIKEYSEQLABEL_ENGLISH = "OriKeySeq";
 static const char *MAPKEYLABEL_ENGLISH = "MapKey";
 static const char *BURSTPRESSLABEL_ENGLISH = "BurstPress";
 static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
@@ -215,6 +218,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
     m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
+    m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_HotKey(new QHotkey(this)),
     m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
@@ -229,6 +233,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     extractSoundFiles();
     initAddKeyComboBoxes();
     initMappingSwitchKeySeqEdit();
+    initOriginalKeySeqEdit();
 
     QString title = windowTitle();
     QString title_withversion = title + " " + VERSION_INFO;
@@ -391,6 +396,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 
     m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
+    m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
     initKeyMappingDataTable();
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
@@ -405,6 +411,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
+    QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
+    QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
     QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -435,6 +443,9 @@ QKeyMapper::~QKeyMapper()
 
     delete m_mappingswitchKeySeqEdit;
     m_mappingswitchKeySeqEdit = Q_NULLPTR;
+
+    delete m_originalKeySeqEdit;
+    m_originalKeySeqEdit = Q_NULLPTR;
 
     delete m_HotKey;
     m_HotKey = Q_NULLPTR;
@@ -1485,6 +1496,48 @@ void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
     m_mappingswitchKeySeqEdit->clearFocus();
 }
 
+void QKeyMapper::onOriginalKeySequenceChanged(const QKeySequence &keysequence)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onOriginalKeySequenceChanged] KeySequence changed ->" << keysequence.toString();
+#endif
+    Q_UNUSED(keysequence);
+    m_originalKeySeqEdit->clearFocus();
+}
+
+void QKeyMapper::onOriginalKeySequenceEditingFinished()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onOriginalKeySequenceEditingFinished] Current KeySequence ->" << m_originalKeySeqEdit->keySequence().toString();
+#endif
+
+    if (m_originalKeySeqEdit->keySequence().isEmpty()) {
+        if (m_originalKeySeqEdit->lastKeySequence().isEmpty()) {
+            m_originalKeySeqEdit->clear();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onOriginalKeySequenceEditingFinished]" << "Last KeySequence is Empty, Clear it!!!";
+#endif
+        }
+        else {
+            m_originalKeySeqEdit->setKeySequence(QKeySequence(m_originalKeySeqEdit->lastKeySequence()));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onOriginalKeySequenceEditingFinished]" << "Current KeySequence is Empty, set to LAST ->" << m_originalKeySeqEdit->lastKeySequence();
+#endif
+        }
+    }
+    else if (m_originalKeySeqEdit->keySequence().toString() == m_originalKeySeqEdit->defaultKeySequence()) {
+        m_originalKeySeqEdit->clear();
+    }
+    else {
+        m_originalKeySeqEdit->setLastKeySequence(m_originalKeySeqEdit->keySequence().toString());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onOriginalKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_originalKeySeqEdit->keySequence().toString();
+#endif
+    }
+    m_originalKeySeqEdit->clearFocus();
+
+}
+
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if (QSystemTrayIcon::DoubleClick == reason){
@@ -2436,6 +2489,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
+    ui->orikeySeqLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     ui->burstpressLabel->setFont(customFont);
     ui->burstpress_msLabel->setFont(customFont);
@@ -2509,6 +2563,7 @@ void QKeyMapper::setControlFontChinese()
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
+    ui->orikeySeqLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     ui->burstpressLabel->setFont(customFont);
     ui->burstpress_msLabel->setFont(customFont);
@@ -2579,6 +2634,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //ui->titleLineEdit->setEnabled(status);
 
     ui->orikeyLabel->setEnabled(status);
+    ui->orikeySeqLabel->setEnabled(status);
+    m_originalKeySeqEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
 
@@ -3347,12 +3404,24 @@ void QKeyMapper::initMappingSwitchKeySeqEdit()
     m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
     m_mappingswitchKeySeqEdit->setGeometry(QRect(380, 590, 111, 22));
     m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+//    m_mappingswitchKeySeqEdit->setClearButtonEnabled(true);
 }
 
 void QKeyMapper::updateMappingSwitchKeySeq(const QKeySequence &keysequence)
 {
     m_mappingswitchKeySeqEdit->setLastKeySequence(keysequence.toString());
     m_HotKey_StartStop->setShortcut(keysequence, true);
+}
+
+void QKeyMapper::initOriginalKeySeqEdit()
+{
+    m_originalKeySeqEdit->setObjectName(QStringLiteral("originalKeySeqEdit"));
+    int left = m_orikeyComboBox->x();
+    int top = ui->waitTimeSpinBox->y();
+    int width = m_orikeyComboBox->width();
+    int height = m_orikeyComboBox->height();
+    m_originalKeySeqEdit->setGeometry(QRect(left, top, width, height));
+    m_originalKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 }
 
 void QKeyMapper::refreshKeyMappingDataTable()
@@ -3477,6 +3546,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
     ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
+    ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_CHINESE);
     ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
     ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
     ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
@@ -3527,6 +3597,7 @@ void QKeyMapper::setUILanguage_English()
     ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
     ui->orikeyLabel->setText(ORIKEYLABEL_ENGLISH);
+    ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_ENGLISH);
     ui->mapkeyLabel->setText(MAPKEYLABEL_ENGLISH);
     ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
     ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
@@ -3948,26 +4019,25 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
     QKeySequence setKeySeq;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QKeyCombination keyComb = keySeq[0];
-    if (keyComb.key() == Qt::Key_Backspace || keyComb.key() == Qt::Key_Delete)
+    if (keyComb.key() == Qt::Key_Backspace)
     {
-        setKeySeq = QKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
+        setKeySeq = QKeySequence(defaultKeySequence());
     }
     else {
         setKeySeq = QKeySequence(keyComb);
     }
 #else
     int keyComb = keySeq[0];
-    if (keyComb == Qt::Key_Backspace || keyComb == Qt::Key_Delete)
+    if (keyComb == Qt::Key_Backspace)
     {
-        setKeySeq = QKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
+        setKeySeq = QKeySequence(defaultKeySequence());
     }
     else {
         setKeySeq = QKeySequence(keyComb);
     }
 #endif
 
-    QString keyseqEditStr = setKeySeq.toString();
-    if (false == keyseqEditStr.isEmpty()) {
+    if (false == setKeySeq.isEmpty()) {
         setKeySequence(setKeySeq);
         emit keySeqEditChanged_Signal(setKeySeq);
     }

@@ -1459,6 +1459,22 @@
     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QLabel" name="orikeySeqLabel">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>410</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>OriKeySeq</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1503,6 +1519,7 @@
   <zorder>waitTimeSpinBox</zorder>
   <zorder>waitTimeLabel</zorder>
   <zorder>waitTime_msLabel</zorder>
+  <zorder>orikeySeqLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
