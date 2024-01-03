@@ -1164,7 +1164,12 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
             if (error != VIGEM_ERROR_NONE) {
-                qDebug("[ViGEmClient] Button Press Return code: 0x%08X", error);
+                qDebug("[ViGEmClient_Button] Button Press Return code: 0x%08X", error);
+            }
+            else {
+#ifdef JOYSTICK_VERBOSE_LOG
+                qDebug("[ViGEmClient_Button] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+#endif
             }
 #endif
         }
@@ -1255,7 +1260,12 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
             if (error != VIGEM_ERROR_NONE) {
-                qDebug("[ViGEmClient] Button Release Return code: 0x%08X", error);
+                qDebug("[ViGEmClient_Button] Button Release Return code: 0x%08X", error);
+            }
+            else {
+#ifdef JOYSTICK_VERBOSE_LOG
+                qDebug("[ViGEmClient_Button] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+#endif
             }
 #endif
         }
@@ -1344,6 +1354,8 @@ QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2Joy
 
 void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y)
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
     }
@@ -1403,12 +1415,19 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         if (error != VIGEM_ERROR_NONE) {
             qDebug("[ViGEmClient_Mouse2JoystickUpdate] Mouse2Joystick Update ErrorCode: 0x%08X", error);
         }
+        else {
+#ifdef JOYSTICK_VERBOSE_LOG
+            qDebug("[ViGEmClient_Mouse2JoystickUpdate] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+#endif
+        }
 #endif
     }
 }
 
 void QKeyMapper_Worker::ViGEmClient_GamepadReset()
 {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
     }
@@ -1436,6 +1455,11 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset()
     if (error != VIGEM_ERROR_NONE) {
         qDebug("[ViGEmClient_GamepadReset] GamepadReset Update ErrorCode: 0x%08X", error);
     }
+    else {
+#ifdef JOYSTICK_VERBOSE_LOG
+        qDebug("[ViGEmClient_GamepadReset] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+#endif
+    }
 #endif
 }
 
@@ -1444,6 +1468,8 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
     if (MOUSE2VJOY_NONE == s_Mouse2vJoy_EnableState) {
         return;
     }
+
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
 
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
@@ -1480,6 +1506,11 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
 #ifdef DEBUG_LOGOUT_ON
     if (error != VIGEM_ERROR_NONE) {
         qDebug("[ViGEmClient_GamepadReset] GamepadReset Update ErrorCode: 0x%08X", error);
+    }
+    else {
+#ifdef JOYSTICK_VERBOSE_LOG
+        qDebug("[ViGEmClient_JoysticksReset] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+#endif
     }
 #endif
 }
