@@ -215,7 +215,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
     m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    m_mappingswitchKeySeqStr(),
     m_HotKey(new QHotkey(this)),
     m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
@@ -391,6 +390,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensLabel->setVisible(false);
 #endif
 
+    m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
     initKeyMappingDataTable();
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
@@ -403,8 +403,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
     QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(cellChanged_slot(int,int)));
 
-    QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onKeySequenceChanged);
-    QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onKeySequenceEditingFinished);
+    QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
+    QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
 
     QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -1447,43 +1447,42 @@ void QKeyMapper::HotKeyStartStopActivated()
     on_keymapButton_clicked();
 }
 
-void QKeyMapper::onKeySequenceChanged(const QKeySequence &keysequence)
+void QKeyMapper::onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[KeySequenceEditOnlyOne_Changed] ->" << keysequence.toString();
+    qDebug() << "[onMappingSwitchKeySequenceChanged] KeySequence changed ->" << keysequence.toString();
 #endif
-
-    QString keyseqStr = keysequence.toString();
-    if (false == keyseqStr.isEmpty()) {
-        m_mappingswitchKeySeqStr = keyseqStr;
-        QKeySequence mappingswitchKeySeq = QKeySequence(m_mappingswitchKeySeqStr);
-        updateMappingSwitchKeySeq(mappingswitchKeySeq);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[KeySequenceEditOnlyOne_Changed]" << "m_mappingswitchKeySeqStr ->" << m_mappingswitchKeySeqStr;
-#endif
-    }
+    Q_UNUSED(keysequence);
     m_mappingswitchKeySeqEdit->clearFocus();
 }
 
-void QKeyMapper::onKeySequenceEditingFinished()
+void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
 {
-    QString curKeySeqEditStr = m_mappingswitchKeySeqEdit->keySequence().toString();
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[KeySequenceEditOnlyOne_EditFinish] ->" << curKeySeqEditStr;
+    qDebug() << "[onMappingSwitchKeySequenceEditingFinished] Current KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString();
 #endif
 
-    if (m_mappingswitchKeySeqStr.isEmpty()) {
-        m_mappingswitchKeySeqStr = QString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
-        QKeySequence mappingswitchKeySeq = QKeySequence(m_mappingswitchKeySeqStr);
-        updateMappingSwitchKeySeq(mappingswitchKeySeq);
+    if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
+        if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
+            m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->defaultKeySequence()));
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[KeySequenceEditOnlyOne_EditFinish]" << "m_mappingswitchKeySeqStr is Empty, set to DEFAULT ->" << MAPPINGSWITCH_KEYSEQ_DEFAULT;
+            qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Last KeySequence is Empty, set to DEFAULT ->" << m_mappingswitchKeySeqEdit->defaultKeySequence();
+#endif
+        }
+        else {
+            m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->lastKeySequence()));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Current KeySequence is Empty, set to LAST ->" << m_mappingswitchKeySeqEdit->lastKeySequence();
+#endif
+        }
+    }
+    else {
+        updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString();
 #endif
     }
-
-    if (curKeySeqEditStr.isEmpty()) {
-        m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqStr));
-    }
+    m_mappingswitchKeySeqEdit->clearFocus();
 }
 
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
@@ -1795,12 +1794,17 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
 #endif
 
-        if (m_mappingswitchKeySeqStr.isEmpty()) {
-            m_mappingswitchKeySeqStr = QString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
-            QKeySequence mappingswitchKeySeq = QKeySequence(m_mappingswitchKeySeqStr);
-            updateMappingSwitchKeySeq(mappingswitchKeySeq);
+        if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
+            if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
+                m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->defaultKeySequence()));
+            }
+            else {
+                m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->lastKeySequence()));
+            }
+            updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
         }
-        settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqStr);
+        m_mappingswitchKeySeqEdit->clearFocus();
+        settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqEdit->keySequence().toString());
 
         const QString savedSettingName = saveSettingSelectStr.remove("/");
         loadSetting_flag = true;
@@ -2289,16 +2293,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     if (true == settingFile.contains(settingSelectStr+MAPPINGSWITCH_KEYSEQ)){
         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSWITCH_KEYSEQ).toString();
         if (loadedmappingswitchKeySeqStr.isEmpty()) {
-            loadedmappingswitchKeySeqStr = QString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
+            loadedmappingswitchKeySeqStr = m_mappingswitchKeySeqEdit->defaultKeySequence();
         }
     }
     else {
-        loadedmappingswitchKeySeqStr = QString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
+        loadedmappingswitchKeySeqStr = m_mappingswitchKeySeqEdit->defaultKeySequence();
     }
     m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(loadedmappingswitchKeySeqStr));
-    m_mappingswitchKeySeqStr = loadedmappingswitchKeySeqStr;
-    QKeySequence mappingswitchKeySeq = QKeySequence(m_mappingswitchKeySeqStr);
-    updateMappingSwitchKeySeq(mappingswitchKeySeq);
+    updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
 
     if (false == datavalidflag){
         QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
@@ -2916,15 +2918,6 @@ void QKeyMapper::initHotKeySequence()
     m_HotKey->setShortcut(hotkeysequence_displayswitch, true);
 
     connect( m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
-    QKeySequence hotkeysequence_mappingswitch;
-    if (false == m_mappingswitchKeySeqStr.isEmpty()){
-        hotkeysequence_mappingswitch = QKeySequence::fromString(m_mappingswitchKeySeqStr);
-    }
-    else {
-        hotkeysequence_mappingswitch = QKeySequence::fromString(MAPPINGSWITCH_KEYSEQ_DEFAULT);
-    }
-    updateMappingSwitchKeySeq(hotkeysequence_mappingswitch);
-    m_mappingswitchKeySeqEdit->setKeySequence(hotkeysequence_mappingswitch);
 }
 
 void QKeyMapper::initProcessInfoTable(void)
@@ -3358,6 +3351,7 @@ void QKeyMapper::initMappingSwitchKeySeqEdit()
 
 void QKeyMapper::updateMappingSwitchKeySeq(const QKeySequence &keysequence)
 {
+    m_mappingswitchKeySeqEdit->setLastKeySequence(keysequence.toString());
     m_HotKey_StartStop->setShortcut(keysequence, true);
 }
 
@@ -3919,6 +3913,26 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
 
     //QComboBox::keyPressEvent(keyevent);
+}
+
+void KeySequenceEditOnlyOne::setDefaultKeySequence(const QString &keysequencestr)
+{
+    m_DefaultKeySequence = keysequencestr;
+}
+
+QString KeySequenceEditOnlyOne::defaultKeySequence()
+{
+    return m_DefaultKeySequence;
+}
+
+void KeySequenceEditOnlyOne::setLastKeySequence(const QString &keysequencestr)
+{
+    m_LastKeySequence = keysequencestr;
+}
+
+QString KeySequenceEditOnlyOne::lastKeySequence()
+{
+    return m_LastKeySequence;
 }
 
 void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)

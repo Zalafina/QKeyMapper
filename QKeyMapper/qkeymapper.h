@@ -86,15 +86,27 @@ class KeySequenceEditOnlyOne : public QKeySequenceEdit
     Q_OBJECT
 
 public:
-    explicit KeySequenceEditOnlyOne(QWidget *parent = Q_NULLPTR) : QKeySequenceEdit(parent)
+    explicit KeySequenceEditOnlyOne(QWidget *parent = Q_NULLPTR) :
+        QKeySequenceEdit(parent),
+        m_DefaultKeySequence(),
+        m_LastKeySequence()
     {
     }
+
+    void setDefaultKeySequence(const QString &keysequencestr);
+    QString defaultKeySequence();
+    void setLastKeySequence(const QString &keysequencestr);
+    QString lastKeySequence();
 
 signals:
     void keySeqEditChanged_Signal(const QKeySequence &keysequence);
 
 protected:
     virtual void keyPressEvent(QKeyEvent* pEvent);
+
+private:
+    QString m_DefaultKeySequence;
+    QString m_LastKeySequence;
 };
 
 
@@ -185,9 +197,9 @@ private slots:
 
     void HotKeyStartStopActivated();
 
-    void onKeySequenceChanged(const QKeySequence &keysequence);
+    void onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence);
 
-    void onKeySequenceEditingFinished();
+    void onMappingSwitchKeySequenceEditingFinished();
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
@@ -297,7 +309,6 @@ private:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
-    QString m_mappingswitchKeySeqStr;
     QHotkey *m_HotKey;
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
