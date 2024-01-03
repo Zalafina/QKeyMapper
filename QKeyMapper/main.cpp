@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 //    HWND hwd = GetDesktopWindow();
     HDC hdc = GetDC(NULL);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
+    int height = GetDeviceCaps(hdc, DESKTOPVERTRES);
     double dWidth = static_cast<double>(width);
     double dScreenWidth = static_cast<double>(nScreenWidth);
     double scale = dWidth / dScreenWidth;
@@ -91,21 +92,21 @@ int main(int argc, char *argv[])
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.0");
             Flag_4K = true;
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Set QT_SCALE_FACTOR to [1.5] for screen width ->" << dWidth;
+            qDebug() << "Set QT_SCALE_FACTOR to [1.5] for screen ->" << width << "*" << height;
 #endif
         }
         else if (dWidth >= 2560) {
             qputenv("QT_SCALE_FACTOR", "1.25");
             qputenv("WINDOWS_SCALE_FACTOR", "2K_1.0");
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Set QT_SCALE_FACTOR to [1.25] for screen width ->" << dWidth;
+            qDebug() << "Set QT_SCALE_FACTOR to [1.25] for screen ->" << width << "*" << height;
 #endif
         }
         else {
             qputenv("QT_SCALE_FACTOR", "1");
             qputenv("WINDOWS_SCALE_FACTOR", "1K_1.0");
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "set QT_SCALE_FACTOR to [1] for screen width ->" << dWidth;
+            qDebug() << "set QT_SCALE_FACTOR to [1] for screen ->" << width << "*" << height;
 #endif
         }
     }
@@ -135,7 +136,7 @@ int main(int argc, char *argv[])
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Original screen scale ->" << scale << "," << "Screen width ->" << dWidth << ", do not need to set QT_SCALE_FACTOR.";
+        qDebug() << "Original screen scale ->" << scale << "," << "Screen [" << width << "*" << height <<"], do not need to set QT_SCALE_FACTOR.";
 #endif
     }
 

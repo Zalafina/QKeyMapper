@@ -3368,7 +3368,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
 
     if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "KeyMappingDataList Start >>>";
+        qDebug() << "[refreshKeyMappingDataTable]" << "KeyMappingDataList Start >>>";
 #endif
         int rowindex = 0;
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
@@ -3438,12 +3438,12 @@ void QKeyMapper::refreshKeyMappingDataTable()
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << keymapdata.Original_Key << "to" << keymapdata.Mapping_Keys;
+            qDebug() << "[refreshKeyMappingDataTable]" << keymapdata.Original_Key << "->" << keymapdata.Mapping_Keys;
 #endif
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "KeyMappingDataList End   <<<";
+        qDebug() << "[refreshKeyMappingDataTable]" << "KeyMappingDataList End <<<";
 #endif
     }
 }
