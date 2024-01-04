@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QThread>
 #include <QHash>
+#include <QHotkey>
 #include <QThreadPool>
 #include <QWaitCondition>
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -32,7 +33,7 @@ class QKeyMapper;
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME     ("⏱")
 
-#define PREFIX_KEYSEQUENCE     ("→")
+#define PREFIX_SHORTCUT     ("★")
 
 #define SEND_INPUTS_MAX     (30)
 #define KEY_SEQUENCE_MAX    (8)
@@ -354,6 +355,9 @@ private:
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void initJoystickKeyMap(void);
+    void updateShortcutsMap(void);
+    void setShortcutsRegistered(bool registered);
+    void freeShortcuts(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
 #endif
@@ -373,6 +377,7 @@ public:
     static QHash<WPARAM, QString> MouseButtonNameMap;
     static QHash<QString, QString> MouseButtonNameConvertMap;
     static QHash<QString, int> JoyStickKeyMap;
+    static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
 #endif
@@ -476,10 +481,6 @@ public slots:
     void onSetHookProcKeyUnHook(void);
 
 public:
-
-    static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
-    static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
-
 #ifdef QT_DEBUG
     static bool s_LowLevelKeyboardHook_Enable;
     static bool s_LowLevelMouseHook_Enable;

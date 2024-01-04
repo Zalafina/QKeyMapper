@@ -88,6 +88,7 @@ QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QSt
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
 QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
+QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
 #ifdef VIGEM_CLIENT_SUPPORT
 QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, XUSB_BUTTON>();
 #endif
@@ -226,6 +227,7 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 #endif
 
     setWorkerKeyUnHook();
+    freeShortcuts();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     (void)ViGEmClient_Remove();
@@ -1614,7 +1616,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
             }
         }
 #endif
-
+        setShortcutsRegistered(true);
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
 //#ifdef QT_DEBUG
 //        if (m_LowLevelKeyboardHook_Enable) {
@@ -1655,6 +1657,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
+    setShortcutsRegistered(false);
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
 
 //    if (m_MouseHook != Q_NULLPTR) {
@@ -3224,6 +3227,21 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
 }
 
+void QKeyMapper_Worker::updateShortcutsMap()
+{
+//    m_HotKey_StartStop->setShortcut(keysequence);
+}
+
+void QKeyMapper_Worker::setShortcutsRegistered(bool registered)
+{
+    //    m_HotKey_StartStop->setRegistered(registered);
+}
+
+void QKeyMapper_Worker::freeShortcuts()
+{
+//    delete ShortcutsMap;
+}
+
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::initViGEmKeyMap()
 {
@@ -3488,14 +3506,14 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
 
 #ifdef QT_DEBUG
     if (s_LowLevelKeyboardHook_Enable) {
-        s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Hook_Proc::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
     }
     if (s_LowLevelMouseHook_Enable) {
-        s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Hook_Proc::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
     }
 #else
-    s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Hook_Proc::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-    s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Hook_Proc::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3518,401 +3536,4 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
 #ifdef DEBUG_LOGOUT_ON
     qInfo("[onSetHookProcKeyUnHook] Normal Key Hook & Mouse Hook Released.");
 #endif
-}
-
-LRESULT QKeyMapper_Hook_Proc::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-    if (nCode != HC_ACTION) {
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-    }
-
-    KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
-    ULONG_PTR extraInfo = pKeyBoard->dwExtraInfo;
-
-    bool returnFlag = false;
-    V_KEYCODE vkeycode;
-    vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
-    if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
-        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
-    }
-    else{
-        vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
-    }
-
-    QString keycodeString = QKeyMapper_Worker::VirtualKeyCodeMap.key(vkeycode);
-
-    if (VIRTUAL_WIN_PLUS_D == extraInfo) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("[HookProc_LowLevelKeyboardHookProc] Ignore extraInfo:VIRTUAL_WIN_PLUS_D(0x%08X) -> \"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", extraInfo, keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-#endif
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-    }
-
-    //#ifdef DEBUG_LOGOUT_ON
-    //    qDebug("\"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-    //#endif
-
-    if ((false == keycodeString.isEmpty())
-        && (WM_KEYDOWN == wParam || WM_KEYUP == wParam || WM_SYSKEYDOWN == wParam || WM_SYSKEYUP == wParam)){
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("[HookProc_LowLevelKeyboardHookProc] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
-
-        if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
-            if (WM_KEYDOWN == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else if (WM_KEYUP == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else if (WM_SYSKEYDOWN == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else if (WM_SYSKEYUP == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else{
-            }
-        }
-        else {
-            if (WM_KEYDOWN == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else if (WM_KEYUP == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else if (WM_SYSKEYDOWN == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else if (WM_SYSKEYUP == wParam){
-                qDebug("[HookProc_LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-            }
-            else{
-            }
-        }
-#endif
-        int keyupdown;
-        if (WM_KEYDOWN == wParam || WM_SYSKEYDOWN == wParam) {
-            keyupdown = KEY_DOWN;
-        }
-        else {
-            keyupdown = KEY_UP;
-        }
-
-        if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
-            int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
-            returnFlag = QKeyMapper_Worker::hookBurstAndLockProc(keycodeString, keyupdown);
-
-            if (true == QKeyMapper::getDisableWinKeyStatus()) {
-                if (KEY_DOWN == keyupdown) {
-                    if ("D" == keycodeString && QKeyMapper_Worker::pressedRealKeysList.contains("L-Win")) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("[HookProc_LowLevelKeyboardHookProc] \"L-Win + D\" pressed!");
-#endif
-                        emit QKeyMapper_Worker::getInstance()->send_WINplusD_Signal();
-                    }
-                }
-
-                if (("L-Win" == keycodeString)
-                    || ("R-Win" == keycodeString)
-                    || ("Application" == keycodeString)) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("[HookProc_LowLevelKeyboardHookProc] Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
-#endif
-                    returnFlag = true;
-                }
-            }
-
-            if (KEY_UP == keyupdown && false == returnFlag){
-                if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
-                }
-                else {
-                    if (QKeyMapper_Worker::pressedVirtualKeysList.contains(keycodeString)) {
-                        returnFlag = true;
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("[HookProc_LowLevelKeyboardHookProc] VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
-#endif
-                    }
-                }
-            }
-
-            if (false == returnFlag) {
-                if (findindex >=0){
-                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                    if (KEY_DOWN == keyupdown){
-                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                        returnFlag = true;
-                    }
-                    else { /* KEY_UP == keyupdown */
-                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
-                        returnFlag = true;
-                    }
-                }
-            }
-        }
-        else {
-            if (KEY_DOWN == keyupdown){
-                if (false == QKeyMapper_Worker::pressedVirtualKeysList.contains(keycodeString)){
-                    QKeyMapper_Worker::pressedVirtualKeysList.append(keycodeString);
-                }
-            }
-            /* KEY_UP == keyupdown */
-            else {
-                int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
-                if (QKeyMapper_Worker::pressedRealKeysList.contains(keycodeString) && findindex < 0){
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("[HookProc_LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
-#endif
-                    returnFlag = true;
-                }
-
-                QKeyMapper_Worker::pressedVirtualKeysList.removeAll(keycodeString);
-            }
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[HookProc_LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << QKeyMapper_Worker::pressedVirtualKeysList;
-#endif
-        }
-    }
-    else{
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X), ExtenedFlag(%s)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-#endif
-    }
-
-    if (true == returnFlag){
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("[HookProc_LowLevelKeyboardHookProc] return TRUE");
-#endif
-        return (LRESULT)TRUE;
-    }
-    else{
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-    }
-}
-
-LRESULT QKeyMapper_Hook_Proc::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-    if (nCode != HC_ACTION) {
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-    }
-
-    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
-    ULONG_PTR extraInfo = pMouse->dwExtraInfo;
-    DWORD mousedata = pMouse->mouseData;
-
-    bool returnFlag = false;
-    if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
-        || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
-        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
-        || (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP)) {
-        int keyupdown;
-        WPARAM wParam_X;
-        if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || wParam == WM_XBUTTONDOWN) {
-            keyupdown = KEY_DOWN;
-        }
-        else {
-            keyupdown = KEY_UP;
-        }
-        if (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP) {
-            WORD xbutton = GET_XBUTTON_WPARAM(mousedata);
-            if ( xbutton == XBUTTON1 ) {
-                wParam_X = MAKELONG(wParam, XBUTTON1);
-            }
-            else if ( xbutton == XBUTTON2 ) {
-                wParam_X = MAKELONG(wParam, XBUTTON2);
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                qWarning("[HookProc_LowLevelMouseHookProc] Unsupport Mouse XButton -> 0x%04X", xbutton);
-#endif
-            }
-        }
-        else {
-            wParam_X = MAKELONG(wParam, XBUTTON_NONE);
-        }
-
-        if (true == QKeyMapper_Worker::MouseButtonNameMap.contains(wParam_X)) {
-            QString keycodeString = QKeyMapper_Worker::MouseButtonNameMap.value(wParam_X);
-            if (VIRTUAL_MOUSE_CLICK == extraInfo) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("Virtual \"%s\" %s", QKeyMapper_Worker::MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
-#endif
-                if (KEY_DOWN == keyupdown) {
-                    if (false == QKeyMapper_Worker::pressedVirtualKeysList.contains(keycodeString)){
-                        QKeyMapper_Worker::pressedVirtualKeysList.append(keycodeString);
-                    }
-                }
-                else {
-                    QKeyMapper_Worker::pressedVirtualKeysList.removeAll(keycodeString);
-                }
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("Real \"%s\" %s", QKeyMapper_Worker::MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
-#endif
-                int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
-                returnFlag = QKeyMapper_Worker::hookBurstAndLockProc(keycodeString, keyupdown);
-
-                if (KEY_UP == keyupdown && false == returnFlag){
-                    if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
-                    }
-                    else {
-                        if (QKeyMapper_Worker::pressedVirtualKeysList.contains(keycodeString)) {
-                            returnFlag = true;
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug("Virtual \"%s\" is pressed down, skip Real \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
-#endif
-                        }
-                    }
-                }
-
-                if (false == returnFlag) {
-                    if (findindex >=0){
-                        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                        if (KEY_DOWN == keyupdown){
-                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                            returnFlag = true;
-                        }
-                        else { /* KEY_UP == keyupdown */
-                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
-                            returnFlag = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    else if (wParam == WM_MOUSEWHEEL) {
-        if (VIRTUAL_MOUSE_WHEEL == extraInfo) {
-#ifdef DEBUG_LOGOUT_ON
-            short zDelta = GET_WHEEL_DELTA_WPARAM(mousedata);
-
-            if (zDelta != 0) {
-#ifdef MOUSE_VERBOSE_LOG
-                qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel -> Delta =" << zDelta;
-#endif
-                if (zDelta > 0) {
-                    qDebug() << "[HookProc_LowLevelMouseHookProc]" << "Virtual Mouse Wheel Up";
-                }
-                else {
-                    qDebug() << "[HookProc_LowLevelMouseHookProc]" << "Virtual Mouse Wheel Down";
-                }
-            }
-#endif
-        }
-        else {
-            short zDelta = GET_WHEEL_DELTA_WPARAM(mousedata);
-
-            if (zDelta != 0) {
-#ifdef MOUSE_VERBOSE_LOG
-                qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel -> Delta =" << zDelta;
-#endif
-                short delta_abs = std::abs(zDelta);
-                if (delta_abs >= WHEEL_DELTA) {
-                    bool wheel_up_found = false;
-                    bool wheel_down_found = false;
-                    bool send_wheel_keys = false;
-                    int findindex = -1;
-
-                    int findWheelUpindex = QKeyMapper::findInKeyMappingDataList(MOUSE_STR_WHEEL_UP);
-                    if (findWheelUpindex >=0){
-                        wheel_up_found = true;
-                    }
-
-                    int findWheelDownindex = QKeyMapper::findInKeyMappingDataList(MOUSE_STR_WHEEL_DOWN);
-                    if (findWheelDownindex >=0){
-                        wheel_down_found = true;
-                    }
-
-                    if (wheel_up_found || wheel_down_found) {
-                        if (wheel_up_found && zDelta > 0) {
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[HookProc_LowLevelMouseHookProc]" << "Real Mouse Wheel Up -> Send Wheel Up Mapping Keys";
-#endif
-                            send_wheel_keys = true;
-                            findindex = findWheelUpindex;
-                        }
-                        else if (wheel_down_found && zDelta < 0) {
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[HookProc_LowLevelMouseHookProc]" << "Real Mouse Wheel Down -> Send Wheel Up Mapping Keys";
-#endif
-                            send_wheel_keys = true;
-                            findindex = findWheelDownindex;
-                        }
-
-                        if (send_wheel_keys) {
-                            QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                            QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
-                            returnFlag = true;
-                        }
-                    }
-                }
-            }
-        }
-
-#if 0
-        if (zDelta > 0)
-        {
-            short delta_abs = std::abs(zDelta);
-
-            if (delta_abs >= WHEEL_DELTA) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel Up -> Delta =" << zDelta;
-#endif
-                int findindex = QKeyMapper::findInKeyMappingDataList(MOUSE_WHEEL_UP);
-
-                emit QKeyMapper_Worker::getInstance()->onMouseWheel_Signal(MOUSE_WHEEL_UP);
-            }
-        }
-        else if (zDelta < 0)
-        {
-            short delta_abs = std::abs(zDelta);
-
-            if (delta_abs >= WHEEL_DELTA) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel Down -> Delta =" << zDelta;
-#endif
-
-                emit QKeyMapper_Worker::getInstance()->onMouseWheel_Signal(MOUSE_WHEEL_DOWN);
-            }
-        }
-#endif
-    }
-#ifdef VIGEM_CLIENT_SUPPORT
-    else if (wParam == WM_MOUSEMOVE) {
-#ifdef MOUSE_VERBOSE_LOG
-        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
-#endif
-
-        if (extraInfo != VIRTUAL_MOUSE_MOVE) {
-            if (QKeyMapper_Worker::s_Mouse2vJoy_EnableState != QKeyMapper_Worker::MOUSE2VJOY_NONE) {
-                QKeyMapper_Worker::s_Mouse2vJoy_delta.rx() = pMouse->pt.x - QKeyMapper_Worker::s_Mouse2vJoy_prev.x();
-                QKeyMapper_Worker::s_Mouse2vJoy_delta.ry() = pMouse->pt.y - QKeyMapper_Worker::s_Mouse2vJoy_prev.y();
-
-                if (QKeyMapper::getLockCursorStatus()) {
-                    returnFlag = true;
-                }
-                else {
-                    QKeyMapper_Worker::s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
-                    QKeyMapper_Worker::s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
-                }
-
-                emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
-            }
-        }
-    }
-#endif
-
-    if (true == returnFlag){
-        //#ifdef DEBUG_LOGOUT_ON
-        //        qDebug("LowLevelMouseHookProc() -> return TRUE");
-        //#endif
-        return (LRESULT)TRUE;
-    }
-    else{
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-    }
 }

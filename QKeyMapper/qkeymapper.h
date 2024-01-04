@@ -24,7 +24,6 @@
 #include <QCheckBox>
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
-#include <QHotkey>
 #include <QDir>
 #include <QProcess>
 #include <windows.h>
