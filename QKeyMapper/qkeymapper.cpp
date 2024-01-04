@@ -2141,6 +2141,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
                         QString appendOriKey = ori_key;
+                        if (ori_key.startsWith(PREFIX_SHORTCUT)) {
+                            keyboardmapcontains = true;
+                        }
                         if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
                             appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
                             mousemapcontains = true;
