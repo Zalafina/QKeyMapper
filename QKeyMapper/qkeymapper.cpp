@@ -3433,6 +3433,8 @@ void QKeyMapper::refreshKeyMappingDataTable()
 {
     ui->keymapdataTable->clearContents();
     ui->keymapdataTable->setRowCount(0);
+    QKeyMapper_Worker::setShortcutsRegistered(false);
+    QKeyMapper_Worker::freeShortcuts();
 
     if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
