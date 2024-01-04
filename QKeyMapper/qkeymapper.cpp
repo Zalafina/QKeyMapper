@@ -3793,7 +3793,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
     QString currentMapKeyComboBoxText = m_mapkeyComboBox->currentText();
 
-    if (currentOriKeyComboBoxText.isEmpty() || currentMapKeyComboBoxText.isEmpty()) {
+    if (currentOriKeyComboBoxText.isEmpty() || (m_mapkeyComboBox->isEnabled() && currentMapKeyComboBoxText.isEmpty())) {
         return;
     }
 
