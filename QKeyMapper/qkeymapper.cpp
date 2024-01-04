@@ -1433,10 +1433,11 @@ void QKeyMapper::on_keymapButton_clicked()
     }
 }
 
-void QKeyMapper::HotKeyActivated()
+void QKeyMapper::HotKeyActivated(const QString &keyseqstr)
 {
+    Q_UNUSED(keyseqstr);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "HotKeyActivated() Called, is Hidden:" << isHidden();
+    qDebug() << "[HotKeyActivated] isHidden =" << isHidden();
 #endif
     if (false == isHidden()){
         hide();
@@ -1448,11 +1449,12 @@ void QKeyMapper::HotKeyActivated()
     }
 }
 
-void QKeyMapper::HotKeyStartStopActivated()
+void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr)
 {
+    Q_UNUSED(keyseqstr);
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "HotKeyStartStopActivated() Called, KeyMapStatus:" << keymapstatusEnum.valueToKey(m_KeyMapStatus);
+    qDebug() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyMapStatus =" << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
     on_keymapButton_clicked();

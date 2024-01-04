@@ -193,9 +193,9 @@ public slots:
 #endif
 
 private slots:
-    void HotKeyActivated();
+    void HotKeyActivated(const QString &keyseqstr);
 
-    void HotKeyStartStopActivated();
+    void HotKeyStartStopActivated(const QString &keyseqstr);
 
     void onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence);
 
