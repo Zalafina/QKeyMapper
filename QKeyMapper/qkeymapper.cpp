@@ -3514,6 +3514,11 @@ void QKeyMapper::refreshKeyMappingDataTable()
         qDebug() << "[refreshKeyMappingDataTable]" << "KeyMappingDataList End <<<";
 #endif
     }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[refreshKeyMappingDataTable]" << "Empty KeyMappingDataList";
+#endif
+    }
 }
 
 void QKeyMapper::reloadUILanguage()

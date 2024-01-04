@@ -1761,6 +1761,8 @@ void QKeyMapper_Worker::HotKeyForMappingActivated(const QString &keyseqstr)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[HotKeyForMappingActivated] Shortcut Activated [" << keyseqstr << "]";
 #endif
+
+    HotKeyHookProc(keyseqstr, KEY_DOWN);
 }
 
 void QKeyMapper_Worker::HotKeyForMappingReleased(const QString &keyseqstr)
@@ -1768,6 +1770,13 @@ void QKeyMapper_Worker::HotKeyForMappingReleased(const QString &keyseqstr)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[HotKeyForMappingActivated] Shortcut Released [" << keyseqstr << "]";
 #endif
+
+    HotKeyHookProc(keyseqstr, KEY_UP);
+}
+
+void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdown)
+{
+
 }
 
 #ifdef DINPUT_TEST

@@ -323,6 +323,8 @@ public slots:
     void HotKeyForMappingActivated(const QString &keyseqstr);
     void HotKeyForMappingReleased(const QString &keyseqstr);
 
+    void HotKeyHookProc(const QString &keycodeString, int keyupdown);
+
 #ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);
     void setWorkerDInputKeyUnHook(void);
