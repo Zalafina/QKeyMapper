@@ -3433,8 +3433,6 @@ void QKeyMapper::refreshKeyMappingDataTable()
 {
     ui->keymapdataTable->clearContents();
     ui->keymapdataTable->setRowCount(0);
-    QKeyMapper_Worker::setShortcutsRegistered(false);
-    QKeyMapper_Worker::freeShortcuts();
 
     if (false == KeyMappingDataList.isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
@@ -3898,6 +3896,7 @@ void QKeyMapper::on_deleteoneButton_clicked()
         ui->keymapdataTable->removeRow(currentrowindex);
         KeyMappingDataList.removeAt(currentrowindex);
 
+        refreshKeyMappingDataTable();
 #ifdef DEBUG_LOGOUT_ON
         if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){
             qDebug("KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", ui->keymapdataTable->rowCount(), KeyMappingDataList.size());

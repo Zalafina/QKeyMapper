@@ -177,7 +177,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     QObject::connect(this, SIGNAL(startBurstTimer_Signal(QString,int)), this, SLOT(startBurstTimer(QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(stopBurstTimer_Signal(QString,int)), this, SLOT(stopBurstTimer(QString,int)), Qt::QueuedConnection);
-
 #if 0
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseClick_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseClick(V_MOUSECODE,int)), Qt::QueuedConnection);
@@ -1616,7 +1615,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
             }
         }
 #endif
-        setShortcutsRegistered(true);
+        updateShortcutsMap();
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
 //#ifdef QT_DEBUG
 //        if (m_LowLevelKeyboardHook_Enable) {
@@ -1657,7 +1656,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
-    setShortcutsRegistered(false);
+    freeShortcuts();
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
 
 //    if (m_MouseHook != Q_NULLPTR) {
@@ -1704,6 +1703,71 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
 void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
 {
     m_JoystickCapture = false;
+}
+
+void QKeyMapper_Worker::updateShortcutsMap()
+{
+    freeShortcuts();
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
+    {
+        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
+        {
+            QString shortcutstr = keymapdata.Original_Key;
+            shortcutstr.remove(PREFIX_SHORTCUT);
+            if (false == ShortcutsMap.contains(shortcutstr)) {
+                ShortcutsMap.insert(shortcutstr, new QHotkey(this));
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning() << "[updateShortcutsMap]" << "Already contains Shortcut!!! ->" << shortcutstr;
+#endif
+            }
+            QHotkey* hotkey = ShortcutsMap.value(shortcutstr);
+            connect(hotkey, &QHotkey::activated, this, &QKeyMapper_Worker::HotKeyForMappingActivated);
+            connect(hotkey, &QHotkey::released,  this, &QKeyMapper_Worker::HotKeyForMappingReleased);
+            hotkey->setShortcut(QKeySequence(shortcutstr), true);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateShortcutsMap]" << "ShortcutsList ->" << ShortcutsMap.keys();
+#endif
+}
+
+void QKeyMapper_Worker::freeShortcuts()
+{
+    QList<QHotkey*> HotkeysList = ShortcutsMap.values();
+    for (QHotkey* shortcut : qAsConst(HotkeysList)) {
+        bool unregister = shortcut->setRegistered(false);
+        Q_UNUSED(unregister);
+#ifdef DEBUG_LOGOUT_ON
+        if (false == unregister) {
+            qWarning() << "[freeShortcuts]" << "unregister Shortcut[" << shortcut->shortcut().toString() << "] Failed!!!";
+        }
+#endif
+        if (shortcut != Q_NULLPTR) {
+            delete shortcut;
+        }
+    }
+    ShortcutsMap.clear();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[freeShortcuts]" << "ShortcutsList ->" << ShortcutsMap.keys();
+#endif
+}
+
+void QKeyMapper_Worker::HotKeyForMappingActivated(const QString &keyseqstr)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HotKeyForMappingActivated] Shortcut Activated [" << keyseqstr << "]";
+#endif
+}
+
+void QKeyMapper_Worker::HotKeyForMappingReleased(const QString &keyseqstr)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HotKeyForMappingActivated] Shortcut Released [" << keyseqstr << "]";
+#endif
 }
 
 #ifdef DINPUT_TEST
@@ -3225,21 +3289,6 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_L_DOWN,  JOYSTICK_DPAD_L_DOWN            );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_UP,    JOYSTICK_DPAD_R_UP              );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
-}
-
-void QKeyMapper_Worker::updateShortcutsMap()
-{
-//    m_HotKey_StartStop->setShortcut(keysequence);
-}
-
-void QKeyMapper_Worker::setShortcutsRegistered(bool registered)
-{
-    //    m_HotKey_StartStop->setRegistered(registered);
-}
-
-void QKeyMapper_Worker::freeShortcuts()
-{
-//    delete ShortcutsMap;
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT

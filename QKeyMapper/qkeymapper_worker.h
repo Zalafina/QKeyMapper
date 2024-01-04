@@ -317,6 +317,12 @@ public slots:
     void setWorkerKeyUnHook(void);
     void setWorkerJoystickCaptureStart(HWND hWnd);
     void setWorkerJoystickCaptureStop(void);
+
+    void updateShortcutsMap(void);
+    void freeShortcuts(void);
+    void HotKeyForMappingActivated(const QString &keyseqstr);
+    void HotKeyForMappingReleased(const QString &keyseqstr);
+
 #ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);
     void setWorkerDInputKeyUnHook(void);
@@ -355,9 +361,6 @@ private:
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void initJoystickKeyMap(void);
-    void updateShortcutsMap(void);
-    void setShortcutsRegistered(bool registered);
-    void freeShortcuts(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
 #endif
