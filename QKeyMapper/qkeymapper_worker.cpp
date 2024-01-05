@@ -1784,6 +1784,24 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[HotKeyHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedShortcutKeysList -> " << pressedShortcutKeysList;
 #endif
+
+    bool returnFlag = false;
+    QString keycodeStringForSearch = QString(PREFIX_SHORTCUT) + keycodeString;
+    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeStringForSearch);
+    returnFlag = hookBurstAndLockProc(keycodeStringForSearch, keyupdown);
+
+    if (false == returnFlag) {
+        if (findindex >=0){
+            QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+            QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+            if (KEY_DOWN == keyupdown){
+                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            }
+            else { /* KEY_UP == keyupdown */
+                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+            }
+        }
+    }
 }
 
 #ifdef DINPUT_TEST
