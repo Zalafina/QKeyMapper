@@ -251,13 +251,13 @@ bool QHotkeyPrivate::removeShortcut(QHotkey *hotkey)
 	if(!hotkey->_registered)
 		return false;
 
-    if (last_activated_shortcut != QHotkey::NativeShortcut()) {
-        if (hotkey->currentNativeShortcut() == last_activated_shortcut) {
-            QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::released);
-            signal.invoke(hotkey, Qt::QueuedConnection , Q_ARG(QString, hotkey->shortcut().toString()));
-            last_activated_shortcut = QHotkey::NativeShortcut();
-        }
-    }
+	if (last_activated_shortcut != QHotkey::NativeShortcut()) {
+		if (hotkey->currentNativeShortcut() == last_activated_shortcut) {
+			QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::released);
+			signal.invoke(hotkey, Qt::DirectConnection , Q_ARG(QString, hotkey->shortcut().toString()));
+			last_activated_shortcut = QHotkey::NativeShortcut();
+		}
+	}
 
 	Qt::ConnectionType conType = (QThread::currentThread() == thread() ?
 									  Qt::DirectConnection :
@@ -280,7 +280,7 @@ void QHotkeyPrivate::activateShortcut(QHotkey::NativeShortcut shortcut)
 	if (last_activated_shortcut != QHotkey::NativeShortcut()) {
 		QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::released);
 		for(QHotkey *hkey : shortcuts.values(last_activated_shortcut))
-			signal.invoke(hkey, Qt::QueuedConnection, Q_ARG(QString, hkey->shortcut().toString()));
+			signal.invoke(hkey, Qt::DirectConnection, Q_ARG(QString, hkey->shortcut().toString()));
 	}
 
 	QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::activated);

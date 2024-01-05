@@ -438,8 +438,9 @@ QKeyMapper::~QKeyMapper()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper() called.";
 #endif
-
     m_isDestructing = true;
+
+    freeShortcuts();
 
     delete m_orikeyComboBox;
     m_orikeyComboBox = Q_NULLPTR;
