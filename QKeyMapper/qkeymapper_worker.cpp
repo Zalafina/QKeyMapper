@@ -175,30 +175,30 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     Q_UNUSED(parent);
 
-    QObject::connect(this, SIGNAL(setKeyHook_Signal(HWND)), this, SLOT(setWorkerKeyHook(HWND)), Qt::QueuedConnection);
-    QObject::connect(this, SIGNAL(setKeyUnHook_Signal()), this, SLOT(setWorkerKeyUnHook()), Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
 
-    QObject::connect(QKeyMapper_Hook_Proc::getInstance(), SIGNAL(setKeyHook_Signal(HWND)), QKeyMapper_Hook_Proc::getInstance(), SLOT(onSetHookProcKeyHook(HWND)), Qt::QueuedConnection);
-    QObject::connect(QKeyMapper_Hook_Proc::getInstance(), SIGNAL(setKeyUnHook_Signal()), QKeyMapper_Hook_Proc::getInstance(), SLOT(onSetHookProcKeyUnHook()), Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
 
-    QObject::connect(this, SIGNAL(startBurstTimer_Signal(QString,int)), this, SLOT(startBurstTimer(QString,int)), Qt::QueuedConnection);
-    QObject::connect(this, SIGNAL(stopBurstTimer_Signal(QString,int)), this, SLOT(stopBurstTimer(QString,int)), Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::startBurstTimer_Signal, this, &QKeyMapper_Worker::startBurstTimer, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::stopBurstTimer_Signal, this, &QKeyMapper_Worker::stopBurstTimer, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, SIGNAL(sendKeyboardInput_Signal(V_KEYCODE,int)), this, SLOT(sendKeyboardInput(V_KEYCODE,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(sendMouseClick_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseClick(V_MOUSECODE,int)), Qt::QueuedConnection);
 #endif
-    QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(onSendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
-    QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
-    QObject::connect(this, SIGNAL(HotKeyTrigger_Signal(const QString &, int)), this, SLOT(HotKeyHookProc(const QString &, int)), Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::sendInputKeys_Signal, this, &QKeyMapper_Worker::onSendInputKeys, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
-    QObject::connect(this, SIGNAL(onMouseMove_Signal(int,int)), this, SLOT(onMouseMove(int,int)), Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::onMouseMove_Signal, this, &QKeyMapper_Worker::onMouseMove, Qt::QueuedConnection);
 
     m_Mouse2vJoyResetTimer.setTimerType(Qt::PreciseTimer);
     m_Mouse2vJoyResetTimer.setSingleShot(true);
-    QObject::connect(&m_Mouse2vJoyResetTimer, SIGNAL(timeout()), this, SLOT(onMouse2vJoyResetTimeout()));
+    QObject::connect(&m_Mouse2vJoyResetTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onMouse2vJoyResetTimeout);
 #endif
 
     /* Connect QJoysticks Signals */

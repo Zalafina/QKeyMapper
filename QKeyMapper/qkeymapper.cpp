@@ -408,18 +408,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     reloadUILanguage();
     resetFontSize();
 
-    QObject::connect(m_SysTrayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(SystrayIconActivated(QSystemTrayIcon::ActivationReason)));
-    QObject::connect(&m_CycleCheckTimer, SIGNAL(timeout()), this, SLOT(cycleCheckProcessProc()));
-    QObject::connect(ui->keymapdataTable, SIGNAL(cellChanged(int,int)), this, SLOT(cellChanged_slot(int,int)));
+    QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
+    QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
+    QObject::connect(ui->keymapdataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
 
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
     QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
     QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
-    QObject::connect(this, SIGNAL(updateLockStatus_Signal()), this, SLOT(updateLockStatusDisplay()), Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
-    QObject::connect(this, SIGNAL(updateViGEmBusStatus_Signal()), this, SLOT(updateViGEmBusLabelDisplay()));
+    QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
 
@@ -2991,11 +2991,11 @@ void QKeyMapper::on_savemaplistButton_clicked()
 
 void QKeyMapper::initHotKeySequence()
 {
-    connect( m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
+    QObject::connect(m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
     QKeySequence hotkeysequence_displayswitch = QKeySequence::fromString(DISPLAYSWITCH_KEYSEQ);
     m_HotKey->setShortcut(hotkeysequence_displayswitch, true);
 
-    connect( m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
+    QObject::connect(m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
 }
 
 void QKeyMapper::initProcessInfoTable(void)
@@ -3762,8 +3762,8 @@ void QKeyMapper::updateShortcutsMap()
 #endif
             }
             QHotkey* hotkey = ShortcutsMap.value(shortcutstr);
-            connect(hotkey, &QHotkey::activated, this, &QKeyMapper::HotKeyForMappingActivated);
-            connect(hotkey, &QHotkey::released,  this, &QKeyMapper::HotKeyForMappingReleased);
+            QObject::connect(hotkey, &QHotkey::activated, this, &QKeyMapper::HotKeyForMappingActivated);
+            QObject::connect(hotkey, &QHotkey::released,  this, &QKeyMapper::HotKeyForMappingReleased);
             hotkey->setShortcut(QKeySequence(shortcutstr), true);
         }
     }
