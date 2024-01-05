@@ -253,6 +253,7 @@ public slots:
     void sendMouseMove(int x, int y);
     void sendMouseWheel(int wheel_updown);
     void setMouseToScreenCenter(void);
+    void setMouseToPoint(POINT point);
     void setMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int x, int y);
@@ -277,6 +278,9 @@ public:
     static void ViGEmClient_Remove(void);
     static void ViGEmClient_Disconnect(void);
     static void ViGEmClient_Free(void);
+
+    static void updateViGEmBusStatus(void);
+    static void updateLockStatus(void);
 
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
 
@@ -307,6 +311,7 @@ signals:
     void onMouseWheel_Signal(int wheel_updown);
 #endif
     void send_WINplusD_Signal(void);
+    void HotKeyTrigger_Signal(const QString &keycodeString, int keyupdown);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -317,12 +322,6 @@ public slots:
     void setWorkerKeyUnHook(void);
     void setWorkerJoystickCaptureStart(HWND hWnd);
     void setWorkerJoystickCaptureStop(void);
-
-    void updateShortcutsMap(void);
-    void freeShortcuts(void);
-    void HotKeyForMappingActivated(const QString &keyseqstr);
-    void HotKeyForMappingReleased(const QString &keyseqstr);
-
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
 
 #ifdef DINPUT_TEST
@@ -365,6 +364,7 @@ private:
     void initJoystickKeyMap(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
+    bool isCursorAtBottomRight(void);
 #endif
     void clearAllBurstTimersAndLockKeys(void);
     void collectExchangeKeysList(void);
@@ -373,6 +373,7 @@ public:
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 
 public:
+    static bool m_isWorkerDestructing;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QMultiHash<QString, V_KEYCODE> VirtualKeyCodeMap;
 #else
@@ -388,6 +389,7 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
+    static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QStringList pressedvJoyLStickKeys;
     static QStringList pressedvJoyRStickKeys;
@@ -423,6 +425,10 @@ public:
 private:
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
+#ifdef VIGEM_CLIENT_SUPPORT
+    POINT m_BottomRightPoint;
+    POINT m_LastMouseCursorPoint;
+#endif
     QRunnable *m_sendInputTask;
     QWaitCondition m_sendInputStopCondition;
     QMutex m_sendInputStopMutex;

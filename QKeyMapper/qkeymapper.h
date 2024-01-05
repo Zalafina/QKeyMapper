@@ -191,6 +191,11 @@ public slots:
     void raiseQKeyMapperWindow(void);
 #endif
 
+    void updateShortcutsMap(void);
+    void freeShortcuts(void);
+    void HotKeyForMappingActivated(const QString &keyseqstr);
+    void HotKeyForMappingReleased(const QString &keyseqstr);
+
 private slots:
     void HotKeyActivated(const QString &keyseqstr);
 
@@ -293,8 +298,10 @@ public slots:
 #endif
 
 public:
+    static bool m_isDestructing;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
+    static QHash<QString, QHotkey*> ShortcutsMap;
 
 private:
     static QKeyMapper *m_instance;

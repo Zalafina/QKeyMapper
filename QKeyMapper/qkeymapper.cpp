@@ -199,8 +199,11 @@ static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
+
+bool QKeyMapper::m_isDestructing = false;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
+QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -435,6 +438,8 @@ QKeyMapper::~QKeyMapper()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper() called.";
 #endif
+
+    m_isDestructing = true;
 
     delete m_orikeyComboBox;
     m_orikeyComboBox = Q_NULLPTR;
@@ -692,11 +697,17 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
+    if(TRUE == IsWindowVisible(hWnd)){
+        updateShortcutsMap();
+    }
+
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
 }
 
 void QKeyMapper::setKeyUnHook(void)
 {
+    freeShortcuts();
+
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
 }
 
@@ -1309,6 +1320,10 @@ Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
 
 bool QKeyMapper::getDisableWinKeyStatus()
 {
+    if (m_isDestructing) {
+        return false;
+    }
+
     if (true == getInstance()->ui->disableWinKeyCheckBox->isChecked()) {
         return true;
     }
@@ -3726,6 +3741,89 @@ void QKeyMapper::raiseQKeyMapperWindow()
     raise();
 }
 #endif
+
+void QKeyMapper::updateShortcutsMap()
+{
+    freeShortcuts();
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    {
+        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
+        {
+            QString shortcutstr = keymapdata.Original_Key;
+            shortcutstr.remove(PREFIX_SHORTCUT);
+            if (false == ShortcutsMap.contains(shortcutstr)) {
+                ShortcutsMap.insert(shortcutstr, new QHotkey(this));
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning() << "[updateShortcutsMap]" << "Already contains Shortcut!!! ->" << shortcutstr;
+#endif
+            }
+            QHotkey* hotkey = ShortcutsMap.value(shortcutstr);
+            connect(hotkey, &QHotkey::activated, this, &QKeyMapper::HotKeyForMappingActivated);
+            connect(hotkey, &QHotkey::released,  this, &QKeyMapper::HotKeyForMappingReleased);
+            hotkey->setShortcut(QKeySequence(shortcutstr), true);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateShortcutsMap]" << "ShortcutsList ->" << ShortcutsMap.keys();
+#endif
+}
+
+void QKeyMapper::freeShortcuts()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[freeShortcuts] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+#endif
+
+    if (ShortcutsMap.isEmpty()) {
+        return;
+    }
+
+    QList<QHotkey*> HotkeysList = ShortcutsMap.values();
+
+    for (QHotkey* shortcut : qAsConst(HotkeysList)) {
+        bool unregister = shortcut->setRegistered(false);
+        Q_UNUSED(unregister);
+#ifdef DEBUG_LOGOUT_ON
+        if (false == unregister) {
+            qWarning() << "[freeShortcuts]" << "unregister Shortcut[" << shortcut->shortcut().toString() << "] Failed!!!";
+        }
+#endif
+    }
+
+    for (QHotkey* shortcut : qAsConst(HotkeysList)) {
+        if (shortcut != Q_NULLPTR) {
+            delete shortcut;
+        }
+    }
+
+    ShortcutsMap.clear();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[freeShortcuts]" << "ShortcutsList ->" << ShortcutsMap.keys();
+#endif
+}
+
+void QKeyMapper::HotKeyForMappingActivated(const QString &keyseqstr)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HotKeyForMappingActivated] Shortcut Activated [" << keyseqstr << "]";
+#endif
+
+    emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_DOWN);
+}
+
+void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HotKeyForMappingActivated] Shortcut Released [" << keyseqstr << "]";
+#endif
+
+    emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_UP);
+}
 
 void QKeyMapper::on_refreshButton_clicked()
 {

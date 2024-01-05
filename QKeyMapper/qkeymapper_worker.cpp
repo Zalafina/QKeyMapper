@@ -79,6 +79,7 @@ static const ULONG_PTR VIRTUAL_MOUSE_MOVE = 0xBFBCBFBC;
 static const ULONG_PTR VIRTUAL_MOUSE_WHEEL = 0xEBFAEBFA;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
+bool QKeyMapper_Worker::m_isWorkerDestructing = false;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QMultiHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QMultiHash<QString, V_KEYCODE>();
 #else
@@ -94,6 +95,7 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
+QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
 #ifdef VIGEM_CLIENT_SUPPORT
 QStringList QKeyMapper_Worker::pressedvJoyLStickKeys = QStringList();
 QStringList QKeyMapper_Worker::pressedvJoyRStickKeys = QStringList();
@@ -137,6 +139,10 @@ HHOOK QKeyMapper_Hook_Proc::s_MouseHook = Q_NULLPTR;
 QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
     m_MouseHook(Q_NULLPTR),
+#ifdef VIGEM_CLIENT_SUPPORT
+    m_BottomRightPoint(),
+    m_LastMouseCursorPoint(),
+#endif
     m_sendInputTask(Q_NULLPTR),
     m_sendInputStopCondition(),
     m_sendInputStopMutex(),
@@ -183,6 +189,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #endif
     QObject::connect(this, SIGNAL(sendInputKeys_Signal(QStringList,int,QString,int)), this, SLOT(onSendInputKeys(QStringList,int,QString,int)), Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(send_WINplusD_Signal()), this, SLOT(send_WINplusD()), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(HotKeyTrigger_Signal(const QString &, int)), this, SLOT(HotKeyHookProc(const QString &, int)), Qt::QueuedConnection);
 #if 0
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
 #endif
@@ -206,6 +213,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
 #ifdef VIGEM_CLIENT_SUPPORT
     initViGEmKeyMap();
+    m_LastMouseCursorPoint.x = -1;
+    m_LastMouseCursorPoint.y = -1;
 #endif
 
 #ifdef QT_DEBUG
@@ -224,9 +233,9 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper_Worker() called.";
 #endif
+    m_isWorkerDestructing = true;
 
     setWorkerKeyUnHook();
-    freeShortcuts();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     (void)ViGEmClient_Remove();
@@ -358,13 +367,37 @@ void QKeyMapper_Worker::setMouseToScreenCenter(void)
     mouse_input.mi.mouseData = 0;
     mouse_input.mi.time = 0;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
-    mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 
     // Send the mouse_input event
     UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
     if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("setMouseToScreenCenter(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+        qDebug("[setMouseToScreenCenter] SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
+void QKeyMapper_Worker::setMouseToPoint(POINT point)
+{
+    // Calculate the new coordinates for the mouse input structure.
+    double fScreenWidth    = ::GetSystemMetrics( SM_CXSCREEN )-1;
+    double fScreenHeight  = ::GetSystemMetrics( SM_CYSCREEN )-1;
+    double fx = point.x * ( 65535.0f / fScreenWidth );
+    double fy = point.y * ( 65535.0f / fScreenHeight );
+
+    INPUT mouse_input = { 0 };
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = fx;
+    mouse_input.mi.dy = fy;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+
+    // Send the mouse_input event
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setMouseToPoint] SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
 }
@@ -381,13 +414,13 @@ void QKeyMapper_Worker::setMouseToScreenBottomRight()
     mouse_input.mi.mouseData = 0;
     mouse_input.mi.time = 0;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
-    mouse_input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 
     // Send the mouse_input event
     UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
     if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("setMouseToScreenBottomRight(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+        qDebug("[setMouseToScreenBottomRight] SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
 }
@@ -906,7 +939,7 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
         if (!VIGEM_SUCCESS(retval))
         {
             s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_FAILED;
-            emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
+            updateViGEmBusStatus();
 #ifdef DEBUG_LOGOUT_ON
             qWarning("[ViGEmClient_Connect] ViGEm Bus connection failed with error code: 0x%08X", retval);
 #endif
@@ -922,7 +955,7 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
 #endif
 
     s_ViGEmClient_ConnectState = VIGEMCLIENT_CONNECT_SUCCESS;
-    emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
+    updateViGEmBusStatus();
 
     return 0;
 }
@@ -1055,7 +1088,7 @@ void QKeyMapper_Worker::ViGEmClient_Disconnect()
 #endif
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
-    emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
+    updateViGEmBusStatus();
 }
 
 void QKeyMapper_Worker::ViGEmClient_Free()
@@ -1071,7 +1104,23 @@ void QKeyMapper_Worker::ViGEmClient_Free()
 #endif
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
+    updateViGEmBusStatus();
+}
+
+void QKeyMapper_Worker::updateViGEmBusStatus()
+{
+    if (m_isWorkerDestructing) {
+        return;
+    }
     emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
+}
+
+void QKeyMapper_Worker::updateLockStatus()
+{
+    if (m_isWorkerDestructing) {
+        return;
+    }
+    emit QKeyMapper::getInstance()->updateLockStatus_Signal();
 }
 
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::ViGEmClient_getConnectState()
@@ -1583,6 +1632,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
+    pressedShortcutKeysList.clear();
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
@@ -1602,20 +1652,27 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
     if(TRUE == IsWindowVisible(hWnd)){
 #ifdef VIGEM_CLIENT_SUPPORT
-        if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-            setMouseToScreenBottomRight();
-
+        if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
             POINT pt;
             if (GetCursorPos(&pt)) {
+                m_LastMouseCursorPoint = pt;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[setWorkerKeyHook] Last Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+#endif
+            }
+
+            setMouseToScreenBottomRight();
+
+            if (GetCursorPos(&pt)) {
+                m_BottomRightPoint = pt;
                 s_Mouse2vJoy_prev.rx() = pt.x;
                 s_Mouse2vJoy_prev.ry() = pt.y;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[setWorkerKeyHook] Centered Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+                qDebug("[setWorkerKeyHook] BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
 #endif
             }
         }
 #endif
-        updateShortcutsMap();
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
 //#ifdef QT_DEBUG
 //        if (m_LowLevelKeyboardHook_Enable) {
@@ -1650,13 +1707,13 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
+    pressedShortcutKeysList.clear();
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
-    freeShortcuts();
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
 
 //    if (m_MouseHook != Q_NULLPTR) {
@@ -1676,10 +1733,14 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     //    setWorkerDInputKeyUnHook();
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    if (QKeyMapper::getLockCursorStatus() && s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-        setMouseToScreenCenter();
+    if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
+        setMouseToPoint(m_LastMouseCursorPoint);
+
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[setWorkerKeyUnHook] Set Mouse Cursor Back to ScreenCenter.");
+        POINT pt;
+        if (GetCursorPos(&pt)) {
+            qDebug("[setWorkerKeyUnHook] Set Mouse Cursor Back to Last Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+        }
 #endif
     }
 
@@ -1691,6 +1752,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedvJoyRStickKeys.clear();
     ViGEmClient_GamepadReset();
     s_Mouse2vJoy_EnableState = MOUSE2VJOY_NONE;
+    m_LastMouseCursorPoint.x = -1;
+    m_LastMouseCursorPoint.y = -1;
 #endif
 }
 
@@ -1705,78 +1768,22 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
     m_JoystickCapture = false;
 }
 
-void QKeyMapper_Worker::updateShortcutsMap()
-{
-    freeShortcuts();
-
-    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
-    {
-        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
-        {
-            QString shortcutstr = keymapdata.Original_Key;
-            shortcutstr.remove(PREFIX_SHORTCUT);
-            if (false == ShortcutsMap.contains(shortcutstr)) {
-                ShortcutsMap.insert(shortcutstr, new QHotkey(this));
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                qWarning() << "[updateShortcutsMap]" << "Already contains Shortcut!!! ->" << shortcutstr;
-#endif
-            }
-            QHotkey* hotkey = ShortcutsMap.value(shortcutstr);
-            connect(hotkey, &QHotkey::activated, this, &QKeyMapper_Worker::HotKeyForMappingActivated);
-            connect(hotkey, &QHotkey::released,  this, &QKeyMapper_Worker::HotKeyForMappingReleased);
-            hotkey->setShortcut(QKeySequence(shortcutstr), true);
-        }
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateShortcutsMap]" << "ShortcutsList ->" << ShortcutsMap.keys();
-#endif
-}
-
-void QKeyMapper_Worker::freeShortcuts()
-{
-    QList<QHotkey*> HotkeysList = ShortcutsMap.values();
-    for (QHotkey* shortcut : qAsConst(HotkeysList)) {
-        bool unregister = shortcut->setRegistered(false);
-        Q_UNUSED(unregister);
-#ifdef DEBUG_LOGOUT_ON
-        if (false == unregister) {
-            qWarning() << "[freeShortcuts]" << "unregister Shortcut[" << shortcut->shortcut().toString() << "] Failed!!!";
-        }
-#endif
-        if (shortcut != Q_NULLPTR) {
-            delete shortcut;
-        }
-    }
-    ShortcutsMap.clear();
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[freeShortcuts]" << "ShortcutsList ->" << ShortcutsMap.keys();
-#endif
-}
-
-void QKeyMapper_Worker::HotKeyForMappingActivated(const QString &keyseqstr)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyForMappingActivated] Shortcut Activated [" << keyseqstr << "]";
-#endif
-
-    HotKeyHookProc(keyseqstr, KEY_DOWN);
-}
-
-void QKeyMapper_Worker::HotKeyForMappingReleased(const QString &keyseqstr)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyForMappingActivated] Shortcut Released [" << keyseqstr << "]";
-#endif
-
-    HotKeyHookProc(keyseqstr, KEY_UP);
-}
-
 void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdown)
 {
+    if (KEY_DOWN == keyupdown){
+        if (false == pressedShortcutKeysList.contains(keycodeString)){
+            pressedShortcutKeysList.append(keycodeString);
+        }
+    }
+    else {  /* KEY_UP == keyupdown */
+        if (true == pressedShortcutKeysList.contains(keycodeString)){
+            pressedShortcutKeysList.removeAll(keycodeString);
+        }
+    }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HotKeyHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedShortcutKeysList -> " << pressedShortcutKeysList;
+#endif
 }
 
 #ifdef DINPUT_TEST
@@ -2734,34 +2741,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
             }
         }
-
-#if 0
-        if (zDelta > 0)
-        {
-            short delta_abs = std::abs(zDelta);
-
-            if (delta_abs >= WHEEL_DELTA) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel Up -> Delta =" << zDelta;
-#endif
-                int findindex = QKeyMapper::findInKeyMappingDataList(MOUSE_WHEEL_UP);
-
-                emit QKeyMapper_Worker::getInstance()->onMouseWheel_Signal(MOUSE_WHEEL_UP);
-            }
-        }
-        else if (zDelta < 0)
-        {
-            short delta_abs = std::abs(zDelta);
-
-            if (delta_abs >= WHEEL_DELTA) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[LowLevelMouseHookProc]" << "Mouse Wheel Down -> Delta =" << zDelta;
-#endif
-
-                emit QKeyMapper_Worker::getInstance()->onMouseWheel_Signal(MOUSE_WHEEL_DOWN);
-            }
-        }
-#endif
     }
 #ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
@@ -2829,7 +2808,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
             if (true == pressedLockKeysList.contains(keycodeString)){
                 QKeyMapper::KeyMappingDataList[findindex].LockStatus = false;
                 pressedLockKeysList.removeAll(keycodeString);
-                emit QKeyMapper::getInstance()->updateLockStatus_Signal();
+                updateLockStatus();
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("hookBurstAndLockProc(): Key \"%s\" KeyDown LockStatus -> OFF", keycodeString.toStdString().c_str());
 #endif
@@ -2837,7 +2816,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
             else {
                 QKeyMapper::KeyMappingDataList[findindex].LockStatus = true;
                 pressedLockKeysList.append(keycodeString);
-                emit QKeyMapper::getInstance()->updateLockStatus_Signal();
+                updateLockStatus();
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("hookBurstAndLockProc(): Key \"%s\" KeyDown LockStatus -> ON", keycodeString.toStdString().c_str());
 #endif
@@ -3351,6 +3330,19 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     ViGEmButtonMap.insert("vJoy-DPad-Down"              ,   XUSB_GAMEPAD_DPAD_DOWN      );
     ViGEmButtonMap.insert("vJoy-DPad-Left"              ,   XUSB_GAMEPAD_DPAD_LEFT      );
     ViGEmButtonMap.insert("vJoy-DPad-Right"             ,   XUSB_GAMEPAD_DPAD_RIGHT     );
+}
+
+bool QKeyMapper_Worker::isCursorAtBottomRight()
+{
+    bool ret = false;
+    POINT pt;
+    if (m_BottomRightPoint.x != 0 && GetCursorPos(&pt)) {
+        if (m_BottomRightPoint.x == pt.x && m_BottomRightPoint.y == pt.y) {
+            ret = true;
+        }
+    }
+
+    return ret;
 }
 #endif
 

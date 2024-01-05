@@ -44,6 +44,7 @@ protected:
 private:
 	QHash<QPair<Qt::Key, Qt::KeyboardModifiers>, QHotkey::NativeShortcut> mapping;
 	QMultiHash<QHotkey::NativeShortcut, QHotkey*> shortcuts;
+	QHotkey::NativeShortcut last_activated_shortcut;
 
 	Q_INVOKABLE void addMappingInvoked(Qt::Key keycode, Qt::KeyboardModifiers modifiers, QHotkey::NativeShortcut nativeShortcut);
 	Q_INVOKABLE bool addShortcutInvoked(QHotkey *hotkey);
