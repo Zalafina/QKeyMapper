@@ -4000,7 +4000,8 @@ void QKeyMapper::on_deleteoneButton_clicked()
         ui->keymapdataTable->removeRow(currentrowindex);
         KeyMappingDataList.removeAt(currentrowindex);
 
-        refreshKeyMappingDataTable();
+        /* do not refresh for select cursor hold position */
+//        refreshKeyMappingDataTable();
 #ifdef DEBUG_LOGOUT_ON
         if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){
             qDebug("KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", ui->keymapdataTable->rowCount(), KeyMappingDataList.size());
