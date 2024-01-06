@@ -1479,7 +1479,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr)
 void QKeyMapper::onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onMappingSwitchKeySequenceChanged] KeySequence changed ->" << keysequence.toString();
+    qDebug() << "[onMappingSwitchKeySequenceChanged] KeySequence changed ->" << keysequence.toString(QKeySequence::NativeText);
 #endif
     Q_UNUSED(keysequence);
     m_mappingswitchKeySeqEdit->clearFocus();
@@ -1488,7 +1488,7 @@ void QKeyMapper::onMappingSwitchKeySequenceChanged(const QKeySequence &keysequen
 void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onMappingSwitchKeySequenceEditingFinished] Current KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString();
+    qDebug() << "[onMappingSwitchKeySequenceEditingFinished] Current KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
 #endif
 
     if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
@@ -1508,7 +1508,7 @@ void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
     else {
         updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString();
+        qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
 #endif
     }
     m_mappingswitchKeySeqEdit->clearFocus();
@@ -1517,7 +1517,7 @@ void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
 void QKeyMapper::onOriginalKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onOriginalKeySequenceChanged] KeySequence changed ->" << keysequence.toString();
+    qDebug() << "[onOriginalKeySequenceChanged] KeySequence changed ->" << keysequence.toString(QKeySequence::NativeText);
 #endif
     Q_UNUSED(keysequence);
     m_originalKeySeqEdit->clearFocus();
@@ -1526,7 +1526,7 @@ void QKeyMapper::onOriginalKeySequenceChanged(const QKeySequence &keysequence)
 void QKeyMapper::onOriginalKeySequenceEditingFinished()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onOriginalKeySequenceEditingFinished] Current KeySequence ->" << m_originalKeySeqEdit->keySequence().toString();
+    qDebug() << "[onOriginalKeySequenceEditingFinished] Current KeySequence ->" << m_originalKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
 #endif
 
     if (m_originalKeySeqEdit->keySequence().isEmpty()) {
@@ -1543,13 +1543,13 @@ void QKeyMapper::onOriginalKeySequenceEditingFinished()
 #endif
         }
     }
-    else if (m_originalKeySeqEdit->keySequence().toString() == m_originalKeySeqEdit->defaultKeySequence()) {
+    else if (m_originalKeySeqEdit->keySequence().toString(QKeySequence::NativeText) == m_originalKeySeqEdit->defaultKeySequence()) {
         m_originalKeySeqEdit->clear();
     }
     else {
         m_originalKeySeqEdit->setLastKeySequence(m_originalKeySeqEdit->keySequence().toString());
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onOriginalKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_originalKeySeqEdit->keySequence().toString();
+        qDebug() << "[onOriginalKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_originalKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
 #endif
     }
     m_originalKeySeqEdit->clearFocus();
@@ -2992,7 +2992,7 @@ void QKeyMapper::on_savemaplistButton_clicked()
 void QKeyMapper::initHotKeySequence()
 {
     QObject::connect(m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
-    QKeySequence hotkeysequence_displayswitch = QKeySequence::fromString(DISPLAYSWITCH_KEYSEQ);
+    QKeySequence hotkeysequence_displayswitch = QKeySequence(DISPLAYSWITCH_KEYSEQ);
     m_HotKey->setShortcut(hotkeysequence_displayswitch, true);
 
     QObject::connect(m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
@@ -4131,6 +4131,7 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
     __super::keyPressEvent(pEvent);
 
     QKeySequence keySeq = keySequence();
+    QString keySeqStr = keySeq.toString(QKeySequence::NativeText);
     if (keySeq.count() <= 0 || keySeq.isEmpty())
     {
         return;
@@ -4158,6 +4159,23 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
 #endif
 
     if (false == setKeySeq.isEmpty()) {
+        QKeySequence keyseqConverted = QKeySequence(pEvent->keyCombination());
+        QString keyseqConvertedStr = keyseqConverted.toString(QKeySequence::NativeText);
+        if (keyseqConvertedStr != keySeqStr) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeySequenceEditOnlyOne]" << "Convert KeySequence [" << keySeqStr << "] -> [" << keyseqConvertedStr << "]";
+#endif
+            keySeqStr = keyseqConvertedStr;
+            setKeySeq = QKeySequence(keyseqConvertedStr);
+        }
+
+        if (keySeqStr.length() < 2 || false == keySeqStr.contains("+") || keySeqStr.startsWith("Num+"))
+        {
+            setKeySeq = QKeySequence();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeySequenceEditOnlyOne]" << "Change KeySequence [" << keySeqStr << "] -> [" << setKeySeq.toString(QKeySequence::NativeText) << "]";
+#endif
+        }
         setKeySequence(setKeySeq);
         emit keySeqEditChanged_Signal(setKeySeq);
     }
