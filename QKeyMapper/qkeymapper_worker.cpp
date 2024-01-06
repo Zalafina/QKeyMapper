@@ -13,6 +13,8 @@ static const int MOUSE_WHEEL_DOWN = 2;
 
 static const int MOUSE_WHEEL_KEYUP_WAITTIME = 20;
 
+static const int SETMOUSEPOSITION_WAITTIME_MAX = 100;
+
 static const int MAPPING_WAITTIME_MIN = 0;
 static const int MAPPING_WAITTIME_MAX = 1000;
 
@@ -140,7 +142,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_KeyHook(Q_NULLPTR),
     m_MouseHook(Q_NULLPTR),
 #ifdef VIGEM_CLIENT_SUPPORT
-    m_BottomRightPoint(),
     m_LastMouseCursorPoint(),
 #endif
     m_sendInputTask(Q_NULLPTR),
@@ -423,6 +424,21 @@ void QKeyMapper_Worker::setMouseToScreenBottomRight()
         qDebug("[setMouseToScreenBottomRight] SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
     }
+}
+
+POINT QKeyMapper_Worker::mousePositionAfterSetMouseToScreenBottomRight()
+{
+    POINT pt;
+
+    // Get the screen resolution
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    // Calculate the theoretical mouse position
+    pt.x = (MOUSE_CURSOR_BOTTOMRIGHT_X * screenWidth) / 65535 - 1;
+    pt.y = (MOUSE_CURSOR_BOTTOMRIGHT_Y * screenHeight) / 65535 - 1;
+
+    return pt;
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -1661,14 +1677,32 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #endif
             }
 
+            POINT bottomrightPoint = mousePositionAfterSetMouseToScreenBottomRight();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[setWorkerKeyHook] mousePositionAfterSetMouseToScreenBottomRight -> X = %lu, Y = %lu", bottomrightPoint.x, bottomrightPoint.y);
+#endif
+
             setMouseToScreenBottomRight();
 
+            for (int loop = 0; loop < SETMOUSEPOSITION_WAITTIME_MAX; ++loop) {
+                POINT pt;
+                if (GetCursorPos(&pt)) {
+                    if (pt.x == bottomrightPoint.x && pt.y == bottomrightPoint.y) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[setWorkerKeyHook] Wait setMouseToScreenBottomRight OK -> loop = %d", loop);
+#endif
+                        break;
+                    }
+                }
+                QThread::msleep(1);
+            }
+
+
             if (GetCursorPos(&pt)) {
-                m_BottomRightPoint = pt;
                 s_Mouse2vJoy_prev.rx() = pt.x;
                 s_Mouse2vJoy_prev.ry() = pt.y;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[setWorkerKeyHook] BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+                qDebug("[setWorkerKeyHook] Current BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
 #endif
             }
         }
@@ -3356,8 +3390,9 @@ bool QKeyMapper_Worker::isCursorAtBottomRight()
 {
     bool ret = false;
     POINT pt;
-    if (m_BottomRightPoint.x != 0 && GetCursorPos(&pt)) {
-        if (m_BottomRightPoint.x == pt.x && m_BottomRightPoint.y == pt.y) {
+    POINT bottomrightPoint = mousePositionAfterSetMouseToScreenBottomRight();
+    if (GetCursorPos(&pt)) {
+        if (pt.x == bottomrightPoint.x && pt.y == bottomrightPoint.y) {
             ret = true;
         }
     }

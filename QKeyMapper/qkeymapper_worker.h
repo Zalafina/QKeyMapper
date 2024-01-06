@@ -255,6 +255,7 @@ public slots:
     void setMouseToScreenCenter(void);
     void setMouseToPoint(POINT point);
     void setMouseToScreenBottomRight(void);
+    POINT mousePositionAfterSetMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int x, int y);
     void onMouse2vJoyResetTimeout(void);
@@ -426,7 +427,6 @@ private:
     HHOOK m_KeyHook;
     HHOOK m_MouseHook;
 #ifdef VIGEM_CLIENT_SUPPORT
-    POINT m_BottomRightPoint;
     POINT m_LastMouseCursorPoint;
 #endif
     QRunnable *m_sendInputTask;
