@@ -1770,6 +1770,7 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
 
 void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdown)
 {
+#if 0
     if (KEY_DOWN == keyupdown){
         if (false == pressedShortcutKeysList.contains(keycodeString)){
             pressedShortcutKeysList.append(keycodeString);
@@ -1780,9 +1781,6 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
             pressedShortcutKeysList.removeAll(keycodeString);
         }
     }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedShortcutKeysList -> " << pressedShortcutKeysList;
 #endif
 
     bool returnFlag = false;
@@ -2881,13 +2879,16 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
         }
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[pressedRealKeysList]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : Current Pressed RealKeys -> " << pressedRealKeysList;
+#endif
+
     return returnFlag;
 }
 
 bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName)
 {
     Q_UNUSED(joystickName);
-    bool returnFlag = false;
 
 #ifdef DEBUG_LOGOUT_ON
     if (KEY_DOWN == keyupdown){
@@ -2901,6 +2902,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
     }
 #endif
 
+    bool returnFlag = false;
     int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
@@ -2919,9 +2921,9 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
         }
     }
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[JoyStickKeysProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedRealKeysList -> " << pressedRealKeysList;
-#endif
+//#ifdef DEBUG_LOGOUT_ON
+//    qDebug() << "[JoyStickKeysProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedRealKeysList -> " << pressedRealKeysList;
+//#endif
 
     return returnFlag;
 }
