@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
     HDC hdc = GetDC(NULL);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
     int height = GetDeviceCaps(hdc, DESKTOPVERTRES);
+    Q_UNUSED(height);
     double dWidth = static_cast<double>(width);
     double dScreenWidth = static_cast<double>(nScreenWidth);
     double scale = dWidth / dScreenWidth;

@@ -4159,7 +4159,12 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
 #endif
 
     if (false == setKeySeq.isEmpty()) {
-        QKeySequence keyseqConverted = QKeySequence(pEvent->keyCombination());
+        QKeySequence keyseqConverted;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        keyseqConverted = QKeySequence(pEvent->keyCombination());
+#else
+        keyseqConverted = QKeySequence(pEvent->modifiers() + pEvent->key());
+#endif
         QString keyseqConvertedStr = keyseqConverted.toString(QKeySequence::NativeText);
         if (keyseqConvertedStr != keySeqStr) {
 #ifdef DEBUG_LOGOUT_ON
