@@ -11,6 +11,8 @@
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
+* v1.3.6(Build 20240106)
+    * 增加了原始快捷键编辑框，可以将包含Ctrl、Shift、Alt按键的组合键设定为原始输入(原始按键下拉框为空时，才会添加原始快捷键编辑框中的设定按键)。
 * v1.3.6(Build 20231230)
     * 为映射按键增加"延时"数值调节框，可以适当增加组合按键之间的按下和抬起时的等待时间。
 * v1.3.6(Build 20231225)
