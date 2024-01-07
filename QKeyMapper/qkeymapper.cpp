@@ -4079,15 +4079,23 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
 
     if (false == keycodeString.isEmpty()){
-        if (keycodeString == QString("Enter")){
-            QComboBox::keyPressEvent(keyevent);
+        if ((keycodeString == QString("L-Win"))
+                || (keycodeString == QString("R-Win"))){
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeyListComboBox_Press]" <<"Don't act on" << keycodeString;
+#endif
         }
         else{
-            this->setCurrentText(keycodeString);
+            if (keycodeString == QString("Enter")){
+                QComboBox::keyPressEvent(keyevent);
+            }
+            else{
+                this->setCurrentText(keycodeString);
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[KeyListComboBox_Press]" << "convert to VirtualKeyCodeMap:" << keycodeString;
+                qDebug() << "[KeyListComboBox_Press]" << "convert to VirtualKeyCodeMap:" << keycodeString;
 #endif
+            }
         }
     }
     else{
