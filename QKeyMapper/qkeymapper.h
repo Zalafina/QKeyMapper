@@ -160,6 +160,7 @@ public:
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findInKeyMappingDataList(const QString &keyname);
+    static int findInKeyMappingDataListGlobal(const QString &keyname);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -301,6 +302,7 @@ public:
     static bool m_isDestructing;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
+    static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QHash<QString, QHotkey*> ShortcutsMap;
 
 private:
