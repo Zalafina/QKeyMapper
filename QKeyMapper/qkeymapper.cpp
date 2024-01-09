@@ -1735,6 +1735,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString saveSettingSelectStr;
         QString cursettingSelectStr = ui->settingselectComboBox->currentText();
         int languageIndex = ui->languageComboBox->currentIndex();
+        bool saveGlobalSetting = false;
 
         if (LANGUAGE_ENGLISH == languageIndex) {
             settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_ENGLISH);
@@ -1743,7 +1744,13 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
         }
 
-        if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+        if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == 1) {
+            saveGlobalSetting = true;
+            saveSettingSelectStr = cursettingSelectStr;
+            settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+            saveSettingSelectStr = saveSettingSelectStr + "/";
+        }
+        else if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
                 && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
             saveSettingSelectStr = cursettingSelectStr;
             settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
@@ -1854,32 +1861,42 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
         }
 
-        if ((false == ui->nameLineEdit->text().isEmpty())
-                && (false == ui->titleLineEdit->text().isEmpty())
-                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, m_MapProcessInfo.WindowTitle);
+        if (saveGlobalSetting) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[saveKeyMapSetting]" << "GlobalSetting do not need processinfo!";
+#endif
 
-            if (false == m_MapProcessInfo.FilePath.isEmpty()){
-                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
+            settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, false);
+        }
+        else {
+            if ((false == ui->nameLineEdit->text().isEmpty())
+                    && (false == ui->titleLineEdit->text().isEmpty())
+                    && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                    && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
+                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
+                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, m_MapProcessInfo.WindowTitle);
+
+                if (false == m_MapProcessInfo.FilePath.isEmpty()){
+                    settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
+                }
+                else{
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[saveKeyMapSetting]" << "FilePath is empty, unsaved.";
+#endif
+                }
+
+                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
+                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
             }
             else{
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[saveKeyMapSetting]" << "FilePath is empty, unsaved.";
+                qDebug() << "[saveKeyMapSetting]" << "Unmatch display processinfo & stored processinfo.";
 #endif
             }
 
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
-        }
-        else{
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[saveKeyMapSetting]" << "Unmatch display processinfo & stored processinfo.";
-#endif
+            settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
         }
 
-        settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
         settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
 #ifdef VIGEM_CLIENT_SUPPORT
         settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
@@ -2031,7 +2048,96 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
     }
 
-    validgroups = validgroups_fullmatch + validgroups_customsetting;
+    if (groups.contains(GROUPNAME_GLOBALSETTING)) {
+        QString settingSelectStr_bak = settingSelectStr;
+
+        settingSelectStr == QString(GROUPNAME_GLOBALSETTING) + "/";
+        QStringList original_keys;
+        QStringList mapping_keys;
+        QStringList burstStringList;
+        QStringList lockStringList;
+        QList<bool> burstList;
+        QList<bool> lockList;
+        QList<MAP_KEYDATA> loadkeymapdata;
+        bool global_datavalid = false;
+
+        if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
+            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))
+            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST))
+            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK))){
+            original_keys   = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toStringList();
+            mapping_keys    = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
+            burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
+            lockStringList  = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
+
+            if ((original_keys.size() == mapping_keys.size())
+                && (original_keys.size() == burstStringList.size())){
+                global_datavalid = true;
+
+                if (original_keys.size() > 0){
+                    for (const QString &burst : qAsConst(burstStringList)){
+                        if (burst == "ON") {
+                            burstList.append(true);
+                        }
+                        else {
+                            burstList.append(false);
+                        }
+                    }
+
+                    for (const QString &lock : qAsConst(lockStringList)){
+                        if (lock == "ON") {
+                            lockList.append(true);
+                        }
+                        else {
+                            lockList.append(false);
+                        }
+                    }
+
+                    int loadindex = 0;
+                    for (const QString &ori_key : qAsConst(original_keys)){
+                        bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
+                        bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
+                        bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
+                        QString appendOriKey = ori_key;
+                        if (ori_key.startsWith(PREFIX_SHORTCUT)) {
+                            keyboardmapcontains = true;
+                        }
+                        if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
+                            appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
+                            mousemapcontains = true;
+                        }
+                        bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
+
+                        if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
+                            && (true == checkmappingstr)){
+                            loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
+                        }
+                        else{
+                            global_datavalid = false;
+#ifdef DEBUG_LOGOUT_ON
+                            qWarning("[loadKeyMapSetting] GlobalSetting invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), joystickmapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", joystickmapcontains?"true":"false", checkmappingstr?"true":"false");
+#endif
+                            break;
+                        }
+
+                        loadindex += 1;
+                    }
+                }
+            }
+        }
+
+        if (global_datavalid && false == loadkeymapdata.isEmpty()) {
+            KeyMappingDataListGlobal = loadkeymapdata;
+            validgroups.append(GROUPNAME_GLOBALSETTING);
+        }
+        else {
+            KeyMappingDataListGlobal.clear();
+        }
+
+        settingSelectStr = settingSelectStr_bak;
+    }
+
+    validgroups = validgroups + validgroups_fullmatch + validgroups_customsetting;
 
     if (true == settingtext.isEmpty()) {
         if (true == settingFile.contains(SETTINGSELECT)){
@@ -2257,18 +2363,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->titleLineEdit->setText(QString());
         ui->nameCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
+        ui->disableWinKeyCheckBox->setChecked(false);
 
         ui->nameLineEdit->setEnabled(false);
         ui->titleLineEdit->setEnabled(false);
         ui->nameCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
+        ui->disableWinKeyCheckBox->setEnabled(false);
 
         ui->iconLabel->clear();
         m_MapProcessInfo = MAP_PROCESSINFO();
     }
     else {
         ui->removeSettingButton->setEnabled(true);
+        ui->disableWinKeyCheckBox->setEnabled(true);
 
         if ((true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME))
                 && (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE))){
@@ -2332,6 +2441,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         if (true == loadDefault) {
             ui->nameCheckBox->setChecked(true);
             ui->titleCheckBox->setChecked(true);
+        }
+
+        if (true == settingFile.contains(settingSelectStr+DISABLEWINKEY_CHECKED)){
+            bool disableWinKeyChecked = settingFile.value(settingSelectStr+DISABLEWINKEY_CHECKED).toBool();
+            if (true == disableWinKeyChecked) {
+                ui->disableWinKeyCheckBox->setChecked(true);
+            }
+            else {
+                ui->disableWinKeyCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "DisableWinKeyChecked =" << disableWinKeyChecked;
+#endif
+        }
+        else {
+            ui->disableWinKeyCheckBox->setChecked(false);
         }
     }
 
@@ -2400,22 +2525,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->lockCursorCheckBox->setChecked(false);
     }
 #endif
-
-    if (true == settingFile.contains(settingSelectStr+DISABLEWINKEY_CHECKED)){
-        bool disableWinKeyChecked = settingFile.value(settingSelectStr+DISABLEWINKEY_CHECKED).toBool();
-        if (true == disableWinKeyChecked) {
-            ui->disableWinKeyCheckBox->setChecked(true);
-        }
-        else {
-            ui->disableWinKeyCheckBox->setChecked(false);
-        }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "DisableWinKeyChecked =" << disableWinKeyChecked;
-#endif
-    }
-    else {
-        ui->disableWinKeyCheckBox->setChecked(false);
-    }
 
     Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
     if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
@@ -2704,16 +2813,17 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->nameCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
+        ui->disableWinKeyCheckBox->setEnabled(false);
     }
     else {
         ui->nameCheckBox->setEnabled(status);
         ui->titleCheckBox->setEnabled(status);
         ui->removeSettingButton->setEnabled(status);
+        ui->disableWinKeyCheckBox->setEnabled(status);
     }
 
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
-    ui->disableWinKeyCheckBox->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
