@@ -140,6 +140,14 @@ public:
     };
     Q_ENUM(KeyMapStatus)
 
+    enum MappingStartMode
+    {
+        MAPPINGSTART_BUTTONCLICK = 0U,
+        MAPPINGSTART_HOTKEY,
+        MAPPINGSTART_LOADSETTING
+    };
+    Q_ENUM(MappingStartMode)
+
     Q_INVOKABLE void WindowStateChangedProc(void);
     Q_INVOKABLE void cycleCheckProcessProc(void);
 
@@ -173,6 +181,8 @@ public:
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
     static bool getLockCursorStatus(void);
+    static int getGlobalSettingAutoStart(void);
+    static bool checkGlobalSettingAutoStart(void);
 
 signals:
     void updateLockStatus_Signal(void);
@@ -185,6 +195,8 @@ protected:
 
 public slots:
     void on_keymapButton_clicked();
+
+    void MappingStart(MappingStartMode startmode);
 
     void updateLockStatusDisplay(void);
 
@@ -300,6 +312,7 @@ public slots:
 
 public:
     static bool m_isDestructing;
+    static int s_GlobalSettingAutoStart;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;

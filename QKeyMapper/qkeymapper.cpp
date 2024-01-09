@@ -202,6 +202,7 @@ QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 
 bool QKeyMapper::m_isDestructing = false;
+int QKeyMapper::s_GlobalSettingAutoStart = 0;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
@@ -1383,6 +1384,21 @@ bool QKeyMapper::getLockCursorStatus()
     }
 }
 
+int QKeyMapper::getGlobalSettingAutoStart()
+{
+    return s_GlobalSettingAutoStart;
+}
+
+bool QKeyMapper::checkGlobalSettingAutoStart()
+{
+    if (s_GlobalSettingAutoStart == Qt::Checked && false == KeyMappingDataListGlobal.isEmpty()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void QKeyMapper::changeEvent(QEvent *event)
 {
     if(event->type()==QEvent::WindowStateChange)
@@ -1394,7 +1410,14 @@ void QKeyMapper::changeEvent(QEvent *event)
 
 void QKeyMapper::on_keymapButton_clicked()
 {
+    MappingStart(MAPPINGSTART_BUTTONCLICK);
+}
+
+void QKeyMapper::MappingStart(MappingStartMode startmode)
+{
+    Q_UNUSED(startmode);
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    QMetaEnum mappingstartmodeEnum = QMetaEnum::fromType<QKeyMapper::MappingStartMode>();
     bool startKeyMap = false;
 
     if (KEYMAP_IDLE == m_KeyMapStatus){
@@ -1425,7 +1448,7 @@ void QKeyMapper::on_keymapButton_clicked()
             startKeyMap = true;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "on_keymapButton_clicked()";
+            qDebug().nospace().noquote() << "[MappingStart]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") -> " << mappingstartmodeEnum.valueToKey(startmode);
 #endif
         }
         else{
@@ -1450,7 +1473,7 @@ void QKeyMapper::on_keymapButton_clicked()
         emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[KeyMappingButton]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "on_keymapButton_clicked()";
+        qDebug().nospace().noquote() << "[MappingStart]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") -> " << mappingstartmodeEnum.valueToKey(startmode);
 #endif
     }
 
@@ -1493,7 +1516,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr)
     qDebug() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyMapStatus =" << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    on_keymapButton_clicked();
+    MappingStart(MAPPINGSTART_HOTKEY);
 }
 
 void QKeyMapper::onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence)
@@ -1945,6 +1968,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     settingFile.setIniCodec("UTF-8");
 #endif
 
+    if (GROUPNAME_GLOBALSETTING == settingtext) {
+        loadGlobalSetting = true;
+    }
+
     if (true == settingFile.contains(LANGUAGE_INDEX)){
         int languageIndex = settingFile.value(LANGUAGE_INDEX).toInt();
         if (languageIndex >= 0 && languageIndex < ui->languageComboBox->count()) {
@@ -2064,7 +2091,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
             && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))
             && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST))
-            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK))){
+            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK))
+            && (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED))){
             original_keys   = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toStringList();
             mapping_keys    = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
             burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
@@ -2125,6 +2153,18 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 }
             }
         }
+
+        Qt::CheckState autoStartMappingCheckState_global = Qt::Unchecked;
+        if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
+            autoStartMappingCheckState_global = (Qt::CheckState)settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toInt();
+        }
+        else {
+            autoStartMappingCheckState_global = Qt::Unchecked;
+        }
+        s_GlobalSettingAutoStart = autoStartMappingCheckState_global;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "GlobalSettingAutoStartMapping =" << s_GlobalSettingAutoStart;
+#endif
 
         if (global_datavalid && false == loadkeymapdata.isEmpty()) {
             KeyMappingDataListGlobal = loadkeymapdata;
@@ -2253,7 +2293,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
     }
     else {
-        settingSelectStr.clear();
+        if (loadGlobalSetting) {
+            settingSelectStr = QString(GROUPNAME_GLOBALSETTING) + "/";
+        }
+        else {
+            settingSelectStr.clear();
+        }
     }
 
     if (false == clearallcontainsflag){
@@ -2337,6 +2382,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
             }
             else {
+                KeyMappingDataList.clear();
                 KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false,  false));
                 KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false,  false));
                 KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false,  false));
@@ -2376,6 +2422,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         m_MapProcessInfo = MAP_PROCESSINFO();
     }
     else {
+        ui->nameLineEdit->setEnabled(true);
+        ui->titleLineEdit->setEnabled(true);
+        ui->nameCheckBox->setEnabled(true);
+        ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         ui->disableWinKeyCheckBox->setEnabled(true);
 
@@ -2529,14 +2579,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
     if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
         autoStartMappingCheckState = (Qt::CheckState)settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toInt();
-        ui->autoStartMappingCheckBox->setCheckState(autoStartMappingCheckState);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingCheckState =" << autoStartMappingCheckState;
-#endif
     }
     else {
-        ui->autoStartMappingCheckBox->setCheckState(Qt::Unchecked);
+        autoStartMappingCheckState = Qt::Unchecked;
     }
+    ui->autoStartMappingCheckBox->setCheckState(autoStartMappingCheckState);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingCheckState =" << autoStartMappingCheckState;
+#endif
 
     QString loadedmappingswitchKeySeqStr;
     if (true == settingFile.contains(settingSelectStr+MAPPINGSWITCH_KEYSEQ)){
@@ -2559,7 +2609,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->nameLineEdit->setCursorPosition(0);
         ui->titleLineEdit->setCursorPosition(0);
         if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
-            on_keymapButton_clicked();
+            MappingStart(MAPPINGSTART_LOADSETTING);
         }
 
         if (settingSelectStr.isEmpty() != true) {
@@ -4467,42 +4517,20 @@ void QKeyMapper::on_movedownButton_clicked()
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
-{
-    if (loadSetting_flag) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_settingselectComboBox_textActivated] Loading Setting not finished!";
-#endif
-        return;
-    }
-
-    if (false == text.isEmpty()) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_settingselectComboBox_textActivated] Change to Setting ->" << text;
-#endif
-        loadSetting_flag = true;
-        bool loadresult = loadKeyMapSetting(text);
-        Q_UNUSED(loadresult);
-        loadSetting_flag = false;
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_settingselectComboBox_textActivated] Select setting text error ->" << text;
-#endif
-    }
-}
 #else
 void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text)
+#endif
 {
     if (loadSetting_flag) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_settingselectComboBox_currentTextChanged] Loading Setting not finished!";
+        qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Loading Setting not finished!";
 #endif
         return;
     }
 
     if (false == text.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_settingselectComboBox_currentTextChanged] Change to Setting ->" << text;
+        qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Change to Setting ->" << text;
 #endif
         loadSetting_flag = true;
         bool loadresult = loadKeyMapSetting(text);
@@ -4511,11 +4539,16 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_settingselectComboBox_currentTextChanged] Select setting text error ->" << text;
+        qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Select setting text Empty!";
 #endif
+        ui->nameLineEdit->setEnabled(true);
+        ui->titleLineEdit->setEnabled(true);
+        ui->nameCheckBox->setEnabled(true);
+        ui->titleCheckBox->setEnabled(true);
+        ui->removeSettingButton->setEnabled(true);
+        ui->disableWinKeyCheckBox->setEnabled(true);
     }
 }
-#endif
 
 void QKeyMapper::on_removeSettingButton_clicked()
 {
