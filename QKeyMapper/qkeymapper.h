@@ -24,6 +24,7 @@
 #include <QCheckBox>
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
+#include <QStandardItemModel>
 #include <QDir>
 #include <QProcess>
 #include <windows.h>
@@ -136,7 +137,8 @@ public:
     {
         KEYMAP_IDLE = 0U,
         KEYMAP_CHECKING,
-        KEYMAP_MAPPING
+        KEYMAP_MAPPING_GLOBAL,
+        KEYMAP_MAPPING_MATCHED
     };
     Q_ENUM(KeyMapStatus)
 
@@ -313,6 +315,7 @@ public slots:
 public:
     static bool m_isDestructing;
     static int s_GlobalSettingAutoStart;
+    static uint s_CycleCheckLoopCount;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;

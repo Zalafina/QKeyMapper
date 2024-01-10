@@ -3,6 +3,11 @@
 
 //static const uint WIN_TITLESTR_MAX = 200U;
 static const uint CYCLE_CHECK_TIMEOUT = 300U;
+static const uint CYCLE_CHECK_LOOPCOUNT_MAX = 100000U;
+static const uint CYCLE_CHECK_LOOPCOUNT_RESET = 500U;
+
+static const uint GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
+
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
 static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
 
@@ -203,6 +208,7 @@ QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 
 bool QKeyMapper::m_isDestructing = false;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
+uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
@@ -514,7 +520,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
             if (filename.isEmpty() != true) {
                 bool savecheckresult = checkSaveSettings(filename);
 
-                if (savecheckresult && KEYMAP_CHECKING == m_KeyMapStatus) {
+                if (savecheckresult && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
                     bool needtoload = false;
                     QVariant nameChecked_Var;
                     QVariant titleChecked_Var;
@@ -623,44 +629,68 @@ void QKeyMapper::cycleCheckProcessProc(void)
         }
         /* Skip inVisibleWidow & ToolbarWindow <<< */
 
+        bool GlobalMappingFlag = false;
+        if (checkGlobalSettingAutoStart()
+            && 1 == ui->settingselectComboBox->currentIndex()
+            && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()
+            && 2 == checkresult) {
+            GlobalMappingFlag = true;
+        }
+
         if (checkresult){
-            if (KEYMAP_CHECKING == m_KeyMapStatus){
+            if (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus){
+                if (GlobalMappingFlag) {
+                    if (m_KeyMapStatus != KEYMAP_MAPPING_GLOBAL) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << " GlobalMappingFlag = " << GlobalMappingFlag << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_GLOBAL) << "]";
 #endif
-                if (isToolbarWindow) {
-                    /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
-                    if (filename == "explorer.exe"
-                        && windowTitle == "Program Manager"
-                        && isVisibleWindow == true
-                        && isExToolWindow == true) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Do not skip ToolbarWindow \"explorer.exe -> Program Manager\" of KeyMapStatus(KEYMAP_MAPPING)";
-#endif
-                    }
-                    /* Add for "explorer.exe -> Program Manager" Bug Fix <<< */
-                    else {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_MAPPING)";
-#endif
-                        return;
+                        setKeyHook(hwnd);
+                        m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
+                        s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+                        updateSystemTrayDisplay();
+                        emit updateLockStatus_Signal();
                     }
                 }
-                playStartSound();
-                setKeyHook(hwnd);
-                m_KeyMapStatus = KEYMAP_MAPPING;
-                updateSystemTrayDisplay();
-                emit updateLockStatus_Signal();
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_MATCHED) << "]" << ", ForegroundWindow: " << windowTitle << "(" << filename << ")";
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " isToolbarWindow = " << isToolbarWindow;
+#endif
+                    if (isToolbarWindow) {
+                        /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
+                        if (filename == "explorer.exe"
+                            && windowTitle == "Program Manager"
+                            && isVisibleWindow == true
+                            && isExToolWindow == true) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Do not skip ToolbarWindow \"explorer.exe -> Program Manager\" of KeyMapStatus(KEYMAP_MAPPING_MATCHED)";
+#endif
+                        }
+                        /* Add for "explorer.exe -> Program Manager" Bug Fix <<< */
+                        else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_MAPPING_MATCHED)";
+#endif
+                            return;
+                        }
+                    }
+                    playStartSound();
+                    setKeyHook(hwnd);
+                    m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
+                    s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+                    updateSystemTrayDisplay();
+                    emit updateLockStatus_Signal();
+                }
             }
         }
         else{
-            if (KEYMAP_MAPPING == m_KeyMapStatus){
+            if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus){
 #ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_CHECKING) << "]" << ", ForegroundWindow: " << windowTitle << "(" << filename << ")";
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
@@ -689,6 +719,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 playStopSound();
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
+                s_CycleCheckLoopCount = 0;
                 updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
             }
@@ -696,6 +727,20 @@ void QKeyMapper::cycleCheckProcessProc(void)
     }
     else{
         //EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
+    }
+
+    if (m_KeyMapStatus == KEYMAP_CHECKING && GLOBAL_MAPPING_START_WAIT == s_CycleCheckLoopCount) {
+        if (checkGlobalSettingAutoStart()) {
+            loadSetting_flag = true;
+            bool loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
+            Q_UNUSED(loadresult);
+            loadSetting_flag = false;
+        }
+    }
+
+    s_CycleCheckLoopCount += 1;
+    if (s_CycleCheckLoopCount > CYCLE_CHECK_LOOPCOUNT_MAX) {
+        s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
     }
 }
 
@@ -1443,6 +1488,7 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
                 ui->keymapButton->setText(KEYMAPBUTTON_STOP_CHINESE);
             }
             m_KeyMapStatus = KEYMAP_CHECKING;
+            s_CycleCheckLoopCount = 0;
             updateSystemTrayDisplay();
             emit updateLockStatus_Signal();
             startKeyMap = true;
@@ -1465,11 +1511,13 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
         else {
             ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
         }
-        if (KEYMAP_MAPPING == m_KeyMapStatus) {
+
+        if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
             playStopSound();
         }
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+        s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
         emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -2030,6 +2078,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     ui->settingselectComboBox->clear();
     ui->settingselectComboBox->addItem(QString());
     ui->settingselectComboBox->addItem(GROUPNAME_GLOBALSETTING);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
+    QStandardItem* item = model->item(1);
+    item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+#else
+    QBrush colorBrush(Qt::darkMagenta);
+    ui->settingselectComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
+#endif
     QStringList groups = settingFile.childGroups();
     QStringList validgroups;
     QStringList validgroups_fullmatch;
@@ -2078,7 +2134,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     if (groups.contains(GROUPNAME_GLOBALSETTING)) {
         QString settingSelectStr_bak = settingSelectStr;
 
-        settingSelectStr == QString(GROUPNAME_GLOBALSETTING) + "/";
+        settingSelectStr = QString(GROUPNAME_GLOBALSETTING) + "/";
         QStringList original_keys;
         QStringList mapping_keys;
         QStringList burstStringList;
@@ -2608,13 +2664,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     else {
         ui->nameLineEdit->setCursorPosition(0);
         ui->titleLineEdit->setCursorPosition(0);
-        if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
-            MappingStart(MAPPINGSTART_LOADSETTING);
-        }
 
         if (settingSelectStr.isEmpty() != true) {
             settingSelectStr = settingSelectStr.remove("/");
             ui->settingselectComboBox->setCurrentText(settingSelectStr);
+        }
+
+        if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
+            MappingStart(MAPPINGSTART_LOADSETTING);
         }
         return true;
     }
@@ -3384,9 +3441,14 @@ void QKeyMapper::updateSystemTrayDisplay()
         m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_checking.ico"));
         m_SysTrayIcon->setToolTip("QKeyMapper(Checking : " + m_MapProcessInfo.FileName + ")");
     }
-    else if (KEYMAP_MAPPING == m_KeyMapStatus) {
+    else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
         m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping.ico"));
         m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
+    }
+    else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
+        /* Need to make a new global mapping status ICO */
+        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_checking.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : Global)");
     }
 }
 
@@ -3944,11 +4006,11 @@ void QKeyMapper::updateLockStatusDisplay()
     int rowindex = 0;
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
-        if (m_KeyMapStatus == KEYMAP_MAPPING) {
+        if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED) {
             if (keymapdata.Lock == true) {
                 if (keymapdata.LockStatus == true) {
                     ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("ON");
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::magenta);
+                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::darkMagenta);
                 }
                 else {
                     ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("OFF");

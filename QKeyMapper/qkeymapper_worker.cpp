@@ -3611,10 +3611,14 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
 
 #ifdef QT_DEBUG
     if (s_LowLevelKeyboardHook_Enable) {
-        s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        if (s_KeyHook == Q_NULLPTR) {
+            s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        }
     }
     if (s_LowLevelMouseHook_Enable) {
-        s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        if (s_MouseHook == Q_NULLPTR) {
+            s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+        }
     }
 #else
     s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
