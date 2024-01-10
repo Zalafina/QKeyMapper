@@ -3,6 +3,7 @@
         <file alias="DefaultIcon.ico">image/ForzaHorizon4.ico</file>
         <file alias="QKeyMapper.ico">image/QKeyMapper.ico</file>
         <file alias="QKeyMapper_checking.ico">image/QKeyMapper_checking.ico</file>
-        <file alias="QKeyMapper_mapping.ico">image/QKeyMapper_mapping.ico</file>
+        <file alias="QKeyMapper_mapping_global.ico">image/QKeyMapper_mapping_global.ico</file>
+        <file alias="QKeyMapper_mapping_matched.ico">image/QKeyMapper_mapping_matched.ico</file>
     </qresource>
 </RCC>

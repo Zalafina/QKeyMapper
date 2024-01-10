@@ -3441,12 +3441,12 @@ void QKeyMapper::updateSystemTrayDisplay()
         m_SysTrayIcon->setToolTip("QKeyMapper(Checking : " + m_MapProcessInfo.FileName + ")");
     }
     else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
-        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping.ico"));
+        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping_matched.ico"));
         m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         /* Need to make a new global mapping status ICO */
-        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_checking.ico"));
+        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping_global.ico"));
         m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : Global)");
     }
 }
