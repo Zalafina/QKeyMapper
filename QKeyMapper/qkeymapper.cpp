@@ -630,8 +630,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         /* Skip inVisibleWidow & ToolbarWindow <<< */
 
         bool GlobalMappingFlag = false;
-        if (checkGlobalSettingAutoStart()
-            && 1 == ui->settingselectComboBox->currentIndex()
+        if (1 == ui->settingselectComboBox->currentIndex()
             && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()
             && 2 == checkresult) {
             GlobalMappingFlag = true;
