@@ -4614,7 +4614,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 void QKeyMapper::on_removeSettingButton_clicked()
 {
     QString settingSelectStr = ui->settingselectComboBox->currentText();
-    if (true == settingSelectStr.isEmpty()) {
+    if (true == settingSelectStr.isEmpty() || settingSelectStr == GROUPNAME_GLOBALSETTING) {
         return;
     }
 
