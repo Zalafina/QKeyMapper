@@ -11,7 +11,7 @@
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
-* v1.3.6(Build 20240110)
+* v1.3.6(Build 20240112)
     * 增加了固定的全局映射设定项(QKeyMapperGlobalSetting)，如果全局映射勾选了自动开始映射，开始映射状态下从匹配的窗口退出后过几秒时间会自动切换到全局映射设定并启用映射。为全局映射状态加了一个专门的托盘图标。
 * v1.3.6(Build 20240106)
     * 增加了原始快捷键编辑框，可以将包含Ctrl、Shift、Alt按键的组合键设定为原始输入(原始按键下拉框为空时，才会添加原始快捷键编辑框中的设定按键)。
