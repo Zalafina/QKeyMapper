@@ -3621,8 +3621,12 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
         }
     }
 #else
-    s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-    s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    if (s_KeyHook == Q_NULLPTR) {
+        s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    }
+    if (s_MouseHook == Q_NULLPTR) {
+        s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    }
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3632,15 +3636,37 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
 
 void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
 {
+    bool unhook_ret = 0;
+
     if (s_MouseHook != Q_NULLPTR) {
-        UnhookWindowsHookEx(s_MouseHook);
+        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
         s_MouseHook = Q_NULLPTR;
+
+#ifdef DEBUG_LOGOUT_ON
+        if (0 == unhook_ret) {
+            qDebug() << "[onSetHookProcKeyUnHook]" << "Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
+        }
+        else {
+            qDebug() << "[onSetHookProcKeyUnHook]" << "Mouse UnhookWindowsHookEx Success.";
+        }
+#endif
     }
 
     if (s_KeyHook != Q_NULLPTR){
-        UnhookWindowsHookEx(s_KeyHook);
+        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
         s_KeyHook = Q_NULLPTR;
+
+#ifdef DEBUG_LOGOUT_ON
+        if (0 == unhook_ret) {
+            qDebug() << "[onSetHookProcKeyUnHook]" << "Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
+        }
+        else {
+            qDebug() << "[onSetHookProcKeyUnHook]" << "Keyboard UnhookWindowsHookEx Success.";
+        }
     }
+#endif
+
+    Q_UNUSED(unhook_ret);
 
 #ifdef DEBUG_LOGOUT_ON
     qInfo("[onSetHookProcKeyUnHook] Normal Key Hook & Mouse Hook Released.");
