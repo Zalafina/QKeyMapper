@@ -3663,8 +3663,8 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
         else {
             qDebug() << "[onSetHookProcKeyUnHook]" << "Keyboard UnhookWindowsHookEx Success.";
         }
-    }
 #endif
+    }
 
     Q_UNUSED(unhook_ret);
 
