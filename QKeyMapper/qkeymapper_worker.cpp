@@ -130,10 +130,8 @@ QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 #endif
 
-#ifdef QT_DEBUG
 bool QKeyMapper_Hook_Proc::s_LowLevelKeyboardHook_Enable = true;
 bool QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable = true;
-#endif
 
 HHOOK QKeyMapper_Hook_Proc::s_KeyHook = Q_NULLPTR;
 HHOOK QKeyMapper_Hook_Proc::s_MouseHook = Q_NULLPTR;
@@ -149,10 +147,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_sendInputStopMutex(),
     m_sendInputStopFlag(false),
     m_JoystickCapture(false),
-#ifdef QT_DEBUG
-    m_LowLevelKeyboardHook_Enable(true),
-    m_LowLevelMouseHook_Enable(true),
-#endif
 #ifdef DINPUT_TEST
     m_DirectInput(Q_NULLPTR),
 #endif
@@ -220,7 +214,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        m_LowLevelMouseHook_Enable = false;
         QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Worker() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
@@ -1708,24 +1701,9 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
         }
 #endif
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
-//#ifdef QT_DEBUG
-//        if (m_LowLevelKeyboardHook_Enable) {
-////            m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//            m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Hook_Proc::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//        }
-//        if (m_LowLevelMouseHook_Enable) {
-////            m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//            m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Hook_Proc::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//        }
-//#else
 //        m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
 //        m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//#endif
         setWorkerJoystickCaptureStart(hWnd);
-
-#ifdef DEBUG_LOGOUT_ON
-        qInfo("[setWorkerKeyHook] Normal Key Hook & Mouse Hook Started.");
-#endif
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
@@ -3609,28 +3587,29 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
 {
     Q_UNUSED(hWnd);
 
-#ifdef QT_DEBUG
     if (s_LowLevelKeyboardHook_Enable) {
         if (s_KeyHook == Q_NULLPTR) {
             s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#ifdef DEBUG_LOGOUT_ON
+            if (s_KeyHook != Q_NULLPTR) {
+                qDebug("[SetHookProc] Keyboard SetWindowsHookEx Success. -> 0x%08X", s_KeyHook);
+            }
+#endif
         }
     }
     if (s_LowLevelMouseHook_Enable) {
         if (s_MouseHook == Q_NULLPTR) {
             s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#ifdef DEBUG_LOGOUT_ON
+            if (s_MouseHook != Q_NULLPTR) {
+                qDebug("[SetHookProc] Mouse SetWindowsHookEx Success. -> 0x%08X", s_MouseHook);
+            }
+#endif
         }
     }
-#else
-    if (s_KeyHook == Q_NULLPTR) {
-        s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-    }
-    if (s_MouseHook == Q_NULLPTR) {
-        s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-    }
-#endif
 
 #ifdef DEBUG_LOGOUT_ON
-    qInfo("[onSetHookProcKeyHook] Normal Key Hook & Mouse Hook Started.");
+    qInfo("[SetHookProc] Keyboard Hook & Mouse Hook Started.");
 #endif
 }
 
@@ -3638,30 +3617,34 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
 {
     bool unhook_ret = 0;
 
-    if (s_MouseHook != Q_NULLPTR) {
-        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
-        s_MouseHook = Q_NULLPTR;
+    if (s_KeyHook != Q_NULLPTR){
+        void* keyboardhook_p = (void*)s_KeyHook;
+        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
+        s_KeyHook = Q_NULLPTR;
+        Q_UNUSED(keyboardhook_p);
 
 #ifdef DEBUG_LOGOUT_ON
         if (0 == unhook_ret) {
-            qDebug() << "[onSetHookProcKeyUnHook]" << "Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
+            qDebug() << "[SetHookProc]" << "Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
         }
         else {
-            qDebug() << "[onSetHookProcKeyUnHook]" << "Mouse UnhookWindowsHookEx Success.";
+            qDebug("[SetHookProc] Keyboard UnhookWindowsHookEx Success. -> 0x%08X", keyboardhook_p);
         }
 #endif
     }
 
-    if (s_KeyHook != Q_NULLPTR){
-        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
-        s_KeyHook = Q_NULLPTR;
+    if (s_MouseHook != Q_NULLPTR) {
+        void* mousehook_p = (void*)s_MouseHook;
+        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
+        s_MouseHook = Q_NULLPTR;
+        Q_UNUSED(mousehook_p);
 
 #ifdef DEBUG_LOGOUT_ON
         if (0 == unhook_ret) {
-            qDebug() << "[onSetHookProcKeyUnHook]" << "Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
+            qDebug() << "[SetHookProc]" << "Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
         }
         else {
-            qDebug() << "[onSetHookProcKeyUnHook]" << "Keyboard UnhookWindowsHookEx Success.";
+            qDebug("[SetHookProc] Mouse UnhookWindowsHookEx Success. -> 0x%08X", mousehook_p);
         }
 #endif
     }
@@ -3669,6 +3652,6 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
     Q_UNUSED(unhook_ret);
 
 #ifdef DEBUG_LOGOUT_ON
-    qInfo("[onSetHookProcKeyUnHook] Normal Key Hook & Mouse Hook Released.");
+    qInfo("[SetHookProc] Keyboard Hook & Mouse Hook Stopped.");
 #endif
 }

@@ -434,10 +434,6 @@ private:
     QMutex m_sendInputStopMutex;
     bool m_sendInputStopFlag;
     bool m_JoystickCapture;
-#ifdef QT_DEBUG
-    bool m_LowLevelKeyboardHook_Enable;
-    bool m_LowLevelMouseHook_Enable;
-#endif
 #ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;
 #endif
