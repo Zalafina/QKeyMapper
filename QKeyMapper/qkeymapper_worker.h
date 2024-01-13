@@ -488,10 +488,8 @@ public slots:
     void onSetHookProcKeyUnHook(void);
 
 public:
-#ifdef QT_DEBUG
     static bool s_LowLevelKeyboardHook_Enable;
     static bool s_LowLevelMouseHook_Enable;
-#endif
 
     static HHOOK s_KeyHook;
     static HHOOK s_MouseHook;
