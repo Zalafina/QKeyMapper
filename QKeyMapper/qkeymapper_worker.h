@@ -31,7 +31,8 @@ class QKeyMapper;
 
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
-#define SEPARATOR_WAITTIME     ("⏱")
+#define SEPARATOR_WAITTIME      ("⏱")
+#define SEPARATOR_TITLESETTING  ("|")
 
 #define PREFIX_SHORTCUT     ("★")
 

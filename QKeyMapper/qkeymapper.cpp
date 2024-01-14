@@ -37,6 +37,8 @@ static const int LANGUAGE_ENGLISH = 1;
 
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
+static const int TITLESETTING_INDEX_MAX = 3;
+
 static const int MAPPING_WAITTIME_MIN = 0;
 static const int MAPPING_WAITTIME_MAX = 1000;
 
@@ -79,6 +81,7 @@ static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
 static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
 static const char *GROUPNAME_GLOBALSETTING = "QKeyMapperGlobalSetting";
+static const char *WINDOWTITLE_STRING = "Title";
 
 static const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
 static const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
@@ -1863,14 +1866,46 @@ void QKeyMapper::saveKeyMapSetting(void)
             }
 
             if ((false == ui->nameLineEdit->text().isEmpty())
-                    && (false == ui->titleLineEdit->text().isEmpty())
-                    && (true == ui->nameCheckBox->isChecked())
-                    /*&& (true == ui->titleCheckBox->isChecked())*/
-                    && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                    /*&& (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)*/
-                    && (m_MapProcessInfo.FilePath.isEmpty() != true)){
-                settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
+                     && (false == ui->titleLineEdit->text().isEmpty())
+                     && (true == ui->nameCheckBox->isChecked())
+                     && (true == ui->titleCheckBox->isChecked())
+                     && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                     && (m_MapProcessInfo.FilePath.isEmpty() != true)){
+                QStringList groups = settingFile.childGroups();
+                QString tempSettingSelectStr = m_MapProcessInfo.FileName + "/";
+                int index = -1;
+                for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
+                    QString windowtitleSet = QString(WINDOWTITLE_STRING) + QString::number(index);
+                    if (settingFile.contains(tempSettingSelectStr+windowtitleSet)) {
+                        QString titleStr = settingFile.value(tempSettingSelectStr+windowtitleSet).toString();
+                        if (titleStr == ui->titleLineEdit->text()) {
+                            break;
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if (0 < index && index <= TITLESETTING_INDEX_MAX) {
+                    QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
+                    settingFile.setValue(SETTINGSELECT , subgroup);
+                    settingFile.setValue(m_MapProcessInfo.FileName + "/" + QString(WINDOWTITLE_STRING) + QString::number(index), ui->titleLineEdit->text());
+                    saveSettingSelectStr = subgroup + "/";
+                }
+                else {
+                    QString message = "Too many settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "]";
+                    QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                    return;
+                }
+            }
+            else if ((false == ui->nameLineEdit->text().isEmpty())
+                && (true == ui->nameCheckBox->isChecked())
+                && (false == ui->titleCheckBox->isChecked())
+                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                && (m_MapProcessInfo.FilePath.isEmpty() != true)){
                 saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
+                settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
             }
             else {
                 if (customSettingIndex < 10) {
@@ -1941,10 +1976,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         else {
             if ((false == ui->nameLineEdit->text().isEmpty())
                     && (false == ui->titleLineEdit->text().isEmpty())
-                    && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
-                    && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)){
+                    // && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
+                    && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)){
                 settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
-                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, m_MapProcessInfo.WindowTitle);
+                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->titleLineEdit->text());
 
                 if (false == m_MapProcessInfo.FilePath.isEmpty()){
                     settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
@@ -2094,7 +2129,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
-        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive)) {
+        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) || group.contains(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
             QString tempSettingSelectStr = group + "/";
             if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
                     && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
