@@ -108,6 +108,7 @@ static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChe
 static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 static const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
+static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 
 static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
@@ -148,7 +149,8 @@ static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
-static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
+static const char *WINDOWSWITCHKEYLABEL_CHINESE = "窗口显示切换键";
+static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程名";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
 static const char *PROCESSINFOTABLE_COL3_CHINESE = "窗口标题";
@@ -190,6 +192,7 @@ static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
+static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowSwitchKey";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
@@ -235,6 +238,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
+    m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_HotKey(new QHotkey(this)),
@@ -250,6 +254,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     extractSoundFiles();
     initAddKeyComboBoxes();
+    initWindowSwitchKeySeqEdit();
     initMappingSwitchKeySeqEdit();
     initOriginalKeySeqEdit();
 
@@ -413,6 +418,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensLabel->setVisible(false);
 #endif
 
+    m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEYSEQ);
     m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
     m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
     initKeyMappingDataTable();
@@ -427,6 +433,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
     QObject::connect(ui->keymapdataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
 
+    QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
+    QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
     QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
@@ -461,6 +469,9 @@ QKeyMapper::~QKeyMapper()
     m_orikeyComboBox = Q_NULLPTR;
     delete m_mapkeyComboBox;
     m_mapkeyComboBox = Q_NULLPTR;
+
+    delete m_windowswitchKeySeqEdit;
+    m_windowswitchKeySeqEdit = Q_NULLPTR;
 
     delete m_mappingswitchKeySeqEdit;
     m_mappingswitchKeySeqEdit = Q_NULLPTR;
@@ -1572,6 +1583,44 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr)
     MappingStart(MAPPINGSTART_HOTKEY);
 }
 
+void QKeyMapper::onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onWindowSwitchKeySequenceChanged] KeySequence changed ->" << keysequence.toString(QKeySequence::NativeText);
+#endif
+    Q_UNUSED(keysequence);
+    m_windowswitchKeySeqEdit->clearFocus();
+}
+
+void QKeyMapper::onWindowSwitchKeySequenceEditingFinished()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onWindowSwitchKeySequenceEditingFinished] Current KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+#endif
+
+    if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
+        if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
+            m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->defaultKeySequence()));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onWindowSwitchKeySequenceEditingFinished]" << "Last KeySequence is Empty, set to DEFAULT ->" << m_windowswitchKeySeqEdit->defaultKeySequence();
+#endif
+        }
+        else {
+            m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->lastKeySequence()));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onWindowSwitchKeySequenceEditingFinished]" << "Current KeySequence is Empty, set to LAST ->" << m_windowswitchKeySeqEdit->lastKeySequence();
+#endif
+        }
+    }
+    else {
+        updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onWindowSwitchKeySequenceEditingFinished]" << "Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+#endif
+    }
+    m_windowswitchKeySeqEdit->clearFocus();
+}
+
 void QKeyMapper::onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -1861,6 +1910,18 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
         }
 
+        if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
+            if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
+                m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->defaultKeySequence()));
+            }
+            else {
+                m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->lastKeySequence()));
+            }
+            updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+        }
+        m_windowswitchKeySeqEdit->clearFocus();
+        settingFile.setValue(WINDOWSWITCH_KEYSEQ, m_windowswitchKeySeqEdit->keySequence().toString());
+
         if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == 1) {
             saveGlobalSetting = true;
             saveSettingSelectStr = cursettingSelectStr;
@@ -2113,6 +2174,19 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     else {
         ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
     }
+
+    QString loadedwindowswitchKeySeqStr;
+    if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
+        loadedwindowswitchKeySeqStr = settingFile.value(WINDOWSWITCH_KEYSEQ).toString();
+        if (loadedwindowswitchKeySeqStr.isEmpty()) {
+            loadedwindowswitchKeySeqStr = m_windowswitchKeySeqEdit->defaultKeySequence();
+        }
+    }
+    else {
+        loadedwindowswitchKeySeqStr = m_windowswitchKeySeqEdit->defaultKeySequence();
+    }
+    m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(loadedwindowswitchKeySeqStr));
+    updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
 
     if (true == settingFile.contains(AUTO_STARTUP)){
         bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
@@ -2894,6 +2968,7 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(8);
     }
+    ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     ui->uninstallViGEmBusButton->setFont(customFont);
@@ -2968,6 +3043,7 @@ void QKeyMapper::setControlFontChinese()
     else {
         customFont.setPointSize(8);
     }
+    ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     ui->uninstallViGEmBusButton->setFont(customFont);
@@ -3071,6 +3147,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->movedownButton->setEnabled(status);
     ui->nextarrowCheckBox->setEnabled(status);
 
+    ui->windowswitchkeyLabel->setEnabled(status);
+    m_windowswitchKeySeqEdit->setEnabled(status);
     ui->mappingswitchkeyLabel->setEnabled(status);
     m_mappingswitchKeySeqEdit->setEnabled(status);
 
@@ -3364,8 +3442,6 @@ void QKeyMapper::on_savemaplistButton_clicked()
 void QKeyMapper::initHotKeySequence()
 {
     QObject::connect(m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
-    QKeySequence hotkeysequence_displayswitch = QKeySequence(DISPLAYSWITCH_KEYSEQ);
-    m_HotKey->setShortcut(hotkeysequence_displayswitch, true);
 
     QObject::connect(m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
 }
@@ -3797,12 +3873,24 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->addItems(keycodelist);
 }
 
+void QKeyMapper::initWindowSwitchKeySeqEdit()
+{
+    m_windowswitchKeySeqEdit->setObjectName(QStringLiteral("windowswitchKeySeqEdit"));
+    m_windowswitchKeySeqEdit->setGeometry(QRect(115, 590, 111, 22));
+    m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+}
+
 void QKeyMapper::initMappingSwitchKeySeqEdit()
 {
     m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
     m_mappingswitchKeySeqEdit->setGeometry(QRect(380, 590, 111, 22));
     m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
-//    m_mappingswitchKeySeqEdit->setClearButtonEnabled(true);
+}
+
+void QKeyMapper::updateWindowSwitchKeySeq(const QKeySequence &keysequence)
+{
+    m_windowswitchKeySeqEdit->setLastKeySequence(keysequence.toString());
+    m_HotKey->setShortcut(keysequence, true);
 }
 
 void QKeyMapper::updateMappingSwitchKeySeq(const QKeySequence &keysequence)
@@ -3962,6 +4050,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
+    ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
@@ -4013,6 +4102,7 @@ void QKeyMapper::setUILanguage_English()
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
+    ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);

@@ -236,7 +236,7 @@
   <widget class="QPushButton" name="deleteoneButton">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>587</x>
      <y>445</y>
      <width>121</width>
      <height>25</height>
@@ -255,7 +255,7 @@
   <widget class="QPushButton" name="clearallButton">
    <property name="geometry">
     <rect>
-     <x>810</x>
+     <x>775</x>
      <y>445</y>
      <width>121</width>
      <height>25</height>
@@ -340,9 +340,9 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>590</y>
-     <width>131</width>
+     <x>920</x>
+     <y>445</y>
+     <width>121</width>
      <height>21</height>
     </rect>
    </property>
@@ -1247,7 +1247,7 @@
     <rect>
      <x>265</x>
      <y>590</y>
-     <width>111</width>
+     <width>110</width>
      <height>22</height>
     </rect>
    </property>
@@ -1475,6 +1475,22 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QLabel" name="windowswitchkeyLabel">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>590</y>
+     <width>90</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>WindowSwitchKey</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1520,6 +1536,7 @@
   <zorder>waitTimeLabel</zorder>
   <zorder>waitTime_msLabel</zorder>
   <zorder>orikeySeqLabel</zorder>
+  <zorder>windowswitchkeyLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

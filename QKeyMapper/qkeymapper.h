@@ -216,6 +216,10 @@ private slots:
 
     void HotKeyStartStopActivated(const QString &keyseqstr);
 
+    void onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence);
+
+    void onWindowSwitchKeySequenceEditingFinished();
+
     void onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence);
 
     void onMappingSwitchKeySequenceEditingFinished();
@@ -276,7 +280,9 @@ private:
 
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
+    void initWindowSwitchKeySeqEdit(void);
     void initMappingSwitchKeySeqEdit(void);
+    void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
     void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
     void initOriginalKeySeqEdit(void);
     void refreshKeyMappingDataTable(void);
@@ -337,6 +343,7 @@ private:
     StyledDelegate *m_KeyMappingDataTableDelegate;
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
+    KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     QHotkey *m_HotKey;
