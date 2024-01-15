@@ -37,6 +37,8 @@ static const int LANGUAGE_ENGLISH = 1;
 
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
+static const int TITLESETTING_INDEX_INVALID = -1;
+static const int TITLESETTING_INDEX_ANYTITLE = 0;
 static const int TITLESETTING_INDEX_MAX = 3;
 
 static const int MAPPING_WAITTIME_MIN = 0;
@@ -79,9 +81,10 @@ static const char *AUTO_STARTUP = "AutoStartup";
 static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
 #endif
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
-static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
+static const char *GROUPNAME_CUSTOMGLOBALSETTING = "CustomGlobalSetting ";
 static const char *GROUPNAME_GLOBALSETTING = "QKeyMapperGlobalSetting";
 static const char *WINDOWTITLE_STRING = "Title";
+static const char *ANYWINDOWTITLE_STRING = "AnyTitle";
 
 static const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
 static const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
@@ -521,10 +524,9 @@ void QKeyMapper::cycleCheckProcessProc(void)
             }
 
             if (filename.isEmpty() != true) {
-                bool savecheckresult = checkSaveSettings(filename);
+                int savecheckindex = checkSaveSettings(filename, windowTitle);
 
-                if (savecheckresult && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
-                    bool needtoload = false;
+                if ((TITLESETTING_INDEX_INVALID < savecheckindex && savecheckindex <= TITLESETTING_INDEX_MAX) && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
                     QVariant nameChecked_Var;
                     QVariant titleChecked_Var;
                     QVariant fileName_Var;
@@ -533,6 +535,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     bool titleChecked = false;
                     QString readFileName;
                     QString readWindowTitle;
+                    QString loadSettingSelectStr;
 
                     if (readSaveSettingData(filename, PROCESSINFO_FILENAME_CHECKED, nameChecked_Var)) {
                         nameChecked = nameChecked_Var.toBool();
@@ -548,31 +551,23 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     }
 
                     if ((true == nameChecked)
-                            && (true == titleChecked)){
-                        if ((filename == readFileName)
-                                && (windowTitle == readWindowTitle || windowTitle.contains(readWindowTitle))){
-                            needtoload = true;
-                        }
+                            && (true == titleChecked)
+                            && (savecheckindex != TITLESETTING_INDEX_ANYTITLE)){
+                        loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(savecheckindex);
                     }
-                    else if (true == nameChecked){
-                        if (filename == readFileName){
-                            needtoload = true;
-                        }
-                    }
-                    else if (true == titleChecked){
-                        if (windowTitle == windowTitle){
-                            needtoload = true;
-                        }
+                    else if (true == nameChecked
+                            && savecheckindex == TITLESETTING_INDEX_ANYTITLE){
+                        loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
                     }
 
-                    if (needtoload) {
+                    if (false == loadSettingSelectStr.isEmpty()) {
                         QString curSettingSelectStr = ui->settingselectComboBox->currentText();
-                        if (curSettingSelectStr != filename) {
+                        if (curSettingSelectStr != loadSettingSelectStr) {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Setting Check Matched! Load setting -> [" << filename << "]";
+                            qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
 #endif
                             loadSetting_flag = true;
-                            bool loadresult = loadKeyMapSetting(filename);
+                            bool loadresult = loadKeyMapSetting(loadSettingSelectStr);
                             Q_UNUSED(loadresult)
                             loadSetting_flag = false;
                         }
@@ -1744,34 +1739,75 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 }
 #endif
 
-bool QKeyMapper::checkSaveSettings(const QString &executablename)
+int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &windowtitle)
 {
-    bool checkresult = false;
+    int ret_index = TITLESETTING_INDEX_INVALID;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
 
-    if (groups.contains(executablename)) {
-#if 0
-        QString curSettingSelectStr = ui->settingselectComboBox->currentText();
-        if (curSettingSelectStr == executablename) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[checkSaveSettings]" << "Current setting select is already the same ->" << executablename;
-#endif
-            return false;
-        }
-#endif
+    int index = TITLESETTING_INDEX_INVALID;
+    for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
+        QString subgroup = executablename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
 
-        QString settingSelectStr = executablename + "/";
-        bool autoStartMappingChecked = false;
-        if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
-            autoStartMappingChecked = settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toBool();
-            if (true == autoStartMappingChecked) {
-                checkresult = true;
+        if (groups.contains(subgroup)) {
+            QVariant windowTitle_Var;
+            if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
+                QString titleStr = windowTitle_Var.toString();
+                if (titleStr == windowtitle) {
+                    bool autoStartMappingChecked = false;
+                    QVariant autoStartMappingChecked_Var;
+                    if (readSaveSettingData(subgroup, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
+                        autoStartMappingChecked = autoStartMappingChecked_Var.toBool();
+                        if (true == autoStartMappingChecked) {
+                            ret_index = index;
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
 
-    return checkresult;
+    if (ret_index == TITLESETTING_INDEX_INVALID) {
+        for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
+            QString subgroup = executablename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
+
+            if (groups.contains(subgroup)) {
+                QVariant windowTitle_Var;
+                if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
+                    QString titleStr = windowTitle_Var.toString();
+                    if (windowtitle.contains(titleStr)) {
+                        bool autoStartMappingChecked = false;
+                        QVariant autoStartMappingChecked_Var;
+                        if (readSaveSettingData(subgroup, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
+                            autoStartMappingChecked = autoStartMappingChecked_Var.toBool();
+                            if (true == autoStartMappingChecked) {
+                                ret_index = index;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (ret_index == TITLESETTING_INDEX_INVALID) {
+        QString subgroup = executablename + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
+
+        if (groups.contains(subgroup)) {
+            bool autoStartMappingChecked = false;
+            QVariant autoStartMappingChecked_Var;
+            if (readSaveSettingData(subgroup, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
+                autoStartMappingChecked = autoStartMappingChecked_Var.toBool();
+                if (true == autoStartMappingChecked) {
+                    ret_index = TITLESETTING_INDEX_ANYTITLE;
+                }
+            }
+        }
+    }
+
+    return ret_index;
 }
 
 bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata)
@@ -1823,7 +1859,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
             saveSettingSelectStr = saveSettingSelectStr + "/";
         }
-        else if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+        else if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
                 && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
             saveSettingSelectStr = cursettingSelectStr;
             settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
@@ -1837,32 +1873,32 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
 
             for (const QString &group : qAsConst(groups)){
-                if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+                if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
                         && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
                     validgroups_customsetting.append(group);
                 }
             }
 
-            int customSettingIndex;
+            int customGlobalSettingIndex;
             if (validgroups_customsetting.size() > 0) {
                 QString lastgroup = validgroups_customsetting.last();
-                QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMSETTING);
+                QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMGLOBALSETTING);
 
                 if (lastNumberStr.toInt() >= CUSTOMSETTING_INDEX_MAX) {
-                    QString message = "Too big custom setting number " + lastNumberStr + ", please remove some custom settings!";
+                    QString message = "There is already " + lastNumberStr + " CustomGlobalSettings, please remove some CustomGlobalSettings!";
                     QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
                     return;
                 }
                 else {
-                    customSettingIndex = lastNumberStr.toInt() + 1;
+                    customGlobalSettingIndex = lastNumberStr.toInt() + 1;
                 }
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[saveKeyMapSetting] Last custom setting index ->" << lastNumberStr.toInt();
-                qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customSettingIndex;
+                qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customGlobalSettingIndex;
 #endif
             }
             else {
-                customSettingIndex = 1;
+                customGlobalSettingIndex = 1;
             }
 
             if ((false == ui->nameLineEdit->text().isEmpty())
@@ -1872,14 +1908,17 @@ void QKeyMapper::saveKeyMapSetting(void)
                      && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
                      && (m_MapProcessInfo.FilePath.isEmpty() != true)){
                 QStringList groups = settingFile.childGroups();
-                QString tempSettingSelectStr = m_MapProcessInfo.FileName + "/";
                 int index = -1;
                 for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
-                    QString windowtitleSet = QString(WINDOWTITLE_STRING) + QString::number(index);
-                    if (settingFile.contains(tempSettingSelectStr+windowtitleSet)) {
-                        QString titleStr = settingFile.value(tempSettingSelectStr+windowtitleSet).toString();
-                        if (titleStr == ui->titleLineEdit->text()) {
-                            break;
+                    QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
+
+                    if (groups.contains(subgroup)) {
+                        QVariant windowTitle_Var;
+                        if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
+                            QString titleStr = windowTitle_Var.toString();
+                            if (titleStr == ui->titleLineEdit->text()) {
+                                break;
+                            }
                         }
                     }
                     else {
@@ -1894,7 +1933,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     saveSettingSelectStr = subgroup + "/";
                 }
                 else {
-                    QString message = "Too many settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "]";
+                    QString message = "There is already " + QString::number(TITLESETTING_INDEX_MAX) + " settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "] first!";
                     QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
                     return;
                 }
@@ -1904,15 +1943,16 @@ void QKeyMapper::saveKeyMapSetting(void)
                 && (false == ui->titleCheckBox->isChecked())
                 && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
                 && (m_MapProcessInfo.FilePath.isEmpty() != true)){
-                saveSettingSelectStr = m_MapProcessInfo.FileName + "/";
-                settingFile.setValue(SETTINGSELECT , m_MapProcessInfo.FileName);
+                QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
+                settingFile.setValue(SETTINGSELECT , subgroup);
+                saveSettingSelectStr = subgroup + "/";
             }
             else {
-                if (customSettingIndex < 10) {
-                    saveSettingSelectStr = QString(GROUPNAME_CUSTOMSETTING) + " " + QString::number(customSettingIndex);
+                if (customGlobalSettingIndex < 10) {
+                    saveSettingSelectStr = QString(GROUPNAME_CUSTOMGLOBALSETTING) + " " + QString::number(customGlobalSettingIndex);
                 }
                 else {
-                    saveSettingSelectStr = QString(GROUPNAME_CUSTOMSETTING) + QString::number(customSettingIndex);
+                    saveSettingSelectStr = QString(GROUPNAME_CUSTOMGLOBALSETTING) + QString::number(customGlobalSettingIndex);
                 }
                 settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
                 saveSettingSelectStr = saveSettingSelectStr + "/";
@@ -2129,7 +2169,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
-        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) || group.contains(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
+        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive) || group.contains(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
             QString tempSettingSelectStr = group + "/";
             if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
                     && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
@@ -2151,7 +2191,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
-        if (group.startsWith(GROUPNAME_CUSTOMSETTING, Qt::CaseInsensitive)
+        if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
                 && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
             valid_setting = true;
         }
@@ -2160,7 +2200,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->settingselectComboBox->addItem(group);
             validgroups_customsetting.append(group);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting] Setting select add CustomSetting ->" << group;
+            qDebug() << "[loadKeyMapSetting] Setting select add CustomGlobalSetting ->" << group;
 #endif
         }
     }
