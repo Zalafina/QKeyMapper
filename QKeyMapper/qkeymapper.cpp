@@ -132,7 +132,7 @@ static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
 static const char *DELETEONEBUTTON_CHINESE = "删除单行";
 static const char *CLEARALLBUTTON_CHINESE = "全部清除";
 static const char *ADDMAPDATABUTTON_CHINESE = "添加";
-static const char *NAMECHECKBOX_CHINESE = "文件名";
+static const char *NAMECHECKBOX_CHINESE = "进程名";
 static const char *TITLECHECKBOX_CHINESE = "标题";
 static const char *ORIKEYLABEL_CHINESE = "原始按键";
 static const char *ORIKEYSEQLABEL_CHINESE = "原始组合键";
@@ -149,7 +149,7 @@ static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关快捷键";
-static const char *PROCESSINFOTABLE_COL1_CHINESE = "文件名";
+static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程名";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
 static const char *PROCESSINFOTABLE_COL3_CHINESE = "窗口标题";
 static const char *KEYMAPDATATABLE_COL1_CHINESE = "原始按键";
@@ -174,7 +174,7 @@ static const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
 static const char *DELETEONEBUTTON_ENGLISH = "Delete One";
 static const char *CLEARALLBUTTON_ENGLISH = "Clear All";
 static const char *ADDMAPDATABUTTON_ENGLISH = "ADD";
-static const char *NAMECHECKBOX_ENGLISH = "Name";
+static const char *NAMECHECKBOX_ENGLISH = "Process";
 static const char *TITLECHECKBOX_ENGLISH = "Title";
 static const char *ORIKEYLABEL_ENGLISH = "OriKey";
 static const char *ORIKEYSEQLABEL_ENGLISH = "OriKeySeq";
@@ -191,7 +191,7 @@ static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
-static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Name";
+static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
 static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Window Title";
 static const char *KEYMAPDATATABLE_COL1_ENGLISH = "OriginalKey";
@@ -527,6 +527,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 int savecheckindex = checkSaveSettings(filename, windowTitle);
 
                 if ((TITLESETTING_INDEX_INVALID < savecheckindex && savecheckindex <= TITLESETTING_INDEX_MAX) && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
+                    bool needtoload = false;
                     QVariant nameChecked_Var;
                     QVariant titleChecked_Var;
                     QVariant fileName_Var;
@@ -537,30 +538,37 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     QString readWindowTitle;
                     QString loadSettingSelectStr;
 
-                    if (readSaveSettingData(filename, PROCESSINFO_FILENAME_CHECKED, nameChecked_Var)) {
+                    if (savecheckindex == TITLESETTING_INDEX_ANYTITLE) {
+                        loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
+                    }
+                    else {
+                        loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(savecheckindex);
+                    }
+
+                    if (readSaveSettingData(loadSettingSelectStr, PROCESSINFO_FILENAME_CHECKED, nameChecked_Var)) {
                         nameChecked = nameChecked_Var.toBool();
                     }
-                    if (readSaveSettingData(filename, PROCESSINFO_WINDOWTITLE_CHECKED, titleChecked_Var)) {
+                    if (readSaveSettingData(loadSettingSelectStr, PROCESSINFO_WINDOWTITLE_CHECKED, titleChecked_Var)) {
                         titleChecked = titleChecked_Var.toBool();
                     }
-                    if (readSaveSettingData(filename, PROCESSINFO_FILENAME, fileName_Var)) {
+                    if (readSaveSettingData(loadSettingSelectStr, PROCESSINFO_FILENAME, fileName_Var)) {
                         readFileName = fileName_Var.toString();
                     }
-                    if (readSaveSettingData(filename, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
+                    if (readSaveSettingData(loadSettingSelectStr, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
                         readWindowTitle = windowTitle_Var.toString();
                     }
 
                     if ((true == nameChecked)
                             && (true == titleChecked)
                             && (savecheckindex != TITLESETTING_INDEX_ANYTITLE)){
-                        loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(savecheckindex);
+                        needtoload = true;
                     }
                     else if (true == nameChecked
                             && savecheckindex == TITLESETTING_INDEX_ANYTITLE){
-                        loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
+                        needtoload = true;
                     }
 
-                    if (false == loadSettingSelectStr.isEmpty()) {
+                    if (needtoload) {
                         QString curSettingSelectStr = ui->settingselectComboBox->currentText();
                         if (curSettingSelectStr != loadSettingSelectStr) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1754,11 +1762,11 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
             if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
                 QString titleStr = windowTitle_Var.toString();
                 if (titleStr == windowtitle) {
-                    bool autoStartMappingChecked = false;
+                    Qt::CheckState autoStartMappingChecked = Qt::Unchecked;
                     QVariant autoStartMappingChecked_Var;
                     if (readSaveSettingData(subgroup, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
-                        autoStartMappingChecked = autoStartMappingChecked_Var.toBool();
-                        if (true == autoStartMappingChecked) {
+                        autoStartMappingChecked = (Qt::CheckState)autoStartMappingChecked_Var.toInt();
+                        if (Qt::Checked == autoStartMappingChecked) {
                             ret_index = index;
                             break;
                         }
@@ -1777,11 +1785,11 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
                 if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
                     QString titleStr = windowTitle_Var.toString();
                     if (windowtitle.contains(titleStr)) {
-                        bool autoStartMappingChecked = false;
+                        Qt::CheckState autoStartMappingChecked = Qt::Unchecked;
                         QVariant autoStartMappingChecked_Var;
                         if (readSaveSettingData(subgroup, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
-                            autoStartMappingChecked = autoStartMappingChecked_Var.toBool();
-                            if (true == autoStartMappingChecked) {
+                            autoStartMappingChecked = (Qt::CheckState)autoStartMappingChecked_Var.toInt();
+                            if (Qt::Checked == autoStartMappingChecked) {
                                 ret_index = index;
                                 break;
                             }
@@ -1796,11 +1804,11 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
         QString subgroup = executablename + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
 
         if (groups.contains(subgroup)) {
-            bool autoStartMappingChecked = false;
+            Qt::CheckState autoStartMappingChecked = Qt::Unchecked;
             QVariant autoStartMappingChecked_Var;
             if (readSaveSettingData(subgroup, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
-                autoStartMappingChecked = autoStartMappingChecked_Var.toBool();
-                if (true == autoStartMappingChecked) {
+                autoStartMappingChecked = (Qt::CheckState)autoStartMappingChecked_Var.toInt();
+                if (Qt::Checked == autoStartMappingChecked) {
                     ret_index = TITLESETTING_INDEX_ANYTITLE;
                 }
             }
@@ -1929,7 +1937,6 @@ void QKeyMapper::saveKeyMapSetting(void)
                 if (0 < index && index <= TITLESETTING_INDEX_MAX) {
                     QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
                     settingFile.setValue(SETTINGSELECT , subgroup);
-                    settingFile.setValue(m_MapProcessInfo.FileName + "/" + QString(WINDOWTITLE_STRING) + QString::number(index), ui->titleLineEdit->text());
                     saveSettingSelectStr = subgroup + "/";
                 }
                 else {
