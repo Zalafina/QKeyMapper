@@ -295,6 +295,7 @@ private:
     bool checkSettingsFileNeedtoConvert(void);
     void renameSettingsGroup(QSettings &settings, const QString &oldName, const QString &newName);
     void convertSettingsFile(void);
+    int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
     int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);
