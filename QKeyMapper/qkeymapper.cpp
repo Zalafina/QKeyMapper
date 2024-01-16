@@ -134,7 +134,7 @@ static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
 static const char *DELETEONEBUTTON_CHINESE = "删除单行";
 static const char *CLEARALLBUTTON_CHINESE = "全部清除";
 static const char *ADDMAPDATABUTTON_CHINESE = "添加";
-static const char *NAMECHECKBOX_CHINESE = "进程名";
+static const char *NAMECHECKBOX_CHINESE = "进程";
 static const char *TITLECHECKBOX_CHINESE = "标题";
 static const char *ORIKEYLABEL_CHINESE = "原始按键";
 static const char *ORIKEYSEQLABEL_CHINESE = "原始组合键";
@@ -152,7 +152,7 @@ static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化"
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *WINDOWSWITCHKEYLABEL_CHINESE = "窗口显示切换键";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
-static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程名";
+static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
 static const char *PROCESSINFOTABLE_COL3_CHINESE = "窗口标题";
 static const char *KEYMAPDATATABLE_COL1_CHINESE = "原始按键";
@@ -160,6 +160,7 @@ static const char *KEYMAPDATATABLE_COL2_CHINESE = "映射按键";
 static const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
 static const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
 #ifdef VIGEM_CLIENT_SUPPORT
+static const char *VIRTUALGAMEPADGROUPBOX_CHINESE = "虚拟游戏手柄";
 static const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
 static const char *VJOYYSENSLABEL_CHINESE = "Y轴灵敏度";
 static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
@@ -203,6 +204,7 @@ static const char *KEYMAPDATATABLE_COL2_ENGLISH = "MappingKey";
 static const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
 static const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
 #ifdef VIGEM_CLIENT_SUPPORT
+static const char *VIRTUALGAMEPADGROUPBOX_ENGLISH = "Virtual Gamepad";
 static const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
 static const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
 static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmBus Unavailable";
@@ -253,6 +255,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_instance = this;
     ui->setupUi(this);
+    QStyle* defaultStyle = QStyleFactory::create("windows");
+    ui->virtualgamepadGroupBox->setStyle(defaultStyle);
 
     bool settingNeedConvert = checkSettingsFileNeedtoConvert();
     if (settingNeedConvert) {
@@ -261,26 +265,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "QKeyMapper() -> Need to convert Settings INI file! Backup Settings file Success.";
 #endif
-//            void renameGroup(QSettings &settings, const QString &oldName, const QString &newName) {
-//                settings.beginGroup(oldName);
-//                QStringList keys = settings.allKeys();
-//                QMap<QString, QVariant> values;
-//                for (const QString &key : keys) {
-//                    values[key] = settings.value(key);
-//                }
-//                settings.endGroup();
-
-//                settings.beginGroup(newName);
-//                for (const QString &key : keys) {
-//                    settings.setValue(key, values[key]);
-//                }
-//                settings.endGroup();
-
-//                settings.remove(oldName);
-//            }
-
-//            QSettings settings("settings.ini", QSettings::IniFormat);
-//            renameGroup(settings, "MobaXterm_Personal_11.1.exe", "MobaXterm_Personal_11.1.exe|Title1");
+            convertSettingsFile();
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
@@ -435,6 +420,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->vJoyYSensSpinBox->setVisible(false);
         ui->vJoyXSensLabel->setVisible(false);
         ui->vJoyYSensLabel->setVisible(false);
+        ui->virtualgamepadGroupBox->setVisible(false);
     }
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -453,6 +439,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensSpinBox->setVisible(false);
     ui->vJoyXSensLabel->setVisible(false);
     ui->vJoyYSensLabel->setVisible(false);
+    ui->virtualgamepadGroupBox->setVisible(false);
 #endif
 
     m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEYSEQ);
@@ -1864,6 +1851,65 @@ bool QKeyMapper::checkSettingsFileNeedtoConvert()
     return ret;
 }
 
+void QKeyMapper::renameSettingsGroup(QSettings &settings, const QString &oldName, const QString &newName)
+{
+    settings.beginGroup(oldName);
+    QStringList keys = settings.allKeys();
+    QMap<QString, QVariant> values;
+    for (const QString &key : keys) {
+        values[key] = settings.value(key);
+    }
+    settings.endGroup();
+
+    settings.beginGroup(newName);
+    for (const QString &key : keys) {
+        settings.setValue(key, values[key]);
+    }
+    settings.endGroup();
+
+    settings.remove(oldName);
+}
+
+void QKeyMapper::convertSettingsFile()
+{
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QStringList groups = settingFile.childGroups();
+
+    for (const QString &group : qAsConst(groups)){
+        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive)) {
+            QVariant nameChecked_Var;
+            QVariant titleChecked_Var;
+            bool nameChecked = false;
+            bool titleChecked = false;
+            QString newGroupName;
+            if (readSaveSettingData(group, PROCESSINFO_FILENAME_CHECKED, nameChecked_Var)) {
+                nameChecked = nameChecked_Var.toBool();
+            }
+            if (readSaveSettingData(group, PROCESSINFO_WINDOWTITLE_CHECKED, titleChecked_Var)) {
+                titleChecked = titleChecked_Var.toBool();
+            }
+
+            if (nameChecked && titleChecked) {
+                newGroupName = group + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(1);
+            }
+            else if (nameChecked && titleChecked == false) {
+                newGroupName = group + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
+            }
+
+            if (newGroupName.isEmpty() == false) {
+                renameSettingsGroup(settingFile, group, newGroupName);
+            }
+        }
+
+        if (group.startsWith("CustomSetting ", Qt::CaseInsensitive)
+            && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
+            QString newGroupName = group;
+            newGroupName = newGroupName.replace("CustomSetting ", GROUPNAME_CUSTOMGLOBALSETTING);
+            renameSettingsGroup(settingFile, group, newGroupName);
+        }
+    }
+}
+
 int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &windowtitle)
 {
     int ret_index = TITLESETTING_INDEX_INVALID;
@@ -3045,6 +3091,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
+    ui->virtualgamepadGroupBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -3120,6 +3167,7 @@ void QKeyMapper::setControlFontChinese()
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
+    ui->virtualgamepadGroupBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -3201,6 +3249,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->installViGEmBusButton->setEnabled(status);
     }
     ui->uninstallViGEmBusButton->setEnabled(status);
+    ui->virtualgamepadGroupBox->setEnabled(status);
 
     if (false == status || ui->enableVirtualJoystickCheckBox->isChecked()) {
         ui->vJoyXSensLabel->setEnabled(status);
@@ -3944,14 +3993,14 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 void QKeyMapper::initWindowSwitchKeySeqEdit()
 {
     m_windowswitchKeySeqEdit->setObjectName(QStringLiteral("windowswitchKeySeqEdit"));
-    m_windowswitchKeySeqEdit->setGeometry(QRect(115, 590, 111, 22));
+    m_windowswitchKeySeqEdit->setGeometry(QRect(115, 600, 111, 22));
     m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 }
 
 void QKeyMapper::initMappingSwitchKeySeqEdit()
 {
     m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
-    m_mappingswitchKeySeqEdit->setGeometry(QRect(380, 590, 111, 22));
+    m_mappingswitchKeySeqEdit->setGeometry(QRect(380, 600, 111, 22));
     m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -4121,6 +4170,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
 #ifdef VIGEM_CLIENT_SUPPORT
+    ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
@@ -4173,6 +4223,7 @@ void QKeyMapper::setUILanguage_English()
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
 #ifdef VIGEM_CLIENT_SUPPORT
+    ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_ENGLISH);
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_ENGLISH);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);

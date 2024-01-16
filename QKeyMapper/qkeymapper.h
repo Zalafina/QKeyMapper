@@ -293,6 +293,8 @@ private:
 
     bool backupFile(const QString &originalFile, const QString &backupFile);
     bool checkSettingsFileNeedtoConvert(void);
+    void renameSettingsGroup(QSettings &settings, const QString &oldName, const QString &newName);
+    void convertSettingsFile(void);
     int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);

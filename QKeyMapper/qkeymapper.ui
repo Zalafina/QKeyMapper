@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1050</width>
-    <height>630</height>
+    <height>650</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>1050</width>
-    <height>630</height>
+    <height>650</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>1050</width>
-    <height>630</height>
+    <height>650</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -34,10 +34,10 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>480</y>
-     <width>180</width>
-     <height>50</height>
+     <x>380</x>
+     <y>495</y>
+     <width>160</width>
+     <height>40</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -56,8 +56,8 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>640</x>
-     <y>485</y>
+     <x>660</x>
+     <y>495</y>
      <width>160</width>
      <height>40</height>
     </rect>
@@ -94,7 +94,7 @@
    <property name="geometry">
     <rect>
      <x>115</x>
-     <y>390</y>
+     <y>385</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -110,7 +110,7 @@
    <property name="geometry">
     <rect>
      <x>115</x>
-     <y>425</y>
+     <y>420</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -125,8 +125,8 @@
   <widget class="QPushButton" name="refreshButton">
    <property name="geometry">
     <rect>
-     <x>60</x>
-     <y>485</y>
+     <x>100</x>
+     <y>495</y>
      <width>160</width>
      <height>40</height>
     </rect>
@@ -145,7 +145,7 @@
    <property name="geometry">
     <rect>
      <x>176</x>
-     <y>390</y>
+     <y>385</y>
      <width>324</width>
      <height>20</height>
     </rect>
@@ -158,7 +158,7 @@
    <property name="geometry">
     <rect>
      <x>176</x>
-     <y>425</y>
+     <y>420</y>
      <width>324</width>
      <height>20</height>
     </rect>
@@ -237,7 +237,7 @@
    <property name="geometry">
     <rect>
      <x>587</x>
-     <y>445</y>
+     <y>450</y>
      <width>121</width>
      <height>25</height>
     </rect>
@@ -256,7 +256,7 @@
    <property name="geometry">
     <rect>
      <x>775</x>
-     <y>445</y>
+     <y>450</y>
      <width>121</width>
      <height>25</height>
     </rect>
@@ -341,7 +341,7 @@
    <property name="geometry">
     <rect>
      <x>920</x>
-     <y>445</y>
+     <y>450</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -360,7 +360,7 @@
    <property name="geometry">
     <rect>
      <x>935</x>
-     <y>480</y>
+     <y>490</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -704,7 +704,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>480</y>
+     <y>490</y>
      <width>111</width>
      <height>22</height>
     </rect>
@@ -720,7 +720,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>480</y>
+     <y>490</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -736,7 +736,7 @@
    <property name="geometry">
     <rect>
      <x>935</x>
-     <y>510</y>
+     <y>520</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -1077,7 +1077,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>510</y>
+     <y>520</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -1093,7 +1093,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>510</y>
+     <y>520</y>
      <width>111</width>
      <height>22</height>
     </rect>
@@ -1109,7 +1109,7 @@
    <property name="geometry">
     <rect>
      <x>350</x>
-     <y>545</y>
+     <y>555</y>
      <width>171</width>
      <height>21</height>
     </rect>
@@ -1127,8 +1127,8 @@
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
-     <x>690</x>
-     <y>545</y>
+     <x>160</x>
+     <y>455</y>
      <width>271</width>
      <height>22</height>
     </rect>
@@ -1143,8 +1143,8 @@
   <widget class="QLabel" name="settingselectLabel">
    <property name="geometry">
     <rect>
-     <x>645</x>
-     <y>545</y>
+     <x>110</x>
+     <y>455</y>
      <width>41</width>
      <height>22</height>
     </rect>
@@ -1159,8 +1159,8 @@
   <widget class="QPushButton" name="removeSettingButton">
    <property name="geometry">
     <rect>
-     <x>969</x>
-     <y>546</y>
+     <x>439</x>
+     <y>456</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -1179,7 +1179,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>545</y>
+     <y>555</y>
      <width>151</width>
      <height>21</height>
     </rect>
@@ -1217,7 +1217,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>545</y>
+     <y>555</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1246,7 +1246,7 @@
    <property name="geometry">
     <rect>
      <x>265</x>
-     <y>590</y>
+     <y>600</y>
      <width>110</width>
      <height>22</height>
     </rect>
@@ -1262,7 +1262,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>590</y>
+     <y>600</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1281,7 +1281,7 @@
    <property name="geometry">
     <rect>
      <x>640</x>
-     <y>590</y>
+     <y>600</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1300,7 +1300,7 @@
    <property name="geometry">
     <rect>
      <x>760</x>
-     <y>590</y>
+     <y>600</y>
      <width>111</width>
      <height>21</height>
     </rect>
@@ -1319,7 +1319,7 @@
    <property name="geometry">
     <rect>
      <x>890</x>
-     <y>590</y>
+     <y>600</y>
      <width>141</width>
      <height>21</height>
     </rect>
@@ -1340,8 +1340,8 @@
   <widget class="QSpinBox" name="vJoyXSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>535</y>
+     <x>700</x>
+     <y>570</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1353,8 +1353,8 @@
   <widget class="QSpinBox" name="vJoyYSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>565</y>
+     <x>820</x>
+     <y>570</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1366,8 +1366,8 @@
   <widget class="QLabel" name="vJoyXSensLabel">
    <property name="geometry">
     <rect>
-     <x>510</x>
-     <y>535</y>
+     <x>620</x>
+     <y>570</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1382,8 +1382,8 @@
   <widget class="QLabel" name="vJoyYSensLabel">
    <property name="geometry">
     <rect>
-     <x>510</x>
-     <y>565</y>
+     <x>740</x>
+     <y>570</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1399,7 +1399,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>510</y>
+     <y>570</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1479,7 +1479,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>590</y>
+     <y>600</y>
      <width>90</width>
      <height>22</height>
     </rect>
@@ -1489,6 +1489,22 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="virtualgamepadGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>550</y>
+     <width>520</width>
+     <height>85</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Virtual Gamepad</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
   </widget>
   <zorder>keymapButton</zorder>
@@ -1537,6 +1553,7 @@
   <zorder>waitTime_msLabel</zorder>
   <zorder>orikeySeqLabel</zorder>
   <zorder>windowswitchkeyLabel</zorder>
+  <zorder>virtualgamepadGroupBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
