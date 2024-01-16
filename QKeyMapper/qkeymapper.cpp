@@ -4448,17 +4448,20 @@ void QKeyMapper::on_refreshButton_clicked()
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 {
     if ((KEYMAP_IDLE == m_KeyMapStatus)
-            && (true == ui->nameLineEdit->isEnabled())
-            && (true == ui->titleLineEdit->isEnabled())){
+            && (true == ui->processinfoTable->isEnabled())){
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[SelectProcessInfo]" << "Table DoubleClicked" << index.row() << ui->processinfoTable->item(index.row(), 0)->text() << ui->processinfoTable->item(index.row(), 2)->text();
 #endif
+        ui->nameLineEdit->setEnabled(true);
+        ui->titleLineEdit->setEnabled(true);
+        ui->nameCheckBox->setEnabled(true);
+        ui->titleCheckBox->setEnabled(true);
+        ui->removeSettingButton->setEnabled(true);
+        ui->disableWinKeyCheckBox->setEnabled(true);
 
-        ui->nameLineEdit->setText(ui->processinfoTable->item(index.row(), 0)->text());
-        ui->titleLineEdit->setText(ui->processinfoTable->item(index.row(), 2)->text());
+        QString filename = ui->processinfoTable->item(index.row(), 0)->text();
+        QString windowTitle = ui->processinfoTable->item(index.row(), 2)->text();
 
-        QString filename = ui->nameLineEdit->text();
-        QString windowTitle = ui->titleLineEdit->text();
         int checksaveindex = checkSaveSettings(filename, windowTitle);
         if (TITLESETTING_INDEX_ANYTITLE < checksaveindex && checksaveindex <= TITLESETTING_INDEX_MAX) {
             QString loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(checksaveindex);
@@ -4481,6 +4484,9 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         else {
             ui->settingselectComboBox->setCurrentText(QString());
         }
+
+        ui->nameLineEdit->setText(filename);
+        ui->titleLineEdit->setText(windowTitle);
 
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
         QString ProcessPath;
