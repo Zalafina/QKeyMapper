@@ -4284,6 +4284,7 @@ void QKeyMapper::resetFontSize()
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -4303,6 +4304,7 @@ void QKeyMapper::resetFontSize()
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
+        m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
