@@ -69,6 +69,7 @@ static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const char *VERSION_INFO = "1.3.6";
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
+static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
 
 static const char *DISPLAYSWITCH_KEYSEQ         = "Ctrl+`";
 static const char *MAPPINGSWITCH_KEYSEQ_DEFAULT = "Ctrl+F6";
@@ -252,6 +253,42 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_instance = this;
     ui->setupUi(this);
+
+    bool settingNeedConvert = checkSettingsFileNeedtoConvert();
+    if (settingNeedConvert) {
+        bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_BACKUP_FILENAME);
+        if (backupRet) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "QKeyMapper() -> Need to convert Settings INI file! Backup Settings file Success.";
+#endif
+//            void renameGroup(QSettings &settings, const QString &oldName, const QString &newName) {
+//                settings.beginGroup(oldName);
+//                QStringList keys = settings.allKeys();
+//                QMap<QString, QVariant> values;
+//                for (const QString &key : keys) {
+//                    values[key] = settings.value(key);
+//                }
+//                settings.endGroup();
+
+//                settings.beginGroup(newName);
+//                for (const QString &key : keys) {
+//                    settings.setValue(key, values[key]);
+//                }
+//                settings.endGroup();
+
+//                settings.remove(oldName);
+//            }
+
+//            QSettings settings("settings.ini", QSettings::IniFormat);
+//            renameGroup(settings, "MobaXterm_Personal_11.1.exe", "MobaXterm_Personal_11.1.exe|Title1");
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "QKeyMapper() -> Need to convert Settings INI file! But backup Settings file Failed!";
+#endif
+        }
+    }
+
     extractSoundFiles();
     initAddKeyComboBoxes();
     initWindowSwitchKeySeqEdit();
@@ -1795,6 +1832,37 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
     }
 }
 #endif
+
+bool QKeyMapper::backupFile(const QString &originalFile, const QString &backupFile)
+{
+    return QFile::copy(originalFile, backupFile);
+}
+
+bool QKeyMapper::checkSettingsFileNeedtoConvert()
+{
+    bool ret = false;
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QStringList groups = settingFile.childGroups();
+
+    bool endsWithEXE = false;
+    bool containsTitleGroup = false;
+    for (const QString &group : qAsConst(groups)){
+        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive)) {
+            endsWithEXE = true;
+        }
+
+        if (group.contains(GROUPNAME_EXECUTABLE_SUFFIX + QString(SEPARATOR_TITLESETTING) + WINDOWTITLE_STRING)
+            || group.contains(GROUPNAME_EXECUTABLE_SUFFIX + QString(SEPARATOR_TITLESETTING) + ANYWINDOWTITLE_STRING)) {
+            containsTitleGroup = true;
+        }
+    }
+
+    if (endsWithEXE && containsTitleGroup == false) {
+        ret = true;
+    }
+
+    return ret;
+}
 
 int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &windowtitle)
 {

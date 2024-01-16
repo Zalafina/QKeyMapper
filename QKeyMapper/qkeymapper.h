@@ -291,6 +291,8 @@ private:
     void setUILanguage_English(void);
     void resetFontSize(void);
 
+    bool backupFile(const QString &originalFile, const QString &backupFile);
+    bool checkSettingsFileNeedtoConvert(void);
     int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);
