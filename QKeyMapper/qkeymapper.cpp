@@ -628,6 +628,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 if ((true == ui->nameCheckBox->isChecked())
                     && (true == ui->titleCheckBox->isChecked())){
                     if ((m_MapProcessInfo.FileName == filename)
+                        && (m_MapProcessInfo.WindowTitle.isEmpty() == false)
                         && (m_MapProcessInfo.WindowTitle == windowTitle || windowTitle.contains(m_MapProcessInfo.WindowTitle))){
                         checkresult = 1;
                     }
@@ -642,6 +643,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 }
 
                 if ((m_MapProcessInfo.FileName == filename)
+                    && (m_MapProcessInfo.WindowTitle.isEmpty() == false)
                     && (m_MapProcessInfo.WindowTitle == windowTitle || windowTitle.contains(m_MapProcessInfo.WindowTitle))){
                     checkresult = 1;
                 }
