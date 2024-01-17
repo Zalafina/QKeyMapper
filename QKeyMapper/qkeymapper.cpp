@@ -1875,6 +1875,23 @@ void QKeyMapper::convertSettingsFile()
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
 
+    for (const QString &group : qAsConst(groups)) {
+        settingFile.beginGroup(group);
+        QStringList keys = {KEYMAPDATA_ORIGINALKEYS, KEYMAPDATA_MAPPINGKEYS};
+        for (const QString &key : keys) {
+            if (settingFile.contains(key)) {
+                QStringList values = settingFile.value(key).toStringList();
+                for (QString &value : values) {
+                    if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(value)) {
+                        value = QKeyMapper_Worker::MouseButtonNameConvertMap[value];
+                    }
+                }
+                settingFile.setValue(key, values);
+            }
+        }
+        settingFile.endGroup();
+    }
+
     for (const QString &group : qAsConst(groups)){
         if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive)) {
             QVariant nameChecked_Var;
