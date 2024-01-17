@@ -383,7 +383,9 @@ public:
 #endif
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QHash<WPARAM, QString> MouseButtonNameMap;
+#ifdef MOUSEBUTTON_CONVERT
     static QHash<QString, QString> MouseButtonNameConvertMap;
+#endif
     static QHash<QString, int> JoyStickKeyMap;
     static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT

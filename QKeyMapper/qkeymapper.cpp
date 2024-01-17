@@ -259,6 +259,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QStyle* defaultStyle = QStyleFactory::create("windows");
     ui->virtualgamepadGroupBox->setStyle(defaultStyle);
 
+#ifdef SETTINGSFILE_CONVERT
     bool settingNeedConvert = checkSettingsFileNeedtoConvert();
     if (settingNeedConvert) {
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_BACKUP_FILENAME);
@@ -274,6 +275,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
         }
     }
+#endif
 
     extractSoundFiles();
     initAddKeyComboBoxes();
@@ -2476,10 +2478,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                             keyboardmapcontains = true;
                         }
+#ifdef MOUSEBUTTON_CONVERT
                         if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
                             appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
                             mousemapcontains = true;
                         }
+#endif
                         bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
                         if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
@@ -2697,10 +2701,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                             keyboardmapcontains = true;
                         }
+#ifdef MOUSEBUTTON_CONVERT
                         if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
                             appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
                             mousemapcontains = true;
                         }
+#endif
                         bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
                         if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
@@ -2969,10 +2975,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
 bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 {
+#ifdef MOUSEBUTTON_CONVERT
     QStringList mouseNameConvertList = QKeyMapper_Worker::MouseButtonNameConvertMap.keys();
     for (const QString &mousekey : qAsConst(mouseNameConvertList)){
         mappingkeystr.replace(mousekey, QKeyMapper_Worker::MouseButtonNameConvertMap.value(mousekey));
     }
+#endif
 
     bool checkResult = true;
     static QRegularExpression regexp("\\s[+»]\\s");

@@ -89,7 +89,9 @@ QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, 
 #endif
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
+#ifdef MOUSEBUTTON_CONVERT
 QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
+#endif
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3226,11 +3228,13 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONDOWN,  XBUTTON2    ),   "Mouse-X2");
     MouseButtonNameMap.insert(MAKELONG(WM_XBUTTONUP,    XBUTTON2    ),   "Mouse-X2");
 
+#ifdef MOUSEBUTTON_CONVERT
     MouseButtonNameConvertMap.insert("L-Mouse",     "Mouse-L"   );
     MouseButtonNameConvertMap.insert("R-Mouse",     "Mouse-R"   );
     MouseButtonNameConvertMap.insert("M-Mouse",     "Mouse-M"   );
     MouseButtonNameConvertMap.insert("X1-Mouse",    "Mouse-X1"  );
     MouseButtonNameConvertMap.insert("X2-Mouse",    "Mouse-X2"  );
+#endif
 }
 void QKeyMapper_Worker::initJoystickKeyMap()
 {
