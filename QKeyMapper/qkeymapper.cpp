@@ -622,32 +622,27 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         }
                     }
                 }
-            }
 
-            if ((true == ui->nameCheckBox->isChecked())
+                if ((true == ui->nameCheckBox->isChecked())
                     && (true == ui->titleCheckBox->isChecked())){
-                if ((m_MapProcessInfo.FileName == filename)
+                    if ((m_MapProcessInfo.FileName == filename)
                         && (m_MapProcessInfo.WindowTitle == windowTitle || windowTitle.contains(m_MapProcessInfo.WindowTitle))){
-                    checkresult = 1;
+                        checkresult = 1;
+                    }
                 }
-            }
-            else if (true == ui->nameCheckBox->isChecked()){
-                if (m_MapProcessInfo.FileName == filename){
-                    checkresult = 1;
+                else if (true == ui->nameCheckBox->isChecked()){
+                    if (m_MapProcessInfo.FileName == filename){
+                        checkresult = 1;
+                    }
                 }
-            }
-            else if (true == ui->titleCheckBox->isChecked()){
-                if (m_MapProcessInfo.WindowTitle == windowTitle){
-                    checkresult = 1;
+                else{
+                    // checkresult = 2;
                 }
-            }
-            else{
-                // checkresult = 2;
-            }
 
-            if ((m_MapProcessInfo.FileName == filename)
+                if ((m_MapProcessInfo.FileName == filename)
                     && (m_MapProcessInfo.WindowTitle == windowTitle || windowTitle.contains(m_MapProcessInfo.WindowTitle))){
-                checkresult = 1;
+                    checkresult = 1;
+                }
             }
         }
 
