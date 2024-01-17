@@ -1262,7 +1262,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>600</y>
+     <y>605</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1281,7 +1281,7 @@
    <property name="geometry">
     <rect>
      <x>640</x>
-     <y>600</y>
+     <y>605</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1300,7 +1300,7 @@
    <property name="geometry">
     <rect>
      <x>760</x>
-     <y>600</y>
+     <y>605</y>
      <width>111</width>
      <height>21</height>
     </rect>
@@ -1319,7 +1319,7 @@
    <property name="geometry">
     <rect>
      <x>890</x>
-     <y>600</y>
+     <y>605</y>
      <width>141</width>
      <height>21</height>
     </rect>
@@ -1341,7 +1341,7 @@
    <property name="geometry">
     <rect>
      <x>700</x>
-     <y>570</y>
+     <y>575</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1354,7 +1354,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>570</y>
+     <y>575</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1367,7 +1367,7 @@
    <property name="geometry">
     <rect>
      <x>620</x>
-     <y>570</y>
+     <y>575</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1383,7 +1383,7 @@
    <property name="geometry">
     <rect>
      <x>740</x>
-     <y>570</y>
+     <y>575</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1399,7 +1399,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>570</y>
+     <y>575</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1495,7 +1495,7 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>550</y>
+     <y>555</y>
      <width>520</width>
      <height>85</height>
     </rect>
@@ -1507,6 +1507,7 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1553,7 +1554,6 @@
   <zorder>waitTime_msLabel</zorder>
   <zorder>orikeySeqLabel</zorder>
   <zorder>windowswitchkeyLabel</zorder>
-  <zorder>virtualgamepadGroupBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
