@@ -1831,8 +1831,31 @@ bool QKeyMapper::checkSettingsFileNeedtoConvert()
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
 
+    bool containsOldMouseButton = false;
     bool endsWithEXE = false;
     bool containsTitleGroup = false;
+
+    bool shouldBreak = false;
+    for (const QString &group : qAsConst(groups)) {
+        if (shouldBreak) break;
+        settingFile.beginGroup(group);
+        QStringList keys = {KEYMAPDATA_ORIGINALKEYS, KEYMAPDATA_MAPPINGKEYS};
+        for (const QString &key : keys) {
+            if (shouldBreak) break;
+            if (settingFile.contains(key)) {
+                QStringList values = settingFile.value(key).toStringList();
+                for (QString &value : values) {
+                    if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(value)) {
+                        containsOldMouseButton = true;
+                        shouldBreak = true;
+                        break;
+                    }
+                }
+            }
+        }
+        settingFile.endGroup();
+    }
+
     for (const QString &group : qAsConst(groups)){
         if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive)) {
             endsWithEXE = true;
@@ -1842,6 +1865,10 @@ bool QKeyMapper::checkSettingsFileNeedtoConvert()
             || group.contains(GROUPNAME_EXECUTABLE_SUFFIX + QString(SEPARATOR_TITLESETTING) + ANYWINDOWTITLE_STRING)) {
             containsTitleGroup = true;
         }
+    }
+
+    if (containsOldMouseButton) {
+        ret = true;
     }
 
     if (endsWithEXE && containsTitleGroup == false) {
