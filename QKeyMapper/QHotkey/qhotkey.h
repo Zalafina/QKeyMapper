@@ -105,10 +105,10 @@ public slots:
 signals:
 	//! Will be emitted if the shortcut is pressed
 //	void activated(QPrivateSignal);
-    void activated(const QString &, QPrivateSignal);
+    void activated(const QString &, const Qt::KeyboardModifiers &, QPrivateSignal);
 
 	//! Will be emitted if the shortcut press is released
-    void released(const QString &, QPrivateSignal);
+    void released(const QString &, const Qt::KeyboardModifiers &, QPrivateSignal);
 
 	//! @notifyAcFn{QHotkey::registered}
 	void registeredChanged(bool registered);

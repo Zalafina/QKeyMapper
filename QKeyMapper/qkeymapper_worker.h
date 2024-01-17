@@ -269,6 +269,7 @@ public slots:
 public:
     void sendBurstKeyDown(const QString &burstKey);
     void sendBurstKeyUp(const QString &burstKey, bool stop);
+    void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
     void sendSpecialVirtualKeyUp(const QString &virtualKey);
 
@@ -314,6 +315,7 @@ signals:
 #endif
     void send_WINplusD_Signal(void);
     void HotKeyTrigger_Signal(const QString &keycodeString, int keyupdown);
+    void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -375,7 +377,8 @@ public:
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 
 public:
-    static bool m_isWorkerDestructing;
+    static bool s_isWorkerDestructing;
+    static bool s_forceSendVirtualKey;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QMultiHash<QString, V_KEYCODE> VirtualKeyCodeMap;
 #else

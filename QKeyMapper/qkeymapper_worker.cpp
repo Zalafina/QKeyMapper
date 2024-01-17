@@ -81,7 +81,8 @@ static const ULONG_PTR VIRTUAL_MOUSE_MOVE = 0xBFBCBFBC;
 static const ULONG_PTR VIRTUAL_MOUSE_WHEEL = 0xEBFAEBFA;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
-bool QKeyMapper_Worker::m_isWorkerDestructing = false;
+bool QKeyMapper_Worker::s_isWorkerDestructing = false;
+bool QKeyMapper_Worker::s_forceSendVirtualKey = false;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QMultiHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QMultiHash<QString, V_KEYCODE>();
 #else
@@ -169,6 +170,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     qRegisterMetaType<QJoystickPOVEvent>("QJoystickPOVEvent");
     qRegisterMetaType<QJoystickAxisEvent>("QJoystickAxisEvent");
     qRegisterMetaType<QJoystickButtonEvent>("QJoystickButtonEvent");
+    qRegisterMetaType<Qt::KeyboardModifiers>("Qt::KeyboardModifiers");
 
     Q_UNUSED(parent);
 
@@ -187,6 +189,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::sendInputKeys_Signal, this, &QKeyMapper_Worker::onSendInputKeys, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
 #endif
@@ -229,7 +232,7 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper_Worker() called.";
 #endif
-    m_isWorkerDestructing = true;
+    s_isWorkerDestructing = true;
 
     setWorkerKeyUnHook();
 
@@ -887,26 +890,38 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
     }
 }
 
+void QKeyMapper_Worker::sendSpecialVirtualKey(const QString &keycodeString, int keyupdown)
+{
+    s_forceSendVirtualKey = true;
+    if (KEY_DOWN == keyupdown){
+        sendSpecialVirtualKeyDown(keycodeString);
+    }
+    else {
+        sendSpecialVirtualKeyUp(keycodeString);
+    }
+    s_forceSendVirtualKey = false;
+}
+
 void QKeyMapper_Worker::sendSpecialVirtualKeyDown(const QString &virtualKey)
 {
-    if (true == VirtualMouseButtonMap.contains(virtualKey)) {
+    if (VirtualMouseButtonMap.contains(virtualKey)) {
         V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(virtualKey);
         sendMouseClick(vmousecode, KEY_DOWN);
     }
-    else {
-        V_KEYCODE map_vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(virtualKey);
+    else if (VirtualKeyCodeMap.contains(virtualKey)) {
+        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
         sendKeyboardInput(map_vkeycode, KEY_DOWN);
     }
 }
 
 void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
 {
-    if (true == VirtualMouseButtonMap.contains(virtualKey)) {
+    if (VirtualMouseButtonMap.contains(virtualKey)) {
         V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(virtualKey);
         sendMouseClick(vmousecode, KEY_UP);
     }
-    else {
-        V_KEYCODE map_vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(virtualKey);
+    else if (VirtualKeyCodeMap.contains(virtualKey)) {
+        V_KEYCODE map_vkeycode = VirtualKeyCodeMap.value(virtualKey);
         sendKeyboardInput(map_vkeycode, KEY_UP);
     }
 }
@@ -1120,7 +1135,7 @@ void QKeyMapper_Worker::ViGEmClient_Free()
 
 void QKeyMapper_Worker::updateViGEmBusStatus()
 {
-    if (m_isWorkerDestructing) {
+    if (s_isWorkerDestructing) {
         return;
     }
     emit QKeyMapper::getInstance()->updateViGEmBusStatus_Signal();
@@ -1128,7 +1143,7 @@ void QKeyMapper_Worker::updateViGEmBusStatus()
 
 void QKeyMapper_Worker::updateLockStatus()
 {
-    if (m_isWorkerDestructing) {
+    if (s_isWorkerDestructing) {
         return;
     }
     emit QKeyMapper::getInstance()->updateLockStatus_Signal();
@@ -2577,12 +2592,14 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
             /* KEY_UP == keyupdown */
             else {
-                int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
-                if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
-#endif
-                    returnFlag = true;
+                if (s_forceSendVirtualKey != true) {
+                    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+                    if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
+    #ifdef DEBUG_LOGOUT_ON
+                        qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+    #endif
+                        returnFlag = true;
+                    }
                 }
 
                 pressedVirtualKeysList.removeAll(keycodeString);

@@ -254,7 +254,7 @@ bool QHotkeyPrivate::removeShortcut(QHotkey *hotkey)
 	if (last_activated_shortcut != QHotkey::NativeShortcut()) {
 		if (hotkey->currentNativeShortcut() == last_activated_shortcut) {
 			QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::released);
-			signal.invoke(hotkey, Qt::DirectConnection , Q_ARG(QString, hotkey->shortcut().toString()));
+			signal.invoke(hotkey, Qt::DirectConnection , Q_ARG(QString, hotkey->shortcut().toString()), Q_ARG(Qt::KeyboardModifiers, hotkey->modifiers()));
 			last_activated_shortcut = QHotkey::NativeShortcut();
 		}
 	}
@@ -280,12 +280,12 @@ void QHotkeyPrivate::activateShortcut(QHotkey::NativeShortcut shortcut)
 	if (last_activated_shortcut != QHotkey::NativeShortcut()) {
 		QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::released);
 		for(QHotkey *hkey : shortcuts.values(last_activated_shortcut))
-			signal.invoke(hkey, Qt::DirectConnection, Q_ARG(QString, hkey->shortcut().toString()));
+			signal.invoke(hkey, Qt::DirectConnection, Q_ARG(QString, hkey->shortcut().toString()), Q_ARG(Qt::KeyboardModifiers, hkey->modifiers()));
 	}
 
 	QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::activated);
 	for(QHotkey *hkey : shortcuts.values(shortcut)) {
-		signal.invoke(hkey, Qt::QueuedConnection, Q_ARG(QString, hkey->shortcut().toString()));
+		signal.invoke(hkey, Qt::QueuedConnection, Q_ARG(QString, hkey->shortcut().toString()), Q_ARG(Qt::KeyboardModifiers, hkey->modifiers()));
 	}
 
 	last_activated_shortcut = shortcut;
@@ -295,7 +295,7 @@ void QHotkeyPrivate::releaseShortcut(QHotkey::NativeShortcut shortcut)
 {
 	QMetaMethod signal = QMetaMethod::fromSignal(&QHotkey::released);
 	for(QHotkey *hkey : shortcuts.values(shortcut))
-		signal.invoke(hkey, Qt::QueuedConnection, Q_ARG(QString, hkey->shortcut().toString()));
+		signal.invoke(hkey, Qt::QueuedConnection, Q_ARG(QString, hkey->shortcut().toString()), Q_ARG(Qt::KeyboardModifiers, hkey->modifiers()));
 
 	if (last_activated_shortcut == shortcut) {
 		last_activated_shortcut = QHotkey::NativeShortcut();

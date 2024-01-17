@@ -208,13 +208,13 @@ public slots:
 
     void updateShortcutsMap(void);
     void freeShortcuts(void);
-    void HotKeyForMappingActivated(const QString &keyseqstr);
-    void HotKeyForMappingReleased(const QString &keyseqstr);
+    void HotKeyForMappingActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
+    void HotKeyForMappingReleased(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
 private slots:
-    void HotKeyActivated(const QString &keyseqstr);
+    void HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
-    void HotKeyStartStopActivated(const QString &keyseqstr);
+    void HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
     void onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence);
 

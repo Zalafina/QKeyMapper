@@ -1580,9 +1580,10 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
     }
 }
 
-void QKeyMapper::HotKeyActivated(const QString &keyseqstr)
+void QKeyMapper::HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers)
 {
     Q_UNUSED(keyseqstr);
+    Q_UNUSED(modifiers);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[HotKeyActivated] isHidden =" << isHidden();
 #endif
@@ -1596,9 +1597,10 @@ void QKeyMapper::HotKeyActivated(const QString &keyseqstr)
     }
 }
 
-void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr)
+void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers)
 {
     Q_UNUSED(keyseqstr);
+    Q_UNUSED(modifiers);
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyMapStatus =" << keymapstatusEnum.valueToKey(m_KeyMapStatus);
@@ -4471,21 +4473,37 @@ void QKeyMapper::freeShortcuts()
 #endif
 }
 
-void QKeyMapper::HotKeyForMappingActivated(const QString &keyseqstr)
+void QKeyMapper::HotKeyForMappingActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyForMappingActivated] Shortcut Activated [" << keyseqstr << "]";
+    qDebug() << "[HotKeyForMappingActivated] Shortcut Activated [" << keyseqstr << "], KeyboardModifiers[" << modifiers << "]";
 #endif
+
+    Q_UNUSED(modifiers);
+
+    if (modifiers & Qt::ShiftModifier) {
+        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("Shift", KEY_UP);
+    }
+    if (modifiers & Qt::ControlModifier) {
+        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("Ctrl", KEY_UP);
+    }
+    if (modifiers & Qt::AltModifier) {
+        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("Alt", KEY_UP);
+    }
+    if (modifiers & Qt::MetaModifier) {
+        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("L-Win", KEY_UP);
+    }
 
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_DOWN);
 }
 
-void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr)
+void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyForMappingActivated] Shortcut Released [" << keyseqstr << "]";
+    qDebug() << "[HotKeyForMappingActivated] Shortcut Released [" << keyseqstr << "], KeyboardModifiers[" << modifiers << "]";
 #endif
 
+    Q_UNUSED(modifiers);
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_UP);
 }
 
