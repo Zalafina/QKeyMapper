@@ -4481,17 +4481,35 @@ void QKeyMapper::HotKeyForMappingActivated(const QString &keyseqstr, const Qt::K
 
     Q_UNUSED(modifiers);
 
-    if (modifiers & Qt::ShiftModifier) {
-        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("Shift", KEY_UP);
+    QStringList pressedKeyboardModifiersList;
+    if ((GetKeyState(VK_LSHIFT) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Shift");
     }
-    if (modifiers & Qt::ControlModifier) {
-        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("Ctrl", KEY_UP);
+    if ((GetKeyState(VK_RSHIFT) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Shift");
     }
-    if (modifiers & Qt::AltModifier) {
-        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("Alt", KEY_UP);
+    if ((GetKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Ctrl");
     }
-    if (modifiers & Qt::MetaModifier) {
-        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal("L-Win", KEY_UP);
+    if ((GetKeyState(VK_RCONTROL) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Ctrl");
+    }
+    if ((GetKeyState(VK_LMENU) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Alt");
+    }
+    if ((GetKeyState(VK_RMENU) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Alt");
+    }
+    if ((GetKeyState(VK_LWIN) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Win");
+    }
+    if ((GetKeyState(VK_RWIN) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Win");
+    }
+
+    for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
+        emit QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey_Signal(modifierstr, KEY_UP);
+
     }
 
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_DOWN);
