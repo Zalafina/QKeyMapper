@@ -34,7 +34,9 @@ class QKeyMapper;
 #define SEPARATOR_WAITTIME      ("⏱")
 #define SEPARATOR_TITLESETTING  ("|")
 
-#define PREFIX_SHORTCUT     ("★")
+#define PREFIX_SHORTCUT         ("★")
+
+#define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
 
 #define SEND_INPUTS_MAX     (30)
 #define KEY_SEQUENCE_MAX    (8)
@@ -269,9 +271,11 @@ public slots:
 public:
     void sendBurstKeyDown(const QString &burstKey);
     void sendBurstKeyUp(const QString &burstKey, bool stop);
+#if 0
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
     void sendSpecialVirtualKeyUp(const QString &virtualKey);
+#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
 public:
@@ -315,7 +319,9 @@ signals:
 #endif
     void send_WINplusD_Signal(void);
     void HotKeyTrigger_Signal(const QString &keycodeString, int keyupdown);
+#if 0
     void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);
+#endif
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -327,6 +333,7 @@ public slots:
     void setWorkerJoystickCaptureStart(HWND hWnd);
     void setWorkerJoystickCaptureStop(void);
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
+    void releaseKeyboardModifiers(void);
 
 #ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);

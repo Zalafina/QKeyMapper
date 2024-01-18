@@ -71,7 +71,6 @@ static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
 static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
 static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
 
-
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
@@ -189,8 +188,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::sendInputKeys_Signal, this, &QKeyMapper_Worker::onSendInputKeys, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
 #if 0
+    QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -643,9 +642,14 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             }
 #endif
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-                if (false == pressedVirtualKeysList.contains(key)) {
-                    qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
-                    continue;
+                if (original_key == KEYBOARD_MODIFIERS) {
+                    s_forceSendVirtualKey = true;
+                }
+                else {
+                    if (false == pressedVirtualKeysList.contains(key)) {
+                        qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                        continue;
+                    }
                 }
 
                 INPUT input = { 0 };
@@ -671,6 +675,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
                 SendInput(1, &input, sizeof(INPUT));
+
+                s_forceSendVirtualKey = false;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -890,16 +896,15 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
     }
 }
 
+#if 0
 void QKeyMapper_Worker::sendSpecialVirtualKey(const QString &keycodeString, int keyupdown)
 {
-    s_forceSendVirtualKey = true;
     if (KEY_DOWN == keyupdown){
         sendSpecialVirtualKeyDown(keycodeString);
     }
     else {
         sendSpecialVirtualKeyUp(keycodeString);
     }
-    s_forceSendVirtualKey = false;
 }
 
 void QKeyMapper_Worker::sendSpecialVirtualKeyDown(const QString &virtualKey)
@@ -925,6 +930,7 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
         sendKeyboardInput(map_vkeycode, KEY_UP);
     }
 }
+#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper_Worker::ViGEmClient_Alloc()
@@ -1822,12 +1828,48 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
             QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
             QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
             if (KEY_DOWN == keyupdown){
+                releaseKeyboardModifiers();
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             }
             else { /* KEY_UP == keyupdown */
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
             }
         }
+    }
+}
+
+void QKeyMapper_Worker::releaseKeyboardModifiers()
+{
+    QStringList pressedKeyboardModifiersList;
+    if ((GetKeyState(VK_LSHIFT) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Shift");
+    }
+    if ((GetKeyState(VK_RSHIFT) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Shift");
+    }
+    if ((GetKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Ctrl");
+    }
+    if ((GetKeyState(VK_RCONTROL) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Ctrl");
+    }
+    if ((GetKeyState(VK_LMENU) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Alt");
+    }
+    if ((GetKeyState(VK_RMENU) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Alt");
+    }
+    if ((GetKeyState(VK_LWIN) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("L-Win");
+    }
+    if ((GetKeyState(VK_RWIN) & 0x8000) != 0) {
+        pressedKeyboardModifiersList.append("R-Win");
+    }
+
+    for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
+        QStringList mappingKeyList = QStringList() << modifierstr;
+        QString original_key = QString(KEYBOARD_MODIFIERS);
+        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 }
 
