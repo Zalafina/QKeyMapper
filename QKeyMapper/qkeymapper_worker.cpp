@@ -155,6 +155,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #ifdef VIGEM_CLIENT_SUPPORT
     m_Mouse2vJoyResetTimer(this),
 #endif
+    skipReleaseModifiersKeysList(),
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap(),
     m_JoystickButtonMap(),
@@ -209,6 +210,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
     initJoystickKeyMap();
+    initSkipReleaseModifiersKeysList();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     initViGEmKeyMap();
@@ -1828,7 +1830,18 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
             QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
             QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
             if (KEY_DOWN == keyupdown){
-                releaseKeyboardModifiers();
+                bool skipReleaseModifiers = false;
+
+                if (mappingKeyList.size() == 1) {
+                    QString mappingkey = mappingKeyList.constFirst();
+                    if (skipReleaseModifiersKeysList.contains(mappingkey)) {
+                        skipReleaseModifiers = true;
+                    }
+                }
+
+                if (false == skipReleaseModifiers) {
+                    releaseKeyboardModifiers();
+                }
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             }
             else { /* KEY_UP == keyupdown */
@@ -3415,6 +3428,15 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_L_DOWN,  JOYSTICK_DPAD_L_DOWN            );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_UP,    JOYSTICK_DPAD_R_UP              );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
+}
+
+void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
+{
+    skipReleaseModifiersKeysList = QStringList() \
+        << "Vol Mute"
+        << "Vol Down"
+        << "Vol Up"
+        ;
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT

@@ -375,6 +375,7 @@ private:
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
     void initJoystickKeyMap(void);
+    void initSkipReleaseModifiersKeysList(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
     bool isCursorAtBottomRight(void);
@@ -455,6 +456,7 @@ private:
 #ifdef VIGEM_CLIENT_SUPPORT
     QTimer m_Mouse2vJoyResetTimer;
 #endif
+    QStringList skipReleaseModifiersKeysList;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
