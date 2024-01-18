@@ -362,6 +362,8 @@ public:
 
     static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
 
+    static QString getWindowsKeyName(uint virtualKeyCode);
+
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
 #ifdef DINPUT_TEST

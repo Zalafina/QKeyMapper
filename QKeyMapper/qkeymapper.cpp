@@ -3977,6 +3977,17 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Media Prev"
             << "Media Stop"
             << "Media PlayPause"
+            << "Launch Mail"
+            << "Select Media"
+            << "Launch App1"
+            << "Launch App2"
+            << "Browser Back"
+            << "Browser Forward"
+            << "Browser Refresh"
+            << "Browser Stop"
+            << "Browser Search"
+            << "Browser Favorites"
+            << "Browser Home"
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_STR_MOUSE2LS
             << VJOY_STR_MOUSE2RS

@@ -2959,6 +2959,36 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
     return returnFlag;
 }
 
+QString QKeyMapper_Worker::getWindowsKeyName(uint virtualKeyCode)
+{
+    QString keynameStr;
+    LONG lParam = MapVirtualKey(virtualKeyCode, MAPVK_VK_TO_VSC) << 16;
+    // Set the extended key flag for certain keys
+    if (virtualKeyCode == VK_RCONTROL || virtualKeyCode == VK_RMENU ||
+        virtualKeyCode == VK_LWIN || virtualKeyCode == VK_RWIN ||
+        virtualKeyCode == VK_VOLUME_MUTE || virtualKeyCode == VK_VOLUME_DOWN ||
+        virtualKeyCode == VK_VOLUME_UP || virtualKeyCode == VK_MEDIA_NEXT_TRACK ||
+        virtualKeyCode == VK_MEDIA_PREV_TRACK || virtualKeyCode == VK_MEDIA_STOP ||
+        virtualKeyCode == VK_MEDIA_PLAY_PAUSE || virtualKeyCode == VK_BROWSER_BACK ||
+        virtualKeyCode == VK_BROWSER_FORWARD || virtualKeyCode == VK_BROWSER_REFRESH ||
+        virtualKeyCode == VK_BROWSER_STOP || virtualKeyCode == VK_BROWSER_SEARCH ||
+        virtualKeyCode == VK_BROWSER_FAVORITES || virtualKeyCode == VK_BROWSER_HOME ||
+        virtualKeyCode == VK_LAUNCH_MAIL || virtualKeyCode == VK_LAUNCH_MEDIA_SELECT) {
+        lParam |= 1 << 24;
+    }
+    TCHAR keyName[50];
+    memset(keyName, 0x00, sizeof(keyName));
+    if (GetKeyNameText(lParam, keyName, sizeof(keyName) / sizeof(TCHAR)) > 0) {
+        keynameStr = QString::fromWCharArray(keyName);
+    } else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[getWindowsKeyName] Failed to get keyname[0x%02X]!", virtualKeyCode);
+#endif
+    }
+
+    return keynameStr;
+}
+
 bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName)
 {
     Q_UNUSED(joystickName);
@@ -3257,13 +3287,26 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
 #endif
 
     // MultiMedia keys
-    VirtualKeyCodeMap.insert        ("Vol Mute",            V_KEYCODE(VK_VOLUME_MUTE,       EXTENED_FLAG_TRUE));   // 0xAD
-    VirtualKeyCodeMap.insert        ("Vol Down",            V_KEYCODE(VK_VOLUME_DOWN,       EXTENED_FLAG_TRUE));   // 0xAE
-    VirtualKeyCodeMap.insert        ("Vol Up",              V_KEYCODE(VK_VOLUME_UP,         EXTENED_FLAG_TRUE));   // 0xAF
-    VirtualKeyCodeMap.insert        ("Media Next",          V_KEYCODE(VK_MEDIA_NEXT_TRACK,  EXTENED_FLAG_TRUE));   // 0xB0
-    VirtualKeyCodeMap.insert        ("Media Prev",          V_KEYCODE(VK_MEDIA_PREV_TRACK,  EXTENED_FLAG_TRUE));   // 0xB1
-    VirtualKeyCodeMap.insert        ("Media Stop",          V_KEYCODE(VK_MEDIA_STOP,        EXTENED_FLAG_TRUE));   // 0xB2
-    VirtualKeyCodeMap.insert        ("Media PlayPause",     V_KEYCODE(VK_MEDIA_PLAY_PAUSE,  EXTENED_FLAG_TRUE));   // 0xB3
+    VirtualKeyCodeMap.insert        ("Vol Mute",            V_KEYCODE(VK_VOLUME_MUTE,           EXTENED_FLAG_TRUE));   // 0xAD
+    VirtualKeyCodeMap.insert        ("Vol Down",            V_KEYCODE(VK_VOLUME_DOWN,           EXTENED_FLAG_TRUE));   // 0xAE
+    VirtualKeyCodeMap.insert        ("Vol Up",              V_KEYCODE(VK_VOLUME_UP,             EXTENED_FLAG_TRUE));   // 0xAF
+    VirtualKeyCodeMap.insert        ("Media Next",          V_KEYCODE(VK_MEDIA_NEXT_TRACK,      EXTENED_FLAG_TRUE));   // 0xB0
+    VirtualKeyCodeMap.insert        ("Media Prev",          V_KEYCODE(VK_MEDIA_PREV_TRACK,      EXTENED_FLAG_TRUE));   // 0xB1
+    VirtualKeyCodeMap.insert        ("Media Stop",          V_KEYCODE(VK_MEDIA_STOP,            EXTENED_FLAG_TRUE));   // 0xB2
+    VirtualKeyCodeMap.insert        ("Media PlayPause",     V_KEYCODE(VK_MEDIA_PLAY_PAUSE,      EXTENED_FLAG_TRUE));   // 0xB3
+    VirtualKeyCodeMap.insert        ("Launch Mail",         V_KEYCODE(VK_LAUNCH_MAIL,           EXTENED_FLAG_TRUE));   // 0xB4
+    VirtualKeyCodeMap.insert        ("Select Media",        V_KEYCODE(VK_LAUNCH_MEDIA_SELECT,   EXTENED_FLAG_TRUE));   // 0xB5
+    VirtualKeyCodeMap.insert        ("Launch App1",         V_KEYCODE(VK_LAUNCH_APP1,           EXTENED_FLAG_TRUE));   // 0xB6
+    VirtualKeyCodeMap.insert        ("Launch App2",         V_KEYCODE(VK_LAUNCH_APP2,           EXTENED_FLAG_TRUE));   // 0xB7
+
+    // Browser keys
+    VirtualKeyCodeMap.insert        ("Browser Back",        V_KEYCODE(VK_BROWSER_BACK,          EXTENED_FLAG_TRUE));   // 0xA6
+    VirtualKeyCodeMap.insert        ("Browser Forward",     V_KEYCODE(VK_BROWSER_FORWARD,       EXTENED_FLAG_TRUE));   // 0xA7
+    VirtualKeyCodeMap.insert        ("Browser Refresh",     V_KEYCODE(VK_BROWSER_REFRESH,       EXTENED_FLAG_TRUE));   // 0xA8
+    VirtualKeyCodeMap.insert        ("Browser Stop",        V_KEYCODE(VK_BROWSER_STOP,          EXTENED_FLAG_TRUE));   // 0xA9
+    VirtualKeyCodeMap.insert        ("Browser Search",      V_KEYCODE(VK_BROWSER_SEARCH,        EXTENED_FLAG_TRUE));   // 0xAA
+    VirtualKeyCodeMap.insert        ("Browser Favorites",   V_KEYCODE(VK_BROWSER_FAVORITES,     EXTENED_FLAG_TRUE));   // 0xAB
+    VirtualKeyCodeMap.insert        ("Browser Home",        V_KEYCODE(VK_BROWSER_HOME,          EXTENED_FLAG_TRUE));   // 0xAC
 }
 
 void QKeyMapper_Worker::initVirtualMouseButtonMap()
