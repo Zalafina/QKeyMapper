@@ -560,7 +560,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         QStringList mappingKeys = inputKeys.constFirst().split(SEPARATOR_PLUS);
         keycount = mappingKeys.size();
 
-        if (keycount >= SEND_INPUTS_MAX) {
+        if (keycount > MAPPING_KEYS_MAX) {
 #ifdef DEBUG_LOGOUT_ON
             qWarning("sendInputKeys(): Too many keys(%d) to mapping!!!", keycount);
 #endif
@@ -569,7 +569,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
         pressedMappingKeysMap.remove(original_key);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+        qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
 
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
@@ -701,7 +701,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             QStringList mappingKeys = inputKeys.constFirst().split(SEPARATOR_PLUS);
             keycount = mappingKeys.size();
 
-            if (keycount >= SEND_INPUTS_MAX) {
+            if (keycount > MAPPING_KEYS_MAX) {
 #ifdef DEBUG_LOGOUT_ON
                 qWarning("sendInputKeys(): Too many keys(%d) to mapping!!!", keycount);
 #endif
@@ -822,23 +822,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         }
         /* key_sequence_count > 1 */
         else {
-            keycount = makeKeySequenceInputarray(inputKeys, inputs);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[sendInputKeys] " << "Key Sequence [" << inputKeys << "]," << "keycount =" << keycount;
-#endif
+            sendKeySequenceList(inputKeys, original_key);
         }
     }
-
-#if 0
-    if (keycount > 0) {
-        UINT uSent = SendInput(keycount, inputs, sizeof(INPUT));
-        if (uSent != keycount) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("sendInputKeys(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
-#endif
-        }
-    }
-#endif
 }
 
 void QKeyMapper_Worker::send_WINplusD()
@@ -3598,6 +3584,7 @@ bool QKeyMapper_Worker::isPressedMappingKeysContains(QString &key)
     return result;
 }
 
+#if 0
 int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array)
 {
     int index = 0;
@@ -3709,6 +3696,21 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
     }
 
     return keycount;
+}
+#endif
+
+void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &original_key)
+{
+    int index = 1;
+    for (const QString &keyseq : qAsConst(keyseq_list)){
+        QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + QString::number(index);
+        QStringList mappingKeyList = QStringList() << keyseq;
+
+        emit sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_NORMAL);
+        emit sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_NORMAL);
+
+        index += 1;
+    }
 }
 
 void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)

@@ -37,9 +37,11 @@ class QKeyMapper;
 #define PREFIX_SHORTCUT         ("★")
 
 #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
+#define KEYSEQUENCE_STR         ("KeySequence")
 
-#define SEND_INPUTS_MAX     (30)
-#define KEY_SEQUENCE_MAX    (8)
+#define MAPPING_KEYS_MAX        (30)
+#define SEND_INPUTS_MAX         (50)
+#define KEY_SEQUENCE_MAX        (10)
 
 typedef struct MAP_KEYDATA
 {
@@ -384,7 +386,10 @@ private:
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
 public:
+#if 0
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
+#endif
+    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key);
 
 public:
     static bool s_isWorkerDestructing;
