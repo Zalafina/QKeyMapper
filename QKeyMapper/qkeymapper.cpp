@@ -4556,7 +4556,7 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 
 void QKeyMapper::on_refreshButton_clicked()
 {
-#ifdef DEBUG_LOGOUT_ON
+#ifndef DEBUG_LOGOUT_ON
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
     refreshProcessInfoTable();
