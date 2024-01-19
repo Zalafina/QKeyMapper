@@ -6,6 +6,8 @@ static const uint CYCLE_CHECK_TIMEOUT = 300U;
 static const uint CYCLE_CHECK_LOOPCOUNT_MAX = 100000U;
 static const uint CYCLE_CHECK_LOOPCOUNT_RESET = 500U;
 
+static const uint CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 2000U;
+
 static const uint GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
 
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
@@ -232,6 +234,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui(new Ui::QKeyMapper),
     m_KeyMapStatus(KEYMAP_IDLE),
     m_CycleCheckTimer(this),
+    m_ProcessInfoTableRefreshTimer(this),
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
 #ifdef USE_SAOFONT
@@ -458,6 +461,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
+    QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
     QObject::connect(ui->keymapdataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
 
     QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
@@ -475,6 +479,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
+#ifndef DEBUG_LOGOUT_ON
+    m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
+#endif
 
 //    if (false == loadresult){
 //        QMessageBox::warning(this, tr("QKeyMapper"), tr("Load invalid keymapdata from ini file.\nReset to default values."));
@@ -781,6 +788,13 @@ void QKeyMapper::cycleCheckProcessProc(void)
     s_CycleCheckLoopCount += 1;
     if (s_CycleCheckLoopCount > CYCLE_CHECK_LOOPCOUNT_MAX) {
         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+    }
+}
+
+void QKeyMapper::cycleRefreshProcessInfoTableProc()
+{
+    if (false == isHidden()){
+        refreshProcessInfoTable();
     }
 }
 
@@ -3671,6 +3685,9 @@ void QKeyMapper::initProcessInfoTable(void)
 
 void QKeyMapper::refreshProcessInfoTable(void)
 {
+    ui->processinfoTable->clearContents();
+    ui->processinfoTable->setRowCount(0);
+
     static_ProcessInfoList.clear();
 #if 1
     EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
@@ -4507,8 +4524,6 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 
 void QKeyMapper::on_refreshButton_clicked()
 {
-    ui->processinfoTable->clearContents();
-    ui->processinfoTable->setRowCount(0);
     refreshProcessInfoTable();
 }
 

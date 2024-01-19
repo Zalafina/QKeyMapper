@@ -150,9 +150,12 @@ public:
     };
     Q_ENUM(MappingStartMode)
 
-    Q_INVOKABLE void WindowStateChangedProc(void);
-    Q_INVOKABLE void cycleCheckProcessProc(void);
+public slots:
+    void WindowStateChangedProc(void);
+    void cycleCheckProcessProc(void);
+    void cycleRefreshProcessInfoTableProc(void);
 
+public:
     void setKeyHook(HWND hWnd);
     void setKeyUnHook(void);
 
@@ -338,6 +341,7 @@ private:
     Ui::QKeyMapper *ui;
     quint8 m_KeyMapStatus;
     QTimer m_CycleCheckTimer;
+    QTimer m_ProcessInfoTableRefreshTimer;
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
 #ifdef USE_SAOFONT
