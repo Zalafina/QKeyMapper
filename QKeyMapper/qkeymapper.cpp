@@ -3685,6 +3685,12 @@ void QKeyMapper::initProcessInfoTable(void)
 
 void QKeyMapper::refreshProcessInfoTable(void)
 {
+    bool isselected = false;
+    QList<QTableWidgetItem*> items = ui->processinfoTable->selectedItems();
+    if (!items.empty()) {
+        selectedPID = items.at(PROCESS_PID_COLUMN)->text(); // PID是第二列
+    }
+
     ui->processinfoTable->clearContents();
     ui->processinfoTable->setRowCount(0);
 
@@ -3703,6 +3709,21 @@ void QKeyMapper::refreshProcessInfoTable(void)
     }
 
     ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
+
+    if (!selectedPID.isEmpty()) {
+        int reselectrow = -1;
+        for (int i = 0; i < ui->processinfoTable->rowCount(); ++i) {
+            if (ui->processinfoTable->item(i, PROCESS_PID_COLUMN)->text() == selectedPID) {
+                reselectrow = i;
+                break;
+            }
+        }
+
+        if (reselectrow != -1) {
+            QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, PROCESSINFO_TABLE_COLUMN_COUNT - 1);
+            ui->processinfoTable->setRangeSelected(selection, true);
+        }
+    }
 }
 
 void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
@@ -4915,7 +4936,7 @@ void QKeyMapper::on_moveupButton_clicked()
 {
     int currentrowindex = -1;
     QList<QTableWidgetItem*> items = ui->keymapdataTable->selectedItems();
-    if (false == items.empty() && items.size() > 0) {
+    if (items.size() > 0) {
         QTableWidgetItem* selectedItem = items.at(0);
         currentrowindex = ui->keymapdataTable->row(selectedItem);
 #ifdef DEBUG_LOGOUT_ON
@@ -4957,7 +4978,7 @@ void QKeyMapper::on_movedownButton_clicked()
 {
     int currentrowindex = -1;
     QList<QTableWidgetItem*> items = ui->keymapdataTable->selectedItems();
-    if (false == items.empty() && items.size() > 0) {
+    if (items.size() > 0) {
         QTableWidgetItem* selectedItem = items.at(0);
         currentrowindex = ui->keymapdataTable->row(selectedItem);
 #ifdef DEBUG_LOGOUT_ON
