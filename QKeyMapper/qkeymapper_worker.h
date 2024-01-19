@@ -41,7 +41,7 @@ class QKeyMapper;
 
 #define MAPPING_KEYS_MAX        (30)
 #define SEND_INPUTS_MAX         (50)
-#define KEY_SEQUENCE_MAX        (10)
+#define KEY_SEQUENCE_MAX        (30)
 
 typedef struct MAP_KEYDATA
 {
