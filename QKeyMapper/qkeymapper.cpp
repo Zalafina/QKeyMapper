@@ -6,7 +6,7 @@ static const uint CYCLE_CHECK_TIMEOUT = 300U;
 static const uint CYCLE_CHECK_LOOPCOUNT_MAX = 100000U;
 static const uint CYCLE_CHECK_LOOPCOUNT_RESET = 500U;
 
-static const uint CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 2000U;
+static const uint CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 
 static const uint GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
 
@@ -3685,10 +3685,19 @@ void QKeyMapper::initProcessInfoTable(void)
 
 void QKeyMapper::refreshProcessInfoTable(void)
 {
-    bool isselected = false;
+    bool isSelected = false;
     QList<QTableWidgetItem*> items = ui->processinfoTable->selectedItems();
+    QString selectedProcess;
+    QString selectedPID;
+    QString selectedTitle;
     if (!items.empty()) {
-        selectedPID = items.at(PROCESS_PID_COLUMN)->text(); // PID是第二列
+        selectedProcess = items.at(PROCESS_NAME_COLUMN)->text();
+        selectedPID = items.at(PROCESS_PID_COLUMN)->text();
+        selectedTitle = items.at(PROCESS_TITLE_COLUMN)->text();
+        isSelected = true;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[refreshProcessInfoTable]" << "Selected[" << items.size() << "] -> " << selectedProcess << " | " << selectedPID << " | " << selectedTitle;
+#endif
     }
 
     ui->processinfoTable->clearContents();
@@ -3710,10 +3719,12 @@ void QKeyMapper::refreshProcessInfoTable(void)
 
     ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
 
-    if (!selectedPID.isEmpty()) {
+    if (isSelected) {
         int reselectrow = -1;
         for (int i = 0; i < ui->processinfoTable->rowCount(); ++i) {
-            if (ui->processinfoTable->item(i, PROCESS_PID_COLUMN)->text() == selectedPID) {
+            if (ui->processinfoTable->item(i, PROCESS_NAME_COLUMN)->text() == selectedProcess
+                && ui->processinfoTable->item(i, PROCESS_PID_COLUMN)->text() == selectedPID
+                && ui->processinfoTable->item(i, PROCESS_TITLE_COLUMN)->text() == selectedTitle) {
                 reselectrow = i;
                 break;
             }
@@ -4545,6 +4556,9 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 
 void QKeyMapper::on_refreshButton_clicked()
 {
+#ifdef DEBUG_LOGOUT_ON
+    m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
+#endif
     refreshProcessInfoTable();
 }
 
