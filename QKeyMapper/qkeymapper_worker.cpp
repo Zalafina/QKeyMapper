@@ -66,6 +66,7 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 
 static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
+static const int VJOY_KEYUP_WAITTIME = 20;
 #endif
 
 static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
@@ -519,21 +520,33 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     int waitTime = 0;
     m_sendInputStopFlag = false;
 
+    QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
+
     if (original_key == MOUSE_STR_WHEEL_UP || original_key == MOUSE_STR_WHEEL_DOWN) {
         if (KEY_UP == keyupdown) {
-            m_sendInputStopMutex.lock();
-            if (m_sendInputStopFlag) {
-                waitTime = 0;
-            }
-            else {
-                waitTime = MOUSE_WHEEL_KEYUP_WAITTIME;
-            }
-            if (waitTime > 0) {
-                m_sendInputStopCondition.wait(&m_sendInputStopMutex, waitTime);
-            }
-            m_sendInputStopMutex.unlock();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait start ->" << original_key;
+#endif
+            QThread::msleep(MOUSE_WHEEL_KEYUP_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait end ->" << original_key;
+#endif
         }
     }
+#ifdef VIGEM_CLIENT_SUPPORT
+    else if (original_key.contains(keySequenceStr)) {
+        QString keyseq = inputKeys.constFirst();
+        if (keyupdown == KEY_UP && keyseq.contains("vJoy-")) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[sendInputKeys] vJoy Key Up wait start ->" << keyseq;
+#endif
+            QThread::msleep(VJOY_KEYUP_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[sendInputKeys] vJoy Key Up wait end ->" << keyseq;
+#endif
+        }
+    }
+#endif
 
     int key_sequence_count = inputKeys.size();
     if (key_sequence_count <= 0) {
@@ -578,15 +591,17 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             waitTime = 0;
             if (key.contains(SEPARATOR_WAITTIME)) {
                 QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
-                waitTime = waitTimeKeyList.first().toInt();
                 key = waitTimeKeyList.last();
 
+#if 0
+                waitTime = waitTimeKeyList.first().toInt();
                 if (it + 1 == mappingKeys.crend()) {
                     waitTime = 0;
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] Last key of KEY_UP, do no need wait time";
 #endif
                 }
+#endif
             }
 
             if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
@@ -2804,16 +2819,16 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
                     if (wheel_up_found || wheel_down_found) {
                         if (wheel_up_found && zDelta > 0) {
-    #ifdef DEBUG_LOGOUT_ON
+#ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Up -> Send Wheel Up Mapping Keys";
-    #endif
+#endif
                             send_wheel_keys = true;
                             findindex = findWheelUpindex;
                         }
                         else if (wheel_down_found && zDelta < 0) {
-    #ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Down -> Send Wheel Up Mapping Keys";
-    #endif
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Down -> Send Wheel Down Mapping Keys";
+#endif
                             send_wheel_keys = true;
                             findindex = findWheelDownindex;
                         }
