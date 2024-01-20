@@ -340,6 +340,7 @@ private:
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
     quint8 m_KeyMapStatus;
+    QPoint m_LastWindowPosition;
     QTimer m_CycleCheckTimer;
     QTimer m_ProcessInfoTableRefreshTimer;
     MAP_PROCESSINFO m_MapProcessInfo;

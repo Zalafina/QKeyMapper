@@ -13,6 +13,8 @@ static const uint GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
 static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
 
+static const int INITIAL_WINDOW_POSITION = -1;
+
 static const int PROCESS_NAME_COLUMN = 0;
 static const int PROCESS_PID_COLUMN = 1;
 static const int PROCESS_TITLE_COLUMN = 2;
@@ -77,12 +79,17 @@ static const char *DISPLAYSWITCH_KEYSEQ         = "Ctrl+`";
 static const char *MAPPINGSWITCH_KEYSEQ_DEFAULT = "Ctrl+F6";
 static const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_SHORTCUT;
 
+/* General global settings >>> */
+static const char *LAST_WINDOWPOSITION = "LastWindowPosition";
 static const char *LANGUAGE_INDEX = "LanguageIndex";
 static const char *SETTINGSELECT = "SettingSelect";
 static const char *AUTO_STARTUP = "AutoStartup";
+static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 #ifdef VIGEM_CLIENT_SUPPORT
 static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
 #endif
+/* General global settings <<< */
+
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
 static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
 static const char *GROUPNAME_CUSTOMGLOBALSETTING = "CustomGlobalSetting ";
@@ -112,7 +119,6 @@ static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChe
 static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 static const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
-static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 
 static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
@@ -233,6 +239,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::QKeyMapper),
     m_KeyMapStatus(KEYMAP_IDLE),
+    m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
     m_CycleCheckTimer(this),
     m_ProcessInfoTableRefreshTimer(this),
     m_MapProcessInfo(),
@@ -1598,13 +1605,21 @@ void QKeyMapper::HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardMod
 {
     Q_UNUSED(keyseqstr);
     Q_UNUSED(modifiers);
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyActivated] isHidden =" << isHidden();
-#endif
+
     if (false == isHidden()){
+        m_LastWindowPosition = pos(); // Save the current position before hiding
         hide();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[HotKeyActivated] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
     }
     else{
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[HotKeyActivated] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+        if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
+            move(m_LastWindowPosition); // Restore the position before showing
+        }
         showNormal();
         activateWindow();
         raise();
@@ -2102,6 +2117,9 @@ void QKeyMapper::saveKeyMapSetting(void)
         int languageIndex = ui->languageComboBox->currentIndex();
         bool saveGlobalSetting = false;
 
+        m_LastWindowPosition = pos();
+        settingFile.setValue(LAST_WINDOWPOSITION, m_LastWindowPosition);
+
         if (LANGUAGE_ENGLISH == languageIndex) {
             settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_ENGLISH);
         }
@@ -2357,75 +2375,81 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     settingFile.setIniCodec("UTF-8");
 #endif
 
-    if (GROUPNAME_GLOBALSETTING == settingtext) {
-        loadGlobalSetting = true;
-    }
+    if (settingtext.isEmpty()) {
+        if (true == settingFile.contains(LAST_WINDOWPOSITION)){
+            m_LastWindowPosition = settingFile.value(LAST_WINDOWPOSITION, QPoint()).toPoint();
+            move(m_LastWindowPosition);
+        }
 
-    if (true == settingFile.contains(LANGUAGE_INDEX)){
-        int languageIndex = settingFile.value(LANGUAGE_INDEX).toInt();
-        if (languageIndex >= 0 && languageIndex < ui->languageComboBox->count()) {
-            ui->languageComboBox->setCurrentIndex(languageIndex);
+        if (true == settingFile.contains(LANGUAGE_INDEX)){
+            int languageIndex = settingFile.value(LANGUAGE_INDEX).toInt();
+            if (languageIndex >= 0 && languageIndex < ui->languageComboBox->count()) {
+                ui->languageComboBox->setCurrentIndex(languageIndex);
+            }
+            else {
+                ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
+            }
         }
         else {
             ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
         }
-    }
-    else {
-        ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
-    }
 
-    QString loadedwindowswitchKeySeqStr;
-    if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
-        loadedwindowswitchKeySeqStr = settingFile.value(WINDOWSWITCH_KEYSEQ).toString();
-        if (loadedwindowswitchKeySeqStr.isEmpty()) {
+        QString loadedwindowswitchKeySeqStr;
+        if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
+            loadedwindowswitchKeySeqStr = settingFile.value(WINDOWSWITCH_KEYSEQ).toString();
+            if (loadedwindowswitchKeySeqStr.isEmpty()) {
+                loadedwindowswitchKeySeqStr = m_windowswitchKeySeqEdit->defaultKeySequence();
+            }
+        }
+        else {
             loadedwindowswitchKeySeqStr = m_windowswitchKeySeqEdit->defaultKeySequence();
         }
-    }
-    else {
-        loadedwindowswitchKeySeqStr = m_windowswitchKeySeqEdit->defaultKeySequence();
-    }
-    m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(loadedwindowswitchKeySeqStr));
-    updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+        m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(loadedwindowswitchKeySeqStr));
+        updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
 
-    if (true == settingFile.contains(AUTO_STARTUP)){
-        bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
-        if (true == autostartupChecked) {
-            ui->autoStartupCheckBox->setChecked(true);
+        if (true == settingFile.contains(AUTO_STARTUP)){
+            bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
+            if (true == autostartupChecked) {
+                ui->autoStartupCheckBox->setChecked(true);
+            }
+            else {
+                ui->autoStartupCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Auto Startup Checkbox ->" << autostartupChecked;
+#endif
         }
         else {
             ui->autoStartupCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains AutoStartup, AutoStartup set to Unchecked.";
+#endif
         }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Auto Startup Checkbox ->" << autostartupChecked;
-#endif
-    }
-    else {
-        ui->autoStartupCheckBox->setChecked(false);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains AutoStartup, AutoStartup set to Unchecked.";
-#endif
-    }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    if (true == settingFile.contains(VIRTUALJOYSTICK_ENABLE)){
-        bool virtualjoystickenableChecked = settingFile.value(VIRTUALJOYSTICK_ENABLE).toBool();
-        if (true == virtualjoystickenableChecked) {
-            ui->enableVirtualJoystickCheckBox->setChecked(true);
+        if (true == settingFile.contains(VIRTUALJOYSTICK_ENABLE)){
+            bool virtualjoystickenableChecked = settingFile.value(VIRTUALJOYSTICK_ENABLE).toBool();
+            if (true == virtualjoystickenableChecked) {
+                ui->enableVirtualJoystickCheckBox->setChecked(true);
+            }
+            else {
+                ui->enableVirtualJoystickCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Virtual Joystick Enable Checkbox ->" << virtualjoystickenableChecked;
+#endif
         }
         else {
             ui->enableVirtualJoystickCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualJoystickEnable, VirtualJoystickEnable set to Unchecked.";
+#endif
         }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Virtual Joystick Enable Checkbox ->" << virtualjoystickenableChecked;
 #endif
     }
-    else {
-        ui->enableVirtualJoystickCheckBox->setChecked(false);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualJoystickEnable, VirtualJoystickEnable set to Unchecked.";
-#endif
+    else if (GROUPNAME_GLOBALSETTING == settingtext) {
+        loadGlobalSetting = true;
     }
-#endif
 
     QString settingSelectStr;
 
@@ -2861,8 +2885,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         else {
             m_MapProcessInfo = MAP_PROCESSINFO();
-            ui->iconLabel->clear();
         }
+        ui->iconLabel->clear();
 
         if (true == loadDefault) {
             setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
