@@ -8,6 +8,7 @@
 #include <QHotkey>
 #include <QThreadPool>
 #include <QWaitCondition>
+#include <QDeadlineTimer>
 #ifdef VIGEM_CLIENT_SUPPORT
 #include <QTimer>
 #endif
