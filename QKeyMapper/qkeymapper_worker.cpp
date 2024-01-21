@@ -488,8 +488,10 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
     qDebug() << "[onSendInputKeys] m_sendInputStopFlag set True Start";
 #endif
     m_sendInputStopMutex.lock();
-    m_sendInputStopFlag = true;
-    m_sendInputStopCondition.wakeAll();
+    if (keyupdown == KEY_DOWN) {
+        m_sendInputStopFlag = true;
+        m_sendInputStopCondition.wakeAll();
+    }
     m_sendInputStopMutex.unlock();
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onSendInputKeys] m_sendInputStopFlag set True Finished";
