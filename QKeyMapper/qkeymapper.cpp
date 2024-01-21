@@ -70,7 +70,6 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
-static const char *VERSION_INFO = "1.3.6";
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
@@ -293,11 +292,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initMappingSwitchKeySeqEdit();
     initOriginalKeySeqEdit();
 
-    QString title = windowTitle();
-    QString title_withversion = title + " " + VERSION_INFO;
-    setWindowTitle(title_withversion);
+    QString fileDescription = getExeFileDescription();
+    setWindowTitle(fileDescription);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "QKeyMapper() -> WindowTitle with Version:" << title_withversion;
+    qDebug() << "QKeyMapper() -> Set WindowTitle to FileDescription :" << fileDescription;
 #endif
 
 #ifdef USE_SAOFONT
@@ -838,6 +836,31 @@ void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windo
         qDebug().nospace().noquote() << "[setMapProcessInfo]"<< " Info Error: filename(" << filename << "), " << "windowtitle(" << windowtitle << ")";
 #endif
     }
+}
+
+QString QKeyMapper::getExeFileDescription()
+{
+    QString exeFilePath = QCoreApplication::applicationFilePath();
+    DWORD dummy;
+    DWORD size = GetFileVersionInfoSize((LPCWSTR)exeFilePath.utf16(), &dummy);
+    if (size == 0) {
+        return QString();
+    }
+
+    QByteArray data(size, 0);
+    if (!GetFileVersionInfo((LPCWSTR)exeFilePath.utf16(), 0, size, data.data())) {
+        return QString();
+    }
+
+    void *value = nullptr;
+    UINT length;
+    if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\FileDescription", &value, &length)) {
+        return QString();
+    }
+
+    QString retStr = QString::fromUtf16((ushort *)value, length);
+    retStr.remove(QChar('\0'));
+    return retStr;
 }
 
 #ifdef ADJUST_PRIVILEGES

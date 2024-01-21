@@ -92,6 +92,7 @@ LIBS        += User32.lib Psapi.lib dxguid.lib
 LIBS        += Gdi32.Lib
 LIBS        += WinMM.Lib
 LIBS        += dwmapi.lib
+LIBS        += Version.Lib
 LIBS        += SDL2.lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib

@@ -161,6 +161,8 @@ public:
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
+    QString getExeFileDescription(void);
+
 #ifdef ADJUST_PRIVILEGES
     static BOOL EnableDebugPrivilege(void);
     static BOOL AdjustPrivileges(void);
