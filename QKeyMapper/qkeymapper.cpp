@@ -4695,7 +4695,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriKeyShortcutText;
     }
 
-    if (currentOriKeyText.isEmpty() || (m_mapkeyComboBox->isEnabled() && currentMapKeyText.isEmpty())) {
+    if (currentOriKeyText.isEmpty() || (m_mapkeyComboBox->isEnabled() && currentMapKeyText.isEmpty() && ui->nextarrowCheckBox->isChecked() == false)) {
         return;
     }
 
@@ -4728,14 +4728,14 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
 #endif
+            int waitTime = ui->waitTimeSpinBox->value();
+            if (waitTime > 0) {
+                currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
+            }
             if (ui->nextarrowCheckBox->isChecked()) {
                 mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + currentMapKeyText;
             }
             else {
-                int waitTime = ui->waitTimeSpinBox->value();
-                if (waitTime > 0) {
-                    currentMapKeyText = QString::number(waitTime) + QString(SEPARATOR_WAITTIME) + currentMapKeyText;
-                }
                 mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + currentMapKeyText;
             }
 
@@ -4751,7 +4751,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else {
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0) {
-                    currentMapKeyText = QString::number(waitTime) + QString(SEPARATOR_WAITTIME) + currentMapKeyText;
+                    currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
             }
 

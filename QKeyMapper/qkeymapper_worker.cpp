@@ -590,13 +590,15 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
 
+#if 0
             waitTime = 0;
+#endif
             if (key.contains(SEPARATOR_WAITTIME)) {
                 QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
-                key = waitTimeKeyList.last();
+                key = waitTimeKeyList.first();
 
 #if 0
-                waitTime = waitTimeKeyList.first().toInt();
+                waitTime = waitTimeKeyList.last().toInt();
                 if (it + 1 == mappingKeys.crend()) {
                     waitTime = 0;
 #ifdef DEBUG_LOGOUT_ON
@@ -604,6 +606,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
                 }
 #endif
+            }
+
+            if (key.isEmpty()) {
+                continue;
             }
 
             if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
@@ -703,14 +709,17 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
             }
 
+#if 0
             m_sendInputStopMutex.lock();
             if (m_sendInputStopFlag) {
                 waitTime = 0;
             }
             if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
-                m_sendInputStopCondition.wait(&m_sendInputStopMutex, waitTime);
+                QDeadlineTimer deadline(waitTime, Qt::PreciseTimer);
+                m_sendInputStopCondition.wait(&m_sendInputStopMutex, deadline);
             }
             m_sendInputStopMutex.unlock();
+#endif
         }
     }
     else {
@@ -735,29 +744,16 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 waitTime = 0;
                 if (key.contains(SEPARATOR_WAITTIME)) {
                     QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
-                    waitTime = waitTimeKeyList.first().toInt();
-                    key = waitTimeKeyList.last();
-
-                    m_sendInputStopMutex.lock();
-                    if (m_sendInputStopFlag) {
-                        waitTime = 0;
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[sendInputKeys] m_sendInputStopFlag ->" << m_sendInputStopFlag << ", line:" << __LINE__;
-#endif
-                    }
-                    if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[sendInputKeys] StopConditionWait Start -> Time=" << waitTime << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
-#endif
-                        m_sendInputStopCondition.wait(&m_sendInputStopMutex, waitTime);
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[sendInputKeys] StopConditionWait Finished -> Time=" << waitTime << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
-#endif
-                    }
-                    m_sendInputStopMutex.unlock();
+                    waitTime = waitTimeKeyList.last().toInt();
+                    key = waitTimeKeyList.first();
                 }
 
-                if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+                if (key.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
+#endif
+                }
+                else if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
                     INPUT input = { 0 };
                     input.type = INPUT_MOUSE;
                     input.mi.dwExtraInfo = VIRTUAL_MOUSE_WHEEL;
@@ -835,6 +831,25 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
 #endif
                 }
+
+                m_sendInputStopMutex.lock();
+                if (m_sendInputStopFlag) {
+                    waitTime = 0;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[sendInputKeys] m_sendInputStopFlag ->" << m_sendInputStopFlag << ", line:" << __LINE__;
+#endif
+                }
+                if (MAPPING_WAITTIME_MIN < waitTime && waitTime <= MAPPING_WAITTIME_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[sendInputKeys] StopConditionWait Start -> Time=" << waitTime << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
+#endif
+                    QDeadlineTimer deadline(waitTime, Qt::PreciseTimer);
+                    m_sendInputStopCondition.wait(&m_sendInputStopMutex, deadline);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[sendInputKeys] StopConditionWait Finished -> Time=" << waitTime << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
+#endif
+                }
+                m_sendInputStopMutex.unlock();
             }
         }
         /* key_sequence_count > 1 */
