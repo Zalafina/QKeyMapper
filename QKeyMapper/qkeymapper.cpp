@@ -46,7 +46,7 @@ static const int TITLESETTING_INDEX_ANYTITLE = 0;
 static const int TITLESETTING_INDEX_MAX = 9;
 
 static const int MAPPING_WAITTIME_MIN = 0;
-static const int MAPPING_WAITTIME_MAX = 1000;
+static const int MAPPING_WAITTIME_MAX = 5000;
 
 static const int UI_SCALE_NORMAL = 0;
 static const int UI_SCALE_1K_PERCENT_100 = 1;
@@ -83,6 +83,7 @@ static const char *LAST_WINDOWPOSITION = "LastWindowPosition";
 static const char *LANGUAGE_INDEX = "LanguageIndex";
 static const char *SETTINGSELECT = "SettingSelect";
 static const char *AUTO_STARTUP = "AutoStartup";
+static const char *PLAY_SOUNDEFFECT = "PlaySoundEffect";
 static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 #ifdef VIGEM_CLIENT_SUPPORT
 static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
@@ -2432,6 +2433,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(loadedwindowswitchKeySeqStr));
         updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
 
+        if (true == settingFile.contains(PLAY_SOUNDEFFECT)){
+            bool soundeffectChecked = settingFile.value(PLAY_SOUNDEFFECT).toBool();
+            if (true == soundeffectChecked) {
+                ui->soundEffectCheckBox->setChecked(true);
+            }
+            else {
+                ui->soundEffectCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Sound Effect Checkbox ->" << soundeffectChecked;
+#endif
+        }
+        else {
+            ui->soundEffectCheckBox->setChecked(true);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
+#endif
+        }
+
         if (true == settingFile.contains(AUTO_STARTUP)){
             bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
             if (true == autostartupChecked) {
@@ -3466,6 +3486,10 @@ void QKeyMapper::extractSoundFiles()
 
 void QKeyMapper::playStartSound()
 {
+    if (!ui->soundEffectCheckBox->isChecked()) {
+        return;
+    }
+
     QFile soundFileStartLocal(SOUNDFILE_START);
 
     if (soundFileStartLocal.exists()){
@@ -3484,6 +3508,10 @@ void QKeyMapper::playStartSound()
 
 void QKeyMapper::playStopSound()
 {
+    if (!ui->soundEffectCheckBox->isChecked()) {
+        return;
+    }
+
     QFile soundFileStopLocal(SOUNDFILE_STOP);
 
     if (soundFileStopLocal.exists()){
@@ -5337,5 +5365,17 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[SoundEffect] Play Sound Effect state changed ->" << (Qt::CheckState)state;
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
+    if (Qt::Checked == state) {
+        settingFile.setValue(PLAY_SOUNDEFFECT , true);
+    }
+    else {
+        settingFile.setValue(PLAY_SOUNDEFFECT , false);
+    }
 }
 
