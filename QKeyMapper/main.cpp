@@ -68,6 +68,10 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 
 int main(int argc, char *argv[])
 {
+    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
+        qputenv("QT_ANGLE_PLATFORM", "d3d11");
+    }
+
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
 
     int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);

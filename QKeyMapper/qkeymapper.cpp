@@ -137,8 +137,8 @@ static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
 static const char *REFRESHBUTTON_CHINESE = "刷新";
-static const char *KEYMAPBUTTON_START_CHINESE = "开始按键映射";
-static const char *KEYMAPBUTTON_STOP_CHINESE = "停止按键映射";
+static const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
+static const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
 static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
 static const char *DELETEONEBUTTON_CHINESE = "删除单行";
 static const char *CLEARALLBUTTON_CHINESE = "全部清除";
@@ -182,8 +182,8 @@ static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
-static const char *KEYMAPBUTTON_START_ENGLISH = "KeyMappingStart";
-static const char *KEYMAPBUTTON_STOP_ENGLISH = "KeyMappingStop";
+static const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
+static const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
 static const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
 static const char *DELETEONEBUTTON_ENGLISH = "Delete One";
 static const char *CLEARALLBUTTON_ENGLISH = "Clear All";
