@@ -243,8 +243,6 @@ private slots:
 
     void on_savemaplistButton_clicked();
 
-    void on_refreshButton_clicked();
-
     void on_processinfoTable_doubleClicked(const QModelIndex &index);
 
     void on_addmapdataButton_clicked();
@@ -274,6 +272,8 @@ private slots:
     void on_installViGEmBusButton_clicked();
 
     void on_uninstallViGEmBusButton_clicked();
+
+    void on_soundEffectCheckBox_stateChanged(int state);
 
 private:
     void initHotKeySequence(void);

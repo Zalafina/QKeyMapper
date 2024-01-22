@@ -122,25 +122,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="refreshButton">
-   <property name="geometry">
-    <rect>
-     <x>100</x>
-     <y>495</y>
-     <width>160</width>
-     <height>40</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Refresh</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QLineEdit" name="nameLineEdit">
    <property name="geometry">
     <rect>
@@ -1178,8 +1159,8 @@
   <widget class="QCheckBox" name="autoStartupCheckBox">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>555</y>
+     <x>30</x>
+     <y>560</y>
      <width>151</width>
      <height>21</height>
     </rect>
@@ -1217,7 +1198,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>555</y>
+     <y>490</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1507,12 +1488,30 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QCheckBox" name="soundEffectCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>530</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Sound Effect</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
   <zorder>titleCheckBox</zorder>
-  <zorder>refreshButton</zorder>
   <zorder>nameLineEdit</zorder>
   <zorder>titleLineEdit</zorder>
   <zorder>keymapdataTable</zorder>
@@ -1554,6 +1553,7 @@
   <zorder>waitTime_msLabel</zorder>
   <zorder>orikeySeqLabel</zorder>
   <zorder>windowswitchkeyLabel</zorder>
+  <zorder>soundEffectCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

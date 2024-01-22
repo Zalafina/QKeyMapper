@@ -158,6 +158,7 @@ static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
+static const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
 static const char *WINDOWSWITCHKEYLABEL_CHINESE = "窗口显示切换键";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程";
@@ -202,6 +203,7 @@ static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
+static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
 static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowSwitchKey";
 static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
@@ -3143,7 +3145,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     QFont customFont(fontname);
 
     customFont.setPointSize(18);
-    ui->refreshButton->setFont(customFont);
+    // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3183,7 +3185,7 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(14);
     }
-    ui->refreshButton->setFont(customFont);
+    // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3239,6 +3241,7 @@ void QKeyMapper::setControlFontEnglish()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+    ui->soundEffectCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(10);
@@ -3259,7 +3262,7 @@ void QKeyMapper::setControlFontChinese()
     else {
         customFont.setPointSize(14);
     }
-    ui->refreshButton->setFont(customFont);
+    // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3315,6 +3318,7 @@ void QKeyMapper::setControlFontChinese()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+    ui->soundEffectCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -3344,6 +3348,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //ui->titleLineEdit->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
+    ui->soundEffectCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
@@ -3407,7 +3412,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mappingswitchkeyLabel->setEnabled(status);
     m_mappingswitchKeySeqEdit->setEnabled(status);
 
-    ui->refreshButton->setEnabled(status);
+    // ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
 
     ui->processinfoTable->setEnabled(status);
@@ -4330,7 +4335,7 @@ void QKeyMapper::setUILanguage_Chinese()
         ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
     }
 
-    ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
+    // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
     ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
@@ -4351,6 +4356,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
+    ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4383,7 +4389,7 @@ void QKeyMapper::setUILanguage_English()
         ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
     }
 
-    ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
+    // ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
@@ -4404,6 +4410,7 @@ void QKeyMapper::setUILanguage_English()
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
+    ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4599,14 +4606,6 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 
     Q_UNUSED(modifiers);
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_UP);
-}
-
-void QKeyMapper::on_refreshButton_clicked()
-{
-#ifndef DEBUG_LOGOUT_ON
-    m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
-#endif
-    refreshProcessInfoTable();
 }
 
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
@@ -5334,3 +5333,9 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     (void)uninstallViGEmBusDriver();
 #endif
 }
+
+void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+}
+
