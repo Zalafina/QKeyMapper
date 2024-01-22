@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 {
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
         qputenv("QT_OPENGL", "software");
+        qputenv("QT_ANGLE_PLATFORM", "d3d9");
     }
 
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
