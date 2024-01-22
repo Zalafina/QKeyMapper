@@ -256,7 +256,7 @@ public:
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
-    void sendMouseMove(int x, int y);
+    void sendMouseMove(int delta_x, int delta_y);
     void sendMouseWheel(int wheel_updown);
     void setMouseToScreenCenter(void);
     void setMouseToPoint(POINT point);
@@ -354,10 +354,11 @@ public slots:
 
 private:
     void joystickLTRTButtonProc(const QJoystickAxisEvent &e);
-    void joystickLSVerticalProc(const QJoystickAxisEvent &e);
     void joystickLSHorizontalProc(const QJoystickAxisEvent &e);
-    void joystickRSVerticalProc(const QJoystickAxisEvent &e);
+    void joystickLSVerticalProc(const QJoystickAxisEvent &e);
     void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
+    void joystickRSVerticalProc(const QJoystickAxisEvent &e);
+    void joystick2MouseMoveProc(const QJoystickAxisEvent &e);
 
 public:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
