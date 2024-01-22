@@ -2546,6 +2546,33 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e) {
     sendMouseMove(delta_x, delta_y);
 }
 
+#if 0
+void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e)
+{
+    int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
+    int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
+
+    // Joystick2Mouse core algorithm >>>
+    // Convert joystick values from (-1, 1) to (-32767, 32767)
+    short joystickX = 0;
+    short joystickY = 0;
+    if (e.axis == JOYSTICK_AXIS_LS_HORIZONTAL || e.axis == JOYSTICK_AXIS_RS_HORIZONTAL) {
+        joystickX = (short)(32767.0 * e.value);
+    }
+    else if (e.axis == JOYSTICK_AXIS_LS_VERTICAL || e.axis == JOYSTICK_AXIS_RS_VERTICAL) {
+        joystickY = (short)(32767.0 * e.value);
+    }
+
+    // Convert joystick values to mouse delta values
+    double deltaX = sign(joystickX) * (1.0 - std::exp(-std::abs(joystickX) / 32767.0 * vJoy_X_Sensitivity));
+    double deltaY = sign(joystickY) * (1.0 - std::exp(-std::abs(joystickY) / 32767.0 * vJoy_Y_Sensitivity));
+    // Joystick2Mouse core algorithm <<<
+
+    // Now you can use deltaX and deltaY as the mouse movement offsets
+    sendMouseMove(deltaX, deltaY);
+}
+#endif
+
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     if (nCode != HC_ACTION) {
