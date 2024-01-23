@@ -83,11 +83,7 @@ static const ULONG_PTR VIRTUAL_WIN_PLUS_D = 0xDBDBDBDB;
 
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 bool QKeyMapper_Worker::s_forceSendVirtualKey = false;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-QMultiHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QMultiHash<QString, V_KEYCODE>();
-#else
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
-#endif
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
 #ifdef MOUSEBUTTON_CONVERT
@@ -3329,49 +3325,35 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        ("Right",       V_KEYCODE(VK_RIGHT,         EXTENED_FLAG_TRUE ));   // 0x27 + E
 
     //NumberPad Keys
-    VirtualKeyCodeMap.insert        ("NumLock",     V_KEYCODE(VK_NUMLOCK,       EXTENED_FLAG_TRUE ));   // 0x90 + E
-    VirtualKeyCodeMap.insert        ("Num /",       V_KEYCODE(VK_DIVIDE,        EXTENED_FLAG_TRUE ));   // 0x6F + E
-    VirtualKeyCodeMap.insert        ("Num *",       V_KEYCODE(VK_MULTIPLY,      EXTENED_FLAG_FALSE));   // 0x6A
-    VirtualKeyCodeMap.insert        ("Num -",       V_KEYCODE(VK_SUBTRACT,      EXTENED_FLAG_FALSE));   // 0x6D
-    VirtualKeyCodeMap.insert        ("Num +",       V_KEYCODE(VK_ADD,           EXTENED_FLAG_FALSE));   // 0x6B
-    VirtualKeyCodeMap.insert        ("Num .",       V_KEYCODE(VK_DECIMAL,       EXTENED_FLAG_FALSE));   // 0x6E
-    VirtualKeyCodeMap.insert        ("Num 0",       V_KEYCODE(VK_NUMPAD0,       EXTENED_FLAG_FALSE));   // 0x60
-    VirtualKeyCodeMap.insert        ("Num 1",       V_KEYCODE(VK_NUMPAD1,       EXTENED_FLAG_FALSE));   // 0x61
-    VirtualKeyCodeMap.insert        ("Num 2",       V_KEYCODE(VK_NUMPAD2,       EXTENED_FLAG_FALSE));   // 0x62
-    VirtualKeyCodeMap.insert        ("Num 3",       V_KEYCODE(VK_NUMPAD3,       EXTENED_FLAG_FALSE));   // 0x63
-    VirtualKeyCodeMap.insert        ("Num 4",       V_KEYCODE(VK_NUMPAD4,       EXTENED_FLAG_FALSE));   // 0x64
-    VirtualKeyCodeMap.insert        ("Num 5",       V_KEYCODE(VK_NUMPAD5,       EXTENED_FLAG_FALSE));   // 0x65
-    VirtualKeyCodeMap.insert        ("Num 6",       V_KEYCODE(VK_NUMPAD6,       EXTENED_FLAG_FALSE));   // 0x66
-    VirtualKeyCodeMap.insert        ("Num 7",       V_KEYCODE(VK_NUMPAD7,       EXTENED_FLAG_FALSE));   // 0x67
-    VirtualKeyCodeMap.insert        ("Num 8",       V_KEYCODE(VK_NUMPAD8,       EXTENED_FLAG_FALSE));   // 0x68
-    VirtualKeyCodeMap.insert        ("Num 9",       V_KEYCODE(VK_NUMPAD9,       EXTENED_FLAG_FALSE));   // 0x69
-    VirtualKeyCodeMap.insert        ("Num Enter",   V_KEYCODE(VK_RETURN,        EXTENED_FLAG_TRUE ));   // 0x0D + E
+    VirtualKeyCodeMap.insert        ("NumLock",             V_KEYCODE(VK_NUMLOCK,       EXTENED_FLAG_TRUE ));   // 0x90 + E
+    VirtualKeyCodeMap.insert        ("Num /",               V_KEYCODE(VK_DIVIDE,        EXTENED_FLAG_TRUE ));   // 0x6F + E
+    VirtualKeyCodeMap.insert        ("Num *",               V_KEYCODE(VK_MULTIPLY,      EXTENED_FLAG_FALSE));   // 0x6A
+    VirtualKeyCodeMap.insert        ("Num -",               V_KEYCODE(VK_SUBTRACT,      EXTENED_FLAG_FALSE));   // 0x6D
+    VirtualKeyCodeMap.insert        ("Num +",               V_KEYCODE(VK_ADD,           EXTENED_FLAG_FALSE));   // 0x6B
+    VirtualKeyCodeMap.insert        ("Num .",               V_KEYCODE(VK_DECIMAL,       EXTENED_FLAG_FALSE));   // 0x6E
+    VirtualKeyCodeMap.insert        ("Num 0",               V_KEYCODE(VK_NUMPAD0,       EXTENED_FLAG_FALSE));   // 0x60
+    VirtualKeyCodeMap.insert        ("Num 1",               V_KEYCODE(VK_NUMPAD1,       EXTENED_FLAG_FALSE));   // 0x61
+    VirtualKeyCodeMap.insert        ("Num 2",               V_KEYCODE(VK_NUMPAD2,       EXTENED_FLAG_FALSE));   // 0x62
+    VirtualKeyCodeMap.insert        ("Num 3",               V_KEYCODE(VK_NUMPAD3,       EXTENED_FLAG_FALSE));   // 0x63
+    VirtualKeyCodeMap.insert        ("Num 4",               V_KEYCODE(VK_NUMPAD4,       EXTENED_FLAG_FALSE));   // 0x64
+    VirtualKeyCodeMap.insert        ("Num 5",               V_KEYCODE(VK_NUMPAD5,       EXTENED_FLAG_FALSE));   // 0x65
+    VirtualKeyCodeMap.insert        ("Num 6",               V_KEYCODE(VK_NUMPAD6,       EXTENED_FLAG_FALSE));   // 0x66
+    VirtualKeyCodeMap.insert        ("Num 7",               V_KEYCODE(VK_NUMPAD7,       EXTENED_FLAG_FALSE));   // 0x67
+    VirtualKeyCodeMap.insert        ("Num 8",               V_KEYCODE(VK_NUMPAD8,       EXTENED_FLAG_FALSE));   // 0x68
+    VirtualKeyCodeMap.insert        ("Num 9",               V_KEYCODE(VK_NUMPAD9,       EXTENED_FLAG_FALSE));   // 0x69
+    VirtualKeyCodeMap.insert        ("Num Enter",           V_KEYCODE(VK_RETURN,        EXTENED_FLAG_TRUE ));   // 0x0D + E
     //NumLock Off NumberPadKeys
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    VirtualKeyCodeMap.insert        ("Num .",       V_KEYCODE(VK_DELETE,        EXTENED_FLAG_FALSE));   // 0x2E
-    VirtualKeyCodeMap.insert        ("Num 0",       V_KEYCODE(VK_INSERT,        EXTENED_FLAG_FALSE));   // 0x2D
-    VirtualKeyCodeMap.insert        ("Num 1",       V_KEYCODE(VK_END,           EXTENED_FLAG_FALSE));   // 0x23
-    VirtualKeyCodeMap.insert        ("Num 2",       V_KEYCODE(VK_DOWN,          EXTENED_FLAG_FALSE));   // 0x28
-    VirtualKeyCodeMap.insert        ("Num 3",       V_KEYCODE(VK_NEXT,          EXTENED_FLAG_FALSE));   // 0x22
-    VirtualKeyCodeMap.insert        ("Num 4",       V_KEYCODE(VK_LEFT,          EXTENED_FLAG_FALSE));   // 0x25
-    VirtualKeyCodeMap.insert        ("Num 5",       V_KEYCODE(VK_CLEAR,         EXTENED_FLAG_FALSE));   // 0x0C
-    VirtualKeyCodeMap.insert        ("Num 6",       V_KEYCODE(VK_RIGHT,         EXTENED_FLAG_FALSE));   // 0x27
-    VirtualKeyCodeMap.insert        ("Num 7",       V_KEYCODE(VK_HOME,          EXTENED_FLAG_FALSE));   // 0x24
-    VirtualKeyCodeMap.insert        ("Num 8",       V_KEYCODE(VK_UP,            EXTENED_FLAG_FALSE));   // 0x26
-    VirtualKeyCodeMap.insert        ("Num 9",       V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_FALSE));   // 0x21
-#else
-    VirtualKeyCodeMap.insertMulti   ("Num .",       V_KEYCODE(VK_DELETE,        EXTENED_FLAG_FALSE));   // 0x2E
-    VirtualKeyCodeMap.insertMulti   ("Num 0",       V_KEYCODE(VK_INSERT,        EXTENED_FLAG_FALSE));   // 0x2D
-    VirtualKeyCodeMap.insertMulti   ("Num 1",       V_KEYCODE(VK_END,           EXTENED_FLAG_FALSE));   // 0x23
-    VirtualKeyCodeMap.insertMulti   ("Num 2",       V_KEYCODE(VK_DOWN,          EXTENED_FLAG_FALSE));   // 0x28
-    VirtualKeyCodeMap.insertMulti   ("Num 3",       V_KEYCODE(VK_NEXT,          EXTENED_FLAG_FALSE));   // 0x22
-    VirtualKeyCodeMap.insertMulti   ("Num 4",       V_KEYCODE(VK_LEFT,          EXTENED_FLAG_FALSE));   // 0x25
-    VirtualKeyCodeMap.insertMulti   ("Num 5",       V_KEYCODE(VK_CLEAR,         EXTENED_FLAG_FALSE));   // 0x0C
-    VirtualKeyCodeMap.insertMulti   ("Num 6",       V_KEYCODE(VK_RIGHT,         EXTENED_FLAG_FALSE));   // 0x27
-    VirtualKeyCodeMap.insertMulti   ("Num 7",       V_KEYCODE(VK_HOME,          EXTENED_FLAG_FALSE));   // 0x24
-    VirtualKeyCodeMap.insertMulti   ("Num 8",       V_KEYCODE(VK_UP,            EXTENED_FLAG_FALSE));   // 0x26
-    VirtualKeyCodeMap.insertMulti   ("Num 9",       V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_FALSE));   // 0x21
-#endif
+    VirtualKeyCodeMap.insert        ("Num .(NumOFF)",       V_KEYCODE(VK_DELETE,        EXTENED_FLAG_FALSE));   // 0x2E
+    VirtualKeyCodeMap.insert        ("Num 0(NumOFF)",       V_KEYCODE(VK_INSERT,        EXTENED_FLAG_FALSE));   // 0x2D
+    VirtualKeyCodeMap.insert        ("Num 1(NumOFF)",       V_KEYCODE(VK_END,           EXTENED_FLAG_FALSE));   // 0x23
+    VirtualKeyCodeMap.insert        ("Num 2(NumOFF)",       V_KEYCODE(VK_DOWN,          EXTENED_FLAG_FALSE));   // 0x28
+    VirtualKeyCodeMap.insert        ("Num 3(NumOFF)",       V_KEYCODE(VK_NEXT,          EXTENED_FLAG_FALSE));   // 0x22
+    VirtualKeyCodeMap.insert        ("Num 4(NumOFF)",       V_KEYCODE(VK_LEFT,          EXTENED_FLAG_FALSE));   // 0x25
+    VirtualKeyCodeMap.insert        ("Num 5(NumOFF)",       V_KEYCODE(VK_CLEAR,         EXTENED_FLAG_FALSE));   // 0x0C
+    VirtualKeyCodeMap.insert        ("Num 6(NumOFF)",       V_KEYCODE(VK_RIGHT,         EXTENED_FLAG_FALSE));   // 0x27
+    VirtualKeyCodeMap.insert        ("Num 7(NumOFF)",       V_KEYCODE(VK_HOME,          EXTENED_FLAG_FALSE));   // 0x24
+    VirtualKeyCodeMap.insert        ("Num 8(NumOFF)",       V_KEYCODE(VK_UP,            EXTENED_FLAG_FALSE));   // 0x26
+    VirtualKeyCodeMap.insert        ("Num 9(NumOFF)",       V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_FALSE));   // 0x21
 
     // MultiMedia keys
     VirtualKeyCodeMap.insert        ("Vol Mute",            V_KEYCODE(VK_VOLUME_MUTE,           EXTENED_FLAG_TRUE));   // 0xAD

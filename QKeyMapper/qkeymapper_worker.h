@@ -396,11 +396,7 @@ public:
 public:
     static bool s_isWorkerDestructing;
     static bool s_forceSendVirtualKey;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    static QMultiHash<QString, V_KEYCODE> VirtualKeyCodeMap;
-#else
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
-#endif
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QHash<WPARAM, QString> MouseButtonNameMap;
 #ifdef MOUSEBUTTON_CONVERT
