@@ -156,6 +156,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #ifdef VIGEM_CLIENT_SUPPORT
     m_Mouse2vJoyResetTimer(this),
 #endif
+    m_Joy2MouseCycleTimer(this),
     skipReleaseModifiersKeysList(),
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap(),
@@ -2557,22 +2558,26 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e)
 
     // Joystick2Mouse core algorithm >>>
     // Convert joystick values from (-1, 1) to (-32767, 32767)
-    short joystickX = 0;
-    short joystickY = 0;
+    qreal x = 0;
+    qreal y = 0;
     if (e.axis == JOYSTICK_AXIS_LS_HORIZONTAL || e.axis == JOYSTICK_AXIS_RS_HORIZONTAL) {
-        joystickX = (short)(32767.0 * e.value);
+        x = e.value;
     }
     else if (e.axis == JOYSTICK_AXIS_LS_VERTICAL || e.axis == JOYSTICK_AXIS_RS_VERTICAL) {
-        joystickY = (short)(32767.0 * e.value);
+        y = e.value;
     }
 
-    // Convert joystick values to mouse delta values
-    double deltaX = sign(joystickX) * (1.0 - std::exp(-std::abs(joystickX) / 32767.0 * vJoy_X_Sensitivity));
-    double deltaY = sign(joystickY) * (1.0 - std::exp(-std::abs(joystickY) / 32767.0 * vJoy_Y_Sensitivity));
-    // Joystick2Mouse core algorithm <<<
+    // Apply the inverse of the transformation used in mouse2joystick
+    int delta_x = (int)round(-vJoy_X_Sensitivity * std::log(1.0 - std::abs(x)));
+    int delta_y = (int)round(-vJoy_Y_Sensitivity * std::log(1.0 - std::abs(y)));
 
-    // Now you can use deltaX and deltaY as the mouse movement offsets
-    sendMouseMove(deltaX, deltaY);
+    // Take the sign into delta
+    delta_x *= sign(x);
+    delta_y *= -sign(y);
+
+    if (delta_x != 0 || delta_y != 0) {
+        sendMouseMove(delta_x, delta_y);
+    }
 }
 #endif
 

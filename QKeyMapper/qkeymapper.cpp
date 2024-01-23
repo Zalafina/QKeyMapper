@@ -3215,7 +3215,7 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(14);
     }
-    // ui->refreshButton->setFont(customFont);
+    ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3292,7 +3292,7 @@ void QKeyMapper::setControlFontChinese()
     else {
         customFont.setPointSize(14);
     }
-    // ui->refreshButton->setFont(customFont);
+    ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3443,7 +3443,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mappingswitchkeyLabel->setEnabled(status);
     m_mappingswitchKeySeqEdit->setEnabled(status);
 
-    // ui->refreshButton->setEnabled(status);
+    ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
 
     ui->processinfoTable->setEnabled(status);
@@ -4374,7 +4374,7 @@ void QKeyMapper::setUILanguage_Chinese()
         ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
     }
 
-    // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
+    ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
     ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
@@ -4428,7 +4428,7 @@ void QKeyMapper::setUILanguage_English()
         ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
     }
 
-    // ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
+    ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
@@ -4645,6 +4645,14 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 
     Q_UNUSED(modifiers);
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_UP);
+}
+
+void QKeyMapper::on_refreshButton_clicked()
+{
+#ifndef DEBUG_LOGOUT_ON
+    m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
+#endif
+    refreshProcessInfoTable();
 }
 
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)

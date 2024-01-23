@@ -463,6 +463,7 @@ private:
 #ifdef VIGEM_CLIENT_SUPPORT
     QTimer m_Mouse2vJoyResetTimer;
 #endif
+    QTimer m_Joy2MouseCycleTimer;
     QStringList skipReleaseModifiersKeysList;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;

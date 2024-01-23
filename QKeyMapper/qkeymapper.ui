@@ -34,7 +34,7 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>380</x>
+     <x>400</x>
      <y>495</y>
      <width>160</width>
      <height>40</height>
@@ -119,6 +119,25 @@
     <string>Title</string>
    </property>
    <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="refreshButton">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>495</y>
+     <width>160</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+   <property name="autoDefault">
     <bool>false</bool>
    </property>
   </widget>
@@ -1512,6 +1531,7 @@
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
   <zorder>titleCheckBox</zorder>
+  <zorder>refreshButton</zorder>
   <zorder>nameLineEdit</zorder>
   <zorder>titleLineEdit</zorder>
   <zorder>keymapdataTable</zorder>
