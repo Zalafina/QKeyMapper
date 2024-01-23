@@ -2085,6 +2085,7 @@ int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const 
 int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &windowtitle)
 {
     int ret_index = TITLESETTING_INDEX_INVALID;
+    int contains_index = TITLESETTING_INDEX_INVALID;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
 
@@ -2096,12 +2097,21 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
             QVariant windowTitle_Var;
             if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
                 QString titleStr = windowTitle_Var.toString();
-                if (titleStr == windowtitle) {
+                if (contains_index == TITLESETTING_INDEX_INVALID
+                    && windowtitle.contains(titleStr)) {
+                    contains_index = index;
+                }
+                if (windowtitle == titleStr) {
                     ret_index = index;
                     break;
                 }
             }
         }
+    }
+
+    if (ret_index == TITLESETTING_INDEX_INVALID
+        && contains_index != TITLESETTING_INDEX_INVALID) {
+        ret_index = contains_index;
     }
 
     return ret_index;
@@ -3360,6 +3370,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     else {
         ui->nameCheckBox->setEnabled(status);
         ui->titleCheckBox->setEnabled(status);
+        ui->titleLineEdit->setReadOnly(!status);
         ui->removeSettingButton->setEnabled(status);
         ui->disableWinKeyCheckBox->setEnabled(status);
     }

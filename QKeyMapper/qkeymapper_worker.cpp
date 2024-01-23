@@ -2127,24 +2127,27 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
+    if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis
+        || JOYSTICK_AXIS_LS_VERTICAL == e.axis
+        || JOYSTICK_AXIS_RS_HORIZONTAL == e.axis
+        || JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
+        joystick2MouseMoveProc(e);
+    }
+
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
         joystickLTRTButtonProc(e);
     }
     else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
         joystickLSHorizontalProc(e);
-        joystick2MouseMoveProc(e);
     }
     else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis) {
         joystickLSVerticalProc(e);
-        joystick2MouseMoveProc(e);
     }
     else if (JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
         joystickRSHorizontalProc(e);
-        joystick2MouseMoveProc(e);
     }
     else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
         joystickRSVerticalProc(e);
-        joystick2MouseMoveProc(e);
     }
 }
 
@@ -2531,6 +2534,7 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
 }
 
+#if 0
 void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e) {
     int delta_x = 0;
     int delta_y = 0;
@@ -2545,8 +2549,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e) {
 
     sendMouseMove(delta_x, delta_y);
 }
-
-#if 0
+#else
 void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e)
 {
     int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
