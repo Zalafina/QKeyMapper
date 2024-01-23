@@ -445,9 +445,9 @@ POINT QKeyMapper_Worker::mousePositionAfterSetMouseToScreenBottomRight()
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::onMouseMove(int x, int y)
 {
-//#ifdef DEBUG_LOGOUT_ON
+// #ifdef MOUSE_VERBOSE_LOG
 //    qDebug() << "[onMouseMove]" << "Mouse Move -> Delta X =" << s_Mouse2vJoy_delta.x() << ", Delta Y = " << s_Mouse2vJoy_delta.y();
-//#endif
+// #endif
 
     Q_UNUSED(x);
     Q_UNUSED(y);
@@ -2128,12 +2128,12 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
-    if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis
-        || JOYSTICK_AXIS_LS_VERTICAL == e.axis
-        || JOYSTICK_AXIS_RS_HORIZONTAL == e.axis
-        || JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
-        joystick2MouseMoveProc(e);
-    }
+    // if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis
+    //     || JOYSTICK_AXIS_LS_VERTICAL == e.axis
+    //     || JOYSTICK_AXIS_RS_HORIZONTAL == e.axis
+    //     || JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
+    //     joystick2MouseMoveProc(e);
+    // }
 
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
         joystickLTRTButtonProc(e);
@@ -2934,7 +2934,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
                     s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
                 }
-
+// #ifdef MOUSE_VERBOSE_LOG
+//                 qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> Delta X =" << s_Mouse2vJoy_delta.x() << ", Delta Y = " << s_Mouse2vJoy_delta.y();
+// #endif
                 emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y);
             }
         }
