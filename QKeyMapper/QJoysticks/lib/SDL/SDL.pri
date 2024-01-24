@@ -15,11 +15,11 @@ win32-g++* {
 
 win32-msvc* {
     contains (QMAKE_TARGET.arch, x86_64) {
-        LIBS += -L$$PWD/bin/windows/msvc/x64/ -lSDL2
+        LIBS += -L$$PWD/lib/x64/ -lSDL2
     }
 
     else {
-        LIBS += -L$$PWD/bin/windows/msvc/x86/ -lSDL2
+        LIBS += -L$$PWD/lib/x86/ -lSDL2
     }
 }
 

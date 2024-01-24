@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2016 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2023 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -27,13 +27,13 @@
 #include "SDL_config.h"
 
 #ifdef __IPHONEOS__
-    #include <OpenGLES/ES1/gl.h>
-    #include <OpenGLES/ES1/glext.h>
+#include <OpenGLES/ES1/gl.h>
+#include <OpenGLES/ES1/glext.h>
 #else
-    #include <GLES/gl.h>
-    #include <GLES/glext.h>
+#include <GLES/gl.h>
+#include <GLES/glext.h>
 #endif
 
 #ifndef APIENTRY
-    #define APIENTRY
+#define APIENTRY
 #endif
