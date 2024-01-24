@@ -2654,7 +2654,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
             if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
                 delta_x += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
             }
-            else if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+            else if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
                 delta_x += JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
             }
             else {
@@ -2677,7 +2677,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
             if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
                 delta_y += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
             }
-            else if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+            else if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
                 delta_y += JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
             }
             else {
@@ -2702,7 +2702,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
             if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
                 delta_x += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
             }
-            else if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+            else if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
                 delta_x += JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
             }
             else {
@@ -2725,7 +2725,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
             if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
                 delta_y += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
             }
-            else if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+            else if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
                 delta_y += JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
             }
             else {
