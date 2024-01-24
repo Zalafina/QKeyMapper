@@ -115,6 +115,13 @@ typedef struct V_MOUSECODE
     }
 }V_MOUSECODE_st;
 
+struct Joystick_AxisState {
+    qreal left_x;
+    qreal left_y;
+    qreal right_x;
+    qreal right_y;
+};
+
 #ifdef DINPUT_TEST
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
@@ -253,6 +260,15 @@ public:
     Q_ENUM(Mouse2vJoyState)
 #endif
 
+    enum Joy2MouseState
+    {
+        JOY2MOUSE_NONE,
+        JOY2MOUSE_LEFT,
+        JOY2MOUSE_RIGHT,
+        JOY2MOUSE_BOTH
+    };
+    Q_ENUM(Joy2MouseState)
+
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
@@ -266,6 +282,7 @@ public slots:
     void onMouseMove(int x, int y);
     void onMouse2vJoyResetTimeout(void);
 #endif
+    void onJoy2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
     void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
@@ -352,13 +369,15 @@ public slots:
     void checkJoystickPOV(const QJoystickPOVEvent &e);
     void checkJoystickAxis(const QJoystickAxisEvent &e);
 
+    Joy2MouseState checkJoystick2MouseEnableState(void);
+
 private:
     void joystickLTRTButtonProc(const QJoystickAxisEvent &e);
     void joystickLSHorizontalProc(const QJoystickAxisEvent &e);
     void joystickLSVerticalProc(const QJoystickAxisEvent &e);
     void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
     void joystickRSVerticalProc(const QJoystickAxisEvent &e);
-    void joystick2MouseMoveProc(const QJoystickAxisEvent &e);
+    void joystick2MouseMoveProc(const Joystick_AxisState &axis_state);
 
 public:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
@@ -441,6 +460,9 @@ public:
     static QPoint s_Mouse2vJoy_prev;
     static Mouse2vJoyState s_Mouse2vJoy_EnableState;
 #endif
+
+    static Joy2MouseState s_Joy2Mouse_EnableState;
+    static Joystick_AxisState s_JoyAxisState;
 
 private:
     HHOOK m_KeyHook;

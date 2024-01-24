@@ -50,8 +50,13 @@ static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD           = 0.
 static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
 static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
 
+static const qreal JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD  = -0.25;
+static const qreal JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD   = 0.25;
+
 static const int MOUSE_CURSOR_BOTTOMRIGHT_X = 65535;
 static const int MOUSE_CURSOR_BOTTOMRIGHT_Y = 65535;
+
+static const int JOY2MOUSE_CYCLECHECK_TIMEOUT = 2;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 static const BYTE XINPUT_TRIGGER_MIN     = 0;
@@ -128,6 +133,8 @@ QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 #endif
+QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
+Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 
 bool QKeyMapper_Hook_Proc::s_LowLevelKeyboardHook_Enable = true;
 bool QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable = true;
@@ -198,6 +205,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_Mouse2vJoyResetTimer.setSingleShot(true);
     QObject::connect(&m_Mouse2vJoyResetTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onMouse2vJoyResetTimeout);
 #endif
+
+    m_Joy2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
+    QObject::connect(&m_Joy2MouseCycleTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onJoy2MouseCycleTimeout);
 
     /* Connect QJoysticks Signals */
     QJoysticks *instance = QJoysticks::getInstance();
@@ -458,6 +468,11 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onMouse2vJoyResetTimeout]" << "Reset the Joysticks to Release Center State.";
 #endif
+}
+
+void QKeyMapper_Worker::onJoy2MouseCycleTimeout()
+{
+    joystick2MouseMoveProc(s_JoyAxisState);
 }
 #endif
 
@@ -1470,15 +1485,26 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     bool leftJoystickUpdate = false;
     bool rightJoystickUpdate = false;
 
-    int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2LS);
-    if (findMouse2LSindex >=0){
+    if (MOUSE2VJOY_LEFT == s_Mouse2vJoy_EnableState) {
         leftJoystickUpdate = true;
     }
-
-    int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2RS);
-    if (findMouse2RSindex >=0){
+    else if (MOUSE2VJOY_RIGHT == s_Mouse2vJoy_EnableState) {
         rightJoystickUpdate = true;
     }
+    else if (MOUSE2VJOY_BOTH == s_Mouse2vJoy_EnableState) {
+        leftJoystickUpdate = true;
+        rightJoystickUpdate = true;
+    }
+
+    // int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2LS);
+    // if (findMouse2LSindex >=0){
+    //     leftJoystickUpdate = true;
+    // }
+
+    // int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2RS);
+    // if (findMouse2RSindex >=0){
+    //     rightJoystickUpdate = true;
+    // }
 
     if (leftJoystickUpdate || rightJoystickUpdate) {
         int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
@@ -1699,6 +1725,8 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Mouse2vJoy_EnableState = ViGEmClient_checkMouse2JoystickEnableState();
 #endif
 
+    s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
+
     if(TRUE == IsWindowVisible(hWnd)){
 #ifdef VIGEM_CLIENT_SUPPORT
         if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
@@ -1813,11 +1841,17 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
 {
     Q_UNUSED(hWnd);
     m_JoystickCapture = true;
+
+    if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE) {
+        m_Joy2MouseCycleTimer.start(JOY2MOUSE_CYCLECHECK_TIMEOUT);
+    }
 }
 
 void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
 {
     m_JoystickCapture = false;
+
+    m_Joy2MouseCycleTimer.stop();
 }
 
 void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdown)
@@ -2124,28 +2158,30 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
-    // if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis
-    //     || JOYSTICK_AXIS_LS_VERTICAL == e.axis
-    //     || JOYSTICK_AXIS_RS_HORIZONTAL == e.axis
-    //     || JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
-    //     joystick2MouseMoveProc(e);
-    // }
-
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
         joystickLTRTButtonProc(e);
     }
     else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
+        s_JoyAxisState.left_x = e.value;
         joystickLSHorizontalProc(e);
     }
     else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis) {
+        s_JoyAxisState.left_y = e.value;
         joystickLSVerticalProc(e);
     }
     else if (JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
+        s_JoyAxisState.right_x = e.value;
         joystickRSHorizontalProc(e);
     }
     else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
+        s_JoyAxisState.right_y = e.value;
         joystickRSVerticalProc(e);
     }
+}
+
+QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableState()
+{
+    return JOY2MOUSE_LEFT;
 }
 
 void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
@@ -2531,51 +2567,51 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
 }
 
-#if 0
-void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e) {
+void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_state)
+{
     int delta_x = 0;
     int delta_y = 0;
-    int speedFactor = 2;
+    bool checkLeftJoystick = false;
+    bool checkRightJoystick = false;
 
-    if (e.axis == JOYSTICK_AXIS_LS_HORIZONTAL || e.axis == JOYSTICK_AXIS_RS_HORIZONTAL) {
-        delta_x = e.value * speedFactor;
+    if (JOY2MOUSE_LEFT == s_Mouse2vJoy_EnableState) {
+        checkLeftJoystick = true;
     }
-    else if (e.axis == JOYSTICK_AXIS_LS_VERTICAL || e.axis == JOYSTICK_AXIS_RS_VERTICAL) {
-        delta_y = e.value * speedFactor;
+    else if (JOY2MOUSE_RIGHT == s_Mouse2vJoy_EnableState) {
+        checkRightJoystick = true;
     }
-
-    sendMouseMove(delta_x, delta_y);
-}
-#else
-void QKeyMapper_Worker::joystick2MouseMoveProc(const QJoystickAxisEvent &e)
-{
-    int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
-    int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
-
-    // Joystick2Mouse core algorithm >>>
-    // Convert joystick values from (-1, 1) to (-32767, 32767)
-    qreal x = 0;
-    qreal y = 0;
-    if (e.axis == JOYSTICK_AXIS_LS_HORIZONTAL || e.axis == JOYSTICK_AXIS_RS_HORIZONTAL) {
-        x = e.value;
-    }
-    else if (e.axis == JOYSTICK_AXIS_LS_VERTICAL || e.axis == JOYSTICK_AXIS_RS_VERTICAL) {
-        y = e.value;
+    else if (JOY2MOUSE_BOTH == s_Mouse2vJoy_EnableState) {
+        checkLeftJoystick = true;
+        checkRightJoystick = true;
     }
 
-    // Apply the inverse of the transformation used in mouse2joystick
-    int delta_x = (int)round(-vJoy_X_Sensitivity * std::log(1.0 - std::abs(x)));
-    int delta_y = (int)round(-vJoy_Y_Sensitivity * std::log(1.0 - std::abs(y)));
+    if (checkLeftJoystick) {
+        if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD) {
+            delta_x -= 1;
+        }
+        else if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD) {
+            delta_x += 1;
+        }
 
-    // Take the sign into delta
-    delta_x *= sign(x);
-    delta_y *= -sign(y);
+        if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD) {
+            delta_y -= 1;
+        }
+        else if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD) {
+            delta_y += 1;
+        }
+    }
+
+    if (checkRightJoystick) {
+        if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD) {
+        }
+        else if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD) {
+        }
+    }
 
     if (delta_x != 0 || delta_y != 0) {
         sendMouseMove(delta_x, delta_y);
     }
 }
-#endif
 
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
