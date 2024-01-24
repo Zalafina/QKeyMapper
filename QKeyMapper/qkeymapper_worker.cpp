@@ -50,8 +50,16 @@ static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD           = 0.
 static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
 static const qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
 
-static const qreal JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD  = -0.25;
-static const qreal JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD   = 0.25;
+static const qreal JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD  = -0.25;
+static const qreal JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD  = -0.50;
+static const qreal JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD  = -0.75;
+static const qreal JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD   = 0.25;
+static const qreal JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD   = 0.50;
+static const qreal JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD   = 0.75;
+
+static const int JOYSTICK2MOUSE_LOW_SPEED   = 1;
+static const int JOYSTICK2MOUSE_MID_SPEED   = 2;
+static const int JOYSTICK2MOUSE_HIGH_SPEED  = 3;
 
 static const int MOUSE_CURSOR_BOTTOMRIGHT_X = 65535;
 static const int MOUSE_CURSOR_BOTTOMRIGHT_Y = 65535;
@@ -74,8 +82,11 @@ static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
 static const int VJOY_KEYUP_WAITTIME = 20;
 #endif
 
-static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
-static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
+static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
+static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
+
+static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
+static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
@@ -314,8 +325,8 @@ void QKeyMapper_Worker::sendMouseMove(int delta_x, int delta_y)
 
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
-    mouse_input.mi.dx = delta_x * (65535 / GetSystemMetrics(SM_CXSCREEN)); // delta_x being coordinate in pixels
-    mouse_input.mi.dy = delta_y * (65535 / GetSystemMetrics(SM_CYSCREEN)); // delta_y being coordinate in pixels
+    mouse_input.mi.dx = delta_x;
+    mouse_input.mi.dy = delta_y;
     mouse_input.mi.mouseData = 0;
     mouse_input.mi.time = 0;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
@@ -1443,12 +1454,12 @@ QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2Joy
     bool leftJoystickUpdate = false;
     bool rightJoystickUpdate = false;
 
-    int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2LS);
+    int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2LS_STR);
     if (findMouse2LSindex >=0){
         leftJoystickUpdate = true;
     }
 
-    int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2RS);
+    int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2RS_STR);
     if (findMouse2RSindex >=0){
         rightJoystickUpdate = true;
     }
@@ -1496,12 +1507,12 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         rightJoystickUpdate = true;
     }
 
-    // int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2LS);
+    // int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2LS_STR);
     // if (findMouse2LSindex >=0){
     //     leftJoystickUpdate = true;
     // }
 
-    // int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_STR_MOUSE2RS);
+    // int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2RS_STR);
     // if (findMouse2RSindex >=0){
     //     rightJoystickUpdate = true;
     // }
@@ -1809,6 +1820,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 //#endif
 //    }
 
+    s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     setWorkerJoystickCaptureStop();
     //    setWorkerDInputKeyUnHook();
 
@@ -1842,7 +1854,11 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
     Q_UNUSED(hWnd);
     m_JoystickCapture = true;
 
+    s_JoyAxisState = Joystick_AxisState();
     if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setWorkerJoystickCaptureStart] Joy2MouseCycleTimer Started.");
+#endif
         m_Joy2MouseCycleTimer.start(JOY2MOUSE_CYCLECHECK_TIMEOUT);
     }
 }
@@ -1851,7 +1867,12 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
 {
     m_JoystickCapture = false;
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[setWorkerJoystickCaptureStop] Joy2MouseCycleTimer Stopped.");
+#endif
+
     m_Joy2MouseCycleTimer.stop();
+    s_JoyAxisState = Joystick_AxisState();
 }
 
 void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdown)
@@ -2181,7 +2202,31 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 
 QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableState()
 {
-    return JOY2MOUSE_LEFT;
+    Joy2MouseState joy2mouse_enablestate = JOY2MOUSE_NONE;
+    bool leftJoy2Mouse = false;
+    bool rightJoy2Mouse = false;
+
+    int findLS2Mouseindex = QKeyMapper::findInKeyMappingDataList(JOY_LS2MOUSE_STR);
+    if (findLS2Mouseindex >= 0){
+        leftJoy2Mouse = true;
+    }
+
+    int findRS2Mouseindex = QKeyMapper::findInKeyMappingDataList(JOY_RS2MOUSE_STR);
+    if (findRS2Mouseindex >= 0){
+        rightJoy2Mouse = true;
+    }
+
+    if (leftJoy2Mouse && rightJoy2Mouse) {
+        joy2mouse_enablestate = JOY2MOUSE_BOTH;
+    }
+    else if (leftJoy2Mouse) {
+        joy2mouse_enablestate = JOY2MOUSE_LEFT;
+    }
+    else if (rightJoy2Mouse) {
+        joy2mouse_enablestate = JOY2MOUSE_RIGHT;
+    }
+
+    return joy2mouse_enablestate;
 }
 
 void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
@@ -2573,38 +2618,119 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
     int delta_y = 0;
     bool checkLeftJoystick = false;
     bool checkRightJoystick = false;
+    int sensitivity_x = 1;
+    int sensitivity_y = 1;
 
-    if (JOY2MOUSE_LEFT == s_Mouse2vJoy_EnableState) {
+// #ifdef DEBUG_LOGOUT_ON
+//     if (axis_state.left_x != 0 || axis_state.left_y != 0 || axis_state.right_x != 0 || axis_state.right_y != 0) {
+//         qDebug().nospace().noquote() << "[joystick2MouseMoveProc]" << "s_Mouse2vJoy_EnableState = " << s_Mouse2vJoy_EnableState << ", Joystick_AxisState -> Left-X = " << axis_state.left_x << ", Left-Y = " << axis_state.left_y << ", Right-X = " << axis_state.right_x << ", Right-Y = " << axis_state.right_y;
+//     }
+// #endif
+
+    if (JOY2MOUSE_LEFT == s_Joy2Mouse_EnableState) {
         checkLeftJoystick = true;
     }
-    else if (JOY2MOUSE_RIGHT == s_Mouse2vJoy_EnableState) {
+    else if (JOY2MOUSE_RIGHT == s_Joy2Mouse_EnableState) {
         checkRightJoystick = true;
     }
-    else if (JOY2MOUSE_BOTH == s_Mouse2vJoy_EnableState) {
+    else if (JOY2MOUSE_BOTH == s_Joy2Mouse_EnableState) {
         checkLeftJoystick = true;
         checkRightJoystick = true;
     }
 
     if (checkLeftJoystick) {
-        if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD) {
-            delta_x -= 1;
+        if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
+            if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
+                delta_x -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
+            }
+            else if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_x -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
+            }
+            else {
+                delta_x -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
+            }
         }
-        else if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD) {
-            delta_x += 1;
+        else if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
+            if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
+                delta_x += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
+            }
+            else if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_x += JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
+            }
+            else {
+                delta_x += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
+            }
         }
 
-        if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD) {
-            delta_y -= 1;
+        if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
+            if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
+                delta_y -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
+            }
+            else if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_y -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
+            }
+            else {
+                delta_y -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
+            }
         }
-        else if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD) {
-            delta_y += 1;
+        else if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
+            if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
+                delta_y += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
+            }
+            else if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_y += JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
+            }
+            else {
+                delta_y += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
+            }
         }
     }
 
     if (checkRightJoystick) {
-        if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_THRESHOLD) {
+        if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
+            if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
+                delta_x -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
+            }
+            else if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_x -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
+            }
+            else {
+                delta_x -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
+            }
         }
-        else if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_THRESHOLD) {
+        else if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
+            if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
+                delta_x += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
+            }
+            else if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_x += JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
+            }
+            else {
+                delta_x += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
+            }
+        }
+
+        if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
+            if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
+                delta_y -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
+            }
+            else if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_y -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
+            }
+            else {
+                delta_y -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
+            }
+        }
+        else if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
+            if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
+                delta_y += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
+            }
+            else if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
+                delta_y += JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
+            }
+            else {
+                delta_y += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
+            }
         }
     }
 
@@ -3445,6 +3571,9 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
 }
 void QKeyMapper_Worker::initJoystickKeyMap()
 {
+    /* Joystick 2Mouse */
+    JoyStickKeyMap.insert(JOY_LS2MOUSE_STR                ,   (int)JOYSTICK_LS_MOUSE          );
+    JoyStickKeyMap.insert(JOY_RS2MOUSE_STR                ,   (int)JOYSTICK_RS_MOUSE          );
     /* Joystick Buttons */
     JoyStickKeyMap.insert("Joy-Key1(A)"                   ,   (int)JOYSTICK_BUTTON_0          );
     JoyStickKeyMap.insert("Joy-Key2(B)"                   ,   (int)JOYSTICK_BUTTON_1          );
@@ -3535,8 +3664,8 @@ void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
 void QKeyMapper_Worker::initViGEmKeyMap()
 {
     /* Virtual Joystick Buttons */
-    JoyStickKeyMap.insert(VJOY_STR_MOUSE2LS             ,   (int)JOYSTICK_LS_MOUSE      );
-    JoyStickKeyMap.insert(VJOY_STR_MOUSE2RS             ,   (int)JOYSTICK_RS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_MOUSE2LS_STR             ,   (int)JOYSTICK_LS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_MOUSE2RS_STR             ,   (int)JOYSTICK_RS_MOUSE      );
 
     JoyStickKeyMap.insert("vJoy-Key1(A)"                ,   (int)JOYSTICK_BUTTON_0      );
     JoyStickKeyMap.insert("vJoy-Key2(B)"                ,   (int)JOYSTICK_BUTTON_1      );

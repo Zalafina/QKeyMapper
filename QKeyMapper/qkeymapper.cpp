@@ -130,8 +130,11 @@ static const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
-static const char *VJOY_STR_MOUSE2LS = "vJoy-Mouse2LS";
-static const char *VJOY_STR_MOUSE2RS = "vJoy-Mouse2RS";
+static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
+static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
+
+static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
+static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
@@ -1857,14 +1860,10 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 {
-    if (VJOY_STR_MOUSE2LS == text) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
-#endif
-        m_mapkeyComboBox->setCurrentText(QString());
-        m_mapkeyComboBox->setEnabled(false);
-    }
-    else if (VJOY_STR_MOUSE2RS == text) {
+    if (VJOY_MOUSE2LS_STR == text
+        || VJOY_MOUSE2RS_STR == text
+        || JOY_LS2MOUSE_STR == text
+        || JOY_RS2MOUSE_STR == text) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
 #endif
@@ -3401,8 +3400,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
 #ifdef VIGEM_CLIENT_SUPPORT
     if (true == status
-        && (m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2LS
-         || m_orikeyComboBox->currentText() == VJOY_STR_MOUSE2RS)) {
+        && (m_orikeyComboBox->currentText() == VJOY_MOUSE2LS_STR
+            || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
+            || m_orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
+            || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR)) {
         m_mapkeyComboBox->setCurrentText(QString());
         m_mapkeyComboBox->setEnabled(false);
     }
@@ -4140,8 +4141,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Browser Favorites"
             << "Browser Home"
 #ifdef VIGEM_CLIENT_SUPPORT
-            << VJOY_STR_MOUSE2LS
-            << VJOY_STR_MOUSE2RS
+            << VJOY_MOUSE2LS_STR
+            << VJOY_MOUSE2RS_STR
             << "vJoy-LS-Up"
             << "vJoy-LS-Down"
             << "vJoy-LS-Left"
@@ -4191,6 +4192,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key10(RS-Click)"
             << "Joy-Key11(LT)"
             << "Joy-Key12(RT)"
+            << JOY_LS2MOUSE_STR
+            << JOY_RS2MOUSE_STR
             ;
 
     int top = ui->orikeyLabel->y();
@@ -4205,15 +4208,15 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #ifdef VIGEM_CLIENT_SUPPORT
     QRegularExpression re_vjoy("^vJoy-");
     QStringList vJoyStrlist = orikeycodelist.filter(re_vjoy);
-    vJoyStrlist.removeOne(VJOY_STR_MOUSE2LS);
-    vJoyStrlist.removeOne(VJOY_STR_MOUSE2RS);
+    vJoyStrlist.removeOne(VJOY_MOUSE2LS_STR);
+    vJoyStrlist.removeOne(VJOY_MOUSE2RS_STR);
 
     // Remove Strings start with "vJoy-" from orikeyComboBox
     for (const QString &joystr : qAsConst(vJoyStrlist)){
         orikeycodelist.removeOne(joystr);
     }
-    keycodelist.removeOne("vJoy-Mouse2LS");
-    keycodelist.removeOne("vJoy-Mouse2RS");
+    keycodelist.removeOne(VJOY_MOUSE2LS_STR);
+    keycodelist.removeOne(VJOY_MOUSE2RS_STR);
 #endif
 
     QRegularExpression re_Joy("^Joy-");
@@ -4223,6 +4226,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     for (const QString &joystr : qAsConst(JoyStrlist)){
         keycodelist.removeOne(joystr);
     }
+    keycodelist.removeOne(JOY_LS2MOUSE_STR);
+    keycodelist.removeOne(JOY_RS2MOUSE_STR);
     /* Remove Joy Keys from MappingKey ComboBox <<< */
 
     m_orikeyComboBox->addItems(orikeycodelist);
@@ -4282,10 +4287,14 @@ void QKeyMapper::refreshKeyMappingDataTable()
             bool disable_burstandlock = false;
 
 #ifdef VIGEM_CLIENT_SUPPORT
-            if (keymapdata.Original_Key == VJOY_STR_MOUSE2LS || keymapdata.Original_Key == VJOY_STR_MOUSE2RS) {
+            if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
                 disable_burstandlock = true;
             }
 #endif
+            if (keymapdata.Original_Key == JOY_LS2MOUSE_STR || keymapdata.Original_Key == JOY_RS2MOUSE_STR) {
+                disable_burstandlock = true;
+            }
+
             if (keymapdata.Original_Key == MOUSE_STR_WHEEL_UP || keymapdata.Original_Key == MOUSE_STR_WHEEL_DOWN) {
                 disable_burstandlock = true;
             }
@@ -4783,7 +4792,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
     int findindex = findInKeyMappingDataList(currentOriKeyText);
 
     if (findindex != -1){
-        if (VJOY_STR_MOUSE2LS == currentOriKeyText || VJOY_STR_MOUSE2RS == currentOriKeyText) {
+        if (VJOY_MOUSE2LS_STR == currentOriKeyText
+            || VJOY_MOUSE2RS_STR == currentOriKeyText
+            || JOY_LS2MOUSE_STR == currentOriKeyText
+            || JOY_RS2MOUSE_STR == currentOriKeyText) {
             already_exist = true;
         }
         else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
@@ -4825,7 +4837,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
             KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
         }
         else {
-            if (VJOY_STR_MOUSE2LS == currentOriKeyText || VJOY_STR_MOUSE2RS == currentOriKeyText) {
+            if (VJOY_MOUSE2LS_STR == currentOriKeyText
+                || VJOY_MOUSE2RS_STR == currentOriKeyText
+                || JOY_LS2MOUSE_STR == currentOriKeyText
+                || JOY_RS2MOUSE_STR == currentOriKeyText) {
                 currentMapKeyText = currentOriKeyText;
             }
             else {
