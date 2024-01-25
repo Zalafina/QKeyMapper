@@ -1524,8 +1524,13 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
 
         // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
+        #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         qreal x = -qExp((-1.0 / vJoy_X_Sensitivity) * qAbs(delta_x)) + 1.0;
         qreal y = -qExp((-1.0 / vJoy_Y_Sensitivity) * qAbs(delta_y)) + 1.0;
+        #else
+        qreal x = -std::exp((-1.0 / vJoy_X_Sensitivity) * std::abs(delta_x)) + 1.0;
+        qreal y = -std::exp((-1.0 / vJoy_Y_Sensitivity) * std::abs(delta_y)) + 1.0;
+        #endif
         // take the sign into account, expanding the range to (-1, 1)
         x *= sign(delta_x);
         y *= -sign(delta_y);
@@ -2095,9 +2100,15 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 #endif
     if (m_JoystickCapture) {
         QJoystickAxisEvent axisEvent = e;
+        #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         if (qFabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
             axisEvent.value = 0;
         }
+        #else
+        if (std::fabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
+            axisEvent.value = 0;
+        }
+        #endif
         checkJoystickAxis(axisEvent);
     }
 }
