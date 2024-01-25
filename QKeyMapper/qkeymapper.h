@@ -198,7 +198,8 @@ signals:
 #endif
 
 protected:
-    void changeEvent(QEvent *event);
+    void changeEvent(QEvent *event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 public slots:
     void on_keymapButton_clicked();
@@ -242,8 +243,6 @@ private slots:
 #endif
 
     void on_savemaplistButton_clicked();
-
-    void on_refreshButton_clicked();
 
     void on_processinfoTable_doubleClicked(const QModelIndex &index);
 

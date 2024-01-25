@@ -48,6 +48,9 @@ static const int TITLESETTING_INDEX_MAX = 9;
 static const int MAPPING_WAITTIME_MIN = 0;
 static const int MAPPING_WAITTIME_MAX = 5000;
 
+static const int MOUSE_SPEED_MIN = 1;
+static const int MOUSE_SPEED_MAX = 50;
+
 static const int UI_SCALE_NORMAL = 0;
 static const int UI_SCALE_1K_PERCENT_100 = 1;
 static const int UI_SCALE_1K_PERCENT_125 = 2;
@@ -143,20 +146,22 @@ static const char *REFRESHBUTTON_CHINESE = "刷新";
 static const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
 static const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
 static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
-static const char *DELETEONEBUTTON_CHINESE = "删除单行";
-static const char *CLEARALLBUTTON_CHINESE = "全部清除";
+static const char *DELETEONEBUTTON_CHINESE = "删除";
+static const char *CLEARALLBUTTON_CHINESE = "清空";
 static const char *ADDMAPDATABUTTON_CHINESE = "添加";
 static const char *NAMECHECKBOX_CHINESE = "进程";
 static const char *TITLECHECKBOX_CHINESE = "标题";
 static const char *ORIKEYLABEL_CHINESE = "原始按键";
 static const char *ORIKEYSEQLABEL_CHINESE = "原始组合键";
 static const char *MAPKEYLABEL_CHINESE = "映射按键";
-static const char *BURSTPRESSLABEL_CHINESE = "连发按下时间";
-static const char *BURSTRELEASE_CHINESE = "连发抬起时间";
+static const char *BURSTPRESSLABEL_CHINESE = "连发按下";
+static const char *BURSTRELEASE_CHINESE = "连发抬起";
 static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 static const char *WAITTIME_CHINESE = "延时";
 static const char *WAITTIME_MSLABEL_CHINESE = "毫秒";
+static const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
+static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
 static const char *SETTINGSELECTLABEL_CHINESE = "设定";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
@@ -188,8 +193,8 @@ static const char *REFRESHBUTTON_ENGLISH = "Refresh";
 static const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
 static const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
 static const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
-static const char *DELETEONEBUTTON_ENGLISH = "Delete One";
-static const char *CLEARALLBUTTON_ENGLISH = "Clear All";
+static const char *DELETEONEBUTTON_ENGLISH = "Delete";
+static const char *CLEARALLBUTTON_ENGLISH = "Clear";
 static const char *ADDMAPDATABUTTON_ENGLISH = "ADD";
 static const char *NAMECHECKBOX_ENGLISH = "Process";
 static const char *TITLECHECKBOX_ENGLISH = "Title";
@@ -202,6 +207,8 @@ static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 static const char *WAITTIME_ENGLISH = "Delay";
 static const char *WAITTIME_MSLABEL_ENGLISH = "ms";
+static const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";
+static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
@@ -377,6 +384,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
+
+    ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
+    ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
@@ -1541,6 +1551,22 @@ void QKeyMapper::changeEvent(QEvent *event)
         QTimer::singleShot(0, this, SLOT(WindowStateChangedProc()));
     }
     QDialog::changeEvent(event);
+}
+
+void QKeyMapper::keyPressEvent(QKeyEvent *event)
+{
+   if (event->key() == Qt::Key_F5) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
+#endif
+#ifndef DEBUG_LOGOUT_ON
+        m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
+#endif
+        refreshProcessInfoTable();
+
+   } else {
+       QDialog::keyPressEvent(event);
+   }
 }
 
 void QKeyMapper::on_keymapButton_clicked()
@@ -3214,7 +3240,7 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(14);
     }
-    ui->refreshButton->setFont(customFont);
+    // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3241,6 +3267,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->waitTime_msLabel->setFont(customFont);
+    ui->mouseXSpeedLabel->setFont(customFont);
+    ui->mouseYSpeedLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -3291,7 +3319,7 @@ void QKeyMapper::setControlFontChinese()
     else {
         customFont.setPointSize(14);
     }
-    ui->refreshButton->setFont(customFont);
+    // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
     ui->savemaplistButton->setFont(customFont);
 
@@ -3318,6 +3346,8 @@ void QKeyMapper::setControlFontChinese()
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->waitTime_msLabel->setFont(customFont);
+    ui->mouseXSpeedLabel->setFont(customFont);
+    ui->mouseYSpeedLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -3391,6 +3421,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->waitTimeLabel->setEnabled(status);
     ui->waitTime_msLabel->setEnabled(status);
     ui->waitTimeSpinBox->setEnabled(status);
+    ui->mouseXSpeedLabel->setEnabled(status);
+    ui->mouseYSpeedLabel->setEnabled(status);
+    ui->mouseXSpeedSpinBox->setEnabled(status);
+    ui->mouseYSpeedSpinBox->setEnabled(status);
 
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
@@ -3444,7 +3478,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mappingswitchkeyLabel->setEnabled(status);
     m_mappingswitchKeySeqEdit->setEnabled(status);
 
-    ui->refreshButton->setEnabled(status);
+    // ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
 
     ui->processinfoTable->setEnabled(status);
@@ -4394,7 +4428,7 @@ void QKeyMapper::setUILanguage_Chinese()
         ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
     }
 
-    ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
+    // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
     ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
@@ -4410,6 +4444,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
     ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
+    ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
+    ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_CHINESE);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
@@ -4448,7 +4484,7 @@ void QKeyMapper::setUILanguage_English()
         ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
     }
 
-    ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
+    // ui->refreshButton->setText(REFRESHBUTTON_ENGLISH);
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
@@ -4464,6 +4500,8 @@ void QKeyMapper::setUILanguage_English()
     ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
     ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
+    ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_ENGLISH);
+    ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_ENGLISH);
     ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
@@ -4512,6 +4550,8 @@ void QKeyMapper::resetFontSize()
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
         ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
@@ -4532,6 +4572,8 @@ void QKeyMapper::resetFontSize()
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
         ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
@@ -4665,14 +4707,6 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 
     Q_UNUSED(modifiers);
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_UP);
-}
-
-void QKeyMapper::on_refreshButton_clicked()
-{
-#ifndef DEBUG_LOGOUT_ON
-    m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
-#endif
-    refreshProcessInfoTable();
 }
 
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)

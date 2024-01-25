@@ -34,8 +34,8 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>400</x>
-     <y>495</y>
+     <x>880</x>
+     <y>570</y>
      <width>160</width>
      <height>40</height>
     </rect>
@@ -56,7 +56,7 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>660</x>
+     <x>340</x>
      <y>495</y>
      <width>160</width>
      <height>40</height>
@@ -122,25 +122,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="refreshButton">
-   <property name="geometry">
-    <rect>
-     <x>140</x>
-     <y>495</y>
-     <width>160</width>
-     <height>40</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Refresh</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QLineEdit" name="nameLineEdit">
    <property name="geometry">
     <rect>
@@ -185,7 +166,7 @@
   <widget class="QPushButton" name="addmapdataButton">
    <property name="geometry">
     <rect>
-     <x>920</x>
+     <x>910</x>
      <y>380</y>
      <width>60</width>
      <height>23</height>
@@ -236,9 +217,9 @@
   <widget class="QPushButton" name="deleteoneButton">
    <property name="geometry">
     <rect>
-     <x>587</x>
-     <y>450</y>
-     <width>121</width>
+     <x>910</x>
+     <y>410</y>
+     <width>60</width>
      <height>25</height>
     </rect>
    </property>
@@ -246,7 +227,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Delete One</string>
+    <string>Delete</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -255,9 +236,9 @@
   <widget class="QPushButton" name="clearallButton">
    <property name="geometry">
     <rect>
-     <x>775</x>
-     <y>450</y>
-     <width>121</width>
+     <x>980</x>
+     <y>410</y>
+     <width>60</width>
      <height>25</height>
     </rect>
    </property>
@@ -265,7 +246,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Clear All</string>
+    <string>Clear</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -340,8 +321,8 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>920</x>
-     <y>450</y>
+     <x>180</x>
+     <y>555</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -359,8 +340,8 @@
   <widget class="QComboBox" name="burstpressComboBox">
    <property name="geometry">
     <rect>
-     <x>935</x>
-     <y>490</y>
+     <x>585</x>
+     <y>440</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -703,14 +684,14 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>820</x>
-     <y>490</y>
-     <width>111</width>
+     <x>520</x>
+     <y>440</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
    <property name="text">
-    <string>BurstPress </string>
+    <string>BurstPress</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -719,8 +700,8 @@
   <widget class="QLabel" name="burstpress_msLabel">
    <property name="geometry">
     <rect>
-     <x>990</x>
-     <y>490</y>
+     <x>640</x>
+     <y>440</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -735,8 +716,8 @@
   <widget class="QComboBox" name="burstreleaseComboBox">
    <property name="geometry">
     <rect>
-     <x>935</x>
-     <y>520</y>
+     <x>725</x>
+     <y>440</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -1076,8 +1057,8 @@
   <widget class="QLabel" name="burstrelease_msLabel">
    <property name="geometry">
     <rect>
-     <x>990</x>
-     <y>520</y>
+     <x>780</x>
+     <y>440</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -1092,14 +1073,14 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>820</x>
-     <y>520</y>
-     <width>111</width>
+     <x>660</x>
+     <y>440</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
    <property name="text">
-    <string>BurstRelease </string>
+    <string>BurstRelease</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1197,7 +1178,7 @@
   <widget class="QCheckBox" name="nextarrowCheckBox">
    <property name="geometry">
     <rect>
-     <x>990</x>
+     <x>980</x>
      <y>380</y>
      <width>51</width>
      <height>21</height>
@@ -1262,7 +1243,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>605</y>
+     <y>520</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1281,7 +1262,7 @@
    <property name="geometry">
     <rect>
      <x>640</x>
-     <y>605</y>
+     <y>520</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1300,7 +1281,7 @@
    <property name="geometry">
     <rect>
      <x>760</x>
-     <y>605</y>
+     <y>520</y>
      <width>111</width>
      <height>21</height>
     </rect>
@@ -1319,7 +1300,7 @@
    <property name="geometry">
     <rect>
      <x>890</x>
-     <y>605</y>
+     <y>520</y>
      <width>141</width>
      <height>21</height>
     </rect>
@@ -1341,7 +1322,7 @@
    <property name="geometry">
     <rect>
      <x>700</x>
-     <y>575</y>
+     <y>490</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1354,7 +1335,7 @@
    <property name="geometry">
     <rect>
      <x>820</x>
-     <y>575</y>
+     <y>490</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1367,7 +1348,7 @@
    <property name="geometry">
     <rect>
      <x>620</x>
-     <y>575</y>
+     <y>490</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1383,7 +1364,7 @@
    <property name="geometry">
     <rect>
      <x>740</x>
-     <y>575</y>
+     <y>490</y>
      <width>76</width>
      <height>22</height>
     </rect>
@@ -1399,7 +1380,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>575</y>
+     <y>490</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1495,9 +1476,9 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>555</y>
+     <y>475</y>
      <width>520</width>
-     <height>85</height>
+     <height>75</height>
     </rect>
    </property>
    <property name="title">
@@ -1526,12 +1507,75 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QLabel" name="mouseXSpeedLabel">
+   <property name="geometry">
+    <rect>
+     <x>805</x>
+     <y>440</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X Speed</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="mouseXSpeedSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>870</x>
+     <y>440</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>3</number>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="mouseYSpeedSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>980</x>
+     <y>440</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>3</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mouseYSpeedLabel">
+   <property name="geometry">
+    <rect>
+     <x>915</x>
+     <y>440</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Y Speed</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
   <zorder>titleCheckBox</zorder>
-  <zorder>refreshButton</zorder>
   <zorder>nameLineEdit</zorder>
   <zorder>titleLineEdit</zorder>
   <zorder>keymapdataTable</zorder>
@@ -1574,6 +1618,10 @@
   <zorder>orikeySeqLabel</zorder>
   <zorder>windowswitchkeyLabel</zorder>
   <zorder>soundEffectCheckBox</zorder>
+  <zorder>mouseXSpeedLabel</zorder>
+  <zorder>mouseXSpeedSpinBox</zorder>
+  <zorder>mouseYSpeedSpinBox</zorder>
+  <zorder>mouseYSpeedLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
