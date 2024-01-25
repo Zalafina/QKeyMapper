@@ -73,6 +73,8 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
+static const char *PROGRAM_NAME = "QKeyMapper";
+
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
@@ -164,11 +166,11 @@ static const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
 static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
 static const char *SETTINGSELECTLABEL_CHINESE = "设定";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
-static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN按键";
+static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
-static const char *WINDOWSWITCHKEYLABEL_CHINESE = "窗口显示切换键";
+static const char *WINDOWSWITCHKEYLABEL_CHINESE = "显示切换键";
 static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
 static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程";
 static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
@@ -181,11 +183,11 @@ static const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
 static const char *VIRTUALGAMEPADGROUPBOX_CHINESE = "虚拟游戏手柄";
 static const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
 static const char *VJOYYSENSLABEL_CHINESE = "Y轴灵敏度";
-static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEmBus不可用";
-static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEmBus可用";
-static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEmBus";
-static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEmBus";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "启用虚拟手柄";
+static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEm不可用";
+static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEm可用";
+static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEm";
+static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEm";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 
@@ -211,7 +213,7 @@ static const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";
 static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
-static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN Key";
+static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
@@ -228,11 +230,11 @@ static const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
 static const char *VIRTUALGAMEPADGROUPBOX_ENGLISH = "Virtual Gamepad";
 static const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
 static const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
-static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmBus Unavailable";
-static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmBus Available";
-static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "Install ViGEmBus";
-static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "Uninstall ViGEmBus";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "Virtual Gamepad";
+static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmUnavailable";
+static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmAvailable";
+static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "InstallViGEm";
+static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "UninstallViGEm";
+static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
 
@@ -505,7 +507,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 
 //    if (false == loadresult){
-//        QMessageBox::warning(this, tr("QKeyMapper"), tr("Load invalid keymapdata from ini file.\nReset to default values."));
+//        QMessageBox::warning(this, PROGRAM_NAME, tr("Load invalid keymapdata from ini file.\nReset to default values."));
 //    }
 
     initHotKeySequence();
@@ -1099,7 +1101,6 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
         WindowText = QString::fromWCharArray(titleBuffer);
 
         if ((false == WindowText.isEmpty())
-                //&& (WindowText != QString("QKeyMapper"))
                 && (false == ProcessPath.isEmpty())
                 ){
             MAP_PROCESSINFO ProcessInfo;
@@ -1198,7 +1199,6 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
         WindowText = QString::fromWCharArray(titleBuffer);
 
         if ((false == WindowText.isEmpty())
-                //&& (WindowText != QString("QKeyMapper"))
                 && (false == ProcessPath.isEmpty())){
             MAP_PROCESSINFO ProcessInfo;
             QFileInfo fileinfo(ProcessPath);
@@ -1400,7 +1400,6 @@ void QKeyMapper::EnumProcessFunction(void)
                 WindowText = QString::fromWCharArray(titleBuffer);
 
                 if ((false == WindowText.isEmpty())
-                        //&& (WindowText != QString("QKeyMapper"))
                         && (false == ProcessPath.isEmpty())){
                     MAP_PROCESSINFO ProcessInfo;
                     ProcessInfo.FileName = filename;
@@ -1615,7 +1614,12 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
 #endif
         }
         else{
-            QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid process info for key mapping."));
+            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                QMessageBox::warning(this, PROGRAM_NAME, "Please doubleclick process info table to select valid processinfo for key mapping.");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "请双击进程列表为按键映射选择有效的进程信息。");
+            }
         }
     }
     else{
@@ -1841,7 +1845,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             ui->keymapdataTable->setItem(row, LOCK_COLUMN    , lockCheckBox);
 
             QString message = "Key sequence with \"»\" do not support Burst or Lock mode!";
-            QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+            QMessageBox::warning(this, PROGRAM_NAME, tr(message.toStdString().c_str()));
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) could not set burst or lock for key sequence(%d)", __func__, row, KeyMappingDataList[row].Mapping_Keys.size());
 #endif
@@ -2234,7 +2238,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
                 if (lastNumberStr.toInt() >= CUSTOMSETTING_INDEX_MAX) {
                     QString message = "There is already " + lastNumberStr + " CustomGlobalSettings, please remove some CustomGlobalSettings!";
-                    QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                    QMessageBox::warning(this, PROGRAM_NAME, message);
                     return;
                 }
                 else {
@@ -2281,7 +2285,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                 }
                 else {
                     QString message = "There is already " + QString::number(TITLESETTING_INDEX_MAX) + " settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "] first!";
-                    QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                    QMessageBox::warning(this, PROGRAM_NAME, message);
                     return;
                 }
             }
@@ -2421,7 +2425,12 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
     }
     else{
-        QMessageBox::warning(this, tr("QKeyMapper"), tr("Invalid KeyMap Data."));
+        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+            QMessageBox::warning(this, PROGRAM_NAME, "Invalid KeyMap Data to save!");
+        }
+        else {
+            QMessageBox::warning(this, PROGRAM_NAME, "错误的映射数据，保存失败！");
+        }
     }
 }
 
@@ -3121,7 +3130,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
 
     if (false == datavalidflag){
-        QMessageBox::warning(this, tr("QKeyMapper"), tr("<html><head/><body><p align=\"center\">Load invalid keymapdata from ini file.</p><p align=\"center\">Reset to default values.</p></body></html>"));
+        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+            QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">Load invalid keymapdata from INI file.</p><p align=\"center\">Reset to default values.</p></body></html>");
+        }
+        else {
+            QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">从INI文件加载了无效的设定数据。</p><p align=\"center\">显示默认设定。</p></body></html>");
+        }
         return false;
     }
     else {
@@ -3243,6 +3257,13 @@ void QKeyMapper::setControlFontEnglish()
     }
     // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(14);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
     ui->savemaplistButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
@@ -3263,7 +3284,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->burstpress_msLabel->setFont(customFont);
     ui->burstreleaseLabel->setFont(customFont);
     ui->burstrelease_msLabel->setFont(customFont);
-    ui->settingselectLabel->setFont(customFont);
+    // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
@@ -3322,6 +3343,13 @@ void QKeyMapper::setControlFontChinese()
     }
     // ui->refreshButton->setFont(customFont);
     ui->keymapButton->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(14);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
     ui->savemaplistButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
@@ -3342,7 +3370,7 @@ void QKeyMapper::setControlFontChinese()
     ui->burstpress_msLabel->setFont(customFont);
     ui->burstreleaseLabel->setFont(customFont);
     ui->burstrelease_msLabel->setFont(customFont);
-    ui->settingselectLabel->setFont(customFont);
+    // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
@@ -3414,7 +3442,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->burstpressComboBox->setEnabled(status);
     ui->burstreleaseComboBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
-    ui->settingselectLabel->setEnabled(status);
+    // ui->settingselectLabel->setEnabled(status);
     ui->burstpressLabel->setEnabled(status);
     ui->burstpress_msLabel->setEnabled(status);
     ui->burstreleaseLabel->setEnabled(status);
@@ -3591,7 +3619,7 @@ int QKeyMapper::installViGEmBusDriver()
     HINSTANCE ret_instance;
     INT64 ret;
 
-    /* ViGEMBus Remove Old Device Node 1 */
+    /* ViGEmBus Remove Old Device Node 1 */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
     argument = remove_old_devnode1_argument_str.toStdWString();
@@ -3609,7 +3637,7 @@ int QKeyMapper::installViGEmBusDriver()
 #endif
     }
 
-    /* ViGEMBus Remove Old Device Node 2 */
+    /* ViGEmBus Remove Old Device Node 2 */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
     argument = remove_old_devnode2_argument_str.toStdWString();
@@ -3627,7 +3655,7 @@ int QKeyMapper::installViGEmBusDriver()
 #endif
     }
 
-    /* ViGEMBus Create Device Node */
+    /* ViGEmBus Create Device Node */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
     argument = create_devnode_argument_str.toStdWString();
@@ -3646,7 +3674,7 @@ int QKeyMapper::installViGEmBusDriver()
     }
 
 
-    /* ViGEMBus Install Inf Driver */
+    /* ViGEmBus Install Inf Driver */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
     argument = install_argument_str.toStdWString();
@@ -3680,7 +3708,7 @@ int QKeyMapper::uninstallViGEmBusDriver()
     HINSTANCE ret_instance;
     INT64 ret;
 
-    /* ViGEMBus Remove Device Node */
+    /* ViGEmBus Remove Device Node */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
     argument = remove_devnode_argument_str.toStdWString();
@@ -3698,7 +3726,7 @@ int QKeyMapper::uninstallViGEmBusDriver()
 #endif
     }
 
-    /* ViGEMBus Uninstall Inf Driver */
+    /* ViGEmBus Uninstall Inf Driver */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
     argument = uninstall_argument_str.toStdWString();
@@ -4271,15 +4299,19 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
 void QKeyMapper::initWindowSwitchKeySeqEdit()
 {
+    int top = ui->windowswitchkeyLabel->y();
+    int left = ui->windowswitchkeyLabel->x() + ui->windowswitchkeyLabel->width() + 5;
     m_windowswitchKeySeqEdit->setObjectName(QStringLiteral("windowswitchKeySeqEdit"));
-    m_windowswitchKeySeqEdit->setGeometry(QRect(115, 600, 111, 22));
+    m_windowswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 }
 
 void QKeyMapper::initMappingSwitchKeySeqEdit()
 {
+    int top = ui->mappingswitchkeyLabel->y();
+    int left = ui->mappingswitchkeyLabel->x() + ui->mappingswitchkeyLabel->width() + 5;
     m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
-    m_mappingswitchKeySeqEdit->setGeometry(QRect(380, 600, 111, 22));
+    m_mappingswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -4447,7 +4479,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
     ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_CHINESE);
-    ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
+    // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
@@ -4503,7 +4535,7 @@ void QKeyMapper::setUILanguage_English()
     ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_ENGLISH);
     ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_ENGLISH);
-    ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
+    // ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
@@ -4847,8 +4879,14 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (findindex != -1){
             MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
             if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
-                QString message = QString("Key sequence mapping to \"%1\" is too long!").arg(currentOriKeyText);
-                QMessageBox::warning(this, tr("QKeyMapper"), tr(message.toStdString().c_str()));
+                QString message;
+                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                    message = QString("Key sequence mapping to \"%1\" is too long!").arg(currentOriKeyText);
+                }
+                else {
+                    message = QString("映射到\"%1\"的按键序列太长了!").arg(currentOriKeyText);
+                }
+                QMessageBox::warning(this, PROGRAM_NAME, message);
                 return;
             }
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
@@ -4897,7 +4935,12 @@ void QKeyMapper::on_addmapdataButton_clicked()
         refreshKeyMappingDataTable();
     }
     else{
-        QMessageBox::warning(this, tr("QKeyMapper"), tr("Conflict with exist Keys."));
+        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+            QMessageBox::warning(this, PROGRAM_NAME, "Conflict with exist Keys!");
+        }
+        else {
+            QMessageBox::warning(this, PROGRAM_NAME, "与已存在的按键映射冲突！");
+        }
     }
 }
 

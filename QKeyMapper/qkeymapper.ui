@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1050</width>
-    <height>650</height>
+    <width>1070</width>
+    <height>590</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,14 +18,14 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1050</width>
-    <height>650</height>
+    <width>1070</width>
+    <height>590</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1050</width>
-    <height>650</height>
+    <width>1070</width>
+    <height>590</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -34,8 +34,8 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>880</x>
-     <y>570</y>
+     <x>900</x>
+     <y>450</y>
      <width>160</width>
      <height>40</height>
     </rect>
@@ -56,10 +56,10 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>340</x>
-     <y>495</y>
-     <width>160</width>
-     <height>40</height>
+     <x>315</x>
+     <y>450</y>
+     <width>111</width>
+     <height>31</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -169,7 +169,7 @@
      <x>910</x>
      <y>380</y>
      <width>60</width>
-     <height>23</height>
+     <height>25</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -217,9 +217,9 @@
   <widget class="QPushButton" name="deleteoneButton">
    <property name="geometry">
     <rect>
-     <x>910</x>
-     <y>410</y>
-     <width>60</width>
+     <x>990</x>
+     <y>230</y>
+     <width>71</width>
      <height>25</height>
     </rect>
    </property>
@@ -236,9 +236,9 @@
   <widget class="QPushButton" name="clearallButton">
    <property name="geometry">
     <rect>
-     <x>980</x>
-     <y>410</y>
-     <width>60</width>
+     <x>990</x>
+     <y>300</y>
+     <width>71</width>
      <height>25</height>
     </rect>
    </property>
@@ -256,7 +256,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>383</y>
+     <y>370</y>
      <width>72</width>
      <height>72</height>
     </rect>
@@ -283,10 +283,10 @@
   <widget class="QPushButton" name="moveupButton">
    <property name="geometry">
     <rect>
-     <x>1000</x>
-     <y>130</y>
-     <width>30</width>
-     <height>35</height>
+     <x>999</x>
+     <y>100</y>
+     <width>51</width>
+     <height>31</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -302,10 +302,10 @@
   <widget class="QPushButton" name="movedownButton">
    <property name="geometry">
     <rect>
-     <x>1000</x>
-     <y>205</y>
-     <width>30</width>
-     <height>35</height>
+     <x>999</x>
+     <y>160</y>
+     <width>51</width>
+     <height>31</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -321,9 +321,9 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>555</y>
-     <width>121</width>
+     <x>870</x>
+     <y>410</y>
+     <width>90</width>
      <height>21</height>
     </rect>
    </property>
@@ -331,7 +331,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Disable WIN Key</string>
+    <string>Disable WIN</string>
    </property>
    <property name="checked">
     <bool>false</bool>
@@ -341,7 +341,7 @@
    <property name="geometry">
     <rect>
      <x>585</x>
-     <y>440</y>
+     <y>445</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -685,7 +685,7 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>440</y>
+     <y>445</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -701,7 +701,7 @@
    <property name="geometry">
     <rect>
      <x>640</x>
-     <y>440</y>
+     <y>445</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -716,8 +716,8 @@
   <widget class="QComboBox" name="burstreleaseComboBox">
    <property name="geometry">
     <rect>
-     <x>725</x>
-     <y>440</y>
+     <x>585</x>
+     <y>470</y>
      <width>52</width>
      <height>22</height>
     </rect>
@@ -1057,8 +1057,8 @@
   <widget class="QLabel" name="burstrelease_msLabel">
    <property name="geometry">
     <rect>
-     <x>780</x>
-     <y>440</y>
+     <x>640</x>
+     <y>470</y>
      <width>31</width>
      <height>22</height>
     </rect>
@@ -1073,8 +1073,8 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>660</x>
-     <y>440</y>
+     <x>520</x>
+     <y>470</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -1089,9 +1089,9 @@
   <widget class="QCheckBox" name="autoStartMappingCheckBox">
    <property name="geometry">
     <rect>
-     <x>350</x>
-     <y>555</y>
-     <width>171</width>
+     <x>30</x>
+     <y>550</y>
+     <width>120</width>
      <height>21</height>
     </rect>
    </property>
@@ -1108,7 +1108,7 @@
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>30</x>
      <y>455</y>
      <width>271</width>
      <height>22</height>
@@ -1119,22 +1119,6 @@
    </property>
    <property name="currentIndex">
     <number>-1</number>
-   </property>
-  </widget>
-  <widget class="QLabel" name="settingselectLabel">
-   <property name="geometry">
-    <rect>
-     <x>110</x>
-     <y>455</y>
-     <width>41</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Setting</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QPushButton" name="removeSettingButton">
@@ -1160,8 +1144,8 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>555</y>
-     <width>151</width>
+     <y>520</y>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
@@ -1197,9 +1181,9 @@
   <widget class="QComboBox" name="languageComboBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>480</y>
-     <width>76</width>
+     <x>990</x>
+     <y>30</y>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
@@ -1226,10 +1210,10 @@
   <widget class="QLabel" name="mappingswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>265</x>
-     <y>600</y>
-     <width>110</width>
-     <height>22</height>
+     <x>160</x>
+     <y>550</y>
+     <width>60</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -1243,7 +1227,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>520</y>
+     <y>550</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1252,7 +1236,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Virtual Gamepad</string>
+    <string>VirtualGamepad</string>
    </property>
    <property name="checked">
     <bool>false</bool>
@@ -1261,9 +1245,9 @@
   <widget class="QPushButton" name="installViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>640</x>
-     <y>520</y>
-     <width>101</width>
+     <x>811</x>
+     <y>550</y>
+     <width>70</width>
      <height>21</height>
     </rect>
    </property>
@@ -1271,7 +1255,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Install ViGEmBus</string>
+    <string>InstallViGEm</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -1280,9 +1264,9 @@
   <widget class="QPushButton" name="uninstallViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>760</x>
-     <y>520</y>
-     <width>111</width>
+     <x>891</x>
+     <y>550</y>
+     <width>70</width>
      <height>21</height>
     </rect>
    </property>
@@ -1290,7 +1274,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Uninstall ViGEmBus</string>
+    <string>UninstallViGEm</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -1299,9 +1283,9 @@
   <widget class="QLabel" name="ViGEmBusStatusLabel">
    <property name="geometry">
     <rect>
-     <x>890</x>
-     <y>520</y>
-     <width>141</width>
+     <x>970</x>
+     <y>550</y>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -1321,8 +1305,8 @@
   <widget class="QSpinBox" name="vJoyXSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>700</x>
-     <y>490</y>
+     <x>660</x>
+     <y>520</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1334,8 +1318,8 @@
   <widget class="QSpinBox" name="vJoyYSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>820</x>
-     <y>490</y>
+     <x>660</x>
+     <y>550</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1347,9 +1331,9 @@
   <widget class="QLabel" name="vJoyXSensLabel">
    <property name="geometry">
     <rect>
-     <x>620</x>
-     <y>490</y>
-     <width>76</width>
+     <x>595</x>
+     <y>520</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -1363,9 +1347,9 @@
   <widget class="QLabel" name="vJoyYSensLabel">
    <property name="geometry">
     <rect>
-     <x>740</x>
-     <y>490</y>
-     <width>76</width>
+     <x>595</x>
+     <y>550</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -1380,7 +1364,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>490</y>
+     <y>520</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -1459,10 +1443,10 @@
   <widget class="QLabel" name="windowswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>600</y>
-     <width>90</width>
-     <height>22</height>
+     <x>160</x>
+     <y>520</y>
+     <width>60</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -1476,8 +1460,8 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>475</y>
-     <width>520</width>
+     <y>505</y>
+     <width>541</width>
      <height>75</height>
     </rect>
    </property>
@@ -1492,8 +1476,8 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>520</y>
-     <width>151</width>
+     <y>490</y>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
@@ -1510,9 +1494,9 @@
   <widget class="QLabel" name="mouseXSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>805</x>
-     <y>440</y>
-     <width>61</width>
+     <x>670</x>
+     <y>445</y>
+     <width>41</width>
      <height>22</height>
     </rect>
    </property>
@@ -1526,8 +1510,8 @@
   <widget class="QSpinBox" name="mouseXSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>870</x>
-     <y>440</y>
+     <x>715</x>
+     <y>445</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1542,8 +1526,8 @@
   <widget class="QSpinBox" name="mouseYSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>980</x>
-     <y>440</y>
+     <x>715</x>
+     <y>470</y>
      <width>45</width>
      <height>22</height>
     </rect>
@@ -1558,9 +1542,9 @@
   <widget class="QLabel" name="mouseYSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>915</x>
-     <y>440</y>
-     <width>61</width>
+     <x>670</x>
+     <y>470</y>
+     <width>41</width>
      <height>22</height>
     </rect>
    </property>
@@ -1596,7 +1580,6 @@
   <zorder>burstreleaseLabel</zorder>
   <zorder>autoStartMappingCheckBox</zorder>
   <zorder>settingselectComboBox</zorder>
-  <zorder>settingselectLabel</zorder>
   <zorder>removeSettingButton</zorder>
   <zorder>autoStartupCheckBox</zorder>
   <zorder>nextarrowCheckBox</zorder>
