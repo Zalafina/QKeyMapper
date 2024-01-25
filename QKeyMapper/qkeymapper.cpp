@@ -1564,7 +1564,8 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 #endif
         refreshProcessInfoTable();
 
-   } else {
+   }
+   else if (event->key() != Qt::Key_Escape) {
        QDialog::keyPressEvent(event);
    }
 }
