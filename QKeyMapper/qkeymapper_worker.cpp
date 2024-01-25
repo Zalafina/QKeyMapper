@@ -37,6 +37,8 @@ static const int JOYSTICK_AXIS_RS_VERTICAL      = 3;
 static const int JOYSTICK_AXIS_LT_BUTTON        = 4;
 static const int JOYSTICK_AXIS_RT_BUTTON        = 5;
 
+static const qreal JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD = 1e-04;
+
 static const qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD      = 0.15;
 static const qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD    = 0.5;
 
@@ -1522,8 +1524,8 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
 
         // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
-        double x = -std::exp((-1.0 / vJoy_X_Sensitivity) * std::abs(delta_x)) + 1.0;
-        double y = -std::exp((-1.0 / vJoy_Y_Sensitivity) * std::abs(delta_y)) + 1.0;
+        qreal x = -qExp((-1.0 / vJoy_X_Sensitivity) * qAbs(delta_x)) + 1.0;
+        qreal y = -qExp((-1.0 / vJoy_Y_Sensitivity) * qAbs(delta_y)) + 1.0;
         // take the sign into account, expanding the range to (-1, 1)
         x *= sign(delta_x);
         y *= -sign(delta_y);
@@ -2092,7 +2094,11 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
     qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
     if (m_JoystickCapture) {
-        checkJoystickAxis(e);
+        QJoystickAxisEvent axisEvent = e;
+        if (qFabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
+            axisEvent.value = 0;
+        }
+        checkJoystickAxis(axisEvent);
     }
 }
 
@@ -2621,12 +2627,6 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
     int sensitivity_x = 1;
     int sensitivity_y = 1;
 
-// #ifdef DEBUG_LOGOUT_ON
-//     if (axis_state.left_x != 0 || axis_state.left_y != 0 || axis_state.right_x != 0 || axis_state.right_y != 0) {
-//         qDebug().nospace().noquote() << "[joystick2MouseMoveProc]" << "s_Mouse2vJoy_EnableState = " << s_Mouse2vJoy_EnableState << ", Joystick_AxisState -> Left-X = " << axis_state.left_x << ", Left-Y = " << axis_state.left_y << ", Right-X = " << axis_state.right_x << ", Right-Y = " << axis_state.right_y;
-//     }
-// #endif
-
     if (JOY2MOUSE_LEFT == s_Joy2Mouse_EnableState) {
         checkLeftJoystick = true;
     }
@@ -2735,6 +2735,10 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
     }
 
     if (delta_x != 0 || delta_y != 0) {
+#ifdef JOYSTICK_VERBOSE_LOG
+        qDebug().nospace().noquote() << "[joystick2MouseMoveProc]" << "JoyAxis -> Left-X = " << axis_state.left_x << ", Left-Y = " << axis_state.left_y << ", Right-X = " << axis_state.right_x << ", Right-Y = " << axis_state.right_y \
+                                     << ", delta_x = " << delta_x << ", delta_y = " << delta_y;
+#endif
         sendMouseMove(delta_x, delta_y);
     }
 }
@@ -3029,7 +3033,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef MOUSE_VERBOSE_LOG
                 qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel -> Delta =" << zDelta;
 #endif
-                short delta_abs = std::abs(zDelta);
+                short delta_abs = qAbs(zDelta);
                 if (delta_abs >= WHEEL_DELTA) {
                     bool wheel_up_found = false;
                     bool wheel_down_found = false;
