@@ -1102,6 +1102,7 @@ int QKeyMapper_Worker::ViGEmClient_Add()
 #endif
 
             XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
+            s_ViGEmTarget_Report.sThumbLY = 1;
             VIGEM_ERROR error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
