@@ -45,6 +45,12 @@ static const int TITLESETTING_INDEX_INVALID = -1;
 static const int TITLESETTING_INDEX_ANYTITLE = 0;
 static const int TITLESETTING_INDEX_MAX = 9;
 
+static const int BURST_TIME_MIN = 1;
+static const int BURST_TIME_MAX = 5000;
+
+static const int BURST_PRESS_TIME_DEFAULT   = 40;
+static const int BURST_RELEASE_TIME_DEFAULT = 20;
+
 static const int MAPPING_WAITTIME_MIN = 0;
 static const int MAPPING_WAITTIME_MAX = 5000;
 
@@ -386,7 +392,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
-
+    ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
+    ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
@@ -1500,12 +1507,12 @@ bool QKeyMapper::getDisableWinKeyStatus()
 
 int QKeyMapper::getBurstPressTime()
 {
-    return getInstance()->ui->burstpressComboBox->currentText().toInt();
+    return getInstance()->ui->burstpressSpinBox->value();
 }
 
 int QKeyMapper::getBurstReleaseTime()
 {
-    return getInstance()->ui->burstreleaseComboBox->currentText().toInt();
+    return getInstance()->ui->burstreleaseSpinBox->value();
 }
 
 int QKeyMapper::getvJoyXSensitivity()
@@ -2171,8 +2178,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList mapping_keysList;
         QStringList burstList;
         QStringList lockList;
-        QString burstpressTimeString = ui->burstpressComboBox->currentText();
-        QString burstreleaseTimeString = ui->burstreleaseComboBox->currentText();
+        int burstpressTime = ui->burstpressSpinBox->value();
+        int burstreleaseTime = ui->burstreleaseSpinBox->value();
 #ifdef VIGEM_CLIENT_SUPPORT
         int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
         int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
@@ -2333,8 +2340,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
 #ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
@@ -2347,8 +2354,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTimeString  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTimeString  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
 #ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
@@ -3039,29 +3046,29 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
     if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME)){
-        QString burstpressTimeString = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME).toString();
-        if (false == burstpressTimeString.isEmpty()) {
-            ui->burstpressComboBox->setCurrentText(burstpressTimeString);
+        int burstpressTime = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME).toInt();
+        if (BURST_TIME_MIN <= burstpressTime && burstpressTime <= BURST_TIME_MAX) {
+            ui->burstpressSpinBox->setValue(burstpressTime);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "BurstPressTime =" << burstpressTimeString;
+        qDebug() << "[loadKeyMapSetting]" << "BurstPressTime =" << burstpressTime;
 #endif
     }
     else {
-        ui->burstpressComboBox->setCurrentText(QString("40"));
+        ui->burstpressSpinBox->setValue(BURST_PRESS_TIME_DEFAULT);
     }
 
     if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME)){
-        QString burstreleaseTimeString = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME).toString();
-        if (false == burstreleaseTimeString.isEmpty()) {
-            ui->burstreleaseComboBox->setCurrentText(burstreleaseTimeString);
+        int burstreleaseTime = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME).toInt();
+        if (BURST_TIME_MIN <= burstreleaseTime && burstreleaseTime <= BURST_TIME_MAX) {
+            ui->burstreleaseSpinBox->setValue(burstreleaseTime);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "BurstReleaseTime =" << burstreleaseTimeString;
+        qDebug() << "[loadKeyMapSetting]" << "BurstReleaseTime =" << burstreleaseTime;
 #endif
     }
     else {
-        ui->burstreleaseComboBox->setCurrentText(QString("20"));
+        ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
     }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3439,8 +3446,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->autoStartupCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
-    ui->burstpressComboBox->setEnabled(status);
-    ui->burstreleaseComboBox->setEnabled(status);
+    ui->burstpressSpinBox->setEnabled(status);
+    ui->burstreleaseSpinBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
     // ui->settingselectLabel->setEnabled(status);
     ui->burstpressLabel->setEnabled(status);
@@ -4586,8 +4593,8 @@ void QKeyMapper::resetFontSize()
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
-        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->burstpressSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->burstreleaseSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
         ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
 
@@ -4608,8 +4615,8 @@ void QKeyMapper::resetFontSize()
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
-        ui->burstpressComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->burstreleaseComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->burstpressSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->burstreleaseSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
         ui->keymapdataTable->setFont(QFont("Microsoft YaHei", 9));
 

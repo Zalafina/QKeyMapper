@@ -337,350 +337,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QComboBox" name="burstpressComboBox">
-   <property name="geometry">
-    <rect>
-     <x>585</x>
-     <y>445</y>
-     <width>52</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="currentText">
-    <string>40</string>
-   </property>
-   <property name="currentIndex">
-    <number>31</number>
-   </property>
-   <item>
-    <property name="text">
-     <string>1</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>2</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>3</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>4</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>5</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>6</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>7</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>8</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>9</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>10</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>11</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>12</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>13</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>14</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>15</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>16</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>17</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>18</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>19</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>20</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>21</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>22</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>23</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>24</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>25</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>26</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>27</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>28</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>29</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>30</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>35</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>40</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>45</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>50</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>55</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>60</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>65</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>70</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>75</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>80</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>85</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>90</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>95</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>100</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>150</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>200</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>250</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>300</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>350</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>400</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>450</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>600</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>700</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>800</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>900</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>1000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>1500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>2000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>2500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>3000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>3500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>4000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>4500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>5000</string>
-    </property>
-   </item>
-  </widget>
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
@@ -696,347 +352,6 @@
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
-  </widget>
-  <widget class="QComboBox" name="burstreleaseComboBox">
-   <property name="geometry">
-    <rect>
-     <x>585</x>
-     <y>470</y>
-     <width>52</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="currentIndex">
-    <number>19</number>
-   </property>
-   <item>
-    <property name="text">
-     <string>1</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>2</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>3</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>4</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>5</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>6</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>7</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>8</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>9</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>10</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>11</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>12</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>13</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>14</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>15</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>16</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>17</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>18</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>19</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>20</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>21</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>22</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>23</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>24</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>25</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>26</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>27</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>28</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>29</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>30</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>35</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>40</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>45</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>50</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>55</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>60</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>65</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>70</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>75</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>80</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>85</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>90</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>95</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>100</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>150</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>200</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>250</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>300</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>350</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>400</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>450</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>600</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>700</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>800</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>900</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>1000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>1500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>2000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>2500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>3000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>3500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>4000</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>4500</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>5000</string>
-    </property>
-   </item>
   </widget>
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
@@ -1464,7 +779,7 @@
     <rect>
      <x>700</x>
      <y>445</y>
-     <width>45</width>
+     <width>35</width>
      <height>22</height>
     </rect>
    </property>
@@ -1480,7 +795,7 @@
     <rect>
      <x>700</x>
      <y>470</y>
-     <width>45</width>
+     <width>35</width>
      <height>22</height>
     </rect>
    </property>
@@ -1507,6 +822,38 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QSpinBox" name="burstpressSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>585</x>
+     <y>445</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>40</number>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="burstreleaseSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>585</x>
+     <y>470</y>
+     <width>45</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>20</number>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1524,9 +871,7 @@
   <zorder>moveupButton</zorder>
   <zorder>movedownButton</zorder>
   <zorder>disableWinKeyCheckBox</zorder>
-  <zorder>burstpressComboBox</zorder>
   <zorder>burstpressLabel</zorder>
-  <zorder>burstreleaseComboBox</zorder>
   <zorder>burstreleaseLabel</zorder>
   <zorder>autoStartMappingCheckBox</zorder>
   <zorder>settingselectComboBox</zorder>
@@ -1554,6 +899,8 @@
   <zorder>mouseXSpeedSpinBox</zorder>
   <zorder>mouseYSpeedSpinBox</zorder>
   <zorder>mouseYSpeedLabel</zorder>
+  <zorder>burstpressSpinBox</zorder>
+  <zorder>burstreleaseSpinBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
