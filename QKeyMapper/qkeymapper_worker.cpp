@@ -1100,6 +1100,18 @@ int QKeyMapper_Worker::ViGEmClient_Add()
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[ViGEmClient_Add] ViGEmTarget Add Success, index(%lu), user_index(%lu). -> [0x%08X]", index, user_index, s_ViGEmTarget);
 #endif
+
+            XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
+            VIGEM_ERROR error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+            if (error != VIGEM_ERROR_NONE) {
+                qWarning("[ViGEmClient_Add] Reset Joystick Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
+            }
+            else {
+                qDebug("[ViGEmClient_Add] Reset Joystick -> ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+            }
+#endif
         }
         else {
             return -1;
@@ -1140,7 +1152,7 @@ void QKeyMapper_Worker::ViGEmClient_Remove()
             else {
                 s_ViGEmTarget = Q_NULLPTR;
 #ifdef DEBUG_LOGOUT_ON
-                qWarning("[ViGEmClient_Remove] ViGEmTarget Reset Buttons failed!!!, Error=0x%08X -> [0x%08X]", error, s_ViGEmTarget);
+                qWarning("[ViGEmClient_Remove] Reset Joystick Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
 #endif
             }
         }
