@@ -167,9 +167,9 @@
    <property name="geometry">
     <rect>
      <x>910</x>
-     <y>380</y>
-     <width>60</width>
-     <height>25</height>
+     <y>378</y>
+     <width>71</width>
+     <height>26</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -324,7 +324,7 @@
      <x>870</x>
      <y>410</y>
      <width>90</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1162,7 +1162,7 @@
   <widget class="QCheckBox" name="nextarrowCheckBox">
    <property name="geometry">
     <rect>
-     <x>980</x>
+     <x>990</x>
      <y>380</y>
      <width>51</width>
      <height>21</height>
