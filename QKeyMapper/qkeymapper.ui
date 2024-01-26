@@ -321,7 +321,7 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>870</x>
+     <x>850</x>
      <y>410</y>
      <width>90</width>
      <height>22</height>
@@ -697,22 +697,6 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QLabel" name="burstpress_msLabel">
-   <property name="geometry">
-    <rect>
-     <x>640</x>
-     <y>445</y>
-     <width>31</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>ms</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-   </property>
-  </widget>
   <widget class="QComboBox" name="burstreleaseComboBox">
    <property name="geometry">
     <rect>
@@ -1054,22 +1038,6 @@
     </property>
    </item>
   </widget>
-  <widget class="QLabel" name="burstrelease_msLabel">
-   <property name="geometry">
-    <rect>
-     <x>640</x>
-     <y>470</y>
-     <width>31</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>ms</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-   </property>
-  </widget>
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
@@ -1091,7 +1059,7 @@
     <rect>
      <x>30</x>
      <y>550</y>
-     <width>120</width>
+     <width>141</width>
      <height>21</height>
     </rect>
    </property>
@@ -1145,7 +1113,7 @@
     <rect>
      <x>30</x>
      <y>520</y>
-     <width>91</width>
+     <width>121</width>
      <height>21</height>
     </rect>
    </property>
@@ -1210,7 +1178,7 @@
   <widget class="QLabel" name="mappingswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>170</x>
      <y>550</y>
      <width>60</width>
      <height>21</height>
@@ -1408,22 +1376,6 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QLabel" name="waitTime_msLabel">
-   <property name="geometry">
-    <rect>
-     <x>825</x>
-     <y>410</y>
-     <width>31</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>ms</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-   </property>
-  </widget>
   <widget class="QLabel" name="orikeySeqLabel">
    <property name="geometry">
     <rect>
@@ -1443,7 +1395,7 @@
   <widget class="QLabel" name="windowswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>170</x>
      <y>520</y>
      <width>60</width>
      <height>21</height>
@@ -1494,9 +1446,9 @@
   <widget class="QLabel" name="mouseXSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>645</x>
      <y>445</y>
-     <width>41</width>
+     <width>51</width>
      <height>22</height>
     </rect>
    </property>
@@ -1510,7 +1462,7 @@
   <widget class="QSpinBox" name="mouseXSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>715</x>
+     <x>700</x>
      <y>445</y>
      <width>45</width>
      <height>22</height>
@@ -1526,7 +1478,7 @@
   <widget class="QSpinBox" name="mouseYSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>715</x>
+     <x>700</x>
      <y>470</y>
      <width>45</width>
      <height>22</height>
@@ -1542,9 +1494,9 @@
   <widget class="QLabel" name="mouseYSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>645</x>
      <y>470</y>
-     <width>41</width>
+     <width>51</width>
      <height>22</height>
     </rect>
    </property>
@@ -1574,9 +1526,7 @@
   <zorder>disableWinKeyCheckBox</zorder>
   <zorder>burstpressComboBox</zorder>
   <zorder>burstpressLabel</zorder>
-  <zorder>burstpress_msLabel</zorder>
   <zorder>burstreleaseComboBox</zorder>
-  <zorder>burstrelease_msLabel</zorder>
   <zorder>burstreleaseLabel</zorder>
   <zorder>autoStartMappingCheckBox</zorder>
   <zorder>settingselectComboBox</zorder>
@@ -1597,7 +1547,6 @@
   <zorder>lockCursorCheckBox</zorder>
   <zorder>waitTimeSpinBox</zorder>
   <zorder>waitTimeLabel</zorder>
-  <zorder>waitTime_msLabel</zorder>
   <zorder>orikeySeqLabel</zorder>
   <zorder>windowswitchkeyLabel</zorder>
   <zorder>soundEffectCheckBox</zorder>
