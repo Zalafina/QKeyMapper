@@ -90,6 +90,9 @@ static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
+static const char *VIRTUAL_GAMEPAD_X360 = "X360";
+static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
+
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
@@ -1064,7 +1067,12 @@ int QKeyMapper_Worker::ViGEmClient_Add()
         return 0;
     }
 
-    s_ViGEmTarget = vigem_target_x360_alloc();
+    if (VIRTUAL_GAMEPAD_DS4 == QKeyMapper::getVirtualGamepadType()) {
+        s_ViGEmTarget = vigem_target_ds4_alloc();
+    }
+    else {
+        s_ViGEmTarget = vigem_target_x360_alloc();
+    }
 
     if (s_ViGEmTarget == Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1091,34 +1099,36 @@ int QKeyMapper_Worker::ViGEmClient_Add()
     }
 
     ULONG index = 255;
-    ULONG user_index = 255;
     VIGEM_ERROR error;
     Q_UNUSED(index);
     Q_UNUSED(error);
     if (s_ViGEmTarget != Q_NULLPTR) {
         index = vigem_target_get_index(s_ViGEmTarget);
-        error = vigem_target_x360_get_user_index(s_ViGEmClient, s_ViGEmTarget, &user_index);
-        if (error == VIGEM_ERROR_NONE) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[ViGEmClient_Add] ViGEmTarget Add Success, index(%lu), user_index(%lu). -> [0x%08X]", index, user_index, s_ViGEmTarget);
+        qDebug("[ViGEmClient_Add] ViGEmTarget Add Success, index(%lu) -> [0x%08X]", index, s_ViGEmTarget);
 #endif
 
-            XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
-            s_ViGEmTarget_Report.sThumbLY = 1;
-            VIGEM_ERROR error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
-            Q_UNUSED(error);
-#ifdef DEBUG_LOGOUT_ON
-            if (error != VIGEM_ERROR_NONE) {
-                qWarning("[ViGEmClient_Add] Reset Joystick Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
-            }
-            else {
-                qDebug("[ViGEmClient_Add] Reset Joystick -> ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
-            }
-#endif
+        XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
+        s_ViGEmTarget_Report.sThumbLY = 1;
+        VIGEM_ERROR error;
+        if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+            DS4_REPORT ds4_report;
+            DS4_REPORT_INIT(&ds4_report);
+            XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+            error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
         }
         else {
-            return -1;
+            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
         }
+        Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+        if (error != VIGEM_ERROR_NONE) {
+            qWarning("[ViGEmClient_Add] Reset VirtualGamepad Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
+        }
+        else {
+            qDebug("[ViGEmClient_Add] Reset VirtualGamepad -> ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+        }
+#endif
     }
     else {
         return -1;
@@ -1134,7 +1144,16 @@ void QKeyMapper_Worker::ViGEmClient_Remove()
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
         if (s_ViGEmClient_ConnectState == VIGEMCLIENT_CONNECT_SUCCESS && vigem_target_is_attached(s_ViGEmTarget)) {
             XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
-            VIGEM_ERROR error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            VIGEM_ERROR error;
+            if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+                DS4_REPORT ds4_report;
+                DS4_REPORT_INIT(&ds4_report);
+                XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+                error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+            }
+            else {
+                error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            }
 
             if (error == VIGEM_ERROR_NONE) {
                 error = vigem_target_remove(s_ViGEmClient, s_ViGEmTarget);
@@ -1155,7 +1174,7 @@ void QKeyMapper_Worker::ViGEmClient_Remove()
             else {
                 s_ViGEmTarget = Q_NULLPTR;
 #ifdef DEBUG_LOGOUT_ON
-                qWarning("[ViGEmClient_Remove] Reset Joystick Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
+                qWarning("[ViGEmClient_Remove] Reset VirtualGamepad Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
 #endif
             }
         }
@@ -1309,7 +1328,15 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
 
         if (updateFlag) {
             VIGEM_ERROR error;
-            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+                DS4_REPORT ds4_report;
+                DS4_REPORT_INIT(&ds4_report);
+                XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+                error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+            }
+            else {
+                error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            }
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
             if (error != VIGEM_ERROR_NONE) {
@@ -1405,7 +1432,15 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
 
         if (updateFlag) {
             VIGEM_ERROR error;
-            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+                DS4_REPORT ds4_report;
+                DS4_REPORT_INIT(&ds4_report);
+                XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+                error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+            }
+            else {
+                error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            }
             Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
             if (error != VIGEM_ERROR_NONE) {
@@ -1573,7 +1608,15 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
 
         VIGEM_ERROR error;
-        error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+        if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+            DS4_REPORT ds4_report;
+            DS4_REPORT_INIT(&ds4_report);
+            XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+            error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+        }
+        else {
+            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+        }
         Q_UNUSED(error);
         m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
 #ifdef DEBUG_LOGOUT_ON
@@ -1605,20 +1648,21 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset()
         return;
     }
 
-    s_ViGEmTarget_Report.wButtons = 0;
-    s_ViGEmTarget_Report.bLeftTrigger = 0;
-    s_ViGEmTarget_Report.bRightTrigger = 0;
-    s_ViGEmTarget_Report.sThumbLX = 0;
-    s_ViGEmTarget_Report.sThumbLY = 0;
-    s_ViGEmTarget_Report.sThumbRX = 0;
-    s_ViGEmTarget_Report.sThumbRY = 0;
-
+    XUSB_REPORT_INIT(&s_ViGEmTarget_Report);
     VIGEM_ERROR error;
-    error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+        DS4_REPORT ds4_report;
+        DS4_REPORT_INIT(&ds4_report);
+        XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+        error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+    }
+    else {
+        error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    }
     Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
     if (error != VIGEM_ERROR_NONE) {
-        qDebug("[ViGEmClient_GamepadReset] GamepadReset Update ErrorCode: 0x%08X", error);
+        qDebug("[ViGEmClient_GamepadReset] VirtualGamepad Reset Update ErrorCode: 0x%08X", error);
     }
     else {
 #ifdef JOYSTICK_VERBOSE_LOG
@@ -1666,7 +1710,15 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
     ViGEmClient_CheckJoysticksReportData();
 
     VIGEM_ERROR error;
-    error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+        DS4_REPORT ds4_report;
+        DS4_REPORT_INIT(&ds4_report);
+        XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+        error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+    }
+    else {
+        error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    }
     Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
     if (error != VIGEM_ERROR_NONE) {
@@ -3612,10 +3664,10 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert(JOY_LS2MOUSE_STR                ,   (int)JOYSTICK_LS_MOUSE          );
     JoyStickKeyMap.insert(JOY_RS2MOUSE_STR                ,   (int)JOYSTICK_RS_MOUSE          );
     /* Joystick Buttons */
-    JoyStickKeyMap.insert("Joy-Key1(A)"                   ,   (int)JOYSTICK_BUTTON_0          );
-    JoyStickKeyMap.insert("Joy-Key2(B)"                   ,   (int)JOYSTICK_BUTTON_1          );
-    JoyStickKeyMap.insert("Joy-Key3(X)"                   ,   (int)JOYSTICK_BUTTON_2          );
-    JoyStickKeyMap.insert("Joy-Key4(Y)"                   ,   (int)JOYSTICK_BUTTON_3          );
+    JoyStickKeyMap.insert("Joy-Key1(A/×)"                 ,   (int)JOYSTICK_BUTTON_0          );
+    JoyStickKeyMap.insert("Joy-Key2(B/○)"                 ,   (int)JOYSTICK_BUTTON_1          );
+    JoyStickKeyMap.insert("Joy-Key3(X/□)"                 ,   (int)JOYSTICK_BUTTON_2          );
+    JoyStickKeyMap.insert("Joy-Key4(Y/△)"                 ,   (int)JOYSTICK_BUTTON_3          );
     JoyStickKeyMap.insert("Joy-Key5(LB)"                  ,   (int)JOYSTICK_BUTTON_4          );
     JoyStickKeyMap.insert("Joy-Key6(RB)"                  ,   (int)JOYSTICK_BUTTON_5          );
     JoyStickKeyMap.insert("Joy-Key7(Back)"                ,   (int)JOYSTICK_BUTTON_6          );
@@ -3641,10 +3693,10 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-RS-Right"                  ,   (int)JOYSTICK_RS_RIGHT          );
 
     /* Joystick Buttons Map */
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A)"                   );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_1,       "Joy-Key2(B)"                   );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_2,       "Joy-Key3(X)"                   );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_3,       "Joy-Key4(Y)"                   );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A/×)"                 );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_1,       "Joy-Key2(B/○)"                 );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_2,       "Joy-Key3(X/□)"                 );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_3,       "Joy-Key4(Y/△)"                 );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_4,       "Joy-Key5(LB)"                  );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_5,       "Joy-Key6(RB)"                  );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_6,       "Joy-Key7(Back)"                );
@@ -3704,10 +3756,10 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     JoyStickKeyMap.insert(VJOY_MOUSE2LS_STR             ,   (int)JOYSTICK_LS_MOUSE      );
     JoyStickKeyMap.insert(VJOY_MOUSE2RS_STR             ,   (int)JOYSTICK_RS_MOUSE      );
 
-    JoyStickKeyMap.insert("vJoy-Key1(A)"                ,   (int)JOYSTICK_BUTTON_0      );
-    JoyStickKeyMap.insert("vJoy-Key2(B)"                ,   (int)JOYSTICK_BUTTON_1      );
-    JoyStickKeyMap.insert("vJoy-Key3(X)"                ,   (int)JOYSTICK_BUTTON_2      );
-    JoyStickKeyMap.insert("vJoy-Key4(Y)"                ,   (int)JOYSTICK_BUTTON_3      );
+    JoyStickKeyMap.insert("vJoy-Key1(A/×)"              ,   (int)JOYSTICK_BUTTON_0      );
+    JoyStickKeyMap.insert("vJoy-Key2(B/○)"              ,   (int)JOYSTICK_BUTTON_1      );
+    JoyStickKeyMap.insert("vJoy-Key3(X/□)"              ,   (int)JOYSTICK_BUTTON_2      );
+    JoyStickKeyMap.insert("vJoy-Key4(Y/△)"              ,   (int)JOYSTICK_BUTTON_3      );
     JoyStickKeyMap.insert("vJoy-Key5(LB)"               ,   (int)JOYSTICK_BUTTON_4      );
     JoyStickKeyMap.insert("vJoy-Key6(RB)"               ,   (int)JOYSTICK_BUTTON_5      );
     JoyStickKeyMap.insert("vJoy-Key7(Back)"             ,   (int)JOYSTICK_BUTTON_6      );
@@ -3733,10 +3785,10 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     JoyStickKeyMap.insert("vJoy-RS-Right"               ,   (int)JOYSTICK_RS_RIGHT      );
 
     /* ViGEm Virtual Joystick Buttons */
-    ViGEmButtonMap.insert("vJoy-Key1(A)"                ,   XUSB_GAMEPAD_A              );
-    ViGEmButtonMap.insert("vJoy-Key2(B)"                ,   XUSB_GAMEPAD_B              );
-    ViGEmButtonMap.insert("vJoy-Key3(X)"                ,   XUSB_GAMEPAD_X              );
-    ViGEmButtonMap.insert("vJoy-Key4(Y)"                ,   XUSB_GAMEPAD_Y              );
+    ViGEmButtonMap.insert("vJoy-Key1(A/×)"              ,   XUSB_GAMEPAD_A              );
+    ViGEmButtonMap.insert("vJoy-Key2(B/○)"              ,   XUSB_GAMEPAD_B              );
+    ViGEmButtonMap.insert("vJoy-Key3(X/□)"              ,   XUSB_GAMEPAD_X              );
+    ViGEmButtonMap.insert("vJoy-Key4(Y/△)"              ,   XUSB_GAMEPAD_Y              );
     ViGEmButtonMap.insert("vJoy-Key5(LB)"               ,   XUSB_GAMEPAD_LEFT_SHOULDER  );
     ViGEmButtonMap.insert("vJoy-Key6(RB)"               ,   XUSB_GAMEPAD_RIGHT_SHOULDER );
     ViGEmButtonMap.insert("vJoy-Key7(Back)"             ,   XUSB_GAMEPAD_BACK           );

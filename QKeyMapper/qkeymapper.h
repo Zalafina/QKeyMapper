@@ -187,6 +187,7 @@ public:
     static int getBurstReleaseTime(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
+    static QString getVirtualGamepadType(void);
     static bool getLockCursorStatus(void);
     static int getGlobalSettingAutoStart(void);
     static bool checkGlobalSettingAutoStart(void);

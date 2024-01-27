@@ -150,6 +150,9 @@ static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
+static const char *VIRTUAL_GAMEPAD_X360 = "X360";
+static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
+
 static const char *REFRESHBUTTON_CHINESE = "刷新";
 static const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
 static const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
@@ -1523,6 +1526,12 @@ int QKeyMapper::getvJoyXSensitivity()
 int QKeyMapper::getvJoyYSensitivity()
 {
     return getInstance()->ui->vJoyYSensSpinBox->value();
+}
+
+QString QKeyMapper::getVirtualGamepadType()
+{
+    // return VIRTUAL_GAMEPAD_X360;
+    return VIRTUAL_GAMEPAD_DS4;
 }
 
 bool QKeyMapper::getLockCursorStatus()
@@ -4247,10 +4256,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-DPad-Down"
             << "vJoy-DPad-Left"
             << "vJoy-DPad-Right"
-            << "vJoy-Key1(A)"
-            << "vJoy-Key2(B)"
-            << "vJoy-Key3(X)"
-            << "vJoy-Key4(Y)"
+            << "vJoy-Key1(A/×)"
+            << "vJoy-Key2(B/○)"
+            << "vJoy-Key3(X/□)"
+            << "vJoy-Key4(Y/△)"
             << "vJoy-Key5(LB)"
             << "vJoy-Key6(RB)"
             << "vJoy-Key7(Back)"
@@ -4272,10 +4281,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-DPad-Down"
             << "Joy-DPad-Left"
             << "Joy-DPad-Right"
-            << "Joy-Key1(A)"
-            << "Joy-Key2(B)"
-            << "Joy-Key3(X)"
-            << "Joy-Key4(Y)"
+            << "Joy-Key1(A/×)"
+            << "Joy-Key2(B/○)"
+            << "Joy-Key3(X/□)"
+            << "Joy-Key4(Y/△)"
             << "Joy-Key5(LB)"
             << "Joy-Key6(RB)"
             << "Joy-Key7(Back)"

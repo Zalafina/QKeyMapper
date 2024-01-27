@@ -20,6 +20,7 @@
 #include <QJoysticks.h>
 #ifdef VIGEM_CLIENT_SUPPORT
 #include <ViGEm/Client.h>
+#include <ViGEm/Util.h>
 #endif
 #ifdef DINPUT_TEST
 #include <dinput.h>
