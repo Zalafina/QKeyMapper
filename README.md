@@ -12,6 +12,8 @@
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
+* v1.3.6(Build 20240126)
+    * UI控件整体布局变化。
 * v1.3.6(Build 20240125)
     * 增加了窗口显示切换键编辑框，可以用于更改显示和隐藏窗口到系统托盘的快捷键。
     * 用于匹配窗口标题的单行文本编辑框可以手动进行内容更改并保存到设定了，同一个进程可以保存多个不同的窗口标题设定了(同一进程最多保存9个不同标题的设定)，不同的标题会保存到<process.exe|TitleX>形式的设定中。再次保存同一进程名相同标题的设定会覆盖之前已经存在的设定。
