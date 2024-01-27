@@ -97,7 +97,8 @@ static const char *AUTO_STARTUP = "AutoStartup";
 static const char *PLAY_SOUNDEFFECT = "PlaySoundEffect";
 static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 #ifdef VIGEM_CLIENT_SUPPORT
-static const char *VIRTUALJOYSTICK_ENABLE = "VirtualJoystickEnable";
+static const char *VIRTUALGAMEPAD_ENABLE = "VirtualGamepadEnable";
+static const char *VIRTUALGAMEPAD_TYPE = "VirtualGamepadType";
 #endif
 /* General global settings <<< */
 
@@ -1530,8 +1531,7 @@ int QKeyMapper::getvJoyYSensitivity()
 
 QString QKeyMapper::getVirtualGamepadType()
 {
-    // return VIRTUAL_GAMEPAD_X360;
-    return VIRTUAL_GAMEPAD_DS4;
+    return getInstance()->ui->virtualGamepadTypeComboBox->currentText();
 }
 
 bool QKeyMapper::getLockCursorStatus()
@@ -2209,6 +2209,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
         }
 
+        settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
+
         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
                 m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->defaultKeySequence()));
@@ -2481,6 +2483,19 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
         }
 
+        if (true == settingFile.contains(VIRTUALGAMEPAD_TYPE)){
+            QString virtualGamepadType = settingFile.value(VIRTUALGAMEPAD_TYPE).toString();
+            if (virtualGamepadType == VIRTUAL_GAMEPAD_X360 || virtualGamepadType == VIRTUAL_GAMEPAD_DS4) {
+                ui->virtualGamepadTypeComboBox->setCurrentText(virtualGamepadType);
+            }
+            else {
+                ui->virtualGamepadTypeComboBox->setCurrentText(VIRTUAL_GAMEPAD_X360);
+            }
+        }
+        else {
+            ui->virtualGamepadTypeComboBox->setCurrentText(VIRTUAL_GAMEPAD_X360);
+        }
+
         QString loadedwindowswitchKeySeqStr;
         if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
             loadedwindowswitchKeySeqStr = settingFile.value(WINDOWSWITCH_KEYSEQ).toString();
@@ -2533,8 +2548,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-        if (true == settingFile.contains(VIRTUALJOYSTICK_ENABLE)){
-            bool virtualjoystickenableChecked = settingFile.value(VIRTUALJOYSTICK_ENABLE).toBool();
+        if (true == settingFile.contains(VIRTUALGAMEPAD_ENABLE)){
+            bool virtualjoystickenableChecked = settingFile.value(VIRTUALGAMEPAD_ENABLE).toBool();
             if (true == virtualjoystickenableChecked) {
                 ui->enableVirtualJoystickCheckBox->setChecked(true);
             }
@@ -2548,7 +2563,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             ui->enableVirtualJoystickCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualJoystickEnable, VirtualJoystickEnable set to Unchecked.";
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualGamepadEnable, VirtualGamepadEnable set to Unchecked.";
 #endif
         }
 #endif
@@ -3455,6 +3470,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->autoStartupCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
+    ui->virtualGamepadTypeComboBox->setEnabled(status);
     ui->burstpressSpinBox->setEnabled(status);
     ui->burstreleaseSpinBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
@@ -4624,6 +4640,7 @@ void QKeyMapper::resetFontSize()
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
@@ -4646,6 +4663,7 @@ void QKeyMapper::resetFontSize()
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
@@ -5474,7 +5492,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyYSensLabel->setEnabled(true);
         ui->lockCursorCheckBox->setEnabled(true);
 
-        settingFile.setValue(VIRTUALJOYSTICK_ENABLE , true);
+        settingFile.setValue(VIRTUALGAMEPAD_ENABLE , true);
     }
     else {
         ui->vJoyXSensSpinBox->setEnabled(false);
@@ -5483,7 +5501,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyYSensLabel->setEnabled(false);
         ui->lockCursorCheckBox->setEnabled(false);
 
-        settingFile.setValue(VIRTUALJOYSTICK_ENABLE , false);
+        settingFile.setValue(VIRTUALGAMEPAD_ENABLE , false);
     }
 #endif
 }
