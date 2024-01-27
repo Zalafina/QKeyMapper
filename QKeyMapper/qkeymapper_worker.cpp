@@ -1024,6 +1024,8 @@ int QKeyMapper_Worker::ViGEmClient_Connect()
         }
     }
     else {
+        s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
+        updateViGEmBusStatus();
         return -1;
     }
 
@@ -1218,6 +1220,13 @@ QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::ViGEmClient_getCo
     QMutexLocker locker(&s_ViGEmClient_Mutex);
 
     return s_ViGEmClient_ConnectState;
+}
+
+void QKeyMapper_Worker::ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate)
+{
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
+    s_ViGEmClient_ConnectState = connectstate;
 }
 
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)

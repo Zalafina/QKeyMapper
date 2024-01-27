@@ -510,7 +510,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>550</y>
+     <y>520</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -528,7 +528,7 @@
   <widget class="QPushButton" name="installViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>811</x>
+     <x>890</x>
      <y>550</y>
      <width>70</width>
      <height>21</height>
@@ -539,25 +539,6 @@
    </property>
    <property name="text">
     <string>InstallViGEm</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="uninstallViGEmBusButton">
-   <property name="geometry">
-    <rect>
-     <x>891</x>
-     <y>550</y>
-     <width>70</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>UninstallViGEm</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -647,7 +628,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>520</y>
+     <y>550</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -883,7 +864,6 @@
   <zorder>mappingswitchkeyLabel</zorder>
   <zorder>enableVirtualJoystickCheckBox</zorder>
   <zorder>installViGEmBusButton</zorder>
-  <zorder>uninstallViGEmBusButton</zorder>
   <zorder>ViGEmBusStatusLabel</zorder>
   <zorder>vJoyXSensSpinBox</zorder>
   <zorder>vJoyYSensSpinBox</zorder>

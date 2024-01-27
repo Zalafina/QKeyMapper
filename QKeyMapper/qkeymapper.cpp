@@ -442,7 +442,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
         ui->installViGEmBusButton->setEnabled(false);
-        ui->uninstallViGEmBusButton->setEnabled(false);
+        // ui->uninstallViGEmBusButton->setEnabled(false);
         ui->ViGEmBusStatusLabel->setEnabled(false);
         ui->vJoyXSensSpinBox->setEnabled(false);
         ui->vJoyYSensSpinBox->setEnabled(false);
@@ -450,7 +450,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->enableVirtualJoystickCheckBox->setVisible(false);
         ui->lockCursorCheckBox->setVisible(false);
         ui->installViGEmBusButton->setVisible(false);
-        ui->uninstallViGEmBusButton->setVisible(false);
+        // ui->uninstallViGEmBusButton->setVisible(false);
         ui->ViGEmBusStatusLabel->setVisible(false);
         ui->vJoyXSensSpinBox->setVisible(false);
         ui->vJoyYSensSpinBox->setVisible(false);
@@ -463,13 +463,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
     ui->lockCursorCheckBox->setEnabled(false);
     ui->installViGEmBusButton->setEnabled(false);
-    ui->uninstallViGEmBusButton->setEnabled(false);
+    // ui->uninstallViGEmBusButton->setEnabled(false);
     ui->ViGEmBusStatusLabel->setEnabled(false);
 
     ui->enableVirtualJoystickCheckBox->setVisible(false);
     ui->lockCursorCheckBox->setVisible(false);
     ui->installViGEmBusButton->setVisible(false);
-    ui->uninstallViGEmBusButton->setVisible(false);
+    // ui->uninstallViGEmBusButton->setVisible(false);
     ui->ViGEmBusStatusLabel->setVisible(false);
     ui->vJoyXSensSpinBox->setVisible(false);
     ui->vJoyYSensSpinBox->setVisible(false);
@@ -3311,7 +3311,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
-    ui->uninstallViGEmBusButton->setFont(customFont);
+    // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
     ui->lockCursorCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
@@ -3397,7 +3397,7 @@ void QKeyMapper::setControlFontChinese()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
-    ui->uninstallViGEmBusButton->setFont(customFont);
+    // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
     ui->lockCursorCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
@@ -3491,9 +3491,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 #ifdef VIGEM_CLIENT_SUPPORT
     if (false == status) {
         ui->enableVirtualJoystickCheckBox->setEnabled(status);
-        ui->installViGEmBusButton->setEnabled(status);
     }
-    ui->uninstallViGEmBusButton->setEnabled(status);
+    ui->installViGEmBusButton->setEnabled(status);
+    // ui->uninstallViGEmBusButton->setEnabled(status);
     ui->virtualgamepadGroupBox->setEnabled(status);
 
     if (false == status || ui->enableVirtualJoystickCheckBox->isChecked()) {
@@ -3756,12 +3756,28 @@ int QKeyMapper::uninstallViGEmBusDriver()
 
 void QKeyMapper::updateViGEmBusLabelDisplay()
 {
-    int languageIndex = ui->languageComboBox->currentIndex();
-    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
-        ui->enableVirtualJoystickCheckBox->setEnabled(true);
-        ui->installViGEmBusButton->setEnabled(false);
-        ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
+    QKeyMapper_Worker::ViGEmClient_ConnectState connectstate = QKeyMapper_Worker::ViGEmClient_getConnectState();
 
+#ifdef DEBUG_LOGOUT_ON
+    static QKeyMapper_Worker::ViGEmClient_ConnectState lastConnectState = QKeyMapper_Worker::VIGEMCLIENT_CONNECTING;
+    if (lastConnectState != connectstate) {
+        lastConnectState = connectstate;
+        qDebug() << "[updateViGEmBusLabelDisplay]" << "ViGEmClient Connect State ->" << lastConnectState;
+    }
+#endif
+
+    int languageIndex = ui->languageComboBox->currentIndex();
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == connectstate) {
+        ui->enableVirtualJoystickCheckBox->setEnabled(true);
+        // ui->installViGEmBusButton->setEnabled(false);
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
+        }
+        else {
+            ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+        }
+
+        ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
         if (LANGUAGE_ENGLISH == languageIndex) {
             ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH);
         }
@@ -3771,9 +3787,15 @@ void QKeyMapper::updateViGEmBusLabelDisplay()
     }
     else {
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
-        ui->installViGEmBusButton->setEnabled(true);
-        ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
+        // ui->installViGEmBusButton->setEnabled(true);
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
+        }
+        else {
+            ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
+        }
 
+        ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
         if (LANGUAGE_ENGLISH == languageIndex) {
             ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH);
         }
@@ -4500,8 +4522,13 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
-    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
-    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+        ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+    }
+    else {
+        ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
+    }
+    // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
@@ -4556,8 +4583,13 @@ void QKeyMapper::setUILanguage_English()
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_ENGLISH);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
-    ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
-    ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+        ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
+    }
+    else {
+        ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
+    }
+    // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
 #endif
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
@@ -5451,23 +5483,50 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 void QKeyMapper::on_installViGEmBusButton_clicked()
 {
 #ifdef VIGEM_CLIENT_SUPPORT
-
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "Install ViGEm Bus.";
+        qDebug() << "Uninstall ViGEm Bus.";
 #endif
 
-    if (QKeyMapper_Worker::s_ViGEmClient == Q_NULLPTR) {
-        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-        if (retval_alloc != 0) {
-#ifdef DEBUG_LOGOUT_ON
-            qWarning("[on_installViGEmBusButton_clicked] ViGEmClient Alloc Failed!!! -> retval_alloc(%d)", retval_alloc);
-#endif
-        }
+        QKeyMapper_Worker::ViGEmClient_Remove();
+        QKeyMapper_Worker::ViGEmClient_Disconnect();
+        QKeyMapper_Worker::ViGEmClient_Free();
+
+        emit updateViGEmBusStatus_Signal();
+        ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+
+        (void)uninstallViGEmBusDriver();
     }
+    else {
+        QKeyMapper_Worker::ViGEmClient_ConnectState connectstate = QKeyMapper_Worker::ViGEmClient_getConnectState();
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECTING == connectstate
+            || QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == connectstate) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_installViGEmBusButton_clicked]" <<"Skip Install ViGEm Bus on ConnectState ->" << connectstate;
+#endif
+            return;
+        }
 
-    (void)installViGEmBusDriver();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Install ViGEm Bus.";
+#endif
+        QKeyMapper_Worker::ViGEmClient_setConnectState(QKeyMapper_Worker::VIGEMCLIENT_CONNECTING);
+        emit updateViGEmBusStatus_Signal();
 
-    QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
+        if (QKeyMapper_Worker::s_ViGEmClient == Q_NULLPTR) {
+            int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+            if (retval_alloc != 0) {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[on_installViGEmBusButton_clicked] ViGEmClient Alloc Failed!!! -> retval_alloc(%d)", retval_alloc);
+#endif
+            }
+        }
+
+        (void)installViGEmBusDriver();
+
+        QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
+    }
 #endif
 }
 

@@ -245,8 +245,9 @@ public:
     enum ViGEmClient_ConnectState
     {
         VIGEMCLIENT_DISCONNECTED = 0,
-        VIGEMCLIENT_CONNECT_SUCCESS,
         VIGEMCLIENT_CONNECT_FAILED,
+        VIGEMCLIENT_CONNECTING,
+        VIGEMCLIENT_CONNECT_SUCCESS,
     };
     Q_ENUM(ViGEmClient_ConnectState)
 
@@ -310,6 +311,7 @@ public:
     static void updateLockStatus(void);
 
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
+    static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
