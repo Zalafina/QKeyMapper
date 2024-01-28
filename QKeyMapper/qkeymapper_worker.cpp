@@ -762,6 +762,13 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 return;
             }
 
+            if (pressedMappingKeysMap.contains(original_key)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeys] Mapping KeyDown Skiped! pressedMappingKeys already exist! -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+#endif
+                return;
+            }
+
             pressedMappingKeysMap.insert(original_key, mappingKeys);
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
@@ -1302,7 +1309,9 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
             }
 
             if (updateFlag) {
-                pressedvJoyLStickKeys.append(joystickButton);
+                if (false == pressedvJoyLStickKeys.contains(joystickButton)){
+                    pressedvJoyLStickKeys.append(joystickButton);
+                }
                 ViGEmClient_CheckJoysticksReportData();
             }
         }
@@ -1321,7 +1330,9 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton)
             }
 
             if (updateFlag) {
-                pressedvJoyRStickKeys.append(joystickButton);
+                if (false == pressedvJoyRStickKeys.contains(joystickButton)){
+                    pressedvJoyRStickKeys.append(joystickButton);
+                }
                 ViGEmClient_CheckJoysticksReportData();
             }
         }
@@ -1493,6 +1504,43 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData()
             s_ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MAX;
         }
     }
+
+    if (s_ViGEmTarget_Report.sThumbLX != XINPUT_THUMB_RELEASE
+        && s_ViGEmTarget_Report.sThumbLY != XINPUT_THUMB_RELEASE) {
+        ViGEmClient_CalculateThumbValue(&s_ViGEmTarget_Report.sThumbLX, &s_ViGEmTarget_Report.sThumbLY);
+    }
+
+    if (s_ViGEmTarget_Report.sThumbRX != XINPUT_THUMB_RELEASE
+        && s_ViGEmTarget_Report.sThumbRY != XINPUT_THUMB_RELEASE) {
+        ViGEmClient_CalculateThumbValue(&s_ViGEmTarget_Report.sThumbRX, &s_ViGEmTarget_Report.sThumbRY);
+    }
+
+}
+
+void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT *ori_ThumbY)
+{
+    SHORT ThumbX = *ori_ThumbX;
+    SHORT ThumbY = *ori_ThumbY;
+    qreal direction = qAtan2(ThumbY, ThumbX);
+    qint64 sumOfSquares = static_cast<qint64>(ThumbX) * static_cast<qint64>(ThumbX) + static_cast<qint64>(ThumbY) * static_cast<qint64>(ThumbY);
+    qreal distance = qSqrt(static_cast<qreal>(sumOfSquares));
+
+    if (distance > 32767) {
+        qreal scale = 32767 / distance;
+        ThumbX = static_cast<SHORT>(ThumbX * scale);
+        ThumbY = static_cast<SHORT>(ThumbY * scale);
+        distance = 32767;
+
+        // Recalculate direction after scaling ThumbLX and ThumbLY
+        direction = qAtan2(ThumbY, ThumbX);
+    }
+
+    SHORT newThumbX = static_cast<SHORT>(qRound(distance * qCos(direction)));
+    SHORT newThumbY = static_cast<SHORT>(qRound(distance * qSin(direction)));
+    qDebug("[ViGEmClient_CalculateThumbValue] Calculated ThumbX[%d], ThumbY[%d]", newThumbX, newThumbY);
+
+    *ori_ThumbX = newThumbX;
+    *ori_ThumbY = newThumbY;
 }
 
 QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnableState()

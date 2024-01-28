@@ -317,6 +317,7 @@ public:
     static void ViGEmClient_PressButton(const QString &joystickButton);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
     static void ViGEmClient_CheckJoysticksReportData(void);
+    static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
 
     static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
