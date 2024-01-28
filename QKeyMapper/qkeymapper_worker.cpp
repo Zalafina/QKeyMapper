@@ -1523,9 +1523,17 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 {
     SHORT ThumbX = *ori_ThumbX;
     SHORT ThumbY = *ori_ThumbY;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qreal direction = qAtan2(ThumbY, ThumbX);
+#else
+    qreal direction = std::atan2(ThumbY, ThumbX);
+#endif
     qint64 sumOfSquares = static_cast<qint64>(ThumbX) * static_cast<qint64>(ThumbX) + static_cast<qint64>(ThumbY) * static_cast<qint64>(ThumbY);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     qreal distance = qSqrt(static_cast<qreal>(sumOfSquares));
+#else
+    qreal distance = std::sqrt(static_cast<qreal>(sumOfSquares));
+#endif
 
     if (distance > THUMB_DISTANCE_MAX) {
         qreal scale = THUMB_DISTANCE_MAX / distance;
@@ -1534,11 +1542,20 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
         distance = THUMB_DISTANCE_MAX;
 
         // Recalculate direction after scaling ThumbX and ThumbY
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         direction = qAtan2(ThumbY, ThumbX);
+#else
+        direction = std::atan2(ThumbY, ThumbX);
+#endif
     }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     SHORT newThumbX = static_cast<SHORT>(qRound(distance * qCos(direction)));
     SHORT newThumbY = static_cast<SHORT>(qRound(distance * qSin(direction)));
+#else
+    SHORT newThumbX = static_cast<SHORT>(std::round(distance * std::cos(direction)));
+    SHORT newThumbY = static_cast<SHORT>(std::round(distance * std::sin(direction)));
+#endif
 
     *ori_ThumbX = newThumbX;
     *ori_ThumbY = newThumbY;
