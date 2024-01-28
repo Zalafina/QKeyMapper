@@ -55,7 +55,7 @@ static const int MAPPING_WAITTIME_MIN = 0;
 static const int MAPPING_WAITTIME_MAX = 5000;
 
 static const int MOUSE_SPEED_MIN = 1;
-static const int MOUSE_SPEED_MAX = 50;
+static const int MOUSE_SPEED_MAX = 15;
 
 static const int UI_SCALE_NORMAL = 0;
 static const int UI_SCALE_1K_PERCENT_100 = 1;
@@ -1517,6 +1517,16 @@ int QKeyMapper::getBurstPressTime()
 int QKeyMapper::getBurstReleaseTime()
 {
     return getInstance()->ui->burstreleaseSpinBox->value();
+}
+
+int QKeyMapper::getJoystick2MouseSpeedX()
+{
+    return getInstance()->ui->mouseXSpeedSpinBox->value();
+}
+
+int QKeyMapper::getJoystick2MouseSpeedY()
+{
+    return getInstance()->ui->mouseYSpeedSpinBox->value();
 }
 
 int QKeyMapper::getvJoyXSensitivity()

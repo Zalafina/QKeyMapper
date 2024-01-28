@@ -185,6 +185,8 @@ public:
     static bool getDisableWinKeyStatus(void);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);
+    static int getJoystick2MouseSpeedX(void);
+    static int getJoystick2MouseSpeedY(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
     static QString getVirtualGamepadType(void);

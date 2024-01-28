@@ -381,6 +381,7 @@ private:
     void joystickLSVerticalProc(const QJoystickAxisEvent &e);
     void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
     void joystickRSVerticalProc(const QJoystickAxisEvent &e);
+    int  joystickCalculateDelta(qreal axis_value, int Speed_Factor, bool checkJoystick);
     void joystick2MouseMoveProc(const Joystick_AxisState &axis_state);
 
 public:

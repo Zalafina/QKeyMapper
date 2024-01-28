@@ -2757,14 +2757,42 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
 }
 
+int QKeyMapper_Worker::joystickCalculateDelta(qreal axis_value, int Speed_Factor, bool checkJoystick)
+{
+    int delta = 0;
+    if (checkJoystick) {
+        if (axis_value > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
+            qreal range = 1.0 - JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD;
+            qreal step = range / Speed_Factor;
+            for (int i = 1; i <= Speed_Factor; i++) {
+                if (axis_value <= JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD + i * step) {
+                    delta += i;
+                    break;
+                }
+            }
+        }
+        else if (axis_value < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
+            qreal range = 1.0 - JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD;
+            qreal step = range / Speed_Factor;
+            for (int i = 1; i <= Speed_Factor; i++) {
+                if (axis_value >= JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD - i * step) {
+                    delta -= i;
+                    break;
+                }
+            }
+        }
+    }
+    return delta;
+}
+
 void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_state)
 {
     int delta_x = 0;
     int delta_y = 0;
     bool checkLeftJoystick = false;
     bool checkRightJoystick = false;
-    int sensitivity_x = 1;
-    int sensitivity_y = 1;
+    int Speed_Factor_X = QKeyMapper::getJoystick2MouseSpeedX();
+    int Speed_Factor_Y = QKeyMapper::getJoystick2MouseSpeedY();
 
     if (JOY2MOUSE_LEFT == s_Joy2Mouse_EnableState) {
         checkLeftJoystick = true;
@@ -2777,101 +2805,8 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
         checkRightJoystick = true;
     }
 
-    if (checkLeftJoystick) {
-        if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
-            if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
-                delta_x -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
-            }
-            else if (axis_state.left_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
-                delta_x -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
-            }
-            else {
-                delta_x -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
-            }
-        }
-        else if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
-            if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
-                delta_x += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
-            }
-            else if (axis_state.left_x > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
-                delta_x += JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
-            }
-            else {
-                delta_x += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
-            }
-        }
-
-        if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
-            if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
-                delta_y -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
-            }
-            else if (axis_state.left_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
-                delta_y -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
-            }
-            else {
-                delta_y -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
-            }
-        }
-        else if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
-            if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
-                delta_y += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
-            }
-            else if (axis_state.left_y > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
-                delta_y += JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
-            }
-            else {
-                delta_y += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
-            }
-        }
-    }
-
-    if (checkRightJoystick) {
-        if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
-            if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
-                delta_x -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
-            }
-            else if (axis_state.right_x < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
-                delta_x -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
-            }
-            else {
-                delta_x -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
-            }
-        }
-        else if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
-            if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
-                delta_x += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_x;
-            }
-            else if (axis_state.right_x > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
-                delta_x += JOYSTICK2MOUSE_MID_SPEED * sensitivity_x;
-            }
-            else {
-                delta_x += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_x;
-            }
-        }
-
-        if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
-            if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD) {
-                delta_y -= JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
-            }
-            else if (axis_state.right_y < JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD) {
-                delta_y -= JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
-            }
-            else {
-                delta_y -= JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
-            }
-        }
-        else if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
-            if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD) {
-                delta_y += JOYSTICK2MOUSE_HIGH_SPEED * sensitivity_y;
-            }
-            else if (axis_state.right_y > JOYSTICK2MOUSE_AXIS_PLUS_MID_THRESHOLD) {
-                delta_y += JOYSTICK2MOUSE_MID_SPEED * sensitivity_y;
-            }
-            else {
-                delta_y += JOYSTICK2MOUSE_LOW_SPEED * sensitivity_y;
-            }
-        }
-    }
+    delta_x = joystickCalculateDelta(axis_state.left_x, Speed_Factor_X, checkLeftJoystick) + joystickCalculateDelta(axis_state.right_x, Speed_Factor_X, checkRightJoystick);
+    delta_y = joystickCalculateDelta(axis_state.left_y, Speed_Factor_Y, checkLeftJoystick) + joystickCalculateDelta(axis_state.right_y, Speed_Factor_Y, checkRightJoystick);
 
     if (delta_x != 0 || delta_y != 0) {
 #ifdef JOYSTICK_VERBOSE_LOG
