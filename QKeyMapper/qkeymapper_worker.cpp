@@ -76,6 +76,8 @@ static const SHORT XINPUT_THUMB_MIN     = -32768;
 static const SHORT XINPUT_THUMB_RELEASE = 0;
 static const SHORT XINPUT_THUMB_MAX     = 32767;
 
+static const qreal THUMB_DISTANCE_MAX   = 32767;
+
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
@@ -1525,13 +1527,13 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
     qint64 sumOfSquares = static_cast<qint64>(ThumbX) * static_cast<qint64>(ThumbX) + static_cast<qint64>(ThumbY) * static_cast<qint64>(ThumbY);
     qreal distance = qSqrt(static_cast<qreal>(sumOfSquares));
 
-    if (distance > 32767) {
-        qreal scale = 32767 / distance;
+    if (distance > THUMB_DISTANCE_MAX) {
+        qreal scale = THUMB_DISTANCE_MAX / distance;
         ThumbX = static_cast<SHORT>(ThumbX * scale);
         ThumbY = static_cast<SHORT>(ThumbY * scale);
-        distance = 32767;
+        distance = THUMB_DISTANCE_MAX;
 
-        // Recalculate direction after scaling ThumbLX and ThumbLY
+        // Recalculate direction after scaling ThumbX and ThumbY
         direction = qAtan2(ThumbY, ThumbX);
     }
 
