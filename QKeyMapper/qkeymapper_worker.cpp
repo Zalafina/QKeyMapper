@@ -1537,10 +1537,13 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 
     SHORT newThumbX = static_cast<SHORT>(qRound(distance * qCos(direction)));
     SHORT newThumbY = static_cast<SHORT>(qRound(distance * qSin(direction)));
-    qDebug("[ViGEmClient_CalculateThumbValue] Calculated ThumbX[%d], ThumbY[%d]", newThumbX, newThumbY);
 
     *ori_ThumbX = newThumbX;
     *ori_ThumbY = newThumbY;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[ViGEmClient_CalculateThumbValue] Calculated ThumbX[%d], ThumbY[%d]", newThumbX, newThumbY);
+#endif
 }
 
 QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnableState()
@@ -1641,8 +1644,9 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         y *= -sign(delta_y);
         // XInput joystick coordinates are signed shorts, so convert to (-32767, 32767)
         short leftX = (short)(32767.0 * x);
-        short rightX = leftX;
         short leftY = (short)(32767.0 * y);
+        ViGEmClient_CalculateThumbValue(&leftX, &leftY);
+        short rightX = leftX;
         short rightY = leftY;
         // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" <<<
 
