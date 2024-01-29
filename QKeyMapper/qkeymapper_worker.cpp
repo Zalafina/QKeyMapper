@@ -1560,7 +1560,7 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
     *ori_ThumbX = newThumbX;
     *ori_ThumbY = newThumbY;
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef JOYSTICK_VERBOSE_LOG
     qDebug("[ViGEmClient_CalculateThumbValue] Calculated ThumbX[%d], ThumbY[%d]", newThumbX, newThumbY);
 #endif
 }
