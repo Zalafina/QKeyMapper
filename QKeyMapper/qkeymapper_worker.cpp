@@ -199,10 +199,10 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
-#ifndef HOOKSTART_ONSTARTUP
+
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
-#endif
+
     QObject::connect(this, &QKeyMapper_Worker::startBurstTimer_Signal, this, &QKeyMapper_Worker::startBurstTimer, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::stopBurstTimer_Signal, this, &QKeyMapper_Worker::stopBurstTimer, Qt::QueuedConnection);
 #if 0
@@ -244,7 +244,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_LastMouseCursorPoint.y = -1;
 #endif
 
-#ifndef HOOKSTART_ONSTARTUP
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
         QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable = false;
@@ -252,7 +251,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
         qDebug("QKeyMapper_Worker() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
 #endif
     }
-#endif
 #endif
 }
 
@@ -1562,7 +1560,7 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
     *ori_ThumbX = newThumbX;
     *ori_ThumbY = newThumbY;
 
-#ifdef JOYSTICK_VERBOSE_LOG
+#ifdef DEBUG_LOGOUT_ON
     qDebug("[ViGEmClient_CalculateThumbValue] Calculated ThumbX[%d], ThumbY[%d]", newThumbX, newThumbY);
 #endif
 }
@@ -1933,10 +1931,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
             }
         }
 #endif
-
-#ifndef HOOKSTART_ONSTARTUP
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
-#endif
 //        m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
 //        m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
         setWorkerJoystickCaptureStart(hWnd);
@@ -1962,9 +1957,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
-#ifndef HOOKSTART_ONSTARTUP
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
-#endif
 
 //    if (m_MouseHook != Q_NULLPTR) {
 //        UnhookWindowsHookEx(m_MouseHook);
@@ -4049,98 +4042,6 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         index += 1;
     }
 }
-
-#ifdef HOOKSTART_ONSTARTUP
-QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "QKeyMapper_Hook_Proc() Called.";
-#endif
-
-    Q_UNUSED(parent);
-
-#ifdef QT_DEBUG
-    if (IsDebuggerPresent()) {
-        s_LowLevelMouseHook_Enable = false;
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
-#endif
-    }
-#endif
-
-    if (s_LowLevelKeyboardHook_Enable) {
-        if (s_KeyHook == Q_NULLPTR) {
-            s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef DEBUG_LOGOUT_ON
-            if (s_KeyHook != Q_NULLPTR) {
-                qDebug("[SetHookProc] QKeyMapper_Hook_Proc() Keyboard SetWindowsHookEx Success. -> 0x%08X", s_KeyHook);
-            }
-#endif
-        }
-    }
-    if (s_LowLevelMouseHook_Enable) {
-        if (s_MouseHook == Q_NULLPTR) {
-            s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef DEBUG_LOGOUT_ON
-            if (s_MouseHook != Q_NULLPTR) {
-                qDebug("[SetHookProc] QKeyMapper_Hook_Proc() Mouse SetWindowsHookEx Success. -> 0x%08X", s_MouseHook);
-            }
-#endif
-        }
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qInfo("[SetHookProc] QKeyMapper_Hook_Proc() Keyboard Hook & Mouse Hook Started.");
-#endif
-}
-
-QKeyMapper_Hook_Proc::~QKeyMapper_Hook_Proc()
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "~QKeyMapper_Hook_Proc() Called.";
-#endif
-
-    bool unhook_ret = 0;
-
-    if (s_KeyHook != Q_NULLPTR){
-        void* keyboardhook_p = (void*)s_KeyHook;
-        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
-        s_KeyHook = Q_NULLPTR;
-        Q_UNUSED(keyboardhook_p);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (0 == unhook_ret) {
-            qDebug() << "[SetHookProc]" << "~QKeyMapper_Hook_Proc() Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
-        }
-        else {
-            qDebug("[SetHookProc] ~QKeyMapper_Hook_Proc() Keyboard UnhookWindowsHookEx Success. -> 0x%08X", keyboardhook_p);
-        }
-#endif
-    }
-
-    if (s_MouseHook != Q_NULLPTR) {
-        void* mousehook_p = (void*)s_MouseHook;
-        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
-        s_MouseHook = Q_NULLPTR;
-        Q_UNUSED(mousehook_p);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (0 == unhook_ret) {
-            qDebug() << "[SetHookProc]" << "~QKeyMapper_Hook_Proc() Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
-        }
-        else {
-            qDebug("[SetHookProc] ~QKeyMapper_Hook_Proc() Mouse UnhookWindowsHookEx Success. -> 0x%08X", mousehook_p);
-        }
-#endif
-    }
-
-    Q_UNUSED(unhook_ret);
-
-#ifdef DEBUG_LOGOUT_ON
-    qInfo("[SetHookProc] ~QKeyMapper_Hook_Proc() Keyboard Hook & Mouse Hook Stopped.");
-#endif
-}
-#endif
 
 void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
 {

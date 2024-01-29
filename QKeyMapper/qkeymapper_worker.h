@@ -521,11 +521,6 @@ class QKeyMapper_Hook_Proc : public QObject
 {
     Q_OBJECT
 public:
-#ifdef HOOKSTART_ONSTARTUP
-    explicit QKeyMapper_Hook_Proc(QObject *parent = Q_NULLPTR);
-    ~QKeyMapper_Hook_Proc();
-#endif
-
     static QKeyMapper_Hook_Proc *getInstance()
     {
         static QKeyMapper_Hook_Proc m_instance;
