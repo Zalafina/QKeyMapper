@@ -569,7 +569,7 @@
   <widget class="QSpinBox" name="vJoyXSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>730</x>
+     <x>720</x>
      <y>520</y>
      <width>45</width>
      <height>22</height>
@@ -582,7 +582,7 @@
   <widget class="QSpinBox" name="vJoyYSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>730</x>
+     <x>720</x>
      <y>550</y>
      <width>45</width>
      <height>22</height>
@@ -595,7 +595,7 @@
   <widget class="QLabel" name="vJoyXSensLabel">
    <property name="geometry">
     <rect>
-     <x>665</x>
+     <x>655</x>
      <y>520</y>
      <width>61</width>
      <height>22</height>
@@ -611,7 +611,7 @@
   <widget class="QLabel" name="vJoyYSensLabel">
    <property name="geometry">
     <rect>
-     <x>665</x>
+     <x>655</x>
      <y>550</y>
      <width>61</width>
      <height>22</height>

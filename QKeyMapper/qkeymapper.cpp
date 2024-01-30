@@ -3370,6 +3370,12 @@ void QKeyMapper::setControlFontEnglish()
         customFont.setPointSize(8);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+        curGeometry.moveLeft(curGeometry.x() - 10);
+        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    }
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -3456,6 +3462,12 @@ void QKeyMapper::setControlFontChinese()
         customFont.setPointSize(9);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+        curGeometry.moveLeft(curGeometry.x() - 10);
+        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    }
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
