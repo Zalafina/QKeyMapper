@@ -3336,12 +3336,12 @@ void QKeyMapper::setControlFontEnglish()
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(10);
-    }
-    else {
-        customFont.setPointSize(8);
-    }
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     customFont.setPointSize(10);
+    // }
+    // else {
+    //     customFont.setPointSize(8);
+    // }
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
