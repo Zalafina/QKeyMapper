@@ -26,6 +26,15 @@
 #include <dinput.h>
 #endif
 
+#ifdef HOOKSTART_ONSTARTUP
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <QAtomicInteger>
+using QAtomicBool = QAtomicInteger<bool>;
+#else
+#include <QAtomicBool>
+#endif
+#endif
+
 class QKeyMapper;
 
 #define EXTENED_FLAG_TRUE   true
@@ -419,6 +428,9 @@ public:
 
 public:
     static bool s_isWorkerDestructing;
+#ifdef HOOKSTART_ONSTARTUP
+    static QAtomicBool s_AtomicHookProcStart;
+#endif
     static bool s_forceSendVirtualKey;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
@@ -521,6 +533,9 @@ class QKeyMapper_Hook_Proc : public QObject
 {
     Q_OBJECT
 public:
+    explicit QKeyMapper_Hook_Proc(QObject *parent = Q_NULLPTR);
+    ~QKeyMapper_Hook_Proc();
+
     static QKeyMapper_Hook_Proc *getInstance()
     {
         static QKeyMapper_Hook_Proc m_instance;
@@ -532,8 +547,10 @@ signals:
     void setKeyUnHook_Signal(void);
 
 public slots:
+#ifndef HOOKSTART_ONSTARTUP
     void onSetHookProcKeyHook(HWND hWnd);
     void onSetHookProcKeyUnHook(void);
+#endif
 
 public:
     static bool s_LowLevelKeyboardHook_Enable;
