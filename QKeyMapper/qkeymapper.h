@@ -275,7 +275,7 @@ private slots:
 
     void on_installViGEmBusButton_clicked();
 
-    void on_uninstallViGEmBusButton_clicked();
+    // void on_uninstallViGEmBusButton_clicked();
 
     void on_soundEffectCheckBox_stateChanged(int state);
 

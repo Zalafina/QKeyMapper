@@ -5579,7 +5579,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
 #endif
 }
 
-
+#if 0
 void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 {
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -5599,6 +5599,7 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
     (void)uninstallViGEmBusDriver();
 #endif
 }
+#endif
 
 void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
 {

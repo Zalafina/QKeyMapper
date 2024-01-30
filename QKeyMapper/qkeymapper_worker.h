@@ -27,12 +27,8 @@
 #endif
 
 #ifdef HOOKSTART_ONSTARTUP
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QAtomicInteger>
 using QAtomicBool = QAtomicInteger<bool>;
-#else
-#include <QAtomicBool>
-#endif
 #endif
 
 class QKeyMapper;

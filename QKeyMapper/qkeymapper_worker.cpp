@@ -1927,11 +1927,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #endif
 
 #ifdef HOOKSTART_ONSTARTUP
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         s_AtomicHookProcStart = true;
-#else
-        s_AtomicHookProcStart.store(true);
-#endif
 #else
         emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
 #endif
@@ -1961,11 +1957,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     exchangeKeysList.clear();
 
 #ifdef HOOKSTART_ONSTARTUP
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     s_AtomicHookProcStart = false;
-#else
-    s_AtomicHookProcStart.store(false);
-#endif
 #else
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
 #endif
@@ -2848,12 +2840,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 #ifdef HOOKSTART_ONSTARTUP
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
-#else
-    bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart.load();
-#endif
-
     if (!hookprocstart) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
@@ -3032,12 +3019,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 #ifdef HOOKSTART_ONSTARTUP
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
-#else
-    bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart.load();
-#endif
-
     if (!hookprocstart) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
