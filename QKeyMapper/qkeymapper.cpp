@@ -2440,10 +2440,10 @@ void QKeyMapper::saveKeyMapSetting(void)
             else {
                 m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->lastKeySequence()));
             }
-            updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
         }
         m_mappingswitchKeySeqEdit->clearFocus();
         if (false == m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
+            updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
             settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqEdit->keySequence().toString());
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Switch KeySequence [" << saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
@@ -2530,6 +2530,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(loadedwindowswitchKeySeqStr));
         updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Load & Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+#endif
 
         if (true == settingFile.contains(PLAY_SOUNDEFFECT)){
             bool soundeffectChecked = settingFile.value(PLAY_SOUNDEFFECT).toBool();
@@ -3181,6 +3184,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(loadedmappingswitchKeySeqStr));
     updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Switch KeySequence [" << settingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
+#endif
 
     if (false == datavalidflag){
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
