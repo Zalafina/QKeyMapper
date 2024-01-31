@@ -279,7 +279,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    m_HotKey(new QHotkey(this)),
+    m_HotKey_ShowHide(new QHotkey(this)),
     m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
     loadSetting_flag(false)
@@ -547,8 +547,8 @@ QKeyMapper::~QKeyMapper()
     delete m_originalKeySeqEdit;
     m_originalKeySeqEdit = Q_NULLPTR;
 
-    delete m_HotKey;
-    m_HotKey = Q_NULLPTR;
+    delete m_HotKey_ShowHide;
+    m_HotKey_ShowHide = Q_NULLPTR;
     delete m_HotKey_StartStop;
     m_HotKey_StartStop = Q_NULLPTR;
 
@@ -1730,6 +1730,13 @@ void QKeyMapper::onWindowSwitchKeySequenceChanged(const QKeySequence &keysequenc
     qDebug() << "[onWindowSwitchKeySequenceChanged] KeySequence changed ->" << keysequence.toString(QKeySequence::NativeText);
 #endif
     Q_UNUSED(keysequence);
+
+    if (false == m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
+        updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onWindowSwitchKeySequenceChanged]" << "Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+#endif
+    }
     m_windowswitchKeySeqEdit->clearFocus();
 }
 
@@ -1753,12 +1760,6 @@ void QKeyMapper::onWindowSwitchKeySequenceEditingFinished()
 #endif
         }
     }
-    else {
-        updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onWindowSwitchKeySequenceEditingFinished]" << "Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
-#endif
-    }
     m_windowswitchKeySeqEdit->clearFocus();
 }
 
@@ -1768,6 +1769,13 @@ void QKeyMapper::onMappingSwitchKeySequenceChanged(const QKeySequence &keysequen
     qDebug() << "[onMappingSwitchKeySequenceChanged] KeySequence changed ->" << keysequence.toString(QKeySequence::NativeText);
 #endif
     Q_UNUSED(keysequence);
+
+    if (false == m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
+        updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onMappingSwitchKeySequenceChanged]" << "Set Mapping Switch KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+#endif
+    }
     m_mappingswitchKeySeqEdit->clearFocus();
 }
 
@@ -1790,12 +1798,6 @@ void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
             qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Current KeySequence is Empty, set to LAST ->" << m_mappingswitchKeySeqEdit->lastKeySequence();
 #endif
         }
-    }
-    else {
-        updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onMappingSwitchKeySequenceEditingFinished]" << "Set Mapping Switch KeySequence ->" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
-#endif
     }
     m_mappingswitchKeySeqEdit->clearFocus();
 }
@@ -2228,10 +2230,15 @@ void QKeyMapper::saveKeyMapSetting(void)
             else {
                 m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->lastKeySequence()));
             }
-            updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
         }
         m_windowswitchKeySeqEdit->clearFocus();
-        settingFile.setValue(WINDOWSWITCH_KEYSEQ, m_windowswitchKeySeqEdit->keySequence().toString());
+        if (false == m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
+            updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+            settingFile.setValue(WINDOWSWITCH_KEYSEQ, m_windowswitchKeySeqEdit->keySequence().toString());
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[saveKeyMapSetting]" << "Save & Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+#endif
+        }
 
         if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == 1) {
             saveGlobalSetting = true;
@@ -2436,7 +2443,12 @@ void QKeyMapper::saveKeyMapSetting(void)
             updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
         }
         m_mappingswitchKeySeqEdit->clearFocus();
-        settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqEdit->keySequence().toString());
+        if (false == m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
+            settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqEdit->keySequence().toString());
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Switch KeySequence [" << saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
+#endif
+        }
 
         const QString savedSettingName = saveSettingSelectStr.remove("/");
         loadSetting_flag = true;
@@ -3880,7 +3892,7 @@ void QKeyMapper::on_savemaplistButton_clicked()
 
 void QKeyMapper::initHotKeySequence()
 {
-    QObject::connect(m_HotKey, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
+    QObject::connect(m_HotKey_ShowHide, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
 
     QObject::connect(m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
 }
@@ -4394,7 +4406,7 @@ void QKeyMapper::initMappingSwitchKeySeqEdit()
 void QKeyMapper::updateWindowSwitchKeySeq(const QKeySequence &keysequence)
 {
     m_windowswitchKeySeqEdit->setLastKeySequence(keysequence.toString());
-    m_HotKey->setShortcut(keysequence, true);
+    m_HotKey_ShowHide->setShortcut(keysequence, true);
 }
 
 void QKeyMapper::updateMappingSwitchKeySeq(const QKeySequence &keysequence)

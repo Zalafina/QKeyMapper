@@ -362,7 +362,7 @@ private:
     KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     KeySequenceEditOnlyOne *m_originalKeySeqEdit;
-    QHotkey *m_HotKey;
+    QHotkey *m_HotKey_ShowHide;
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
     bool loadSetting_flag;
