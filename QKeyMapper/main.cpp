@@ -10,8 +10,10 @@
 #include <QTextStream>
 #endif
 
-#ifdef DEBUG_LOGOUT_ON
-//#include "vld.h"
+#ifdef QT_DEBUG
+#ifdef VLD_DETECT
+#include "vld.h"
+#endif
 #endif
 
 #ifdef LOGOUT_TOFILE
@@ -226,6 +228,14 @@ int main(int argc, char *argv[])
 #ifdef LOGOUT_TOFILE
     delete logfile_mutex;
 #endif
+
+    hookprocThread->quit();
+    hookprocThread->wait();
+    delete hookprocThread;
+
+    workerThread->quit();
+    workerThread->wait();
+    delete workerThread;
 
     return ret;
 }
