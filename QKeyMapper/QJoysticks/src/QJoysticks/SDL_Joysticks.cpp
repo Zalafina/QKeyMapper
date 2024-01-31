@@ -203,7 +203,7 @@ void SDL_Joysticks::configureJoystick(const SDL_Event *event)
 #ifdef SDL_SUPPORTED
    QJoystickDevice *joystick = getJoystick(event->jdevice.which);
 
-   if (!SDL_IsGameController(event->cdevice.which))
+   if (!SDL_IsGameController(event->cdevice.which) && joystick != nullptr)
    {
       SDL_Joystick *js = SDL_JoystickFromInstanceID(joystick->instanceID);
       if (js)
@@ -260,11 +260,17 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
       for (int i = 0; i < buttons; ++i)
          joystick->buttons.append(false);
 
+      if (m_joysticks.contains(joystick->instanceID)
+          && m_joysticks[joystick->instanceID] != nullptr) {
+        delete m_joysticks[joystick->instanceID];
+      }
       m_joysticks[joystick->instanceID] = joystick;
    }
    else
    {
       qWarning() << Q_FUNC_INFO << "Cannot find joystick with id:" << id;
+      delete joystick; // Delete the joystick object if SDL_JoystickOpen failed
+      joystick = nullptr;
    }
 
    return joystick;

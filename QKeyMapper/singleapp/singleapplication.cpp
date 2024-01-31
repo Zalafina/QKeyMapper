@@ -45,7 +45,10 @@ public:
         // Successful creation means that no main process exists
         // So we start a QLocalServer to listen for connections
         QLocalServer::removeServer( memory->key() );
-        delete server;  // Delete the old server if it exists
+        if( server != NULL ) {
+            server->close();
+            delete server;
+        }
         server = new QLocalServer();
         server->listen( memory->key() );
         QObject::connect(
