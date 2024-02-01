@@ -3499,13 +3499,13 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     else {
         ui->nameCheckBox->setEnabled(status);
         ui->titleCheckBox->setEnabled(status);
-        ui->titleLineEdit->setReadOnly(!status);
         ui->removeSettingButton->setEnabled(status);
         ui->disableWinKeyCheckBox->setEnabled(status);
     }
 
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
+    ui->titleLineEdit->setReadOnly(!status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
