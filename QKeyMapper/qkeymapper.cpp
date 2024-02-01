@@ -1714,16 +1714,17 @@ void QKeyMapper::HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardMod
 
 void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers)
 {
-    Q_UNUSED(keyseqstr);
-    Q_UNUSED(modifiers);
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    Q_UNUSED(keyseqstr);
+    Q_UNUSED(keymapstatusEnum);
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyboardModifiers = " << modifiers <<", KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
     MappingStart(MAPPINGSTART_HOTKEY);
     if (modifiers.testFlag(Qt::AltModifier)) {
-        QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers();
+        const Qt::KeyboardModifiers modifiers_arg = Qt::AltModifier;
+        QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers(modifiers_arg);
     }
 }
 

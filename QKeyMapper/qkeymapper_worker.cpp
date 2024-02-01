@@ -2065,7 +2065,8 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
                 }
 
                 if (false == skipReleaseModifiers) {
-                    releaseKeyboardModifiers();
+                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                    releaseKeyboardModifiers(modifiers_arg);
                 }
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             }
@@ -2076,37 +2077,44 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::releaseKeyboardModifiers()
+void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers)
 {
     QStringList pressedKeyboardModifiersList;
-    if ((GetKeyState(VK_LSHIFT) & 0x8000) != 0) {
+    if ((GetKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("L-Shift");
     }
-    if ((GetKeyState(VK_RSHIFT) & 0x8000) != 0) {
+    if ((GetKeyState(VK_RSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("R-Shift");
     }
-    if ((GetKeyState(VK_LCONTROL) & 0x8000) != 0) {
+    if ((GetKeyState(VK_LCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("L-Ctrl");
     }
-    if ((GetKeyState(VK_RCONTROL) & 0x8000) != 0) {
+    if ((GetKeyState(VK_RCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("R-Ctrl");
     }
-    if ((GetKeyState(VK_LMENU) & 0x8000) != 0) {
+    if ((GetKeyState(VK_LMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("L-Alt");
     }
-    if ((GetKeyState(VK_RMENU) & 0x8000) != 0) {
+    if ((GetKeyState(VK_RMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("R-Alt");
     }
-    if ((GetKeyState(VK_LWIN) & 0x8000) != 0) {
+    if ((GetKeyState(VK_LWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("L-Win");
     }
-    if ((GetKeyState(VK_RWIN) & 0x8000) != 0) {
+    if ((GetKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("R-Win");
     }
 
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
+        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+    }
+
+    if (modifiers == Qt::AltModifier) {
+        QStringList mappingKeyList = QStringList() << "L-Alt";
+        QString original_key = QString(KEYBOARD_MODIFIERS);
+        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 }

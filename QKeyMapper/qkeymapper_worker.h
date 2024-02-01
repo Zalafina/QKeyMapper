@@ -362,7 +362,7 @@ public slots:
     void setWorkerJoystickCaptureStart(HWND hWnd);
     void setWorkerJoystickCaptureStop(void);
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
-    void releaseKeyboardModifiers(void);
+    void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
 #ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);
