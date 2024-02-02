@@ -725,7 +725,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace() << "[cycleCheckProcessProc]" << " GlobalMappingFlag = " << GlobalMappingFlag << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_GLOBAL) << "]";
 #endif
-                        setKeyHook(hwnd);
+                        setKeyHook(Q_NULLPTR);
                         m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
                         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
                         updateSystemTrayDisplay();
@@ -834,9 +834,7 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
-    if(TRUE == IsWindowVisible(hWnd)){
-        updateShortcutsMap();
-    }
+    updateShortcutsMap();
 
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
 }

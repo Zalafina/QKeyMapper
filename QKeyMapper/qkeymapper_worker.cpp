@@ -1861,6 +1861,7 @@ void QKeyMapper_Worker::threadStarted()
 
 void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 {
+    Q_UNUSED(hWnd);
     clearAllBurstTimersAndLockKeys();
     pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
@@ -1884,62 +1885,55 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
     s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
 
-    if(TRUE == IsWindowVisible(hWnd)){
 #ifdef VIGEM_CLIENT_SUPPORT
-        if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
+    if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
+        POINT pt;
+        if (GetCursorPos(&pt)) {
+            m_LastMouseCursorPoint = pt;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[setWorkerKeyHook] Last Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+#endif
+        }
+
+        POINT bottomrightPoint = mousePositionAfterSetMouseToScreenBottomRight();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setWorkerKeyHook] mousePositionAfterSetMouseToScreenBottomRight -> X = %lu, Y = %lu", bottomrightPoint.x, bottomrightPoint.y);
+#endif
+
+        setMouseToScreenBottomRight();
+
+        for (int loop = 0; loop < SETMOUSEPOSITION_WAITTIME_MAX; ++loop) {
             POINT pt;
             if (GetCursorPos(&pt)) {
-                m_LastMouseCursorPoint = pt;
+                if (pt.x == bottomrightPoint.x && pt.y == bottomrightPoint.y) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[setWorkerKeyHook] Last Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+                    qDebug("[setWorkerKeyHook] Wait setMouseToScreenBottomRight OK -> loop = %d", loop);
 #endif
-            }
-
-            POINT bottomrightPoint = mousePositionAfterSetMouseToScreenBottomRight();
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("[setWorkerKeyHook] mousePositionAfterSetMouseToScreenBottomRight -> X = %lu, Y = %lu", bottomrightPoint.x, bottomrightPoint.y);
-#endif
-
-            setMouseToScreenBottomRight();
-
-            for (int loop = 0; loop < SETMOUSEPOSITION_WAITTIME_MAX; ++loop) {
-                POINT pt;
-                if (GetCursorPos(&pt)) {
-                    if (pt.x == bottomrightPoint.x && pt.y == bottomrightPoint.y) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("[setWorkerKeyHook] Wait setMouseToScreenBottomRight OK -> loop = %d", loop);
-#endif
-                        break;
-                    }
+                    break;
                 }
-                QThread::msleep(1);
             }
-
-
-            if (GetCursorPos(&pt)) {
-                s_Mouse2vJoy_prev.rx() = pt.x;
-                s_Mouse2vJoy_prev.ry() = pt.y;
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("[setWorkerKeyHook] Current BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
-#endif
-            }
+            QThread::msleep(1);
         }
+
+
+        if (GetCursorPos(&pt)) {
+            s_Mouse2vJoy_prev.rx() = pt.x;
+            s_Mouse2vJoy_prev.ry() = pt.y;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[setWorkerKeyHook] Current BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+#endif
+        }
+    }
 #endif
 
 #ifdef HOOKSTART_ONSTARTUP
-        s_AtomicHookProcStart = true;
+    s_AtomicHookProcStart = true;
 #else
-        emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
 #endif
-//        m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-//        m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-        setWorkerJoystickCaptureStart(hWnd);
-    }
-    else{
-#ifdef DEBUG_LOGOUT_ON
-        qWarning("[setWorkerKeyHook] Error: Invisible Window Handle!!!");
-#endif
-    }
+    // m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    // m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+    setWorkerJoystickCaptureStart();
 
 //    setWorkerDInputKeyHook(hWnd);
 }
@@ -2004,9 +1998,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #endif
 }
 
-void QKeyMapper_Worker::setWorkerJoystickCaptureStart(HWND hWnd)
+void QKeyMapper_Worker::setWorkerJoystickCaptureStart(void)
 {
-    Q_UNUSED(hWnd);
     m_JoystickCapture = true;
 
     s_JoyAxisState = Joystick_AxisState();
