@@ -2105,7 +2105,16 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     }
 
     if (modifiers == Qt::AltModifier) {
-        QStringList mappingKeyList = QStringList() << "L-Alt";
+        QStringList mappingKeyList;
+        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
+            mappingKeyList = QStringList() << "L-Alt";
+        }
+        else if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+            mappingKeyList = QStringList() << "R-Alt";
+        }
+        else {
+            mappingKeyList = QStringList() << "L-Alt";
+        }
         QString original_key = QString(KEYBOARD_MODIFIERS);
         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);

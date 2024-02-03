@@ -1720,10 +1720,44 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
 #endif
 
     MappingStart(MAPPINGSTART_HOTKEY);
-    if (modifiers.testFlag(Qt::AltModifier)) {
-        const Qt::KeyboardModifiers modifiers_arg = Qt::AltModifier;
-        QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers(modifiers_arg);
+
+    /* Add for "explorer.exe" AltModifier Bug Fix >>> */
+    HWND hwnd = GetForegroundWindow();
+    if (hwnd == NULL) {
+        return;
     }
+
+    QString filename;
+    QString ProcessPath;
+    getProcessInfoFromHWND( hwnd, ProcessPath);
+
+    if (false == ProcessPath.isEmpty()){
+        QFileInfo fileinfo(ProcessPath);
+        filename = fileinfo.fileName();
+    }
+
+    if ("explorer.exe" == filename) {
+        bool isVisibleWindow = IsWindowVisible(hwnd);
+        bool isExToolWindow = false;
+
+        WINDOWINFO winInfo;
+        winInfo.cbSize = sizeof(WINDOWINFO);
+        if (GetWindowInfo(hwnd, &winInfo)) {
+            if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
+                isExToolWindow = true;
+        }
+
+        if (isVisibleWindow && !isExToolWindow) {
+            if (modifiers.testFlag(Qt::AltModifier)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[HotKeyStartStopActivated] AltModifier & ForegroundWindow Process -> " << filename << ", isVisibleWindow = " << isVisibleWindow << ", isExToolWindow = " << isExToolWindow;
+#endif
+                const Qt::KeyboardModifiers modifiers_arg = Qt::AltModifier;
+                QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers(modifiers_arg);
+            }
+        }
+    }
+    /* Add for "explorer.exe" AltModifier Bug Fix <<< */
 }
 
 void QKeyMapper::onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence)
