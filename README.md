@@ -4,6 +4,7 @@
 ---------------
 ### 最新Release版本压缩包下载:
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
+### https://gitee.com/asukavov/QKeyMapper/releases/latest
 ### ※ QKeyMapper_vX.Y.Z_x64开头的ZIP包是编译好的可执行文件压缩包
 ---------------
 ### 许可证更改 ：请注意，软件许可证已从 MIT 许可证更改为 GNU 通用公共许可证 v3.0 (GPL v3)。在使用、修改或分发软件之前，请确保你已经查看并理解了新许可证的条款。
