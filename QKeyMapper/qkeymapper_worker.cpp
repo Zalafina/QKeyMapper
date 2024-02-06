@@ -182,6 +182,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #endif
     m_Joy2MouseCycleTimer(this),
     skipReleaseModifiersKeysList(),
+    m_UdpSocket(Q_NULLPTR),
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap(),
     m_JoystickButtonMap(),
@@ -945,6 +946,30 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
         }
         sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
     }
+}
+
+void QKeyMapper_Worker::startDataPortListener()
+{
+    if (QKeyMapper::getDataPortListenerStatus()) {
+        int udpDataport = QKeyMapper::getDataPortNumber();
+        bool bindRet = m_UdpSocket->bind(QHostAddress::LocalHost, udpDataport);
+#ifdef DEBUG_LOGOUT_ON
+        if (!bindRet) {
+            qDebug().nospace() << "[DataPortListener]" << "Start DataPortListener on port [" << udpDataport <<"] Failed with Error ->" << m_UdpSocket->errorString();
+        }
+        else {
+            qDebug().nospace() << "[DataPortListener]" << "Start DataPortListener on port [" << udpDataport <<"] Success.";
+        }
+#endif
+    }
+}
+
+void QKeyMapper_Worker::stopDataPortListener()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[DataPortListener]" << "Stop DataPortListener at state ->" << m_UdpSocket->state();
+#endif
+    m_UdpSocket->close();
 }
 
 #if 0
@@ -1857,6 +1882,10 @@ void QKeyMapper_Worker::threadStarted()
 #ifdef DEBUG_LOGOUT_ON
     qDebug("threadStarted() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
+
+    /* UDP Data Port Listener */
+    m_UdpSocket = new QUdpSocket(this);
+    QObject::connect(m_UdpSocket, &QUdpSocket::readyRead, this, &QKeyMapper_Worker::processUdpPendingDatagrams);
 }
 
 void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
@@ -1934,7 +1963,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     // m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
     // m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
     setWorkerJoystickCaptureStart();
-
+    startDataPortListener();
 //    setWorkerDInputKeyHook(hWnd);
 }
 
@@ -1971,6 +2000,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     setWorkerJoystickCaptureStop();
+    stopDataPortListener();
     //    setWorkerDInputKeyUnHook();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -2119,6 +2149,224 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
+}
+
+void QKeyMapper_Worker::processUdpPendingDatagrams()
+{
+    while (m_UdpSocket->hasPendingDatagrams()) {
+        QNetworkDatagram datagram = m_UdpSocket->receiveDatagram();
+
+// #ifdef DEBUG_LOGOUT_ON
+//         qDebug() << "[DataPortListener]" << datagram.data();
+// #endif
+        processForzaHorizon4FormatData(datagram.data());
+    }
+}
+
+void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data)
+{
+    QDataStream stream(fh4data);
+    stream.setByteOrder(QDataStream::LittleEndian);
+
+    qint32 is_race_on;
+    quint32 timestamp_ms;
+    float engine_max_rpm;
+    float engine_idle_rpm;
+    float current_engine_rpm;
+    float acceleration_x;
+    float acceleration_y;
+    float acceleration_z;
+    float velocity_x;
+    float velocity_y;
+    float velocity_z;
+    float angular_velocity_x;
+    float angular_velocity_y;
+    float angular_velocity_z;
+    float yaw;
+    float pitch;
+    float roll;
+    float norm_suspension_travel_FL;
+    float norm_suspension_travel_FR;
+    float norm_suspension_travel_RL;
+    float norm_suspension_travel_RR;
+    float tire_slip_ratio_FL;
+    float tire_slip_ratio_FR;
+    float tire_slip_ratio_RL;
+    float tire_slip_ratio_RR;
+    float wheel_rotation_speed_FL;
+    float wheel_rotation_speed_FR;
+    float wheel_rotation_speed_RL;
+    float wheel_rotation_speed_RR;
+    float wheel_on_rumble_strip_FL;
+    float wheel_on_rumble_strip_FR;
+    float wheel_on_rumble_strip_RL;
+    float wheel_on_rumble_strip_RR;
+    float wheel_in_puddle_FL;
+    float wheel_in_puddle_FR;
+    float wheel_in_puddle_RL;
+    float wheel_in_puddle_RR;
+    float surface_rumble_FL;
+    float surface_rumble_FR;
+    float surface_rumble_RL;
+    float surface_rumble_RR;
+    float tire_slip_angle_FL;
+    float tire_slip_angle_FR;
+    float tire_slip_angle_RL;
+    float tire_slip_angle_RR;
+    float tire_combined_slip_FL;
+    float tire_combined_slip_FR;
+    float tire_combined_slip_RL;
+    float tire_combined_slip_RR;
+    float suspension_travel_meters_FL;
+    float suspension_travel_meters_FR;
+    float suspension_travel_meters_RL;
+    float suspension_travel_meters_RR;
+    qint32 car_ordinal;
+    qint32 car_class;
+    qint32 car_performance_index;
+    qint32 drivetrain_type;
+    qint32 num_cylinders;
+
+    stream >> is_race_on;
+    stream >> timestamp_ms;
+    stream >> engine_max_rpm;
+    stream >> engine_idle_rpm;
+    stream >> current_engine_rpm;
+    stream >> acceleration_x;
+    stream >> acceleration_y;
+    stream >> acceleration_z;
+    stream >> velocity_x;
+    stream >> velocity_y;
+    stream >> velocity_z;
+    stream >> angular_velocity_x;
+    stream >> angular_velocity_y;
+    stream >> angular_velocity_z;
+    stream >> yaw;
+    stream >> pitch;
+    stream >> roll;
+    stream >> norm_suspension_travel_FL;
+    stream >> norm_suspension_travel_FR;
+    stream >> norm_suspension_travel_RL;
+    stream >> norm_suspension_travel_RR;
+    stream >> tire_slip_ratio_FL;
+    stream >> tire_slip_ratio_FR;
+    stream >> tire_slip_ratio_RL;
+    stream >> tire_slip_ratio_RR;
+    stream >> wheel_rotation_speed_FL;
+    stream >> wheel_rotation_speed_FR;
+    stream >> wheel_rotation_speed_RL;
+    stream >> wheel_rotation_speed_RR;
+    stream >> wheel_on_rumble_strip_FL;
+    stream >> wheel_on_rumble_strip_FR;
+    stream >> wheel_on_rumble_strip_RL;
+    stream >> wheel_on_rumble_strip_RR;
+    stream >> wheel_in_puddle_FL;
+    stream >> wheel_in_puddle_FR;
+    stream >> wheel_in_puddle_RL;
+    stream >> wheel_in_puddle_RR;
+    stream >> surface_rumble_FL;
+    stream >> surface_rumble_FR;
+    stream >> surface_rumble_RL;
+    stream >> surface_rumble_RR;
+    stream >> tire_slip_angle_FL;
+    stream >> tire_slip_angle_FR;
+    stream >> tire_slip_angle_RL;
+    stream >> tire_slip_angle_RR;
+    stream >> tire_combined_slip_FL;
+    stream >> tire_combined_slip_FR;
+    stream >> tire_combined_slip_RL;
+    stream >> tire_combined_slip_RR;
+    stream >> suspension_travel_meters_FL;
+    stream >> suspension_travel_meters_FR;
+    stream >> suspension_travel_meters_RL;
+    stream >> suspension_travel_meters_RR;
+    stream >> car_ordinal;
+    stream >> car_class;
+    stream >> car_performance_index;
+    stream >> drivetrain_type;
+    stream >> num_cylinders;
+
+    qDebug() << "tire_slip_ratio_FL:" << tire_slip_ratio_FL;
+    qDebug() << "tire_slip_ratio_FR:" << tire_slip_ratio_FR;
+    qDebug() << "tire_slip_ratio_RL:" << tire_slip_ratio_RL;
+    qDebug() << "tire_slip_ratio_RR:" << tire_slip_ratio_RR;
+    qDebug() << "tire_combined_slip_FL:" << tire_combined_slip_FL;
+    qDebug() << "tire_combined_slip_FR:" << tire_combined_slip_FR;
+    qDebug() << "tire_combined_slip_RL:" << tire_combined_slip_RL;
+    qDebug() << "tire_combined_slip_RR:" << tire_combined_slip_RR;
+
+
+    float average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
+    float max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
+
+    float slip_ratio_threshold = 0.2; // 假设这是你设定的阈值
+
+    if (average_slip_ratio > slip_ratio_threshold || max_slip_ratio > slip_ratio_threshold) {
+        qDebug() << "Tire grip is low.";
+    } else {
+        qDebug() << "Tire grip is normal.";
+    }
+
+#if 0
+    qDebug() << "is_race_on:" << is_race_on;
+    qDebug() << "timestamp_ms:" << timestamp_ms;
+    qDebug() << "engine_max_rpm:" << engine_max_rpm;
+    qDebug() << "engine_idle_rpm:" << engine_idle_rpm;
+    qDebug() << "current_engine_rpm:" << current_engine_rpm;
+    qDebug() << "acceleration_x:" << acceleration_x;
+    qDebug() << "acceleration_y:" << acceleration_y;
+    qDebug() << "acceleration_z:" << acceleration_z;
+    qDebug() << "velocity_x:" << velocity_x;
+    qDebug() << "velocity_y:" << velocity_y;
+    qDebug() << "velocity_z:" << velocity_z;
+    qDebug() << "angular_velocity_x:" << angular_velocity_x;
+    qDebug() << "angular_velocity_y:" << angular_velocity_y;
+    qDebug() << "angular_velocity_z:" << angular_velocity_z;
+    qDebug() << "yaw:" << yaw;
+    qDebug() << "pitch:" << pitch;
+    qDebug() << "roll:" << roll;
+    qDebug() << "norm_suspension_travel_FL:" << norm_suspension_travel_FL;
+    qDebug() << "norm_suspension_travel_FR:" << norm_suspension_travel_FR;
+    qDebug() << "norm_suspension_travel_RL:" << norm_suspension_travel_RL;
+    qDebug() << "norm_suspension_travel_RR:" << norm_suspension_travel_RR;
+    qDebug() << "tire_slip_ratio_FL:" << tire_slip_ratio_FL;
+    qDebug() << "tire_slip_ratio_FR:" << tire_slip_ratio_FR;
+    qDebug() << "tire_slip_ratio_RL:" << tire_slip_ratio_RL;
+    qDebug() << "tire_slip_ratio_RR:" << tire_slip_ratio_RR;
+    qDebug() << "wheel_rotation_speed_FL:" << wheel_rotation_speed_FL;
+    qDebug() << "wheel_rotation_speed_FR:" << wheel_rotation_speed_FR;
+    qDebug() << "wheel_rotation_speed_RL:" << wheel_rotation_speed_RL;
+    qDebug() << "wheel_rotation_speed_RR:" << wheel_rotation_speed_RR;
+    qDebug() << "wheel_on_rumble_strip_FL:" << wheel_on_rumble_strip_FL;
+    qDebug() << "wheel_on_rumble_strip_FR:" << wheel_on_rumble_strip_FR;
+    qDebug() << "wheel_on_rumble_strip_RL:" << wheel_on_rumble_strip_RL;
+    qDebug() << "wheel_on_rumble_strip_RR:" << wheel_on_rumble_strip_RR;
+    qDebug() << "wheel_in_puddle_FL:" << wheel_in_puddle_FL;
+    qDebug() << "wheel_in_puddle_FR:" << wheel_in_puddle_FR;
+    qDebug() << "wheel_in_puddle_RL:" << wheel_in_puddle_RL;
+    qDebug() << "wheel_in_puddle_RR:" << wheel_in_puddle_RR;
+    qDebug() << "surface_rumble_FL:" << surface_rumble_FL;
+    qDebug() << "surface_rumble_FR:" << surface_rumble_FR;
+    qDebug() << "surface_rumble_RL:" << surface_rumble_RL;
+    qDebug() << "surface_rumble_RR:" << surface_rumble_RR;
+    qDebug() << "tire_slip_angle_FL:" << tire_slip_angle_FL;
+    qDebug() << "tire_slip_angle_FR:" << tire_slip_angle_FR;
+    qDebug() << "tire_slip_angle_RL:" << tire_slip_angle_RL;
+    qDebug() << "tire_slip_angle_RR:" << tire_slip_angle_RR;
+    qDebug() << "tire_combined_slip_FL:" << tire_combined_slip_FL;
+    qDebug() << "tire_combined_slip_FR:" << tire_combined_slip_FR;
+    qDebug() << "tire_combined_slip_RL:" << tire_combined_slip_RL;
+    qDebug() << "tire_combined_slip_RR:" << tire_combined_slip_RR;
+    qDebug() << "suspension_travel_meters_FL:" << suspension_travel_meters_FL;
+    qDebug() << "suspension_travel_meters_FR:" << suspension_travel_meters_FR;
+    qDebug() << "suspension_travel_meters_RL:" << suspension_travel_meters_RL;
+    qDebug() << "suspension_travel_meters_RR:" << suspension_travel_meters_RR;
+    qDebug() << "car_ordinal:" << car_ordinal;
+    qDebug() << "car_class:" << car_class;
+    qDebug() << "car_performance_index:" << car_performance_index;
+    qDebug() << "drivetrain_type:" << drivetrain_type;
+    qDebug() << "num_cylinders:" << num_cylinders;
+#endif
 }
 
 #ifdef DINPUT_TEST

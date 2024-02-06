@@ -54,6 +54,10 @@ static const int BURST_RELEASE_TIME_DEFAULT = 20;
 static const int MAPPING_WAITTIME_MIN = 0;
 static const int MAPPING_WAITTIME_MAX = 5000;
 
+static const int DATA_PORT_MIN = 1;
+static const int DATA_PORT_MAX = 65535;
+static const int DATA_PORT_DEFAULT = 5300;
+
 static const int MOUSE_SPEED_MIN = 1;
 static const int MOUSE_SPEED_MAX = 15;
 
@@ -128,6 +132,8 @@ static const char *PROCESSINFO_FILEPATH = "ProcessInfo_FilePath";
 static const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
 static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
 
+static const char *DATAPORT_CHECKED = "DataPortListenerEnable";
+static const char *DATAPORT_NUMBER = "DataPortNumber";
 static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 static const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
@@ -177,6 +183,7 @@ static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
 // static const char *SETTINGSELECTLABEL_CHINESE = "设定";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
+static const char *DATAPORTCHECKBOX_CHINESE = "数据端口";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
@@ -224,6 +231,7 @@ static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 // static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
+static const char *DATAPORTCHECKBOX_ENGLISH = "DataPort";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
@@ -395,11 +403,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
 
+    ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
+
+    ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
@@ -1567,6 +1578,21 @@ bool QKeyMapper::checkGlobalSettingAutoStart()
     }
 }
 
+bool QKeyMapper::getDataPortListenerStatus()
+{
+    if (true == getInstance()->ui->dataPortCheckBox->isChecked()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+int QKeyMapper::getDataPortNumber()
+{
+    return getInstance()->ui->dataPortSpinBox->value();
+}
+
 void QKeyMapper::changeEvent(QEvent *event)
 {
     if(event->type()==QEvent::WindowStateChange)
@@ -2468,6 +2494,8 @@ void QKeyMapper::saveKeyMapSetting(void)
 #ifdef VIGEM_CLIENT_SUPPORT
         settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
 #endif
+        settingFile.setValue(saveSettingSelectStr+DATAPORT_CHECKED, ui->dataPortCheckBox->isChecked());
+        settingFile.setValue(saveSettingSelectStr+DATAPORT_NUMBER, ui->dataPortSpinBox->value());
 
         if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
             if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
@@ -3196,6 +3224,33 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 #endif
 
+    if (true == settingFile.contains(settingSelectStr+DATAPORT_CHECKED)){
+        bool dataPortChecked = settingFile.value(settingSelectStr+DATAPORT_CHECKED).toBool();
+        if (true == dataPortChecked) {
+            ui->dataPortCheckBox->setChecked(true);
+        }
+        else {
+            ui->dataPortCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "DataPortListenerEnable =" << dataPortChecked;
+#endif
+    }
+    else {
+        ui->dataPortCheckBox->setChecked(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+DATAPORT_NUMBER)){
+        int dataPortNumber = settingFile.value(settingSelectStr+DATAPORT_NUMBER).toInt();
+        ui->dataPortSpinBox->setValue(dataPortNumber);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "DataPortNumber =" << dataPortNumber;
+#endif
+    }
+    else {
+        ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
+    }
+
     Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
     if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
         autoStartMappingCheckState = (Qt::CheckState)settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toInt();
@@ -3424,6 +3479,7 @@ void QKeyMapper::setControlFontEnglish()
         customFont.setPointSize(8);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
+    ui->dataPortCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
@@ -3516,6 +3572,7 @@ void QKeyMapper::setControlFontChinese()
         customFont.setPointSize(9);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
+    ui->dataPortCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
@@ -3562,6 +3619,11 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mouseYSpeedLabel->setEnabled(status);
     ui->mouseXSpeedSpinBox->setEnabled(status);
     ui->mouseYSpeedSpinBox->setEnabled(status);
+
+    ui->dataPortCheckBox->setEnabled(status);
+    if (false == status || ui->dataPortCheckBox->isChecked()) {
+        ui->dataPortSpinBox->setEnabled(status);
+    }
 
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
@@ -4612,6 +4674,7 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
+    ui->dataPortCheckBox->setText(DATAPORTCHECKBOX_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
@@ -4673,6 +4736,7 @@ void QKeyMapper::setUILanguage_English()
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
+    ui->dataPortCheckBox->setText(DATAPORTCHECKBOX_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
@@ -4724,6 +4788,7 @@ void QKeyMapper::resetFontSize()
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
@@ -4747,6 +4812,7 @@ void QKeyMapper::resetFontSize()
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
@@ -5669,6 +5735,22 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
     }
     else {
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
+    }
+}
+
+
+void QKeyMapper::on_dataPortCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[DataPortListener] Enable DataPort Listener state changed ->" << (Qt::CheckState)state;
+#endif
+
+    if (Qt::Checked == state) {
+        ui->dataPortSpinBox->setEnabled(true);
+    }
+    else {
+        ui->dataPortSpinBox->setEnabled(false);
     }
 }
 

@@ -321,9 +321,9 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>850</x>
+     <x>830</x>
      <y>410</y>
-     <width>90</width>
+     <width>81</width>
      <height>22</height>
     </rect>
    </property>
@@ -864,6 +864,38 @@
     </property>
    </item>
   </widget>
+  <widget class="QCheckBox" name="dataPortCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>920</x>
+     <y>410</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>DataPort</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="dataPortSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>980</x>
+     <y>410</y>
+     <width>50</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -911,6 +943,8 @@
   <zorder>burstpressSpinBox</zorder>
   <zorder>burstreleaseSpinBox</zorder>
   <zorder>virtualGamepadTypeComboBox</zorder>
+  <zorder>dataPortCheckBox</zorder>
+  <zorder>dataPortSpinBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

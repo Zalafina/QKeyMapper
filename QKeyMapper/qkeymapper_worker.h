@@ -9,6 +9,8 @@
 #include <QThreadPool>
 #include <QWaitCondition>
 #include <QDeadlineTimer>
+#include <QUdpSocket>
+#include <QNetworkDatagram>
 #ifdef VIGEM_CLIENT_SUPPORT
 #include <QTimer>
 #endif
@@ -304,6 +306,9 @@ public:
     void sendSpecialVirtualKeyUp(const QString &virtualKey);
 #endif
 
+    void startDataPortListener(void);
+    void stopDataPortListener(void);
+
 #ifdef VIGEM_CLIENT_SUPPORT
 public:
     static int ViGEmClient_Alloc(void);
@@ -363,6 +368,8 @@ public slots:
     void setWorkerJoystickCaptureStop(void);
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
     void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
+    void processUdpPendingDatagrams(void);
+    void processForzaHorizon4FormatData(const QByteArray &fh4data);
 
 #ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);
@@ -496,6 +503,7 @@ private:
 #endif
     QTimer m_Joy2MouseCycleTimer;
     QStringList skipReleaseModifiersKeysList;
+    QUdpSocket *m_UdpSocket;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
