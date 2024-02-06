@@ -2299,7 +2299,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     float average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
     float max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
 
-    float slip_ratio_threshold = 0.2; // 假设这是你设定的阈值
+    float slip_ratio_threshold = 0.2f; // 假设这是你设定的阈值
 
     if (average_slip_ratio > slip_ratio_threshold || max_slip_ratio > slip_ratio_threshold) {
         qDebug() << "Tire grip is low.";
