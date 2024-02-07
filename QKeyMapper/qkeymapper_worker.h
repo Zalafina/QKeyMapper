@@ -324,7 +324,7 @@ public:
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
     static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
-    static void ViGEmClient_PressButton(const QString &joystickButton);
+    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton);
     static void ViGEmClient_CheckJoysticksReportData(void);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
@@ -452,6 +452,7 @@ public:
 #ifdef VIGEM_CLIENT_SUPPORT
     static QStringList pressedvJoyLStickKeys;
     static QStringList pressedvJoyRStickKeys;
+    static QStringList pressedvJoyButtons;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QStringList pressedLockKeysList;
@@ -471,6 +472,10 @@ public:
     static PVIGEM_TARGET s_ViGEmTarget;
     static ViGEmClient_ConnectState s_ViGEmClient_ConnectState;
     static XUSB_REPORT s_ViGEmTarget_Report;
+    static BYTE s_Auto_Brake;
+    static BYTE s_Auto_Accel;
+    static BYTE s_last_Auto_Brake;
+    static BYTE s_last_Auto_Accel;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;
 #else

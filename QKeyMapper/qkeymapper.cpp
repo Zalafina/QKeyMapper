@@ -4422,6 +4422,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-Key10(RS-Click)"
             << "vJoy-Key11(LT)"
             << "vJoy-Key12(RT)"
+            << "vJoy-Key11(LT)_BRAKE"
+            << "vJoy-Key12(RT)_ACCEL"
+            << "vJoy-Key11(LT)_ACCEL"
+            << "vJoy-Key12(RT)_BRAKE"
 #endif
             << "Joy-LS-Up"
             << "Joy-LS-Down"
