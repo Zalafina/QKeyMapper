@@ -58,6 +58,12 @@ static const int DATA_PORT_MIN = 1;
 static const int DATA_PORT_MAX = 65535;
 static const int DATA_PORT_DEFAULT = 5300;
 
+static const int GRIP_THRESHOLD_DECIMALS = 5;
+static const double GRIP_THRESHOLD_ACCEL_MIN = 0.00001;
+static const double GRIP_THRESHOLD_ACCEL_MAX = 5.00000;
+static const double GRIP_THRESHOLD_ACCEL_DEFAULT = 0.02;
+static const double GRIP_THRESHOLD_SINGLE_STEP = 0.01;
+
 static const int MOUSE_SPEED_MIN = 1;
 static const int MOUSE_SPEED_MAX = 15;
 
@@ -132,8 +138,8 @@ static const char *PROCESSINFO_FILEPATH = "ProcessInfo_FilePath";
 static const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
 static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
 
-static const char *DATAPORT_CHECKED = "DataPortListenerEnable";
 static const char *DATAPORT_NUMBER = "DataPortNumber";
+static const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
 static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 static const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
@@ -183,7 +189,8 @@ static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
 // static const char *SETTINGSELECTLABEL_CHINESE = "设定";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
-static const char *DATAPORTCHECKBOX_CHINESE = "数据端口";
+static const char *DATAPORTLABEL_CHINESE = "数据端口";
+static const char *GRIPTHRESHOLDLABEL_CHINESE = "抓地力阈值";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
@@ -231,7 +238,8 @@ static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 // static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
-static const char *DATAPORTCHECKBOX_ENGLISH = "DataPort";
+static const char *DATAPORTLABEL_ENGLISH = "DataPort";
+static const char *GRIPTHRESHOLDLABEL_ENGLISH = "GripThreshold";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
@@ -404,6 +412,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
+    ui->gripThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
+    ui->gripThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
@@ -411,6 +421,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
     ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
+    ui->gripThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
+    ui->gripThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
@@ -1327,7 +1339,7 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     return FALSE;
 }
 
-int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
+int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
@@ -1345,7 +1357,7 @@ int QKeyMapper::findInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
-int QKeyMapper::findInKeyMappingDataListGlobal(const QString &keyname)
+int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
@@ -1353,6 +1365,24 @@ int QKeyMapper::findInKeyMappingDataListGlobal(const QString &keyname)
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataListGlobal))
     {
         if (keymapdata.Original_Key == keyname){
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
+int QKeyMapper::findMapKeyInKeyMappingDataList(const QString &keyname)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    {
+        if (keymapdata.Mapping_Keys.contains(keyname)){
             returnindex = keymapdataindex;
             break;
         }
@@ -1578,19 +1608,14 @@ bool QKeyMapper::checkGlobalSettingAutoStart()
     }
 }
 
-bool QKeyMapper::getDataPortListenerStatus()
-{
-    if (true == getInstance()->ui->dataPortCheckBox->isChecked()) {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
 int QKeyMapper::getDataPortNumber()
 {
     return getInstance()->ui->dataPortSpinBox->value();
+}
+
+double QKeyMapper::getGripThreshold()
+{
+    return getInstance()->ui->gripThresholdDoubleSpinBox->value();
 }
 
 void QKeyMapper::changeEvent(QEvent *event)
@@ -2494,8 +2519,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 #ifdef VIGEM_CLIENT_SUPPORT
         settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
 #endif
-        settingFile.setValue(saveSettingSelectStr+DATAPORT_CHECKED, ui->dataPortCheckBox->isChecked());
         settingFile.setValue(saveSettingSelectStr+DATAPORT_NUMBER, ui->dataPortSpinBox->value());
+        double gripThresholdAccel = ui->gripThresholdDoubleSpinBox->value();
+        gripThresholdAccel = round(gripThresholdAccel * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
+        settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_ACCEL, gripThresholdAccel);
 
         if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
             if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
@@ -3224,22 +3251,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 #endif
 
-    if (true == settingFile.contains(settingSelectStr+DATAPORT_CHECKED)){
-        bool dataPortChecked = settingFile.value(settingSelectStr+DATAPORT_CHECKED).toBool();
-        if (true == dataPortChecked) {
-            ui->dataPortCheckBox->setChecked(true);
-        }
-        else {
-            ui->dataPortCheckBox->setChecked(false);
-        }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "DataPortListenerEnable =" << dataPortChecked;
-#endif
-    }
-    else {
-        ui->dataPortCheckBox->setChecked(false);
-    }
-
     if (true == settingFile.contains(settingSelectStr+DATAPORT_NUMBER)){
         int dataPortNumber = settingFile.value(settingSelectStr+DATAPORT_NUMBER).toInt();
         ui->dataPortSpinBox->setValue(dataPortNumber);
@@ -3249,6 +3260,17 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     else {
         ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GRIP_THRESHOLD_ACCEL)){
+        double gripThresholdAccel = settingFile.value(settingSelectStr+GRIP_THRESHOLD_ACCEL).toDouble();
+        ui->gripThresholdDoubleSpinBox->setValue(gripThresholdAccel);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "GripThresholdAccel =" << gripThresholdAccel;
+#endif
+    }
+    else {
+        ui->gripThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
     }
 
     Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
@@ -3479,7 +3501,8 @@ void QKeyMapper::setControlFontEnglish()
         customFont.setPointSize(8);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
-    ui->dataPortCheckBox->setFont(customFont);
+    ui->dataPortLabel->setFont(customFont);
+    ui->gripThresholdLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
@@ -3572,7 +3595,8 @@ void QKeyMapper::setControlFontChinese()
         customFont.setPointSize(9);
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
-    ui->dataPortCheckBox->setFont(customFont);
+    ui->dataPortLabel->setFont(customFont);
+    ui->gripThresholdLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
@@ -3620,10 +3644,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mouseXSpeedSpinBox->setEnabled(status);
     ui->mouseYSpeedSpinBox->setEnabled(status);
 
-    ui->dataPortCheckBox->setEnabled(status);
-    if (false == status || ui->dataPortCheckBox->isChecked()) {
-        ui->dataPortSpinBox->setEnabled(status);
-    }
+    ui->dataPortLabel->setEnabled(status);
+    ui->dataPortSpinBox->setEnabled(status);
+    ui->gripThresholdLabel->setEnabled(status);
+    ui->gripThresholdDoubleSpinBox->setEnabled(status);
 
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
@@ -4423,9 +4447,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-Key11(LT)"
             << "vJoy-Key12(RT)"
             << "vJoy-Key11(LT)_BRAKE"
-            << "vJoy-Key12(RT)_ACCEL"
-            << "vJoy-Key11(LT)_ACCEL"
             << "vJoy-Key12(RT)_BRAKE"
+            << "vJoy-Key11(LT)_ACCEL"
+            << "vJoy-Key12(RT)_ACCEL"
 #endif
             << "Joy-LS-Up"
             << "Joy-LS-Down"
@@ -4678,7 +4702,8 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
-    ui->dataPortCheckBox->setText(DATAPORTCHECKBOX_CHINESE);
+    ui->dataPortLabel->setText(DATAPORTLABEL_CHINESE);
+    ui->gripThresholdLabel->setText(GRIPTHRESHOLDLABEL_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
@@ -4740,7 +4765,8 @@ void QKeyMapper::setUILanguage_English()
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
-    ui->dataPortCheckBox->setText(DATAPORTCHECKBOX_ENGLISH);
+    ui->dataPortLabel->setText(DATAPORTLABEL_ENGLISH);
+    ui->gripThresholdLabel->setText(GRIPTHRESHOLDLABEL_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
@@ -4793,6 +4819,7 @@ void QKeyMapper::resetFontSize()
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->gripThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
@@ -4817,6 +4844,7 @@ void QKeyMapper::resetFontSize()
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->gripThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
@@ -5068,7 +5096,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 
     bool already_exist = false;
-    int findindex = findInKeyMappingDataList(currentOriKeyText);
+    int findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
 
     if (findindex != -1){
         if (VJOY_MOUSE2LS_STR == currentOriKeyText
@@ -5741,20 +5769,3 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
     }
 }
-
-
-void QKeyMapper::on_dataPortCheckBox_stateChanged(int state)
-{
-    Q_UNUSED(state);
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[DataPortListener] Enable DataPort Listener state changed ->" << (Qt::CheckState)state;
-#endif
-
-    if (Qt::Checked == state) {
-        ui->dataPortSpinBox->setEnabled(true);
-    }
-    else {
-        ui->dataPortSpinBox->setEnabled(false);
-    }
-}
-

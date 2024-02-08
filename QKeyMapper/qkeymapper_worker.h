@@ -267,6 +267,15 @@ public:
         MOUSE2VJOY_BOTH
     };
     Q_ENUM(Mouse2vJoyState)
+
+    enum GripDetectState
+    {
+        GRIPDETECT_NONE,
+        GRIPDETECT_BRAKE,
+        GRIPDETECT_ACCEL,
+        GRIPDETECT_BOTH
+    };
+    Q_ENUM(GripDetectState)
 #endif
 
     enum Joy2MouseState
@@ -368,6 +377,7 @@ public slots:
     void setWorkerJoystickCaptureStop(void);
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
     void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
+    GripDetectState checkGripDetectEnableState(void);
     void processUdpPendingDatagrams(void);
     void processForzaHorizon4FormatData(const QByteArray &fh4data);
 
@@ -476,6 +486,7 @@ public:
     static BYTE s_Auto_Accel;
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
+    static GripDetectState s_GripDetect_EnableState;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;
 #else

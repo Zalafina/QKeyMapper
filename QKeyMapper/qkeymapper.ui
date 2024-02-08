@@ -528,9 +528,9 @@
   <widget class="QPushButton" name="installViGEmBusButton">
    <property name="geometry">
     <rect>
-     <x>890</x>
+     <x>970</x>
      <y>550</y>
-     <width>70</width>
+     <width>80</width>
      <height>21</height>
     </rect>
    </property>
@@ -548,8 +548,8 @@
    <property name="geometry">
     <rect>
      <x>970</x>
-     <y>550</y>
-     <width>81</width>
+     <y>520</y>
+     <width>80</width>
      <height>21</height>
     </rect>
    </property>
@@ -744,7 +744,7 @@
     <rect>
      <x>645</x>
      <y>445</y>
-     <width>51</width>
+     <width>50</width>
      <height>22</height>
     </rect>
    </property>
@@ -792,7 +792,7 @@
     <rect>
      <x>645</x>
      <y>470</y>
-     <width>51</width>
+     <width>50</width>
      <height>22</height>
     </rect>
    </property>
@@ -864,36 +864,59 @@
     </property>
    </item>
   </widget>
-  <widget class="QCheckBox" name="dataPortCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>920</x>
-     <y>410</y>
-     <width>71</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>DataPort</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QSpinBox" name="dataPortSpinBox">
    <property name="geometry">
     <rect>
-     <x>980</x>
-     <y>410</y>
-     <width>50</width>
+     <x>810</x>
+     <y>445</y>
+     <width>60</width>
      <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
     <enum>Qt::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="gripThresholdLabel">
+   <property name="geometry">
+    <rect>
+     <x>745</x>
+     <y>470</y>
+     <width>60</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>GripThreshold</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="gripThresholdDoubleSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>810</x>
+     <y>470</y>
+     <width>60</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="dataPortLabel">
+   <property name="geometry">
+    <rect>
+     <x>745</x>
+     <y>445</y>
+     <width>60</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>DataPort</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -943,8 +966,10 @@
   <zorder>burstpressSpinBox</zorder>
   <zorder>burstreleaseSpinBox</zorder>
   <zorder>virtualGamepadTypeComboBox</zorder>
-  <zorder>dataPortCheckBox</zorder>
   <zorder>dataPortSpinBox</zorder>
+  <zorder>gripThresholdLabel</zorder>
+  <zorder>gripThresholdDoubleSpinBox</zorder>
+  <zorder>dataPortLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

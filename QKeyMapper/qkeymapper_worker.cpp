@@ -74,16 +74,16 @@ static const SHORT XINPUT_THUMB_MAX     = 32767;
 
 static const qreal THUMB_DISTANCE_MAX   = 32767;
 
-static const float TIRE_SLIP_RATIO_THRESHOLD = 0.0001f;
+static const float GRIP_THRESHOLD_BRAKE = 0.00001f;
 static const BYTE AUTO_BRAKE_ADJUST_VALUE = 8;
 static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
-static const BYTE AUTO_BRAKE_DEFAULT = 20 * AUTO_BRAKE_ADJUST_VALUE + 7;
+static const BYTE AUTO_BRAKE_DEFAULT = 18 * AUTO_BRAKE_ADJUST_VALUE + 7;
 static const BYTE AUTO_ACCEL_DEFAULT = 10 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
-static const int AUTO_ADJUST_NONE  = 0b00;
-static const int AUTO_ADJUST_BRAKE = 0b01;
-static const int AUTO_ADJUST_ACCEL = 0b10;
-static const int AUTO_ADJUST_ALL   = 0b11;
+static const int AUTO_ADJUST_NONE   = 0b00;
+static const int AUTO_ADJUST_BRAKE  = 0b01;
+static const int AUTO_ADJUST_ACCEL  = 0b10;
+static const int AUTO_ADJUST_BOTH   = 0b11;
 
 static const int VJOY_UPDATE_NONE           = 0;
 static const int VJOY_UPDATE_BUTTONS        = 1;
@@ -100,6 +100,11 @@ static const int VJOY_KEYUP_WAITTIME = 20;
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
+
+static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
+static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
+static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
+static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
 
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
@@ -161,6 +166,7 @@ BYTE QKeyMapper_Worker::s_Auto_Brake = AUTO_BRAKE_DEFAULT;
 BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
+QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
@@ -941,7 +947,7 @@ void QKeyMapper_Worker::send_WINplusD()
 
 void QKeyMapper_Worker::sendBurstKeyDown(const QString &burstKey)
 {
-    int findindex = QKeyMapper::findInKeyMappingDataList(burstKey);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
 
     if (findindex >=0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
@@ -952,7 +958,7 @@ void QKeyMapper_Worker::sendBurstKeyDown(const QString &burstKey)
 
 void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
 {
-    int findindex = QKeyMapper::findInKeyMappingDataList(burstKey);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
 
     if (findindex >=0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
@@ -967,7 +973,7 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
 
 void QKeyMapper_Worker::startDataPortListener()
 {
-    if (QKeyMapper::getDataPortListenerStatus()) {
+    if (s_GripDetect_EnableState != GRIPDETECT_NONE) {
         int udpDataport = QKeyMapper::getDataPortNumber();
         bool bindRet = m_UdpSocket->bind(QHostAddress::LocalHost, udpDataport);
 #ifdef DEBUG_LOGOUT_ON
@@ -1703,12 +1709,12 @@ QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2Joy
     bool leftJoystickUpdate = false;
     bool rightJoystickUpdate = false;
 
-    int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2LS_STR);
+    int findMouse2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR);
     if (findMouse2LSindex >=0){
         leftJoystickUpdate = true;
     }
 
-    int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2RS_STR);
+    int findMouse2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR);
     if (findMouse2RSindex >=0){
         rightJoystickUpdate = true;
     }
@@ -1756,12 +1762,12 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         rightJoystickUpdate = true;
     }
 
-    // int findMouse2LSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2LS_STR);
+    // int findMouse2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR);
     // if (findMouse2LSindex >=0){
     //     leftJoystickUpdate = true;
     // }
 
-    // int findMouse2RSindex = QKeyMapper::findInKeyMappingDataList(VJOY_MOUSE2RS_STR);
+    // int findMouse2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR);
     // if (findMouse2RSindex >=0){
     //     rightJoystickUpdate = true;
     // }
@@ -2007,6 +2013,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
+    s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Mouse2vJoy_delta.rx() = 0;
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
@@ -2125,6 +2132,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
+    s_GripDetect_EnableState = GRIPDETECT_NONE;
     s_Mouse2vJoy_delta.rx() = 0;
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
@@ -2181,7 +2189,7 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
 
     bool returnFlag = false;
     QString keycodeStringForSearch = QString(PREFIX_SHORTCUT) + keycodeString;
-    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeStringForSearch);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeStringForSearch);
     returnFlag = hookBurstAndLockProc(keycodeStringForSearch, keyupdown);
 
     if (false == returnFlag) {
@@ -2262,14 +2270,41 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     }
 }
 
+QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::checkGripDetectEnableState()
+{
+    GripDetectState gripdetect_enablestate = GRIPDETECT_NONE;
+    bool gripdetect_brake = false;
+    bool gripdetect_accel = false;
+
+    int findvJoyLTBrakeIndex = QKeyMapper::findMapKeyInKeyMappingDataList(VJOY_LT_BRAKE_STR);
+    int findvJoyRTBrakeIndex = QKeyMapper::findMapKeyInKeyMappingDataList(VJOY_RT_BRAKE_STR);
+    if (findvJoyLTBrakeIndex >= 0 || findvJoyRTBrakeIndex >= 0){
+        gripdetect_brake = true;
+    }
+
+    int findvJoyLTAccelIndex = QKeyMapper::findMapKeyInKeyMappingDataList(VJOY_LT_ACCEL_STR);
+    int findvJoyRTAccelIndex = QKeyMapper::findMapKeyInKeyMappingDataList(VJOY_RT_ACCEL_STR);
+    if (findvJoyLTAccelIndex >= 0 || findvJoyRTAccelIndex >= 0){
+        gripdetect_accel = true;
+    }
+
+    if (gripdetect_brake && gripdetect_accel) {
+        gripdetect_enablestate = GRIPDETECT_BOTH;
+    }
+    else if (gripdetect_brake) {
+        gripdetect_enablestate = GRIPDETECT_BRAKE;
+    }
+    else if (gripdetect_accel) {
+        gripdetect_enablestate = GRIPDETECT_ACCEL;
+    }
+
+    return gripdetect_enablestate;
+}
+
 void QKeyMapper_Worker::processUdpPendingDatagrams()
 {
     while (m_UdpSocket->hasPendingDatagrams()) {
         QNetworkDatagram datagram = m_UdpSocket->receiveDatagram();
-
-// #ifdef DEBUG_LOGOUT_ON
-//         qDebug() << "[DataPortListener]" << datagram.data();
-// #endif
         processForzaHorizon4FormatData(datagram.data());
     }
 }
@@ -2397,21 +2432,18 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     stream >> drivetrain_type;
     stream >> num_cylinders;
 
-    qDebug() << "tire_slip_ratio_FL:" << tire_slip_ratio_FL;
-    qDebug() << "tire_slip_ratio_FR:" << tire_slip_ratio_FR;
-    qDebug() << "tire_slip_ratio_RL:" << tire_slip_ratio_RL;
-    qDebug() << "tire_slip_ratio_RR:" << tire_slip_ratio_RR;
-    qDebug() << "tire_combined_slip_FL:" << tire_combined_slip_FL;
-    qDebug() << "tire_combined_slip_FR:" << tire_combined_slip_FR;
-    qDebug() << "tire_combined_slip_RL:" << tire_combined_slip_RL;
-    qDebug() << "tire_combined_slip_RR:" << tire_combined_slip_RR;
-
-
     float average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
     float max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
+    qDebug() << "[processForzaHorizon4FormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio;
+#endif
+
     int autoadjust = AUTO_ADJUST_NONE;
-    if (average_slip_ratio > TIRE_SLIP_RATIO_THRESHOLD || max_slip_ratio > TIRE_SLIP_RATIO_THRESHOLD) {
+    float gripThreshold_Brake = GRIP_THRESHOLD_BRAKE;
+    float gripThreshold_Accel = QKeyMapper::getGripThreshold();
+    if (average_slip_ratio > gripThreshold_Brake || max_slip_ratio > gripThreshold_Brake) {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE") || pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")){
             if (s_Auto_Brake > AUTO_BRAKE_ADJUST_VALUE) {
                 s_Auto_Brake -= AUTO_BRAKE_ADJUST_VALUE;
@@ -2422,22 +2454,8 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
             autoadjust |= AUTO_ADJUST_BRAKE;
         }
-
-        if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL") || pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")){
-            if (s_Auto_Accel > AUTO_ACCEL_ADJUST_VALUE) {
-                s_Auto_Accel -= AUTO_ACCEL_ADJUST_VALUE;
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel - ->" << s_Auto_Accel;
-#endif
-            }
-
-            autoadjust |= AUTO_ADJUST_ACCEL;
-        }
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Tire Grip becomes Low ->" << "Adjust s_Auto_Brake =" << s_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel;
-#endif
-    } else {
+    }
+    else {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE") || pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")){
             if (s_Auto_Brake < XINPUT_TRIGGER_MAX) {
                 s_Auto_Brake += AUTO_BRAKE_ADJUST_VALUE;
@@ -2451,7 +2469,21 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
             autoadjust |= AUTO_ADJUST_BRAKE;
         }
+    }
 
+    if (average_slip_ratio > gripThreshold_Accel || max_slip_ratio > gripThreshold_Accel) {
+        if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL") || pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")){
+            if (s_Auto_Accel > AUTO_ACCEL_ADJUST_VALUE) {
+                s_Auto_Accel -= AUTO_ACCEL_ADJUST_VALUE;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel - ->" << s_Auto_Accel;
+#endif
+            }
+
+            autoadjust |= AUTO_ADJUST_ACCEL;
+        }
+    }
+    else {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL") || pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")){
             if (s_Auto_Accel < XINPUT_TRIGGER_MAX) {
                 s_Auto_Accel += AUTO_BRAKE_ADJUST_VALUE;
@@ -2465,13 +2497,12 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
             autoadjust |= AUTO_ADJUST_ACCEL;
         }
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Tire Grip return Normal ->" << "Adjust s_Auto_Brake =" << s_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel;
-#endif
     }
 
     if (autoadjust) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[processForzaHorizon4FormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel;
+#endif
         QString autoadjustEmptyStr;
         ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust);
     }
@@ -2798,12 +2829,12 @@ QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableSt
     bool leftJoy2Mouse = false;
     bool rightJoy2Mouse = false;
 
-    int findLS2Mouseindex = QKeyMapper::findInKeyMappingDataList(JOY_LS2MOUSE_STR);
+    int findLS2Mouseindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_LS2MOUSE_STR);
     if (findLS2Mouseindex >= 0){
         leftJoy2Mouse = true;
     }
 
-    int findRS2Mouseindex = QKeyMapper::findInKeyMappingDataList(JOY_RS2MOUSE_STR);
+    int findRS2Mouseindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_RS2MOUSE_STR);
     if (findRS2Mouseindex >= 0){
         rightJoy2Mouse = true;
     }
@@ -3350,7 +3381,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         }
 
         if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
-            int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
             returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
             if (true == QKeyMapper::getDisableWinKeyStatus()) {
@@ -3410,7 +3441,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             /* KEY_UP == keyupdown */
             else {
                 if (s_forceSendVirtualKey != true) {
-                    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                     if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
     #ifdef DEBUG_LOGOUT_ON
                         qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
@@ -3510,7 +3541,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
-                int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+                int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
                 if (KEY_UP == keyupdown && false == returnFlag){
@@ -3575,12 +3606,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     bool send_wheel_keys = false;
                     int findindex = -1;
 
-                    int findWheelUpindex = QKeyMapper::findInKeyMappingDataList(MOUSE_STR_WHEEL_UP);
+                    int findWheelUpindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_STR_WHEEL_UP);
                     if (findWheelUpindex >=0){
                         wheel_up_found = true;
                     }
 
-                    int findWheelDownindex = QKeyMapper::findInKeyMappingDataList(MOUSE_STR_WHEEL_DOWN);
+                    int findWheelDownindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_STR_WHEEL_DOWN);
                     if (findWheelDownindex >=0){
                         wheel_down_found = true;
                     }
@@ -3654,7 +3685,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
-    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
 
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
@@ -3790,7 +3821,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
 #endif
 
     bool returnFlag = false;
-    int findindex = QKeyMapper::findInKeyMappingDataList(keycodeString);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
 
     if (false == returnFlag) {
@@ -4279,7 +4310,7 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
     for (const QString &key : qAsConst(burstKeys)) {
         int timerID = m_BurstTimerMap.value(key, 0);
         if (timerID > 0) {
-            int findindex = QKeyMapper::findInKeyMappingDataList(key);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
             if (findindex >= 0) {
                 if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
                     if (true == pressedLockKeysList.contains(key)){

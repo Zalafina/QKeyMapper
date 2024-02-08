@@ -174,8 +174,9 @@ public:
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
-    static int findInKeyMappingDataList(const QString &keyname);
-    static int findInKeyMappingDataListGlobal(const QString &keyname);
+    static int findOriKeyInKeyMappingDataList(const QString &keyname);
+    static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
+    static int findMapKeyInKeyMappingDataList(const QString &keyname);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -193,8 +194,8 @@ public:
     static bool getLockCursorStatus(void);
     static int getGlobalSettingAutoStart(void);
     static bool checkGlobalSettingAutoStart(void);
-    static bool getDataPortListenerStatus(void);
     static int getDataPortNumber(void);
+    static double getGripThreshold(void);
 
 signals:
     void updateLockStatus_Signal(void);
@@ -280,8 +281,6 @@ private slots:
     // void on_uninstallViGEmBusButton_clicked();
 
     void on_soundEffectCheckBox_stateChanged(int state);
-
-    void on_dataPortCheckBox_stateChanged(int state);
 
 private:
     void initHotKeySequence(void);
