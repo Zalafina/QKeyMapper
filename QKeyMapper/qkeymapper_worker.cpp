@@ -74,11 +74,11 @@ static const SHORT XINPUT_THUMB_MAX     = 32767;
 
 static const qreal THUMB_DISTANCE_MAX   = 32767;
 
-static const float TIRE_SLIP_RATIO_THRESHOLD = 0.2f;
-static const BYTE AUTO_BRAKE_DEFAULT = 31 * 4 + 3;
-static const BYTE AUTO_ACCEL_DEFAULT = 31 * 4 + 3;
-static const BYTE AUTO_BRAKE_ADJUST_VALUE = 4;
-static const BYTE AUTO_ACCEL_ADJUST_VALUE = 4;
+static const float TIRE_SLIP_RATIO_THRESHOLD = 0.0001f;
+static const BYTE AUTO_BRAKE_ADJUST_VALUE = 8;
+static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
+static const BYTE AUTO_BRAKE_DEFAULT = 20 * AUTO_BRAKE_ADJUST_VALUE + 7;
+static const BYTE AUTO_ACCEL_DEFAULT = 10 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
 static const int AUTO_ADJUST_NONE  = 0b00;
 static const int AUTO_ADJUST_BRAKE = 0b01;
@@ -1317,7 +1317,30 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         }
 
         int updateFlag = VJOY_UPDATE_NONE;
-        if (ViGEmButtonMap.contains(joystickButton)) {
+        if (joystickButton.isEmpty() && autoAdjust) {
+            if (autoAdjust & AUTO_ADJUST_BRAKE) {
+                if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE")) {
+                    s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
+                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                }
+                if (pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")) {
+                    s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
+                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                }
+            }
+
+            if (autoAdjust & AUTO_ADJUST_ACCEL) {
+                if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL")) {
+                    s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
+                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                }
+                if (pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")) {
+                    s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
+                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                }
+            }
+        }
+        else if (ViGEmButtonMap.contains(joystickButton)) {
             XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
 
             s_ViGEmTarget_Report.wButtons = s_ViGEmTarget_Report.wButtons | button;
@@ -1387,28 +1410,6 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                     pressedvJoyRStickKeys.append(joystickButton);
                 }
                 ViGEmClient_CheckJoysticksReportData();
-            }
-        }
-
-        if (autoAdjust & AUTO_ADJUST_BRAKE) {
-            if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE")) {
-                s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
-                updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-            }
-            if (pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")) {
-                s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
-                updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-            }
-        }
-
-        if (autoAdjust & AUTO_ADJUST_ACCEL) {
-            if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL")) {
-                s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
-                updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-            }
-            if (pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")) {
-                s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
-                updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
         }
 
