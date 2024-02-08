@@ -74,11 +74,9 @@ static const SHORT XINPUT_THUMB_MAX     = 32767;
 
 static const qreal THUMB_DISTANCE_MAX   = 32767;
 
-// static const float GRIP_THRESHOLD_BRAKE = 0.00001f;
-static const float GRIP_THRESHOLD_BRAKE = 0.005f;
 static const BYTE AUTO_BRAKE_ADJUST_VALUE = 8;
 static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
-static const BYTE AUTO_BRAKE_DEFAULT = 12 * AUTO_BRAKE_ADJUST_VALUE + 7;
+static const BYTE AUTO_BRAKE_DEFAULT = 11 * AUTO_BRAKE_ADJUST_VALUE + 7;
 static const BYTE AUTO_ACCEL_DEFAULT = 31 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
 static const int AUTO_ADJUST_NONE   = 0b00;
@@ -2443,14 +2441,14 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
     int autoadjust = AUTO_ADJUST_NONE;
     // float gripThreshold_Brake = GRIP_THRESHOLD_BRAKE;
-    float gripThreshold_Brake = QKeyMapper::getAccelThreshold();
+    float gripThreshold_Brake = QKeyMapper::getBrakeThreshold();
     float gripThreshold_Accel = QKeyMapper::getAccelThreshold();
     if (average_slip_ratio > gripThreshold_Brake || max_slip_ratio > gripThreshold_Brake) {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE") || pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")){
             if (s_Auto_Brake > AUTO_BRAKE_ADJUST_VALUE) {
                 s_Auto_Brake -= AUTO_BRAKE_ADJUST_VALUE;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake - ->" << s_Auto_Brake;
+                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake ----- ->" << s_Auto_Brake;
 #endif
             }
 
@@ -2465,7 +2463,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
                     s_Auto_Brake = XINPUT_TRIGGER_MAX;
                 }
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake + ->" << s_Auto_Brake;
+                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake +++++ ->" << s_Auto_Brake;
 #endif
             }
 
@@ -2478,7 +2476,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
             if (s_Auto_Accel > AUTO_ACCEL_ADJUST_VALUE) {
                 s_Auto_Accel -= AUTO_ACCEL_ADJUST_VALUE;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel - ->" << s_Auto_Accel;
+                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel ----- ->" << s_Auto_Accel;
 #endif
             }
 
@@ -2493,7 +2491,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
                     s_Auto_Accel = XINPUT_TRIGGER_MAX;
                 }
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel + ->" << s_Auto_Accel;
+                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel +++++ ->" << s_Auto_Accel;
 #endif
             }
 
