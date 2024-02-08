@@ -195,7 +195,8 @@ public:
     static int getGlobalSettingAutoStart(void);
     static bool checkGlobalSettingAutoStart(void);
     static int getDataPortNumber(void);
-    static double getGripThreshold(void);
+    static double getBrakeThreshold(void);
+    static double getAccelThreshold(void);
 
 signals:
     void updateLockStatus_Signal(void);

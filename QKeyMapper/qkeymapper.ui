@@ -867,9 +867,9 @@
   <widget class="QSpinBox" name="dataPortSpinBox">
    <property name="geometry">
     <rect>
-     <x>810</x>
-     <y>445</y>
-     <width>60</width>
+     <x>960</x>
+     <y>410</y>
+     <width>50</width>
      <height>22</height>
     </rect>
    </property>
@@ -877,7 +877,7 @@
     <enum>Qt::ClickFocus</enum>
    </property>
   </widget>
-  <widget class="QLabel" name="gripThresholdLabel">
+  <widget class="QLabel" name="accelThresholdLabel">
    <property name="geometry">
     <rect>
      <x>745</x>
@@ -887,13 +887,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>GripThreshold</string>
+    <string>AccelThreshold</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="gripThresholdDoubleSpinBox">
+  <widget class="QDoubleSpinBox" name="accelThresholdDoubleSpinBox">
    <property name="geometry">
     <rect>
      <x>810</x>
@@ -906,6 +906,32 @@
   <widget class="QLabel" name="dataPortLabel">
    <property name="geometry">
     <rect>
+     <x>895</x>
+     <y>410</y>
+     <width>60</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>DataPort</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="brakeThresholdDoubleSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>810</x>
+     <y>445</y>
+     <width>60</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="brakeThresholdLabel">
+   <property name="geometry">
+    <rect>
      <x>745</x>
      <y>445</y>
      <width>60</width>
@@ -913,7 +939,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>DataPort</string>
+    <string>AccelThreshold</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -967,9 +993,11 @@
   <zorder>burstreleaseSpinBox</zorder>
   <zorder>virtualGamepadTypeComboBox</zorder>
   <zorder>dataPortSpinBox</zorder>
-  <zorder>gripThresholdLabel</zorder>
-  <zorder>gripThresholdDoubleSpinBox</zorder>
+  <zorder>accelThresholdLabel</zorder>
+  <zorder>accelThresholdDoubleSpinBox</zorder>
   <zorder>dataPortLabel</zorder>
+  <zorder>brakeThresholdDoubleSpinBox</zorder>
+  <zorder>brakeThresholdLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

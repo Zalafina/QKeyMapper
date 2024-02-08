@@ -74,11 +74,12 @@ static const SHORT XINPUT_THUMB_MAX     = 32767;
 
 static const qreal THUMB_DISTANCE_MAX   = 32767;
 
-static const float GRIP_THRESHOLD_BRAKE = 0.00001f;
+// static const float GRIP_THRESHOLD_BRAKE = 0.00001f;
+static const float GRIP_THRESHOLD_BRAKE = 0.005f;
 static const BYTE AUTO_BRAKE_ADJUST_VALUE = 8;
 static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
-static const BYTE AUTO_BRAKE_DEFAULT = 18 * AUTO_BRAKE_ADJUST_VALUE + 7;
-static const BYTE AUTO_ACCEL_DEFAULT = 10 * AUTO_ACCEL_ADJUST_VALUE + 7;
+static const BYTE AUTO_BRAKE_DEFAULT = 12 * AUTO_BRAKE_ADJUST_VALUE + 7;
+static const BYTE AUTO_ACCEL_DEFAULT = 31 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
 static const int AUTO_ADJUST_NONE   = 0b00;
 static const int AUTO_ADJUST_BRAKE  = 0b01;
@@ -2441,8 +2442,9 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 #endif
 
     int autoadjust = AUTO_ADJUST_NONE;
-    float gripThreshold_Brake = GRIP_THRESHOLD_BRAKE;
-    float gripThreshold_Accel = QKeyMapper::getGripThreshold();
+    // float gripThreshold_Brake = GRIP_THRESHOLD_BRAKE;
+    float gripThreshold_Brake = QKeyMapper::getAccelThreshold();
+    float gripThreshold_Accel = QKeyMapper::getAccelThreshold();
     if (average_slip_ratio > gripThreshold_Brake || max_slip_ratio > gripThreshold_Brake) {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE") || pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")){
             if (s_Auto_Brake > AUTO_BRAKE_ADJUST_VALUE) {

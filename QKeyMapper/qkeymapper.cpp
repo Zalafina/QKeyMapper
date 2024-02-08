@@ -59,6 +59,9 @@ static const int DATA_PORT_MAX = 65535;
 static const int DATA_PORT_DEFAULT = 5300;
 
 static const int GRIP_THRESHOLD_DECIMALS = 5;
+static const double GRIP_THRESHOLD_BRAKE_MIN = 0.00001;
+static const double GRIP_THRESHOLD_BRAKE_MAX = 5.00000;
+static const double GRIP_THRESHOLD_BRAKE_DEFAULT = 0.005;
 static const double GRIP_THRESHOLD_ACCEL_MIN = 0.00001;
 static const double GRIP_THRESHOLD_ACCEL_MAX = 5.00000;
 static const double GRIP_THRESHOLD_ACCEL_DEFAULT = 0.02;
@@ -139,6 +142,7 @@ static const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
 static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
 
 static const char *DATAPORT_NUMBER = "DataPortNumber";
+static const char *GRIP_THRESHOLD_BRAKE = "GripThresholdBrake";
 static const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
 static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
@@ -190,7 +194,8 @@ static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
 static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
 static const char *DATAPORTLABEL_CHINESE = "数据端口";
-static const char *GRIPTHRESHOLDLABEL_CHINESE = "抓地力阈值";
+static const char *BRAKETHRESHOLDLABEL_CHINESE = "刹车阈值";
+static const char *ACCELTHRESHOLDLABEL_CHINESE = "油门阈值";
 static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
 static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 static const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
@@ -239,7 +244,8 @@ static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
 static const char *DATAPORTLABEL_ENGLISH = "DataPort";
-static const char *GRIPTHRESHOLDLABEL_ENGLISH = "GripThreshold";
+static const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeThreshold";
+static const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelThreshold";
 static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
@@ -412,8 +418,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
-    ui->gripThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
-    ui->gripThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
+    ui->brakeThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
+    ui->brakeThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_BRAKE_MIN, GRIP_THRESHOLD_BRAKE_MAX);
+    ui->accelThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
+    ui->accelThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
@@ -421,8 +429,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
     ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
-    ui->gripThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
-    ui->gripThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
+    ui->brakeThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
+    ui->brakeThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
+    ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
+    ui->accelThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
 
     m_SysTrayIcon = new QSystemTrayIcon(this);
     m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
@@ -1613,9 +1623,14 @@ int QKeyMapper::getDataPortNumber()
     return getInstance()->ui->dataPortSpinBox->value();
 }
 
-double QKeyMapper::getGripThreshold()
+double QKeyMapper::getBrakeThreshold()
 {
-    return getInstance()->ui->gripThresholdDoubleSpinBox->value();
+    return getInstance()->ui->brakeThresholdDoubleSpinBox->value();
+}
+
+double QKeyMapper::getAccelThreshold()
+{
+    return getInstance()->ui->accelThresholdDoubleSpinBox->value();
 }
 
 void QKeyMapper::changeEvent(QEvent *event)
@@ -2520,7 +2535,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
 #endif
         settingFile.setValue(saveSettingSelectStr+DATAPORT_NUMBER, ui->dataPortSpinBox->value());
-        double gripThresholdAccel = ui->gripThresholdDoubleSpinBox->value();
+        double gripThresholdBrake = ui->brakeThresholdDoubleSpinBox->value();
+        gripThresholdBrake = round(gripThresholdBrake * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
+        settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_BRAKE, gripThresholdBrake);
+        double gripThresholdAccel = ui->accelThresholdDoubleSpinBox->value();
         gripThresholdAccel = round(gripThresholdAccel * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
         settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_ACCEL, gripThresholdAccel);
 
@@ -3262,15 +3280,26 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
     }
 
+    if (true == settingFile.contains(settingSelectStr+GRIP_THRESHOLD_BRAKE)){
+        double gripThresholdBrake = settingFile.value(settingSelectStr+GRIP_THRESHOLD_BRAKE).toDouble();
+        ui->brakeThresholdDoubleSpinBox->setValue(gripThresholdBrake);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "GripThresholdBrake =" << gripThresholdBrake;
+#endif
+    }
+    else {
+        ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
+    }
+
     if (true == settingFile.contains(settingSelectStr+GRIP_THRESHOLD_ACCEL)){
         double gripThresholdAccel = settingFile.value(settingSelectStr+GRIP_THRESHOLD_ACCEL).toDouble();
-        ui->gripThresholdDoubleSpinBox->setValue(gripThresholdAccel);
+        ui->accelThresholdDoubleSpinBox->setValue(gripThresholdAccel);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "GripThresholdAccel =" << gripThresholdAccel;
 #endif
     }
     else {
-        ui->gripThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
+        ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
     }
 
     Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
@@ -3502,7 +3531,8 @@ void QKeyMapper::setControlFontEnglish()
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->dataPortLabel->setFont(customFont);
-    ui->gripThresholdLabel->setFont(customFont);
+    ui->brakeThresholdLabel->setFont(customFont);
+    ui->accelThresholdLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
@@ -3596,7 +3626,8 @@ void QKeyMapper::setControlFontChinese()
     }
     ui->disableWinKeyCheckBox->setFont(customFont);
     ui->dataPortLabel->setFont(customFont);
-    ui->gripThresholdLabel->setFont(customFont);
+    ui->brakeThresholdLabel->setFont(customFont);
+    ui->accelThresholdLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
@@ -3646,8 +3677,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->dataPortLabel->setEnabled(status);
     ui->dataPortSpinBox->setEnabled(status);
-    ui->gripThresholdLabel->setEnabled(status);
-    ui->gripThresholdDoubleSpinBox->setEnabled(status);
+    ui->brakeThresholdLabel->setEnabled(status);
+    ui->brakeThresholdDoubleSpinBox->setEnabled(status);
+    ui->accelThresholdLabel->setEnabled(status);
+    ui->accelThresholdDoubleSpinBox->setEnabled(status);
 
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
@@ -4703,7 +4736,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->dataPortLabel->setText(DATAPORTLABEL_CHINESE);
-    ui->gripThresholdLabel->setText(GRIPTHRESHOLDLABEL_CHINESE);
+    ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_CHINESE);
+    ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
@@ -4766,7 +4800,8 @@ void QKeyMapper::setUILanguage_English()
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
     ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->dataPortLabel->setText(DATAPORTLABEL_ENGLISH);
-    ui->gripThresholdLabel->setText(GRIPTHRESHOLDLABEL_ENGLISH);
+    ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_ENGLISH);
+    ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
@@ -4819,7 +4854,8 @@ void QKeyMapper::resetFontSize()
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->gripThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->accelThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
@@ -4844,7 +4880,8 @@ void QKeyMapper::resetFontSize()
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->gripThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->accelThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
 
