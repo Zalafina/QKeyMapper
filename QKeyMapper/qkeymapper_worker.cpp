@@ -977,6 +977,7 @@ void QKeyMapper_Worker::startDataPortListener()
     if (s_GripDetect_EnableState != GRIPDETECT_NONE) {
         int udpDataport = QKeyMapper::getDataPortNumber();
         bool bindRet = m_UdpSocket->bind(QHostAddress::LocalHost, udpDataport);
+        Q_UNUSED(bindRet);
 #ifdef DEBUG_LOGOUT_ON
         if (!bindRet) {
             qDebug().nospace() << "[DataPortListener]" << "Start DataPortListener on port [" << udpDataport <<"] Failed with Error ->" << m_UdpSocket->errorString();
