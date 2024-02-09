@@ -79,6 +79,8 @@ static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
 static const BYTE AUTO_BRAKE_DEFAULT = 11 * AUTO_BRAKE_ADJUST_VALUE + 7;
 static const BYTE AUTO_ACCEL_DEFAULT = 31 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
+static const double GRIP_THRESHOLD_MAX = 2000000.00000;
+
 static const int AUTO_ADJUST_NONE   = 0b00;
 static const int AUTO_ADJUST_BRAKE  = 0b01;
 static const int AUTO_ADJUST_ACCEL  = 0b10;
@@ -1304,7 +1306,14 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
 
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().noquote().nospace() << "[ViGEmClient]" << " Joystick Button Press [" << joystickButton << "]";
+        if (autoAdjust) {
+#ifdef GRIP_VERBOSE_LOG
+            qDebug().noquote().nospace() << "[ViGEmClient]" << " VirtualGamepad LT&RT Auto Adjust Update.";
+#endif
+        }
+        else {
+            qDebug().noquote().nospace() << "[ViGEmClient]" << " VirtualGamepad Button Press [" << joystickButton << "]";
+        }
 #endif
 
         if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
@@ -1464,7 +1473,7 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
 
     if (s_ViGEmClient != Q_NULLPTR && s_ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().noquote().nospace() << "[ViGEmClient]" << " Joystick Button Release [" << joystickButton << "]";
+        qDebug().noquote().nospace() << "[ViGEmClient]" << " VirtualGamepad Button Release [" << joystickButton << "]";
 #endif
 
         if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
@@ -2431,23 +2440,32 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     stream >> drivetrain_type;
     stream >> num_cylinders;
 
-    float average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
-    float max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
+    double average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
+    double max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef GRIP_VERBOSE_LOG
     qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
+    qDebug() << "[processForzaHorizon4FormatData]" << "tire_combined_slip_FL =" << tire_combined_slip_FL << ", tire_combined_slip_FR =" << tire_combined_slip_FR << ", tire_combined_slip_RL =" << tire_combined_slip_RR << ", tire_slip_ratio_RR =" << tire_combined_slip_RR;
     qDebug() << "[processForzaHorizon4FormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio;
 #endif
 
+    if (average_slip_ratio > GRIP_THRESHOLD_MAX) {
+        average_slip_ratio = GRIP_THRESHOLD_MAX;
+    }
+
+    if (max_slip_ratio > GRIP_THRESHOLD_MAX) {
+        max_slip_ratio = GRIP_THRESHOLD_MAX;
+    }
+
     int autoadjust = AUTO_ADJUST_NONE;
-    // float gripThreshold_Brake = GRIP_THRESHOLD_BRAKE;
-    float gripThreshold_Brake = QKeyMapper::getBrakeThreshold();
-    float gripThreshold_Accel = QKeyMapper::getAccelThreshold();
+    double gripThreshold_Brake = QKeyMapper::getBrakeThreshold();
+    double gripThreshold_Accel = QKeyMapper::getAccelThreshold();
     if (average_slip_ratio > gripThreshold_Brake || max_slip_ratio > gripThreshold_Brake) {
+    // if (average_slip_ratio > gripThreshold_Brake) {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE") || pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")){
             if (s_Auto_Brake > AUTO_BRAKE_ADJUST_VALUE) {
                 s_Auto_Brake -= AUTO_BRAKE_ADJUST_VALUE;
-#ifdef DEBUG_LOGOUT_ON
+#ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake ----- ->" << s_Auto_Brake;
 #endif
             }
@@ -2462,7 +2480,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
                 if (s_Auto_Brake > XINPUT_TRIGGER_MAX) {
                     s_Auto_Brake = XINPUT_TRIGGER_MAX;
                 }
-#ifdef DEBUG_LOGOUT_ON
+#ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake +++++ ->" << s_Auto_Brake;
 #endif
             }
@@ -2472,10 +2490,11 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     }
 
     if (average_slip_ratio > gripThreshold_Accel || max_slip_ratio > gripThreshold_Accel) {
+    // if (average_slip_ratio > gripThreshold_Accel) {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL") || pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")){
             if (s_Auto_Accel > AUTO_ACCEL_ADJUST_VALUE) {
                 s_Auto_Accel -= AUTO_ACCEL_ADJUST_VALUE;
-#ifdef DEBUG_LOGOUT_ON
+#ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel ----- ->" << s_Auto_Accel;
 #endif
             }
@@ -2490,7 +2509,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
                 if (s_Auto_Accel > XINPUT_TRIGGER_MAX) {
                     s_Auto_Accel = XINPUT_TRIGGER_MAX;
                 }
-#ifdef DEBUG_LOGOUT_ON
+#ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel +++++ ->" << s_Auto_Accel;
 #endif
             }
@@ -2500,7 +2519,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     }
 
     if (autoadjust) {
-#ifdef DEBUG_LOGOUT_ON
+#ifdef GRIP_VERBOSE_LOG
         qDebug() << "[processForzaHorizon4FormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel;
 #endif
         QString autoadjustEmptyStr;

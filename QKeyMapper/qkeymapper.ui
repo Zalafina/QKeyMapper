@@ -167,9 +167,9 @@
    <property name="geometry">
     <rect>
      <x>910</x>
-     <y>378</y>
-     <width>71</width>
-     <height>26</height>
+     <y>375</y>
+     <width>80</width>
+     <height>32</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -321,7 +321,7 @@
   <widget class="QCheckBox" name="disableWinKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>830</x>
+     <x>980</x>
      <y>410</y>
      <width>81</width>
      <height>22</height>
@@ -445,7 +445,7 @@
   <widget class="QCheckBox" name="nextarrowCheckBox">
    <property name="geometry">
     <rect>
-     <x>990</x>
+     <x>1000</x>
      <y>380</y>
      <width>51</width>
      <height>21</height>
@@ -867,7 +867,7 @@
   <widget class="QSpinBox" name="dataPortSpinBox">
    <property name="geometry">
     <rect>
-     <x>960</x>
+     <x>890</x>
      <y>410</y>
      <width>50</width>
      <height>22</height>
@@ -906,7 +906,7 @@
   <widget class="QLabel" name="dataPortLabel">
    <property name="geometry">
     <rect>
-     <x>895</x>
+     <x>825</x>
      <y>410</y>
      <width>60</width>
      <height>22</height>
