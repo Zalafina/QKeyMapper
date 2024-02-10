@@ -1334,22 +1334,22 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         int updateFlag = VJOY_UPDATE_NONE;
         if (joystickButton.isEmpty() && autoAdjust) {
             if (autoAdjust & AUTO_ADJUST_BRAKE) {
-                if (pressedvJoyButtons.contains("vJoy-Key11(LT)_BRAKE")) {
+                if (pressedvJoyButtons.contains(VJOY_LT_BRAKE_STR)) {
                     s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
                     updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
                 }
-                if (pressedvJoyButtons.contains("vJoy-Key12(RT)_BRAKE")) {
+                if (pressedvJoyButtons.contains(VJOY_RT_BRAKE_STR)) {
                     s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
                     updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
                 }
             }
 
             if (autoAdjust & AUTO_ADJUST_ACCEL) {
-                if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL")) {
+                if (pressedvJoyButtons.contains(VJOY_LT_ACCEL_STR)) {
                     s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
                     updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
                 }
-                if (pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")) {
+                if (pressedvJoyButtons.contains(VJOY_RT_ACCEL_STR)) {
                     s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
                     updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
                 }
@@ -1361,27 +1361,27 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
             s_ViGEmTarget_Report.wButtons = s_ViGEmTarget_Report.wButtons | button;
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key11(LT)_BRAKE") {
+        else if (joystickButton == VJOY_LT_BRAKE_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
             updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key12(RT)_ACCEL") {
-            s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-        }
-        else if (joystickButton == "vJoy-Key11(LT)_ACCEL") {
-            s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-        }
-        else if (joystickButton == "vJoy-Key12(RT)_BRAKE") {
+        else if (joystickButton == VJOY_RT_BRAKE_STR) {
             s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
             updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key11(LT)") {
+        else if (joystickButton == VJOY_LT_ACCEL_STR) {
+            s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
+            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+        }
+        else if (joystickButton == VJOY_RT_ACCEL_STR) {
+            s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
+            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+        }
+        else if (joystickButton == "vJoy-Key11(LT)_Max") {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MAX;
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key12(RT)") {
+        else if (joystickButton == "vJoy-Key12(RT)_Max") {
             s_ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MAX;
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
@@ -1498,27 +1498,27 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
             s_ViGEmTarget_Report.wButtons = s_ViGEmTarget_Report.wButtons & ~button;
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key11(LT)_BRAKE") {
+        else if (joystickButton == VJOY_LT_BRAKE_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key12(RT)_ACCEL") {
+        else if (joystickButton == VJOY_RT_BRAKE_STR) {
             s_ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key11(LT)_ACCEL") {
+        else if (joystickButton == VJOY_LT_ACCEL_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key12(RT)_BRAKE") {
+        else if (joystickButton == VJOY_RT_ACCEL_STR) {
             s_ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key11(LT)") {
+        else if (joystickButton == "vJoy-Key11(LT)_Max") {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
-        else if (joystickButton == "vJoy-Key12(RT)") {
+        else if (joystickButton == "vJoy-Key12(RT)_Max") {
             s_ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
@@ -4267,8 +4267,8 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     JoyStickKeyMap.insert("vJoy-Key8(Start)"            ,   (int)JOYSTICK_BUTTON_7      );
     JoyStickKeyMap.insert("vJoy-Key9(LS-Click)"         ,   (int)JOYSTICK_BUTTON_8      );
     JoyStickKeyMap.insert("vJoy-Key10(RS-Click)"        ,   (int)JOYSTICK_BUTTON_9      );
-    JoyStickKeyMap.insert("vJoy-Key11(LT)"              ,   (int)JOYSTICK_BUTTON_10     );
-    JoyStickKeyMap.insert("vJoy-Key12(RT)"              ,   (int)JOYSTICK_BUTTON_11     );
+    JoyStickKeyMap.insert("vJoy-Key11(LT)_Max"          ,   (int)JOYSTICK_BUTTON_10     );
+    JoyStickKeyMap.insert("vJoy-Key12(RT)_Max"          ,   (int)JOYSTICK_BUTTON_11     );
     /* Virtual Joystick Special Buttons for ForzaHorizon */
     JoyStickKeyMap.insert("vJoy-Key11(LT)_BRAKE"        ,   (int)JOYSTICK_BUTTON_10     );
     JoyStickKeyMap.insert("vJoy-Key11(LT)_ACCEL"        ,   (int)JOYSTICK_BUTTON_10     );
