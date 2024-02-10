@@ -161,6 +161,11 @@ static const char *FONTNAME_CHINESE = "NSimSun";
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 
+static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
+static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
+static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
+static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
+
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
@@ -5133,8 +5138,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 
     bool already_exist = false;
-    int findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
-
+    int findindex = -1;
+    findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
     if (findindex != -1){
         if (VJOY_MOUSE2LS_STR == currentOriKeyText
             || VJOY_MOUSE2RS_STR == currentOriKeyText
@@ -5152,8 +5157,38 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
     }
 
-    if (false == already_exist){
+    if (false == already_exist) {
         if (findindex != -1){
+            if (currentMapKeyText == VJOY_LT_BRAKE_STR
+                || currentMapKeyText == VJOY_RT_BRAKE_STR
+                || currentMapKeyText == VJOY_LT_ACCEL_STR
+                || currentMapKeyText == VJOY_RT_ACCEL_STR) {
+                already_exist = true;
+            }
+            else {
+                MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
+                if (keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
+                    || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
+                    || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
+                    || keymapdata.Mapping_Keys.contains(VJOY_RT_ACCEL_STR)){
+                    already_exist = true;
+                }
+            }
+        }
+        else {
+            if (ui->nextarrowCheckBox->isChecked()) {
+                if (currentMapKeyText == VJOY_LT_BRAKE_STR
+                    || currentMapKeyText == VJOY_RT_BRAKE_STR
+                    || currentMapKeyText == VJOY_LT_ACCEL_STR
+                    || currentMapKeyText == VJOY_RT_ACCEL_STR) {
+                    already_exist = true;
+                }
+            }
+        }
+    }
+
+    if (false == already_exist) {
+        if (findindex != -1) {
             MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
             if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
                 QString message;
@@ -5195,7 +5230,11 @@ void QKeyMapper::on_addmapdataButton_clicked()
             }
             else {
                 int waitTime = ui->waitTimeSpinBox->value();
-                if (waitTime > 0) {
+                if (waitTime > 0
+                    && currentMapKeyText != VJOY_LT_BRAKE_STR
+                    && currentMapKeyText != VJOY_RT_BRAKE_STR
+                    && currentMapKeyText != VJOY_LT_ACCEL_STR
+                    && currentMapKeyText != VJOY_RT_ACCEL_STR) {
                     currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
             }
@@ -5211,7 +5250,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #endif
         refreshKeyMappingDataTable();
     }
-    else{
+    else {
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
             QMessageBox::warning(this, PROGRAM_NAME, "Conflict with exist Keys!");
         }
