@@ -4482,8 +4482,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-Key8(Start)"
             << "vJoy-Key9(LS-Click)"
             << "vJoy-Key10(RS-Click)"
-            << "vJoy-Key11(LT)_Max"
-            << "vJoy-Key12(RT)_Max"
+            << "vJoy-Key11(LT)"
+            << "vJoy-Key12(RT)"
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
