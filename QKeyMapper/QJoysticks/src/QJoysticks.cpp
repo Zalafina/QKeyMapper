@@ -51,13 +51,13 @@ QJoysticks::QJoysticks()
 
    /* Configure the settings */
    m_sortJoyticks = 0;
-   m_settings = new QSettings(qApp->organizationName(), qApp->applicationName());
-   m_settings->beginGroup("Blacklisted Joysticks");
+   // m_settings = new QSettings(qApp->organizationName(), qApp->applicationName());
+   // m_settings->beginGroup("Blacklisted Joysticks");
 }
 
 QJoysticks::~QJoysticks()
 {
-   delete m_settings;
+   // delete m_settings;
    delete m_sdlJoysticks;
    delete m_virtualJoystick;
 }
@@ -295,11 +295,12 @@ void QJoysticks::setBlacklisted(const int index, bool blacklisted)
 
    /* Save settings */
    m_devices.at(index)->blacklisted = blacklisted;
-   m_settings->setValue(getName(index), blacklisted);
+   // m_settings->setValue(getName(index), blacklisted);
 
    /* Re-scan joysticks if blacklist value has changed */
-   if (changed)
-      updateInterfaces();
+   // if (changed)
+   //    updateInterfaces();
+   Q_UNUSED(changed);
 }
 
 /**
@@ -307,6 +308,8 @@ void QJoysticks::setBlacklisted(const int index, bool blacklisted)
  */
 void QJoysticks::updateInterfaces()
 {
+   // Backup the current devices
+   QList<QJoystickDevice*> backupDevices = m_devices;
    m_devices.clear();
 
    /* Put blacklisted joysticks at the bottom of the list */
@@ -315,7 +318,20 @@ void QJoysticks::updateInterfaces()
       /* Register non-blacklisted SDL joysticks */
       foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
       {
-         joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // Check if the joystick is in the backup list and was blacklisted
+         foreach (QJoystickDevice *backupJoystick, backupDevices)
+         {
+             if (backupJoystick->blacklisted &&
+                 backupJoystick->vendorid == joystick->vendorid &&
+                 backupJoystick->productid == joystick->productid &&
+                 backupJoystick->serial == joystick->serial)
+             {
+                 joystick->blacklisted = true;
+                 break;
+             }
+         }
+
          if (!joystick->blacklisted)
             addInputDevice(joystick);
       }
@@ -324,7 +340,19 @@ void QJoysticks::updateInterfaces()
       if (virtualJoystick()->joystickEnabled())
       {
          QJoystickDevice *joystick = virtualJoystick()->joystick();
-         joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // Check if the joystick is in the backup list and was blacklisted
+         foreach (QJoystickDevice *backupJoystick, backupDevices)
+         {
+             if (backupJoystick->blacklisted &&
+                 backupJoystick->vendorid == joystick->vendorid &&
+                 backupJoystick->productid == joystick->productid &&
+                 backupJoystick->serial == joystick->serial)
+             {
+                 joystick->blacklisted = true;
+                 break;
+             }
+         }
 
          if (!joystick->blacklisted)
          {
@@ -336,7 +364,19 @@ void QJoysticks::updateInterfaces()
       /* Register blacklisted SDL joysticks */
       foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
       {
-         joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // Check if the joystick is in the backup list and was blacklisted
+         foreach (QJoystickDevice *backupJoystick, backupDevices)
+         {
+             if (backupJoystick->blacklisted &&
+                 backupJoystick->vendorid == joystick->vendorid &&
+                 backupJoystick->productid == joystick->productid &&
+                 backupJoystick->serial == joystick->serial)
+             {
+                 joystick->blacklisted = true;
+                 break;
+             }
+         }
          if (joystick->blacklisted)
             addInputDevice(joystick);
       }
@@ -345,7 +385,19 @@ void QJoysticks::updateInterfaces()
       if (virtualJoystick()->joystickEnabled())
       {
          QJoystickDevice *joystick = virtualJoystick()->joystick();
-         joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // Check if the joystick is in the backup list and was blacklisted
+         foreach (QJoystickDevice *backupJoystick, backupDevices)
+         {
+             if (backupJoystick->blacklisted &&
+                 backupJoystick->vendorid == joystick->vendorid &&
+                 backupJoystick->productid == joystick->productid &&
+                 backupJoystick->serial == joystick->serial)
+             {
+                 joystick->blacklisted = true;
+                 break;
+             }
+         }
 
          if (joystick->blacklisted)
          {
@@ -362,14 +414,38 @@ void QJoysticks::updateInterfaces()
       foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
       {
          addInputDevice(joystick);
-         joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // Check if the joystick is in the backup list and was blacklisted
+         foreach (QJoystickDevice *backupJoystick, backupDevices)
+         {
+             if (backupJoystick->blacklisted &&
+                 backupJoystick->vendorid == joystick->vendorid &&
+                 backupJoystick->productid == joystick->productid &&
+                 backupJoystick->serial == joystick->serial)
+             {
+                 joystick->blacklisted = true;
+                 break;
+             }
+         }
       }
 
       /* Register virtual joystick */
       if (virtualJoystick()->joystickEnabled())
       {
          QJoystickDevice *joystick = virtualJoystick()->joystick();
-         joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // joystick->blacklisted = m_settings->value(joystick->name, false).toBool();
+         // Check if the joystick is in the backup list and was blacklisted
+         foreach (QJoystickDevice *backupJoystick, backupDevices)
+         {
+             if (backupJoystick->blacklisted &&
+                 backupJoystick->vendorid == joystick->vendorid &&
+                 backupJoystick->productid == joystick->productid &&
+                 backupJoystick->serial == joystick->serial)
+             {
+                 joystick->blacklisted = true;
+                 break;
+             }
+         }
 
          addInputDevice(joystick);
          virtualJoystick()->setJoystickID(inputDevices().count() - 1);

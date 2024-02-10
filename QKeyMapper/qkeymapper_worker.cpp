@@ -65,6 +65,13 @@ static const int MOUSE_CURSOR_BOTTOMRIGHT_Y = 65535;
 static const int JOY2MOUSE_CYCLECHECK_TIMEOUT = 2;
 
 #ifdef VIGEM_CLIENT_SUPPORT
+static const USHORT VIRTUALGAMPAD_VENDORID_X360     = 0x045E;
+static const USHORT VIRTUALGAMPAD_PRODUCTID_X360    = 0xABCD;
+
+static const USHORT VIRTUALGAMPAD_VENDORID_DS4      = 0x054C;
+static const USHORT VIRTUALGAMPAD_PRODUCTID_DS4     = 0x05C4;
+static const char *VIRTUALGAMPAD_SERIAL_DS4 = "c0-13-37-b6-0b-94";
+
 static const BYTE XINPUT_TRIGGER_MIN     = 0;
 static const BYTE XINPUT_TRIGGER_MAX     = 255;
 
@@ -257,6 +264,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     /* Connect QJoysticks Signals */
     QJoysticks *instance = QJoysticks::getInstance();
+    QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
@@ -529,8 +537,12 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
 
 void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
+// #ifdef DEBUG_LOGOUT_ON
+//     qDebug("[onSendInputKeys] currentThread -> Name:%s, ID:0x%08X, Key[%s], UpDown:%d", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId(), original_key.toLatin1().constData(), keyupdown);
+// #endif
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[onSendInputKeys] currentThread -> Name:%s, ID:0x%08X, Key[%s], UpDown:%d", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId(), original_key.toLatin1().constData(), keyupdown);
+    QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
+    qDebug() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Key[" << original_key << "], UpDown:" << keyupdown;
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -1132,6 +1144,11 @@ int QKeyMapper_Worker::ViGEmClient_Add()
         qWarning("[ViGEmClient_Add] ViGEmTarget Alloc failed with NULLPTR!!!");
 #endif
         return -1;
+    }
+
+    if (Xbox360Wired == vigem_target_get_type(s_ViGEmTarget)) {
+        vigem_target_set_vid(s_ViGEmTarget, VIRTUALGAMPAD_VENDORID_X360);
+        vigem_target_set_pid(s_ViGEmTarget, VIRTUALGAMPAD_PRODUCTID_X360);
     }
 
     //
@@ -2709,11 +2726,57 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
     }
 }
 
+void QKeyMapper_Worker::onJoystickcountChanged()
+{
+    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onJoystickcountChanged]" << "JoystickList Start >>>";
+#endif
+    int joystick_index = 0;
+    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
+        bool virtualgamepad = false;
+        USHORT vendorid = joystick->vendorid;
+        USHORT productid = joystick->productid;
+
+        if (vendorid == VIRTUALGAMPAD_VENDORID_X360
+            && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
+            virtualgamepad = true;
+        }
+        else if (joystick->serial == VIRTUALGAMPAD_SERIAL_DS4
+            && vendorid == VIRTUALGAMPAD_VENDORID_DS4
+            && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
+            virtualgamepad = true;
+        }
+
+        if (virtualgamepad) {
+            QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        QString vendorIdStr = QString("0x%1").arg(QString::number(vendorid, 16).toUpper(), 4, '0');
+        QString productIdStr = QString("0x%1").arg(QString::number(productid, 16).toUpper(), 4, '0');
+        qDebug().nospace() << "[onJoystickcountChanged] Joystick[" << joystick_index << "] -> " << "Name = " << joystick->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", Serial = " << joystick->serial << ", Virtualgamepad = " << virtualgamepad;
+#endif
+
+        joystick_index += 1;
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onJoystickcountChanged]" << "JoystickList End <<<";
+#endif
+}
+
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
 {
 #ifdef JOYSTICK_VERBOSE_LOG
     qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
 #endif
+
+#ifdef SDL_JOYSTICK_BLACKLIST
+    if (e.joystick->blacklisted) {
+        return;
+    }
+#endif
+
     if (m_JoystickCapture) {
         checkJoystickPOV(e);
     }
@@ -2724,6 +2787,13 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 #ifdef JOYSTICK_VERBOSE_LOG
     qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
+
+#ifdef SDL_JOYSTICK_BLACKLIST
+    if (e.joystick->blacklisted) {
+        return;
+    }
+#endif
+
     if (m_JoystickCapture) {
         QJoystickAxisEvent axisEvent = e;
         #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -2744,6 +2814,13 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 #ifdef JOYSTICK_VERBOSE_LOG
     qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
 #endif
+
+#ifdef SDL_JOYSTICK_BLACKLIST
+    if (e.joystick->blacklisted) {
+        return;
+    }
+#endif
+
     if (m_JoystickCapture) {
         checkJoystickButtons(e);
     }

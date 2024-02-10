@@ -32,6 +32,9 @@
  *     - The numerical ID of the joystick
  *     - The sdl instance id of the joystick
  *     - The joystick display name
+ *     - The joystick serial string
+ *     - The joystick vendor ID
+ *     - The joystick product ID
  *     - The number of axes operated by the joystick
  *     - The number of buttons operated by the joystick
  *     - The number of POVs operated by the joystick
@@ -42,6 +45,9 @@ struct QJoystickDevice
    int id; /**< Holds the ID of the joystick */
    int instanceID; /**< Holds the sdl instance id of the joystick */
    QString name; /**< Holds the name/title of the joystick */
+   QString serial; /**< Holds the serial of the joystick */
+   ushort vendorid; /**< Holds the vendorid of the joystick */
+   ushort productid; /**< Holds the productid of the joystick */
    QList<int> povs; /**< Holds the values for each POV */
    QList<double> axes; /**< Holds the values for each axis */
    QList<bool> buttons; /**< Holds the values for each button */

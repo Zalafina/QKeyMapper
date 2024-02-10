@@ -112,7 +112,7 @@ private slots:
 private:
    bool m_sortJoyticks;
 
-   QSettings *m_settings;
+   // QSettings *m_settings;
    SDL_Joysticks *m_sdlJoysticks;
    VirtualJoystick *m_virtualJoystick;
 

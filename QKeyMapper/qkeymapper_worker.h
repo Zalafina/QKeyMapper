@@ -387,6 +387,7 @@ public slots:
 #endif
     void startBurstTimer(const QString &burstKey, int mappingIndex);
     void stopBurstTimer(const QString &burstKey, int mappingIndex);
+    void onJoystickcountChanged(void);
     void onJoystickPOVEvent(const QJoystickPOVEvent &e);
     void onJoystickAxisEvent(const QJoystickAxisEvent &e);
     void onJoystickButtonEvent(const QJoystickButtonEvent &e);
