@@ -86,9 +86,9 @@ static const qreal THUMB_DISTANCE_MAX   = 32767;
 // static const BYTE AUTO_BRAKE_DEFAULT = 11 * AUTO_BRAKE_ADJUST_VALUE + 7;
 // static const BYTE AUTO_ACCEL_DEFAULT = 11 * AUTO_ACCEL_ADJUST_VALUE + 7;
 static const BYTE AUTO_BRAKE_ADJUST_VALUE = 4;
-static const BYTE AUTO_ACCEL_ADJUST_VALUE = 4;
+static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
 static const BYTE AUTO_BRAKE_DEFAULT = 23 * AUTO_BRAKE_ADJUST_VALUE + 3;
-static const BYTE AUTO_ACCEL_DEFAULT = 23 * AUTO_ACCEL_ADJUST_VALUE + 3;
+static const BYTE AUTO_ACCEL_DEFAULT = 23 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
 static const double GRIP_THRESHOLD_MAX = 2000000.00000;
 
@@ -2529,7 +2529,6 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
 #ifdef GRIP_VERBOSE_LOG
     qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
-    qDebug() << "[processForzaHorizon4FormatData]" << "tire_combined_slip_FL =" << tire_combined_slip_FL << ", tire_combined_slip_FR =" << tire_combined_slip_FR << ", tire_combined_slip_RL =" << tire_combined_slip_RR << ", tire_slip_ratio_RR =" << tire_combined_slip_RR;
     qDebug() << "[processForzaHorizon4FormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio;
 #endif
 
@@ -2589,7 +2588,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     else {
         if (pressedvJoyButtons.contains("vJoy-Key11(LT)_ACCEL") || pressedvJoyButtons.contains("vJoy-Key12(RT)_ACCEL")){
             if (s_Auto_Accel < XINPUT_TRIGGER_MAX) {
-                s_Auto_Accel += AUTO_BRAKE_ADJUST_VALUE;
+                s_Auto_Accel += AUTO_ACCEL_ADJUST_VALUE;
                 if (s_Auto_Accel > XINPUT_TRIGGER_MAX) {
                     s_Auto_Accel = XINPUT_TRIGGER_MAX;
                 }
@@ -2604,7 +2603,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
     if (autoadjust) {
 #ifdef GRIP_VERBOSE_LOG
-        qDebug() << "[processForzaHorizon4FormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel;
+        qDebug() << "[processForzaHorizon4FormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << "s_last_Auto_Brake =" << s_last_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel << ", s_last_Auto_Accel =" << s_last_Auto_Accel;
 #endif
         QString autoadjustEmptyStr;
         ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust);

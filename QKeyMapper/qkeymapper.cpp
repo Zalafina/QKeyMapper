@@ -64,7 +64,7 @@ static const double GRIP_THRESHOLD_BRAKE_MAX = 2000000.00000;
 static const double GRIP_THRESHOLD_BRAKE_DEFAULT = 0.0005;
 static const double GRIP_THRESHOLD_ACCEL_MIN = 0.00001;
 static const double GRIP_THRESHOLD_ACCEL_MAX = 2000000.00000;
-static const double GRIP_THRESHOLD_ACCEL_DEFAULT = 5.00000;
+static const double GRIP_THRESHOLD_ACCEL_DEFAULT = 8.00000;
 static const double GRIP_THRESHOLD_SINGLE_STEP = 0.01;
 
 static const int MOUSE_SPEED_MIN = 1;
