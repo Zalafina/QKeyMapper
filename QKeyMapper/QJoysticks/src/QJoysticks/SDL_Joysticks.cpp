@@ -246,7 +246,9 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
       joystick->vendorid = SDL_JoystickGetVendor(sdl_joystick);
       joystick->productid = SDL_JoystickGetProduct(sdl_joystick);
 #ifdef DEBUG_LOGOUT_ON
-      qDebug() << "[SDL_Joysticks] getJoystick ->" << "Name =" << joystick->name << ", Serial =" << joystick->serial << ", VendorID =" << Qt::hex << joystick->vendorid << ", ProductID =" << Qt::hex << joystick->productid;
+      QString vendorIdStr = QString("0x%1").arg(QString::number(joystick->vendorid, 16).toUpper(), 4, '0');
+      QString productIdStr = QString("0x%1").arg(QString::number(joystick->productid, 16).toUpper(), 4, '0');
+      qDebug().nospace() << "[SDL_Joysticks] getJoystick -> " << "Name = " << joystick->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", Serial = " << joystick->serial;
 #endif
 
       /* Get joystick properties */

@@ -81,17 +81,23 @@ static const SHORT XINPUT_THUMB_MAX     = 32767;
 
 static const qreal THUMB_DISTANCE_MAX   = 32767;
 
-static const BYTE AUTO_BRAKE_ADJUST_VALUE = 8;
-static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
-static const BYTE AUTO_BRAKE_DEFAULT = 11 * AUTO_BRAKE_ADJUST_VALUE + 7;
-static const BYTE AUTO_ACCEL_DEFAULT = 11 * AUTO_ACCEL_ADJUST_VALUE + 7;
+// static const BYTE AUTO_BRAKE_ADJUST_VALUE = 8;
+// static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
+// static const BYTE AUTO_BRAKE_DEFAULT = 11 * AUTO_BRAKE_ADJUST_VALUE + 7;
+// static const BYTE AUTO_ACCEL_DEFAULT = 11 * AUTO_ACCEL_ADJUST_VALUE + 7;
+static const BYTE AUTO_BRAKE_ADJUST_VALUE = 4;
+static const BYTE AUTO_ACCEL_ADJUST_VALUE = 4;
+static const BYTE AUTO_BRAKE_DEFAULT = 23 * AUTO_BRAKE_ADJUST_VALUE + 3;
+static const BYTE AUTO_ACCEL_DEFAULT = 23 * AUTO_ACCEL_ADJUST_VALUE + 3;
 
 static const double GRIP_THRESHOLD_MAX = 2000000.00000;
 
-static const int AUTO_ADJUST_NONE   = 0b00;
-static const int AUTO_ADJUST_BRAKE  = 0b01;
-static const int AUTO_ADJUST_ACCEL  = 0b10;
-static const int AUTO_ADJUST_BOTH   = 0b11;
+static const int AUTO_ADJUST_NONE   = 0b0000;
+static const int AUTO_ADJUST_BRAKE  = 0b0001;
+static const int AUTO_ADJUST_ACCEL  = 0b0010;
+static const int AUTO_ADJUST_BOTH   = 0b0011;
+static const int AUTO_ADJUST_LT     = 0b0100;
+static const int AUTO_ADJUST_RT     = 0b1000;
 
 static const int VJOY_UPDATE_NONE           = 0;
 static const int VJOY_UPDATE_BUTTONS        = 1;
@@ -113,6 +119,9 @@ static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
 static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
 static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
+
+static const char *JOY_LT2VJOYLT_STR = "Joy-Key11(LT)_2vJoyLT";
+static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
 
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
@@ -175,6 +184,7 @@ BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
 QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
+QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = QKeyMapper_Worker::JOY2VJOY_NONE;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
@@ -1350,25 +1360,43 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
 
         int updateFlag = VJOY_UPDATE_NONE;
         if (joystickButton.isEmpty() && autoAdjust) {
-            if (autoAdjust & AUTO_ADJUST_BRAKE) {
-                if (pressedvJoyButtons.contains(VJOY_LT_BRAKE_STR)) {
-                    s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
-                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-                }
-                if (pressedvJoyButtons.contains(VJOY_RT_BRAKE_STR)) {
-                    s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
-                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
-                }
+            if (autoAdjust & AUTO_ADJUST_LT) {
+                s_ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>(s_JoyAxisState.left_trigger * 255 + 0.5);
+                updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
-
-            if (autoAdjust & AUTO_ADJUST_ACCEL) {
-                if (pressedvJoyButtons.contains(VJOY_LT_ACCEL_STR)) {
-                    s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
-                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            else if (autoAdjust & AUTO_ADJUST_RT) {
+                s_ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>(s_JoyAxisState.right_trigger * 255 + 0.5);
+                updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            }
+            else {
+                if (autoAdjust & AUTO_ADJUST_BRAKE) {
+                    if (pressedvJoyButtons.contains(VJOY_LT_BRAKE_STR)) {
+                        if (s_last_Auto_Brake != s_Auto_Brake) {
+                            s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
+                            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                        }
+                    }
+                    if (pressedvJoyButtons.contains(VJOY_RT_BRAKE_STR)) {
+                        if (s_last_Auto_Brake != s_Auto_Brake) {
+                            s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
+                            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                        }
+                    }
                 }
-                if (pressedvJoyButtons.contains(VJOY_RT_ACCEL_STR)) {
-                    s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
-                    updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+
+                if (autoAdjust & AUTO_ADJUST_ACCEL) {
+                    if (pressedvJoyButtons.contains(VJOY_LT_ACCEL_STR)) {
+                        if (s_last_Auto_Accel != s_Auto_Accel) {
+                            s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
+                            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                        }
+                    }
+                    if (pressedvJoyButtons.contains(VJOY_RT_ACCEL_STR)) {
+                        if (s_last_Auto_Accel != s_Auto_Accel) {
+                            s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
+                            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+                        }
+                    }
                 }
             }
         }
@@ -1380,19 +1408,23 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         }
         else if (joystickButton == VJOY_LT_BRAKE_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Brake;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
+            s_last_Auto_Brake = s_Auto_Brake;
         }
         else if (joystickButton == VJOY_RT_BRAKE_STR) {
             s_ViGEmTarget_Report.bRightTrigger = s_Auto_Brake;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
+            s_last_Auto_Brake = s_Auto_Brake;
         }
         else if (joystickButton == VJOY_LT_ACCEL_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = s_Auto_Accel;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
+            s_last_Auto_Accel = s_Auto_Accel;
         }
         else if (joystickButton == VJOY_RT_ACCEL_STR) {
             s_ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
+            s_last_Auto_Accel = s_Auto_Accel;
         }
         else if (joystickButton == "vJoy-Key11(LT)") {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MAX;
@@ -1459,21 +1491,25 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
             Q_UNUSED(error);
 
             if (error == VIGEM_ERROR_NONE) {
-                if (VJOY_UPDATE_BUTTONS == updateFlag || VJOY_UPDATE_AUTO_BUTTONS == updateFlag) {
+                if (VJOY_UPDATE_BUTTONS == updateFlag) {
                     if (false == pressedvJoyButtons.contains(joystickButton)){
                         pressedvJoyButtons.append(joystickButton);
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[pressedvJoyButtons]" << "Button Press" << ": Current Pressed vJoyButtons -> " << pressedvJoyButtons;
 #endif
                     }
-
-                    if (VJOY_UPDATE_AUTO_BUTTONS == updateFlag) {
+                }
+                else if (VJOY_UPDATE_AUTO_BUTTONS == updateFlag) {
+                    if (autoAdjust & AUTO_ADJUST_BRAKE) {
                         s_last_Auto_Brake = s_Auto_Brake;
+                    }
+
+                    if (autoAdjust & AUTO_ADJUST_ACCEL) {
                         s_last_Auto_Accel = s_Auto_Accel;
                     }
                 }
 #ifdef JOYSTICK_VERBOSE_LOG
-                qDebug("[ViGEmClient_Button] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+                qDebug("[ViGEmClient_Button] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d], LeftTrigger[%d], RightTrigger[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY, s_ViGEmTarget_Report.bLeftTrigger, s_ViGEmTarget_Report.bRightTrigger);
 #endif
             }
             else {
@@ -1517,19 +1553,19 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
         }
         else if (joystickButton == VJOY_LT_BRAKE_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
         }
         else if (joystickButton == VJOY_RT_BRAKE_STR) {
             s_ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
         }
         else if (joystickButton == VJOY_LT_ACCEL_STR) {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
         }
         else if (joystickButton == VJOY_RT_ACCEL_STR) {
             s_ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
-            updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
+            updateFlag = VJOY_UPDATE_BUTTONS;
         }
         else if (joystickButton == "vJoy-Key11(LT)") {
             s_ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
@@ -1592,21 +1628,20 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton)
             Q_UNUSED(error);
 
             if (error == VIGEM_ERROR_NONE) {
-                if (VJOY_UPDATE_BUTTONS == updateFlag || VJOY_UPDATE_AUTO_BUTTONS == updateFlag) {
+                if (VJOY_UPDATE_BUTTONS == updateFlag) {
                     pressedvJoyButtons.removeAll(joystickButton);
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[pressedvJoyButtons]" << "Button Release" << ": Current Pressed vJoyButtons -> " << pressedvJoyButtons;
-#endif
-
-                    if (VJOY_UPDATE_AUTO_BUTTONS == updateFlag) {
-                        s_Auto_Brake = AUTO_BRAKE_DEFAULT;
-                        s_Auto_Accel = AUTO_ACCEL_DEFAULT;
-                        s_last_Auto_Brake = 0;
-                        s_last_Auto_Accel = 0;
-                    }
-#ifdef DEBUG_LOGOUT_ON
                     qDebug("[ViGEmClient_Button] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
 #endif
+                    if (joystickButton == VJOY_LT_BRAKE_STR || joystickButton == VJOY_RT_BRAKE_STR) {
+                        s_Auto_Brake = AUTO_BRAKE_DEFAULT;
+                        s_last_Auto_Brake = 0;
+                    }
+                    else if (joystickButton == VJOY_LT_ACCEL_STR || joystickButton == VJOY_RT_ACCEL_STR) {
+                        s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+                        s_last_Auto_Accel = 0;
+                    }
                 }
 #ifdef JOYSTICK_VERBOSE_LOG
                 qDebug("[ViGEmClient_Button] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
@@ -2040,6 +2075,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = checkGripDetectEnableState();
+    s_Joy2vJoyState = checkJoy2vJoyState();
     s_Mouse2vJoy_delta.rx() = 0;
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
@@ -2159,6 +2195,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
+    s_Joy2vJoyState = JOY2VJOY_NONE;
     s_Mouse2vJoy_delta.rx() = 0;
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
@@ -2325,6 +2362,35 @@ QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::checkGripDetectEnableState
     }
 
     return gripdetect_enablestate;
+}
+
+QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
+{
+    Joy2vJoyState joy2vjoystate = JOY2VJOY_NONE;
+    bool joy2vjoy_LT = false;
+    bool joy2vjoy_RT = false;
+
+    int findJoy2vJoyLTindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_LT2VJOYLT_STR);
+    if (findJoy2vJoyLTindex >= 0) {
+        joy2vjoy_LT = true;
+    }
+
+    int findJoy2vJoyRTindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_RT2VJOYRT_STR);
+    if (findJoy2vJoyRTindex >= 0) {
+        joy2vjoy_RT = true;
+    }
+
+    if (joy2vjoy_LT && joy2vjoy_RT) {
+        joy2vjoystate = JOY2VJOY_LTRT_BOTH;
+    }
+    else if (joy2vjoy_LT) {
+        joy2vjoystate = JOY2VJOY_LT;
+    }
+    else if (joy2vjoy_RT) {
+        joy2vjoystate = JOY2VJOY_RT;
+    }
+
+    return joy2vjoystate;
 }
 
 void QKeyMapper_Worker::processUdpPendingDatagrams()
@@ -2900,7 +2966,21 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
-        joystickLTRTButtonProc(e);
+        if (JOYSTICK_AXIS_LT_BUTTON == e.axis
+            && (JOY2VJOY_LT == s_Joy2vJoyState || JOY2VJOY_LTRT_BOTH == s_Joy2vJoyState)) {
+            s_JoyAxisState.left_trigger = e.value;
+            QString autoadjustEmptyStr;
+            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT);
+        }
+        else if (JOYSTICK_AXIS_RT_BUTTON == e.axis
+            && (JOY2VJOY_RT == s_Joy2vJoyState || JOY2VJOY_LTRT_BOTH == s_Joy2vJoyState)) {
+            s_JoyAxisState.right_trigger = e.value;
+            QString autoadjustEmptyStr;
+            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT);
+        }
+        else {
+            joystickLTRTButtonProc(e);
+        }
     }
     else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
         s_JoyAxisState.left_x = e.value;
@@ -4254,6 +4334,8 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-Key10(RS-Click)"           ,   (int)JOYSTICK_BUTTON_9          );
     JoyStickKeyMap.insert("Joy-Key11(LT)"                 ,   (int)JOYSTICK_BUTTON_10         );
     JoyStickKeyMap.insert("Joy-Key12(RT)"                 ,   (int)JOYSTICK_BUTTON_11         );
+    JoyStickKeyMap.insert(JOY_LT2VJOYLT_STR               ,   (int)JOYSTICK_BUTTON_10         );
+    JoyStickKeyMap.insert(JOY_RT2VJOYRT_STR               ,   (int)JOYSTICK_BUTTON_11         );
     /* Joystick DPad Direction */
     JoyStickKeyMap.insert("Joy-DPad-Up"                   ,   (int)JOYSTICK_DPAD_UP           );
     JoyStickKeyMap.insert("Joy-DPad-Down"                 ,   (int)JOYSTICK_DPAD_DOWN         );

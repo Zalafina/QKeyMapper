@@ -166,6 +166,9 @@ static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
 static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
 static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
 
+static const char *JOY_LT2VJOYLT_STR = "Joy-Key11(LT)_2vJoyLT";
+static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
+
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
@@ -2029,7 +2032,9 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
     if (VJOY_MOUSE2LS_STR == text
         || VJOY_MOUSE2RS_STR == text
         || JOY_LS2MOUSE_STR == text
-        || JOY_RS2MOUSE_STR == text) {
+        || JOY_RS2MOUSE_STR == text
+        || JOY_LT2VJOYLT_STR == text
+        || JOY_RT2VJOYRT_STR == text) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
 #endif
@@ -3698,7 +3703,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         && (m_orikeyComboBox->currentText() == VJOY_MOUSE2LS_STR
             || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
             || m_orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
-            || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR)) {
+            || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
+            || m_orikeyComboBox->currentText() == JOY_LT2VJOYLT_STR
+            || m_orikeyComboBox->currentText() == JOY_RT2VJOYRT_STR)) {
         m_mapkeyComboBox->setCurrentText(QString());
         m_mapkeyComboBox->setEnabled(false);
     }
@@ -4513,6 +4520,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key10(RS-Click)"
             << "Joy-Key11(LT)"
             << "Joy-Key12(RT)"
+#ifdef VIGEM_CLIENT_SUPPORT
+            << JOY_LT2VJOYLT_STR
+            << JOY_RT2VJOYRT_STR
+#endif
             << JOY_LS2MOUSE_STR
             << JOY_RS2MOUSE_STR
             ;
@@ -4547,8 +4558,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     for (const QString &joystr : qAsConst(JoyStrlist)){
         keycodelist.removeOne(joystr);
     }
-    keycodelist.removeOne(JOY_LS2MOUSE_STR);
-    keycodelist.removeOne(JOY_RS2MOUSE_STR);
     /* Remove Joy Keys from MappingKey ComboBox <<< */
 
     m_orikeyComboBox->addItems(orikeycodelist);
@@ -4615,6 +4624,10 @@ void QKeyMapper::refreshKeyMappingDataTable()
             if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
                 disable_burstandlock = true;
             }
+
+            if (keymapdata.Original_Key == JOY_LT2VJOYLT_STR || keymapdata.Original_Key == JOY_RT2VJOYRT_STR) {
+                disable_burstandlock = true;
+            }
 #endif
             if (keymapdata.Original_Key == JOY_LS2MOUSE_STR || keymapdata.Original_Key == JOY_RS2MOUSE_STR) {
                 disable_burstandlock = true;
@@ -4628,6 +4641,12 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(SEPARATOR_WAITTIME)) {
+                disable_burstandlock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
+                || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_BRAKE_STR)
+                || keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_ACCEL_STR)
+                || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_ACCEL_STR)) {
                 disable_burstandlock = true;
             }
 
@@ -5144,7 +5163,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (VJOY_MOUSE2LS_STR == currentOriKeyText
             || VJOY_MOUSE2RS_STR == currentOriKeyText
             || JOY_LS2MOUSE_STR == currentOriKeyText
-            || JOY_RS2MOUSE_STR == currentOriKeyText) {
+            || JOY_RS2MOUSE_STR == currentOriKeyText
+            || JOY_LT2VJOYLT_STR == currentOriKeyText
+            || JOY_RT2VJOYRT_STR == currentOriKeyText) {
             already_exist = true;
         }
         else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
@@ -5225,7 +5246,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
             if (VJOY_MOUSE2LS_STR == currentOriKeyText
                 || VJOY_MOUSE2RS_STR == currentOriKeyText
                 || JOY_LS2MOUSE_STR == currentOriKeyText
-                || JOY_RS2MOUSE_STR == currentOriKeyText) {
+                || JOY_RS2MOUSE_STR == currentOriKeyText
+                || JOY_LT2VJOYLT_STR == currentOriKeyText
+                || JOY_RT2VJOYRT_STR == currentOriKeyText) {
                 currentMapKeyText = currentOriKeyText;
             }
             else {

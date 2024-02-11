@@ -128,6 +128,8 @@ struct Joystick_AxisState {
     qreal left_y;
     qreal right_x;
     qreal right_y;
+    qreal left_trigger;
+    qreal right_trigger;
 };
 
 #ifdef DINPUT_TEST
@@ -276,6 +278,15 @@ public:
         GRIPDETECT_BOTH
     };
     Q_ENUM(GripDetectState)
+
+    enum Joy2vJoyState
+    {
+        JOY2VJOY_NONE,
+        JOY2VJOY_LT,
+        JOY2VJOY_RT,
+        JOY2VJOY_LTRT_BOTH
+    };
+    Q_ENUM(Joy2vJoyState)
 #endif
 
     enum Joy2MouseState
@@ -378,6 +389,7 @@ public slots:
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
     void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
     GripDetectState checkGripDetectEnableState(void);
+    Joy2vJoyState checkJoy2vJoyState(void);
     void processUdpPendingDatagrams(void);
     void processForzaHorizon4FormatData(const QByteArray &fh4data);
 
@@ -488,6 +500,7 @@ public:
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
     static GripDetectState s_GripDetect_EnableState;
+    static Joy2vJoyState s_Joy2vJoyState;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;
 #else
