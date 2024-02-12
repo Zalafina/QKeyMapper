@@ -2524,11 +2524,14 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     stream >> drivetrain_type;
     stream >> num_cylinders;
 
-    double average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
-    double max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
+    // double average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
+    double average_slip_ratio = (qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 2;
+    // double max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
+    double max_slip_ratio = qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR));
 
 #ifdef GRIP_VERBOSE_LOG
-    qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
+    // qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
+    qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
     qDebug() << "[processForzaHorizon4FormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio;
 #endif
 
