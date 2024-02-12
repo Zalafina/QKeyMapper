@@ -18,6 +18,8 @@
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
+* v1.3.6(Build 20240208)
+    * 【极限竞速: 地平线】键盘可使用虚拟手柄 "vJoy-Key11(LT)_BRAKE" 映射来根据 "刹车阈值" 自动控制刹车力度。
 * v1.3.6(Build 20240131)
     * UI控件整体布局变化。
     * 增加虚拟手柄类型选择(X360/DS4), 如果使用以前版本的设定文件时提示"从INI文件加载了无效的设定数据"，在程序路径下备份keymapdata.ini后，使用文本编辑工具对keymapdata.ini进行文本替换后可继续使用。替换内容：(A) -> (A/×)、(B) -> (B/○)、(X) -> (X/□)、(Y) -> (Y/△)
