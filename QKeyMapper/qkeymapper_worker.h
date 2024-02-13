@@ -391,7 +391,7 @@ public slots:
     GripDetectState checkGripDetectEnableState(void);
     Joy2vJoyState checkJoy2vJoyState(void);
     void processUdpPendingDatagrams(void);
-    void processForzaHorizon4FormatData(const QByteArray &fh4data);
+    void processForzaFormatData(const QByteArray &forzadata);
 
 #ifdef DINPUT_TEST
     void setWorkerDInputKeyHook(HWND hWnd);

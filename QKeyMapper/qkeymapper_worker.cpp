@@ -95,7 +95,6 @@ static const double GRIP_THRESHOLD_MAX = 200.00000;
 static const qsizetype FH_DATA_TOTAL_LENGTH = 324;
 static const qsizetype FH_FIRAT_PART_DATA_LENGTH = 232;
 static const qsizetype FH_SPECIAL_PART_DATA_LENGTH = 12;
-static const qsizetype FH_THIRD_PART_DATA_LENGTH = 12;
 
 static const int AUTO_ADJUST_NONE   = 0b0000;
 static const int AUTO_ADJUST_BRAKE  = 0b0001;
@@ -2402,16 +2401,15 @@ void QKeyMapper_Worker::processUdpPendingDatagrams()
 {
     while (m_UdpSocket->hasPendingDatagrams()) {
         QNetworkDatagram datagram = m_UdpSocket->receiveDatagram();
-        processForzaHorizon4FormatData(datagram.data());
+        processForzaFormatData(datagram.data());
     }
 }
 
-void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data)
+void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
 {
-    QByteArray firstPartData = fh4data.left(FH_FIRAT_PART_DATA_LENGTH);
-    QByteArray secondPartData = fh4data.right(FH_DATA_TOTAL_LENGTH - FH_FIRAT_PART_DATA_LENGTH - FH_SPECIAL_PART_DATA_LENGTH);
-    QByteArray specialData = fh4data.mid(FH_FIRAT_PART_DATA_LENGTH, FH_SPECIAL_PART_DATA_LENGTH);
-    QByteArray thirdPartData = fh4data.right(FH_THIRD_PART_DATA_LENGTH);
+    QByteArray firstPartData = forzadata.left(FH_FIRAT_PART_DATA_LENGTH);
+    QByteArray secondPartData = forzadata.right(FH_DATA_TOTAL_LENGTH - FH_FIRAT_PART_DATA_LENGTH - FH_SPECIAL_PART_DATA_LENGTH);
+    QByteArray specialData = forzadata.mid(FH_FIRAT_PART_DATA_LENGTH, FH_SPECIAL_PART_DATA_LENGTH);
 
     QDataStream firstPartStream(firstPartData);
     firstPartStream.setByteOrder(QDataStream::LittleEndian);
@@ -2422,9 +2420,6 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     QDataStream specialDataStream(specialData);
     specialDataStream.setByteOrder(QDataStream::LittleEndian);
     specialDataStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    QDataStream thirdPartStream(specialData);
-    thirdPartStream.setByteOrder(QDataStream::LittleEndian);
-    thirdPartStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
     /* First Part Data */
     qint32 is_race_on;
@@ -2610,14 +2605,15 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
     double max_slip_ratio = qMax(qMax(qAbs(tire_combined_slip_FL), qAbs(tire_combined_slip_FR)), qMax(qAbs(tire_combined_slip_RL), qAbs(tire_combined_slip_RR)));
 
 #ifdef GRIP_VERBOSE_LOG
-    // qDebug().nospace() << "[processForzaHorizon4FormatData]" << " secondPartData = " << secondPartData.toHex();
-    // qDebug().nospace() << "[processForzaHorizon4FormatData]" << " thirdPartData = " << thirdPartData.toHex();
+    // qDebug().nospace() << "[processForzaFormatData]" << " secondPartData = " << secondPartData.toHex();
+    // qDebug().nospace() << "[processForzaFormatData]" << " thirdPartData = " << thirdPartData.toHex();
+    qDebug().nospace() << "[processForzaFormatData]" << " forzadata length = " << forzadata.size();
 
-    qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
-    qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_angle_FL =" << tire_slip_angle_FL << ", tire_slip_angle_FR =" << tire_slip_angle_FR << ", tire_slip_angle_RL =" << tire_slip_angle_RL << ", tire_slip_angle_RR =" << tire_slip_angle_RR;
-    qDebug() << "[processForzaHorizon4FormatData]" << "tire_combined_slip_FL =" << tire_combined_slip_FL << ", tire_combined_slip_FR =" << tire_combined_slip_FR << ", tire_combined_slip_RL =" << tire_combined_slip_RL << ", tire_combined_slip_RR =" << tire_combined_slip_RR;
-    // qDebug() << "[processForzaHorizon4FormatData]" << "tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
-    qDebug() << "[processForzaHorizon4FormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio << ", car_ordinal =" << car_ordinal;
+    qDebug() << "[processForzaFormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
+    qDebug() << "[processForzaFormatData]" << "tire_slip_angle_FL =" << tire_slip_angle_FL << ", tire_slip_angle_FR =" << tire_slip_angle_FR << ", tire_slip_angle_RL =" << tire_slip_angle_RL << ", tire_slip_angle_RR =" << tire_slip_angle_RR;
+    qDebug() << "[processForzaFormatData]" << "tire_combined_slip_FL =" << tire_combined_slip_FL << ", tire_combined_slip_FR =" << tire_combined_slip_FR << ", tire_combined_slip_RL =" << tire_combined_slip_RL << ", tire_combined_slip_RR =" << tire_combined_slip_RR;
+    // qDebug() << "[processForzaFormatData]" << "tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
+    qDebug() << "[processForzaFormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio << ", car_ordinal =" << car_ordinal;
 #endif
 
     if (average_slip_ratio > GRIP_THRESHOLD_MAX) {
@@ -2637,7 +2633,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
             if (s_Auto_Brake > AUTO_BRAKE_ADJUST_VALUE) {
                 s_Auto_Brake -= AUTO_BRAKE_ADJUST_VALUE;
 #ifdef GRIP_VERBOSE_LOG
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake ----- ->" << s_Auto_Brake;
+                qDebug() << "[processForzaFormatData]" << "s_Auto_Brake ----- ->" << s_Auto_Brake;
 #endif
             }
 
@@ -2652,7 +2648,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
                     s_Auto_Brake = XINPUT_TRIGGER_MAX;
                 }
 #ifdef GRIP_VERBOSE_LOG
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Brake +++++ ->" << s_Auto_Brake;
+                qDebug() << "[processForzaFormatData]" << "s_Auto_Brake +++++ ->" << s_Auto_Brake;
 #endif
             }
 
@@ -2666,7 +2662,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
             if (s_Auto_Accel > AUTO_ACCEL_ADJUST_VALUE) {
                 s_Auto_Accel -= AUTO_ACCEL_ADJUST_VALUE;
 #ifdef GRIP_VERBOSE_LOG
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel ----- ->" << s_Auto_Accel;
+                qDebug() << "[processForzaFormatData]" << "s_Auto_Accel ----- ->" << s_Auto_Accel;
 #endif
             }
 
@@ -2681,7 +2677,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
                     s_Auto_Accel = XINPUT_TRIGGER_MAX;
                 }
 #ifdef GRIP_VERBOSE_LOG
-                qDebug() << "[processForzaHorizon4FormatData]" << "s_Auto_Accel +++++ ->" << s_Auto_Accel;
+                qDebug() << "[processForzaFormatData]" << "s_Auto_Accel +++++ ->" << s_Auto_Accel;
 #endif
             }
 
@@ -2691,7 +2687,7 @@ void QKeyMapper_Worker::processForzaHorizon4FormatData(const QByteArray &fh4data
 
     if (autoadjust) {
 #ifdef GRIP_VERBOSE_LOG
-        qDebug() << "[processForzaHorizon4FormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << "s_last_Auto_Brake =" << s_last_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel << ", s_last_Auto_Accel =" << s_last_Auto_Accel;
+        qDebug() << "[processForzaFormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << "s_last_Auto_Brake =" << s_last_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel << ", s_last_Auto_Accel =" << s_last_Auto_Accel;
 #endif
         QString autoadjustEmptyStr;
         ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust);
