@@ -90,11 +90,16 @@ static const BYTE AUTO_ACCEL_ADJUST_VALUE = 8;
 static const BYTE AUTO_BRAKE_DEFAULT = 23 * AUTO_BRAKE_ADJUST_VALUE + 3;
 static const BYTE AUTO_ACCEL_DEFAULT = 23 * AUTO_ACCEL_ADJUST_VALUE + 7;
 
-static const double GRIP_THRESHOLD_MAX = 200.00000;
+static const double GRIP_THRESHOLD_MAX = 1000.00000;
 
-static const qsizetype FH_DATA_TOTAL_LENGTH = 324;
-static const qsizetype FH_FIRAT_PART_DATA_LENGTH = 232;
-static const qsizetype FH_SPECIAL_PART_DATA_LENGTH = 12;
+static const qsizetype FORZA_MOTOR_7_SLED_DATA_LENGTH = 232;
+static const qsizetype FORZA_MOTOR_7_DASH_DATA_LENGTH = 311;
+static const qsizetype FORZA_MOTOR_8_DASH_DATA_LENGTH = 331;
+static const qsizetype FORZA_HORIZON_DATA_LENGTH = 324;
+
+static const qsizetype FIRAT_PART_DATA_LENGTH = 232;
+static const qsizetype SECOND_PART_DATA_LENGTH = 79;
+static const qsizetype FORZA_HORIZON_BUFFER_OFFSET = 12;
 
 static const int AUTO_ADJUST_NONE   = 0b0000;
 static const int AUTO_ADJUST_BRAKE  = 0b0001;
@@ -2407,19 +2412,59 @@ void QKeyMapper_Worker::processUdpPendingDatagrams()
 
 void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
 {
-    QByteArray firstPartData = forzadata.left(FH_FIRAT_PART_DATA_LENGTH);
-    QByteArray secondPartData = forzadata.right(FH_DATA_TOTAL_LENGTH - FH_FIRAT_PART_DATA_LENGTH - FH_SPECIAL_PART_DATA_LENGTH);
-    QByteArray specialData = forzadata.mid(FH_FIRAT_PART_DATA_LENGTH, FH_SPECIAL_PART_DATA_LENGTH);
+    qsizetype data_length = forzadata.size();
+    bool extra_data = false;
+    qsizetype buffer_offset = 0;
+
+    if (data_length != FORZA_MOTOR_7_SLED_DATA_LENGTH
+        && data_length != FORZA_MOTOR_7_DASH_DATA_LENGTH
+        && data_length != FORZA_MOTOR_8_DASH_DATA_LENGTH
+        && data_length != FORZA_HORIZON_DATA_LENGTH) {
+        return;
+    }
+    else {
+        if (data_length == FORZA_MOTOR_7_SLED_DATA_LENGTH) {
+            extra_data = false;
+        }
+        else {
+            extra_data = true;
+            if (data_length == FORZA_HORIZON_DATA_LENGTH) {
+                buffer_offset = FORZA_HORIZON_BUFFER_OFFSET;
+            }
+        }
+    }
+
+#ifdef GRIP_VERBOSE_LOG
+    QString dataformat_str;
+    if (data_length == FORZA_MOTOR_7_SLED_DATA_LENGTH) {
+        dataformat_str = "Forza Motorsport 7 Sled";
+    }
+    else if (data_length == FORZA_MOTOR_7_DASH_DATA_LENGTH) {
+        dataformat_str = "Forza Motorsport 7 Dash";
+    }
+    else if (data_length == FORZA_MOTOR_8_DASH_DATA_LENGTH) {
+        dataformat_str = "Forza Motorsport 8 Dash";
+    }
+    else {
+        dataformat_str = "Forza Horizon";
+    }
+
+    qDebug().nospace() << "[processForzaFormatData]" << dataformat_str << " data length = " << data_length;
+#endif
+
+    QByteArray firstPartData = forzadata.left(FIRAT_PART_DATA_LENGTH);
+    QByteArray secondPartData;
+    if (extra_data) {
+        secondPartData = forzadata.mid(FIRAT_PART_DATA_LENGTH + buffer_offset, SECOND_PART_DATA_LENGTH);
+    }
 
     QDataStream firstPartStream(firstPartData);
     firstPartStream.setByteOrder(QDataStream::LittleEndian);
     firstPartStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+
     QDataStream secondPartStream(secondPartData);
     secondPartStream.setByteOrder(QDataStream::LittleEndian);
     secondPartStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    QDataStream specialDataStream(specialData);
-    specialDataStream.setByteOrder(QDataStream::LittleEndian);
-    specialDataStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
 
     /* First Part Data */
     qint32 is_race_on;
@@ -2569,6 +2614,7 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     firstPartStream >> drivetrain_type;
     firstPartStream >> num_cylinders;
 
+    if (extra_data) {
     secondPartStream >> position_x;
     secondPartStream >> position_y;
     secondPartStream >> position_z;
@@ -2596,6 +2642,7 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     secondPartStream >> steer;
     secondPartStream >> norm_driving_line;
     secondPartStream >> norm_ai_brake_diff;
+    }
 
     // double average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
     // double average_slip_ratio = (qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 2;
@@ -2607,8 +2654,6 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
 #ifdef GRIP_VERBOSE_LOG
     // qDebug().nospace() << "[processForzaFormatData]" << " secondPartData = " << secondPartData.toHex();
     // qDebug().nospace() << "[processForzaFormatData]" << " thirdPartData = " << thirdPartData.toHex();
-    qDebug().nospace() << "[processForzaFormatData]" << " forzadata length = " << forzadata.size();
-
     qDebug() << "[processForzaFormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
     qDebug() << "[processForzaFormatData]" << "tire_slip_angle_FL =" << tire_slip_angle_FL << ", tire_slip_angle_FR =" << tire_slip_angle_FR << ", tire_slip_angle_RL =" << tire_slip_angle_RL << ", tire_slip_angle_RR =" << tire_slip_angle_RR;
     qDebug() << "[processForzaFormatData]" << "tire_combined_slip_FL =" << tire_combined_slip_FL << ", tire_combined_slip_FR =" << tire_combined_slip_FR << ", tire_combined_slip_RL =" << tire_combined_slip_RL << ", tire_combined_slip_RR =" << tire_combined_slip_RR;
@@ -2692,67 +2737,6 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
         QString autoadjustEmptyStr;
         ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust);
     }
-
-#if 0
-    qDebug() << "is_race_on:" << is_race_on;
-    qDebug() << "timestamp_ms:" << timestamp_ms;
-    qDebug() << "engine_max_rpm:" << engine_max_rpm;
-    qDebug() << "engine_idle_rpm:" << engine_idle_rpm;
-    qDebug() << "current_engine_rpm:" << current_engine_rpm;
-    qDebug() << "acceleration_x:" << acceleration_x;
-    qDebug() << "acceleration_y:" << acceleration_y;
-    qDebug() << "acceleration_z:" << acceleration_z;
-    qDebug() << "velocity_x:" << velocity_x;
-    qDebug() << "velocity_y:" << velocity_y;
-    qDebug() << "velocity_z:" << velocity_z;
-    qDebug() << "angular_velocity_x:" << angular_velocity_x;
-    qDebug() << "angular_velocity_y:" << angular_velocity_y;
-    qDebug() << "angular_velocity_z:" << angular_velocity_z;
-    qDebug() << "yaw:" << yaw;
-    qDebug() << "pitch:" << pitch;
-    qDebug() << "roll:" << roll;
-    qDebug() << "norm_suspension_travel_FL:" << norm_suspension_travel_FL;
-    qDebug() << "norm_suspension_travel_FR:" << norm_suspension_travel_FR;
-    qDebug() << "norm_suspension_travel_RL:" << norm_suspension_travel_RL;
-    qDebug() << "norm_suspension_travel_RR:" << norm_suspension_travel_RR;
-    qDebug() << "tire_slip_ratio_FL:" << tire_slip_ratio_FL;
-    qDebug() << "tire_slip_ratio_FR:" << tire_slip_ratio_FR;
-    qDebug() << "tire_slip_ratio_RL:" << tire_slip_ratio_RL;
-    qDebug() << "tire_slip_ratio_RR:" << tire_slip_ratio_RR;
-    qDebug() << "wheel_rotation_speed_FL:" << wheel_rotation_speed_FL;
-    qDebug() << "wheel_rotation_speed_FR:" << wheel_rotation_speed_FR;
-    qDebug() << "wheel_rotation_speed_RL:" << wheel_rotation_speed_RL;
-    qDebug() << "wheel_rotation_speed_RR:" << wheel_rotation_speed_RR;
-    qDebug() << "wheel_on_rumble_strip_FL:" << wheel_on_rumble_strip_FL;
-    qDebug() << "wheel_on_rumble_strip_FR:" << wheel_on_rumble_strip_FR;
-    qDebug() << "wheel_on_rumble_strip_RL:" << wheel_on_rumble_strip_RL;
-    qDebug() << "wheel_on_rumble_strip_RR:" << wheel_on_rumble_strip_RR;
-    qDebug() << "wheel_in_puddle_FL:" << wheel_in_puddle_FL;
-    qDebug() << "wheel_in_puddle_FR:" << wheel_in_puddle_FR;
-    qDebug() << "wheel_in_puddle_RL:" << wheel_in_puddle_RL;
-    qDebug() << "wheel_in_puddle_RR:" << wheel_in_puddle_RR;
-    qDebug() << "surface_rumble_FL:" << surface_rumble_FL;
-    qDebug() << "surface_rumble_FR:" << surface_rumble_FR;
-    qDebug() << "surface_rumble_RL:" << surface_rumble_RL;
-    qDebug() << "surface_rumble_RR:" << surface_rumble_RR;
-    qDebug() << "tire_slip_angle_FL:" << tire_slip_angle_FL;
-    qDebug() << "tire_slip_angle_FR:" << tire_slip_angle_FR;
-    qDebug() << "tire_slip_angle_RL:" << tire_slip_angle_RL;
-    qDebug() << "tire_slip_angle_RR:" << tire_slip_angle_RR;
-    qDebug() << "tire_combined_slip_FL:" << tire_combined_slip_FL;
-    qDebug() << "tire_combined_slip_FR:" << tire_combined_slip_FR;
-    qDebug() << "tire_combined_slip_RL:" << tire_combined_slip_RL;
-    qDebug() << "tire_combined_slip_RR:" << tire_combined_slip_RR;
-    qDebug() << "suspension_travel_meters_FL:" << suspension_travel_meters_FL;
-    qDebug() << "suspension_travel_meters_FR:" << suspension_travel_meters_FR;
-    qDebug() << "suspension_travel_meters_RL:" << suspension_travel_meters_RL;
-    qDebug() << "suspension_travel_meters_RR:" << suspension_travel_meters_RR;
-    qDebug() << "car_ordinal:" << car_ordinal;
-    qDebug() << "car_class:" << car_class;
-    qDebug() << "car_performance_index:" << car_performance_index;
-    qDebug() << "drivetrain_type:" << drivetrain_type;
-    qDebug() << "num_cylinders:" << num_cylinders;
-#endif
 }
 
 #ifdef DINPUT_TEST
