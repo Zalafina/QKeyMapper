@@ -217,7 +217,10 @@ public:
         JOYSTICK_BUTTON_14,
         JOYSTICK_BUTTON_15,
         JOYSTICK_BUTTON_16,
-        JOYSTICK_BUTTON_17
+        JOYSTICK_BUTTON_17,
+        JOYSTICK_BUTTON_18,
+        JOYSTICK_BUTTON_19,
+        JOYSTICK_BUTTON_20
     };
     Q_ENUM(JoystickButtonCode)
 
@@ -234,6 +237,13 @@ public:
         JOYSTICK_DPAD_R_DOWN
     };
     Q_ENUM(JoystickDPadCode)
+
+    enum JoystickTrigger
+    {
+        JOYSTICK_LEFT_TRIGGER = 0,
+        JOYSTICK_RIGHT_TRIGGER
+    };
+    Q_ENUM(JoystickTrigger)
 
     enum JoystickLStickCode
     {

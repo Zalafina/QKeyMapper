@@ -3102,7 +3102,7 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
     QString keycodeString;
     /* LT Button & RT Button */
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
-        keycodeString = m_JoystickButtonMap.value(JOYSTICK_BUTTON_10);
+        keycodeString = "Joy-Key11(LT)";
         if (pressedRealKeysList.contains(keycodeString)) {
             /* LT Button is already Pressed */
             if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
@@ -3117,7 +3117,7 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         }
     }
     else { /* JOYSTICK_AXIS_RT_BUTTON == e.axis */
-        keycodeString = m_JoystickButtonMap.value(JOYSTICK_BUTTON_11);
+        keycodeString = "Joy-Key12(RT)";
         if (pressedRealKeysList.contains(keycodeString)) {
             /* RT Button is already Pressed */
             if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
@@ -4399,18 +4399,19 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-Key8(Start)"             ,   (int)JOYSTICK_BUTTON_7          );
     JoyStickKeyMap.insert("Joy-Key9(LS-Click)"          ,   (int)JOYSTICK_BUTTON_8          );
     JoyStickKeyMap.insert("Joy-Key10(RS-Click)"         ,   (int)JOYSTICK_BUTTON_9          );
-    JoyStickKeyMap.insert("Joy-Key11(LT)"               ,   (int)JOYSTICK_BUTTON_10         );
-    JoyStickKeyMap.insert("Joy-Key12(RT)"               ,   (int)JOYSTICK_BUTTON_11         );
-    JoyStickKeyMap.insert(JOY_LT2VJOYLT_STR             ,   (int)JOYSTICK_BUTTON_10         );
-    JoyStickKeyMap.insert(JOY_RT2VJOYRT_STR             ,   (int)JOYSTICK_BUTTON_11         );
+    JoyStickKeyMap.insert("Joy-Key13(Guide)"            ,   (int)JOYSTICK_BUTTON_10         );
+    JoyStickKeyMap.insert("Joy-Key11(LT)"               ,   (int)JOYSTICK_LEFT_TRIGGER      );
+    JoyStickKeyMap.insert("Joy-Key12(RT)"               ,   (int)JOYSTICK_RIGHT_TRIGGER     );
+    JoyStickKeyMap.insert(JOY_LT2VJOYLT_STR             ,   (int)JOYSTICK_LEFT_TRIGGER      );
+    JoyStickKeyMap.insert(JOY_RT2VJOYRT_STR             ,   (int)JOYSTICK_RIGHT_TRIGGER     );
 
     /* Joystick Expanded Buttons */
-    JoyStickKeyMap.insert("Joy-Key13"                   ,   (int)JOYSTICK_BUTTON_12         );
-    JoyStickKeyMap.insert("Joy-Key14"                   ,   (int)JOYSTICK_BUTTON_13         );
-    JoyStickKeyMap.insert("Joy-Key15"                   ,   (int)JOYSTICK_BUTTON_14         );
-    JoyStickKeyMap.insert("Joy-Key16"                   ,   (int)JOYSTICK_BUTTON_15         );
-    JoyStickKeyMap.insert("Joy-Key17"                   ,   (int)JOYSTICK_BUTTON_16         );
-    JoyStickKeyMap.insert("Joy-Key18"                   ,   (int)JOYSTICK_BUTTON_17         );
+    JoyStickKeyMap.insert("Joy-Key14"                   ,   (int)JOYSTICK_BUTTON_11         );
+    JoyStickKeyMap.insert("Joy-Key15"                   ,   (int)JOYSTICK_BUTTON_12         );
+    JoyStickKeyMap.insert("Joy-Key16"                   ,   (int)JOYSTICK_BUTTON_13         );
+    JoyStickKeyMap.insert("Joy-Key17"                   ,   (int)JOYSTICK_BUTTON_14         );
+    JoyStickKeyMap.insert("Joy-Key18"                   ,   (int)JOYSTICK_BUTTON_15         );
+    JoyStickKeyMap.insert("Joy-Key19"                   ,   (int)JOYSTICK_BUTTON_16         );
 
     /* Joystick DPad Direction */
     JoyStickKeyMap.insert("Joy-DPad-Up"                 ,   (int)JOYSTICK_DPAD_UP           );
@@ -4439,16 +4440,15 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_7,       "Joy-Key8(Start)"               );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_8,       "Joy-Key9(LS-Click)"            );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_9,       "Joy-Key10(RS-Click)"           );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_10,      "Joy-Key11(LT)"                 );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_11,      "Joy-Key12(RT)"                 );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_10,      "Joy-Key13(Guide)"              );
 
     /* Joystick Expanded Buttons Map */
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_12,      "Joy-Key13"                     );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_13,      "Joy-Key14"                     );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_14,      "Joy-Key15"                     );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_15,      "Joy-Key16"                     );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_16,      "Joy-Key17"                     );
-    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_17,      "Joy-Key18"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_11,      "Joy-Key14"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_12,      "Joy-Key15"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_13,      "Joy-Key16"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_14,      "Joy-Key17"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_15,      "Joy-Key18"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_16,      "Joy-Key19"                     );
 
     /* Joystick DPad Direction Map */
     m_JoystickDPadMap.insert(JOYSTICK_DPAD_UP,          "Joy-DPad-Up"                   );

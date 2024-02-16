@@ -4520,18 +4520,19 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key10(RS-Click)"
             << "Joy-Key11(LT)"
             << "Joy-Key12(RT)"
+            << "Joy-Key13(Guide)"
 #ifdef VIGEM_CLIENT_SUPPORT
             << JOY_LT2VJOYLT_STR
             << JOY_RT2VJOYRT_STR
 #endif
             << JOY_LS2MOUSE_STR
             << JOY_RS2MOUSE_STR
-            << "Joy-Key13"
             << "Joy-Key14"
             << "Joy-Key15"
             << "Joy-Key16"
             << "Joy-Key17"
             << "Joy-Key18"
+            << "Joy-Key19"
             ;
 
     int top = ui->orikeyLabel->y();
