@@ -4526,6 +4526,12 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #endif
             << JOY_LS2MOUSE_STR
             << JOY_RS2MOUSE_STR
+            << "Joy-Key13"
+            << "Joy-Key14"
+            << "Joy-Key15"
+            << "Joy-Key16"
+            << "Joy-Key17"
+            << "Joy-Key18"
             ;
 
     int top = ui->orikeyLabel->y();

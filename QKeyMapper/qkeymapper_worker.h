@@ -211,7 +211,13 @@ public:
         JOYSTICK_BUTTON_8,
         JOYSTICK_BUTTON_9,
         JOYSTICK_BUTTON_10,
-        JOYSTICK_BUTTON_11
+        JOYSTICK_BUTTON_11,
+        JOYSTICK_BUTTON_12,
+        JOYSTICK_BUTTON_13,
+        JOYSTICK_BUTTON_14,
+        JOYSTICK_BUTTON_15,
+        JOYSTICK_BUTTON_16,
+        JOYSTICK_BUTTON_17
     };
     Q_ENUM(JoystickButtonCode)
 
