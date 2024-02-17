@@ -48,6 +48,7 @@ struct QJoystickDevice
    QString serial; /**< Holds the serial of the joystick */
    ushort vendorid; /**< Holds the vendorid of the joystick */
    ushort productid; /**< Holds the productid of the joystick */
+   int numbuttons; /**< Holds the number of buttons of the joystick */
    QList<int> povs; /**< Holds the values for each POV */
    QList<double> axes; /**< Holds the values for each axis */
    QList<bool> buttons; /**< Holds the values for each button */

@@ -2870,6 +2870,7 @@ void QKeyMapper_Worker::onJoystickcountChanged()
         bool virtualgamepad = false;
         USHORT vendorid = joystick->vendorid;
         USHORT productid = joystick->productid;
+        int numbuttons = joystick->numbuttons;
 
         if (vendorid == VIRTUALGAMPAD_VENDORID_X360
             && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
@@ -2888,7 +2889,7 @@ void QKeyMapper_Worker::onJoystickcountChanged()
 #ifdef DEBUG_LOGOUT_ON
         QString vendorIdStr = QString("0x%1").arg(QString::number(vendorid, 16).toUpper(), 4, '0');
         QString productIdStr = QString("0x%1").arg(QString::number(productid, 16).toUpper(), 4, '0');
-        qDebug().nospace() << "[onJoystickcountChanged] Joystick[" << joystick_index << "] -> " << "Name = " << joystick->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", Serial = " << joystick->serial << ", Virtualgamepad = " << virtualgamepad;
+        qDebug().nospace() << "[onJoystickcountChanged] Joystick[" << joystick_index << "] -> " << "Name = " << joystick->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNums = " << numbuttons << ", Serial = " << joystick->serial << ", Virtualgamepad = " << virtualgamepad;
 #endif
 
         joystick_index += 1;
