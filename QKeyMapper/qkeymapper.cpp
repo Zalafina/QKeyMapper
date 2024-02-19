@@ -3385,6 +3385,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
             && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+            && false == mapping_key.startsWith("Func-")
             && false == mapping_key.contains(SEPARATOR_WAITTIME)){
             checkResult = false;
             break;
@@ -4464,6 +4465,12 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Browser Search"
             << "Browser Favorites"
             << "Browser Home"
+            << "Func-LockScreen"
+            << "Func-Shutdown"
+            << "Func-Reboot"
+            << "Func-Logoff"
+            << "Func-Sleep"
+            << "Func-Hibernate"
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
@@ -4566,6 +4573,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
         keycodelist.removeOne(joystr);
     }
     /* Remove Joy Keys from MappingKey ComboBox <<< */
+
+    QRegularExpression re_Func("^Func-");
+    QStringList FuncStrlist = orikeycodelist.filter(re_Func);
+    // Remove Strings start with "Func-" from mapkeyComboBox
+    for (const QString &funcstr : qAsConst(FuncStrlist)){
+        orikeycodelist.removeOne(funcstr);
+    }
 
     m_orikeyComboBox->addItems(orikeycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
