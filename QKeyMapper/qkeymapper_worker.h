@@ -453,6 +453,7 @@ private:
 
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
+    void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
     void initSkipReleaseModifiersKeysList(void);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -480,6 +481,7 @@ public:
 #ifdef MOUSEBUTTON_CONVERT
     static QHash<QString, QString> MouseButtonNameConvertMap;
 #endif
+    static QStringList CombinationKeysList;
     static QHash<QString, int> JoyStickKeyMap;
     static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT

@@ -158,6 +158,7 @@ QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QSt
 #ifdef MOUSEBUTTON_CONVERT
 QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
 #endif
+QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -290,6 +291,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
+#ifdef COMBINATIONKEY_HOOK
+    initCombinationKeysList();
+#endif
     initJoystickKeyMap();
     initSkipReleaseModifiersKeysList();
 
@@ -4383,6 +4387,145 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     MouseButtonNameConvertMap.insert("X1-Mouse",    "Mouse-X1"  );
     MouseButtonNameConvertMap.insert("X2-Mouse",    "Mouse-X2"  );
 #endif
+}
+
+void QKeyMapper_Worker::initCombinationKeysList()
+{
+    CombinationKeysList = QStringList() \
+            << "Mouse-L"
+            << "Mouse-R"
+            << "Mouse-M"
+            << "Mouse-X1"
+            << "Mouse-X2"
+            << "A"
+            << "B"
+            << "C"
+            << "D"
+            << "E"
+            << "F"
+            << "G"
+            << "H"
+            << "I"
+            << "J"
+            << "K"
+            << "L"
+            << "M"
+            << "N"
+            << "O"
+            << "P"
+            << "Q"
+            << "R"
+            << "S"
+            << "T"
+            << "U"
+            << "V"
+            << "W"
+            << "X"
+            << "Y"
+            << "Z"
+            << "1"
+            << "2"
+            << "3"
+            << "4"
+            << "5"
+            << "6"
+            << "7"
+            << "8"
+            << "9"
+            << "0"
+            << "Up"
+            << "Down"
+            << "Left"
+            << "Right"
+            << "Insert"
+            << "Delete"
+            << "Home"
+            << "End"
+            << "PageUp"
+            << "PageDown"
+            << "Space"
+            << "Tab"
+            << "Enter"
+            << "L-Shift"
+            << "R-Shift"
+            << "L-Ctrl"
+            << "R-Ctrl"
+            << "L-Alt"
+            << "R-Alt"
+            << "L-Win"
+            << "R-Win"
+            << "Backspace"
+            << "`"
+            << "-"
+            << "="
+            << "["
+            << "]"
+            << "\\"
+            << ";"
+            << "'"
+            << ","
+            << "."
+            << "/"
+            << "Esc"
+            << "F1"
+            << "F2"
+            << "F3"
+            << "F4"
+            << "F5"
+            << "F6"
+            << "F7"
+            << "F8"
+            << "F9"
+            << "F10"
+            << "F11"
+            << "F12"
+            << "F13"
+            << "F14"
+            << "F15"
+            << "F16"
+            << "F17"
+            << "F18"
+            << "F19"
+            << "F20"
+            << "F21"
+            << "F22"
+            << "F23"
+            << "F24"
+            << "CapsLock"
+            << "Application"
+            << "PrintScrn"
+            << "ScrollLock"
+            << "Pause"
+            << "NumLock"
+            << "Num/"
+            << "Num*"
+            << "Num-"
+            << "Num＋"
+            << "Num."
+            << "Num0"
+            << "Num1"
+            << "Num2"
+            << "Num3"
+            << "Num4"
+            << "Num5"
+            << "Num6"
+            << "Num7"
+            << "Num8"
+            << "Num9"
+            << "NumEnter"
+            << "Num.(NumOFF)"
+            << "Num0(NumOFF)"
+            << "Num1(NumOFF)"
+            << "Num2(NumOFF)"
+            << "Num3(NumOFF)"
+            << "Num4(NumOFF)"
+            << "Num5(NumOFF)"
+            << "Num6(NumOFF)"
+            << "Num7(NumOFF)"
+            << "Num8(NumOFF)"
+            << "Num9(NumOFF)"
+            ;
+
 }
 void QKeyMapper_Worker::initJoystickKeyMap()
 {

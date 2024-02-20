@@ -902,6 +902,9 @@
      <height>22</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
   </widget>
   <widget class="QLabel" name="dataPortLabel">
    <property name="geometry">
@@ -928,6 +931,9 @@
      <height>22</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
   </widget>
   <widget class="QLabel" name="brakeThresholdLabel">
    <property name="geometry">
@@ -943,6 +949,16 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="combinationKeyLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>490</y>
+     <width>141</width>
+     <height>20</height>
+    </rect>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -998,6 +1014,7 @@
   <zorder>dataPortLabel</zorder>
   <zorder>brakeThresholdDoubleSpinBox</zorder>
   <zorder>brakeThresholdLabel</zorder>
+  <zorder>combinationKeyLineEdit</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

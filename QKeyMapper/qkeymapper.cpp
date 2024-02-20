@@ -424,6 +424,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->combinationKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
     ui->brakeThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
@@ -3696,6 +3697,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
     m_originalKeySeqEdit->setEnabled(status);
+    ui->combinationKeyLineEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
 
@@ -4549,6 +4551,9 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->setGeometry(QRect(775, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
+    orikeycodelist.removeOne("Shift");
+    orikeycodelist.removeOne("Ctrl");
+    orikeycodelist.removeOne("Alt");
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4897,6 +4902,7 @@ void QKeyMapper::resetFontSize()
         m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -4923,6 +4929,7 @@ void QKeyMapper::resetFontSize()
         m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -5165,9 +5172,26 @@ void QKeyMapper::on_addmapdataButton_clicked()
     QString currentOriKeyText;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
+    QString currentOriCombinationKeyText = ui->combinationKeyLineEdit->text();
     QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
     if (false == currentOriKeyComboBoxText.isEmpty()) {
         currentOriKeyText = currentOriKeyComboBoxText;
+    }
+    else if (false == currentOriCombinationKeyText.isEmpty()) {
+        if (currentOriCombinationKeyText.startsWith("+") || currentOriCombinationKeyText.endsWith("+")) {
+            return;
+        }
+        QStringList combinationkeyslist = currentOriCombinationKeyText.split("+");
+        if (combinationkeyslist.size() <= 1) {
+            return;
+        }
+        for (const QString &key : qAsConst(combinationkeyslist)) {
+            if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
+                return;
+            }
+        }
+
+        currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriCombinationKeyText;
     }
     else if (false == currentOriKeyShortcutText.isEmpty()) {
         currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriKeyShortcutText;
