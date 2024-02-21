@@ -2829,6 +2829,7 @@ void QKeyMapper_Worker::onJoystickcountChanged()
         USHORT vendorid = joystick->vendorid;
         USHORT productid = joystick->productid;
         int numbuttons = joystick->numbuttons;
+        Q_UNUSED(numbuttons);
 
         if (vendorid == VIRTUALGAMPAD_VENDORID_X360
             && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
