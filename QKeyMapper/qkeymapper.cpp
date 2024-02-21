@@ -144,7 +144,7 @@ static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChe
 static const char *DATAPORT_NUMBER = "DataPortNumber";
 static const char *GRIP_THRESHOLD_BRAKE = "GripThresholdBrake";
 static const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
-static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
+// static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 static const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
 
@@ -202,7 +202,7 @@ static const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
 static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
 // static const char *SETTINGSELECTLABEL_CHINESE = "设定";
 static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
-static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
+// static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
 static const char *DATAPORTLABEL_CHINESE = "数据端口";
 static const char *BRAKETHRESHOLDLABEL_CHINESE = "刹车阈值";
 static const char *ACCELTHRESHOLDLABEL_CHINESE = "油门阈值";
@@ -252,7 +252,7 @@ static const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";
 static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 // static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
 static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
-static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
+// static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
 static const char *DATAPORTLABEL_ENGLISH = "DataPort";
 static const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeThreshold";
 static const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelThreshold";
@@ -1555,6 +1555,7 @@ Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
     return ui->autoStartMappingCheckBox->checkState();
 }
 
+#if 0
 bool QKeyMapper::getDisableWinKeyStatus()
 {
     if (m_isDestructing) {
@@ -1568,6 +1569,7 @@ bool QKeyMapper::getDisableWinKeyStatus()
         return false;
     }
 }
+#endif
 
 int QKeyMapper::getBurstPressTime()
 {
@@ -2512,7 +2514,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             qDebug() << "[saveKeyMapSetting]" << "GlobalSetting do not need processinfo!";
 #endif
 
-            settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, false);
+            // settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, false);
         }
         else {
             if ((false == ui->nameLineEdit->text().isEmpty())
@@ -2540,7 +2542,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
             }
 
-            settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
+            // settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
         }
 
         settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
@@ -3115,14 +3117,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->titleLineEdit->setText(QString());
         ui->nameCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
-        ui->disableWinKeyCheckBox->setChecked(false);
+        // ui->disableWinKeyCheckBox->setChecked(false);
 
         ui->nameLineEdit->setEnabled(false);
         ui->titleLineEdit->setEnabled(false);
         ui->nameCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
-        ui->disableWinKeyCheckBox->setEnabled(false);
+        // ui->disableWinKeyCheckBox->setEnabled(false);
 
         ui->iconLabel->clear();
         m_MapProcessInfo = MAP_PROCESSINFO();
@@ -3133,7 +3135,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->nameCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
-        ui->disableWinKeyCheckBox->setEnabled(true);
+        // ui->disableWinKeyCheckBox->setEnabled(true);
 
         if ((true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME))
                 && (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE))){
@@ -3199,6 +3201,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->titleCheckBox->setChecked(true);
         }
 
+#if 0
         if (true == settingFile.contains(settingSelectStr+DISABLEWINKEY_CHECKED)){
             bool disableWinKeyChecked = settingFile.value(settingSelectStr+DISABLEWINKEY_CHECKED).toBool();
             if (true == disableWinKeyChecked) {
@@ -3214,6 +3217,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             ui->disableWinKeyCheckBox->setChecked(false);
         }
+#endif
     }
 
     if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME)){
@@ -3543,7 +3547,7 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(8);
     }
-    ui->disableWinKeyCheckBox->setFont(customFont);
+    // ui->disableWinKeyCheckBox->setFont(customFont);
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
@@ -3638,7 +3642,7 @@ void QKeyMapper::setControlFontChinese()
     else {
         customFont.setPointSize(9);
     }
-    ui->disableWinKeyCheckBox->setFont(customFont);
+    // ui->disableWinKeyCheckBox->setFont(customFont);
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
@@ -3656,13 +3660,13 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->nameCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
-        ui->disableWinKeyCheckBox->setEnabled(false);
+        // ui->disableWinKeyCheckBox->setEnabled(false);
     }
     else {
         ui->nameCheckBox->setEnabled(status);
         ui->titleCheckBox->setEnabled(status);
         ui->removeSettingButton->setEnabled(status);
-        ui->disableWinKeyCheckBox->setEnabled(status);
+        // ui->disableWinKeyCheckBox->setEnabled(status);
     }
 
     //ui->nameLineEdit->setEnabled(status);
@@ -4592,6 +4596,15 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
     m_orikeyComboBox->addItems(orikeycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_mapkeyComboBox->model());
+    QStandardItem* item = model->item(1);
+    item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+#else
+    QBrush colorBrush(Qt::darkMagenta);
+    m_mapkeyComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
+#endif
 }
 
 void QKeyMapper::initWindowSwitchKeySeqEdit()
@@ -4791,7 +4804,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_CHINESE);
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
-    ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
+    // ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->dataPortLabel->setText(DATAPORTLABEL_CHINESE);
     ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_CHINESE);
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
@@ -4855,7 +4868,7 @@ void QKeyMapper::setUILanguage_English()
     ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_ENGLISH);
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_ENGLISH);
     ui->removeSettingButton->setText(REMOVESETTINGBUTTON_ENGLISH);
-    ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
+    // ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_ENGLISH);
     ui->dataPortLabel->setText(DATAPORTLABEL_ENGLISH);
     ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_ENGLISH);
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_ENGLISH);
@@ -5090,7 +5103,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->nameCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
-        ui->disableWinKeyCheckBox->setEnabled(true);
+        // ui->disableWinKeyCheckBox->setEnabled(true);
 
         QString filename = ui->processinfoTable->item(index.row(), 0)->text();
         QString windowTitle = ui->processinfoTable->item(index.row(), 2)->text();
@@ -5680,7 +5693,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->nameCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
-        ui->disableWinKeyCheckBox->setEnabled(true);
+        // ui->disableWinKeyCheckBox->setEnabled(true);
     }
 }
 

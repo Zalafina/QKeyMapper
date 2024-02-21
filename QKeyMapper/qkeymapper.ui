@@ -318,25 +318,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="disableWinKeyCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>980</x>
-     <y>410</y>
-     <width>81</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Disable WIN</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
@@ -977,7 +958,6 @@
   <zorder>iconLabel</zorder>
   <zorder>moveupButton</zorder>
   <zorder>movedownButton</zorder>
-  <zorder>disableWinKeyCheckBox</zorder>
   <zorder>burstpressLabel</zorder>
   <zorder>burstreleaseLabel</zorder>
   <zorder>autoStartMappingCheckBox</zorder>

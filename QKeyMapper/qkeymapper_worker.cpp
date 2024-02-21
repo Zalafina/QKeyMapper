@@ -267,7 +267,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, SIGNAL(sendMouseClick_Signal(V_MOUSECODE,int)), this, SLOT(sendMouseClick(V_MOUSECODE,int)), Qt::QueuedConnection);
 #endif
     QObject::connect(this, &QKeyMapper_Worker::sendInputKeys_Signal, this, &QKeyMapper_Worker::onSendInputKeys, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
+    // QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
@@ -952,6 +952,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     }
 }
 
+#if 0
 void QKeyMapper_Worker::send_WINplusD()
 {
 //    QMutexLocker locker(&sendinput_mutex);
@@ -982,6 +983,7 @@ void QKeyMapper_Worker::send_WINplusD()
 #endif
     }
 }
+#endif
 
 void QKeyMapper_Worker::sendBurstKeyDown(const QString &burstKey)
 {
@@ -3575,13 +3577,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
 
-    if (VIRTUAL_WIN_PLUS_D == extraInfo) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("[LowLevelKeyboardHookProc] Ignore extraInfo:VIRTUAL_WIN_PLUS_D(0x%08X) -> \"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", extraInfo, keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
-#endif
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-    }
-
 //#ifdef DEBUG_LOGOUT_ON
 //    qDebug("\"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
 //#endif
@@ -3638,33 +3633,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             updatePressedRealKeysList(keycodeString, keyupdown);
 #ifdef COMBINATIONKEY_DETECT
             bool detected = detectCombinationKeys(keycodeString, keyupdown);
-            if (detected) {
+            if (detected && KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("[LowLevelKeyboardHookProc] return TRUE");
 #endif
                 return (LRESULT)TRUE;
             }
 #endif
-
-            if (true == QKeyMapper::getDisableWinKeyStatus()) {
-                if (KEY_DOWN == keyupdown) {
-                    if ("D" == keycodeString && pressedRealKeysList.contains("L-Win")) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("[LowLevelKeyboardHookProc] \"L-Win + D\" pressed!");
-#endif
-                        emit QKeyMapper_Worker::getInstance()->send_WINplusD_Signal();
-                    }
-                }
-
-                if (("L-Win" == keycodeString)
-                    || ("R-Win" == keycodeString)
-                    || ("Application" == keycodeString)) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("[LowLevelKeyboardHookProc] Disable \"%s\" (0x%02X), wParam(0x%04X), scanCode(0x%08X), flags(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags);
-#endif
-                    returnFlag = true;
-                }
-            }
 
             if (KEY_UP == keyupdown && false == returnFlag){
                 if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
@@ -3821,7 +3796,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 updatePressedRealKeysList(keycodeString, keyupdown);
 #ifdef COMBINATIONKEY_DETECT
                 bool detected = detectCombinationKeys(keycodeString, keyupdown);
-                if (detected) {
+                if (detected && KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug("[LowLevelMouseHookProc] return TRUE");
 #endif

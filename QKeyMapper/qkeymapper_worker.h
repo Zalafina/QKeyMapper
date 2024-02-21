@@ -331,7 +331,7 @@ public slots:
     void onMouseWheel(int wheel_updown);
     void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
-    void send_WINplusD(void);
+    // void send_WINplusD(void);
 
 public:
     void sendBurstKeyDown(const QString &burstKey);
@@ -387,7 +387,7 @@ signals:
 #if 0
     void onMouseWheel_Signal(int wheel_updown);
 #endif
-    void send_WINplusD_Signal(void);
+    // void send_WINplusD_Signal(void);
     void HotKeyTrigger_Signal(const QString &keycodeString, int keyupdown);
 #if 0
     void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);

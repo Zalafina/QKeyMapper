@@ -183,7 +183,7 @@ public:
     // unused enum all process function <<<
 
     Qt::CheckState getAutoStartMappingStatus(void);
-    static bool getDisableWinKeyStatus(void);
+    // static bool getDisableWinKeyStatus(void);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
