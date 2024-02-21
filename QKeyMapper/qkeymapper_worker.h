@@ -403,7 +403,6 @@ public slots:
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     void HotKeyHookProc(const QString &keycodeString, int keyupdown);
-    void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
     GripDetectState checkGripDetectEnableState(void);
     Joy2vJoyState checkJoy2vJoyState(void);
     void processUdpPendingDatagrams(void);
@@ -443,6 +442,7 @@ public:
     static void updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static bool detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static void CombinationKeyProc(const QString &keycodeString, int keyupdown);
+    static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
     static QString getWindowsKeyName(uint virtualKeyCode);
 
@@ -485,8 +485,9 @@ public:
     static QHash<QString, QString> MouseButtonNameConvertMap;
 #endif
     static QStringList CombinationKeysList;
+    static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;
-    static QHash<QString, QHotkey*> ShortcutsMap;
+    // static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
 #endif
@@ -553,7 +554,6 @@ private:
     QTimer m_Mouse2vJoyResetTimer;
 #endif
     QTimer m_Joy2MouseCycleTimer;
-    QStringList skipReleaseModifiersKeysList;
     QUdpSocket *m_UdpSocket;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;

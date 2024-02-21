@@ -219,10 +219,10 @@ public slots:
     void raiseQKeyMapperWindow(void);
 #endif
 
-    void updateShortcutsMap(void);
-    void freeShortcuts(void);
-    void HotKeyForMappingActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
-    void HotKeyForMappingReleased(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
+    // void updateShortcutsMap(void);
+    // void freeShortcuts(void);
+    // void HotKeyForMappingActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
+    // void HotKeyForMappingReleased(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
 private slots:
     void HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
@@ -237,9 +237,9 @@ private slots:
 
     void onMappingSwitchKeySequenceEditingFinished();
 
-    void onOriginalKeySequenceChanged(const QKeySequence &keysequence);
+    // void onOriginalKeySequenceChanged(const QKeySequence &keysequence);
 
-    void onOriginalKeySequenceEditingFinished();
+    // void onOriginalKeySequenceEditingFinished();
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
@@ -297,7 +297,8 @@ private:
     void initMappingSwitchKeySeqEdit(void);
     void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
     void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
-    void initOriginalKeySeqEdit(void);
+    // void initOriginalKeySeqEdit(void);
+    void initCombinationKeyLineEdit(void);
     void refreshKeyMappingDataTable(void);
     void reloadUILanguage(void);
     void setUILanguage_Chinese(void);
@@ -343,7 +344,7 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
-    static QHash<QString, QHotkey*> ShortcutsMap;
+    // static QHash<QString, QHotkey*> ShortcutsMap;
 
 private:
     static QKeyMapper *m_instance;
@@ -365,7 +366,7 @@ private:
     KeyListComboBox *m_mapkeyComboBox;
     KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
-    KeySequenceEditOnlyOne *m_originalKeySeqEdit;
+    // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     QHotkey *m_HotKey_ShowHide;
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;

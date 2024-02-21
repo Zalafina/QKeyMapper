@@ -289,7 +289,7 @@ uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
-QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
+// QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -310,7 +310,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_mapkeyComboBox(new KeyListComboBox(this)),
     m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
+    // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_HotKey_ShowHide(new QHotkey(this)),
     m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
@@ -347,7 +347,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initAddKeyComboBoxes();
     initWindowSwitchKeySeqEdit();
     initMappingSwitchKeySeqEdit();
-    initOriginalKeySeqEdit();
+    // initOriginalKeySeqEdit();
+    initCombinationKeyLineEdit();
 
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
@@ -426,7 +427,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
-    ui->combinationKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
     ui->brakeThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
@@ -528,7 +528,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEYSEQ);
     m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEYSEQ_DEFAULT);
-    m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
+    // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
     initKeyMappingDataTable();
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
@@ -546,8 +546,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
     QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
-    QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
-    QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
+    // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
+    // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -575,7 +575,7 @@ QKeyMapper::~QKeyMapper()
 #endif
     m_isDestructing = true;
 
-    freeShortcuts();
+    // freeShortcuts();
 
     delete m_orikeyComboBox;
     m_orikeyComboBox = Q_NULLPTR;
@@ -588,8 +588,8 @@ QKeyMapper::~QKeyMapper()
     delete m_mappingswitchKeySeqEdit;
     m_mappingswitchKeySeqEdit = Q_NULLPTR;
 
-    delete m_originalKeySeqEdit;
-    m_originalKeySeqEdit = Q_NULLPTR;
+    // delete m_originalKeySeqEdit;
+    // m_originalKeySeqEdit = Q_NULLPTR;
 
     delete m_HotKey_ShowHide;
     m_HotKey_ShowHide = Q_NULLPTR;
@@ -878,14 +878,14 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
-    updateShortcutsMap();
+    // updateShortcutsMap();
 
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
 }
 
 void QKeyMapper::setKeyUnHook(void)
 {
-    freeShortcuts();
+    // freeShortcuts();
 
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
 }
@@ -1917,6 +1917,7 @@ void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
     m_mappingswitchKeySeqEdit->clearFocus();
 }
 
+#if 0
 void QKeyMapper::onOriginalKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -1958,6 +1959,7 @@ void QKeyMapper::onOriginalKeySequenceEditingFinished()
     m_originalKeySeqEdit->clearFocus();
 
 }
+#endif
 
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
@@ -3702,7 +3704,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
-    m_originalKeySeqEdit->setEnabled(status);
+    // m_originalKeySeqEdit->setEnabled(status);
     ui->combinationKeyLineEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
@@ -4551,11 +4553,14 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key19"
             ;
 
+    int left = ui->orikeyLabel->x() + ui->orikeyLabel->width() + 5;
     int top = ui->orikeyLabel->y();
     m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
-    m_orikeyComboBox->setGeometry(QRect(587, top, 122, 22));
+    m_orikeyComboBox->setGeometry(QRect(left, top, 142, 22));
+    left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
+    top = ui->mapkeyLabel->y();
     m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
-    m_mapkeyComboBox->setGeometry(QRect(775, top, 122, 22));
+    m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
     orikeycodelist.removeOne(KEY_BLOCKED_STR);
@@ -4637,15 +4642,31 @@ void QKeyMapper::updateMappingSwitchKeySeq(const QKeySequence &keysequence)
     m_HotKey_StartStop->setShortcut(keysequence, true);
 }
 
+#if 0
 void QKeyMapper::initOriginalKeySeqEdit()
 {
     m_originalKeySeqEdit->setObjectName(QStringLiteral("originalKeySeqEdit"));
-    int left = m_orikeyComboBox->x();
-    int top = ui->waitTimeSpinBox->y();
+    // int left = m_orikeyComboBox->x();
+    // int top = ui->waitTimeSpinBox->y();
     int width = m_orikeyComboBox->width();
     int height = m_orikeyComboBox->height();
-    m_originalKeySeqEdit->setGeometry(QRect(left, top, width, height));
+    m_originalKeySeqEdit->setGeometry(QRect(378, 490, width, height));
     m_originalKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+}
+#endif
+
+void QKeyMapper::initCombinationKeyLineEdit()
+{
+    int left = m_orikeyComboBox->x();
+    int top = ui->orikeySeqLabel->y();
+    int width = m_orikeyComboBox->width();
+    int height = m_orikeyComboBox->height();
+    ui->combinationKeyLineEdit->setGeometry(QRect(left, top, width, height));
+    ui->combinationKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
+    QLineEdit *lineEdit = ui->combinationKeyLineEdit;
+    QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
+        lineEdit->setToolTip(lineEdit->text());
+    });
 }
 
 void QKeyMapper::refreshKeyMappingDataTable()
@@ -4921,7 +4942,7 @@ void QKeyMapper::resetFontSize()
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -4948,7 +4969,7 @@ void QKeyMapper::resetFontSize()
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -5005,6 +5026,7 @@ void QKeyMapper::raiseQKeyMapperWindow()
 }
 #endif
 
+#if 0
 void QKeyMapper::updateShortcutsMap()
 {
     freeShortcuts();
@@ -5090,6 +5112,7 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
     Q_UNUSED(modifiers);
     emit QKeyMapper_Worker::getInstance()->HotKeyTrigger_Signal(keyseqstr, KEY_UP);
 }
+#endif
 
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 {
@@ -5193,7 +5216,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
     QString currentOriCombinationKeyText = ui->combinationKeyLineEdit->text();
-    QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
+    // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
     if (false == currentOriKeyComboBoxText.isEmpty()) {
         currentOriKeyText = currentOriKeyComboBoxText;
     }
@@ -5230,9 +5253,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
             return;
         }
     }
-    else if (false == currentOriKeyShortcutText.isEmpty()) {
-        currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriKeyShortcutText;
-    }
+    // else if (false == currentOriKeyShortcutText.isEmpty()) {
+    //     currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriKeyShortcutText;
+    // }
 
     if (currentOriKeyText.isEmpty() || (m_mapkeyComboBox->isEnabled() && currentMapKeyText.isEmpty() && ui->nextarrowCheckBox->isChecked() == false)) {
         return;
