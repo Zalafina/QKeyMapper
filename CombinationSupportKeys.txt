@@ -1,8 +1,11 @@
+/* Mouse Keys */
 Mouse-L
 Mouse-R
 Mouse-M
 Mouse-X1
 Mouse-X2
+
+/* Keyboard Keys */
 A
 B
 C
@@ -130,3 +133,36 @@ Num6(NumOFF)
 Num7(NumOFF)
 Num8(NumOFF)
 Num9(NumOFF)
+
+/* Joystick Keys */
+Joy-LS-Up
+Joy-LS-Down
+Joy-LS-Left
+Joy-LS-Right
+Joy-RS-Up
+Joy-RS-Down
+Joy-RS-Left
+Joy-RS-Right
+Joy-DPad-Up
+Joy-DPad-Down
+Joy-DPad-Left
+Joy-DPad-Right
+Joy-Key1(A/×)
+Joy-Key2(B/○)
+Joy-Key3(X/□)
+Joy-Key4(Y/△)
+Joy-Key5(LB)
+Joy-Key6(RB)
+Joy-Key7(Back)
+Joy-Key8(Start)
+Joy-Key9(LS-Click)
+Joy-Key10(RS-Click)
+Joy-Key11(LT)
+Joy-Key12(RT)
+Joy-Key13(Guide)
+Joy-Key14
+Joy-Key15
+Joy-Key16
+Joy-Key17
+Joy-Key18
+Joy-Key19

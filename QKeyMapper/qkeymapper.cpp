@@ -158,6 +158,8 @@ static const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
+static const char *KEY_BLOCKED_STR = "BLOCKED";
+
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 
@@ -4312,6 +4314,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 {
     QStringList keycodelist = QStringList() \
             << ""
+            << KEY_BLOCKED_STR
             << "Mouse-L"
             << "Mouse-R"
             << "Mouse-M"
@@ -4551,6 +4554,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->setGeometry(QRect(775, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
+    orikeycodelist.removeOne(KEY_BLOCKED_STR);
     orikeycodelist.removeOne("Shift");
     orikeycodelist.removeOne("Ctrl");
     orikeycodelist.removeOne("Alt");
@@ -4667,6 +4671,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(SEPARATOR_WAITTIME)) {
+                disable_burstandlock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
@@ -5178,20 +5185,37 @@ void QKeyMapper::on_addmapdataButton_clicked()
         currentOriKeyText = currentOriKeyComboBoxText;
     }
     else if (false == currentOriCombinationKeyText.isEmpty()) {
+        bool valid_combinationkey = true;
         if (currentOriCombinationKeyText.startsWith("+") || currentOriCombinationKeyText.endsWith("+")) {
-            return;
+            valid_combinationkey = false;
         }
-        QStringList combinationkeyslist = currentOriCombinationKeyText.split("+");
-        if (combinationkeyslist.size() <= 1) {
-            return;
-        }
-        for (const QString &key : qAsConst(combinationkeyslist)) {
-            if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
-                return;
+        else {
+            QStringList combinationkeyslist = currentOriCombinationKeyText.split("+");
+            if (combinationkeyslist.size() <= 1) {
+                valid_combinationkey = false;
+            }
+            else {
+                for (const QString &key : qAsConst(combinationkeyslist)) {
+                    if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
+                        valid_combinationkey = false;
+                        break;
+                    }
+                }
             }
         }
 
-        currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriCombinationKeyText;
+        if (valid_combinationkey) {
+            currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriCombinationKeyText;
+        }
+        else {
+            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                QMessageBox::warning(this, PROGRAM_NAME, "Invalid input format for the original key combination!");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "原始组合键输入格式错误！");
+            }
+            return;
+        }
     }
     else if (false == currentOriKeyShortcutText.isEmpty()) {
         currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriKeyShortcutText;
@@ -5225,7 +5249,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
     if (false == already_exist) {
         if (findindex != -1){
-            if (currentMapKeyText == VJOY_LT_BRAKE_STR
+            if (currentMapKeyText == KEY_BLOCKED_STR
+                || currentMapKeyText == VJOY_LT_BRAKE_STR
                 || currentMapKeyText == VJOY_RT_BRAKE_STR
                 || currentMapKeyText == VJOY_LT_ACCEL_STR
                 || currentMapKeyText == VJOY_RT_ACCEL_STR) {
@@ -5233,7 +5258,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
             }
             else {
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
-                if (keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
+                if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
+                    || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_RT_ACCEL_STR)){
@@ -5243,7 +5269,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
         else {
             if (ui->nextarrowCheckBox->isChecked()) {
-                if (currentMapKeyText == VJOY_LT_BRAKE_STR
+                if (currentMapKeyText == KEY_BLOCKED_STR
+                    || currentMapKeyText == VJOY_LT_BRAKE_STR
                     || currentMapKeyText == VJOY_RT_BRAKE_STR
                     || currentMapKeyText == VJOY_LT_ACCEL_STR
                     || currentMapKeyText == VJOY_RT_ACCEL_STR) {
@@ -5299,6 +5326,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else {
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
+                    && currentMapKeyText != KEY_BLOCKED_STR
                     && currentMapKeyText != VJOY_LT_BRAKE_STR
                     && currentMapKeyText != VJOY_RT_BRAKE_STR
                     && currentMapKeyText != VJOY_LT_ACCEL_STR

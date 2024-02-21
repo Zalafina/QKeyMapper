@@ -440,6 +440,9 @@ public:
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
     static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
+    static void updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
+    static bool detectCombinationKeys(const QString &keycodeString, int keyupdown);
+    static void CombinationKeyProc(const QString &keycodeString, int keyupdown);
 
     static QString getWindowsKeyName(uint virtualKeyCode);
 
