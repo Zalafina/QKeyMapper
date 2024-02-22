@@ -388,7 +388,7 @@ signals:
     void onMouseWheel_Signal(int wheel_updown);
 #endif
     // void send_WINplusD_Signal(void);
-    void HotKeyTrigger_Signal(const QString &keycodeString, int keyupdown);
+    // void HotKeyTrigger_Signal(const QString &keycodeString, int keyupdown);
 #if 0
     void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);
 #endif
@@ -402,7 +402,7 @@ public slots:
     void setWorkerKeyUnHook(void);
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
-    void HotKeyHookProc(const QString &keycodeString, int keyupdown);
+    // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
     GripDetectState checkGripDetectEnableState(void);
     Joy2vJoyState checkJoy2vJoyState(void);
     void processUdpPendingDatagrams(void);
@@ -458,7 +458,7 @@ private:
     void initVirtualMouseButtonMap(void);
     void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
-    void initSkipReleaseModifiersKeysList(void);
+    // void initSkipReleaseModifiersKeysList(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
     bool isCursorAtBottomRight(void);
@@ -485,7 +485,7 @@ public:
     static QHash<QString, QString> MouseButtonNameConvertMap;
 #endif
     static QStringList CombinationKeysList;
-    static QStringList skipReleaseModifiersKeysList;
+    // static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;
     // static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT

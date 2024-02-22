@@ -161,7 +161,7 @@ QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QSt
 QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
 #endif
 QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
-QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
+// QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 // QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -268,7 +268,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #endif
     QObject::connect(this, &QKeyMapper_Worker::sendInputKeys_Signal, this, &QKeyMapper_Worker::onSendInputKeys, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
+    // QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
@@ -297,7 +297,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initCombinationKeysList();
 #endif
     initJoystickKeyMap();
-    initSkipReleaseModifiersKeysList();
+    // initSkipReleaseModifiersKeysList();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     initViGEmKeyMap();
@@ -2252,6 +2252,7 @@ void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
     s_JoyAxisState = Joystick_AxisState();
 }
 
+#if 0
 void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdown)
 {
 #if 0
@@ -2299,6 +2300,7 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
         }
     }
 }
+#endif
 
 QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::checkGripDetectEnableState()
 {
@@ -4095,19 +4097,8 @@ void QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int key
             QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
             QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
             if (KEY_DOWN == keyupdown){
-                bool skipReleaseModifiers = false;
-
-                if (mappingKeyList.size() == 1) {
-                    QString mappingkey = mappingKeyList.constFirst();
-                    if (skipReleaseModifiersKeysList.contains(mappingkey)) {
-                        skipReleaseModifiers = true;
-                    }
-                }
-
-                if (false == skipReleaseModifiers) {
-                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    releaseKeyboardModifiers(modifiers_arg);
-                }
+                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                releaseKeyboardModifiers(modifiers_arg);
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             }
             else { /* KEY_UP == keyupdown */
@@ -4812,6 +4803,7 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
 }
 
+#if 0
 void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
 {
     skipReleaseModifiersKeysList = QStringList() \
@@ -4820,6 +4812,7 @@ void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
         << "Vol Up"
         ;
 }
+#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::initViGEmKeyMap()
