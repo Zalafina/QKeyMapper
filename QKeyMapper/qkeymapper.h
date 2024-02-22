@@ -318,6 +318,7 @@ private:
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(const QString &settingtext);
     bool checkMappingkeyStr(QString &mappingkeystr);
+    bool validateCombinationKey(QString &input);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT
@@ -374,14 +375,6 @@ private:
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
     bool loadSetting_flag;
-};
-
-class CombinationKeyValidator : public QValidator
-{
-public:
-    CombinationKeyValidator(QObject* parent = nullptr) : QValidator(parent) {}
-
-    QValidator::State validate(QString& input, int& pos) const override;
 };
 
 #endif // QKEYMAPPER_H

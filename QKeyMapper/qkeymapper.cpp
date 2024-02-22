@@ -1850,7 +1850,8 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
     if (lineEdit)
     {
-        if (lineEdit->hasAcceptableInput())
+        QString inputstring = lineEdit->text();
+        if (validateCombinationKey(inputstring))
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1866,10 +1867,20 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
         else
         {
             if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                QMessageBox::warning(this, PROGRAM_NAME, "Invalid input format for the original key combination!");
+                if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
+                    QMessageBox::warning(this, PROGRAM_NAME, "Invalid input format for WindowSwitchKey!");
+                }
+                else if (lineEdit->objectName() == MAPPINGSWITCHKEY_LINEEDIT_NAME) {
+                    QMessageBox::warning(this, PROGRAM_NAME, "Invalid input format for MappingSwitchKey!");
+                }
             }
             else {
-                QMessageBox::warning(this, PROGRAM_NAME, "原始组合键输入格式错误！");
+                if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
+                    QMessageBox::warning(this, PROGRAM_NAME, "显示切换键输入格式错误！");
+                }
+                else if (lineEdit->objectName() == MAPPINGSWITCHKEY_LINEEDIT_NAME) {
+                    QMessageBox::warning(this, PROGRAM_NAME, "映射开关键输入格式错误！");
+                }
             }
         }
     }
@@ -3440,6 +3451,30 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     return checkResult;
 }
 
+bool QKeyMapper::validateCombinationKey(QString &input)
+{
+    bool isvalid = true;
+
+    QStringList keylist = input.split("+");
+    if (keylist.isEmpty())
+    {
+        isvalid = false;
+    }
+    else
+    {
+        for (const QString& key : keylist)
+        {
+            if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
+            {
+                isvalid = false;
+                break;
+            }
+        }
+    }
+
+    return isvalid;
+}
+
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
 {
     returnback_fontid = -1;
@@ -4656,17 +4691,14 @@ void QKeyMapper::initWindowSwitchKeySeqEdit()
     m_windowswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 
-    left = 390;
-    top = ui->windowswitchkeyLabel->y();
     QLineEdit *lineEdit = ui->windowswitchkeyLineEdit;
-    lineEdit->setGeometry(QRect(left, top, 110, 21));
+    // left = 390;
+    // top = ui->windowswitchkeyLabel->y();
+    // lineEdit->setGeometry(QRect(left, top, 110, 21));
     lineEdit->setFocusPolicy(Qt::ClickFocus);
     QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
         lineEdit->setToolTip(lineEdit->text());
     });
-
-    CombinationKeyValidator* validator = new CombinationKeyValidator(lineEdit);
-    lineEdit->setValidator(validator);
     QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
 }
 
@@ -4678,17 +4710,14 @@ void QKeyMapper::initMappingSwitchKeySeqEdit()
     m_mappingswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 
-    left = 390;
-    top = ui->mappingswitchkeyLabel->y();
     QLineEdit *lineEdit = ui->mappingswitchkeyLineEdit;
-    lineEdit->setGeometry(QRect(left, top, 110, 21));
+    // left = 390;
+    // top = ui->mappingswitchkeyLabel->y();
+    // lineEdit->setGeometry(QRect(left, top, 110, 21));
     lineEdit->setFocusPolicy(Qt::ClickFocus);
     QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
         lineEdit->setToolTip(lineEdit->text());
     });
-
-    CombinationKeyValidator* validator = new CombinationKeyValidator(lineEdit);
-    lineEdit->setValidator(validator);
     QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
 }
 
@@ -6033,36 +6062,4 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
     else {
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
     }
-}
-
-QValidator::State CombinationKeyValidator::validate(QString &input, int &pos) const
-{
-    Q_UNUSED(pos);
-    QValidator::State ret_state = QValidator::Acceptable;
-
-    if (input.startsWith("+") || input.endsWith("+"))
-    {
-        ret_state = QValidator::Invalid;
-    }
-    else
-    {
-        QStringList combinationKeysList = input.split("+");
-        if (combinationKeysList.size() <= 1)
-        {
-            ret_state = QValidator::Invalid;
-        }
-        else
-        {
-            for (const QString& key : combinationKeysList)
-            {
-                if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
-                {
-                    ret_state = QValidator::Invalid;
-                    break;
-                }
-            }
-        }
-    }
-
-    return ret_state;
 }
