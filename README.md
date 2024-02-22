@@ -21,7 +21,7 @@
 ### 新添加功能列表(根据更新时间降序排列)
 * v1.3.6(Build 20240221)
     * 【极限竞速: 地平线】键盘可使用虚拟手柄 "vJoy-Key11(LT)_BRAKE" 映射来根据 "刹车阈值" 自动控制刹车力度。
-    * 更改组合键映射策略，"原始组合键"改为文本框来手动输入，现在可以支持不包含Ctrl、Alt、Shift、Win的组合键映射。支持的按键列表参考版本压缩包中的 CombinationSupportKeys.txt 文件，编写时候按键之间用"+"连接，例如："L-Ctrl+Home"、"A+B+C"。
+    * 更改组合键映射策略，"原始组合键"改为文本框来手动输入，现在可以支持 [CombinationSupportKeys.txt 文件的按键列表](https://github.com/Zalafina/QKeyMapper/wiki/CombinationSupportKeys)中列出的所有按键进行组合，支持键盘按键与鼠标按键组合使用。支持的按键列表参考版本压缩包中的 CombinationSupportKeys.txt 文件，编写时候按键之间用"+"连接，例如："L-Ctrl+Home"、"A+B+C"。
     * 删除"禁用Win键"勾选框，现在可以通过映射按键中选择"BLOCKED"来禁用任意按键。
 
 #### ※ 注意: v1.3.6(Build 20240221)对部分按键名称进行了更改，可能出现无法加载旧版本配置文件的情况，建议更新此版本前备份保存可执行文件路径下的 keymapdata.ini 配置文件。可以根据新Release版本ZIP压缩包中的 CombinationSupportKeys.txt 文件中的按键名称编辑修改 keymapdata.ini 配置文件中原来的按键名称来继续使用旧配置文件。
