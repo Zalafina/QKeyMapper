@@ -293,9 +293,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
-#ifdef COMBINATIONKEY_DETECT
     initCombinationKeysList();
-#endif
     initJoystickKeyMap();
     // initSkipReleaseModifiersKeysList();
 
@@ -3506,7 +3504,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef HOOKSTART_ONSTARTUP
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
     if (!hookprocstart) {
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+        bool hotkey_detected = LowLevelKeyboardHotkeyDetectProc(nCode, wParam, lParam);
+        if (hotkey_detected) {
+            return (LRESULT)TRUE;
+        }
+        else {
+            return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+        }
     }
 #endif
 
@@ -3583,15 +3587,15 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
             returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
             updatePressedRealKeysList(keycodeString, keyupdown);
-#ifdef COMBINATIONKEY_DETECT
-            bool detected = detectCombinationKeys(keycodeString, keyupdown);
-            if (detected && KEY_DOWN == keyupdown) {
+            bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+            bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+            bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
+            if ((combinationkey_detected || displayswitch_detected || mappingswitch_detected) && KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("[LowLevelKeyboardHookProc] return TRUE");
 #endif
                 return (LRESULT)TRUE;
             }
-#endif
 
             if (KEY_UP == keyupdown && false == returnFlag){
                 if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
@@ -3681,7 +3685,13 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef HOOKSTART_ONSTARTUP
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
     if (!hookprocstart) {
-        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+        bool hotkey_detected = LowLevelMouseHotkeyDetectProc(nCode, wParam, lParam);
+        if (hotkey_detected) {
+            return (LRESULT)TRUE;
+        }
+        else {
+            return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+        }
     }
 #endif
 
@@ -3746,15 +3756,15 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
                 updatePressedRealKeysList(keycodeString, keyupdown);
-#ifdef COMBINATIONKEY_DETECT
-                bool detected = detectCombinationKeys(keycodeString, keyupdown);
-                if (detected && KEY_DOWN == keyupdown) {
+                bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+                bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+                bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
+                if ((combinationkey_detected || displayswitch_detected || mappingswitch_detected) && KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug("[LowLevelMouseHookProc] return TRUE");
 #endif
                     return (LRESULT)TRUE;
                 }
-#endif
 
                 if (KEY_UP == keyupdown && false == returnFlag){
                     if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
@@ -3921,6 +3931,106 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 }
 
+bool QKeyMapper_Worker::LowLevelKeyboardHotkeyDetectProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode != HC_ACTION) {
+        return false;
+    }
+
+    KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
+    ULONG_PTR extraInfo = pKeyBoard->dwExtraInfo;
+    bool returnFlag = false;
+    V_KEYCODE vkeycode;
+    vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
+    if (LLKHF_EXTENDED == (pKeyBoard->flags & LLKHF_EXTENDED)){
+        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
+    }
+    else{
+        vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
+    }
+    QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+
+    if ((false == keycodeString.isEmpty())
+        && (WM_KEYDOWN == wParam || WM_KEYUP == wParam || WM_SYSKEYDOWN == wParam || WM_SYSKEYUP == wParam)){
+        int keyupdown;
+        if (WM_KEYDOWN == wParam || WM_SYSKEYDOWN == wParam) {
+            keyupdown = KEY_DOWN;
+        }
+        else {
+            keyupdown = KEY_UP;
+        }
+
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
+            updatePressedRealKeysList(keycodeString, keyupdown);
+            bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+            bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
+            if ((displayswitch_detected || mappingswitch_detected) && KEY_DOWN == keyupdown) {
+                returnFlag = true;
+            }
+        }
+    }
+
+    return returnFlag;
+}
+
+bool QKeyMapper_Worker::LowLevelMouseHotkeyDetectProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode != HC_ACTION) {
+        return false;
+    }
+
+    MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
+    ULONG_PTR extraInfo = pMouse->dwExtraInfo;
+    DWORD mousedata = pMouse->mouseData;
+    bool returnFlag = false;
+
+    if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
+        || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
+        || (wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP)
+        || (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP)) {
+        int keyupdown;
+        WPARAM wParam_X;
+        if (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN || wParam == WM_XBUTTONDOWN) {
+            keyupdown = KEY_DOWN;
+        }
+        else {
+            keyupdown = KEY_UP;
+        }
+        if (wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP) {
+            WORD xbutton = GET_XBUTTON_WPARAM(mousedata);
+            if ( xbutton == XBUTTON1 ) {
+                wParam_X = MAKELONG(wParam, XBUTTON1);
+            }
+            else if ( xbutton == XBUTTON2 ) {
+                wParam_X = MAKELONG(wParam, XBUTTON2);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[LowLevelMouseHotkeyDetectProc] Unsupport Mouse XButton -> 0x%04X", xbutton);
+#endif
+            }
+        }
+        else {
+            wParam_X = MAKELONG(wParam, XBUTTON_NONE);
+        }
+
+        if (true == MouseButtonNameMap.contains(wParam_X)) {
+            QString keycodeString = MouseButtonNameMap.value(wParam_X);
+
+            if (false == keycodeString.isEmpty() && VIRTUAL_MOUSE_CLICK != extraInfo) {
+                updatePressedRealKeysList(keycodeString, keyupdown);
+                bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+                bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
+                if ((displayswitch_detected || mappingswitch_detected) && KEY_DOWN == keyupdown) {
+                    returnFlag = true;
+                }
+            }
+        }
+    }
+
+    return returnFlag;
+}
+
 bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
@@ -4023,6 +4133,24 @@ void QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[pressedRealKeysList]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : Current Pressed RealKeys -> " << pressedRealKeysList;
 #endif
+}
+
+bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int keyupdown)
+{
+    Q_UNUSED(keycodeString);
+    Q_UNUSED(keyupdown);
+    bool detected = false;
+
+    return detected;
+}
+
+bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int keyupdown)
+{
+    Q_UNUSED(keycodeString);
+    Q_UNUSED(keyupdown);
+    bool detected = false;
+
+    return detected;
 }
 
 bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int keyupdown)
@@ -4209,10 +4337,8 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
     updatePressedRealKeysList(keycodeString, keyupdown);
-#ifdef COMBINATIONKEY_DETECT
     bool detected = detectCombinationKeys(keycodeString, keyupdown);
     Q_UNUSED(detected);
-#endif
 
     if (false == returnFlag) {
         if (findindex >=0){

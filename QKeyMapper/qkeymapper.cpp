@@ -552,10 +552,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
     QObject::connect(ui->keymapdataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
 
-    QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
-    QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
-    QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
-    QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
+    // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
+    // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
+    // QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onMappingSwitchKeySequenceChanged);
+    // QObject::connect(m_mappingswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onMappingSwitchKeySequenceEditingFinished);
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
@@ -3881,8 +3881,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->windowswitchkeyLabel->setEnabled(status);
     m_windowswitchKeySeqEdit->setEnabled(status);
+    ui->windowswitchkeyLineEdit->setEnabled(status);
     ui->mappingswitchkeyLabel->setEnabled(status);
     m_mappingswitchKeySeqEdit->setEnabled(status);
+    ui->mappingswitchkeyLineEdit->setEnabled(status);
 
     // ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
@@ -5109,6 +5111,8 @@ void QKeyMapper::resetFontSize()
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->windowswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->mappingswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -5136,6 +5140,8 @@ void QKeyMapper::resetFontSize()
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->windowswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->mappingswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
