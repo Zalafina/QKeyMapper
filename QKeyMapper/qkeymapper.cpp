@@ -158,6 +158,9 @@ static const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
+static const char *ORIKEY_COMBOBOX_STR = "orikeyComboBox";
+static const char *MAPKEY_COMBOBOX_STR = "mapkeyComboBox";
+
 static const char *KEY_BLOCKED_STR = "BLOCKED";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
@@ -4555,11 +4558,11 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
     int left = ui->orikeyLabel->x() + ui->orikeyLabel->width() + 5;
     int top = ui->orikeyLabel->y();
-    m_orikeyComboBox->setObjectName(QStringLiteral("orikeyComboBox"));
+    m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_STR);
     m_orikeyComboBox->setGeometry(QRect(left, top, 142, 22));
     left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
     top = ui->mapkeyLabel->y();
-    m_mapkeyComboBox->setObjectName(QStringLiteral("mapkeyComboBox"));
+    m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_STR);
     m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
@@ -5483,23 +5486,18 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
 
     if (false == keycodeString.isEmpty()){
-        if ((keycodeString == QString("L-Win"))
-                || (keycodeString == QString("R-Win"))){
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[KeyListComboBox_Press]" <<"Don't act on" << keycodeString;
-#endif
+        if (keycodeString == QString("Enter")){
+            QComboBox::keyPressEvent(keyevent);
+        }
+        else if (objectName() == ORIKEY_COMBOBOX_STR && keycodeString == QString("Backspace")) {
+            this->setCurrentText(QString());
         }
         else{
-            if (keycodeString == QString("Enter")){
-                QComboBox::keyPressEvent(keyevent);
-            }
-            else{
-                this->setCurrentText(keycodeString);
+            this->setCurrentText(keycodeString);
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[KeyListComboBox_Press]" << "convert to VirtualKeyCodeMap:" << keycodeString;
+            qDebug() << "[KeyListComboBox_Press]" << "convert to VirtualKeyCodeMap:" << keycodeString;
 #endif
-            }
         }
     }
     else{
