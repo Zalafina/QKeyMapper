@@ -300,6 +300,8 @@ private:
     void initMappingSwitchKeySeqEdit(void);
     void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
     void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
+    void updateWindowSwitchKeyString(const QString &keystring);
+    void updateMappingSwitchKeyString(const QString &keystring);
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
     void refreshKeyMappingDataTable(void);
@@ -349,6 +351,8 @@ public:
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     // static QHash<QString, QHotkey*> ShortcutsMap;
+    static QString s_WindowSwitchKeyString;
+    static QString s_MappingSwitchKeyString;
 
 private:
     static QKeyMapper *m_instance;
