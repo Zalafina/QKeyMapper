@@ -4137,18 +4137,56 @@ void QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, 
 
 bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int keyupdown)
 {
-    Q_UNUSED(keycodeString);
-    Q_UNUSED(keyupdown);
     bool detected = false;
+    QString displayswitchKey = QKeyMapper::s_WindowSwitchKeyString;
+    QStringList keys = displayswitchKey.split("+");
+    bool allKeysPressed = true;
+
+    for (const QString &key : keys)
+    {
+        if (!pressedRealKeysList.contains(key))
+        {
+            allKeysPressed = false;
+            break;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown && allKeysPressed && displayswitchKey.contains(keycodeString))
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[detectDisplaySwitchKey]" << "DisplaySwitchKey Activated ->" << displayswitchKey;
+#endif
+        emit QKeyMapper::getInstance()->HotKeyDisplaySwitchActivated_Signal(displayswitchKey);
+        detected = true;
+    }
 
     return detected;
 }
 
 bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int keyupdown)
 {
-    Q_UNUSED(keycodeString);
-    Q_UNUSED(keyupdown);
     bool detected = false;
+    QString mappingswitchKey = QKeyMapper::s_MappingSwitchKeyString;
+    QStringList keys = mappingswitchKey.split("+");
+    bool allKeysPressed = true;
+
+    for (const QString &key : keys)
+    {
+        if (!pressedRealKeysList.contains(key))
+        {
+            allKeysPressed = false;
+            break;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown && allKeysPressed && mappingswitchKey.contains(keycodeString))
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[detectMappingSwitchKey]" << "MappingSwitchKey Activated ->" << mappingswitchKey;
+#endif
+        emit QKeyMapper::getInstance()->HotKeyMappingSwitchActivated_Signal(mappingswitchKey);
+        detected = true;
+    }
 
     return detected;
 }
@@ -4187,7 +4225,7 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
             }
         }
 
-        if (KEY_DOWN == keyupdown && allKeysPressed)
+        if (KEY_DOWN == keyupdown && allKeysPressed && combinationkey.contains(keycodeString))
         {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[detectCombinationKeys]" << "CombinationKey Down detected ->" << combinationkey;

@@ -559,6 +559,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
+    QObject::connect(this, &QKeyMapper::HotKeyDisplaySwitchActivated_Signal, this, &QKeyMapper::HotKeyDisplaySwitchActivated);
+    QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated);
+
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
@@ -1847,6 +1850,26 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
         }
     }
     /* Add for "explorer.exe" AltModifier Bug Fix <<< */
+}
+
+void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
+{
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    Q_UNUSED(hotkey_string);
+    Q_UNUSED(keymapstatusEnum);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[HotKeyDisplaySwitchActivated] DisplaySwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
+#endif
+}
+
+void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
+{
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    Q_UNUSED(hotkey_string);
+    Q_UNUSED(keymapstatusEnum);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[HotKeyMappingSwitchActivated] MappingSwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
+#endif
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()

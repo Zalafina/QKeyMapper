@@ -200,6 +200,8 @@ public:
     static double getAccelThreshold(void);
 
 signals:
+    void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
+    void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
     void updateLockStatus_Signal(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
@@ -225,11 +227,13 @@ public slots:
     // void HotKeyForMappingActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
     // void HotKeyForMappingReleased(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
-private slots:
     void HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
-
     void HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
+    void HotKeyDisplaySwitchActivated(const QString &hotkey_string);
+    void HotKeyMappingSwitchActivated(const QString &hotkey_string);
+
+private slots:
     void onHotKeyLineEditEditingFinished(void);
 
     void onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence);
