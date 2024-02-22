@@ -158,8 +158,11 @@ static const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
-static const char *ORIKEY_COMBOBOX_STR = "orikeyComboBox";
-static const char *MAPKEY_COMBOBOX_STR = "mapkeyComboBox";
+static const char *ORIKEY_COMBOBOX_NAME = "orikeyComboBox";
+static const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
+
+static const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
+static const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";
 
 static const char *KEY_BLOCKED_STR = "BLOCKED";
 
@@ -1840,6 +1843,36 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
         }
     }
     /* Add for "explorer.exe" AltModifier Bug Fix <<< */
+}
+
+void QKeyMapper::onHotKeyLineEditEditingFinished()
+{
+    QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
+    if (lineEdit)
+    {
+        if (lineEdit->hasAcceptableInput())
+        {
+            if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[onHotKeyLineEditEditingFinished]" << WINDOWSWITCHKEY_LINEEDIT_NAME << "Hotkey String is valid.";
+#endif
+            }
+            else if (lineEdit->objectName() == MAPPINGSWITCHKEY_LINEEDIT_NAME) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[onHotKeyLineEditEditingFinished]" << MAPPINGSWITCHKEY_LINEEDIT_NAME << "Hotkey String is valid.";
+#endif
+            }
+        }
+        else
+        {
+            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                QMessageBox::warning(this, PROGRAM_NAME, "Invalid input format for the original key combination!");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "原始组合键输入格式错误！");
+            }
+        }
+    }
 }
 
 void QKeyMapper::onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence)
@@ -4558,11 +4591,11 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
     int left = ui->orikeyLabel->x() + ui->orikeyLabel->width() + 5;
     int top = ui->orikeyLabel->y();
-    m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_STR);
+    m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_NAME);
     m_orikeyComboBox->setGeometry(QRect(left, top, 142, 22));
     left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
     top = ui->mapkeyLabel->y();
-    m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_STR);
+    m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_NAME);
     m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
@@ -4622,6 +4655,19 @@ void QKeyMapper::initWindowSwitchKeySeqEdit()
     m_windowswitchKeySeqEdit->setObjectName(QStringLiteral("windowswitchKeySeqEdit"));
     m_windowswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+
+    left = 390;
+    top = ui->windowswitchkeyLabel->y();
+    QLineEdit *lineEdit = ui->windowswitchkeyLineEdit;
+    lineEdit->setGeometry(QRect(left, top, 110, 21));
+    lineEdit->setFocusPolicy(Qt::ClickFocus);
+    QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
+        lineEdit->setToolTip(lineEdit->text());
+    });
+
+    CombinationKeyValidator* validator = new CombinationKeyValidator(lineEdit);
+    lineEdit->setValidator(validator);
+    QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
 }
 
 void QKeyMapper::initMappingSwitchKeySeqEdit()
@@ -4631,6 +4677,19 @@ void QKeyMapper::initMappingSwitchKeySeqEdit()
     m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
     m_mappingswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+
+    left = 390;
+    top = ui->mappingswitchkeyLabel->y();
+    QLineEdit *lineEdit = ui->mappingswitchkeyLineEdit;
+    lineEdit->setGeometry(QRect(left, top, 110, 21));
+    lineEdit->setFocusPolicy(Qt::ClickFocus);
+    QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
+        lineEdit->setToolTip(lineEdit->text());
+    });
+
+    CombinationKeyValidator* validator = new CombinationKeyValidator(lineEdit);
+    lineEdit->setValidator(validator);
+    QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
 }
 
 void QKeyMapper::updateWindowSwitchKeySeq(const QKeySequence &keysequence)
@@ -5489,7 +5548,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
         if (keycodeString == QString("Enter")){
             QComboBox::keyPressEvent(keyevent);
         }
-        else if (objectName() == ORIKEY_COMBOBOX_STR && keycodeString == QString("Backspace")) {
+        else if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
             this->setCurrentText(QString());
         }
         else{
@@ -5974,4 +6033,36 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
     else {
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
     }
+}
+
+QValidator::State CombinationKeyValidator::validate(QString &input, int &pos) const
+{
+    Q_UNUSED(pos);
+    QValidator::State ret_state = QValidator::Acceptable;
+
+    if (input.startsWith("+") || input.endsWith("+"))
+    {
+        ret_state = QValidator::Invalid;
+    }
+    else
+    {
+        QStringList combinationKeysList = input.split("+");
+        if (combinationKeysList.size() <= 1)
+        {
+            ret_state = QValidator::Invalid;
+        }
+        else
+        {
+            for (const QString& key : combinationKeysList)
+            {
+                if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
+                {
+                    ret_state = QValidator::Invalid;
+                    break;
+                }
+            }
+        }
+    }
+
+    return ret_state;
 }

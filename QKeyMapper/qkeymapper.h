@@ -25,6 +25,7 @@
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
 #include <QStandardItemModel>
+#include <QValidator>
 #include <QDir>
 #include <QProcess>
 #include <windows.h>
@@ -229,6 +230,8 @@ private slots:
 
     void HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
+    void onHotKeyLineEditEditingFinished(void);
+
     void onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence);
 
     void onWindowSwitchKeySequenceEditingFinished();
@@ -371,6 +374,14 @@ private:
     QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
     bool loadSetting_flag;
+};
+
+class CombinationKeyValidator : public QValidator
+{
+public:
+    CombinationKeyValidator(QObject* parent = nullptr) : QValidator(parent) {}
+
+    QValidator::State validate(QString& input, int& pos) const override;
 };
 
 #endif // QKEYMAPPER_H
