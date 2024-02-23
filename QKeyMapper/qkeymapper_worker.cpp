@@ -2075,7 +2075,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 {
     Q_UNUSED(hWnd);
     clearAllBurstTimersAndLockKeys();
-    pressedRealKeysList.clear();
+    // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     pressedShortcutKeysList.clear();
     pressedMappingKeysMap.clear();
@@ -2160,7 +2160,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
     clearAllBurstTimersAndLockKeys();
-    pressedRealKeysList.clear();
+    // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     pressedShortcutKeysList.clear();
     pressedMappingKeysMap.clear();

@@ -1860,6 +1860,25 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[HotKeyDisplaySwitchActivated] DisplaySwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
+
+    if (false == isHidden()){
+        m_LastWindowPosition = pos(); // Save the current position before hiding
+        hide();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[HotKeyDisplaySwitchActivated] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+    }
+    else{
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[HotKeyDisplaySwitchActivated] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+        if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
+            move(m_LastWindowPosition); // Restore the position before showing
+        }
+        showNormal();
+        activateWindow();
+        raise();
+    }
 }
 
 void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
@@ -1870,6 +1889,46 @@ void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[HotKeyMappingSwitchActivated] MappingSwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
+
+    MappingStart(MAPPINGSTART_HOTKEY);
+
+    /* Add for "explorer.exe" AltModifier Bug Fix >>> */
+    HWND hwnd = GetForegroundWindow();
+    if (hwnd == NULL) {
+        return;
+    }
+
+    QString filename;
+    QString ProcessPath;
+    getProcessInfoFromHWND( hwnd, ProcessPath);
+
+    if (false == ProcessPath.isEmpty()){
+        QFileInfo fileinfo(ProcessPath);
+        filename = fileinfo.fileName();
+    }
+
+    if ("explorer.exe" == filename) {
+        bool isVisibleWindow = IsWindowVisible(hwnd);
+        bool isExToolWindow = false;
+
+        WINDOWINFO winInfo;
+        winInfo.cbSize = sizeof(WINDOWINFO);
+        if (GetWindowInfo(hwnd, &winInfo)) {
+            if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
+                isExToolWindow = true;
+        }
+
+        if (isVisibleWindow && !isExToolWindow) {
+            if (hotkey_string.contains("Alt")) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[HotKeyMappingSwitchActivated] AltModifier & ForegroundWindow Process -> " << filename << ", isVisibleWindow = " << isVisibleWindow << ", isExToolWindow = " << isExToolWindow;
+#endif
+                const Qt::KeyboardModifiers modifiers_arg = Qt::AltModifier;
+                QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers(modifiers_arg);
+            }
+        }
+    }
+    /* Add for "explorer.exe" AltModifier Bug Fix <<< */
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
