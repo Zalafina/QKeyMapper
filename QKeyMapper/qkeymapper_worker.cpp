@@ -2922,9 +2922,7 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
     }
 #endif
 
-    if (m_JoystickCapture) {
-        checkJoystickButtons(e);
-    }
+    checkJoystickButtons(e);
 }
 
 void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
@@ -3595,10 +3593,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
             returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
             updatePressedRealKeysList(keycodeString, keyupdown);
-            bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-            bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
             bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
-            if ((combinationkey_detected || displayswitch_detected || mappingswitch_detected) && KEY_DOWN == keyupdown) {
+            bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+            bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+            if ((mappingswitch_detected || displayswitch_detected || combinationkey_detected) && KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("[LowLevelKeyboardHookProc] return TRUE");
 #endif
@@ -3764,10 +3762,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
                 updatePressedRealKeysList(keycodeString, keyupdown);
-                bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-                bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
                 bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
-                if ((combinationkey_detected || displayswitch_detected || mappingswitch_detected) && KEY_DOWN == keyupdown) {
+                bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+                bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+                if ((mappingswitch_detected || displayswitch_detected || combinationkey_detected) && KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug("[LowLevelMouseHookProc] return TRUE");
 #endif
@@ -4379,12 +4377,21 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
     }
 #endif
 
+    updatePressedRealKeysList(keycodeString, keyupdown);
+    bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
+    bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+    Q_UNUSED(mappingswitch_detected);
+    Q_UNUSED(displayswitch_detected);
+
+    if (!m_JoystickCapture) {
+        return false;
+    }
+
     bool returnFlag = false;
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
-    updatePressedRealKeysList(keycodeString, keyupdown);
-    bool detected = detectCombinationKeys(keycodeString, keyupdown);
-    Q_UNUSED(detected);
+    bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+    Q_UNUSED(combinationkey_detected);
 
     if (false == returnFlag) {
         if (findindex >=0){

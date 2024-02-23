@@ -1899,11 +1899,11 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
         if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
             move(m_LastWindowPosition); // Restore the position before showing
         }
+        DWORD pid = getpid();
+        EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
         showNormal();
         activateWindow();
         raise();
-        DWORD pid = getpid();
-        EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
     }
 }
 
