@@ -29,6 +29,7 @@
 #include <QDir>
 #include <QProcess>
 #include <windows.h>
+#include <process.h>
 #include <tlhelp32.h>
 #include <Psapi.h>
 #include <tchar.h>
