@@ -728,7 +728,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
             if (true == VirtualMouseButtonMap.contains(key)) {
                 if (false == pressedVirtualKeysList.contains(key)) {
+#ifdef DEBUG_LOGOUT_ON
                     qWarning("sendInputKeys(): Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+#endif
                     continue;
                 }
 
@@ -756,7 +758,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
                 else {
                     if (false == pressedVirtualKeysList.contains(key)) {
+#ifdef DEBUG_LOGOUT_ON
                         qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+#endif
                         continue;
                     }
                 }
@@ -859,7 +863,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
                 else if (true == VirtualMouseButtonMap.contains(key)) {
                     if (true == pressedVirtualKeysList.contains(key)) {
-                        qWarning("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+#endif
                         continue;
                     }
 
@@ -886,7 +892,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     qDebug() << "[sendInputKeys] VirtualKey send Key Start ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
 #endif
                     if (true == pressedVirtualKeysList.contains(key)) {
-                        qWarning("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
+#endif
                         continue;
                     }
 
