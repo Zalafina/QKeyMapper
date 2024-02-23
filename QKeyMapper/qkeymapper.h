@@ -82,6 +82,7 @@ private:
     QWidget *m_KeyMapper_ptr;
 };
 
+#if 0
 class KeySequenceEditOnlyOne : public QKeySequenceEdit
 {
     Q_OBJECT
@@ -109,7 +110,7 @@ private:
     QString m_DefaultKeySequence;
     QString m_LastKeySequence;
 };
-
+#endif
 
 class QKeyMapper : public QDialog
 {
@@ -295,8 +296,8 @@ private:
 
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
-    void initWindowSwitchKeySeqEdit(void);
-    void initMappingSwitchKeySeqEdit(void);
+    void initWindowSwitchKeyLineEdit(void);
+    void initMappingSwitchKeyLineEdit(void);
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
     // void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
     void updateWindowSwitchKeyString(const QString &keystring);
@@ -371,8 +372,8 @@ private:
     StyledDelegate *m_KeyMappingDataTableDelegate;
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
-    KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
-    KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
+    // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
+    // KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;

@@ -316,8 +316,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
-    m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
+    // m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
+    // m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
@@ -353,8 +353,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     extractSoundFiles();
     initAddKeyComboBoxes();
-    initWindowSwitchKeySeqEdit();
-    initMappingSwitchKeySeqEdit();
+    initWindowSwitchKeyLineEdit();
+    initMappingSwitchKeyLineEdit();
     // initOriginalKeySeqEdit();
     initCombinationKeyLineEdit();
 
@@ -534,8 +534,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->virtualgamepadGroupBox->setVisible(false);
 #endif
 
-    m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
-    m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
+    // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
+    // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
     // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
     ui->windowswitchkeyLineEdit->setText(DISPLAYSWITCH_KEY_DEFAULT);
     ui->mappingswitchkeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
@@ -595,11 +595,11 @@ QKeyMapper::~QKeyMapper()
     delete m_mapkeyComboBox;
     m_mapkeyComboBox = Q_NULLPTR;
 
-    delete m_windowswitchKeySeqEdit;
-    m_windowswitchKeySeqEdit = Q_NULLPTR;
+    // delete m_windowswitchKeySeqEdit;
+    // m_windowswitchKeySeqEdit = Q_NULLPTR;
 
-    delete m_mappingswitchKeySeqEdit;
-    m_mappingswitchKeySeqEdit = Q_NULLPTR;
+    // delete m_mappingswitchKeySeqEdit;
+    // m_mappingswitchKeySeqEdit = Q_NULLPTR;
 
     // delete m_originalKeySeqEdit;
     // m_originalKeySeqEdit = Q_NULLPTR;
@@ -1854,6 +1854,28 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
 }
 #endif
 
+static void BringWindowToTopEx(HWND hwnd)
+{
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), true) ;
+    SetForegroundWindow(hwnd) ;
+    SetFocus(hwnd) ;
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), false) ;
+}
+
+static BOOL CALLBACK focusChildProcWindow(HWND hwnd, LPARAM lParam)
+{
+    DWORD processId = static_cast<DWORD>(lParam);
+    DWORD windowProcessId = NULL;
+    GetWindowThreadProcessId(hwnd, &windowProcessId);
+    if(windowProcessId == processId)
+    {
+        BringWindowToTopEx(hwnd);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 {
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
@@ -1880,6 +1902,8 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
         showNormal();
         activateWindow();
         raise();
+        DWORD pid = getpid();
+        EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
     }
 }
 
@@ -3964,10 +3988,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->nextarrowCheckBox->setEnabled(status);
 
     ui->windowswitchkeyLabel->setEnabled(status);
-    m_windowswitchKeySeqEdit->setEnabled(status);
+    // m_windowswitchKeySeqEdit->setEnabled(status);
     ui->windowswitchkeyLineEdit->setEnabled(status);
     ui->mappingswitchkeyLabel->setEnabled(status);
-    m_mappingswitchKeySeqEdit->setEnabled(status);
+    // m_mappingswitchKeySeqEdit->setEnabled(status);
     ui->mappingswitchkeyLineEdit->setEnabled(status);
 
     // ui->refreshButton->setEnabled(status);
@@ -4827,13 +4851,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #endif
 }
 
-void QKeyMapper::initWindowSwitchKeySeqEdit()
+void QKeyMapper::initWindowSwitchKeyLineEdit()
 {
-    int top = ui->windowswitchkeyLabel->y();
-    int left = ui->windowswitchkeyLabel->x() + ui->windowswitchkeyLabel->width() + 5;
-    m_windowswitchKeySeqEdit->setObjectName(QStringLiteral("windowswitchKeySeqEdit"));
-    m_windowswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
-    m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+    // int top = ui->windowswitchkeyLabel->y();
+    // int left = ui->windowswitchkeyLabel->x() + ui->windowswitchkeyLabel->width() + 5;
+    // m_windowswitchKeySeqEdit->setObjectName(QStringLiteral("windowswitchKeySeqEdit"));
+    // m_windowswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
+    // m_windowswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 
     QLineEdit *lineEdit = ui->windowswitchkeyLineEdit;
     // left = 390;
@@ -4846,13 +4870,13 @@ void QKeyMapper::initWindowSwitchKeySeqEdit()
     QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
 }
 
-void QKeyMapper::initMappingSwitchKeySeqEdit()
+void QKeyMapper::initMappingSwitchKeyLineEdit()
 {
-    int top = ui->mappingswitchkeyLabel->y();
-    int left = ui->mappingswitchkeyLabel->x() + ui->mappingswitchkeyLabel->width() + 5;
-    m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
-    m_mappingswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
-    m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
+    // int top = ui->mappingswitchkeyLabel->y();
+    // int left = ui->mappingswitchkeyLabel->x() + ui->mappingswitchkeyLabel->width() + 5;
+    // m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
+    // m_mappingswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
+    // m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 
     QLineEdit *lineEdit = ui->mappingswitchkeyLineEdit;
     // left = 390;
@@ -5197,8 +5221,8 @@ void QKeyMapper::resetFontSize()
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->windowswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->mappingswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -5226,8 +5250,8 @@ void QKeyMapper::resetFontSize()
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
+        // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->windowswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->mappingswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -5767,6 +5791,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     //QComboBox::keyPressEvent(keyevent);
 }
 
+#if 0
 void KeySequenceEditOnlyOne::setDefaultKeySequence(const QString &keysequencestr)
 {
     m_DefaultKeySequence = keysequencestr;
@@ -5846,6 +5871,7 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
         emit keySeqEditChanged_Signal(setKeySeq);
     }
 }
+#endif
 
 void QKeyMapper::on_moveupButton_clicked()
 {

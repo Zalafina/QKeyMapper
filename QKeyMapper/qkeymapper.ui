@@ -945,7 +945,7 @@
   <widget class="QLineEdit" name="windowswitchkeyLineEdit">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>255</x>
      <y>520</y>
      <width>110</width>
      <height>21</height>
@@ -955,7 +955,7 @@
   <widget class="QLineEdit" name="mappingswitchkeyLineEdit">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>255</x>
      <y>550</y>
      <width>110</width>
      <height>21</height>
