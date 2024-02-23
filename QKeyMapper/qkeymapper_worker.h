@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QThread>
 #include <QHash>
-#include <QHotkey>
+// #include <QHotkey>
 #include <QThreadPool>
 #include <QWaitCondition>
 #include <QDeadlineTimer>

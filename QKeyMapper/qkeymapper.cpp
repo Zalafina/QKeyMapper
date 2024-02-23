@@ -98,8 +98,8 @@ static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
 
-static const char *DISPLAYSWITCH_KEY_DEFAULT    = "Ctrl+`";
-static const char *MAPPINGSWITCH_KEY_DEFAULT    = "Ctrl+F6";
+static const char *DISPLAYSWITCH_KEY_DEFAULT    = "L-Ctrl+`";
+static const char *MAPPINGSWITCH_KEY_DEFAULT    = "L-Ctrl+F6";
 static const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_SHORTCUT;
 
 /* General global settings >>> */
@@ -319,8 +319,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    m_HotKey_ShowHide(new QHotkey(this)),
-    m_HotKey_StartStop(new QHotkey(this)),
+    // m_HotKey_ShowHide(new QHotkey(this)),
+    // m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
     loadSetting_flag(false)
 {
@@ -578,7 +578,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 //        QMessageBox::warning(this, PROGRAM_NAME, tr("Load invalid keymapdata from ini file.\nReset to default values."));
 //    }
 
-    initHotKeySequence();
+    // initHotKeySequence();
 }
 
 QKeyMapper::~QKeyMapper()
@@ -604,10 +604,10 @@ QKeyMapper::~QKeyMapper()
     // delete m_originalKeySeqEdit;
     // m_originalKeySeqEdit = Q_NULLPTR;
 
-    delete m_HotKey_ShowHide;
-    m_HotKey_ShowHide = Q_NULLPTR;
-    delete m_HotKey_StartStop;
-    m_HotKey_StartStop = Q_NULLPTR;
+    // delete m_HotKey_ShowHide;
+    // m_HotKey_ShowHide = Q_NULLPTR;
+    // delete m_HotKey_StartStop;
+    // m_HotKey_StartStop = Q_NULLPTR;
 
     delete ui;
     delete m_SysTrayIcon;
@@ -1777,6 +1777,7 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
     }
 }
 
+#if 0
 void QKeyMapper::HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers)
 {
     Q_UNUSED(keyseqstr);
@@ -1851,6 +1852,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
     }
     /* Add for "explorer.exe" AltModifier Bug Fix <<< */
 }
+#endif
 
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 {
@@ -1970,6 +1972,7 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
     }
 }
 
+#if 0
 void QKeyMapper::onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -2048,7 +2051,6 @@ void QKeyMapper::onMappingSwitchKeySequenceEditingFinished()
     m_mappingswitchKeySeqEdit->clearFocus();
 }
 
-#if 0
 void QKeyMapper::onOriginalKeySequenceChanged(const QKeySequence &keysequence)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -4285,12 +4287,14 @@ void QKeyMapper::on_savemaplistButton_clicked()
     saveKeyMapSetting();
 }
 
+#if 0
 void QKeyMapper::initHotKeySequence()
 {
     QObject::connect(m_HotKey_ShowHide, &QHotkey::activated, this, &QKeyMapper::HotKeyActivated);
 
     QObject::connect(m_HotKey_StartStop, &QHotkey::activated, this, &QKeyMapper::HotKeyStartStopActivated);
 }
+#endif
 
 void QKeyMapper::initProcessInfoTable(void)
 {
@@ -4861,6 +4865,7 @@ void QKeyMapper::initMappingSwitchKeySeqEdit()
     QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
 }
 
+#if 0
 void QKeyMapper::updateWindowSwitchKeySeq(const QKeySequence &keysequence)
 {
     m_windowswitchKeySeqEdit->setLastKeySequence(keysequence.toString());
@@ -4872,6 +4877,7 @@ void QKeyMapper::updateMappingSwitchKeySeq(const QKeySequence &keysequence)
     m_mappingswitchKeySeqEdit->setLastKeySequence(keysequence.toString());
     m_HotKey_StartStop->setShortcut(keysequence, true);
 }
+#endif
 
 void QKeyMapper::updateWindowSwitchKeyString(const QString &keystring)
 {

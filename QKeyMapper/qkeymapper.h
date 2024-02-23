@@ -227,8 +227,8 @@ public slots:
     // void HotKeyForMappingActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
     // void HotKeyForMappingReleased(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
-    void HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
-    void HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
+    // void HotKeyActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
+    // void HotKeyStartStopActivated(const QString &keyseqstr, const Qt::KeyboardModifiers &modifiers);
 
     void HotKeyDisplaySwitchActivated(const QString &hotkey_string);
     void HotKeyMappingSwitchActivated(const QString &hotkey_string);
@@ -236,16 +236,11 @@ public slots:
 private slots:
     void onHotKeyLineEditEditingFinished(void);
 
-    void onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence);
-
-    void onWindowSwitchKeySequenceEditingFinished();
-
-    void onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence);
-
-    void onMappingSwitchKeySequenceEditingFinished();
-
+    // void onWindowSwitchKeySequenceChanged(const QKeySequence &keysequence);
+    // void onWindowSwitchKeySequenceEditingFinished();
+    // void onMappingSwitchKeySequenceChanged(const QKeySequence &keysequence);
+    // void onMappingSwitchKeySequenceEditingFinished();
     // void onOriginalKeySequenceChanged(const QKeySequence &keysequence);
-
     // void onOriginalKeySequenceEditingFinished();
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -291,7 +286,7 @@ private slots:
     void on_soundEffectCheckBox_stateChanged(int state);
 
 private:
-    void initHotKeySequence(void);
+    // void initHotKeySequence(void);
     void initProcessInfoTable(void);
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
@@ -302,8 +297,8 @@ private:
     void initAddKeyComboBoxes(void);
     void initWindowSwitchKeySeqEdit(void);
     void initMappingSwitchKeySeqEdit(void);
-    void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
-    void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
+    // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
+    // void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
     void updateWindowSwitchKeyString(const QString &keystring);
     void updateMappingSwitchKeyString(const QString &keystring);
     // void initOriginalKeySeqEdit(void);
@@ -379,8 +374,8 @@ private:
     KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
-    QHotkey *m_HotKey_ShowHide;
-    QHotkey *m_HotKey_StartStop;
+    // QHotkey *m_HotKey_ShowHide;
+    // QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
     bool loadSetting_flag;
 };
