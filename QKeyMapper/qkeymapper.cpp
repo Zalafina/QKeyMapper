@@ -570,7 +570,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
-#ifndef DEBUG_LOGOUT_ON
+#ifdef QT_NO_DEBUG
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
 
@@ -1674,7 +1674,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
 #endif
-#ifndef DEBUG_LOGOUT_ON
+#ifdef QT_NO_DEBUG
         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
         refreshProcessInfoTable();
