@@ -559,8 +559,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onOriginalKeySequenceChanged);
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
-    QObject::connect(this, &QKeyMapper::HotKeyDisplaySwitchActivated_Signal, this, &QKeyMapper::HotKeyDisplaySwitchActivated);
-    QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated);
+    QObject::connect(this, &QKeyMapper::HotKeyDisplaySwitchActivated_Signal, this, &QKeyMapper::HotKeyDisplaySwitchActivated, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
