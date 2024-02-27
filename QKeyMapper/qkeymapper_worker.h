@@ -314,6 +314,13 @@ public:
     };
     Q_ENUM(Joy2MouseState)
 
+    struct Mouse2vJoyState_st
+    {
+        Mouse2vJoyState state;
+        bool leftbuttonhold;
+        bool rightbuttonhold;
+    };
+
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
@@ -365,7 +372,7 @@ public:
     static void ViGEmClient_CheckJoysticksReportData(void);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
 
-    static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
+    static Mouse2vJoyState_st ViGEmClient_checkMouse2JoystickEnableState(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
     void ViGEmClient_GamepadReset(void);
     void ViGEmClient_JoysticksReset(void);
@@ -532,7 +539,7 @@ public:
 #endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
-    static Mouse2vJoyState s_Mouse2vJoy_EnableState;
+    static Mouse2vJoyState_st s_Mouse2vJoy_EnableState;
 #endif
 
     static Joy2MouseState s_Joy2Mouse_EnableState;
