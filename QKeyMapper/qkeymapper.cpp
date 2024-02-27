@@ -5604,32 +5604,32 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
     else {
         if (VJOY_MOUSE2LS_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_LHOLD_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_RHOLD_STR)) {
+            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_LHOLD_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_RHOLD_STR) >= 0) {
                 already_exist = true;
             }
         }
         else if (VJOY_MOUSE2LS_LHOLD_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_RHOLD_STR)) {
+            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_RHOLD_STR) >= 0) {
                 already_exist = true;
             }
         }
         else if (VJOY_MOUSE2LS_RHOLD_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_LHOLD_STR)) {
+            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_LHOLD_STR) >= 0) {
                 already_exist = true;
             }
         }
         else if (VJOY_MOUSE2RS_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_LHOLD_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_RHOLD_STR)) {
+            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_LHOLD_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_RHOLD_STR) >= 0) {
                 already_exist = true;
             }
         }
         else if (VJOY_MOUSE2RS_LHOLD_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_RHOLD_STR)) {
+            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_RHOLD_STR) >= 0) {
                 already_exist = true;
             }
         }
         else if (VJOY_MOUSE2RS_RHOLD_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_LHOLD_STR)) {
+            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR) >= 0 || findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_LHOLD_STR) >= 0) {
                 already_exist = true;
             }
         }

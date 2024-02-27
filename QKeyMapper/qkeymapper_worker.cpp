@@ -283,6 +283,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_Mouse2vJoyResetTimer.setTimerType(Qt::PreciseTimer);
     m_Mouse2vJoyResetTimer.setSingleShot(true);
     QObject::connect(&m_Mouse2vJoyResetTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onMouse2vJoyResetTimeout);
+    QObject::connect(this, &QKeyMapper_Worker::startMouse2vJoyResetTimer_Signal, this, &QKeyMapper_Worker::startMouse2vJoyResetTimer, Qt::QueuedConnection);
 #endif
 
     m_Joy2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
@@ -3081,6 +3082,11 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
 }
 
+void QKeyMapper_Worker::startMouse2vJoyResetTimer()
+{
+    m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+}
+
 QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableState()
 {
     Joy2MouseState joy2mouse_enablestate = JOY2MOUSE_NONE;
@@ -3807,6 +3813,23 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
+                if (s_Mouse2vJoy_EnableState.state != MOUSE2VJOY_NONE && keyupdown == KEY_UP) {
+                    bool startTimer = false;
+                    if (s_Mouse2vJoy_EnableState.leftbuttonhold && keycodeString == "Mouse-L") {
+                        startTimer = true;
+                    }
+                    if (s_Mouse2vJoy_EnableState.rightbuttonhold && keycodeString == "Mouse-R") {
+                        startTimer = true;
+                    }
+
+                    if (startTimer) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << keycodeString << "KEY_UP Start Mouse2vJoyResetTimer.";
+#endif
+                        emit QKeyMapper_Worker::getInstance()->startMouse2vJoyResetTimer_Signal();
+                    }
+                }
+
                 int findindex = -1;
                 if (hookprocstart) {
                     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
