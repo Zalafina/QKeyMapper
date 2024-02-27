@@ -317,8 +317,7 @@ public:
     struct Mouse2vJoyState_st
     {
         Mouse2vJoyState state;
-        bool leftbuttonhold;
-        bool rightbuttonhold;
+        bool buttonhold;
     };
 
 public slots:

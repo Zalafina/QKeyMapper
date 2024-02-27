@@ -119,16 +119,19 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 
 static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
 static const int VJOY_KEYUP_WAITTIME = 20;
+
+// static const quint8 MOUSE2JOY_HOLD_KEY = 0x3A;
+static const quint8 MOUSE2JOY_HOLD_KEY = VK_PAUSE;
 #endif
 
 static const char *KEY_BLOCKED_STR = "BLOCKED";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
-static const char *VJOY_MOUSE2LS_LHOLD_STR = "vJoy-Mouse2LS_LHold";
-static const char *VJOY_MOUSE2LS_RHOLD_STR = "vJoy-Mouse2LS_RHold";
-static const char *VJOY_MOUSE2RS_LHOLD_STR = "vJoy-Mouse2RS_LHold";
-static const char *VJOY_MOUSE2RS_RHOLD_STR = "vJoy-Mouse2RS_RHold";
+static const char *VJOY_MOUSE2LS_HOLD_STR = "vJoy-Mouse2LS_Hold";
+static const char *VJOY_MOUSE2RS_HOLD_STR = "vJoy-Mouse2RS_Hold";
+// static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
+static const char *MOUSE2VJOY_HOLD_KEY_STR = "Pause";
 
 static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
@@ -537,13 +540,8 @@ void QKeyMapper_Worker::onMouseMove(int x, int y)
 void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 {
     if (s_Mouse2vJoy_EnableState.state != MOUSE2VJOY_NONE) {
-        if (s_Mouse2vJoy_EnableState.leftbuttonhold) {
-            if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0) {
-                return;
-            }
-        }
-        if (s_Mouse2vJoy_EnableState.rightbuttonhold) {
-            if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0) {
+        if (s_Mouse2vJoy_EnableState.buttonhold) {
+            if ((GetAsyncKeyState(MOUSE2JOY_HOLD_KEY) & 0x8000) != 0) {
                 return;
             }
         }
@@ -1809,23 +1807,17 @@ QKeyMapper_Worker::Mouse2vJoyState_st QKeyMapper_Worker::ViGEmClient_checkMouse2
     Mouse2vJoyState_st mouse2joy_enablestate = Mouse2vJoyState_st();
     bool leftJoystickUpdate = false;
     bool rightJoystickUpdate = false;
-    bool leftButtonHold = false;
-    bool rightButtonHold = false;
+    bool buttonHold = false;
 
     int findMouse2LSindex = -1;
     findMouse2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR);
     if (findMouse2LSindex >=0){
         leftJoystickUpdate = true;
     }
-    findMouse2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_LHOLD_STR);
+    findMouse2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_HOLD_STR);
     if (findMouse2LSindex >=0){
         leftJoystickUpdate = true;
-        leftButtonHold = true;
-    }
-    findMouse2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_RHOLD_STR);
-    if (findMouse2LSindex >=0){
-        leftJoystickUpdate = true;
-        rightButtonHold = true;
+        buttonHold = true;
     }
 
     int findMouse2RSindex = -1;
@@ -1833,42 +1825,28 @@ QKeyMapper_Worker::Mouse2vJoyState_st QKeyMapper_Worker::ViGEmClient_checkMouse2
     if (findMouse2RSindex >=0){
         rightJoystickUpdate = true;
     }
-    findMouse2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_LHOLD_STR);
+    findMouse2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_HOLD_STR);
     if (findMouse2RSindex >=0){
         rightJoystickUpdate = true;
-        leftButtonHold = true;
-    }
-    findMouse2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_RHOLD_STR);
-    if (findMouse2RSindex >=0){
-        rightJoystickUpdate = true;
-        rightButtonHold = true;
+        buttonHold = true;
     }
 
     if (leftJoystickUpdate && rightJoystickUpdate) {
         mouse2joy_enablestate.state = MOUSE2VJOY_BOTH;
-        if (leftButtonHold) {
-            mouse2joy_enablestate.leftbuttonhold = true;
-        }
-        if (rightButtonHold) {
-            mouse2joy_enablestate.rightbuttonhold = true;
+        if (buttonHold) {
+            mouse2joy_enablestate.buttonhold = true;
         }
     }
     else if (leftJoystickUpdate) {
         mouse2joy_enablestate.state = MOUSE2VJOY_LEFT;
-        if (leftButtonHold) {
-            mouse2joy_enablestate.leftbuttonhold = true;
-        }
-        if (rightButtonHold) {
-            mouse2joy_enablestate.rightbuttonhold = true;
+        if (buttonHold) {
+            mouse2joy_enablestate.buttonhold = true;
         }
     }
     else if (rightJoystickUpdate) {
         mouse2joy_enablestate.state = MOUSE2VJOY_RIGHT;
-        if (leftButtonHold) {
-            mouse2joy_enablestate.leftbuttonhold = true;
-        }
-        if (rightButtonHold) {
-            mouse2joy_enablestate.rightbuttonhold = true;
+        if (buttonHold) {
+            mouse2joy_enablestate.buttonhold = true;
         }
     }
 
@@ -3601,6 +3579,15 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
+        if (s_Mouse2vJoy_EnableState.state != MOUSE2VJOY_NONE && keyupdown == KEY_UP) {
+            if (s_Mouse2vJoy_EnableState.buttonhold && keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_UP Start Mouse2vJoyResetTimer.";
+#endif
+                emit QKeyMapper_Worker::getInstance()->startMouse2vJoyResetTimer_Signal();
+            }
+        }
+
         if (extraInfo != VIRTUAL_KEYBOARD_PRESS) {
 #ifdef DEBUG_LOGOUT_ON
             if (WM_KEYDOWN == wParam){
@@ -3813,23 +3800,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
-                if (s_Mouse2vJoy_EnableState.state != MOUSE2VJOY_NONE && keyupdown == KEY_UP) {
-                    bool startTimer = false;
-                    if (s_Mouse2vJoy_EnableState.leftbuttonhold && keycodeString == "Mouse-L") {
-                        startTimer = true;
-                    }
-                    if (s_Mouse2vJoy_EnableState.rightbuttonhold && keycodeString == "Mouse-R") {
-                        startTimer = true;
-                    }
-
-                    if (startTimer) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[LowLevelMouseHookProc]" << keycodeString << "KEY_UP Start Mouse2vJoyResetTimer.";
-#endif
-                        emit QKeyMapper_Worker::getInstance()->startMouse2vJoyResetTimer_Signal();
-                    }
-                }
-
                 int findindex = -1;
                 if (hookprocstart) {
                     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
@@ -3999,18 +3969,8 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (extraInfo != VIRTUAL_MOUSE_MOVE) {
             if (s_Mouse2vJoy_EnableState.state != MOUSE2VJOY_NONE) {
-                if (s_Mouse2vJoy_EnableState.leftbuttonhold) {
-                    if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0) {
-                        if (QKeyMapper::getLockCursorStatus()) {
-                            returnFlag = true;
-                        }
-                        else {
-                            return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-                        }
-                    }
-                }
-                if (s_Mouse2vJoy_EnableState.rightbuttonhold) {
-                    if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0) {
+                if (s_Mouse2vJoy_EnableState.buttonhold) {
+                    if ((GetAsyncKeyState(MOUSE2JOY_HOLD_KEY) & 0x8000) != 0) {
                         if (QKeyMapper::getLockCursorStatus()) {
                             returnFlag = true;
                         }
@@ -5016,10 +4976,8 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     /* Virtual Joystick Buttons */
     JoyStickKeyMap.insert(VJOY_MOUSE2LS_STR             ,   (int)JOYSTICK_LS_MOUSE      );
     JoyStickKeyMap.insert(VJOY_MOUSE2RS_STR             ,   (int)JOYSTICK_RS_MOUSE      );
-    JoyStickKeyMap.insert(VJOY_MOUSE2LS_LHOLD_STR       ,   (int)JOYSTICK_LS_MOUSE      );
-    JoyStickKeyMap.insert(VJOY_MOUSE2LS_RHOLD_STR       ,   (int)JOYSTICK_LS_MOUSE      );
-    JoyStickKeyMap.insert(VJOY_MOUSE2RS_LHOLD_STR       ,   (int)JOYSTICK_RS_MOUSE      );
-    JoyStickKeyMap.insert(VJOY_MOUSE2RS_RHOLD_STR       ,   (int)JOYSTICK_RS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_MOUSE2LS_HOLD_STR        ,   (int)JOYSTICK_LS_MOUSE      );
+    JoyStickKeyMap.insert(VJOY_MOUSE2RS_HOLD_STR        ,   (int)JOYSTICK_RS_MOUSE      );
 
     JoyStickKeyMap.insert("vJoy-Key1(A/×)"              ,   (int)JOYSTICK_BUTTON_0      );
     JoyStickKeyMap.insert("vJoy-Key2(B/○)"              ,   (int)JOYSTICK_BUTTON_1      );
