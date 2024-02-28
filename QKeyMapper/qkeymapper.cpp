@@ -168,8 +168,7 @@ static const char *KEY_BLOCKED_STR = "BLOCKED";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
-static const char *VJOY_MOUSE2LS_HOLD_STR = "vJoy-Mouse2LS_Hold";
-static const char *VJOY_MOUSE2RS_HOLD_STR = "vJoy-Mouse2RS_Hold";
+static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
 
 static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
@@ -2204,8 +2203,6 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 {
     if (VJOY_MOUSE2LS_STR == text
         || VJOY_MOUSE2RS_STR == text
-        || VJOY_MOUSE2LS_HOLD_STR == text
-        || VJOY_MOUSE2RS_HOLD_STR == text
         || JOY_LS2MOUSE_STR == text
         || JOY_RS2MOUSE_STR == text
         || JOY_LT2VJOYLT_STR == text
@@ -3959,8 +3956,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     if (true == status
         && (m_orikeyComboBox->currentText() == VJOY_MOUSE2LS_STR
             || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
-            || m_orikeyComboBox->currentText() == VJOY_MOUSE2LS_HOLD_STR
-            || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_HOLD_STR
             || m_orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
             || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
             || m_orikeyComboBox->currentText() == JOY_LT2VJOYLT_STR
@@ -4737,8 +4732,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
-            << VJOY_MOUSE2LS_HOLD_STR
-            << VJOY_MOUSE2RS_HOLD_STR
+            << MOUSE2VJOY_HOLD_KEY_STR
             << "vJoy-LS-Up"
             << "vJoy-LS-Down"
             << "vJoy-LS-Left"
@@ -4821,6 +4815,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne("Shift");
     orikeycodelist.removeOne("Ctrl");
     orikeycodelist.removeOne("Alt");
+    orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4828,8 +4823,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QStringList vJoyStrlist = orikeycodelist.filter(re_vjoy);
     vJoyStrlist.removeOne(VJOY_MOUSE2LS_STR);
     vJoyStrlist.removeOne(VJOY_MOUSE2RS_STR);
-    vJoyStrlist.removeOne(VJOY_MOUSE2LS_HOLD_STR);
-    vJoyStrlist.removeOne(VJOY_MOUSE2RS_HOLD_STR);
 
     // Remove Strings start with "vJoy-" from orikeyComboBox
     for (const QString &joystr : qAsConst(vJoyStrlist)){
@@ -4837,8 +4830,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     }
     keycodelist.removeOne(VJOY_MOUSE2LS_STR);
     keycodelist.removeOne(VJOY_MOUSE2RS_STR);
-    keycodelist.removeOne(VJOY_MOUSE2LS_HOLD_STR);
-    keycodelist.removeOne(VJOY_MOUSE2RS_HOLD_STR);
 #endif
 
     QRegularExpression re_Joy("^Joy-");
@@ -4985,10 +4976,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
             bool disable_burstandlock = false;
 
 #ifdef VIGEM_CLIENT_SUPPORT
-            if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR
-                || keymapdata.Original_Key == VJOY_MOUSE2RS_STR
-                || keymapdata.Original_Key == VJOY_MOUSE2LS_HOLD_STR
-                || keymapdata.Original_Key == VJOY_MOUSE2RS_HOLD_STR) {
+            if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
                 disable_burstandlock = true;
             }
 
@@ -5011,6 +4999,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
+                disable_burstandlock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
@@ -5574,8 +5565,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if (findindex != -1){
         if (VJOY_MOUSE2LS_STR == currentOriKeyText
             || VJOY_MOUSE2RS_STR == currentOriKeyText
-            || VJOY_MOUSE2LS_HOLD_STR == currentOriKeyText
-            || VJOY_MOUSE2RS_HOLD_STR == currentOriKeyText
             || JOY_LS2MOUSE_STR == currentOriKeyText
             || JOY_RS2MOUSE_STR == currentOriKeyText
             || JOY_LT2VJOYLT_STR == currentOriKeyText
@@ -5589,28 +5578,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
 #endif
-        }
-    }
-    else {
-        if (VJOY_MOUSE2LS_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_HOLD_STR) >= 0) {
-                already_exist = true;
-            }
-        }
-        else if (VJOY_MOUSE2LS_HOLD_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2LS_STR) >= 0) {
-                already_exist = true;
-            }
-        }
-        else if (VJOY_MOUSE2RS_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_HOLD_STR) >= 0) {
-                already_exist = true;
-            }
-        }
-        else if (VJOY_MOUSE2RS_HOLD_STR == currentOriKeyText) {
-            if (findOriKeyInKeyMappingDataList(VJOY_MOUSE2RS_STR) >= 0) {
-                already_exist = true;
-            }
         }
     }
 
@@ -5684,8 +5651,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
         else {
             if (VJOY_MOUSE2LS_STR == currentOriKeyText
                 || VJOY_MOUSE2RS_STR == currentOriKeyText
-                || VJOY_MOUSE2LS_HOLD_STR == currentOriKeyText
-                || VJOY_MOUSE2RS_HOLD_STR == currentOriKeyText
                 || JOY_LS2MOUSE_STR == currentOriKeyText
                 || JOY_RS2MOUSE_STR == currentOriKeyText
                 || JOY_LT2VJOYLT_STR == currentOriKeyText
