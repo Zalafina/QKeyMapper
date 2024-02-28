@@ -5739,7 +5739,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBox_Press]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
     qDebug("[KeyListComboBox_Press] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
-    qDebug("[CAPS Status] KeyState(0x%04X)", GetKeyState(VK_CAPITAL));
+    qDebug("[CAPS Status] KeyState(0x%04X)", GetAsyncKeyState(VK_CAPITAL));
 #endif
 
     V_KEYCODE vkeycode;

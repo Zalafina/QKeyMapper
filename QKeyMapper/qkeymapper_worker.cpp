@@ -538,7 +538,7 @@ void QKeyMapper_Worker::onMouseMove(int x, int y)
 void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 {
     if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-        if ((GetAsyncKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+        if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
             return;
         }
     }
@@ -3963,7 +3963,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (extraInfo != VIRTUAL_MOUSE_MOVE) {
             if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                if ((GetAsyncKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+                if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[LowLevelMouseHookProc]" << "VK_MOUSE2JOY_HOLD Pressed -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
+#endif
                     if (QKeyMapper::getLockCursorStatus()) {
                         returnFlag = true;
                     }
@@ -4248,28 +4251,28 @@ void QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int key
 void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers)
 {
     QStringList pressedKeyboardModifiersList;
-    if ((GetKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
+    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("L-Shift");
     }
-    if ((GetKeyState(VK_RSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
+    if ((GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("R-Shift");
     }
-    if ((GetKeyState(VK_LCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("L-Ctrl");
     }
-    if ((GetKeyState(VK_RCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
+    if ((GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("R-Ctrl");
     }
-    if ((GetKeyState(VK_LMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
+    if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("L-Alt");
     }
-    if ((GetKeyState(VK_RMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
+    if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("R-Alt");
     }
-    if ((GetKeyState(VK_LWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
+    if ((GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("L-Win");
     }
-    if ((GetKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
+    if ((GetAsyncKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("R-Win");
     }
 
