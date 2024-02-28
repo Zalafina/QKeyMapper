@@ -539,6 +539,9 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 {
     if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
         if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2JOY_HOLD is KEY_DOWN State.";
+#endif
             return;
         }
     }
@@ -3705,7 +3708,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         }
                     }
                 }
-                returnFlag = true;
             }
         }
     }
@@ -3964,9 +3966,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         if (extraInfo != VIRTUAL_MOUSE_MOVE) {
             if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
                 if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[LowLevelMouseHookProc]" << "VK_MOUSE2JOY_HOLD Pressed -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
-#endif
                     if (QKeyMapper::getLockCursorStatus()) {
                         returnFlag = true;
                     }
