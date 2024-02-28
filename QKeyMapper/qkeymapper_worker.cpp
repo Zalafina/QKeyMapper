@@ -3967,7 +3967,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
                 if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
                     if (QKeyMapper::getLockCursorStatus()) {
-                        returnFlag = true;
+                        return (LRESULT)TRUE;
                     }
                     else {
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
