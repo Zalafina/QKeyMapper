@@ -1904,6 +1904,11 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 #ifdef QT_NO_DEBUG
         DWORD pid = getpid();
         EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
+#else
+        if (!IsDebuggerPresent()) {
+            DWORD pid = getpid();
+            EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
+        }
 #endif
         showNormal();
         activateWindow();
