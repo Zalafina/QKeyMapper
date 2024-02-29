@@ -10,8 +10,8 @@
 ---------------
 ### 许可证更改 ：请注意，软件许可证已从 MIT 许可证更改为 GNU 通用公共许可证 v3.0 (GPL v3)。在使用、修改或分发软件之前，请确保你已经查看并理解了新许可证的条款。
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
-### 注意: 使用时需要 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe      
-* ( 32位系统则下载32位运行库 https://aka.ms/vs/17/release/vc_redist.x86.exe )
+### 注意: 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe      
+* ( 32位系统则下载安装32位运行库 https://aka.ms/vs/17/release/vc_redist.x86.exe )
 ---------------
 ## 使用教学视频请点击下方图片
 [![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
