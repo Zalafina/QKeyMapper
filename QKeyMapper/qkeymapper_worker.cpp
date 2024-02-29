@@ -148,7 +148,7 @@ static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
-static const ULONG_PTR VIRTUAL_MOUSE2JOY_HOLD = 0x3A3A3A3A;
+static const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS = 0x3A3A3A3A;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 static const ULONG_PTR VIRTUAL_MOUSE_MOVE = 0xBFBCBFBC;
 static const ULONG_PTR VIRTUAL_MOUSE_WHEEL = 0xEBFAEBFA;
@@ -285,6 +285,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_Mouse2vJoyResetTimer.setSingleShot(true);
     QObject::connect(&m_Mouse2vJoyResetTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onMouse2vJoyResetTimeout);
     QObject::connect(this, &QKeyMapper_Worker::startMouse2vJoyResetTimer_Signal, this, &QKeyMapper_Worker::startMouse2vJoyResetTimer, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::stopMouse2vJoyResetTimer_Signal, this, &QKeyMapper_Worker::stopMouse2vJoyResetTimer, Qt::QueuedConnection);
 #endif
 
     m_Joy2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
@@ -790,7 +791,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
                 input.type = INPUT_KEYBOARD;
                 if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode) {
-                    input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_HOLD;
+                    input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                 }
                 else {
                     input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
@@ -928,7 +929,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                     input.type = INPUT_KEYBOARD;
                     if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode) {
-                        input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_HOLD;
+                        input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                     }
                     else {
                         input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
@@ -3052,6 +3053,11 @@ void QKeyMapper_Worker::startMouse2vJoyResetTimer()
     m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
 }
 
+void QKeyMapper_Worker::stopMouse2vJoyResetTimer()
+{
+    m_Mouse2vJoyResetTimer.stop();
+}
+
 QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableState()
 {
     Joy2MouseState joy2mouse_enablestate = JOY2MOUSE_NONE;
@@ -3566,7 +3572,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_HOLD) {
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
 #ifdef DEBUG_LOGOUT_ON
             if (WM_KEYDOWN == wParam){
                 qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
@@ -3692,7 +3698,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
 
-            if (extraInfo == VIRTUAL_MOUSE2JOY_HOLD) {
+            if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
                 if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
                     if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         if (keyupdown == KEY_UP) {
@@ -3703,8 +3709,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         }
                         else {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_DOWN.";
+                            qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_DOWN Stop Mouse2vJoyResetTimer.";
 #endif
+                            emit QKeyMapper_Worker::getInstance()->stopMouse2vJoyResetTimer_Signal();
                         }
                     }
                 }
