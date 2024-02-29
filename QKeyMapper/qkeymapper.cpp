@@ -514,6 +514,16 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->vJoyXSensLabel->setVisible(false);
         ui->vJoyYSensLabel->setVisible(false);
         ui->virtualgamepadGroupBox->setVisible(false);
+
+        ui->dataPortSpinBox->setEnabled(false);
+        ui->brakeThresholdDoubleSpinBox->setEnabled(false);
+        ui->accelThresholdDoubleSpinBox->setEnabled(false);
+        ui->dataPortLabel->setVisible(false);
+        ui->dataPortSpinBox->setVisible(false);
+        ui->brakeThresholdLabel->setVisible(false);
+        ui->accelThresholdLabel->setVisible(false);
+        ui->brakeThresholdDoubleSpinBox->setVisible(false);
+        ui->accelThresholdDoubleSpinBox->setVisible(false);
     }
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
