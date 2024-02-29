@@ -122,6 +122,7 @@ static const int VJOY_KEYUP_WAITTIME = 20;
 static const quint8 VK_MOUSE2JOY_HOLD = 0x3A;
 #endif
 
+static const quint8 VK_BLOCKED = 0x0F;
 static const char *KEY_BLOCKED_STR = "BLOCKED";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
@@ -4488,7 +4489,7 @@ HRESULT QKeyMapper_Worker::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD 
 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()
 {
-    VirtualKeyCodeMap.insert        (KEY_BLOCKED_STR,           V_KEYCODE());   // Key Blocked
+    VirtualKeyCodeMap.insert        (KEY_BLOCKED_STR,           V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key Blocked)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2JOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
 
     // US 104 Keyboard Main Area
