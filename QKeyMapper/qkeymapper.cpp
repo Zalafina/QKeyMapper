@@ -474,7 +474,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         isWin10Above = false;
     }
 
-    if (isWin10Above) {
+    // if (isWin10Above) {
         ui->vJoyXSensSpinBox->setEnabled(false);
         ui->vJoyYSensSpinBox->setEnabled(false);
         ui->vJoyXSensLabel->setEnabled(false);
@@ -494,6 +494,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         }
 
         updateViGEmBusLabelDisplay();
+
+        if (!isWin10Above) {
+            ui->installViGEmBusButton->setEnabled(false);
+            ui->installViGEmBusButton->setVisible(false);
+        }
+#if 0
     }
     else {
         ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -528,6 +534,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->brakeThresholdDoubleSpinBox->setVisible(false);
         ui->accelThresholdDoubleSpinBox->setVisible(false);
     }
+#endif
+
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
