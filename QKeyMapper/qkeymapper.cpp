@@ -4121,11 +4121,34 @@ void QKeyMapper::playStopSound()
 int QKeyMapper::installViGEmBusDriver()
 {
     QString operate_str = QString("runas");
-    QString executable_str = QString("ViGEmBusDriver\\nefconw.exe");
     QString remove_old_devnode1_argument_str = QString("--remove-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
     QString remove_old_devnode2_argument_str = QString("--remove-device-node --hardware-id Root\\ViGEmBus --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
     QString create_devnode_argument_str = QString("--create-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
-    QString install_argument_str = QString("--install-driver --inf-path \"ViGEmBusDriver\\ViGEmBus.inf\"");
+    QString executable_str;
+    QString install_argument_str;
+
+    if (QSysInfo::currentCpuArchitecture() == "x86_64")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Running on a 64-bit operating system ->" << " Use ViGEmBusDriver x64 Driver Files.";
+#endif
+        executable_str = QString("ViGEmBusDriver\\x64\\nefconw.exe");
+        install_argument_str = QString("--install-driver --inf-path \"ViGEmBusDriver\\x64\\ViGEmBus.inf\"");
+    }
+    else if (QSysInfo::currentCpuArchitecture() == "i386")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Running on a 32-bit operating system ->" << " Use ViGEmBusDriver x86 Driver Files.";
+#endif
+        executable_str = QString("ViGEmBusDriver\\x86\\nefconw.exe");
+        install_argument_str = QString("--install-driver --inf-path \"ViGEmBusDriver\\x86\\ViGEmBus.inf\"");
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Unknown operating system architecture!";
+#endif
+        return -1;
+    }
 
     std::wstring operate;
     std::wstring executable;
@@ -4212,9 +4235,32 @@ int QKeyMapper::installViGEmBusDriver()
 int QKeyMapper::uninstallViGEmBusDriver()
 {
     QString operate_str = QString("runas");
-    QString executable_str = QString("ViGEmBusDriver\\nefconw.exe");
     QString remove_devnode_argument_str = QString("--remove-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
-    QString uninstall_argument_str = QString("--uninstall-driver --inf-path \"ViGEmBusDriver\\ViGEmBus.inf\"");
+    QString executable_str;
+    QString uninstall_argument_str;
+
+    if (QSysInfo::currentCpuArchitecture() == "x86_64")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallViGEmBusDriver] Running on a 64-bit operating system ->" << " Use ViGEmBusDriver x64 Driver Files.";
+#endif
+        executable_str = QString("ViGEmBusDriver\\x64\\nefconw.exe");
+        uninstall_argument_str = QString("--uninstall-driver --inf-path \"ViGEmBusDriver\\x64\\ViGEmBus.inf\"");
+    }
+    else if (QSysInfo::currentCpuArchitecture() == "i386")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallViGEmBusDriver] Running on a 32-bit operating system ->" << " Use ViGEmBusDriver x86 Driver Files.";
+#endif
+        executable_str = QString("ViGEmBusDriver\\x86\\nefconw.exe");
+        uninstall_argument_str = QString("--uninstall-driver --inf-path \"ViGEmBusDriver\\x86\\ViGEmBus.inf\"");
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallViGEmBusDriver] Unknown operating system architecture!";
+#endif
+        return -1;
+    }
 
     std::wstring operate;
     std::wstring executable;
