@@ -120,6 +120,7 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
 static const int VJOY_KEYUP_WAITTIME = 20;
 static const quint8 VK_MOUSE2JOY_HOLD = 0x3A;
+static const quint8 VK_MOUSE2JOY_DIRECT = 0x3B;
 #endif
 
 static const quint8 VK_BLOCKED = 0x0F;
@@ -127,9 +128,8 @@ static const char *KEY_BLOCKED_STR = "BLOCKED";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
-static const char *VJOY_MOUSE2LS_HOLD_STR = "vJoy-Mouse2LS_Hold";
-static const char *VJOY_MOUSE2RS_HOLD_STR = "vJoy-Mouse2RS_Hold";
 static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
+static const char *MOUSE2VJOY_DIRECT_KEY_STR = "Mouse2vJoy-Direct";
 
 static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
@@ -546,6 +546,12 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 #endif
             return;
         }
+        else if ((GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2JOY_DIRECT is KEY_DOWN State.";
+#endif
+            return;
+        }
     }
     ViGEmClient_JoysticksReset();
 
@@ -791,7 +797,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     extenedkeyflag = 0;
                 }
                 input.type = INPUT_KEYBOARD;
-                if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode) {
+                if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode
+                    || VK_MOUSE2JOY_DIRECT == vkeycode.KeyCode) {
                     input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                 }
                 else {
@@ -929,7 +936,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         extenedkeyflag = 0;
                     }
                     input.type = INPUT_KEYBOARD;
-                    if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode) {
+                    if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode
+                        || VK_MOUSE2JOY_DIRECT == vkeycode.KeyCode) {
                         input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                     }
                     else {
@@ -1793,12 +1801,12 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
     SHORT newThumbY = static_cast<SHORT>(std::round(distance * std::sin(direction)));
 #endif
 
+#ifdef JOYSTICK_VERBOSE_LOG
+    qDebug("[ViGEmClient_CalculateThumbValue] ori_ThumbX[%d], ori_ThumbY[%d] -> Calculated ThumbX[%d], ThumbY[%d]", *ori_ThumbX, *ori_ThumbY, newThumbX, newThumbY);
+#endif
+
     *ori_ThumbX = newThumbX;
     *ori_ThumbY = newThumbY;
-
-#ifdef JOYSTICK_VERBOSE_LOG
-    qDebug("[ViGEmClient_CalculateThumbValue] Calculated ThumbX[%d], ThumbY[%d]", newThumbX, newThumbY);
-#endif
 }
 
 QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::ViGEmClient_checkMouse2JoystickEnableState()
@@ -1875,25 +1883,64 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     if (leftJoystickUpdate || rightJoystickUpdate) {
         int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
         int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
+        short leftX = 0;
+        short leftY = 0;
 
-        // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
-        #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        qreal x = -qExp((-1.0 / vJoy_X_Sensitivity) * qAbs(delta_x)) + 1.0;
-        qreal y = -qExp((-1.0 / vJoy_Y_Sensitivity) * qAbs(delta_y)) + 1.0;
-        #else
-        qreal x = -std::exp((-1.0 / vJoy_X_Sensitivity) * std::abs(delta_x)) + 1.0;
-        qreal y = -std::exp((-1.0 / vJoy_Y_Sensitivity) * std::abs(delta_y)) + 1.0;
-        #endif
-        // take the sign into account, expanding the range to (-1, 1)
-        x *= sign(delta_x);
-        y *= -sign(delta_y);
-        // XInput joystick coordinates are signed shorts, so convert to (-32767, 32767)
-        short leftX = (short)(32767.0 * x);
-        short leftY = (short)(32767.0 * y);
+        if ((GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) != 0) {
+            int direct_x;
+            int direct_y;
+            int x_sensitivity = vJoy_X_Sensitivity;
+            int y_sensitivity = vJoy_Y_Sensitivity;
+            float x_factor = 1000.0f / x_sensitivity;
+            float y_factor = 1000.0f / y_sensitivity;
+            if (leftJoystickUpdate) {
+                direct_x = s_ViGEmTarget_Report.sThumbLX;
+                direct_y = s_ViGEmTarget_Report.sThumbLY;
+            }
+            else {
+                direct_x = s_ViGEmTarget_Report.sThumbRX;
+                direct_y = s_ViGEmTarget_Report.sThumbRY;
+            }
+            direct_x += delta_x * x_factor;
+            direct_y -= delta_y * y_factor;
+
+            if (direct_x > 32767) {
+                direct_x = 32767;
+            }
+            else if (direct_x < -32767) {
+                direct_x = -32767;
+            }
+            if (direct_y > 32767) {
+                direct_y = 32767;
+            }
+            else if (direct_y < -32767) {
+                direct_y = -32767;
+            }
+
+            leftX = direct_x;
+            leftY = direct_y;
+        }
+        else {
+            // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
+            #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            qreal x = -qExp((-1.0 / vJoy_X_Sensitivity) * qAbs(delta_x)) + 1.0;
+            qreal y = -qExp((-1.0 / vJoy_Y_Sensitivity) * qAbs(delta_y)) + 1.0;
+            #else
+            qreal x = -std::exp((-1.0 / vJoy_X_Sensitivity) * std::abs(delta_x)) + 1.0;
+            qreal y = -std::exp((-1.0 / vJoy_Y_Sensitivity) * std::abs(delta_y)) + 1.0;
+            #endif
+            // take the sign into account, expanding the range to (-1, 1)
+            x *= sign(delta_x);
+            y *= -sign(delta_y);
+            // XInput joystick coordinates are signed shorts, so convert to (-32767, 32767)
+            leftX = (short)(32767.0 * x);
+            leftY = (short)(32767.0 * y);
+            // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" <<<
+        }
+
         ViGEmClient_CalculateThumbValue(&leftX, &leftY);
         short rightX = leftX;
         short rightY = leftY;
-        // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" <<<
 
         if (leftJoystickUpdate) {
             s_ViGEmTarget_Report.sThumbLX = leftX;
@@ -1915,7 +1962,10 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
         }
         Q_UNUSED(error);
-        m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+        if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) == 0
+            && (GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) == 0) {
+            m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+        }
 #ifdef DEBUG_LOGOUT_ON
         if (error != VIGEM_ERROR_NONE) {
             qDebug("[ViGEmClient_Mouse2JoystickUpdate] Mouse2Joystick Update ErrorCode: 0x%08X", error);
@@ -3049,14 +3099,34 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
 }
 
-void QKeyMapper_Worker::startMouse2vJoyResetTimer()
+void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr)
 {
+    Q_UNUSED(mouse2joy_keystr);
     m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
 }
 
-void QKeyMapper_Worker::stopMouse2vJoyResetTimer()
+void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr)
 {
     m_Mouse2vJoyResetTimer.stop();
+
+    if (mouse2joy_keystr == MOUSE2VJOY_DIRECT_KEY_STR) {
+        if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
+            if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Skip Mouse2vJoyReset for VK_MOUSE2JOY_HOLD is KEY_DOWN State.";
+#endif
+                return;
+            }
+        }
+
+        if ((GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) != 0) {
+            ViGEmClient_JoysticksReset();
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Reset the Joysticks to Release Center State.";
+#endif
+        }
+    }
 }
 
 QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableState()
@@ -3701,18 +3771,19 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
             if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
                 if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                    if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
+                    if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR
+                        || keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
                         if (keyupdown == KEY_UP) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_UP Start Mouse2vJoyResetTimer.";
 #endif
-                            emit QKeyMapper_Worker::getInstance()->startMouse2vJoyResetTimer_Signal();
+                            emit QKeyMapper_Worker::getInstance()->startMouse2vJoyResetTimer_Signal(keycodeString);
                         }
                         else {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_DOWN Stop Mouse2vJoyResetTimer.";
 #endif
-                            emit QKeyMapper_Worker::getInstance()->stopMouse2vJoyResetTimer_Signal();
+                            emit QKeyMapper_Worker::getInstance()->stopMouse2vJoyResetTimer_Signal(keycodeString);
                         }
                     }
                 }
@@ -4491,6 +4562,7 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
 {
     VirtualKeyCodeMap.insert        (KEY_BLOCKED_STR,           V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key Blocked)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2JOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
+    VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2JOY_DIRECT,  EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
 
     // US 104 Keyboard Main Area
     // Row 1

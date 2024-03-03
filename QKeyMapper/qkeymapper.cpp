@@ -169,6 +169,7 @@ static const char *KEY_BLOCKED_STR = "BLOCKED";
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
+static const char *MOUSE2VJOY_DIRECT_KEY_STR = "Mouse2vJoy-Direct";
 
 static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
@@ -4806,6 +4807,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
             << MOUSE2VJOY_HOLD_KEY_STR
+            << MOUSE2VJOY_DIRECT_KEY_STR
             << "vJoy-LS-Up"
             << "vJoy-LS-Down"
             << "vJoy-LS-Left"
@@ -4889,6 +4891,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne("Ctrl");
     orikeycodelist.removeOne("Alt");
     orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
+    orikeycodelist.removeOne(MOUSE2VJOY_DIRECT_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -5074,7 +5077,8 @@ void QKeyMapper::refreshKeyMappingDataTable()
             else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
                 disable_burstandlock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
+            else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
+                || keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)) {
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
@@ -5657,6 +5661,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if (false == already_exist) {
         if (findindex != -1){
             if (currentMapKeyText == KEY_BLOCKED_STR
+                || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
+                || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
                 || currentMapKeyText == VJOY_RT_BRAKE_STR
                 || currentMapKeyText == VJOY_LT_ACCEL_STR
@@ -5666,6 +5672,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else {
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
+                    || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
+                    || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_DIRECT_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
@@ -5677,6 +5685,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
         else {
             if (ui->nextarrowCheckBox->isChecked()) {
                 if (currentMapKeyText == KEY_BLOCKED_STR
+                    || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
+                    || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
                     || currentMapKeyText == VJOY_RT_BRAKE_STR
                     || currentMapKeyText == VJOY_LT_ACCEL_STR
@@ -5734,6 +5744,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
                     && currentMapKeyText != KEY_BLOCKED_STR
+                    && currentMapKeyText != MOUSE2VJOY_HOLD_KEY_STR
+                    && currentMapKeyText != MOUSE2VJOY_DIRECT_KEY_STR
                     && currentMapKeyText != VJOY_LT_BRAKE_STR
                     && currentMapKeyText != VJOY_RT_BRAKE_STR
                     && currentMapKeyText != VJOY_LT_ACCEL_STR

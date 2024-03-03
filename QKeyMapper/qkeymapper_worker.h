@@ -392,8 +392,8 @@ signals:
 #if 0
     void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);
 #endif
-    void startMouse2vJoyResetTimer_Signal(void);
-    void stopMouse2vJoyResetTimer_Signal(void);
+    void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
+    void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -425,8 +425,8 @@ public slots:
     void checkJoystickPOV(const QJoystickPOVEvent &e);
     void checkJoystickAxis(const QJoystickAxisEvent &e);
 
-    void startMouse2vJoyResetTimer();
-    void stopMouse2vJoyResetTimer();
+    void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
+    void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
     Joy2MouseState checkJoystick2MouseEnableState(void);
 
 private:
