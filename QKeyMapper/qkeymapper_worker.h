@@ -327,7 +327,7 @@ public slots:
     void onMouseMove(int x, int y);
     void onMouse2vJoyResetTimeout(void);
 #endif
-    void onJoy2MouseCycleTimeout(void);
+    void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
     void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
@@ -428,6 +428,7 @@ public slots:
     void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
     Joy2MouseState checkJoystick2MouseEnableState(void);
+    bool checkKey2MouseEnableState(void);
 
 private:
     void joystickLTRTButtonProc(const QJoystickAxisEvent &e);
@@ -437,6 +438,7 @@ private:
     void joystickRSVerticalProc(const QJoystickAxisEvent &e);
     int  joystickCalculateDelta(qreal axis_value, int Speed_Factor, bool checkJoystick);
     void joystick2MouseMoveProc(const Joystick_AxisState &axis_state);
+    void key2MouseMoveProc(void);
 
 public:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
@@ -539,6 +541,7 @@ public:
     static Mouse2vJoyState s_Mouse2vJoy_EnableState;
 #endif
 
+    static bool s_Key2Mouse_EnableState;
     static Joy2MouseState s_Joy2Mouse_EnableState;
     static Joystick_AxisState s_JoyAxisState;
 
@@ -559,7 +562,7 @@ private:
 #ifdef VIGEM_CLIENT_SUPPORT
     QTimer m_Mouse2vJoyResetTimer;
 #endif
-    QTimer m_Joy2MouseCycleTimer;
+    QTimer m_Key2MouseCycleTimer;
     QUdpSocket *m_UdpSocket;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;

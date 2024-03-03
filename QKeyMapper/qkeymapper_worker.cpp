@@ -62,7 +62,7 @@ static const qreal JOYSTICK2MOUSE_AXIS_PLUS_HIGH_THRESHOLD   = 0.75;
 static const int MOUSE_CURSOR_BOTTOMRIGHT_X = 65535;
 static const int MOUSE_CURSOR_BOTTOMRIGHT_Y = 65535;
 
-static const int JOY2MOUSE_CYCLECHECK_TIMEOUT = 2;
+static const int KEY2MOUSE_CYCLECHECK_TIMEOUT = 2;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 static const USHORT VIRTUALGAMPAD_VENDORID_X360     = 0x045E;
@@ -142,6 +142,12 @@ static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
+static const char *KEY2MOUSE_PREFIX     = "Key2Mouse-";
+static const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";
+static const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
+static const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
+static const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
+
 static const char *VIRTUAL_GAMEPAD_X360 = "X360";
 static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
 
@@ -214,6 +220,7 @@ QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 QKeyMapper_Worker::Mouse2vJoyState QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 #endif
+bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 
@@ -240,7 +247,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #ifdef VIGEM_CLIENT_SUPPORT
     m_Mouse2vJoyResetTimer(this),
 #endif
-    m_Joy2MouseCycleTimer(this),
+    m_Key2MouseCycleTimer(this),
     m_UdpSocket(Q_NULLPTR),
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap(),
@@ -289,8 +296,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::stopMouse2vJoyResetTimer_Signal, this, &QKeyMapper_Worker::stopMouse2vJoyResetTimer, Qt::QueuedConnection);
 #endif
 
-    m_Joy2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
-    QObject::connect(&m_Joy2MouseCycleTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onJoy2MouseCycleTimeout);
+    m_Key2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
+    QObject::connect(&m_Key2MouseCycleTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onKey2MouseCycleTimeout);
 
     /* Connect QJoysticks Signals */
     QJoysticks *instance = QJoysticks::getInstance();
@@ -560,9 +567,14 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 #endif
 }
 
-void QKeyMapper_Worker::onJoy2MouseCycleTimeout()
+void QKeyMapper_Worker::onKey2MouseCycleTimeout()
 {
-    joystick2MouseMoveProc(s_JoyAxisState);
+    if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE) {
+        joystick2MouseMoveProc(s_JoyAxisState);
+    }
+    else if (s_Key2Mouse_EnableState) {
+        key2MouseMoveProc();
+    }
 }
 #endif
 
@@ -2176,6 +2188,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Mouse2vJoy_EnableState = ViGEmClient_checkMouse2JoystickEnableState();
 #endif
 
+    s_Key2Mouse_EnableState = checkKey2MouseEnableState();
     s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -2227,6 +2240,15 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     // m_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
     // m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
     setWorkerJoystickCaptureStart();
+
+    s_JoyAxisState = Joystick_AxisState();
+    if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE || s_Key2Mouse_EnableState) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setWorkerKeyHook] Key2MouseCycleTimer Started.");
+#endif
+        m_Key2MouseCycleTimer.start(KEY2MOUSE_CYCLECHECK_TIMEOUT);
+    }
+
     startDataPortListener();
 //    setWorkerDInputKeyHook(hWnd);
 }
@@ -2262,8 +2284,16 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 //#endif
 //    }
 
+    s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     setWorkerJoystickCaptureStop();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[setWorkerKeyUnHook] Key2MouseCycleTimer Stopped.");
+#endif
+    m_Key2MouseCycleTimer.stop();
+    s_JoyAxisState = Joystick_AxisState();
+
     stopDataPortListener();
     //    setWorkerDInputKeyUnHook();
 
@@ -2302,26 +2332,11 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 void QKeyMapper_Worker::setWorkerJoystickCaptureStart(void)
 {
     m_JoystickCapture = true;
-
-    s_JoyAxisState = Joystick_AxisState();
-    if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("[setWorkerJoystickCaptureStart] Joy2MouseCycleTimer Started.");
-#endif
-        m_Joy2MouseCycleTimer.start(JOY2MOUSE_CYCLECHECK_TIMEOUT);
-    }
 }
 
 void QKeyMapper_Worker::setWorkerJoystickCaptureStop()
 {
     m_JoystickCapture = false;
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug("[setWorkerJoystickCaptureStop] Joy2MouseCycleTimer Stopped.");
-#endif
-
-    m_Joy2MouseCycleTimer.stop();
-    s_JoyAxisState = Joystick_AxisState();
 }
 
 #if 0
@@ -3158,6 +3173,42 @@ QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableSt
     return joy2mouse_enablestate;
 }
 
+bool QKeyMapper_Worker::checkKey2MouseEnableState()
+{
+    bool key2mouse_enablestate = false;
+    bool key2mouse_up = false;
+    bool key2mouse_down = false;
+    bool key2mouse_left = false;
+    bool key2mouse_right = false;
+
+    int findKey2Mouse_index = -1;
+    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_UP_STR);
+    if (findKey2Mouse_index >= 0){
+        key2mouse_up = true;
+    }
+
+    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_DOWN_STR);
+    if (findKey2Mouse_index >= 0){
+        key2mouse_down = true;
+    }
+
+    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_LEFT_STR);
+    if (findKey2Mouse_index >= 0){
+        key2mouse_left = true;
+    }
+
+    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_RIGHT_STR);
+    if (findKey2Mouse_index >= 0){
+        key2mouse_right = true;
+    }
+
+    if (key2mouse_up || key2mouse_down || key2mouse_left || key2mouse_right) {
+        key2mouse_enablestate = true;
+    }
+
+    return key2mouse_enablestate;
+}
+
 void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 {
     int keyupdown = KEY_INIT;
@@ -3601,6 +3652,44 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
     }
 }
 
+void QKeyMapper_Worker::key2MouseMoveProc()
+{
+    int delta_x = 0;
+    int delta_y = 0;
+    int Speed_Factor_X = QKeyMapper::getJoystick2MouseSpeedX();
+    int Speed_Factor_Y = QKeyMapper::getJoystick2MouseSpeedY();
+    int final_x = 0;
+    int final_y = 0;
+    QRegularExpression re_key2mouse("^Key2Mouse");
+    QStringList key2mousePressedKeys = pressedVirtualKeysList.filter(re_key2mouse);
+
+    if (key2mousePressedKeys.contains(KEY2MOUSE_LEFT_STR)) {
+        final_x -= Speed_Factor_X;
+    }
+    if (key2mousePressedKeys.contains(KEY2MOUSE_RIGHT_STR)) {
+        final_x += Speed_Factor_X;
+    }
+    if (key2mousePressedKeys.contains(KEY2MOUSE_UP_STR)) {
+        final_y -= Speed_Factor_Y;
+    }
+    if (key2mousePressedKeys.contains(KEY2MOUSE_DOWN_STR)) {
+        final_y += Speed_Factor_Y;
+    }
+
+    delta_x += final_x;
+    delta_y += final_y;
+
+    if (delta_x != 0 || delta_y != 0) {
+#ifdef MOUSE_VERBOSE_LOG
+        qDebug().nospace().noquote() << "[key2MouseMoveProc]"   << "key2mousePressedKeys = " << key2mousePressedKeys \
+                                                                << "Speed_Factor_X = " << Speed_Factor_X << ", Speed_Factor_Y = " << Speed_Factor_Y \
+                                                                << "final_x = " << final_x << ", final_y = " << final_y \
+                                                                << "-> delta_x = " << delta_x << ", delta_y = " << delta_y;
+#endif
+        sendMouseMove(delta_x, delta_y);
+    }
+}
+
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 #ifdef HOOKSTART_ONSTARTUP
@@ -3709,6 +3798,17 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         }
                         else {
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_UP Blocked ->" << original_key;
+                        }
+#endif
+                        returnFlag = true;
+                    }
+                    else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                        if (KEY_DOWN == keyupdown){
+                            qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << mappingKeyList.constFirst();
+                        }
+                        else {
+                            qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << mappingKeyList.constFirst();
                         }
 #endif
                         returnFlag = true;
@@ -3929,6 +4029,17 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #endif
                             returnFlag = true;
                         }
+                        else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                            if (KEY_DOWN == keyupdown){
+                                qDebug() << "[LowLevelMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << mappingKeyList.constFirst();
+                            }
+                            else {
+                                qDebug() << "[LowLevelMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << mappingKeyList.constFirst();
+                            }
+#endif
+                            returnFlag = true;
+                        }
                         else {
                             if (KEY_DOWN == keyupdown){
                                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
@@ -4018,6 +4129,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                     qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_STR_WHEEL_DOWN;
                                 }
 #endif
+                                returnFlag = true;
+                            }
+                            else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
                                 returnFlag = true;
                             }
                             else {
@@ -4561,6 +4675,10 @@ HRESULT QKeyMapper_Worker::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()
 {
     VirtualKeyCodeMap.insert        (KEY_BLOCKED_STR,           V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key Blocked)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_UP_STR,          V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Up)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_DOWN_STR,        V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Down)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_LEFT_STR,        V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Left)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Right)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2JOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2JOY_DIRECT,  EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
 

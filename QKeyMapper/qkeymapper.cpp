@@ -182,6 +182,12 @@ static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
+static const char *KEY2MOUSE_PREFIX     = "Key2Mouse-";
+static const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";
+static const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
+static const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
+static const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
+
 static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
@@ -4803,6 +4809,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Func-Logoff"
             << "Func-Sleep"
             << "Func-Hibernate"
+            << KEY2MOUSE_UP_STR
+            << KEY2MOUSE_DOWN_STR
+            << KEY2MOUSE_LEFT_STR
+            << KEY2MOUSE_RIGHT_STR
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
@@ -4890,7 +4900,11 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne("Shift");
     orikeycodelist.removeOne("Ctrl");
     orikeycodelist.removeOne("Alt");
-    orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
+    orikeycodelist.removeOne("Alt");
+    orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
+    orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
+    orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
+    orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
     orikeycodelist.removeOne(MOUSE2VJOY_DIRECT_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
@@ -5075,6 +5089,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
+                disable_burstandlock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
@@ -5661,6 +5678,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if (false == already_exist) {
         if (findindex != -1){
             if (currentMapKeyText == KEY_BLOCKED_STR
+                || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                 || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
@@ -5672,6 +5690,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else {
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
+                    || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_DIRECT_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
@@ -5685,6 +5704,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         else {
             if (ui->nextarrowCheckBox->isChecked()) {
                 if (currentMapKeyText == KEY_BLOCKED_STR
+                    || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                     || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
@@ -5744,6 +5764,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
                     && currentMapKeyText != KEY_BLOCKED_STR
+                    && currentMapKeyText.startsWith(KEY2MOUSE_PREFIX) == false
                     && currentMapKeyText != MOUSE2VJOY_HOLD_KEY_STR
                     && currentMapKeyText != MOUSE2VJOY_DIRECT_KEY_STR
                     && currentMapKeyText != VJOY_LT_BRAKE_STR
