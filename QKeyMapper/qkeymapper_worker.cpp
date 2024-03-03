@@ -142,6 +142,11 @@ static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
 static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
+static const quint8 VK_KEY2MOUSE_UP     = 0x8A;
+static const quint8 VK_KEY2MOUSE_DOWN   = 0x8B;
+static const quint8 VK_KEY2MOUSE_LEFT   = 0x8C;
+static const quint8 VK_KEY2MOUSE_RIGHT  = 0x8D;
+
 static const char *KEY2MOUSE_PREFIX     = "Key2Mouse-";
 static const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";
 static const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
@@ -3802,18 +3807,18 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #endif
                         returnFlag = true;
                     }
-                    else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+                    else {
 #ifdef DEBUG_LOGOUT_ON
-                        if (KEY_DOWN == keyupdown){
-                            qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << mappingKeyList.constFirst();
-                        }
-                        else {
-                            qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << mappingKeyList.constFirst();
+                        if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+                            if (KEY_DOWN == keyupdown){
+                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << mappingKeyList.constFirst();
+                            }
+                            else {
+                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << mappingKeyList.constFirst();
+                            }
                         }
 #endif
-                        returnFlag = true;
-                    }
-                    else {
+
                         if (KEY_DOWN == keyupdown){
                             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             returnFlag = true;
@@ -3868,6 +3873,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
+            if (s_Key2Mouse_EnableState && keycodeString.startsWith(KEY2MOUSE_PREFIX)) {
+                returnFlag = true;
+            }
 
             if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
                 if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
@@ -4675,10 +4683,10 @@ HRESULT QKeyMapper_Worker::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()
 {
     VirtualKeyCodeMap.insert        (KEY_BLOCKED_STR,           V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key Blocked)
-    VirtualKeyCodeMap.insert        (KEY2MOUSE_UP_STR,          V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Up)
-    VirtualKeyCodeMap.insert        (KEY2MOUSE_DOWN_STR,        V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Down)
-    VirtualKeyCodeMap.insert        (KEY2MOUSE_LEFT_STR,        V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Left)
-    VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key2Mouse-Right)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_UP_STR,          V_KEYCODE(VK_KEY2MOUSE_UP,      EXTENED_FLAG_TRUE));   // 0x8A (Key2Mouse-Up)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_DOWN_STR,        V_KEYCODE(VK_KEY2MOUSE_DOWN,    EXTENED_FLAG_TRUE));   // 0x8B (Key2Mouse-Down)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_LEFT_STR,        V_KEYCODE(VK_KEY2MOUSE_LEFT,    EXTENED_FLAG_TRUE));   // 0x8C (Key2Mouse-Left)
+    VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_KEY2MOUSE_RIGHT,   EXTENED_FLAG_TRUE));   // 0x8D (Key2Mouse-Right)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2JOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2JOY_DIRECT,  EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
 
