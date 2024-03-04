@@ -170,6 +170,10 @@ bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 #ifdef HOOKSTART_ONSTARTUP
 QAtomicBool QKeyMapper_Worker::s_AtomicHookProcStart = QAtomicBool();
 #endif
+QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Right = QAtomicBool();
 bool QKeyMapper_Worker::s_forceSendVirtualKey = false;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
@@ -3665,30 +3669,38 @@ void QKeyMapper_Worker::key2MouseMoveProc()
     int Speed_Factor_Y = QKeyMapper::getJoystick2MouseSpeedY();
     int final_x = 0;
     int final_y = 0;
-    QRegularExpression re_key2mouse("^Key2Mouse");
-    QStringList key2mousePressedKeys = pressedVirtualKeysList.filter(re_key2mouse);
+    bool key2mouse_up = s_Key2Mouse_Up;
+    bool key2mouse_down = s_Key2Mouse_Down;
+    bool key2mouse_left = s_Key2Mouse_Left;
+    bool key2mouse_right = s_Key2Mouse_Right;
+    QStringList key2mousePressedKeys;
 
-    if (key2mousePressedKeys.contains(KEY2MOUSE_LEFT_STR)) {
-        final_x -= Speed_Factor_X;
-    }
-    if (key2mousePressedKeys.contains(KEY2MOUSE_RIGHT_STR)) {
-        final_x += Speed_Factor_X;
-    }
-    if (key2mousePressedKeys.contains(KEY2MOUSE_UP_STR)) {
+    if (key2mouse_up) {
         final_y -= Speed_Factor_Y;
+        key2mousePressedKeys.append(KEY2MOUSE_UP_STR);
     }
-    if (key2mousePressedKeys.contains(KEY2MOUSE_DOWN_STR)) {
+    if (key2mouse_down) {
         final_y += Speed_Factor_Y;
+        key2mousePressedKeys.append(KEY2MOUSE_DOWN_STR);
     }
+    if (key2mouse_left) {
+        final_x -= Speed_Factor_X;
+        key2mousePressedKeys.append(KEY2MOUSE_LEFT_STR);
+    }
+    if (key2mouse_right) {
+        final_x += Speed_Factor_X;
+        key2mousePressedKeys.append(KEY2MOUSE_RIGHT_STR);
+    }
+    Q_UNUSED(key2mousePressedKeys);
 
     delta_x += final_x;
     delta_y += final_y;
 
     if (delta_x != 0 || delta_y != 0) {
 #ifdef MOUSE_VERBOSE_LOG
-        qDebug().nospace().noquote() << "[key2MouseMoveProc]"   << "key2mousePressedKeys = " << key2mousePressedKeys \
-                                                                << "Speed_Factor_X = " << Speed_Factor_X << ", Speed_Factor_Y = " << Speed_Factor_Y \
-                                                                << "final_x = " << final_x << ", final_y = " << final_y \
+        qDebug().nospace().noquote() << "[key2MouseMoveProc]"   << "Key2MousePressedKeys = " << key2mousePressedKeys \
+                                                                << ", Speed_Factor_X = " << Speed_Factor_X << ", Speed_Factor_Y = " << Speed_Factor_Y \
+                                                                << ", final_x = " << final_x << ", final_y = " << final_y \
                                                                 << "-> delta_x = " << delta_x << ", delta_y = " << delta_y;
 #endif
         sendMouseMove(delta_x, delta_y);
@@ -3796,7 +3808,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (findindex >=0){
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                    if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
+                    QString firstmappingkey = mappingKeyList.constFirst();
+                    int mappingkeylist_size = mappingKeyList.size();
+                    if (firstmappingkey == KEY_BLOCKED_STR && mappingkeylist_size == 1) {
 #ifdef DEBUG_LOGOUT_ON
                         if (KEY_DOWN == keyupdown){
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_DOWN Blocked ->" << original_key;
@@ -3808,16 +3822,18 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         returnFlag = true;
                     }
                     else {
-#ifdef DEBUG_LOGOUT_ON
-                        if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+                        if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
                             if (KEY_DOWN == keyupdown){
-                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << mappingKeyList.constFirst();
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << firstmappingkey;
+#endif
                             }
                             else {
-                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << mappingKeyList.constFirst();
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << firstmappingkey;
+#endif
                             }
                         }
-#endif
 
                         if (KEY_DOWN == keyupdown){
                             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
@@ -3854,6 +3870,19 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             if (KEY_DOWN == keyupdown){
                 if (false == pressedVirtualKeysList.contains(keycodeString)){
                     pressedVirtualKeysList.append(keycodeString);
+
+                    if (keycodeString == KEY2MOUSE_UP_STR) {
+                        s_Key2Mouse_Up = true;
+                    }
+                    else if (keycodeString == KEY2MOUSE_DOWN_STR) {
+                        s_Key2Mouse_Down = true;
+                    }
+                    else if (keycodeString == KEY2MOUSE_LEFT_STR) {
+                        s_Key2Mouse_Left = true;
+                    }
+                    else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
+                        s_Key2Mouse_Right = true;
+                    }
                 }
             }
             /* KEY_UP == keyupdown */
@@ -3869,6 +3898,19 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
 
                 pressedVirtualKeysList.removeAll(keycodeString);
+
+                if (keycodeString == KEY2MOUSE_UP_STR) {
+                    s_Key2Mouse_Up = false;
+                }
+                else if (keycodeString == KEY2MOUSE_DOWN_STR) {
+                    s_Key2Mouse_Down = false;
+                }
+                else if (keycodeString == KEY2MOUSE_LEFT_STR) {
+                    s_Key2Mouse_Left = false;
+                }
+                else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
+                    s_Key2Mouse_Right = false;
+                }
             }
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;

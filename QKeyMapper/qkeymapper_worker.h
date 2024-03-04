@@ -485,6 +485,10 @@ public:
 #ifdef HOOKSTART_ONSTARTUP
     static QAtomicBool s_AtomicHookProcStart;
 #endif
+    static QAtomicBool s_Key2Mouse_Up;
+    static QAtomicBool s_Key2Mouse_Down;
+    static QAtomicBool s_Key2Mouse_Left;
+    static QAtomicBool s_Key2Mouse_Right;
     static bool s_forceSendVirtualKey;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
