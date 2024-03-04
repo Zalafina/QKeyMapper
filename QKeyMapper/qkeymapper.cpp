@@ -69,6 +69,7 @@ static const double GRIP_THRESHOLD_SINGLE_STEP = 0.01;
 
 static const int MOUSE_SPEED_MIN = 1;
 static const int MOUSE_SPEED_MAX = 15;
+static const int MOUSE_SPEED_DEFAULT = 3;
 
 static const int UI_SCALE_NORMAL = 0;
 static const int UI_SCALE_1K_PERCENT_100 = 1;
@@ -128,6 +129,8 @@ static const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 static const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 static const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 static const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
+static const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
+static const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 #ifdef VIGEM_CLIENT_SUPPORT
 static const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
 static const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
@@ -2519,6 +2522,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         int burstpressTime = ui->burstpressSpinBox->value();
         int burstreleaseTime = ui->burstreleaseSpinBox->value();
+        int key2mouse_XSpeed = ui->mouseXSpeedSpinBox->value();
+        int key2mouse_YSpeed = ui->mouseYSpeedSpinBox->value();
 #ifdef VIGEM_CLIENT_SUPPORT
         int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
         int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
@@ -2699,6 +2704,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
+            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
+            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
 #ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
@@ -2713,6 +2720,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
+            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
+            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
 #ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
@@ -3483,6 +3492,28 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     else {
         ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+KEY2MOUSE_X_SPEED)){
+        int mouseXSpeed = settingFile.value(settingSelectStr+KEY2MOUSE_X_SPEED).toInt();
+        ui->mouseXSpeedSpinBox->setValue(mouseXSpeed);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Mouse X Speed =" << mouseXSpeed;
+#endif
+    }
+    else {
+        ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+KEY2MOUSE_Y_SPEED)){
+        int mouseYSpeed = settingFile.value(settingSelectStr+KEY2MOUSE_Y_SPEED).toInt();
+        ui->mouseYSpeedSpinBox->setValue(mouseYSpeed);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Mouse Y Speed =" << mouseYSpeed;
+#endif
+    }
+    else {
+        ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
     }
 
 #ifdef VIGEM_CLIENT_SUPPORT
