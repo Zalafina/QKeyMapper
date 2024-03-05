@@ -681,10 +681,9 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
         if (resultLength){
+            windowTitle = QString::fromWCharArray(titleBuffer);
             QString ProcessPath;
             getProcessInfoFromHWND( hwnd, ProcessPath);
-
-            windowTitle = QString::fromWCharArray(titleBuffer);
 
             if (false == windowTitle.isEmpty() && false == ProcessPath.isEmpty()){
                 QFileInfo fileinfo(ProcessPath);
@@ -1046,7 +1045,6 @@ void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
         if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
         {
 #ifdef DEBUG_LOGOUT_ON
-            processPathStr = QString::fromWCharArray(szProcessPath);
             qDebug().nospace().noquote() << "[getProcessInfoFromPID]"<< " GetProcessImageFileName failure(" << processPathStr << ")";
 #endif
             CloseHandle(hProcess);
@@ -1055,8 +1053,8 @@ void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
 
         if(!DosPathToNtPath(szImagePath, szProcessPath))
         {
-#ifdef DEBUG_LOGOUT_ON
             processPathStr = QString::fromWCharArray(szProcessPath);
+#ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[getProcessInfoFromPID]"<< " DosPathToNtPath failure(" << processPathStr << ")";
 #endif
             CloseHandle(hProcess);
@@ -1103,16 +1101,22 @@ void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
     {
         if(!GetProcessImageFileName(hProcess, szImagePath, MAX_PATH))
         {
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug().nospace().noquote() << "[getProcessInfoFromHWND]"<< " GetProcessImageFileName failure(" << processPathStr << ")";
+// #endif
             CloseHandle(hProcess);
             return;
         }
 
         if(!DosPathToNtPath(szImagePath, szProcessPath))
         {
+            processPathStr = QString::fromWCharArray(szProcessPath);
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug().nospace().noquote() << "[getProcessInfoFromHWND]"<< " DosPathToNtPath failure(" << processPathStr << ")";
+// #endif
             CloseHandle(hProcess);
             return;
         }
-
         processPathStr = QString::fromWCharArray(szProcessPath);
     }
     CloseHandle( hProcess );
@@ -1243,19 +1247,13 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                     if (TRUE == isVisibleWindow) {
                         static_ProcessInfoList.append(ProcessInfo);
                     }
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[EnumWindowsProc] Windows version Win10 and above.";
-#endif
                 }
                 else {
                     static_ProcessInfoList.append(ProcessInfo);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[EnumWindowsProc] Windows version lower than Win10 (Win8.1/Win8/Win7...)";
-#endif
                 }
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << "), " << "IsAltTabWindow -> " << (isVisibleWindow == TRUE);
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << "), " << "IsAltTabWindow = " << (isVisibleWindow == TRUE) << ", Win10Above = " << isWin10Above;
 #endif
             }
             else{
