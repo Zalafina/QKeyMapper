@@ -1374,6 +1374,20 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     if(!pszDosPath || !pszNtPath )
         return FALSE;
 
+    // Check for network paths and handle them separately
+    if (_wcsnicmp(pszDosPath, L"\\Device\\Mup\\", 12) == 0)
+    {
+        lstrcpy(pszNtPath, L"\\\\");
+        lstrcat(pszNtPath, pszDosPath + wcslen(L"\\Device\\Mup\\"));
+        return TRUE;
+    }
+    else if (_wcsnicmp(pszDosPath, L"\\Device\\LanmanRedirector\\", 25) == 0)
+    {
+        lstrcpy(pszNtPath, L"\\\\");
+        lstrcat(pszNtPath, pszDosPath + wcslen(L"\\Device\\LanmanRedirector\\"));
+        return TRUE;
+    }
+
     if(GetLogicalDriveStrings(sizeof(szDriveStr), szDriveStr))
     {
         for(i = 0; szDriveStr[i]; i += 4)
