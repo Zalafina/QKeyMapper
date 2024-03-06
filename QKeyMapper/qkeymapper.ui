@@ -185,9 +185,9 @@
   <widget class="QLabel" name="orikeyLabel">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>500</x>
      <y>380</y>
-     <width>61</width>
+     <width>81</width>
      <height>22</height>
     </rect>
    </property>
@@ -656,9 +656,9 @@
   <widget class="QLabel" name="orikeySeqLabel">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>500</x>
      <y>410</y>
-     <width>61</width>
+     <width>81</width>
      <height>22</height>
     </rect>
    </property>
