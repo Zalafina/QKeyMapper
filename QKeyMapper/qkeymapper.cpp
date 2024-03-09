@@ -95,6 +95,8 @@ static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
 static const char *PROGRAM_NAME = "QKeyMapper";
 
+static const char *PROCESS_UNKNOWN = "QKeyMapperUnknown";
+
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
 static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
@@ -685,7 +687,16 @@ void QKeyMapper::cycleCheckProcessProc(void)
             QString ProcessPath;
             getProcessInfoFromHWND( hwnd, ProcessPath);
 
-            if (false == windowTitle.isEmpty() && false == ProcessPath.isEmpty()){
+            if (ProcessPath.isEmpty()) {
+                if (windowTitle == "Parsec") {
+                    ProcessPath = "parsecd.exe";
+                }
+                else {
+                    ProcessPath = PROCESS_UNKNOWN;
+                }
+            }
+
+            if (false == windowTitle.isEmpty()){
                 QFileInfo fileinfo(ProcessPath);
                 filename = fileinfo.fileName();
             }
@@ -1065,7 +1076,7 @@ void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[getProcessInfoFromPID]" << "OpenProcess Failure:" << hProcess << ", LastError:" << GetLastError();
+        qDebug() << "[getProcessInfoFromPID]" << "OpenProcess Failure:" << processID << ", LastError:" << GetLastError();
 #endif
     }
     CloseHandle( hProcess );
@@ -1197,14 +1208,21 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     TCHAR titleBuffer[MAX_PATH] = TEXT("");
     memset(titleBuffer, 0x00, sizeof(titleBuffer));
 
-    getProcessInfoFromPID(dwProcessId, ProcessPath);
     int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
     if (resultLength){
         WindowText = QString::fromWCharArray(titleBuffer);
+        getProcessInfoFromPID(dwProcessId, ProcessPath);
 
-        if ((false == WindowText.isEmpty())
-                && (false == ProcessPath.isEmpty())
-                ){
+        if (ProcessPath.isEmpty()) {
+            if (WindowText == "Parsec") {
+                ProcessPath = "parsecd.exe";
+            }
+            else {
+                ProcessPath = PROCESS_UNKNOWN;
+            }
+        }
+
+        if (false == WindowText.isEmpty()){
             MAP_PROCESSINFO ProcessInfo;
             QFileInfo fileinfo(ProcessPath);
             filename = fileinfo.fileName();
@@ -3003,7 +3021,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
-        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive) || group.contains(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
+        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
+            || group.contains(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
+            || group.startsWith(PROCESS_UNKNOWN+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
             QString tempSettingSelectStr = group + "/";
             if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
                     && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
@@ -5597,6 +5617,10 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         DWORD dwProcessId = pidStr.toULong();
 
         getProcessInfoFromPID(dwProcessId, ProcessPath);
+
+        if (ProcessPath.isEmpty()) {
+            ProcessPath = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
+        }
 
         QIcon fileicon = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->icon();
         setMapProcessInfo(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text(),
