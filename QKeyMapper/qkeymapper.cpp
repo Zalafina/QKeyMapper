@@ -193,7 +193,15 @@ static const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
 static const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
 static const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
 
-static const char *MOUSE_STR_WHEEL_UP = "Mouse-WheelUp";
+static const char *FUNC_PREFIX          = "Func-";
+static const char *FUNC_LOCKSCREEN      = "Func-LockScreen";
+static const char *FUNC_SHUTDOWN        = "Func-Shutdown";
+static const char *FUNC_REBOOT          = "Func-Reboot";
+static const char *FUNC_LOGOFF          = "Func-Logoff";
+static const char *FUNC_SLEEP           = "Func-Sleep";
+static const char *FUNC_HIBERNATE       = "Func-Hibernate";
+
+static const char *MOUSE_STR_WHEEL_UP   = "Mouse-WheelUp";
 static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
 static const char *VIRTUAL_GAMEPAD_X360 = "X360";
@@ -4866,12 +4874,12 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Browser Search"
             << "Browser Favorites"
             << "Browser Home"
-            << "Func-LockScreen"
-            << "Func-Shutdown"
-            << "Func-Reboot"
-            << "Func-Logoff"
-            << "Func-Sleep"
-            << "Func-Hibernate"
+            << FUNC_LOCKSCREEN
+            << FUNC_SHUTDOWN
+            << FUNC_REBOOT
+            << FUNC_LOGOFF
+            << FUNC_SLEEP
+            << FUNC_HIBERNATE
             << KEY2MOUSE_UP_STR
             << KEY2MOUSE_DOWN_STR
             << KEY2MOUSE_LEFT_STR
@@ -4997,7 +5005,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
     QRegularExpression re_Func("^Func-");
     QStringList FuncStrlist = orikeycodelist.filter(re_Func);
-    // Remove Strings start with "Func-" from mapkeyComboBox
+    // Remove Strings start with "Func-" from orikeyComboBox
     for (const QString &funcstr : qAsConst(FuncStrlist)){
         orikeycodelist.removeOne(funcstr);
     }
@@ -5156,6 +5164,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
+                disable_burstandlock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(FUNC_PREFIX)) {
                 disable_burstandlock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
@@ -5747,6 +5758,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (findindex != -1){
             if (currentMapKeyText == KEY_BLOCKED_STR
                 || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
+                || currentMapKeyText.startsWith(FUNC_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                 || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
@@ -5759,6 +5771,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 MAP_KEYDATA keymapdata = KeyMappingDataList.at(findindex);
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
                     || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
+                    || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_DIRECT_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
@@ -5773,6 +5786,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             if (ui->nextarrowCheckBox->isChecked()) {
                 if (currentMapKeyText == KEY_BLOCKED_STR
                     || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
+                    || currentMapKeyText.startsWith(FUNC_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                     || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
@@ -5833,6 +5847,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (waitTime > 0
                     && currentMapKeyText != KEY_BLOCKED_STR
                     && currentMapKeyText.startsWith(KEY2MOUSE_PREFIX) == false
+                    && currentMapKeyText.startsWith(FUNC_PREFIX) == false
                     && currentMapKeyText != MOUSE2VJOY_HOLD_KEY_STR
                     && currentMapKeyText != MOUSE2VJOY_DIRECT_KEY_STR
                     && currentMapKeyText != VJOY_LT_BRAKE_STR
