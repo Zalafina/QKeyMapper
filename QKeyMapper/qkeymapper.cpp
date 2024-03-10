@@ -4968,6 +4968,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
+    orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
     orikeycodelist.removeOne(MOUSE2VJOY_DIRECT_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
