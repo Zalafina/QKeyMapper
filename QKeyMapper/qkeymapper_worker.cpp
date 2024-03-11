@@ -3266,7 +3266,6 @@ bool QKeyMapper_Worker::systemShutdownReboot(const QString &func_keystring)
     if (!ExitWindowsEx(flags | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
         return false;
     }
-#endif
 
     return true;
 }
