@@ -30,6 +30,7 @@
     * 删除"禁用Win键"勾选框，现在可以通过映射按键中选择"BLOCKED"来禁用任意按键。
     * 为鼠标控制虚拟游戏手柄左/右摇杆的功能(Mouse2Joystick)添加了两个可映射的控制按键，Mouse2vJoy-Hold(按下后当前的摇杆偏移保持不再变化，按键抬起后摇杆偏移归0)，Mouse2vJoy-Direct(按下后摇杆偏移跟随鼠标移动方向变化，按键抬起后摇杆偏移归0)。
     * 添加鼠标键功能，可以通过映射按键列表中的"Key2Mouse-"前缀的按键控制鼠标指针移动，同样通过"X轴速度"和"Y轴速度"来控制鼠标指针移动速度，速度1~15，1最慢。
+    * 由于权限原因无法读取进程可执行文件名称的情况进程名统一显示为QKeyMapperUnknown
 
 #### ※ 注意: v1.3.6(Build 20240223)对部分按键名称进行了更改(按键名称变更列表可参考[KeyNameChanged wiki页面](https://github.com/Zalafina/QKeyMapper/wiki/KeyNameChanged))，可能出现无法加载旧版本配置文件的情况，建议更新此版本前备份保存可执行文件路径下的 keymapdata.ini 配置文件。可以根据新Release版本ZIP压缩包中的 CombinationSupportKeys.txt 文件中的按键名称编辑修改 keymapdata.ini 配置文件中原来的按键名称来继续使用旧配置文件。
 * v1.3.6(Build 20240131)
