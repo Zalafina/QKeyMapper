@@ -299,6 +299,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::sendInputKeys_Signal, this, &QKeyMapper_Worker::onSendInputKeys, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::doFunctionMappingProc_Signal, this, &QKeyMapper_Worker::doFunctionMappingProc, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
@@ -3226,6 +3227,52 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState()
     return key2mouse_enablestate;
 }
 
+void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[doFunctionMappingProc]" << "Function KeyString ->" << func_keystring;
+#endif
+
+    if (func_keystring == FUNC_LOCKSCREEN) {
+        if( !LockWorkStation() ) {
+            qDebug() << "[doFunctionMappingProc]" << "LockWorkStation Failed with ->" << GetLastError();
+        }
+        else {
+            qDebug() << "[doFunctionMappingProc]" << "LockWorkStation Success.";
+        }
+    }
+    else if (func_keystring == FUNC_SHUTDOWN) {
+        if (!ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCE, SHTDN_REASON_FLAG_PLANNED)) {
+            qDebug() << "[doFunctionMappingProc]" << "SystemShutdown Failed with ->" << GetLastError();
+        }
+        else {
+            qDebug() << "[doFunctionMappingProc]" << "SystemShutdown Success.";
+        }
+    }
+    else if (func_keystring == FUNC_REBOOT) {
+        if (!ExitWindowsEx(EWX_LOGOFF | EWX_FORCE, SHTDN_REASON_FLAG_PLANNED)) {
+            qDebug() << "[doFunctionMappingProc]" << "System Logoff Failed with ->" << GetLastError();
+        }
+        else {
+            qDebug() << "[doFunctionMappingProc]" << "System Logoff Success.";
+        }
+    }
+    else if (func_keystring == FUNC_LOGOFF) {
+        if (!ExitWindowsEx(EWX_REBOOT | EWX_FORCE, SHTDN_REASON_FLAG_PLANNED)) {
+            qDebug() << "[doFunctionMappingProc]" << "System Reboot Failed with ->" << GetLastError();
+        }
+        else {
+            qDebug() << "[doFunctionMappingProc]" << "System Reboot Success.";
+        }
+    }
+    else if (func_keystring == FUNC_SLEEP) {
+
+    }
+    else if (func_keystring == FUNC_HIBERNATE) {
+
+    }
+}
+
 void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 {
     int keyupdown = KEY_INIT;
@@ -3838,6 +3885,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             qDebug() << "[LowLevelKeyboardHookProc]" << "Function KEY_UP ->" << firstmappingkey;
                         }
 #endif
+                        if (KEY_DOWN == keyupdown){
+                            emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
+                        }
+
                         returnFlag = true;
                     }
                     else {
@@ -4127,6 +4178,21 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                 qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Button Up Blocked ->" << original_key;
                             }
 #endif
+                            returnFlag = true;
+                        }
+                        else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                            if (KEY_DOWN == keyupdown){
+                                qDebug() << "[LowLevelMouseHookProc]" << "Function KEY_DOWN ->" << firstmappingkey;
+                            }
+                            else {
+                                qDebug() << "[LowLevelMouseHookProc]" << "Function KEY_UP ->" << firstmappingkey;
+                            }
+#endif
+                            if (KEY_DOWN == keyupdown){
+                                emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
+                            }
+
                             returnFlag = true;
                         }
                         else {

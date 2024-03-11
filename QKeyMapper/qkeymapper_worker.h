@@ -394,6 +394,7 @@ signals:
 #endif
     void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
     void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
+    void doFunctionMappingProc_Signal(const QString &func_keystring);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -429,6 +430,7 @@ public slots:
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
     Joy2MouseState checkJoystick2MouseEnableState(void);
     bool checkKey2MouseEnableState(void);
+    void doFunctionMappingProc(const QString &func_keystring);
 
 private:
     void joystickLTRTButtonProc(const QJoystickAxisEvent &e);
