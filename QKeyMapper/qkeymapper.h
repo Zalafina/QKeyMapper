@@ -35,6 +35,7 @@
 #include <tchar.h>
 #include <string.h>
 #include <dwmapi.h>
+#include <Shlobj.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>

@@ -194,6 +194,7 @@ static const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
 static const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
 
 static const char *FUNC_PREFIX          = "Func-";
+static const char *FUNC_REFRESH         = "Func-Refresh";
 static const char *FUNC_LOCKSCREEN      = "Func-LockScreen";
 static const char *FUNC_SHUTDOWN        = "Func-Shutdown";
 static const char *FUNC_REBOOT          = "Func-Reboot";
@@ -4874,6 +4875,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Browser Search"
             << "Browser Favorites"
             << "Browser Home"
+            << FUNC_REFRESH
             << FUNC_LOCKSCREEN
             << FUNC_SHUTDOWN
             << FUNC_REBOOT
