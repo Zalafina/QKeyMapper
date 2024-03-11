@@ -98,6 +98,7 @@ LIBS        += WinMM.Lib
 LIBS        += dwmapi.lib
 LIBS        += Version.Lib
 LIBS        += SDL2.lib
+LIBS        += AdvAPI32.Lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
 }
@@ -122,9 +123,9 @@ contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
         ViGEm\include\ViGEm\Util.h
 }
 
-contains( DEFINES, ADJUST_PRIVILEGES ) {
-    LIBS    += AdvAPI32.Lib
-}
+# contains( DEFINES, ADJUST_PRIVILEGES ) {
+#     LIBS    += AdvAPI32.Lib
+# }
 
 
 # UAC for Administrator

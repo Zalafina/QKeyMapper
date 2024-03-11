@@ -430,6 +430,7 @@ public slots:
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
     Joy2MouseState checkJoystick2MouseEnableState(void);
     bool checkKey2MouseEnableState(void);
+    bool systemShutdownReboot(const QString &func_keystring);
     void doFunctionMappingProc(const QString &func_keystring);
 
 private:
