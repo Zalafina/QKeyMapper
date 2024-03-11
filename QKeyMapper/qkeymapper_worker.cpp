@@ -3242,7 +3242,7 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         }
     }
     else if (func_keystring == FUNC_SHUTDOWN) {
-        if (!ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCE, SHTDN_REASON_FLAG_PLANNED)) {
+        if (!ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
             qDebug() << "[doFunctionMappingProc]" << "SystemShutdown Failed with ->" << GetLastError();
         }
         else {
@@ -3250,7 +3250,7 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         }
     }
     else if (func_keystring == FUNC_REBOOT) {
-        if (!ExitWindowsEx(EWX_LOGOFF | EWX_FORCE, SHTDN_REASON_FLAG_PLANNED)) {
+        if (!ExitWindowsEx(EWX_LOGOFF | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
             qDebug() << "[doFunctionMappingProc]" << "System Logoff Failed with ->" << GetLastError();
         }
         else {
@@ -3258,7 +3258,7 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         }
     }
     else if (func_keystring == FUNC_LOGOFF) {
-        if (!ExitWindowsEx(EWX_REBOOT | EWX_FORCE, SHTDN_REASON_FLAG_PLANNED)) {
+        if (!ExitWindowsEx(EWX_REBOOT | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
             qDebug() << "[doFunctionMappingProc]" << "System Reboot Failed with ->" << GetLastError();
         }
         else {
