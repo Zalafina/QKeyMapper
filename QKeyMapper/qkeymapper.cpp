@@ -4033,6 +4033,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->burstreleaseLabel->setEnabled(status);
     // ui->burstrelease_msLabel->setEnabled(status);
     ui->waitTimeLabel->setEnabled(status);
+    ui->pointLabel->setEnabled(status);
     // ui->waitTime_msLabel->setEnabled(status);
     ui->waitTimeSpinBox->setEnabled(status);
     ui->mouseXSpeedLabel->setEnabled(status);
@@ -5483,8 +5484,13 @@ void QKeyMapper::updateLockStatusDisplay()
 
 void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 {
-    QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
-    ui->pointDisplayLabel->setText(labelText);
+    if (point.x() >= 0 && point.y() >= 0) {
+        QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
+        ui->pointDisplayLabel->setText(labelText);
+    }
+    else {
+        ui->pointDisplayLabel->clear();
+    }
 }
 
 #ifdef SINGLE_APPLICATION

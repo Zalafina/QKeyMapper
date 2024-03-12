@@ -4190,11 +4190,18 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     POINT pt;
                     if (GetCursorPos(&pt)) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[LowLevelMouseHookProc]" << "Capture MousePoint -> X =" << pt.x << ", Y=" << pt.y;
+                        qDebug() << "[LowLevelMouseHookProc]" << "L-Ctrl + Mouse-Left Click Capture MousePoint -> X =" << pt.x << ", Y=" << pt.y;
 #endif
                         QPoint point = QPoint(pt.x, pt.y);
                         emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
                     }
+                }
+                else if (wParam == WM_RBUTTONDOWN && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[LowLevelMouseHookProc]" << "L-Ctrl + Mouse-Right Click Clear MousePoint";
+#endif
+                    QPoint point = QPoint(-500, -500);
+                    emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
                 }
 
                 int findindex = -1;
