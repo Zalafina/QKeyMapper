@@ -697,12 +697,32 @@ void QKeyMapper::cycleCheckProcessProc(void)
             getProcessInfoFromHWND( hwnd, ProcessPath);
 
             if (ProcessPath.isEmpty()) {
-                if (windowTitle == "Parsec") {
-                    ProcessPath = "parsecd.exe";
+                bool adjust_priv;
+                adjust_priv = EnablePrivilege(SE_DEBUG_NAME);
+                if (adjust_priv) {
+                    getProcessInfoFromHWND( hwnd, ProcessPath);
                 }
                 else {
-                    ProcessPath = PROCESS_UNKNOWN;
+                    qDebug() << "[cycleCheckProcessProc]" << "getProcessInfoFromHWND EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
                 }
+                adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+
+                if (!adjust_priv) {
+                    qDebug() << "[doFunctionMappingProc]" << "getProcessInfoFromHWND DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+                }
+
+#ifdef DEBUG_LOGOUT_ON
+                if (ProcessPath.isEmpty()) {
+                    qDebug().nospace().noquote() << "[cycleCheckProcessProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromHWND Failed!";
+                }
+                else {
+                    qDebug().nospace().noquote() << "[cycleCheckProcessProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromHWND Success -> " << ProcessPath;
+                }
+#endif
+            }
+
+            if (ProcessPath.isEmpty()) {
+                ProcessPath = PROCESS_UNKNOWN;
             }
 
             if (false == windowTitle.isEmpty()){
@@ -1172,12 +1192,31 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
         getProcessInfoFromPID(dwProcessId, ProcessPath);
 
         if (ProcessPath.isEmpty()) {
-            if (WindowText == "Parsec") {
-                ProcessPath = "parsecd.exe";
+            bool adjust_priv;
+            adjust_priv = EnablePrivilege(SE_DEBUG_NAME);
+            if (adjust_priv) {
+                getProcessInfoFromPID(dwProcessId, ProcessPath);
             }
             else {
-                ProcessPath = PROCESS_UNKNOWN;
+                qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
             }
+            adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+
+            if (!adjust_priv) {
+                qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+            }
+#ifdef DEBUG_LOGOUT_ON
+            if (ProcessPath.isEmpty()) {
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Failed! -> " << " [PID:" << dwProcessId <<"]";
+            }
+            else {
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Success -> " << ProcessPath << " [PID:" << dwProcessId <<"]";
+            }
+#endif
+        }
+
+        if (ProcessPath.isEmpty()) {
+            ProcessPath = PROCESS_UNKNOWN;
         }
 
         if (false == WindowText.isEmpty()){
@@ -5580,6 +5619,30 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         DWORD dwProcessId = pidStr.toULong();
 
         getProcessInfoFromPID(dwProcessId, ProcessPath);
+
+        if (ProcessPath.isEmpty()) {
+            bool adjust_priv;
+            adjust_priv = EnablePrivilege(SE_DEBUG_NAME);
+            if (adjust_priv) {
+                getProcessInfoFromPID(dwProcessId, ProcessPath);
+            }
+            else {
+                qDebug() << "[on_processinfoTable_doubleClicked]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+            }
+            adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+
+            if (!adjust_priv) {
+                qDebug() << "[on_processinfoTable_doubleClicked]" << "getProcessInfoFromPID DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+            }
+#ifdef DEBUG_LOGOUT_ON
+            if (ProcessPath.isEmpty()) {
+                qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Failed! -> " << " [PID:" << dwProcessId <<"]";
+            }
+            else {
+                qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Success -> " << ProcessPath << " [PID:" << dwProcessId <<"]";
+            }
+#endif
+        }
 
         if (ProcessPath.isEmpty()) {
             ProcessPath = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
