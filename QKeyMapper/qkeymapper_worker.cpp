@@ -3294,10 +3294,44 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         }
     }
     else if (func_keystring == FUNC_SLEEP) {
+        bool adjust_priv;
+        adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
+        if (adjust_priv) {
+            if (!SetSuspendState(FALSE, FALSE, FALSE)) {
+                qDebug() << "[doFunctionMappingProc]" << "System Sleep Failed with ->" << GetLastError();
+            }
+            else {
+                qDebug() << "[doFunctionMappingProc]" << "System Sleep Success.";
+            }
+        }
+        else {
+            qDebug() << "[doFunctionMappingProc]" << "System Sleep EnablePrivilege Failed with ->" << GetLastError();
+        }
+        adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
 
+        if (!adjust_priv) {
+            qDebug() << "[doFunctionMappingProc]" << "System Sleep DisablePrivilege Failed with ->" << GetLastError();
+        }
     }
     else if (func_keystring == FUNC_HIBERNATE) {
+        bool adjust_priv;
+        adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
+        if (adjust_priv) {
+            if (!SetSuspendState(TRUE, FALSE, FALSE)) {
+                qDebug() << "[doFunctionMappingProc]" << "System Sleep Failed with ->" << GetLastError();
+            }
+            else {
+                qDebug() << "[doFunctionMappingProc]" << "System Sleep Success.";
+            }
+        }
+        else {
+            qDebug() << "[doFunctionMappingProc]" << "System Sleep EnablePrivilege Failed with ->" << GetLastError();
+        }
+        adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
 
+        if (!adjust_priv) {
+            qDebug() << "[doFunctionMappingProc]" << "System Sleep DisablePrivilege Failed with ->" << GetLastError();
+        }
     }
 }
 

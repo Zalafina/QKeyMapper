@@ -97,6 +97,7 @@ LIBS        += dwmapi.lib
 LIBS        += Version.Lib
 LIBS        += SDL2.lib
 LIBS        += AdvAPI32.Lib
+LIBS        += powrprof.lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
 }
