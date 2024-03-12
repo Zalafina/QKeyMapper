@@ -998,57 +998,6 @@ QString QKeyMapper::getExeFileDescription()
     return retStr;
 }
 
-#ifdef ADJUST_PRIVILEGES
-BOOL QKeyMapper::AdjustPrivileges(void)
-{
-    HANDLE hToken;
-    TOKEN_PRIVILEGES tp;
-    TOKEN_PRIVILEGES oldtp;
-    DWORD dwSize=sizeof(TOKEN_PRIVILEGES);
-    LUID luid;
-
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
-    //if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS_P, &hToken)) {
-        if (GetLastError()==ERROR_CALL_NOT_IMPLEMENTED) return true;
-        else return false;
-    }
-    if (!LookupPrivilegeValue(Q_NULLPTR, SE_DEBUG_NAME, &luid)) {
-        CloseHandle(hToken);
-        return false;
-    }
-    ZeroMemory(&tp, sizeof(tp));
-    tp.PrivilegeCount=1;
-    tp.Privileges[0].Luid=luid;
-    tp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
-    /* Adjust Token Privileges */
-    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), &oldtp, &dwSize)) {
-        CloseHandle(hToken);
-        return false;
-    }
-    // close handles
-    CloseHandle(hToken);
-    return true;
-}
-
-BOOL QKeyMapper::EnableDebugPrivilege(void)
-{
-  HANDLE hToken;
-  BOOL fOk=FALSE;
-  if(OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES,&hToken))
-  {
-    TOKEN_PRIVILEGES tp;
-    tp.PrivilegeCount=1;
-    LookupPrivilegeValue(Q_NULLPTR,SE_DEBUG_NAME,&tp.Privileges[0].Luid);
-    tp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
-    AdjustTokenPrivileges(hToken,FALSE,&tp,sizeof(tp),Q_NULLPTR,Q_NULLPTR);
-
-    fOk=(GetLastError()==ERROR_SUCCESS);
-    CloseHandle(hToken);
-  }
-    return fOk;
-}
-#endif
-
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
 {
     TCHAR szProcessPath[MAX_PATH] = TEXT("");

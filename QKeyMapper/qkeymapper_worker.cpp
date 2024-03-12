@@ -3228,48 +3228,6 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState()
     return key2mouse_enablestate;
 }
 
-bool QKeyMapper_Worker::systemShutdownReboot(const QString &func_keystring)
-{
-    HANDLE hToken;
-    TOKEN_PRIVILEGES tkp;
-
-    // Get a token for this process.
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
-        return false;
-    }
-
-    // Get the LUID for the shutdown privilege.
-    LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
-
-    tkp.PrivilegeCount = 1;  // one privilege to set
-    tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-    // Get the shutdown privilege for this process.
-    AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
-
-    if (GetLastError() != ERROR_SUCCESS) {
-        return false;
-    }
-
-    UINT flags = EWX_REBOOT;
-    if (func_keystring == FUNC_SHUTDOWN) {
-        flags = EWX_SHUTDOWN;
-    }
-    else if (func_keystring == FUNC_REBOOT) {
-        flags = EWX_REBOOT;
-    }
-    else {
-        flags = EWX_REBOOT;
-    }
-
-    // Shut down the system and force all applications to close.
-    if (!ExitWindowsEx(flags | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
-        return false;
-    }
-
-    return true;
-}
-
 void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -3288,21 +3246,43 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         }
     }
     else if (func_keystring == FUNC_SHUTDOWN) {
-        bool result = systemShutdownReboot(func_keystring);
-        if (!result) {
-            qDebug() << "[doFunctionMappingProc]" << "SystemShutdown Failed with ->" << GetLastError();
+        bool adjust_priv;
+        adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
+        if (adjust_priv) {
+            if (!ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
+                qDebug() << "[doFunctionMappingProc]" << "System Shutdown Failed with ->" << GetLastError();
+            }
+            else {
+                qDebug() << "[doFunctionMappingProc]" << "System Shutdown Success.";
+            }
         }
         else {
-            qDebug() << "[doFunctionMappingProc]" << "SystemShutdown Success.";
+            qDebug() << "[doFunctionMappingProc]" << "System Shutdown EnablePrivilege Failed with ->" << GetLastError();
+        }
+        adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
+
+        if (!adjust_priv) {
+            qDebug() << "[doFunctionMappingProc]" << "System Shutdown DisablePrivilege Failed with ->" << GetLastError();
         }
     }
     else if (func_keystring == FUNC_REBOOT) {
-        bool result = systemShutdownReboot(func_keystring);
-        if (!result) {
-            qDebug() << "[doFunctionMappingProc]" << "System Reboot Failed with ->" << GetLastError();
+        bool adjust_priv;
+        adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
+        if (adjust_priv) {
+            if (!ExitWindowsEx(EWX_REBOOT | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
+                qDebug() << "[doFunctionMappingProc]" << "System Reboot Failed with ->" << GetLastError();
+            }
+            else {
+                qDebug() << "[doFunctionMappingProc]" << "System Reboot Success.";
+            }
         }
         else {
-            qDebug() << "[doFunctionMappingProc]" << "System Reboot Success.";
+            qDebug() << "[doFunctionMappingProc]" << "System Reboot EnablePrivilege Failed with ->" << GetLastError();
+        }
+        adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
+
+        if (!adjust_priv) {
+            qDebug() << "[doFunctionMappingProc]" << "System Reboot DisablePrivilege Failed with ->" << GetLastError();
         }
     }
     else if (func_keystring == FUNC_LOGOFF) {
@@ -5839,3 +5819,53 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
 #endif
 }
 #endif
+
+bool EnablePrivilege(LPCWSTR privilege)
+{
+    HANDLE hToken;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken))
+    {
+        TOKEN_PRIVILEGES tkp;
+
+        if (LookupPrivilegeValue(NULL, privilege, &tkp.Privileges[0].Luid))
+        {
+            tkp.PrivilegeCount = 1;
+            tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+            if (AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, NULL))
+            {
+                CloseHandle(hToken);
+                return (GetLastError() == ERROR_SUCCESS);
+            }
+        }
+
+        CloseHandle(hToken);
+    }
+
+    return false;
+}
+
+bool DisablePrivilege(LPCWSTR privilege)
+{
+    HANDLE hToken;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken))
+    {
+        TOKEN_PRIVILEGES tkp;
+
+        if (LookupPrivilegeValue(NULL, privilege, &tkp.Privileges[0].Luid))
+        {
+            tkp.PrivilegeCount = 1;
+            tkp.Privileges[0].Attributes = 0; // PRIVILEGE_DISABLED
+
+            if (AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, NULL))
+            {
+                CloseHandle(hToken);
+                return (GetLastError() == ERROR_SUCCESS);
+            }
+        }
+
+        CloseHandle(hToken);
+    }
+
+    return FALSE;
+}
