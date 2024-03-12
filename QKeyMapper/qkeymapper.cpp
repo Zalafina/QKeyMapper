@@ -225,6 +225,7 @@ static const char *BURSTRELEASE_CHINESE = "连发抬起";
 // static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 // static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 static const char *WAITTIME_CHINESE = "延时";
+static const char *POINT_CHINESE = "坐标";
 // static const char *WAITTIME_MSLABEL_CHINESE = "毫秒";
 static const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
 static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
@@ -275,6 +276,7 @@ static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 // static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 // static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 static const char *WAITTIME_ENGLISH = "Delay";
+static const char *POINT_ENGLISH = "Point";
 // static const char *WAITTIME_MSLABEL_ENGLISH = "ms";
 static const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";
 static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
@@ -445,6 +447,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
 
     ui->iconLabel->setStyle(QStyleFactory::create("windows"));
+    ui->pointDisplayLabel->setStyle(QStyleFactory::create("windows"));
     setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
     ui->nameCheckBox->setChecked(true);
     ui->titleCheckBox->setChecked(true);
@@ -606,6 +609,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
@@ -3846,6 +3850,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
+    ui->pointLabel->setFont(customFont);
+    // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
@@ -3941,6 +3947,8 @@ void QKeyMapper::setControlFontChinese()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
+    ui->pointLabel->setFont(customFont);
+    // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
@@ -5273,6 +5281,7 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
+    ui->pointLabel->setText(POINT_CHINESE);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
     ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_CHINESE);
@@ -5337,6 +5346,7 @@ void QKeyMapper::setUILanguage_English()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
+    ui->pointLabel->setText(POINT_ENGLISH);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_ENGLISH);
     ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_ENGLISH);
@@ -5469,6 +5479,12 @@ void QKeyMapper::updateLockStatusDisplay()
 
         rowindex += 1;
     }
+}
+
+void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
+{
+    QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
+    ui->pointDisplayLabel->setText(labelText);
 }
 
 #ifdef SINGLE_APPLICATION

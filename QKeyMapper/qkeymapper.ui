@@ -848,7 +848,7 @@
   <widget class="QSpinBox" name="dataPortSpinBox">
    <property name="geometry">
     <rect>
-     <x>910</x>
+     <x>1010</x>
      <y>410</y>
      <width>50</width>
      <height>22</height>
@@ -890,7 +890,7 @@
   <widget class="QLabel" name="dataPortLabel">
    <property name="geometry">
     <rect>
-     <x>845</x>
+     <x>945</x>
      <y>410</y>
      <width>60</width>
      <height>22</height>
@@ -962,6 +962,50 @@
     </rect>
    </property>
   </widget>
+  <widget class="QLabel" name="pointLabel">
+   <property name="geometry">
+    <rect>
+     <x>840</x>
+     <y>410</y>
+     <width>31</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Point</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="pointDisplayLabel">
+   <property name="geometry">
+    <rect>
+     <x>876</x>
+     <y>412</y>
+     <width>78</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1017,6 +1061,8 @@
   <zorder>combinationKeyLineEdit</zorder>
   <zorder>windowswitchkeyLineEdit</zorder>
   <zorder>mappingswitchkeyLineEdit</zorder>
+  <zorder>pointLabel</zorder>
+  <zorder>pointDisplayLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

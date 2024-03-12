@@ -4186,6 +4186,17 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"));
 #endif
+                if (wParam == WM_LBUTTONDOWN && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                    POINT pt;
+                    if (GetCursorPos(&pt)) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << "Capture MousePoint -> X =" << pt.x << ", Y=" << pt.y;
+#endif
+                        QPoint point = QPoint(pt.x, pt.y);
+                        emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
+                    }
+                }
+
                 int findindex = -1;
                 if (hookprocstart) {
                     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);

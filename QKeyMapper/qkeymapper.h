@@ -203,6 +203,7 @@ signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
     void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
     void updateLockStatus_Signal(void);
+    void updateMousePointLabelDisplay_Signal(const QPoint &point);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
 #endif
@@ -217,6 +218,8 @@ public slots:
     void MappingStart(MappingStartMode startmode);
 
     void updateLockStatusDisplay(void);
+
+    void updateMousePointLabelDisplay(const QPoint &point);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
