@@ -1632,6 +1632,7 @@ void QKeyMapper::EnumProcessFunction(void)
 #endif
 }
 
+#if 0
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 {
     Q_UNUSED(hwnd);
@@ -1680,6 +1681,74 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
     SelectObject(hdc, hOldBrush);
     DeleteObject(hBrush);
 }
+#endif
+
+void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
+{
+    Q_UNUSED(hwnd);
+    QString mousepoint_str = getInstance()->ui->pointDisplayLabel->text();
+
+    if (mousepoint_str.isEmpty()) {
+        return;
+    }
+
+    int x = -1;
+    int y = -1;
+    QStringList mousepointstrlist = mousepoint_str.split(",");
+    if (mousepointstrlist.size() != 2) {
+        return;
+    }
+
+    QString x_str = mousepointstrlist.at(0).trimmed().remove("X:");
+    QString y_str = mousepointstrlist.at(1).trimmed().remove("Y:");
+
+    bool x_ok;
+    bool y_ok;
+    x = x_str.toInt(&x_ok);
+    y = y_str.toInt(&y_ok);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[DrawMousePoints]" << " X = " << x << ", Y = " << y;
+#endif
+
+    if (!x_ok || !y_ok || x < 0 || y < 0) {
+        return;
+    }
+
+    COLORREF color = MOUSE_L_COLOR;
+    int radius = MOUSE_POINT_RADIUS;
+
+    // Create a memory DC and a bitmap for double buffering
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    HDC memdc = CreateCompatibleDC(hdc);
+    HBITMAP bmp = CreateCompatibleBitmap(hdc, screenWidth, screenHeight);
+    HGDIOBJ original = SelectObject(memdc, bmp);
+
+    // Copy the current content of the window to the memory DC
+    BitBlt(memdc, 0, 0, screenWidth, screenHeight, hdc, 0, 0, SRCCOPY);
+
+    // Calculate the coordinates of the top-left and bottom-right of the circle
+    int left = x - radius;
+    int top = y - radius;
+    int right = x + radius;
+    int bottom = y + radius;
+
+    // Draw the circle on the memory DC
+    HBRUSH hBrush = CreateSolidBrush(color);
+    HGDIOBJ hOldBrush = SelectObject(memdc, hBrush);
+    Ellipse(memdc, left, top, right, bottom);
+    SelectObject(memdc, hOldBrush);
+    DeleteObject(hBrush);
+
+    // Copy the updated memory DC to the window DC
+    BitBlt(hdc, 0, 0, screenWidth, screenHeight, memdc, 0, 0, SRCCOPY);
+
+    // Clean up resources
+    SelectObject(memdc, original);
+    DeleteObject(bmp);
+    DeleteDC(memdc);
+}
 
 LRESULT QKeyMapper::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -1723,7 +1792,8 @@ HWND QKeyMapper::createTransparentWindow()
     HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW, L"TransparentWindow",
         NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
 
-    BYTE opacity = 77; // 30% opacity
+    // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
+    BYTE opacity = 255; // 50% opacity
     SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
