@@ -82,6 +82,8 @@ static const int UI_SCALE_4K_PERCENT_100 = 7;
 static const int UI_SCALE_4K_PERCENT_125 = 8;
 static const int UI_SCALE_4K_PERCENT_150 = 9;
 
+static const int MOUSE_POINT_RADIUS = 16;
+
 #ifdef VIGEM_CLIENT_SUPPORT
 static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 
@@ -346,11 +348,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
-    loadSetting_flag(false)
+    loadSetting_flag(false),
+    m_TransParentHandle(NULL)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
+
+    m_TransParentHandle = createTransparentWindow();
 
     m_instance = this;
     ui->setupUi(this);
@@ -966,6 +971,7 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
+    ShowWindow(m_TransParentHandle, SW_SHOW);
     // updateShortcutsMap();
 
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
@@ -973,6 +979,7 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 
 void QKeyMapper::setKeyUnHook(void)
 {
+    ShowWindow(m_TransParentHandle, SW_HIDE);
     // freeShortcuts();
 
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
@@ -1623,7 +1630,105 @@ void QKeyMapper::EnumProcessFunction(void)
     }
     CloseHandle(hProcessSnap);
 #endif
+}
 
+void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
+{
+    Q_UNUSED(hwnd);
+    QString mousepoint_str = getInstance()->ui->pointDisplayLabel->text();
+
+    if (mousepoint_str.isEmpty()) {
+        return;
+    }
+
+    int x = -1;
+    int y = -1;
+    QStringList mousepointstrlist = mousepoint_str.split(",");
+    if (mousepointstrlist.size() != 2) {
+        return;
+    }
+
+    QString x_str = mousepointstrlist.at(0).trimmed().remove("X:");
+    QString y_str = mousepointstrlist.at(1).trimmed().remove("Y:");
+
+    bool x_ok;
+    bool y_ok;
+    x = x_str.toInt(&x_ok);
+    y = y_str.toInt(&y_ok);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[DrawMousePoints]" << " X = " << x << ", Y = " << y;
+#endif
+
+    if (!x_ok || !y_ok || x < 0 || y < 0) {
+        return;
+    }
+
+    COLORREF color = MOUSE_L_COLOR;
+    int radius = MOUSE_POINT_RADIUS;
+
+    // Calculate the coordinates of the top-left and bottom-right of the circle
+    int left = x - radius;
+    int top = y - radius;
+    int right = x + radius;
+    int bottom = y + radius;
+
+    // Draw the circle
+    HBRUSH hBrush = CreateSolidBrush(color);
+    HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
+    Ellipse(hdc, left, top, right, bottom);
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hBrush);
+}
+
+LRESULT QKeyMapper::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg) {
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+
+        DrawMousePoints(hwnd, hdc);
+
+        EndPaint(hwnd, &ps);
+        break;
+    }
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+
+    return 0;
+}
+
+HWND QKeyMapper::createTransparentWindow()
+{
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    WNDCLASS wc = { 0 };
+    wc.lpfnWndProc = QKeyMapper::WndProc;
+    wc.hInstance = hInstance;
+    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    wc.lpszClassName = L"TransparentWindow";
+    RegisterClass(&wc);
+
+    HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW, L"TransparentWindow",
+        NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
+
+    BYTE opacity = 77; // 30% opacity
+    SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
+
+    ShowWindow(hwnd, SW_HIDE);
+
+    return hwnd;
 }
 
 Qt::CheckState QKeyMapper::getAutoStartMappingStatus()

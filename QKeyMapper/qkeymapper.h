@@ -138,6 +138,12 @@ public:
     #define QT_KEY_R_ALT            (0x00000040U)
     #define QT_KEY_R_WIN            (0x00000080U)
 
+    #define MOUSE_L_COLOR           RGB(232, 131, 124)
+    #define MOUSE_R_COLOR           RGB(90, 165, 250)
+    #define MOUSE_M_COLOR           RGB(124, 205, 76)
+    #define MOUSE_X1_COLOR          RGB(239, 199, 75)
+    #define MOUSE_X2_COLOR          RGB(153, 138, 249)
+
     enum KeyMapStatus
     {
         KEYMAP_IDLE = 0U,
@@ -182,6 +188,10 @@ public:
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
     // unused enum all process function <<<
+
+    static void DrawMousePoints(HWND hwnd, HDC hdc);
+    static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    static HWND createTransparentWindow(void);
 
     Qt::CheckState getAutoStartMappingStatus(void);
     // static bool getDisableWinKeyStatus(void);
@@ -381,6 +391,7 @@ private:
     // QHotkey *m_HotKey_StartStop;
     int m_UI_Scale;
     bool loadSetting_flag;
+    HWND m_TransParentHandle;
 };
 
 #endif // QKEYMAPPER_H
