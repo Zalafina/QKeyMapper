@@ -126,6 +126,22 @@ static const quint8 VK_MOUSE2JOY_DIRECT = 0x3B;
 static const quint8 VK_BLOCKED = 0x0F;
 static const char *KEY_BLOCKED_STR = "BLOCKED";
 
+static const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
+static const char *MOUSE_POINT_POSTFIX  = "_Point";
+static const char *MOUSE_L_STR  = "Mouse-L";
+static const char *MOUSE_R_STR  = "Mouse-R";
+static const char *MOUSE_M_STR  = "Mouse-M";
+static const char *MOUSE_X1_STR = "Mouse-X1";
+static const char *MOUSE_X2_STR = "Mouse-X2";
+static const char *MOUSE_L_POINT_STR  = "Mouse-L_Point";
+static const char *MOUSE_R_POINT_STR  = "Mouse-R_Point";
+static const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
+static const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
+static const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
+
+static const char *MOUSE_WHEEL_UP_STR   = "Mouse-WheelUp";
+static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
+
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
@@ -161,9 +177,6 @@ static const char *FUNC_REBOOT          = "Func-Reboot";
 static const char *FUNC_LOGOFF          = "Func-Logoff";
 static const char *FUNC_SLEEP           = "Func-Sleep";
 static const char *FUNC_HIBERNATE       = "Func-Hibernate";
-
-static const char *MOUSE_STR_WHEEL_UP   = "Mouse-WheelUp";
-static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
 static const char *VIRTUAL_GAMEPAD_X360 = "X360";
 static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
@@ -661,7 +674,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
     QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
 
-    if (original_key == MOUSE_STR_WHEEL_UP || original_key == MOUSE_STR_WHEEL_DOWN) {
+    if (original_key == MOUSE_WHEEL_UP_STR || original_key == MOUSE_WHEEL_DOWN_STR) {
         if (KEY_UP == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait start ->" << original_key;
@@ -749,7 +762,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 continue;
             }
 
-            if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+            if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendInputKeys] Do no need to send [" << key << "]" << " at KEY_UP";
 #endif
@@ -907,12 +920,12 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
 #endif
                 }
-                else if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+                else if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR) {
                     INPUT input = { 0 };
                     input.type = INPUT_MOUSE;
                     input.mi.dwExtraInfo = VIRTUAL_MOUSE_WHEEL;
                     input.mi.dwFlags = MOUSEEVENTF_WHEEL;
-                    if (key == MOUSE_STR_WHEEL_UP) {
+                    if (key == MOUSE_WHEEL_UP_STR) {
                         input.mi.mouseData = WHEEL_DELTA;
                     }
                     else {
@@ -3931,11 +3944,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
                         if (KEY_DOWN == keyupdown){
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_DOWN Blocked ->" << original_key;
-                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINT_ON);
+                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_ON);
                         }
                         else {
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_UP Blocked ->" << original_key;
-                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINT_OFF);
+                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_OFF);
                         }
 #endif
                         returnFlag = true;
@@ -4341,12 +4354,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     bool send_wheel_keys = false;
                     int findindex = -1;
 
-                    int findWheelUpindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_STR_WHEEL_UP);
+                    int findWheelUpindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_WHEEL_UP_STR);
                     if (findWheelUpindex >=0){
                         wheel_up_found = true;
                     }
 
-                    int findWheelDownindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_STR_WHEEL_DOWN);
+                    int findWheelDownindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_WHEEL_DOWN_STR);
                     if (findWheelDownindex >=0){
                         wheel_down_found = true;
                     }
@@ -4373,10 +4386,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
 #ifdef DEBUG_LOGOUT_ON
                                 if (wheel_up_found) {
-                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_STR_WHEEL_UP;
+                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_WHEEL_UP_STR;
                                 }
                                 else {
-                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_STR_WHEEL_DOWN;
+                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_WHEEL_DOWN_STR;
                                 }
 #endif
                                 returnFlag = true;
@@ -5108,8 +5121,8 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     VirtualMouseButtonMap.insert("Mouse-M",             V_MOUSECODE(MOUSEEVENTF_MIDDLEDOWN,     MOUSEEVENTF_MIDDLEUP,   0           )); // Mouse Button Middle
     VirtualMouseButtonMap.insert("Mouse-X1",            V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON1    )); // Mouse Button X1
     VirtualMouseButtonMap.insert("Mouse-X2",            V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // Mouse Button X2
-    VirtualMouseButtonMap.insert(MOUSE_STR_WHEEL_UP,    V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Up
-    VirtualMouseButtonMap.insert(MOUSE_STR_WHEEL_DOWN,  V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Down
+    VirtualMouseButtonMap.insert(MOUSE_WHEEL_UP_STR,    V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Up
+    VirtualMouseButtonMap.insert(MOUSE_WHEEL_DOWN_STR,  V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Down
 
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "Mouse-L");
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "Mouse-L");
@@ -5589,12 +5602,12 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
     for (const QString &keyseq : qAsConst(keyseq_list)){
         QStringList mappingKeys = keyseq.split(SEPARATOR_PLUS);
         for (const QString &key : qAsConst(mappingKeys)){
-            if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+            if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR) {
                 input_p = &input_array[index];
                 input_p->type = INPUT_MOUSE;
                 input_p->mi.dwExtraInfo = VIRTUAL_MOUSE_WHEEL;
                 input_p->mi.dwFlags = MOUSEEVENTF_WHEEL;
-                if (key == MOUSE_STR_WHEEL_UP) {
+                if (key == MOUSE_WHEEL_UP_STR) {
                     input_p->mi.mouseData = WHEEL_DELTA;
                 }
                 else {
@@ -5649,7 +5662,7 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
 
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
-            if (key == MOUSE_STR_WHEEL_UP || key == MOUSE_STR_WHEEL_DOWN) {
+            if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR) {
                 continue;
             }
             else if (true == VirtualMouseButtonMap.contains(key)) {

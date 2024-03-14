@@ -48,12 +48,12 @@ class QKeyMapper;
 #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
 #define KEYSEQUENCE_STR         ("KeySequence")
 
-#define MAPPING_KEYS_MAX        (30)
-#define SEND_INPUTS_MAX         (50)
-#define KEY_SEQUENCE_MAX        (30)
+#define MAPPING_KEYS_MAX        (60)
+#define SEND_INPUTS_MAX         (100)
+#define KEY_SEQUENCE_MAX        (60)
 
-#define SHOW_MOUSEPOINT_OFF     (0)
-#define SHOW_MOUSEPOINT_ON      (1)
+#define SHOW_MOUSEPOINTS_OFF     (0)
+#define SHOW_MOUSEPOINTS_ON      (1)
 
 typedef struct MAP_KEYDATA
 {

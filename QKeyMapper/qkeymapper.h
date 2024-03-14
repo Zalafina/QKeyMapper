@@ -56,6 +56,15 @@ typedef struct
     QIcon   WindowIcon;
 }MAP_PROCESSINFO;
 
+struct MousePoint_Info
+{
+    QString ori_key;
+    QString map_key;
+    QPoint point;
+
+    MousePoint_Info() : ori_key(), map_key(), point(-1, -1) {}
+};
+
 class StyledDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
@@ -138,11 +147,17 @@ public:
     #define QT_KEY_R_ALT            (0x00000040U)
     #define QT_KEY_R_WIN            (0x00000080U)
 
-    #define MOUSE_L_COLOR           RGB(232, 131, 124)
-    #define MOUSE_R_COLOR           RGB(90, 165, 250)
-    #define MOUSE_M_COLOR           RGB(124, 205, 76)
-    #define MOUSE_X1_COLOR          RGB(239, 199, 75)
-    #define MOUSE_X2_COLOR          RGB(153, 138, 249)
+    // Colors for 50% opacity
+    #define MOUSE_L_COLOR           RGB(255, 0, 0)
+    #define MOUSE_R_COLOR           RGB(0, 0, 255)
+    #define MOUSE_M_COLOR           RGB(0, 255, 0)
+    #define MOUSE_X1_COLOR          RGB(255, 255, 0)
+    #define MOUSE_X2_COLOR          RGB(255, 0, 255)
+    // #define MOUSE_L_COLOR           RGB(232, 131, 124)
+    // #define MOUSE_R_COLOR           RGB(90, 165, 250)
+    // #define MOUSE_M_COLOR           RGB(124, 205, 76)
+    // #define MOUSE_X1_COLOR          RGB(239, 199, 75)
+    // #define MOUSE_X2_COLOR          RGB(153, 138, 249)
 
     enum KeyMapStatus
     {
@@ -193,6 +208,7 @@ public:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static HWND createTransparentWindow(void);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
+    static QPoint getMousePointFromLabelString(QString &labelstr);
 
     Qt::CheckState getAutoStartMappingStatus(void);
     // static bool getDisableWinKeyStatus(void);
@@ -321,6 +337,7 @@ private:
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
     void refreshKeyMappingDataTable(void);
+    void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage_Chinese(void);
     void setUILanguage_English(void);
@@ -366,6 +383,7 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
+    static QList<MousePoint_Info> MousePointsList;
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
     static QString s_MappingSwitchKeyString;

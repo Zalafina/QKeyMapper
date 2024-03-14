@@ -82,7 +82,7 @@ static const int UI_SCALE_4K_PERCENT_100 = 7;
 static const int UI_SCALE_4K_PERCENT_125 = 8;
 static const int UI_SCALE_4K_PERCENT_150 = 9;
 
-static const int MOUSE_POINT_RADIUS = 16;
+static const int MOUSE_POINT_RADIUS = 12;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
@@ -173,6 +173,22 @@ static const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";
 
 static const char *KEY_BLOCKED_STR = "BLOCKED";
 
+static const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
+static const char *MOUSE_POINT_POSTFIX  = "_Point";
+static const char *MOUSE_L_STR  = "Mouse-L";
+static const char *MOUSE_R_STR  = "Mouse-R";
+static const char *MOUSE_M_STR  = "Mouse-M";
+static const char *MOUSE_X1_STR = "Mouse-X1";
+static const char *MOUSE_X2_STR = "Mouse-X2";
+static const char *MOUSE_L_POINT_STR  = "Mouse-L_Point";
+static const char *MOUSE_R_POINT_STR  = "Mouse-R_Point";
+static const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
+static const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
+static const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
+
+static const char *MOUSE_WHEEL_UP_STR   = "Mouse-WheelUp";
+static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
+
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
@@ -203,9 +219,6 @@ static const char *FUNC_REBOOT          = "Func-Reboot";
 static const char *FUNC_LOGOFF          = "Func-Logoff";
 static const char *FUNC_SLEEP           = "Func-Sleep";
 static const char *FUNC_HIBERNATE       = "Func-Hibernate";
-
-static const char *MOUSE_STR_WHEEL_UP   = "Mouse-WheelUp";
-static const char *MOUSE_STR_WHEEL_DOWN = "Mouse-WheelDown";
 
 static const char *VIRTUAL_GAMEPAD_X360 = "X360";
 static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
@@ -321,6 +334,7 @@ uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
+QList<MousePoint_Info> QKeyMapper::MousePointsList = QList<MousePoint_Info>();
 // QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
 QString QKeyMapper::s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
@@ -1640,26 +1654,15 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
         return;
     }
 
-    int x = -1;
-    int y = -1;
-    QStringList mousepointstrlist = mousepoint_str.split(",");
-    if (mousepointstrlist.size() != 2) {
-        return;
-    }
-
-    QString x_str = mousepointstrlist.at(0).trimmed().remove("X:");
-    QString y_str = mousepointstrlist.at(1).trimmed().remove("Y:");
-
-    bool x_ok;
-    bool y_ok;
-    x = x_str.toInt(&x_ok);
-    y = y_str.toInt(&y_ok);
+    QPoint mousepoint = getMousePointFromLabelString(mousepoint_str);
+    int x = mousepoint.x();
+    int y = mousepoint.y();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[DrawMousePoints]" << " X = " << x << ", Y = " << y;
 #endif
 
-    if (!x_ok || !y_ok || x < 0 || y < 0) {
+    if (x < 0 || y < 0) {
         return;
     }
 
@@ -1824,6 +1827,35 @@ void QKeyMapper::clearTransparentWindow(HWND hwnd, HDC hdc)
     // Restore the original brush
     SelectObject(hdc, hOldBrush);
     DeleteObject(hBrush);
+}
+
+QPoint QKeyMapper::getMousePointFromLabelString(QString &labelstr)
+{
+    QPoint mousepoint = QPoint(-1, -1);
+
+    if (labelstr.isEmpty()) {
+        return mousepoint;
+    }
+
+    QStringList mousepointstrlist = labelstr.split(",");
+    if (mousepointstrlist.size() != 2) {
+        return mousepoint;
+    }
+
+    QString x_str = mousepointstrlist.at(0).trimmed().remove("X:");
+    QString y_str = mousepointstrlist.at(1).trimmed().remove("Y:");
+
+    bool x_ok;
+    bool y_ok;
+    int x = x_str.toInt(&x_ok);
+    int y = y_str.toInt(&y_ok);
+
+    if (x_ok && y_ok && x >= 0 && y >= 0) {
+        mousepoint.rx() = x;
+        mousepoint.ry() = y;
+    }
+
+    return mousepoint;
 }
 
 Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
@@ -4917,13 +4949,18 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QStringList keycodelist = QStringList() \
             << ""
             << KEY_BLOCKED_STR
-            << "Mouse-L"
-            << "Mouse-R"
-            << "Mouse-M"
-            << "Mouse-X1"
-            << "Mouse-X2"
-            << "Mouse-WheelUp"
-            << "Mouse-WheelDown"
+            << MOUSE_L_STR
+            << MOUSE_R_STR
+            << MOUSE_M_STR
+            << MOUSE_X1_STR
+            << MOUSE_X2_STR
+            << MOUSE_L_POINT_STR
+            << MOUSE_R_POINT_STR
+            << MOUSE_M_POINT_STR
+            << MOUSE_X1_POINT_STR
+            << MOUSE_X2_POINT_STR
+            << MOUSE_WHEEL_UP_STR
+            << MOUSE_WHEEL_DOWN_STR
             << "A"
             << "B"
             << "C"
@@ -5167,6 +5204,11 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 
     QStringList orikeycodelist = keycodelist;
     orikeycodelist.removeOne(KEY_BLOCKED_STR);
+    orikeycodelist.removeOne(MOUSE_L_POINT_STR);
+    orikeycodelist.removeOne(MOUSE_R_POINT_STR);
+    orikeycodelist.removeOne(MOUSE_M_POINT_STR);
+    orikeycodelist.removeOne(MOUSE_X1_POINT_STR);
+    orikeycodelist.removeOne(MOUSE_X2_POINT_STR);
     orikeycodelist.removeOne("Shift");
     orikeycodelist.removeOne("Ctrl");
     orikeycodelist.removeOne("Alt");
@@ -5349,7 +5391,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
 
-            if (keymapdata.Original_Key == MOUSE_STR_WHEEL_UP || keymapdata.Original_Key == MOUSE_STR_WHEEL_DOWN) {
+            if (keymapdata.Original_Key == MOUSE_WHEEL_UP_STR || keymapdata.Original_Key == MOUSE_WHEEL_DOWN_STR) {
                 disable_burstandlock = true;
             }
 
@@ -5438,6 +5480,18 @@ void QKeyMapper::refreshKeyMappingDataTable()
         qDebug() << "[refreshKeyMappingDataTable]" << "Empty KeyMappingDataList";
 #endif
     }
+
+    updateMousePointsList();
+}
+
+void QKeyMapper::updateMousePointsList()
+{
+    if (KeyMappingDataList.isEmpty()) {
+        MousePointsList.clear();
+        return;
+    }
+
+
 }
 
 void QKeyMapper::reloadUILanguage()
@@ -5697,8 +5751,10 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 
 void QKeyMapper::showMousePoints(int onoff)
 {
-    if (SHOW_MOUSEPOINT_ON == onoff) {
-        ShowWindow(m_TransParentHandle, SW_SHOW);
+    if (SHOW_MOUSEPOINTS_ON == onoff) {
+        if (!ui->pointDisplayLabel->text().isEmpty()) {
+            ShowWindow(m_TransParentHandle, SW_SHOW);
+        }
     }
     else {
         ShowWindow(m_TransParentHandle, SW_HIDE);
@@ -6061,6 +6117,29 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 QMessageBox::warning(this, PROGRAM_NAME, message);
                 return;
             }
+            if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+                QString mousepointstr = ui->pointDisplayLabel->text();
+                if (mousepointstr.isEmpty()) {
+                    QString message;
+                    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                        message = QString("Need to set a mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
+                    }
+                    else {
+                        message = QString("需要使用\"%1\"设置一个坐标点!").arg("L-Ctrl+鼠标左键点击");
+                    }
+                    QMessageBox::warning(this, PROGRAM_NAME, message);
+                    return;
+                }
+                else {
+                    QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                    int x = mousepoint.x();
+                    int y = mousepoint.y();
+
+                    if (x >= 0 && y >= 0) {
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                    }
+                }
+            }
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
@@ -6102,6 +6181,31 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyText != VJOY_RT_BRAKE_STR
                     && currentMapKeyText != VJOY_LT_ACCEL_STR
                     && currentMapKeyText != VJOY_RT_ACCEL_STR) {
+
+                    if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+                        QString mousepointstr = ui->pointDisplayLabel->text();
+                        if (mousepointstr.isEmpty()) {
+                            QString message;
+                            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                                message = QString("Need to set a mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
+                            }
+                            else {
+                                message = QString("需要使用\"%1\"设置一个坐标点!").arg("L-Ctrl+鼠标左键点击");
+                            }
+                            QMessageBox::warning(this, PROGRAM_NAME, message);
+                            return;
+                        }
+                        else {
+                            QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                            int x = mousepoint.x();
+                            int y = mousepoint.y();
+
+                            if (x >= 0 && y >= 0) {
+                                currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                            }
+                        }
+                    }
+
                     currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
             }
@@ -6141,6 +6245,7 @@ void QKeyMapper::on_deleteoneButton_clicked()
 
         /* do not refresh for select cursor hold position */
 //        refreshKeyMappingDataTable();
+        updateMousePointsList();
 #ifdef DEBUG_LOGOUT_ON
         if (ui->keymapdataTable->rowCount() != KeyMappingDataList.size()){
             qDebug("KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", ui->keymapdataTable->rowCount(), KeyMappingDataList.size());
@@ -6155,6 +6260,7 @@ void QKeyMapper::on_clearallButton_clicked()
     ui->keymapdataTable->clearContents();
     ui->keymapdataTable->setRowCount(0);
     KeyMappingDataList.clear();
+    MousePointsList.clear();
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
