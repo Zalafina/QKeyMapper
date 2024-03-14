@@ -185,6 +185,7 @@ static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK      = 0xCEDFCEDF;
 static const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFBC;
+static const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
 static const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D       = 0xDBDBDBDB;
 
@@ -433,7 +434,7 @@ void QKeyMapper_Worker::sendMouseMove(int delta_x, int delta_y)
     mouse_input.mi.dy = delta_y;
     mouse_input.mi.mouseData = 0;
     mouse_input.mi.time = 0;
-    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE_BYKEYS;
     mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE;
 //    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 
