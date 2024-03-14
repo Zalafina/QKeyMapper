@@ -375,6 +375,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     QStyle* defaultStyle = QStyleFactory::create("windows");
     ui->virtualgamepadGroupBox->setStyle(defaultStyle);
+#ifdef QT_DEBUG
+    ui->pointDisplayLabel->setText("X:1100, Y:1200");
+#endif
 
 #ifdef SETTINGSFILE_CONVERT
     bool settingNeedConvert = checkSettingsFileNeedtoConvert();
@@ -1645,6 +1648,7 @@ void QKeyMapper::EnumProcessFunction(void)
 #endif
 }
 
+#if 1
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 {
     Q_UNUSED(hwnd);
@@ -1683,7 +1687,7 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
     DeleteObject(hBrush);
 }
 
-#if 0
+#else
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 {
     Q_UNUSED(hwnd);
@@ -3941,7 +3945,8 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
-            && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
+            // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
+            && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
             && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
             && false == mapping_key.startsWith("Func-")
             && false == mapping_key.contains(SEPARATOR_WAITTIME)){
@@ -5753,6 +5758,11 @@ void QKeyMapper::showMousePoints(int onoff)
 {
     if (SHOW_MOUSEPOINTS_ON == onoff) {
         if (!ui->pointDisplayLabel->text().isEmpty()) {
+            RECT clientRect;
+            GetClientRect(m_TransParentHandle, &clientRect);
+            int windowWidth = clientRect.right - clientRect.left;
+            int windowHeight = clientRect.bottom - clientRect.top;
+            SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, windowWidth, windowHeight, SWP_SHOWWINDOW);
             ShowWindow(m_TransParentHandle, SW_SHOW);
         }
     }
@@ -6137,6 +6147,20 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
                     if (x >= 0 && y >= 0) {
                         currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+
+                        if (keymapdata.Mapping_Keys.size() == 1
+                            && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
+                            && !ui->nextarrowCheckBox->isChecked()) {
+                            QString message;
+                            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                                message = QString("Already set a same mouse point!");
+                            }
+                            else {
+                                message = QString("已经保存了一个相同的鼠标坐标点!");
+                            }
+                            QMessageBox::warning(this, PROGRAM_NAME, message);
+                            return;
+                        }
                     }
                 }
             }
@@ -6170,6 +6194,30 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 currentMapKeyText = currentOriKeyText;
             }
             else {
+                if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+                    QString mousepointstr = ui->pointDisplayLabel->text();
+                    if (mousepointstr.isEmpty()) {
+                        QString message;
+                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                            message = QString("Need to set a mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
+                        }
+                        else {
+                            message = QString("需要使用\"%1\"设置一个坐标点!").arg("L-Ctrl+鼠标左键点击");
+                        }
+                        QMessageBox::warning(this, PROGRAM_NAME, message);
+                        return;
+                    }
+                    else {
+                        QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                        int x = mousepoint.x();
+                        int y = mousepoint.y();
+
+                        if (x >= 0 && y >= 0) {
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                        }
+                    }
+                }
+
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
                     && currentMapKeyText != KEY_BLOCKED_STR
@@ -6181,31 +6229,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyText != VJOY_RT_BRAKE_STR
                     && currentMapKeyText != VJOY_LT_ACCEL_STR
                     && currentMapKeyText != VJOY_RT_ACCEL_STR) {
-
-                    if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
-                        QString mousepointstr = ui->pointDisplayLabel->text();
-                        if (mousepointstr.isEmpty()) {
-                            QString message;
-                            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                                message = QString("Need to set a mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
-                            }
-                            else {
-                                message = QString("需要使用\"%1\"设置一个坐标点!").arg("L-Ctrl+鼠标左键点击");
-                            }
-                            QMessageBox::warning(this, PROGRAM_NAME, message);
-                            return;
-                        }
-                        else {
-                            QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
-                            int x = mousepoint.x();
-                            int y = mousepoint.y();
-
-                            if (x >= 0 && y >= 0) {
-                                currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
-                            }
-                        }
-                    }
-
                     currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
             }

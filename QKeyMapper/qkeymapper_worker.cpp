@@ -3895,6 +3895,38 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
 #endif
 
+            static bool show_mousepoints = false;
+            if (KEY_DOWN == keyupdown){
+                if((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && keycodeString == "F12") {
+                        if (!show_mousepoints) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points KEY_DOWN -> ON";
+#endif
+                            show_mousepoints = true;
+                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_ON);
+                        }
+                }
+            }
+            else {
+                if (keycodeString == "F12") {
+                    if (show_mousepoints) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points KEY_UP -> OFF";
+#endif
+                        show_mousepoints = false;
+                        emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_OFF);
+                    }
+                }
+                else {
+                    if (show_mousepoints) {
+                        if((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0 || (GetAsyncKeyState(VK_F12) & 0x8000) == 0) {
+                            show_mousepoints = false;
+                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_OFF);
+                        }
+                    }
+                }
+            }
+
             int findindex = -1;
             if (hookprocstart) {
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
@@ -3944,11 +3976,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
                         if (KEY_DOWN == keyupdown){
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_DOWN Blocked ->" << original_key;
-                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_ON);
                         }
                         else {
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_UP Blocked ->" << original_key;
-                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_OFF);
                         }
 #endif
                         returnFlag = true;

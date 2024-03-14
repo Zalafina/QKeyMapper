@@ -640,7 +640,7 @@
   <widget class="QLabel" name="waitTimeLabel">
    <property name="geometry">
     <rect>
-     <x>740</x>
+     <x>745</x>
      <y>410</y>
      <width>51</width>
      <height>22</height>
