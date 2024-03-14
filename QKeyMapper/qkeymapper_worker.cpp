@@ -3931,9 +3931,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
                         if (KEY_DOWN == keyupdown){
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_DOWN Blocked ->" << original_key;
+                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINT_ON);
                         }
                         else {
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_UP Blocked ->" << original_key;
+                            emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINT_OFF);
                         }
 #endif
                         returnFlag = true;

@@ -192,6 +192,7 @@ public:
     static void DrawMousePoints(HWND hwnd, HDC hdc);
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static HWND createTransparentWindow(void);
+    static void clearTransparentWindow(HWND hwnd, HDC hdc);
 
     Qt::CheckState getAutoStartMappingStatus(void);
     // static bool getDisableWinKeyStatus(void);
@@ -214,6 +215,7 @@ signals:
     void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
+    void showMousePoints_Signal(int onoff);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
 #endif
@@ -230,6 +232,8 @@ public slots:
     void updateLockStatusDisplay(void);
 
     void updateMousePointLabelDisplay(const QPoint &point);
+
+    void showMousePoints(int onoff);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);

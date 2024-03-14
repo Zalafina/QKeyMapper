@@ -52,6 +52,9 @@ class QKeyMapper;
 #define SEND_INPUTS_MAX         (50)
 #define KEY_SEQUENCE_MAX        (30)
 
+#define SHOW_MOUSEPOINT_OFF     (0)
+#define SHOW_MOUSEPOINT_ON      (1)
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;

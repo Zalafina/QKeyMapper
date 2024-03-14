@@ -627,7 +627,7 @@
   <widget class="QSpinBox" name="waitTimeSpinBox">
    <property name="geometry">
     <rect>
-     <x>796</x>
+     <x>770</x>
      <y>410</y>
      <width>45</width>
      <height>22</height>
@@ -640,9 +640,9 @@
   <widget class="QLabel" name="waitTimeLabel">
    <property name="geometry">
     <rect>
-     <x>730</x>
+     <x>740</x>
      <y>410</y>
-     <width>61</width>
+     <width>51</width>
      <height>22</height>
     </rect>
    </property>
@@ -650,7 +650,7 @@
     <string>Delay</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="orikeySeqLabel">
@@ -965,7 +965,7 @@
   <widget class="QLabel" name="pointLabel">
    <property name="geometry">
     <rect>
-     <x>840</x>
+     <x>820</x>
      <y>410</y>
      <width>31</width>
      <height>22</height>
@@ -981,9 +981,9 @@
   <widget class="QLabel" name="pointDisplayLabel">
    <property name="geometry">
     <rect>
-     <x>876</x>
+     <x>853</x>
      <y>412</y>
-     <width>78</width>
+     <width>96</width>
      <height>20</height>
     </rect>
    </property>

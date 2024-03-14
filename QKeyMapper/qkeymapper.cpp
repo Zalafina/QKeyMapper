@@ -615,6 +615,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
@@ -971,7 +972,6 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
-    ShowWindow(m_TransParentHandle, SW_SHOW);
     // updateShortcutsMap();
 
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
@@ -979,7 +979,6 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 
 void QKeyMapper::setKeyUnHook(void)
 {
-    ShowWindow(m_TransParentHandle, SW_HIDE);
     // freeShortcuts();
 
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
@@ -1632,7 +1631,6 @@ void QKeyMapper::EnumProcessFunction(void)
 #endif
 }
 
-#if 0
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 {
     Q_UNUSED(hwnd);
@@ -1681,8 +1679,8 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
     SelectObject(hdc, hOldBrush);
     DeleteObject(hBrush);
 }
-#endif
 
+#if 0
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 {
     Q_UNUSED(hwnd);
@@ -1749,6 +1747,7 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
     DeleteObject(bmp);
     DeleteDC(memdc);
 }
+#endif
 
 LRESULT QKeyMapper::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -1757,14 +1756,17 @@ LRESULT QKeyMapper::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-
         DrawMousePoints(hwnd, hdc);
-
         EndPaint(hwnd, &ps);
         break;
     }
     case WM_ERASEBKGND:
+    {
+        HDC hdc = GetDC(hwnd);
+        clearTransparentWindow(hwnd, hdc);
+        ReleaseDC(hwnd, hdc);
         return 1;
+    }
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -1793,12 +1795,35 @@ HWND QKeyMapper::createTransparentWindow()
         NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
 
     // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
-    BYTE opacity = 255; // 50% opacity
+    BYTE opacity = 128; // 50% opacity
     SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
 
     return hwnd;
+}
+
+void QKeyMapper::clearTransparentWindow(HWND hwnd, HDC hdc)
+{
+    QString mousepoint_str = getInstance()->ui->pointDisplayLabel->text();
+    if (mousepoint_str.isEmpty()) {
+        return;
+    }
+
+    // Get the window area
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+
+    // Create a transparent brush
+    HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+    HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
+
+    // Use the transparent brush to draw a rectangle to cover the previous content
+    Rectangle(hdc, clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
+
+    // Restore the original brush
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hBrush);
 }
 
 Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
@@ -5586,6 +5611,7 @@ void QKeyMapper::resetFontSize()
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->pointDisplayLabel->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->accelThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -5615,6 +5641,7 @@ void QKeyMapper::resetFontSize()
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->pointDisplayLabel->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->accelThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -5665,6 +5692,16 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
     }
     else {
         ui->pointDisplayLabel->clear();
+    }
+}
+
+void QKeyMapper::showMousePoints(int onoff)
+{
+    if (SHOW_MOUSEPOINT_ON == onoff) {
+        ShowWindow(m_TransParentHandle, SW_SHOW);
+    }
+    else {
+        ShowWindow(m_TransParentHandle, SW_HIDE);
     }
 }
 
