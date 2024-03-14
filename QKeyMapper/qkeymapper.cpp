@@ -5758,12 +5758,9 @@ void QKeyMapper::showMousePoints(int onoff)
 {
     if (SHOW_MOUSEPOINTS_ON == onoff) {
         if (!ui->pointDisplayLabel->text().isEmpty()) {
-            RECT clientRect;
-            GetClientRect(m_TransParentHandle, &clientRect);
-            int windowWidth = clientRect.right - clientRect.left;
-            int windowHeight = clientRect.bottom - clientRect.top;
-            SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, windowWidth, windowHeight, SWP_SHOWWINDOW);
-            ShowWindow(m_TransParentHandle, SW_SHOW);
+            SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+            // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
+            // ShowWindow(m_TransParentHandle, SW_SHOW);
         }
     }
     else {
