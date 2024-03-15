@@ -184,6 +184,7 @@ static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK      = 0xCEDFCEDF;
+static const ULONG_PTR VIRTUAL_MOUSE_POINTCLICK = 0xBBDFBBDF;
 static const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFBC;
 static const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
 static const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
@@ -814,6 +815,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
                 SendInput(1, &input, sizeof(INPUT));
             }
+            else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
+                sendMousePointClick(key, KEY_UP);
+            }
 #ifdef VIGEM_CLIENT_SUPPORT
             else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
                 ViGEmClient_ReleaseButton(key);
@@ -955,6 +959,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                     SendInput(1, &input, sizeof(INPUT));
                 }
+                else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
+                    sendMousePointClick(key, KEY_DOWN);
+                }
 #ifdef VIGEM_CLIENT_SUPPORT
                 else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
                     ViGEmClient_PressButton(key, false);
@@ -1033,6 +1040,47 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         /* key_sequence_count > 1 */
         else {
             sendKeySequenceList(inputKeys, original_key);
+        }
+    }
+}
+
+void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown)
+{
+    static QRegularExpression regex("Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)");
+    QRegularExpressionMatch match = regex.match(mousepoint_str);
+
+    if (match.hasMatch()) {
+        QString mousebutton = MOUSE_BUTTON_PREFIX + match.captured(1);
+        if (!VirtualMouseButtonMap.contains(mousebutton)) {
+            return;
+        }
+
+        int x = match.captured(2).toInt();
+        int y = match.captured(3).toInt();
+        double fScreenWidth     = GetSystemMetrics( SM_CXSCREEN )-1;
+        double fScreenHeight    = GetSystemMetrics( SM_CYSCREEN )-1;
+        double fx = x * ( 65535.0f / fScreenWidth );
+        double fy = y * ( 65535.0f / fScreenHeight );
+        V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(mousebutton);
+        INPUT mouse_input = { 0 };
+        mouse_input.type = INPUT_MOUSE;
+        mouse_input.mi.dx = fx;
+        mouse_input.mi.dy = fy;
+        mouse_input.mi.mouseData = vmousecode.MouseXButton;
+        mouse_input.mi.time = 0;
+        mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_POINTCLICK;
+        if (KEY_DOWN == keyupdown) {
+            mouse_input.mi.dwFlags = vmousecode.MouseDownCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+        }
+        else {
+            mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+        }
+
+        UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+        if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("sendMouseMove(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
         }
     }
 }
@@ -4177,7 +4225,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (true == MouseButtonNameMap.contains(wParam_X)) {
             QString keycodeString = MouseButtonNameMap.value(wParam_X);
-            if (VIRTUAL_MOUSE_CLICK == extraInfo) {
+            if (VIRTUAL_MOUSE_CLICK == extraInfo || VIRTUAL_MOUSE_POINTCLICK == extraInfo) {
                 if (!hookprocstart) {
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
@@ -4439,10 +4487,11 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         }
 
 #ifdef MOUSE_VERBOSE_LOG
-        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y = " << pMouse->pt.y;
+        QString extraInfoStr = QString("0x%1").arg(QString::number(extraInfo, 16).toUpper(), 8, '0');
+        qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y =" << pMouse->pt.y << ", extraInfoStr =" << extraInfoStr;
 #endif
 
-        if (extraInfo != VIRTUAL_MOUSE_MOVE) {
+        if (extraInfo != VIRTUAL_MOUSE_MOVE && extraInfo != VIRTUAL_MOUSE_POINTCLICK) {
             if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
                 if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
                     if (QKeyMapper::getLockCursorStatus()) {

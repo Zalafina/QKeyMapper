@@ -335,6 +335,7 @@ public slots:
     void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     // void send_WINplusD(void);
+    void sendMousePointClick(QString &mousepoint_str, int keyupdown);
 
 public:
     void sendBurstKeyDown(const QString &burstKey);
