@@ -1667,7 +1667,7 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[DrawMousePoints]" << pointInfo.map_key << "-> X = " << x << ", Y = " << y;
+        qDebug().nospace().noquote() << "[DrawMousePoints]" << pointInfo.map_key << " -> X = " << x << ", Y = " << y;
 #endif
 
         COLORREF color = MOUSE_L_COLOR;

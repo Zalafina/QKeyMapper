@@ -158,11 +158,11 @@ public:
     #define QT_KEY_R_WIN            (0x00000080U)
 
     // Colors for 50% opacity
-    #define MOUSE_L_COLOR           RGB(255, 0, 0)
-    #define MOUSE_R_COLOR           RGB(0, 255, 0)
-    #define MOUSE_M_COLOR           RGB(0, 0, 255)
-    #define MOUSE_X1_COLOR          RGB(255, 255, 0)
-    #define MOUSE_X2_COLOR          RGB(255, 0, 255)
+    #define MOUSE_L_COLOR           RGB(255, 0, 0)      /* Red */
+    #define MOUSE_R_COLOR           RGB(255, 0, 255)    /* Purple */
+    #define MOUSE_M_COLOR           RGB(255, 255, 0)    /* Yellow */
+    #define MOUSE_X1_COLOR          RGB(0, 0, 255)      /* Blue */
+    #define MOUSE_X2_COLOR          RGB(0, 255, 0)      /* Green */
     // #define MOUSE_L_COLOR           RGB(232, 131, 124)
     // #define MOUSE_R_COLOR           RGB(90, 165, 250)
     // #define MOUSE_M_COLOR           RGB(124, 205, 76)
