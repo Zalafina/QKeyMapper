@@ -60,9 +60,19 @@ struct MousePoint_Info
 {
     QString ori_key;
     QString map_key;
-    QPoint point;
+    int x;
+    int y;
 
-    MousePoint_Info() : ori_key(), map_key(), point(-1, -1) {}
+    MousePoint_Info() : ori_key(), map_key(), x(-1), y(-1) {}
+
+#ifdef DEBUG_LOGOUT_ON
+    friend QDebug operator<<(QDebug debug, const MousePoint_Info& info)
+    {
+        QDebugStateSaver saver(debug);
+        debug.nospace() << "\nMousePoint_Info[" << "Ori:"<< info.ori_key << ", Map:" << info.map_key << ", X:" << info.x << ", Y:" << info.y << "]";
+        return debug;
+    }
+#endif
 };
 
 class StyledDelegate : public QStyledItemDelegate

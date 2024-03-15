@@ -5509,7 +5509,55 @@ void QKeyMapper::updateMousePointsList()
         return;
     }
 
+    static QRegularExpression regex("Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)");
+    QRegularExpressionMatch match;
+    MousePointsList.clear();
 
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    {
+        QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+
+        match = regex.match(mappingkeys_str);
+        while (match.hasMatch())
+        {
+            QString ori_key = keymapdata.Original_Key;
+            QString map_key = match.captured(0);
+            QString x_str = match.captured(2);
+            QString y_str = match.captured(3);
+            int x = x_str.isEmpty() ? -1 : x_str.toInt();
+            int y = y_str.isEmpty() ? -1 : y_str.toInt();
+
+            // Check if the same "Mouse-?(int,int)" string already exists in MousePointsList
+            bool alreadyExists = false;
+            for (const MousePoint_Info &info : MousePointsList)
+            {
+                if (info.map_key == map_key)
+                {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+
+            // Add the new MousePoint_Info if it doesn't already exist
+            if (!alreadyExists)
+            {
+                MousePoint_Info info;
+                info.ori_key = ori_key;
+                info.map_key = map_key;
+                info.x = x;
+                info.y = y;
+                MousePointsList.append(info);
+            }
+
+            int matchEnd = match.capturedEnd();
+            mappingkeys_str = mappingkeys_str.mid(matchEnd);
+            match = regex.match(mappingkeys_str);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateMousePointsList]" << "Updated MousePointsList ->" << MousePointsList;
+#endif
 }
 
 void QKeyMapper::reloadUILanguage()
@@ -5770,7 +5818,7 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 void QKeyMapper::showMousePoints(int onoff)
 {
     if (SHOW_MOUSEPOINTS_ON == onoff) {
-        if (!ui->pointDisplayLabel->text().isEmpty()) {
+        if (!MousePointsList.isEmpty()) {
             // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
             // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
             ShowWindow(m_TransParentHandle, SW_SHOW);
