@@ -1654,39 +1654,48 @@ void QKeyMapper::EnumProcessFunction(void)
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 {
     Q_UNUSED(hwnd);
-    QString mousepoint_str = getInstance()->ui->pointDisplayLabel->text();
-
-    if (mousepoint_str.isEmpty()) {
+    if (MousePointsList.isEmpty()) {
         return;
     }
 
-    QPoint mousepoint = getMousePointFromLabelString(mousepoint_str);
-    int x = mousepoint.x();
-    int y = mousepoint.y();
+    for (const MousePoint_Info& pointInfo : MousePointsList) {
+        int x = pointInfo.x;
+        int y = pointInfo.y;
+
+        if (x < 0 || y < 0) {
+            continue;
+        }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[DrawMousePoints]" << " X = " << x << ", Y = " << y;
+        qDebug().nospace().noquote() << "[DrawMousePoints]" << pointInfo.map_key << "-> X = " << x << ", Y = " << y;
 #endif
 
-    if (x < 0 || y < 0) {
-        return;
+        COLORREF color = MOUSE_L_COLOR;
+        if (pointInfo.map_key.startsWith(MOUSE_R_STR)) {
+            color = MOUSE_R_COLOR;
+        } else if (pointInfo.map_key.startsWith(MOUSE_M_STR)) {
+            color = MOUSE_M_COLOR;
+        } else if (pointInfo.map_key.startsWith(MOUSE_X1_STR)) {
+            color = MOUSE_X1_COLOR;
+        } else if (pointInfo.map_key.startsWith(MOUSE_X2_STR)) {
+            color = MOUSE_X2_COLOR;
+        }
+
+        int radius = MOUSE_POINT_RADIUS;
+
+        // Calculate the coordinates of the top-left and bottom-right of the circle
+        int left = x - radius;
+        int top = y - radius;
+        int right = x + radius;
+        int bottom = y + radius;
+
+        // Draw the circle
+        HBRUSH hBrush = CreateSolidBrush(color);
+        HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
+        Ellipse(hdc, left, top, right, bottom);
+        SelectObject(hdc, hOldBrush);
+        DeleteObject(hBrush);
     }
-
-    COLORREF color = MOUSE_L_COLOR;
-    int radius = MOUSE_POINT_RADIUS;
-
-    // Calculate the coordinates of the top-left and bottom-right of the circle
-    int left = x - radius;
-    int top = y - radius;
-    int right = x + radius;
-    int bottom = y + radius;
-
-    // Draw the circle
-    HBRUSH hBrush = CreateSolidBrush(color);
-    HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
-    Ellipse(hdc, left, top, right, bottom);
-    SelectObject(hdc, hOldBrush);
-    DeleteObject(hBrush);
 }
 
 #else
