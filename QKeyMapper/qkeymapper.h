@@ -207,6 +207,7 @@ public:
     static void DrawMousePoints(HWND hwnd, HDC hdc);
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static HWND createTransparentWindow(void);
+    static void destoryTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
 

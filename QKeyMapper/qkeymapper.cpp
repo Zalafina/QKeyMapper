@@ -658,6 +658,8 @@ QKeyMapper::~QKeyMapper()
 #endif
     m_isDestructing = true;
 
+    destoryTransparentWindow(m_TransParentHandle);
+    m_TransParentHandle = NULL;
     // freeShortcuts();
 
     delete m_orikeyComboBox;
@@ -1795,19 +1797,30 @@ HWND QKeyMapper::createTransparentWindow()
     wc.lpfnWndProc = QKeyMapper::WndProc;
     wc.hInstance = hInstance;
     wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
-    wc.lpszClassName = L"TransparentWindow";
+    wc.lpszClassName = L"QKeyMapper_TransparentWindow";
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW, L"TransparentWindow",
+    HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"QKeyMapper_TransparentWindow",
         NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
 
     // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
-    BYTE opacity = 128; // 50% opacity
+    BYTE opacity = 100; // 50% opacity
     SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
 
     return hwnd;
+}
+
+void QKeyMapper::destoryTransparentWindow(HWND hwnd)
+{
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+
+    // Destroy the window
+    DestroyWindow(hwnd);
+
+    // Unregister the window class
+    UnregisterClass(L"QKeyMapper_TransparentWindow", hInstance);
 }
 
 void QKeyMapper::clearTransparentWindow(HWND hwnd, HDC hdc)
@@ -5758,9 +5771,9 @@ void QKeyMapper::showMousePoints(int onoff)
 {
     if (SHOW_MOUSEPOINTS_ON == onoff) {
         if (!ui->pointDisplayLabel->text().isEmpty()) {
-            SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+            // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
             // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
-            // ShowWindow(m_TransParentHandle, SW_SHOW);
+            ShowWindow(m_TransParentHandle, SW_SHOW);
         }
     }
     else {
