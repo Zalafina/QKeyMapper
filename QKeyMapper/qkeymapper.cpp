@@ -5420,11 +5420,13 @@ void QKeyMapper::refreshKeyMappingDataTable()
         ui->keymapdataTable->setRowCount(KeyMappingDataList.size());
         for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
         {
-            bool disable_burstandlock = false;
+            bool disable_burst = false;
+            bool disable_lock = false;
 
 #ifdef VIGEM_CLIENT_SUPPORT
             if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
 
             if (keymapdata.Original_Key == JOY_LS2VJOYLS_STR
@@ -5433,41 +5435,51 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 || keymapdata.Original_Key == JOY_RS2VJOYLS_STR
                 || keymapdata.Original_Key == JOY_LT2VJOYLT_STR
                 || keymapdata.Original_Key == JOY_RT2VJOYRT_STR) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
 #endif
             if (keymapdata.Original_Key == JOY_LS2MOUSE_STR || keymapdata.Original_Key == JOY_RS2MOUSE_STR) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
 
             if (keymapdata.Original_Key == MOUSE_WHEEL_UP_STR || keymapdata.Original_Key == MOUSE_WHEEL_DOWN_STR) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
 
             if (keymapdata.Mapping_Keys.size() > 1) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(SEPARATOR_WAITTIME)) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(FUNC_PREFIX)) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
                 || keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                // disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
                 || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_BRAKE_STR)
                 || keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_ACCEL_STR)
                 || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_ACCEL_STR)) {
-                disable_burstandlock = true;
+                disable_burst = true;
+                disable_lock = true;
             }
 
             /* ORIGINAL_KEY_COLUMN */
@@ -5491,7 +5503,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
             }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-            if (disable_burstandlock) {
+            if (disable_burst) {
                 burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
 #endif
@@ -5507,7 +5519,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
             }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-            if (disable_burstandlock) {
+            if (disable_lock) {
                 lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
 #endif
