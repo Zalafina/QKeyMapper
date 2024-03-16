@@ -1813,7 +1813,7 @@ HWND QKeyMapper::createTransparentWindow()
         NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
 
     // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
-    BYTE opacity = 100; // 50% opacity
+    BYTE opacity = 120; // 50% opacity
     SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
