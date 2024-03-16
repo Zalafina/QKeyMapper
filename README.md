@@ -25,6 +25,7 @@
 ### 新添加功能列表(根据更新时间降序排列)
 * v1.3.6(Build 20240315)
     * 映射按键列表加入Mouse-(L/R/M/X1/X2)_Point，用于模拟鼠标按键移动到屏幕上特定坐标点进行点击的效果。"L-Ctrl+鼠标左键"点击屏幕任意位置更新"坐标"显示标签中的“X:???,Y:???”坐标点显示。例如：映射按键选择"Mouse-L_Point"配合"坐标"显示标签，添加后映射列表加入Mouse-L(aaa,bbb)表示模拟鼠标左键点击屏幕横坐标aaa、纵坐标bbb的位置。按下键盘"F9"会用半透明窗口+彩色圆点的形式显示当前映射列表中鼠标点击坐标的位置，不同鼠标按键的圆点颜色不同，左键(红色)、右键(绿色)、中键(黄色)、侧键1(蓝色)、侧键2(紫色)。
+    * 原始按键列表加入 Joy-LS_2vJoyLS、Joy-RS_2vJoyRS、Joy-LS_2vJoyRS、Joy-RS_2vJoyLS可以将物理手柄摇杆完全映射到虚拟手柄摇杆。
 * v1.3.6(Build 20240312)
     * 为Parsec等高优先级进程窗口添加兼容性支持，其他由于权限原因无法读取进程可执行文件名称的情况进程名统一显示为QKeyMapperUnknown
     * 添加"Func-"前缀的功能性映射按键，Func-Refresh(刷新)/Func-LockScreen(锁屏)/Func-Shutdown(关机)/Func-Reboot(重启)/Func-Logoff(注销)/Func-Sleep(睡眠)/Func-Hibernate(休眠)
