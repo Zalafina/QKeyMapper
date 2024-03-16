@@ -135,6 +135,36 @@ struct Joystick_AxisState {
     qreal right_trigger;
 };
 
+enum Joy2vJoyTriggerState
+{
+    JOY2VJOY_TRIGGER_NONE,
+    JOY2VJOY_TRIGGER_LT,
+    JOY2VJOY_TRIGGER_RT,
+    JOY2VJOY_TRIGGER_LTRT_BOTH
+};
+
+enum Joy2vJoyLeftStickState
+{
+    JOY2VJOY_LS_NONE,
+    JOY2VJOY_LS_2LS,
+    JOY2VJOY_LS_2RS,
+    JOY2VJOY_LS_2LSRS_BOTH
+};
+
+enum Joy2vJoyRightStickState
+{
+    JOY2VJOY_RS_NONE,
+    JOY2VJOY_RS_2LS,
+    JOY2VJOY_RS_2RS,
+    JOY2VJOY_RS_2LSRS_BOTH
+};
+
+struct Joy2vJoyState {
+    Joy2vJoyTriggerState trigger_state;
+    Joy2vJoyLeftStickState ls_state;
+    Joy2vJoyRightStickState rs_state;
+};
+
 #ifdef DINPUT_TEST
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
@@ -255,7 +285,8 @@ public:
         JOYSTICK_LS_DOWN,
         JOYSTICK_LS_LEFT,
         JOYSTICK_LS_RIGHT,
-        JOYSTICK_LS_MOUSE
+        JOYSTICK_LS_MOUSE,
+        JOYSTICK_LS_2VJOY
     };
     Q_ENUM(JoystickLStickCode)
 
@@ -266,7 +297,8 @@ public:
         JOYSTICK_RS_DOWN,
         JOYSTICK_RS_LEFT,
         JOYSTICK_RS_RIGHT,
-        JOYSTICK_RS_MOUSE
+        JOYSTICK_RS_MOUSE,
+        JOYSTICK_RS_2VJOY
     };
     Q_ENUM(JoystickRStickCode)
 
@@ -298,14 +330,9 @@ public:
     };
     Q_ENUM(GripDetectState)
 
-    enum Joy2vJoyState
-    {
-        JOY2VJOY_NONE,
-        JOY2VJOY_LT,
-        JOY2VJOY_RT,
-        JOY2VJOY_LTRT_BOTH
-    };
-    Q_ENUM(Joy2vJoyState)
+    Q_ENUM(Joy2vJoyTriggerState)
+    Q_ENUM(Joy2vJoyLeftStickState)
+    Q_ENUM(Joy2vJoyRightStickState)
 #endif
 
     enum Joy2MouseState
@@ -371,6 +398,7 @@ public:
 
     static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
+    void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
     void ViGEmClient_JoysticksReset(void);
 #endif

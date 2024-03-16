@@ -64,6 +64,11 @@ static const int MOUSE_CURSOR_BOTTOMRIGHT_Y = 65535;
 
 static const int KEY2MOUSE_CYCLECHECK_TIMEOUT = 2;
 
+static const int JOY2VJOY_LEFTSTICK_X   = 1;
+static const int JOY2VJOY_LEFTSTICK_Y   = 2;
+static const int JOY2VJOY_RIGHTSTICK_X  = 3;
+static const int JOY2VJOY_RIGHTSTICK_Y  = 4;
+
 #ifdef VIGEM_CLIENT_SUPPORT
 static const USHORT VIRTUALGAMPAD_VENDORID_X360     = 0x045E;
 static const USHORT VIRTUALGAMPAD_PRODUCTID_X360    = 0xABCD;
@@ -119,8 +124,8 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 
 static const int MOUSE2VJOY_RESET_TIMEOUT = 200;
 static const int VJOY_KEYUP_WAITTIME = 20;
-static const quint8 VK_MOUSE2JOY_HOLD = 0x3A;
-static const quint8 VK_MOUSE2JOY_DIRECT = 0x3B;
+static const quint8 VK_MOUSE2VJOY_HOLD = 0x3A;
+static const quint8 VK_MOUSE2VJOY_DIRECT = 0x3B;
 #endif
 
 static const quint8 VK_BLOCKED = 0x0F;
@@ -151,6 +156,11 @@ static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
 static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
 static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
+
+static const char *JOY_LS2VJOYLS_STR = "Joy-LS_2vJoyLS";
+static const char *JOY_RS2VJOYRS_STR = "Joy-RS_2vJoyRS";
+static const char *JOY_LS2VJOYRS_STR = "Joy-LS_2vJoyRS";
+static const char *JOY_RS2VJOYLS_STR = "Joy-RS_2vJoyLS";
 
 static const char *JOY_LT2VJOYLT_STR = "Joy-Key11(LT)_2vJoyLT";
 static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
@@ -242,7 +252,7 @@ BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
 QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
-QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = QKeyMapper_Worker::JOY2VJOY_NONE;
+Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
@@ -581,15 +591,15 @@ void QKeyMapper_Worker::onMouseMove(int x, int y)
 void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 {
     if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-        if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+        if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) != 0) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2JOY_HOLD is KEY_DOWN State.";
+            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2VJOY_HOLD is KEY_DOWN State.";
 #endif
             return;
         }
-        else if ((GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) != 0) {
+        else if ((GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) != 0) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2JOY_DIRECT is KEY_DOWN State.";
+            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2VJOY_DIRECT is KEY_DOWN State.";
 #endif
             return;
         }
@@ -846,8 +856,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     extenedkeyflag = 0;
                 }
                 input.type = INPUT_KEYBOARD;
-                if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode
-                    || VK_MOUSE2JOY_DIRECT == vkeycode.KeyCode) {
+                if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                    || VK_MOUSE2VJOY_DIRECT == vkeycode.KeyCode) {
                     input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                 }
                 else {
@@ -988,8 +998,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         extenedkeyflag = 0;
                     }
                     input.type = INPUT_KEYBOARD;
-                    if (VK_MOUSE2JOY_HOLD == vkeycode.KeyCode
-                        || VK_MOUSE2JOY_DIRECT == vkeycode.KeyCode) {
+                    if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                        || VK_MOUSE2VJOY_DIRECT == vkeycode.KeyCode) {
                         input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                     }
                     else {
@@ -1979,7 +1989,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         short leftX = 0;
         short leftY = 0;
 
-        if ((GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) != 0) {
+        if ((GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) != 0) {
             int direct_x;
             int direct_y;
             int x_sensitivity = vJoy_X_Sensitivity;
@@ -2055,8 +2065,8 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
         }
         Q_UNUSED(error);
-        if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) == 0
-            && (GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) == 0) {
+        if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) == 0
+            && (GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) == 0) {
             m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
         }
 #ifdef DEBUG_LOGOUT_ON
@@ -2070,6 +2080,144 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
 #endif
     }
+}
+
+void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(int sticktype)
+{
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return;
+    }
+
+    if (s_ViGEmClient == Q_NULLPTR || s_ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+
+    if (vigem_target_is_attached(s_ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    // Convert the joystick axis values from qreal to short
+    int leftX_int = 0;
+    int leftY_int = 0;
+    int rightX_int = 0;
+    int rightY_int = 0;
+    short leftX = 0;
+    short leftY = 0;
+    short rightX = 0;
+    short rightY = 0;
+
+    if (sticktype == JOY2VJOY_LEFTSTICK_X || sticktype == JOY2VJOY_LEFTSTICK_Y) {
+        leftX_int = (int)(32767.0 * s_JoyAxisState.left_x);
+        leftY_int = -(int)(32767.0 * s_JoyAxisState.left_y);
+        if (leftX_int < -32767) {
+            leftX_int = -32767;
+        }
+        if (leftX_int > 32767) {
+            leftX_int = 32767;
+        }
+        if (leftY_int < -32767) {
+            leftY_int = -32767;
+        }
+        if (leftY_int > 32767) {
+            leftY_int = 32767;
+        }
+        leftX = (short)leftX_int;
+        leftY = (short)leftY_int;
+        // ViGEmClient_CalculateThumbValue(&leftX, &leftY);
+    }
+    else if (sticktype == JOY2VJOY_RIGHTSTICK_X || sticktype == JOY2VJOY_RIGHTSTICK_Y) {
+        rightX_int = (int)(32767.0 * s_JoyAxisState.right_x);
+        rightY_int = -(int)(32767.0 * s_JoyAxisState.right_y);
+        if (rightX_int < -32767) {
+            rightX_int = -32767;
+        }
+        if (rightX_int > 32767) {
+            rightX_int = 32767;
+        }
+        if (rightY_int < -32767) {
+            rightY_int = -32767;
+        }
+        if (rightY_int > 32767) {
+            rightY_int = 32767;
+        }
+        rightX = (short)rightX_int;
+        rightY = (short)rightY_int;
+        // ViGEmClient_CalculateThumbValue(&rightX, &rightY);
+    }
+
+    // Update the virtual joystick's state based on the physical joystick's state
+    if (sticktype == JOY2VJOY_LEFTSTICK_X) {
+        if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LSRS_BOTH) {
+            s_ViGEmTarget_Report.sThumbLX = leftX;
+            s_ViGEmTarget_Report.sThumbRX = leftX;
+        }
+        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LS) {
+            s_ViGEmTarget_Report.sThumbLX = leftX;
+        }
+        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2RS) {
+            s_ViGEmTarget_Report.sThumbRX = leftX;
+        }
+    }
+    else if (sticktype == JOY2VJOY_LEFTSTICK_Y) {
+        if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LSRS_BOTH) {
+            s_ViGEmTarget_Report.sThumbLY = leftY;
+            s_ViGEmTarget_Report.sThumbRY = leftY;
+        }
+        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LS) {
+            s_ViGEmTarget_Report.sThumbLY = leftY;
+        }
+        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2RS) {
+            s_ViGEmTarget_Report.sThumbRY = leftY;
+        }
+    }
+    else if (sticktype == JOY2VJOY_RIGHTSTICK_X) {
+        if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LSRS_BOTH) {
+            s_ViGEmTarget_Report.sThumbLX = rightX;
+            s_ViGEmTarget_Report.sThumbRX = rightX;
+        }
+        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LS) {
+            s_ViGEmTarget_Report.sThumbLX = rightX;
+        }
+        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2RS) {
+            s_ViGEmTarget_Report.sThumbRX = rightX;
+        }
+    }
+    else if (sticktype == JOY2VJOY_RIGHTSTICK_Y) {
+        if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LSRS_BOTH) {
+            s_ViGEmTarget_Report.sThumbLY = rightY;
+            s_ViGEmTarget_Report.sThumbRY = rightY;
+        }
+        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LS) {
+            s_ViGEmTarget_Report.sThumbLY = rightY;
+        }
+        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2RS) {
+            s_ViGEmTarget_Report.sThumbRY = rightY;
+        }
+    }
+
+    VIGEM_ERROR error;
+    if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+        DS4_REPORT ds4_report;
+        DS4_REPORT_INIT(&ds4_report);
+        XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+        error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+    }
+    else {
+        error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+    }
+    Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+    if (error != VIGEM_ERROR_NONE) {
+        qDebug("[ViGEmClient_Joy2vJoystickUpdate] Joy2vJoystick Update ErrorCode: 0x%08X", error);
+    }
+    else {
+#ifdef JOYSTICK_VERBOSE_LOG
+        qDebug("[ViGEmClient_Joy2vJoystickUpdate] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
+#endif
+    }
+#endif
 }
 
 void QKeyMapper_Worker::ViGEmClient_GamepadReset()
@@ -2395,7 +2543,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
-    s_Joy2vJoyState = JOY2VJOY_NONE;
+    s_Joy2vJoyState = Joy2vJoyState();
     s_Mouse2vJoy_delta.rx() = 0;
     s_Mouse2vJoy_delta.ry() = 0;
     s_Mouse2vJoy_prev.rx() = 0;
@@ -2501,11 +2649,15 @@ QKeyMapper_Worker::GripDetectState QKeyMapper_Worker::checkGripDetectEnableState
     return gripdetect_enablestate;
 }
 
-QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
+Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
 {
-    Joy2vJoyState joy2vjoystate = JOY2VJOY_NONE;
+    Joy2vJoyState joy2vjoystate = Joy2vJoyState();
     bool joy2vjoy_LT = false;
     bool joy2vjoy_RT = false;
+    bool joy2vjoy_LS2LS = false;
+    bool joy2vjoy_LS2RS = false;
+    bool joy2vjoy_RS2LS = false;
+    bool joy2vjoy_RS2RS = false;
 
     int findJoy2vJoyLTindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_LT2VJOYLT_STR);
     if (findJoy2vJoyLTindex >= 0) {
@@ -2517,14 +2669,54 @@ QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
         joy2vjoy_RT = true;
     }
 
+    int findJoy2vJoy_LS2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_LS2VJOYLS_STR);
+    if (findJoy2vJoy_LS2LSindex >= 0) {
+        joy2vjoy_LS2LS = true;
+    }
+
+    int findJoy2vJoy_LS2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_LS2VJOYRS_STR);
+    if (findJoy2vJoy_LS2RSindex >= 0) {
+        joy2vjoy_LS2RS = true;
+    }
+
+    int findJoy2vJoy_RS2LSindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_RS2VJOYLS_STR);
+    if (findJoy2vJoy_RS2LSindex >= 0) {
+        joy2vjoy_RS2LS = true;
+    }
+
+    int findJoy2vJoy_RS2RSindex = QKeyMapper::findOriKeyInKeyMappingDataList(JOY_RS2VJOYRS_STR);
+    if (findJoy2vJoy_RS2RSindex >= 0) {
+        joy2vjoy_RS2RS = true;
+    }
+
     if (joy2vjoy_LT && joy2vjoy_RT) {
-        joy2vjoystate = JOY2VJOY_LTRT_BOTH;
+        joy2vjoystate.trigger_state = JOY2VJOY_TRIGGER_LTRT_BOTH;
     }
     else if (joy2vjoy_LT) {
-        joy2vjoystate = JOY2VJOY_LT;
+        joy2vjoystate.trigger_state = JOY2VJOY_TRIGGER_LT;
     }
     else if (joy2vjoy_RT) {
-        joy2vjoystate = JOY2VJOY_RT;
+        joy2vjoystate.trigger_state = JOY2VJOY_TRIGGER_RT;
+    }
+
+    if (joy2vjoy_LS2LS && joy2vjoy_LS2RS) {
+        joy2vjoystate.ls_state = JOY2VJOY_LS_2LSRS_BOTH;
+    }
+    else if (joy2vjoy_LS2LS) {
+        joy2vjoystate.ls_state = JOY2VJOY_LS_2LS;
+    }
+    else if (joy2vjoy_LS2RS) {
+        joy2vjoystate.ls_state = JOY2VJOY_LS_2RS;
+    }
+
+    if (joy2vjoy_RS2LS && joy2vjoy_RS2RS) {
+        joy2vjoystate.rs_state = JOY2VJOY_RS_2LSRS_BOTH;
+    }
+    else if (joy2vjoy_RS2LS) {
+        joy2vjoystate.rs_state = JOY2VJOY_RS_2LS;
+    }
+    else if (joy2vjoy_RS2RS) {
+        joy2vjoystate.rs_state = JOY2VJOY_RS_2RS;
     }
 
     return joy2vjoystate;
@@ -3160,16 +3352,19 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
-    if (JOYSTICK_AXIS_LT_BUTTON == e.axis || JOYSTICK_AXIS_RT_BUTTON == e.axis) {
-        if (JOYSTICK_AXIS_LT_BUTTON == e.axis
-            && (JOY2VJOY_LT == s_Joy2vJoyState || JOY2VJOY_LTRT_BOTH == s_Joy2vJoyState)) {
-            s_JoyAxisState.left_trigger = e.value;
+    if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
+        s_JoyAxisState.left_trigger = e.value;
+        if (JOY2VJOY_TRIGGER_LT == s_Joy2vJoyState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == s_Joy2vJoyState.trigger_state) {
             QString autoadjustEmptyStr;
             ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT);
         }
-        else if (JOYSTICK_AXIS_RT_BUTTON == e.axis
-            && (JOY2VJOY_RT == s_Joy2vJoyState || JOY2VJOY_LTRT_BOTH == s_Joy2vJoyState)) {
-            s_JoyAxisState.right_trigger = e.value;
+        else {
+            joystickLTRTButtonProc(e);
+        }
+    }
+    else if (JOYSTICK_AXIS_RT_BUTTON == e.axis) {
+        s_JoyAxisState.right_trigger = e.value;
+        if (JOY2VJOY_TRIGGER_RT == s_Joy2vJoyState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == s_Joy2vJoyState.trigger_state) {
             QString autoadjustEmptyStr;
             ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT);
         }
@@ -3179,19 +3374,39 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
     else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
         s_JoyAxisState.left_x = e.value;
-        joystickLSHorizontalProc(e);
+        if (s_Joy2vJoyState.ls_state != JOY2VJOY_LS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_LEFTSTICK_X);
+        }
+        else {
+            joystickLSHorizontalProc(e);
+        }
     }
     else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis) {
         s_JoyAxisState.left_y = e.value;
-        joystickLSVerticalProc(e);
+        if (s_Joy2vJoyState.ls_state != JOY2VJOY_LS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_LEFTSTICK_Y);
+        }
+        else {
+            joystickLSVerticalProc(e);
+        }
     }
     else if (JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
         s_JoyAxisState.right_x = e.value;
-        joystickRSHorizontalProc(e);
+        if (s_Joy2vJoyState.rs_state != JOY2VJOY_RS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_RIGHTSTICK_X);
+        }
+        else {
+            joystickRSHorizontalProc(e);
+        }
     }
     else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
         s_JoyAxisState.right_y = e.value;
-        joystickRSVerticalProc(e);
+        if (s_Joy2vJoyState.rs_state != JOY2VJOY_RS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_RIGHTSTICK_Y);
+        }
+        else {
+            joystickRSVerticalProc(e);
+        }
     }
 }
 
@@ -3207,15 +3422,15 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
 
     if (mouse2joy_keystr == MOUSE2VJOY_DIRECT_KEY_STR) {
         if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-            if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+            if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) != 0) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Skip Mouse2vJoyReset for VK_MOUSE2JOY_HOLD is KEY_DOWN State.";
+                qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Skip Mouse2vJoyReset for VK_MOUSE2VJOY_HOLD is KEY_DOWN State.";
 #endif
                 return;
             }
         }
 
-        if ((GetKeyState(VK_MOUSE2JOY_DIRECT) & 0x8000) != 0) {
+        if ((GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) != 0) {
             ViGEmClient_JoysticksReset();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4493,7 +4708,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (extraInfo != VIRTUAL_MOUSE_MOVE && extraInfo != VIRTUAL_MOUSE_POINTCLICK) {
             if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                if ((GetKeyState(VK_MOUSE2JOY_HOLD) & 0x8000) != 0) {
+                if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) != 0) {
                     if (QKeyMapper::getLockCursorStatus()) {
                         return (LRESULT)TRUE;
                     }
@@ -5014,8 +5229,8 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        (KEY2MOUSE_DOWN_STR,        V_KEYCODE(VK_KEY2MOUSE_DOWN,    EXTENED_FLAG_TRUE));   // 0x8B (Key2Mouse-Down)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_LEFT_STR,        V_KEYCODE(VK_KEY2MOUSE_LEFT,    EXTENED_FLAG_TRUE));   // 0x8C (Key2Mouse-Left)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_KEY2MOUSE_RIGHT,   EXTENED_FLAG_TRUE));   // 0x8D (Key2Mouse-Right)
-    VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2JOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
-    VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2JOY_DIRECT,  EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
+    VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2VJOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
+    VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2VJOY_DIRECT,  EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
 
     // US 104 Keyboard Main Area
     // Row 1
@@ -5408,6 +5623,11 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-Key12(RT)"               ,   (int)JOYSTICK_RIGHT_TRIGGER     );
     JoyStickKeyMap.insert(JOY_LT2VJOYLT_STR             ,   (int)JOYSTICK_LEFT_TRIGGER      );
     JoyStickKeyMap.insert(JOY_RT2VJOYRT_STR             ,   (int)JOYSTICK_RIGHT_TRIGGER     );
+    /* Joystick 2vJoy L/R Stick */
+    JoyStickKeyMap.insert(JOY_LS2VJOYLS_STR              ,  (int)JOYSTICK_LS_2VJOY          );
+    JoyStickKeyMap.insert(JOY_RS2VJOYRS_STR              ,  (int)JOYSTICK_RS_2VJOY          );
+    JoyStickKeyMap.insert(JOY_LS2VJOYRS_STR              ,  (int)JOYSTICK_LS_2VJOY          );
+    JoyStickKeyMap.insert(JOY_RS2VJOYLS_STR              ,  (int)JOYSTICK_RS_2VJOY          );
 
     /* Joystick Expanded Buttons */
     JoyStickKeyMap.insert("Joy-Key14"                   ,   (int)JOYSTICK_BUTTON_11         );

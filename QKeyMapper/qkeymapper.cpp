@@ -199,6 +199,11 @@ static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
 static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
 static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
 
+static const char *JOY_LS2VJOYLS_STR = "Joy-LS_2vJoyLS";
+static const char *JOY_RS2VJOYRS_STR = "Joy-RS_2vJoyRS";
+static const char *JOY_LS2VJOYRS_STR = "Joy-LS_2vJoyRS";
+static const char *JOY_RS2VJOYLS_STR = "Joy-RS_2vJoyLS";
+
 static const char *JOY_LT2VJOYLT_STR = "Joy-Key11(LT)_2vJoyLT";
 static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
 
@@ -2531,6 +2536,10 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
         || VJOY_MOUSE2RS_STR == text
         || JOY_LS2MOUSE_STR == text
         || JOY_RS2MOUSE_STR == text
+        || JOY_LS2VJOYLS_STR == text
+        || JOY_RS2VJOYRS_STR == text
+        || JOY_LS2VJOYRS_STR == text
+        || JOY_RS2VJOYLS_STR == text
         || JOY_LT2VJOYLT_STR == text
         || JOY_RT2VJOYRT_STR == text) {
 #ifdef DEBUG_LOGOUT_ON
@@ -4320,6 +4329,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
             || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
             || m_orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
             || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
+            || m_orikeyComboBox->currentText() == JOY_LS2VJOYLS_STR
+            || m_orikeyComboBox->currentText() == JOY_RS2VJOYRS_STR
+            || m_orikeyComboBox->currentText() == JOY_LS2VJOYRS_STR
+            || m_orikeyComboBox->currentText() == JOY_RS2VJOYLS_STR
             || m_orikeyComboBox->currentText() == JOY_LT2VJOYLT_STR
             || m_orikeyComboBox->currentText() == JOY_RT2VJOYRT_STR)) {
         m_mapkeyComboBox->setCurrentText(QString());
@@ -5207,6 +5220,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key12(RT)"
             << "Joy-Key13(Guide)"
 #ifdef VIGEM_CLIENT_SUPPORT
+            << JOY_LS2VJOYLS_STR
+            << JOY_RS2VJOYRS_STR
+            << JOY_LS2VJOYRS_STR
+            << JOY_RS2VJOYLS_STR
             << JOY_LT2VJOYLT_STR
             << JOY_RT2VJOYRT_STR
 #endif
@@ -5410,7 +5427,12 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_burstandlock = true;
             }
 
-            if (keymapdata.Original_Key == JOY_LT2VJOYLT_STR || keymapdata.Original_Key == JOY_RT2VJOYRT_STR) {
+            if (keymapdata.Original_Key == JOY_LS2VJOYLS_STR
+                || keymapdata.Original_Key == JOY_RS2VJOYRS_STR
+                || keymapdata.Original_Key == JOY_LS2VJOYRS_STR
+                || keymapdata.Original_Key == JOY_RS2VJOYLS_STR
+                || keymapdata.Original_Key == JOY_LT2VJOYLT_STR
+                || keymapdata.Original_Key == JOY_RT2VJOYRT_STR) {
                 disable_burstandlock = true;
             }
 #endif
@@ -6121,6 +6143,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
             || VJOY_MOUSE2RS_STR == currentOriKeyText
             || JOY_LS2MOUSE_STR == currentOriKeyText
             || JOY_RS2MOUSE_STR == currentOriKeyText
+            || JOY_LS2VJOYLS_STR == currentOriKeyText
+            || JOY_RS2VJOYRS_STR == currentOriKeyText
+            || JOY_LS2VJOYRS_STR == currentOriKeyText
+            || JOY_RS2VJOYLS_STR == currentOriKeyText
             || JOY_LT2VJOYLT_STR == currentOriKeyText
             || JOY_RT2VJOYRT_STR == currentOriKeyText) {
             already_exist = true;
@@ -6256,6 +6282,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 || VJOY_MOUSE2RS_STR == currentOriKeyText
                 || JOY_LS2MOUSE_STR == currentOriKeyText
                 || JOY_RS2MOUSE_STR == currentOriKeyText
+                || JOY_LS2VJOYLS_STR == currentOriKeyText
+                || JOY_RS2VJOYRS_STR == currentOriKeyText
+                || JOY_LS2VJOYRS_STR == currentOriKeyText
+                || JOY_RS2VJOYLS_STR == currentOriKeyText
                 || JOY_LT2VJOYLT_STR == currentOriKeyText
                 || JOY_RT2VJOYRT_STR == currentOriKeyText) {
                 currentMapKeyText = currentOriKeyText;
