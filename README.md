@@ -6,7 +6,7 @@
 ### [![Github Latest Release](https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg)](https://github.com/Zalafina/QKeyMapper/releases/latest)
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
-### ※ QKeyMapper_vX.Y.Z_x64开头的ZIP包是编译好的可执行文件压缩包
+### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
 ---------------
 ### 许可证更改 ：请注意，软件许可证已从 MIT 许可证更改为 GNU 通用公共许可证 v3.0 (GPL v3)。在使用、修改或分发软件之前，请确保你已经查看并理解了新许可证的条款。
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
