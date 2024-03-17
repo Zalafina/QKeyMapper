@@ -16,8 +16,11 @@
 ### [注意: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 * https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
 ---------------
-## 使用教学视频请点击下方图片
-[![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://www.bilibili.com/video/BV1Re411f7YS/?share_source=copy_web&vd_source=9602438c12e2a27bbe08c10cd8723515)
+## 按键映射工具使用技巧等参考Wiki页面：
+* [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
+---------------
+## 使用教学视频合集请点击下方图片
+[![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
 ---------------
 ## 使用中有疑问也可以加Q群咨询 (群号: 906963961)
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
