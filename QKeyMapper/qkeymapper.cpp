@@ -5189,6 +5189,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-Key10(RS-Click)"
             << "vJoy-Key11(LT)"
             << "vJoy-Key12(RT)"
+            << "vJoy-Key13(Guide)"
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR

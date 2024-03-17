@@ -5736,13 +5736,14 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     JoyStickKeyMap.insert("vJoy-Key8(Start)"            ,   (int)JOYSTICK_BUTTON_7      );
     JoyStickKeyMap.insert("vJoy-Key9(LS-Click)"         ,   (int)JOYSTICK_BUTTON_8      );
     JoyStickKeyMap.insert("vJoy-Key10(RS-Click)"        ,   (int)JOYSTICK_BUTTON_9      );
-    JoyStickKeyMap.insert("vJoy-Key11(LT)"              ,   (int)JOYSTICK_BUTTON_10     );
-    JoyStickKeyMap.insert("vJoy-Key12(RT)"              ,   (int)JOYSTICK_BUTTON_11     );
+    JoyStickKeyMap.insert("vJoy-Key13(Guide)"           ,   (int)JOYSTICK_BUTTON_10     );
+    JoyStickKeyMap.insert("vJoy-Key11(LT)"              ,   (int)JOYSTICK_LEFT_TRIGGER  );
+    JoyStickKeyMap.insert("vJoy-Key12(RT)"              ,   (int)JOYSTICK_RIGHT_TRIGGER );
     /* Virtual Joystick Special Buttons for ForzaHorizon */
-    JoyStickKeyMap.insert("vJoy-Key11(LT)_BRAKE"        ,   (int)JOYSTICK_BUTTON_10     );
-    JoyStickKeyMap.insert("vJoy-Key11(LT)_ACCEL"        ,   (int)JOYSTICK_BUTTON_10     );
-    JoyStickKeyMap.insert("vJoy-Key12(RT)_BRAKE"        ,   (int)JOYSTICK_BUTTON_11     );
-    JoyStickKeyMap.insert("vJoy-Key12(RT)_ACCEL"        ,   (int)JOYSTICK_BUTTON_11     );
+    JoyStickKeyMap.insert("vJoy-Key11(LT)_BRAKE"        ,   (int)JOYSTICK_LEFT_TRIGGER  );
+    JoyStickKeyMap.insert("vJoy-Key11(LT)_ACCEL"        ,   (int)JOYSTICK_LEFT_TRIGGER  );
+    JoyStickKeyMap.insert("vJoy-Key12(RT)_BRAKE"        ,   (int)JOYSTICK_RIGHT_TRIGGER );
+    JoyStickKeyMap.insert("vJoy-Key12(RT)_ACCEL"        ,   (int)JOYSTICK_RIGHT_TRIGGER );
 
     /* Virtual Joystick DPad Direction */
     JoyStickKeyMap.insert("vJoy-DPad-Up"                ,   (int)JOYSTICK_DPAD_UP       );
@@ -5771,6 +5772,7 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     ViGEmButtonMap.insert("vJoy-Key8(Start)"            ,   XUSB_GAMEPAD_START          );
     ViGEmButtonMap.insert("vJoy-Key9(LS-Click)"         ,   XUSB_GAMEPAD_LEFT_THUMB     );
     ViGEmButtonMap.insert("vJoy-Key10(RS-Click)"        ,   XUSB_GAMEPAD_RIGHT_THUMB    );
+    ViGEmButtonMap.insert("vJoy-Key13(Guide)"           ,   XUSB_GAMEPAD_GUIDE          );
     /* ViGEm Virtual Joystick DPad Direction */
     ViGEmButtonMap.insert("vJoy-DPad-Up"                ,   XUSB_GAMEPAD_DPAD_UP        );
     ViGEmButtonMap.insert("vJoy-DPad-Down"              ,   XUSB_GAMEPAD_DPAD_DOWN      );
