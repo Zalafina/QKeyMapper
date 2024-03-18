@@ -686,7 +686,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
     QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
 
-    if (original_key == MOUSE_WHEEL_UP_STR || original_key == MOUSE_WHEEL_DOWN_STR) {
+    if (original_key.contains(MOUSE_WHEEL_UP_STR) || original_key.contains(MOUSE_WHEEL_DOWN_STR)) {
         if (KEY_UP == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait start ->" << original_key;
@@ -4633,6 +4633,26 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef MOUSE_VERBOSE_LOG
                 qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel -> Delta =" << zDelta;
 #endif
+                QString keycodeString;
+                if (zDelta > 0) {
+                    keycodeString = MOUSE_WHEEL_UP_STR;
+                }
+                else {
+                    keycodeString = MOUSE_WHEEL_DOWN_STR;
+                }
+                int keyupdown = KEY_DOWN;
+                updatePressedRealKeysList(keycodeString, keyupdown);
+                bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+                keyupdown = KEY_UP;
+                updatePressedRealKeysList(keycodeString, keyupdown);
+                combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+                if (combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[LowLevelMouseHookProc] return TRUE");
+#endif
+                    return (LRESULT)TRUE;
+                }
+
                 short delta_abs = qAbs(zDelta);
                 if (delta_abs >= WHEEL_DELTA) {
                     bool wheel_up_found = false;
@@ -5440,6 +5460,8 @@ void QKeyMapper_Worker::initCombinationKeysList()
             << "Mouse-M"
             << "Mouse-X1"
             << "Mouse-X2"
+            << MOUSE_WHEEL_UP_STR
+            << MOUSE_WHEEL_DOWN_STR
             /* Keyboard Keys */
             << "A"
             << "B"

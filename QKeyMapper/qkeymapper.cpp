@@ -5445,7 +5445,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
                 disable_lock = true;
             }
 
-            if (keymapdata.Original_Key == MOUSE_WHEEL_UP_STR || keymapdata.Original_Key == MOUSE_WHEEL_DOWN_STR) {
+            if (keymapdata.Original_Key.contains(MOUSE_WHEEL_UP_STR) || keymapdata.Original_Key.contains(MOUSE_WHEEL_DOWN_STR)) {
                 disable_burst = true;
                 disable_lock = true;
             }
