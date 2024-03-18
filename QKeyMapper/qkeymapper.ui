@@ -34,9 +34,9 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>900</x>
+     <x>920</x>
      <y>450</y>
-     <width>160</width>
+     <width>140</width>
      <height>40</height>
     </rect>
    </property>
@@ -321,7 +321,7 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>705</x>
      <y>445</y>
      <width>61</width>
      <height>22</height>
@@ -337,7 +337,7 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>705</x>
      <y>470</y>
      <width>61</width>
      <height>22</height>
@@ -723,7 +723,7 @@
   <widget class="QLabel" name="mouseXSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>645</x>
+     <x>820</x>
      <y>445</y>
      <width>50</width>
      <height>22</height>
@@ -739,7 +739,7 @@
   <widget class="QSpinBox" name="mouseXSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>700</x>
+     <x>875</x>
      <y>445</y>
      <width>35</width>
      <height>22</height>
@@ -755,7 +755,7 @@
   <widget class="QSpinBox" name="mouseYSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>700</x>
+     <x>875</x>
      <y>470</y>
      <width>35</width>
      <height>22</height>
@@ -771,7 +771,7 @@
   <widget class="QLabel" name="mouseYSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>645</x>
+     <x>820</x>
      <y>470</y>
      <width>50</width>
      <height>22</height>
@@ -787,7 +787,7 @@
   <widget class="QSpinBox" name="burstpressSpinBox">
    <property name="geometry">
     <rect>
-     <x>585</x>
+     <x>770</x>
      <y>445</y>
      <width>45</width>
      <height>22</height>
@@ -803,7 +803,7 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>585</x>
+     <x>770</x>
      <y>470</y>
      <width>45</width>
      <height>22</height>
@@ -848,8 +848,8 @@
   <widget class="QSpinBox" name="dataPortSpinBox">
    <property name="geometry">
     <rect>
-     <x>1010</x>
-     <y>410</y>
+     <x>440</x>
+     <y>490</y>
      <width>50</width>
      <height>22</height>
     </rect>
@@ -861,8 +861,8 @@
   <widget class="QLabel" name="accelThresholdLabel">
    <property name="geometry">
     <rect>
-     <x>745</x>
-     <y>470</y>
+     <x>375</x>
+     <y>550</y>
      <width>60</width>
      <height>22</height>
     </rect>
@@ -877,8 +877,8 @@
   <widget class="QDoubleSpinBox" name="accelThresholdDoubleSpinBox">
    <property name="geometry">
     <rect>
-     <x>810</x>
-     <y>470</y>
+     <x>440</x>
+     <y>550</y>
      <width>60</width>
      <height>22</height>
     </rect>
@@ -890,8 +890,8 @@
   <widget class="QLabel" name="dataPortLabel">
    <property name="geometry">
     <rect>
-     <x>945</x>
-     <y>410</y>
+     <x>375</x>
+     <y>490</y>
      <width>60</width>
      <height>22</height>
     </rect>
@@ -906,8 +906,8 @@
   <widget class="QDoubleSpinBox" name="brakeThresholdDoubleSpinBox">
    <property name="geometry">
     <rect>
-     <x>810</x>
-     <y>445</y>
+     <x>440</x>
+     <y>520</y>
      <width>60</width>
      <height>22</height>
     </rect>
@@ -919,8 +919,8 @@
   <widget class="QLabel" name="brakeThresholdLabel">
    <property name="geometry">
     <rect>
-     <x>745</x>
-     <y>445</y>
+     <x>375</x>
+     <y>520</y>
      <width>60</width>
      <height>22</height>
     </rect>
