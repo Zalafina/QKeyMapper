@@ -321,7 +321,7 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>705</x>
+     <x>710</x>
      <y>445</y>
      <width>61</width>
      <height>22</height>
@@ -337,7 +337,7 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>705</x>
+     <x>710</x>
      <y>470</y>
      <width>61</width>
      <height>22</height>
@@ -627,7 +627,7 @@
   <widget class="QSpinBox" name="waitTimeSpinBox">
    <property name="geometry">
     <rect>
-     <x>770</x>
+     <x>775</x>
      <y>410</y>
      <width>45</width>
      <height>22</height>
@@ -640,7 +640,7 @@
   <widget class="QLabel" name="waitTimeLabel">
    <property name="geometry">
     <rect>
-     <x>745</x>
+     <x>720</x>
      <y>410</y>
      <width>51</width>
      <height>22</height>
@@ -650,7 +650,7 @@
     <string>Delay</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="orikeySeqLabel">
@@ -787,7 +787,7 @@
   <widget class="QSpinBox" name="burstpressSpinBox">
    <property name="geometry">
     <rect>
-     <x>770</x>
+     <x>775</x>
      <y>445</y>
      <width>45</width>
      <height>22</height>
@@ -803,7 +803,7 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>770</x>
+     <x>775</x>
      <y>470</y>
      <width>45</width>
      <height>22</height>
