@@ -149,6 +149,7 @@ static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
+static const char *MOUSE2VJOY_PREFIX = "Mouse2vJoy-";
 static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
 static const char *MOUSE2VJOY_DIRECT_KEY_STR = "Mouse2vJoy-Direct";
 
@@ -204,6 +205,8 @@ bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 #ifdef HOOKSTART_ONSTARTUP
 QAtomicBool QKeyMapper_Worker::s_AtomicHookProcStart = QAtomicBool();
 #endif
+QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Direct = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left = QAtomicBool();
@@ -591,15 +594,15 @@ void QKeyMapper_Worker::onMouseMove(int x, int y)
 void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 {
     if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-        if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) != 0) {
+        if (s_Mouse2vJoy_Hold) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2VJOY_HOLD is KEY_DOWN State.";
+            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for Mouse2vJoy_Hold is KEY_DOWN State.";
 #endif
             return;
         }
-        else if ((GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) != 0) {
+        else if (s_Mouse2vJoy_Direct) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for VK_MOUSE2VJOY_DIRECT is KEY_DOWN State.";
+            qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for Mouse2vJoy_Direct is KEY_DOWN State.";
 #endif
             return;
         }
@@ -1989,7 +1992,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         short leftX = 0;
         short leftY = 0;
 
-        if ((GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) != 0) {
+        if (s_Mouse2vJoy_Direct) {
             int direct_x;
             int direct_y;
             int x_sensitivity = vJoy_X_Sensitivity;
@@ -2065,8 +2068,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
         }
         Q_UNUSED(error);
-        if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) == 0
-            && (GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) == 0) {
+        if (false == s_Mouse2vJoy_Hold && false == s_Mouse2vJoy_Direct) {
             m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
         }
 #ifdef DEBUG_LOGOUT_ON
@@ -3422,15 +3424,15 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
 
     if (mouse2joy_keystr == MOUSE2VJOY_DIRECT_KEY_STR) {
         if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-            if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) != 0) {
+            if (s_Mouse2vJoy_Hold) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Skip Mouse2vJoyReset for VK_MOUSE2VJOY_HOLD is KEY_DOWN State.";
+                qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Skip Mouse2vJoyReset for Mouse2vJoy_Hold is KEY_DOWN State.";
 #endif
                 return;
             }
         }
 
-        if ((GetKeyState(VK_MOUSE2VJOY_DIRECT) & 0x8000) != 0) {
+        if (s_Mouse2vJoy_Direct) {
             ViGEmClient_JoysticksReset();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4316,6 +4318,12 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
                         s_Key2Mouse_Right = true;
                     }
+                    else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
+                        s_Mouse2vJoy_Hold = true;
+                    }
+                    else if (keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
+                        s_Mouse2vJoy_Direct = true;
+                    }
                 }
             }
             /* KEY_UP == keyupdown */
@@ -4344,17 +4352,16 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
                     s_Key2Mouse_Right = false;
                 }
+                else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
+                    s_Mouse2vJoy_Hold = false;
+                }
+                else if (keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
+                    s_Mouse2vJoy_Direct = false;
+                }
             }
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
-            if (s_Key2Mouse_EnableState && keycodeString.startsWith(KEY2MOUSE_PREFIX)) {
-                returnFlag = true;
-            }
-            else if (keycodeString.startsWith(FUNC_PREFIX)) {
-                returnFlag = true;
-            }
-
             if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
                 if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
                     if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR
@@ -4373,6 +4380,16 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         }
                     }
                 }
+            }
+
+            if (s_Key2Mouse_EnableState && keycodeString.startsWith(KEY2MOUSE_PREFIX)) {
+                returnFlag = true;
+            }
+            else if (keycodeString.startsWith(MOUSE2VJOY_PREFIX)) {
+                returnFlag = true;
+            }
+            else if (keycodeString.startsWith(FUNC_PREFIX)) {
+                returnFlag = true;
             }
         }
     }
@@ -4464,6 +4481,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
                             s_Key2Mouse_Right = true;
                         }
+                        else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
+                            s_Mouse2vJoy_Hold = true;
+                        }
+                        else if (keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
+                            s_Mouse2vJoy_Direct = true;
+                        }
                     }
                 }
                 else {
@@ -4480,6 +4503,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                     else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
                         s_Key2Mouse_Right = false;
+                    }
+                    else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
+                        s_Mouse2vJoy_Hold = false;
+                    }
+                    else if (keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
+                        s_Mouse2vJoy_Direct = false;
                     }
                 }
             }
@@ -4734,7 +4763,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (extraInfo != VIRTUAL_MOUSE_MOVE && extraInfo != VIRTUAL_MOUSE_POINTCLICK) {
             if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                if ((GetKeyState(VK_MOUSE2VJOY_HOLD) & 0x8000) != 0) {
+                if (s_Mouse2vJoy_Hold) {
                     if (QKeyMapper::getLockCursorStatus()) {
                         return (LRESULT)TRUE;
                     }

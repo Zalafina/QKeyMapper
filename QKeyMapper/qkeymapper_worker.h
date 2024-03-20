@@ -519,6 +519,8 @@ public:
 #ifdef HOOKSTART_ONSTARTUP
     static QAtomicBool s_AtomicHookProcStart;
 #endif
+    static QAtomicBool s_Mouse2vJoy_Hold;
+    static QAtomicBool s_Mouse2vJoy_Direct;
     static QAtomicBool s_Key2Mouse_Up;
     static QAtomicBool s_Key2Mouse_Down;
     static QAtomicBool s_Key2Mouse_Left;

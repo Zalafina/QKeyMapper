@@ -191,6 +191,7 @@ static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
 
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
+static const char *MOUSE2VJOY_PREFIX = "Mouse2vJoy-";
 static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
 static const char *MOUSE2VJOY_DIRECT_KEY_STR = "Mouse2vJoy-Direct";
 
