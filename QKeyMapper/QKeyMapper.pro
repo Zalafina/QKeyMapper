@@ -27,6 +27,7 @@ DEFINES += SETTINGSFILE_CONVERT
 DEFINES += VIGEM_CLIENT_SUPPORT
 DEFINES += HOOKSTART_ONSTARTUP
 DEFINES += SDL_JOYSTICK_BLACKLIST
+DEFINES += MULTI_INPUTDEVICE_SUPPORT
 
 lessThan(QT_MAJOR_VERSION, 6) {
     message("Qt5 Version")
@@ -98,6 +99,7 @@ LIBS        += Version.Lib
 LIBS        += SDL2.lib
 LIBS        += AdvAPI32.Lib
 LIBS        += powrprof.lib
+LIBS        += SetupAPI.Lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
 }
@@ -112,7 +114,6 @@ contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
     }
 
     LIBS    += ViGEmClient.lib
-    LIBS    += SetupAPI.Lib
 
     INCLUDEPATH += $$PWD/ViGEm/include
 
@@ -122,15 +123,32 @@ contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
         ViGEm\include\ViGEm\Util.h
 }
 
+contains( DEFINES, MULTI_INPUTDEVICE_SUPPORT ) {
+    contains(DEFINES, WIN64) {
+    # Interception x64 dll library
+    LIBS        += -L$$PWD/Interception/lib/x64
+    } else {
+    # Interception x86 dll library
+    LIBS        += -L$$PWD/Interception/lib/x86
+    }
+    LIBS    += interception.lib
+
+    INCLUDEPATH += $$PWD/Interception/include
+
+    HEADERS     += Interception/include/interception.h
+}
+
 # UAC for Administrator
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
 
 SOURCES     += \
+    interception_worker.cpp \
     main.cpp \
     qkeymapper.cpp \
     qkeymapper_worker.cpp
 
 HEADERS     += \
+    interception_worker.h \
     qkeymapper.h \
     qkeymapper_worker.h
 

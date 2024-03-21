@@ -2,6 +2,7 @@
 #include <QDir>
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
+#include "interception_worker.h"
 #ifdef SINGLE_APPLICATION
 #include "singleapp/singleapplication.h"
 #endif
@@ -70,6 +71,8 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 
 int main(int argc, char *argv[])
 {
+    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
         qputenv("QT_OPENGL", "software");
         qputenv("QT_ANGLE_PLATFORM", "d3d9");
@@ -179,6 +182,14 @@ int main(int argc, char *argv[])
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
     QThread::currentThread()->setObjectName("QKeyMapper");
+
+    Interception_Worker * const interception_worker = Interception_Worker::getInstance();;
+    // Move Interception_Worker Process to a sub thread
+    QThread * const interceptionThread = new QThread();
+    interceptionThread->setObjectName("Interception_Worker");
+    interception_worker->moveToThread(interceptionThread);
+    QObject::connect(interceptionThread, &QThread::started, interception_worker, &Interception_Worker::InterceptionThreadStarted);
+    interceptionThread->start();
 
     QKeyMapper_Hook_Proc * const keymapper_hook_proc = QKeyMapper_Hook_Proc::getInstance();
     // Move Hook Process to a sub thread

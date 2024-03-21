@@ -37,11 +37,14 @@
 #include <dwmapi.h>
 #include <Shlobj.h>
 #include <powrprof.h>
+#include <setupapi.h>
+#include <interception.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
 
 #include "qkeymapper_worker.h"
+#include "interception_worker.h"
 
 namespace Ui {
 class QKeyMapper;
@@ -333,6 +336,7 @@ private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
     void refreshProcessInfoTable(void);
+    void refreshDeviceListInfo(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void updateSystemTrayDisplay(void);
@@ -388,7 +392,7 @@ public slots:
 #endif
 
 public:
-    static bool m_isDestructing;
+    static bool s_isDestructing;
     static int s_GlobalSettingAutoStart;
     static uint s_CycleCheckLoopCount;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
@@ -398,6 +402,8 @@ public:
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
     static QString s_MappingSwitchKeyString;
+    static QList<InputDevice> KeyboardDeviceList;
+    static QList<InputDevice> MouseDeviceList;
 
 private:
     static QKeyMapper *m_instance;
