@@ -279,6 +279,7 @@ static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEm";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
+static const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
 static const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
@@ -330,6 +331,7 @@ static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "UninstallViGEm";
 static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
+static const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
@@ -383,6 +385,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     QStyle* defaultStyle = QStyleFactory::create("windows");
     ui->virtualgamepadGroupBox->setStyle(defaultStyle);
+    ui->MultiInputGroupBox->setStyle(defaultStyle);
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
 #endif
@@ -4149,6 +4152,9 @@ void QKeyMapper::setControlFontEnglish()
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
     ui->virtualgamepadGroupBox->setFont(customFont);
+    ui->MultiInputGroupBox->setFont(customFont);
+    ui->installInterceptionButton->setFont(customFont);
+    ui->MultiInputStatusLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -4246,6 +4252,9 @@ void QKeyMapper::setControlFontChinese()
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
     ui->virtualgamepadGroupBox->setFont(customFont);
+    ui->MultiInputGroupBox->setFont(customFont);
+    ui->installInterceptionButton->setFont(customFont);
+    ui->MultiInputStatusLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -4371,6 +4380,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->lockCursorCheckBox->setEnabled(status);
     }
 #endif
+
+    ui->installInterceptionButton->setEnabled(status);
+    ui->MultiInputGroupBox->setEnabled(status);
+    ui->installInterceptionButton->setEnabled(status);
 
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
@@ -5687,6 +5700,7 @@ void QKeyMapper::setUILanguage_Chinese()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
+    ui->MultiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
                                                                   << PROCESSINFOTABLE_COL2_CHINESE
@@ -5752,6 +5766,7 @@ void QKeyMapper::setUILanguage_English()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
 #endif
+    ui->MultiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
                                                                   << PROCESSINFOTABLE_COL2_ENGLISH

@@ -490,7 +490,7 @@
   <widget class="QCheckBox" name="enableVirtualJoystickCheckBox">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>720</x>
      <y>520</y>
      <width>80</width>
      <height>21</height>
@@ -550,7 +550,7 @@
   <widget class="QSpinBox" name="vJoyXSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>910</x>
      <y>520</y>
      <width>45</width>
      <height>22</height>
@@ -563,7 +563,7 @@
   <widget class="QSpinBox" name="vJoyYSensSpinBox">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>910</x>
      <y>550</y>
      <width>45</width>
      <height>22</height>
@@ -576,7 +576,7 @@
   <widget class="QLabel" name="vJoyXSensLabel">
    <property name="geometry">
     <rect>
-     <x>655</x>
+     <x>845</x>
      <y>520</y>
      <width>61</width>
      <height>22</height>
@@ -592,7 +592,7 @@
   <widget class="QLabel" name="vJoyYSensLabel">
    <property name="geometry">
     <rect>
-     <x>655</x>
+     <x>845</x>
      <y>550</y>
      <width>61</width>
      <height>22</height>
@@ -608,7 +608,7 @@
   <widget class="QCheckBox" name="lockCursorCheckBox">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>720</x>
      <y>550</y>
      <width>80</width>
      <height>21</height>
@@ -688,9 +688,9 @@
   <widget class="QGroupBox" name="virtualgamepadGroupBox">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>710</x>
      <y>505</y>
-     <width>541</width>
+     <width>351</width>
      <height>75</height>
     </rect>
    </property>
@@ -819,7 +819,7 @@
   <widget class="QComboBox" name="virtualGamepadTypeComboBox">
    <property name="geometry">
     <rect>
-     <x>600</x>
+     <x>790</x>
      <y>520</y>
      <width>56</width>
      <height>22</height>
@@ -1006,6 +1006,63 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QGroupBox" name="MultiInputGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>505</y>
+     <width>171</width>
+     <height>75</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Multi-InputDevice</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+   <widget class="QPushButton" name="installInterceptionButton">
+    <property name="geometry">
+     <rect>
+      <x>19</x>
+      <y>45</y>
+      <width>131</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Install Driver</string>
+    </property>
+    <property name="autoDefault">
+     <bool>false</bool>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QLabel" name="MultiInputStatusLabel">
+   <property name="geometry">
+    <rect>
+     <x>550</x>
+     <y>520</y>
+     <width>131</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::WinPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1063,6 +1120,8 @@
   <zorder>mappingswitchkeyLineEdit</zorder>
   <zorder>pointLabel</zorder>
   <zorder>pointDisplayLabel</zorder>
+  <zorder>MultiInputGroupBox</zorder>
+  <zorder>MultiInputStatusLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

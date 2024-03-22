@@ -8,6 +8,7 @@ struct InputDevice
 {
     QString hardwareid;
     QString devicename;
+    InterceptionDevice device;
 };
 
 class Interception_Worker : public QObject
@@ -23,19 +24,29 @@ public:
         return &m_instance;
     }
 
+    enum Interception_State
+    {
+        INTERCEPTION_UNAVAILABLE = 0,
+        INTERCEPTION_AVAILABLE,
+    };
+    Q_ENUM(Interception_State)
+
 signals:
 
 public slots:
     void InterceptionThreadStarted(void);
+    bool doLoadInterception(void);
+    void doUnloadInterception(void);
 
 public:
-    bool doLoad(void);
-    void doUnload(void);
-
+    static bool isInterceptionDriverFileExist(void);
+    static Interception_State getInterceptionState(void);
     static QString getDeviceNameByHardwareID(const QString& hardwareID);
     static InterceptionContext getInterceptionContext(void);
     static QList<InputDevice> getKeyboardDeviceList(void);
     static QList<InputDevice> getMouseDeviceList(void);
+    static QString getHardwareId(InterceptionDevice device);
+    static QString getDeviceName(InterceptionDevice device);
 
     static InterceptionContext s_InterceptionContext;
     static int s_InterceptionStatus;

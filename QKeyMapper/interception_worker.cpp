@@ -7,14 +7,14 @@ int Interception_Worker::s_InterceptionStatus = 0;
 Interception_Worker::Interception_Worker(QObject *parent) :
     QObject{parent}
 {
-    if (doLoad()) {
+    if (doLoadInterception()) {
         s_InterceptionStatus = 1;
     }
 }
 
 Interception_Worker::~Interception_Worker()
 {
-    doUnload();
+    doUnloadInterception();
 }
 
 void Interception_Worker::InterceptionThreadStarted()
@@ -25,7 +25,7 @@ void Interception_Worker::InterceptionThreadStarted()
 #endif
 }
 
-bool Interception_Worker::doLoad()
+bool Interception_Worker::doLoadInterception()
 {
     bool result = false;
     s_InterceptionContext = interception_create_context();
@@ -45,10 +45,80 @@ bool Interception_Worker::doLoad()
     return result;
 }
 
-void Interception_Worker::doUnload()
+void Interception_Worker::doUnloadInterception()
 {
     if (s_InterceptionContext != Q_NULLPTR) {
         interception_destroy_context(s_InterceptionContext);
+    }
+}
+
+bool Interception_Worker::isInterceptionDriverFileExist()
+{
+    wchar_t system32Path[MAX_PATH];
+    UINT result = GetSystemDirectory(system32Path, MAX_PATH);
+    if (result == 0)
+    {
+        return false;
+    }
+
+    QString driverFilePath = QString::fromWCharArray(system32Path) + QString("\\drivers\\keyboard.sys");
+    DWORD dummy;
+    DWORD size = GetFileVersionInfoSize((LPCWSTR)driverFilePath.utf16(), &dummy);
+    if (size == 0) {
+        return false;
+    }
+
+    QByteArray data(size, 0);
+    if (!GetFileVersionInfo((LPCWSTR)driverFilePath.utf16(), 0, size, data.data())) {
+        return false;
+    }
+
+    void *value = nullptr;
+    UINT length;
+    QString fileDescription;
+    QString productName;
+    QString originalFilename;
+    if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\FileDescription", &value, &length)) {
+        return false;
+    }
+    fileDescription = QString::fromUtf16((ushort *)value, length);
+    fileDescription.remove(QChar('\0'));
+    if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\ProductName", &value, &length)) {
+        return false;
+    }
+    productName = QString::fromUtf16((ushort *)value, length);
+    productName.remove(QChar('\0'));
+    if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\OriginalFilename", &value, &length)) {
+        return false;
+    }
+    originalFilename = QString::fromUtf16((ushort *)value, length);
+    originalFilename.remove(QChar('\0'));
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[isInterceptionDriverFileExist]" << "FileDescription:" << fileDescription;
+    qDebug() << "[isInterceptionDriverFileExist]" << "ProductName:" << productName;
+    qDebug() << "[isInterceptionDriverFileExist]" << "originalFilename:" << originalFilename;
+#endif
+
+    if (fileDescription == "Keyboard Upper Filter Driver"
+        && productName == "Interception"
+        && originalFilename == "keyboard.sys") {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[isInterceptionDriverFileExist]" << "Interception driver file exists.";
+#endif
+        return true;
+    }
+
+    return false;
+}
+
+Interception_Worker::Interception_State Interception_Worker::getInterceptionState()
+{
+    if (s_InterceptionContext != Q_NULLPTR) {
+        return INTERCEPTION_UNAVAILABLE;
+    }
+    else {
+        return INTERCEPTION_AVAILABLE;
     }
 }
 
@@ -117,6 +187,7 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
             QString devicename = getDeviceNameByHardwareID(hardware_id_str);
             input_device.hardwareid = hardware_id_str;
             input_device.devicename = devicename;
+            input_device.device = device;
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[getKeyboardDeviceList] Keyboard[" << device << "] -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
 #endif
@@ -145,11 +216,13 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
         InputDevice input_device = InputDevice();
         size_t length = interception_get_hardware_id(s_InterceptionContext, device, hardware_id, sizeof(hardware_id));
         int mouse_index = device - INTERCEPTION_MAX_KEYBOARD;
+        Q_UNUSED(mouse_index);
         if(length > 0 && length < sizeof(hardware_id)) {
             QString hardware_id_str = QString::fromWCharArray(hardware_id);
             QString devicename = getDeviceNameByHardwareID(hardware_id_str);
             input_device.hardwareid = hardware_id_str;
             input_device.devicename = devicename;
+            input_device.device = device;
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[getMouseDeviceList] Mouse[" << mouse_index << "] -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
 #endif
@@ -163,4 +236,50 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
     }
 
     return devicelist;
+}
+
+QString Interception_Worker::getHardwareId(InterceptionDevice device)
+{
+    QString hardware_id_str;
+    WCHAR hardware_id[MAX_PATH];
+    size_t length = interception_get_hardware_id(s_InterceptionContext, device, hardware_id, sizeof(hardware_id));
+    if(length > 0 && length < sizeof(hardware_id)) {
+        hardware_id_str = QString::fromWCharArray(hardware_id);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[getHardwareId] Device[" << device << "] -> HardwareID: " << hardware_id_str;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[getHardwareId] No HardwareId[" << device << "]";
+#endif
+    }
+
+    return hardware_id_str;
+}
+
+QString Interception_Worker::getDeviceName(InterceptionDevice device)
+{
+    QString hardware_id_str;
+    QString devicename;
+    WCHAR hardware_id[MAX_PATH];
+    size_t length = interception_get_hardware_id(s_InterceptionContext, device, hardware_id, sizeof(hardware_id));
+    if(length > 0 && length < sizeof(hardware_id)) {
+        hardware_id_str = QString::fromWCharArray(hardware_id);
+        devicename = getDeviceNameByHardwareID(hardware_id_str);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[getDeviceName] Device[" << device << "] -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
+        if (devicename.isEmpty()) {
+            qDebug().nospace() << "[getDeviceName] No DeviceName[" << device << "]";
+        }
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[getDeviceName] No HardwareId[" << device << "]";
+#endif
+    }
+
+    return devicename;
+
 }
