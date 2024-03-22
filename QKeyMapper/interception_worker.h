@@ -4,12 +4,8 @@
 #include <QObject>
 #include <interception.h>
 
-struct InputDevice
-{
-    QString hardwareid;
-    QString devicename;
-    InterceptionDevice device;
-};
+#include "qkeymapper.h"
+#include "qkeymapper_worker.h"
 
 class Interception_Worker : public QObject
 {
@@ -27,6 +23,7 @@ public:
     enum Interception_State
     {
         INTERCEPTION_UNAVAILABLE = 0,
+        INTERCEPTION_REBOOTREQUIRED,
         INTERCEPTION_AVAILABLE,
     };
     Q_ENUM(Interception_State)
@@ -37,6 +34,8 @@ public slots:
     void InterceptionThreadStarted(void);
     bool doLoadInterception(void);
     void doUnloadInterception(void);
+    void startInterception(void);
+    void stopInterception(void);
 
 public:
     static bool isInterceptionDriverFileExist(void);
@@ -49,7 +48,6 @@ public:
     static QString getDeviceName(InterceptionDevice device);
 
     static InterceptionContext s_InterceptionContext;
-    static int s_InterceptionStatus;
 };
 
 #endif // INTERCEPTION_WORKER_H

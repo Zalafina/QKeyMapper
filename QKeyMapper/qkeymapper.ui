@@ -1006,7 +1006,7 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QGroupBox" name="MultiInputGroupBox">
+  <widget class="QGroupBox" name="multiInputGroupBox">
    <property name="geometry">
     <rect>
      <x>530</x>
@@ -1024,9 +1024,9 @@
    <widget class="QPushButton" name="installInterceptionButton">
     <property name="geometry">
      <rect>
-      <x>19</x>
+      <x>69</x>
       <y>45</y>
-      <width>131</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -1041,12 +1041,12 @@
     </property>
    </widget>
   </widget>
-  <widget class="QLabel" name="MultiInputStatusLabel">
+  <widget class="QLabel" name="multiInputStatusLabel">
    <property name="geometry">
     <rect>
-     <x>550</x>
+     <x>600</x>
      <y>520</y>
-     <width>131</width>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
@@ -1061,6 +1061,25 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="enableMultiInputCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>540</x>
+     <y>520</y>
+     <width>51</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Enable</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -1120,8 +1139,9 @@
   <zorder>mappingswitchkeyLineEdit</zorder>
   <zorder>pointLabel</zorder>
   <zorder>pointDisplayLabel</zorder>
-  <zorder>MultiInputGroupBox</zorder>
-  <zorder>MultiInputStatusLabel</zorder>
+  <zorder>multiInputGroupBox</zorder>
+  <zorder>multiInputStatusLabel</zorder>
+  <zorder>enableMultiInputCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

@@ -44,6 +44,14 @@
 //#include <QTextCodec>
 
 #include "qkeymapper_worker.h"
+
+struct InputDevice
+{
+    QString hardwareid;
+    QString devicename;
+    InterceptionDevice device;
+};
+
 #include "interception_worker.h"
 
 namespace Ui {
@@ -249,6 +257,7 @@ signals:
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
 #endif
+    void updateMultiInputStatus_Signal(void);
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -332,6 +341,8 @@ private slots:
 
     void on_soundEffectCheckBox_stateChanged(int state);
 
+    void on_installInterceptionButton_clicked();
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -383,6 +394,9 @@ private:
     void playStartSound();
     void playStopSound();
 
+    int installInterceptionDriver(void);
+    int uninstallInterceptionDriver(void);
+
 #ifdef VIGEM_CLIENT_SUPPORT
     int installViGEmBusDriver(void);
     int uninstallViGEmBusDriver(void);
@@ -390,6 +404,10 @@ public slots:
     void updateViGEmBusLabelDisplay(void);
     Q_INVOKABLE void reconnectViGEmClient(void);
 #endif
+
+public slots:
+    void updateMultiInputLabelDisplay(void);
+    Q_INVOKABLE void reloadInterception(void);
 
 public:
     static bool s_isDestructing;

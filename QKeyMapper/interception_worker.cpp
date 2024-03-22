@@ -1,15 +1,11 @@
-#include "qkeymapper.h"
 #include "interception_worker.h"
 
 InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
-int Interception_Worker::s_InterceptionStatus = 0;
 
 Interception_Worker::Interception_Worker(QObject *parent) :
     QObject{parent}
 {
-    if (doLoadInterception()) {
-        s_InterceptionStatus = 1;
-    }
+    (void)doLoadInterception();
 }
 
 Interception_Worker::~Interception_Worker()
@@ -48,8 +44,20 @@ bool Interception_Worker::doLoadInterception()
 void Interception_Worker::doUnloadInterception()
 {
     if (s_InterceptionContext != Q_NULLPTR) {
+        interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_NONE);
+        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_NONE);
         interception_destroy_context(s_InterceptionContext);
     }
+}
+
+void Interception_Worker::startInterception()
+{
+
+}
+
+void Interception_Worker::stopInterception()
+{
+
 }
 
 bool Interception_Worker::isInterceptionDriverFileExist()
@@ -115,10 +123,15 @@ bool Interception_Worker::isInterceptionDriverFileExist()
 Interception_Worker::Interception_State Interception_Worker::getInterceptionState()
 {
     if (s_InterceptionContext != Q_NULLPTR) {
-        return INTERCEPTION_UNAVAILABLE;
+        return INTERCEPTION_AVAILABLE;
     }
     else {
-        return INTERCEPTION_AVAILABLE;
+        if (isInterceptionDriverFileExist()) {
+            return INTERCEPTION_REBOOTREQUIRED;
+        }
+        else {
+            return INTERCEPTION_UNAVAILABLE;
+        }
     }
 }
 

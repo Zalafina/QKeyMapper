@@ -92,6 +92,8 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 #endif
 
+static const int RELOAD_INTERCEPTION_WAIT_TIME = 2000;
+
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
 
@@ -280,6 +282,11 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 static const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
+static const char *INSTALLINTERCEPTIONBUTTON_CHINESE = "安装驱动";
+static const char *UNINSTALLINTERCEPTIONBUTTON_CHINESE = "卸载驱动";
+static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE = "Multi-Input Unavailable";
+static const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE = "Reboot Required";
+static const char *MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE = "Multi-Input Available";
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
 static const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
@@ -332,6 +339,11 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
 static const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
+static const char *INSTALLINTERCEPTIONBUTTON_ENGLISH = "Install Driver";
+static const char *UNINSTALLINTERCEPTIONBUTTON_ENGLISH = "Uninstall Driver";
+static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH = "Multi-Input Unavailable";
+static const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH = "Reboot Required";
+static const char *MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH = "Multi-Input Available";
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
@@ -385,7 +397,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     QStyle* defaultStyle = QStyleFactory::create("windows");
     ui->virtualgamepadGroupBox->setStyle(defaultStyle);
-    ui->MultiInputGroupBox->setStyle(defaultStyle);
+    ui->multiInputGroupBox->setStyle(defaultStyle);
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
 #endif
@@ -648,6 +660,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
+    QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputLabelDisplay);
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
@@ -4152,9 +4165,10 @@ void QKeyMapper::setControlFontEnglish()
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
     ui->virtualgamepadGroupBox->setFont(customFont);
-    ui->MultiInputGroupBox->setFont(customFont);
+    ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
-    ui->MultiInputStatusLabel->setFont(customFont);
+    ui->multiInputStatusLabel->setFont(customFont);
+    ui->enableMultiInputCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -4252,9 +4266,10 @@ void QKeyMapper::setControlFontChinese()
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
     ui->virtualgamepadGroupBox->setFont(customFont);
-    ui->MultiInputGroupBox->setFont(customFont);
+    ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
-    ui->MultiInputStatusLabel->setFont(customFont);
+    ui->multiInputStatusLabel->setFont(customFont);
+    ui->enableMultiInputCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -4382,8 +4397,11 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 #endif
 
     ui->installInterceptionButton->setEnabled(status);
-    ui->MultiInputGroupBox->setEnabled(status);
+    ui->multiInputGroupBox->setEnabled(status);
     ui->installInterceptionButton->setEnabled(status);
+    if (false == status) {
+        ui->enableMultiInputCheckBox->setEnabled(status);
+    }
 
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
@@ -4490,6 +4508,74 @@ void QKeyMapper::playStopSound()
         qWarning() << "[playStopSound]" << "Sound file do not exist ->" << SOUNDFILE_STOP;
 #endif
     }
+}
+
+int QKeyMapper::installInterceptionDriver()
+{
+    QString operate_str = QString("runas");
+    QString executable_str = QString("InterceptionDriver\\install-interception.exe");
+    QString argument_str = QString("/install");
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* Install Interception Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installInterceptionDriver] Install Interception Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installInterceptionDriver] Install Interception Driver Failed!!! ->" << ret;
+#endif
+        return -1;
+    }
+
+    return 0;
+}
+
+int QKeyMapper::uninstallInterceptionDriver()
+{
+    QString operate_str = QString("runas");
+    QString executable_str = QString("InterceptionDriver\\install-interception.exe");
+    QString argument_str = QString("/uninstall");
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* Install Interception Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallInterceptionDriver] Uninstall Interception Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallInterceptionDriver] Uninstall Interception Driver Failed!!! ->" << ret;
+#endif
+        return -1;
+    }
+
+    return 0;
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4753,6 +4839,16 @@ void QKeyMapper::reconnectViGEmClient()
     }
 }
 #endif
+
+void QKeyMapper::updateMultiInputLabelDisplay()
+{
+
+}
+
+void QKeyMapper::reloadInterception()
+{
+
+}
 
 void QKeyMapper::on_savemaplistButton_clicked()
 {
@@ -5700,7 +5796,7 @@ void QKeyMapper::setUILanguage_Chinese()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
-    ui->MultiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
                                                                   << PROCESSINFOTABLE_COL2_CHINESE
@@ -5766,7 +5862,7 @@ void QKeyMapper::setUILanguage_English()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
 #endif
-    ui->MultiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
+    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
                                                                   << PROCESSINFOTABLE_COL2_ENGLISH
@@ -6974,4 +7070,22 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
     else {
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
     }
+}
+
+void QKeyMapper::on_installInterceptionButton_clicked()
+{
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Uninstall Interception Driver.";
+#endif
+
+        Interception_Worker::getInstance()->doUnloadInterception();
+
+        // emit updateViGEmBusStatus_Signal();
+        // ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+        // ui->enableVirtualJoystickCheckBox->setEnabled(false);
+
+        (void)uninstallInterceptionDriver();
+    }
+
 }
