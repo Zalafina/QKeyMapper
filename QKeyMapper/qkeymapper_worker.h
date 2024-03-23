@@ -55,6 +55,8 @@ class QKeyMapper;
 #define SHOW_MOUSEPOINTS_OFF     (0)
 #define SHOW_MOUSEPOINTS_ON      (1)
 
+#define INTERCEPTION_EXTRA_INFO  (0xAAAA0000)
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;

@@ -48,6 +48,7 @@ public:
     static QString getDeviceName(InterceptionDevice device);
 
     static InterceptionContext s_InterceptionContext;
+    static QAtomicBool s_InterceptStart;
 };
 
 #endif // INTERCEPTION_WORKER_H

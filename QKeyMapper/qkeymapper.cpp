@@ -282,6 +282,7 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 static const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
+static const char *MULTIINPUTDEVICELISTBUTTON_CHINESE = "设备列表";
 static const char *INSTALLINTERCEPTIONBUTTON_CHINESE = "安装驱动";
 static const char *UNINSTALLINTERCEPTIONBUTTON_CHINESE = "卸载驱动";
 static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE = "Multi-Input Unavailable";
@@ -339,6 +340,7 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
 static const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
+static const char *MULTIINPUTDEVICELISTBUTTON_ENGLISH = "DeviceList";
 static const char *INSTALLINTERCEPTIONBUTTON_ENGLISH = "Install Driver";
 static const char *UNINSTALLINTERCEPTIONBUTTON_ENGLISH = "Uninstall Driver";
 static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH = "Multi-Input Unavailable";
@@ -4167,8 +4169,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->virtualgamepadGroupBox->setFont(customFont);
     ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
+    ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
-    ui->enableMultiInputCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -4268,8 +4270,8 @@ void QKeyMapper::setControlFontChinese()
     ui->virtualgamepadGroupBox->setFont(customFont);
     ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
+    ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
-    ui->enableMultiInputCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(12);
@@ -4399,9 +4401,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->installInterceptionButton->setEnabled(status);
     ui->multiInputGroupBox->setEnabled(status);
     ui->installInterceptionButton->setEnabled(status);
-    if (false == status) {
-        ui->enableMultiInputCheckBox->setEnabled(status);
-    }
 
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
@@ -5797,6 +5796,13 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
     ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
+    }
+    else {
+        ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+    }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
                                                                   << PROCESSINFOTABLE_COL2_CHINESE
@@ -5863,6 +5869,13 @@ void QKeyMapper::setUILanguage_English()
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
 #endif
     ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
+    ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_ENGLISH);
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
+    }
+    else {
+        ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+    }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
                                                                   << PROCESSINFOTABLE_COL2_ENGLISH

@@ -491,7 +491,7 @@
    <property name="geometry">
     <rect>
      <x>720</x>
-     <y>520</y>
+     <y>550</y>
      <width>80</width>
      <height>21</height>
     </rect>
@@ -609,7 +609,7 @@
    <property name="geometry">
     <rect>
      <x>720</x>
-     <y>550</y>
+     <y>520</y>
      <width>80</width>
      <height>21</height>
     </rect>
@@ -820,7 +820,7 @@
    <property name="geometry">
     <rect>
      <x>790</x>
-     <y>520</y>
+     <y>550</y>
      <width>56</width>
      <height>22</height>
     </rect>
@@ -1024,9 +1024,9 @@
    <widget class="QPushButton" name="installInterceptionButton">
     <property name="geometry">
      <rect>
-      <x>69</x>
+      <x>79</x>
       <y>45</y>
-      <width>91</width>
+      <width>81</width>
       <height>21</height>
      </rect>
     </property>
@@ -1040,13 +1040,32 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QPushButton" name="multiInputDeviceListButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>15</y>
+      <width>61</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>DeviceList</string>
+    </property>
+    <property name="autoDefault">
+     <bool>false</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QLabel" name="multiInputStatusLabel">
    <property name="geometry">
     <rect>
-     <x>600</x>
+     <x>610</x>
      <y>520</y>
-     <width>91</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -1056,30 +1075,8 @@
    <property name="frameShadow">
     <enum>QFrame::Sunken</enum>
    </property>
-   <property name="text">
-    <string/>
-   </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="enableMultiInputCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>540</x>
-     <y>520</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Enable</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -1141,7 +1138,6 @@
   <zorder>pointDisplayLabel</zorder>
   <zorder>multiInputGroupBox</zorder>
   <zorder>multiInputStatusLabel</zorder>
-  <zorder>enableMultiInputCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

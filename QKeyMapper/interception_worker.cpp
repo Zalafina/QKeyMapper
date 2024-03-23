@@ -1,11 +1,14 @@
 #include "interception_worker.h"
 
 InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
+QAtomicBool Interception_Worker::s_InterceptStart = QAtomicBool();
 
 Interception_Worker::Interception_Worker(QObject *parent) :
     QObject{parent}
 {
-    (void)doLoadInterception();
+    if (doLoadInterception()) {
+        s_InterceptStart = true;
+    }
 }
 
 Interception_Worker::~Interception_Worker()
@@ -18,6 +21,53 @@ void Interception_Worker::InterceptionThreadStarted()
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
     qDebug().nospace().noquote() << "[InterceptionThreadStarted] ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
+
+    if (s_InterceptionContext == Q_NULLPTR) {
+        return;
+    }
+
+    InterceptionDevice device;
+    InterceptionKeyStroke stroke;
+
+    if (s_InterceptStart) {
+        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+        interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[KeyInterceptionWorker] Start intercept Keyboard&Mouse devices.";
+#endif
+    }
+
+    while(s_InterceptStart && interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), (InterceptionStroke *)&stroke, 1) > 0)
+    {
+        if(interception_is_mouse(device))
+        {
+            unsigned int device_index = 1;
+            InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *) &stroke;
+            device_index += device - INTERCEPTION_KEYBOARD(0);
+            mstroke.information = INTERCEPTION_EXTRA_INFO + device_index;
+            interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
+        }
+        else
+        {
+            unsigned int device_index = 1;
+            InterceptionKeyStroke &kstroke = *(InterceptionKeyStroke *) &stroke;
+            // unsigned int ori_information = kstroke.information;
+            device_index += device - INTERCEPTION_KEYBOARD(0);
+            kstroke.information = INTERCEPTION_EXTRA_INFO + device_index;
+            interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
+// #ifdef DEBUG_LOGOUT_ON
+//             QString ori_extraInfoStr = QString("0x%1").arg(QString::number(ori_information, 16).toUpper(), 8, '0');
+//             QString extraInfoStr = QString("0x%1").arg(QString::number(kstroke.information, 16).toUpper(), 8, '0');
+//             qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << device << "] extraInfo (" << ori_extraInfoStr << " -> " << extraInfoStr << ")";
+// #endif
+        }
+    }
+
+    interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_NONE);
+    interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_NONE);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[KeyInterceptionWorker] Stop intercept Keyboard&Mouse devices.";
 #endif
 }
 

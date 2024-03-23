@@ -50,6 +50,7 @@ struct InputDevice
     QString hardwareid;
     QString devicename;
     InterceptionDevice device;
+    QAtomicBool disabled;
 };
 
 #include "interception_worker.h"
