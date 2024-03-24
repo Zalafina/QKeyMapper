@@ -28,6 +28,7 @@
 #include <QValidator>
 #include <QDir>
 #include <QProcess>
+#include <cmath>
 #include <windows.h>
 #include <process.h>
 #include <tlhelp32.h>
