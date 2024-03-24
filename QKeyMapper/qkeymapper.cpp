@@ -360,8 +360,6 @@ QList<MousePoint_Info> QKeyMapper::MousePointsList = QList<MousePoint_Info>();
 // QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
 QString QKeyMapper::s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
-QList<InputDevice> QKeyMapper::KeyboardDeviceList = QList<InputDevice>();
-QList<InputDevice> QKeyMapper::MouseDeviceList = QList<InputDevice>();
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -4948,8 +4946,10 @@ void QKeyMapper::refreshProcessInfoTable(void)
 
 void QKeyMapper::refreshDeviceListInfo()
 {
-    KeyboardDeviceList = Interception_Worker::getKeyboardDeviceList();
-    MouseDeviceList = Interception_Worker::getMouseDeviceList();
+    QList<InputDevice> keyboardDeviceList;
+    QList<InputDevice> mouseDeviceList;
+    keyboardDeviceList = Interception_Worker::getKeyboardDeviceList();
+    mouseDeviceList = Interception_Worker::getMouseDeviceList();
 }
 
 void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)

@@ -46,9 +46,12 @@ public:
     static QList<InputDevice> getMouseDeviceList(void);
     static QString getHardwareId(InterceptionDevice device);
     static QString getDeviceName(InterceptionDevice device);
+    static void setInputDeviceDisabled(InterceptionDevice device, bool disabled);
 
     static InterceptionContext s_InterceptionContext;
     static QAtomicBool s_InterceptStart;
+    static QList<InputDevice> KeyboardDeviceList;
+    static QList<InputDevice> MouseDeviceList;
 };
 
 #endif // INTERCEPTION_WORKER_H

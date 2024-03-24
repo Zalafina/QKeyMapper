@@ -421,8 +421,6 @@ public:
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
     static QString s_MappingSwitchKeyString;
-    static QList<InputDevice> KeyboardDeviceList;
-    static QList<InputDevice> MouseDeviceList;
 
 private:
     static QKeyMapper *m_instance;
