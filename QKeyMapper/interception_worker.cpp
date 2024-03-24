@@ -52,21 +52,26 @@ void Interception_Worker::InterceptionThreadStarted()
     {
         if(interception_is_mouse(device))
         {
-            // int index = device - INTERCEPTION_MOUSE(0);
-            // if (QKeyMapper::MouseDeviceList.at(index)) {
+            int index = device - INTERCEPTION_MOUSE(0);
+            if (MouseDeviceList.at(index).disabled) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[KeyInterceptionWorker] Mouse[" << index << "] is disabled!";
+#endif
+            }
+            else {
                 unsigned int device_index = 1;
                 InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *) &stroke;
                 device_index += device - INTERCEPTION_KEYBOARD(0);
                 mstroke.information = INTERCEPTION_EXTRA_INFO + device_index;
                 interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
-            // }
+            }
         }
         else
         {
             int index = device - INTERCEPTION_KEYBOARD(0);
-            if (false == KeyboardDeviceList.isEmpty() && KeyboardDeviceList.at(index).disabled) {
+            if (KeyboardDeviceList.at(index).disabled) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << device << "] is disabled!";
+                qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << index << "] is disabled!";
 #endif
             }
             else {
@@ -273,12 +278,14 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
             input_device.devicename = devicename;
             input_device.device = device;
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[getKeyboardDeviceList] Keyboard[" << device << "] -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
+            int index = device - INTERCEPTION_KEYBOARD(0);
+            qDebug().nospace() << "[getKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
 #endif
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[getKeyboardDeviceList] No Keyboard[" << device << "]";
+            int index = device - INTERCEPTION_KEYBOARD(0);
+            qDebug().nospace() << "[getKeyboardDeviceList] [" << index << "]No Keyboard Device";
 #endif
         }
 
@@ -305,8 +312,6 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
     {
         InputDevice input_device = InputDevice();
         size_t length = interception_get_hardware_id(s_InterceptionContext, device, hardware_id, sizeof(hardware_id));
-        int mouse_index = device - INTERCEPTION_MOUSE(0) + 1;
-        Q_UNUSED(mouse_index);
         if(length > 0 && length < sizeof(hardware_id)) {
             QString hardware_id_str = QString::fromWCharArray(hardware_id);
             QString devicename = getDeviceNameByHardwareID(hardware_id_str);
@@ -314,12 +319,14 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
             input_device.devicename = devicename;
             input_device.device = device;
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[getMouseDeviceList] Mouse[" << mouse_index << "] -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
+            int index = device - INTERCEPTION_MOUSE(0);
+            qDebug().nospace() << "[getMouseDeviceList] [" << index << "]Mouse -> HardwareID: " << hardware_id_str << ", DeviceName: " << devicename;
 #endif
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[getMouseDeviceList] No Mouse[" << mouse_index << "]";
+            int index = device - INTERCEPTION_MOUSE(0);
+            qDebug().nospace() << "[getMouseDeviceList] [" << index << "]No Mouse Device";
 #endif
         }
 
@@ -384,24 +391,25 @@ void Interception_Worker::setInputDeviceDisabled(InterceptionDevice device, bool
 {
     if (interception_is_invalid(device)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[setInputDeviceDisabled] Invalid Device[" << device << "]";
+        qDebug().nospace() << "[setInputDeviceDisabled] Invalid InputDevice[" << device << "]";
 #endif
         return;
     }
 
     if (interception_is_keyboard(device))
     {
-        KeyboardDeviceList[device - INTERCEPTION_KEYBOARD(0)].disabled = disabled;
+        int index = device - INTERCEPTION_KEYBOARD(0);
+        KeyboardDeviceList[index].disabled = disabled;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[setInputDeviceDisabled] Keyboard[" << device << "] disabled = " << disabled;
+        qDebug().nospace() << "[setInputDeviceDisabled] Keyboard[" << index << "] disabled = " << disabled;
 #endif
     }
     else if(interception_is_mouse(device))
     {
-        MouseDeviceList[device - INTERCEPTION_MOUSE(0)].disabled = disabled;
+        int index = device - INTERCEPTION_MOUSE(0);
+        MouseDeviceList[index].disabled = disabled;
 #ifdef DEBUG_LOGOUT_ON
-        int mouse_index = device - INTERCEPTION_MOUSE(0) + 1;
-        qDebug().nospace() << "[setInputDeviceDisabled] Mouse[" << mouse_index << "] disabled = " << disabled;
+        qDebug().nospace() << "[setInputDeviceDisabled] Mouse[" << index << "] disabled = " << disabled;
 #endif
     }
 }
