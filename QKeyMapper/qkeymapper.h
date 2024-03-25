@@ -40,6 +40,7 @@
 #include <powrprof.h>
 #include <setupapi.h>
 #include <interception.h>
+#include <libusb.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
@@ -48,10 +49,20 @@
 
 struct InputDevice
 {
-    QString hardwareid;
-    QString devicename;
     InterceptionDevice device;
+    QString hardwareid;
+    QString devicedesc;
+    ushort vendorid;
+    ushort productid;
+    QString VendorStr;
+    QString ManufacturerStr;
+    QString ProductStr;
     QAtomicBool disabled;
+};
+
+struct USBDeviceInfo {
+    QString vendorName;
+    QString productName;
 };
 
 #include "interception_worker.h"

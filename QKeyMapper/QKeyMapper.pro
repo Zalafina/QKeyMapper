@@ -127,15 +127,21 @@ contains( DEFINES, MULTI_INPUTDEVICE_SUPPORT ) {
     contains(DEFINES, WIN64) {
     # Interception x64 dll library
     LIBS        += -L$$PWD/Interception/lib/x64
+    LIBS        += -L$$PWD/libusb/lib/x64
     } else {
     # Interception x86 dll library
     LIBS        += -L$$PWD/Interception/lib/x86
+    LIBS        += -L$$PWD/libusb/lib/x86
     }
-    LIBS    += interception.lib
+    LIBS        += interception.lib
+    LIBS        += libusb-1.0.lib
 
     INCLUDEPATH += $$PWD/Interception/include
+    INCLUDEPATH += $$PWD/libusb/include
 
-    HEADERS     += Interception/include/interception.h
+    HEADERS     += \
+        Interception/include/interception.h \
+        libusb/include/libusb.h
 }
 
 # UAC for Administrator
@@ -167,7 +173,8 @@ FORMS       += \
 
 RESOURCES   += \
     image.qrc \
-    sound.qrc
+    sound.qrc \
+    usb-ids.qrc
 
 contains( DEFINES, USE_SAOFONT ) {
 RESOURCES   += font.qrc

@@ -40,18 +40,22 @@ public slots:
 public:
     static bool isInterceptionDriverFileExist(void);
     static Interception_State getInterceptionState(void);
-    static QString getDeviceNameByHardwareID(const QString& hardwareID);
+    static bool getUSBDeviceDescriptor(ushort vendor_id, ushort product_id, QString& iManufacturer, QString& iProduct);
+    static QHash<QString, USBDeviceInfo> parseUSBIDs(const QString& filePath);
+    static QString getDeviceDescriptionByHardwareID(const QString& hardwareID);
     static InterceptionContext getInterceptionContext(void);
     static QList<InputDevice> getKeyboardDeviceList(void);
     static QList<InputDevice> getMouseDeviceList(void);
     static QString getHardwareId(InterceptionDevice device);
-    static QString getDeviceName(InterceptionDevice device);
+    static QString getDeviceDescription(InterceptionDevice device);
     static void setInputDeviceDisabled(InterceptionDevice device, bool disabled);
 
     static InterceptionContext s_InterceptionContext;
+    static bool s_libusb_available;
     static QAtomicBool s_InterceptStart;
     static QList<InputDevice> KeyboardDeviceList;
     static QList<InputDevice> MouseDeviceList;
+    static QHash<QString, USBDeviceInfo> s_USBIDsMap;
 };
 
 #endif // INTERCEPTION_WORKER_H
