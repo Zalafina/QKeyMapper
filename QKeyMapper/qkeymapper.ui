@@ -1024,7 +1024,7 @@
    <widget class="QPushButton" name="installInterceptionButton">
     <property name="geometry">
      <rect>
-      <x>79</x>
+      <x>80</x>
       <y>45</y>
       <width>81</width>
       <height>21</height>

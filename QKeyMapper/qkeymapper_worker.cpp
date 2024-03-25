@@ -227,7 +227,7 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
-QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
+// QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
 #ifdef VIGEM_CLIENT_SUPPORT
 QStringList QKeyMapper_Worker::pressedvJoyLStickKeys = QStringList();
 QStringList QKeyMapper_Worker::pressedvJoyRStickKeys = QStringList();
@@ -833,7 +833,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             }
 #ifdef VIGEM_CLIENT_SUPPORT
             else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
-                ViGEmClient_ReleaseButton(key);
+                if (original_key != CLEAR_VIRTUALKEYS) {
+                    ViGEmClient_ReleaseButton(key);
+                }
             }
 #endif
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
@@ -2392,9 +2394,10 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 {
     Q_UNUSED(hWnd);
     clearAllBurstTimersAndLockKeys();
+    clearAllPressedVirtualKeys();
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
-    pressedShortcutKeysList.clear();
+    // pressedShortcutKeysList.clear();
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
@@ -2487,9 +2490,10 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
     clearAllBurstTimersAndLockKeys();
+    clearAllPressedVirtualKeys();
     // pressedRealKeysList.clear();
-    pressedVirtualKeysList.clear();
-    pressedShortcutKeysList.clear();
+    // pressedVirtualKeysList.clear();
+    // pressedShortcutKeysList.clear();
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
@@ -4331,9 +4335,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (s_forceSendVirtualKey != true) {
                     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                     if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
-    #ifdef DEBUG_LOGOUT_ON
+#ifdef DEBUG_LOGOUT_ON
                         qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
-    #endif
+#endif
                         returnFlag = true;
                     }
                 }
@@ -4511,6 +4515,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         s_Mouse2vJoy_Direct = false;
                     }
                 }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[LowLevelMouseHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
+#endif
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -5891,6 +5898,22 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
     for (int index = 0; index < QKeyMapper::KeyMappingDataList.size(); index++) {
         QKeyMapper::KeyMappingDataList[index].LockStatus = false;
     }
+}
+
+void QKeyMapper_Worker::clearAllPressedVirtualKeys()
+{
+    for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
+        QStringList mappingKeyList = QStringList() << virtualkeystr;
+        QString original_key = QString(CLEAR_VIRTUALKEYS);
+        emit sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+    }
+
+    // QStringList pressedMappingOriginalKeys = pressedMappingKeysMap.keys();
+
+    // for (const QString &original_key : qAsConst(pressedMappingOriginalKeys)){
+    //     QStringList mappingKeyList = pressedMappingKeysMap.value(original_key);;
+    //     emit sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+    // }
 }
 
 void QKeyMapper_Worker::collectExchangeKeysList()
