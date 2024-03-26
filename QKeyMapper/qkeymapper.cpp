@@ -36,8 +36,8 @@ static const int MOUSEWHEEL_SCROLL_DOWN = 2;
 static const int KEY_UP = 0;
 static const int KEY_DOWN = 1;
 
-static const int LANGUAGE_CHINESE = 0;
-static const int LANGUAGE_ENGLISH = 1;
+// static const int LANGUAGE_CHINESE = 0;
+// static const int LANGUAGE_ENGLISH = 1;
 
 static const int CUSTOMSETTING_INDEX_MAX = 30;
 
@@ -385,7 +385,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_StartStop(new QHotkey(this)),
     m_UI_Scale(UI_SCALE_NORMAL),
     loadSetting_flag(false),
-    m_TransParentHandle(NULL)
+    m_TransParentHandle(NULL),
+    m_deviceListWindow(Q_NULLPTR)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -638,6 +639,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     reloadUILanguage();
     resetFontSize();
 
+    m_deviceListWindow = new QInputDeviceListWindow(this);
+
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
@@ -715,6 +718,11 @@ QKeyMapper::~QKeyMapper()
 
     delete m_KeyMappingDataTableDelegate;
     m_KeyMappingDataTableDelegate = Q_NULLPTR;
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        delete m_deviceListWindow;
+        m_deviceListWindow = Q_NULLPTR;
+    }
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -1915,6 +1923,11 @@ Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
     return ui->autoStartMappingCheckBox->checkState();
 }
 
+int QKeyMapper::getLanguageIndex()
+{
+    return getInstance()->ui->languageComboBox->currentIndex();
+}
+
 #if 0
 bool QKeyMapper::getDisableWinKeyStatus()
 {
@@ -2228,6 +2241,10 @@ static BOOL CALLBACK focusChildProcWindow(HWND hwnd, LPARAM lParam)
 
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 {
+    if (m_deviceListWindow->isVisible()) {
+        return;
+    }
+
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     Q_UNUSED(hotkey_string);
     Q_UNUSED(keymapstatusEnum);
@@ -2272,6 +2289,10 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 
 void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
 {
+    if (m_deviceListWindow->isVisible()) {
+        return;
+    }
+
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     Q_UNUSED(hotkey_string);
     Q_UNUSED(keymapstatusEnum);
@@ -4509,6 +4530,13 @@ void QKeyMapper::playStopSound()
     }
 }
 
+void QKeyMapper::showInputDeviceListWindow()
+{
+    if (!m_deviceListWindow->isVisible()) {
+        m_deviceListWindow->show();
+    }
+}
+
 int QKeyMapper::installInterceptionDriver()
 {
     QString operate_str = QString("runas");
@@ -6553,7 +6581,6 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBox_Press]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
     qDebug("[KeyListComboBox_Press] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
-    qDebug("[CAPS Status] KeyState(0x%04X)", GetAsyncKeyState(VK_CAPITAL));
 #endif
 
     V_KEYCODE vkeycode;
@@ -6595,10 +6622,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
 
     if (false == keycodeString.isEmpty()){
-        if (keycodeString == QString("Enter")){
-            QComboBox::keyPressEvent(keyevent);
-        }
-        else if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
+        if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
             this->setCurrentText(QString());
         }
         else{
@@ -7103,4 +7127,9 @@ void QKeyMapper::on_installInterceptionButton_clicked()
         (void)uninstallInterceptionDriver();
     }
 
+}
+
+void QKeyMapper::on_multiInputDeviceListButton_clicked()
+{
+    showInputDeviceListWindow();
 }

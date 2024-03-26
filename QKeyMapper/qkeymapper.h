@@ -46,6 +46,10 @@
 //#include <QTextCodec>
 
 #include "qkeymapper_worker.h"
+#include "qinputdevicelistwindow.h"
+
+#define LANGUAGE_CHINESE    (0)
+#define LANGUAGE_ENGLISH    (1)
 
 struct InputDevice
 {
@@ -247,6 +251,7 @@ public:
 
     Qt::CheckState getAutoStartMappingStatus(void);
     // static bool getDisableWinKeyStatus(void);
+    static int getLanguageIndex(void);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
@@ -356,6 +361,8 @@ private slots:
 
     void on_installInterceptionButton_clicked();
 
+    void on_multiInputDeviceListButton_clicked();
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -406,6 +413,8 @@ private:
     void extractSoundFiles();
     void playStartSound();
     void playStopSound();
+
+    void showInputDeviceListWindow(void);
 
     int installInterceptionDriver(void);
     int uninstallInterceptionDriver(void);
@@ -460,6 +469,7 @@ private:
     int m_UI_Scale;
     bool loadSetting_flag;
     HWND m_TransParentHandle;
+    QInputDeviceListWindow *m_deviceListWindow;
 };
 
 #endif // QKEYMAPPER_H

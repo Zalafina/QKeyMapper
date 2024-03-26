@@ -150,11 +150,13 @@ QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'
 SOURCES     += \
     interception_worker.cpp \
     main.cpp \
+    qinputdevicelistwindow.cpp \
     qkeymapper.cpp \
     qkeymapper_worker.cpp
 
 HEADERS     += \
     interception_worker.h \
+    qinputdevicelistwindow.h \
     qkeymapper.h \
     qkeymapper_worker.h
 
@@ -169,6 +171,7 @@ contains( DEFINES, SINGLE_APPLICATION ) {
 }
 
 FORMS       += \
+    qinputdevicelistwindow.ui \
     qkeymapper.ui
 
 RESOURCES   += \
