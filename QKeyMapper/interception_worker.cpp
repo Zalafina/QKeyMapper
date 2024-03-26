@@ -323,8 +323,12 @@ QHash<QString, USBDeviceInfo> Interception_Worker::parseUSBIDs(const QString &fi
             if (fields.size() < 2)
                 continue;
 
+            QString productId = QString("0000");
             currentVendorId = fields[0];
             currentVendorName = fields[1];
+            USBDeviceInfo deviceInfo;
+            deviceInfo.vendorName = currentVendorName;
+            usbIDs[currentVendorId + productId] = deviceInfo;
         }
     }
 
@@ -403,8 +407,6 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
             ushort productID = 0;
             QString vendorIDStr;
             QString productIDStr;
-            QString VendorStr;
-            QString ProductStr;
             QString iManufacturerStr;
             QString iProductStr;
             static QRegularExpression regex("VID_(\\w+)&PID_(\\w+)");
@@ -429,16 +431,19 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
                     input_device.ProductStr = iProductStr;
                 }
 
-                QString key = vendorIDStr.toLower() + productIDStr.toLower();
-                if (s_USBIDsMap.contains(key)) {
-                    USBDeviceInfo deviceInfo = s_USBIDsMap.value(key);
-                    VendorStr = deviceInfo.vendorName;
+                QString vendor_key = vendorIDStr.toLower() + QString("0000");
+                if (s_USBIDsMap.contains(vendor_key)) {
+                    USBDeviceInfo deviceInfo = s_USBIDsMap.value(vendor_key);
+                    input_device.VendorStr = deviceInfo.vendorName;
+                }
+
+                QString product_key = vendorIDStr.toLower() + productIDStr.toLower();
+                if (s_USBIDsMap.contains(product_key)) {
+                    USBDeviceInfo deviceInfo = s_USBIDsMap.value(product_key);
                     if (input_device.ManufacturerStr.isEmpty()) {
-                        input_device.ManufacturerStr = VendorStr;
+                        input_device.ManufacturerStr = deviceInfo.vendorName;;
                     }
-                    if (input_device.ProductStr.isEmpty()) {
-                        input_device.ProductStr = deviceInfo.productName;
-                    }
+                    input_device.ProductStr = deviceInfo.productName;
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -498,6 +503,8 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
             ushort productID = 0;
             QString vendorIDStr;
             QString productIDStr;
+            QString iManufacturerStr;
+            QString iProductStr;
             static QRegularExpression regex("VID_(\\w+)&PID_(\\w+)");
             QRegularExpressionMatch match = regex.match(hardware_id_str);
             if (match.hasMatch()) {
@@ -513,13 +520,41 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
                     input_device.productid = productID;
                 }
             }
+
+            if (vendorID && productID) {
+                if (getUSBDeviceDescriptor(vendorID, productID, iManufacturerStr, iProductStr)) {
+                    input_device.ManufacturerStr = iManufacturerStr;
+                    input_device.ProductStr = iProductStr;
+                }
+
+                QString vendor_key = vendorIDStr.toLower() + QString("0000");
+                if (s_USBIDsMap.contains(vendor_key)) {
+                    USBDeviceInfo deviceInfo = s_USBIDsMap.value(vendor_key);
+                    input_device.VendorStr = deviceInfo.vendorName;
+                }
+
+                QString product_key = vendorIDStr.toLower() + productIDStr.toLower();
+                if (s_USBIDsMap.contains(product_key)) {
+                    USBDeviceInfo deviceInfo = s_USBIDsMap.value(product_key);
+                    if (input_device.ManufacturerStr.isEmpty()) {
+                        input_device.ManufacturerStr = deviceInfo.vendorName;;
+                    }
+                    input_device.ProductStr = deviceInfo.productName;
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[getMouseDeviceList] USB device not found in USB IDs database -> " << "VendorID =" << vendorIDStr << ", ProductID =" << productIDStr;
+#endif
+                }
+
+            }
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_MOUSE(0);
             if (vendorIDStr.isEmpty() && productIDStr.isEmpty()) {
                 qDebug().nospace().noquote() << "[getMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
             }
             else {
-                qDebug().nospace().noquote() << "[getMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
+                qDebug().nospace().noquote() << "[getMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
             }
 #endif
         }
