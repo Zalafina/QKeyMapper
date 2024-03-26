@@ -44,6 +44,8 @@ public:
     static QHash<QString, USBDeviceInfo> parseUSBIDs(const QString& filePath);
     static QString getDeviceDescriptionByHardwareID(const QString& hardwareID);
     static InterceptionContext getInterceptionContext(void);
+    static QList<InputDevice> getRefreshedKeyboardDeviceList(void);
+    static QList<InputDevice> getRefreshedMouseDeviceList(void);
     static QList<InputDevice> getKeyboardDeviceList(void);
     static QList<InputDevice> getMouseDeviceList(void);
     static QString getHardwareId(InterceptionDevice device);

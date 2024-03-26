@@ -2025,6 +2025,8 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
         refreshProcessInfoTable();
+        (void)Interception_Worker::getRefreshedKeyboardDeviceList();
+        (void)Interception_Worker::getRefreshedMouseDeviceList();
         refreshDeviceListInfo();
 
    }
@@ -4946,10 +4948,10 @@ void QKeyMapper::refreshProcessInfoTable(void)
 
 void QKeyMapper::refreshDeviceListInfo()
 {
-    QList<InputDevice> keyboardDeviceList;
-    QList<InputDevice> mouseDeviceList;
-    keyboardDeviceList = Interception_Worker::getKeyboardDeviceList();
-    mouseDeviceList = Interception_Worker::getMouseDeviceList();
+    QList<InputDevice> keyboardDeviceList = Interception_Worker::getKeyboardDeviceList();
+    QList<InputDevice> mouseDeviceList = Interception_Worker::getMouseDeviceList();
+    Q_UNUSED(keyboardDeviceList);
+    Q_UNUSED(mouseDeviceList);
 }
 
 void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)

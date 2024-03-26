@@ -30,8 +30,8 @@ Interception_Worker::Interception_Worker(QObject *parent) :
         // QString usbids_file = QString(USBIDS_FILEPATH);
         s_USBIDsMap = parseUSBIDs(USBIDS_QRC);
 
-        (void)getKeyboardDeviceList();
-        (void)getMouseDeviceList();
+        (void)getRefreshedKeyboardDeviceList();
+        (void)getRefreshedMouseDeviceList();
         startInterception();
     }
 }
@@ -234,6 +234,10 @@ Interception_Worker::Interception_State Interception_Worker::getInterceptionStat
 
 bool Interception_Worker::getUSBDeviceDescriptor(ushort vendor_id, ushort product_id, QString &iManufacturer, QString &iProduct)
 {
+    if (!s_libusb_available) {
+        return false;
+    }
+
     libusb_device_handle *handle;
     libusb_device *dev;
     struct libusb_device_descriptor dev_desc;
@@ -383,7 +387,7 @@ InterceptionContext Interception_Worker::getInterceptionContext()
     return s_InterceptionContext;
 }
 
-QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
+QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
 {
     QList<InputDevice> devicelist;
     if (s_InterceptionContext == Q_NULLPTR) {
@@ -447,7 +451,7 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[getKeyboardDeviceList] USB device not found in USB IDs database -> " << "VendorID =" << vendorIDStr << ", ProductID =" << productIDStr;
+                    qDebug() << "[getRefreshedKeyboardDeviceList] USB device not found in USB IDs database -> " << "VendorID =" << vendorIDStr << ", ProductID =" << productIDStr;
 #endif
                 }
 
@@ -455,17 +459,17 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_KEYBOARD(0);
             if (vendorIDStr.isEmpty() && productIDStr.isEmpty()) {
-                qDebug().nospace().noquote() << "[getKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
+                qDebug().nospace().noquote() << "[getRefreshedKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
             }
             else {
-                qDebug().nospace().noquote() << "[getKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
+                qDebug().nospace().noquote() << "[getRefreshedKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
             }
 #endif
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_KEYBOARD(0);
-            qDebug().nospace() << "[getKeyboardDeviceList] [" << index << "]No Keyboard Device";
+            qDebug().nospace() << "[getRefreshedKeyboardDeviceList] [" << index << "]No Keyboard Device";
 #endif
         }
 
@@ -480,7 +484,7 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
     return KeyboardDeviceList;
 }
 
-QList<InputDevice> Interception_Worker::getMouseDeviceList()
+QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
 {
     QList<InputDevice> devicelist;
     if (s_InterceptionContext == Q_NULLPTR) {
@@ -543,7 +547,7 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[getMouseDeviceList] USB device not found in USB IDs database -> " << "VendorID =" << vendorIDStr << ", ProductID =" << productIDStr;
+                    qDebug() << "[getRefreshedMouseDeviceList] USB device not found in USB IDs database -> " << "VendorID =" << vendorIDStr << ", ProductID =" << productIDStr;
 #endif
                 }
 
@@ -551,17 +555,17 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_MOUSE(0);
             if (vendorIDStr.isEmpty() && productIDStr.isEmpty()) {
-                qDebug().nospace().noquote() << "[getMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
+                qDebug().nospace().noquote() << "[getRefreshedMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
             }
             else {
-                qDebug().nospace().noquote() << "[getMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
+                qDebug().nospace().noquote() << "[getRefreshedMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
             }
 #endif
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_MOUSE(0);
-            qDebug().nospace() << "[getMouseDeviceList] [" << index << "]No Mouse Device";
+            qDebug().nospace() << "[getRefreshedMouseDeviceList] [" << index << "]No Mouse Device";
 #endif
         }
 
@@ -573,6 +577,16 @@ QList<InputDevice> Interception_Worker::getMouseDeviceList()
 
     MouseDeviceList = devicelist;
 
+    return MouseDeviceList;
+}
+
+QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
+{
+    return KeyboardDeviceList;
+}
+
+QList<InputDevice> Interception_Worker::getMouseDeviceList()
+{
     return MouseDeviceList;
 }
 
