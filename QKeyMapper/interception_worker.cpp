@@ -453,7 +453,7 @@ QList<InputDevice> Interception_Worker::getKeyboardDeviceList()
                 qDebug().nospace().noquote() << "[getKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
             }
             else {
-                qDebug().nospace().noquote() << "[getKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", Vendor=" << VendorStr << ", iManufacturer=" << iManufacturerStr << ", iProductStr=" << iProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
+                qDebug().nospace().noquote() << "[getKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
             }
 #endif
         }
