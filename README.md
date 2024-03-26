@@ -1,9 +1,15 @@
 # QKeyMapper
----------------
+
+<p align="left">
+    <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?color=5af"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=ccf"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg"/></a>
+</p>
+
 ## 在Win10和Win11下可以正常使用的按键映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231220)新增游戏手柄按键和虚拟游戏手柄支持。
 ---------------
 ### 最新Release版本压缩包下载:
-### [![Github Latest Release](https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg)](https://github.com/Zalafina/QKeyMapper/releases/latest)
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
 ### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
