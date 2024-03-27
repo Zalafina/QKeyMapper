@@ -27,11 +27,12 @@ Interception_Worker::Interception_Worker(QObject *parent) :
             s_libusb_available = true;
         }
 
-        // QString usbids_file = QString(USBIDS_FILEPATH);
         s_USBIDsMap = parseUSBIDs(USBIDS_QRC);
 
+        /* Must do KeyboardDeviceList & MouseDeviceList Initialize before Interception Start */
         (void)getRefreshedKeyboardDeviceList();
         (void)getRefreshedMouseDeviceList();
+
         startInterception();
     }
 }
@@ -404,8 +405,8 @@ QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
             input_device.device = device;
             QString hardware_id_str = QString::fromWCharArray(hardware_id);
             QString devicedesc = getDeviceDescriptionByHardwareID(hardware_id_str);
-            input_device.hardwareid = hardware_id_str;
-            input_device.devicedesc = devicedesc;
+            input_device.deviceinfo.hardwareid = hardware_id_str;
+            input_device.deviceinfo.devicedesc = devicedesc;
 
             ushort vendorID = 0;
             ushort productID = 0;
@@ -421,33 +422,33 @@ QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
                 bool ok;
                 vendorID = vendorIDStr.toUShort(&ok, 16);
                 if (ok) {
-                    input_device.vendorid = vendorID;
+                    input_device.deviceinfo.vendorid = vendorID;
                 }
                 productID = productIDStr.toUShort(&ok, 16);
                 if (ok) {
-                    input_device.productid = productID;
+                    input_device.deviceinfo.productid = productID;
                 }
             }
 
             if (vendorID && productID) {
                 if (getUSBDeviceDescriptor(vendorID, productID, iManufacturerStr, iProductStr)) {
-                    input_device.ManufacturerStr = iManufacturerStr;
-                    input_device.ProductStr = iProductStr;
+                    input_device.deviceinfo.ManufacturerStr = iManufacturerStr;
+                    input_device.deviceinfo.ProductStr = iProductStr;
                 }
 
                 QString vendor_key = vendorIDStr.toLower() + QString("0000");
                 if (s_USBIDsMap.contains(vendor_key)) {
                     USBDeviceInfo deviceInfo = s_USBIDsMap.value(vendor_key);
-                    input_device.VendorStr = deviceInfo.vendorName;
+                    input_device.deviceinfo.VendorStr = deviceInfo.vendorName;
                 }
 
                 QString product_key = vendorIDStr.toLower() + productIDStr.toLower();
                 if (s_USBIDsMap.contains(product_key)) {
                     USBDeviceInfo deviceInfo = s_USBIDsMap.value(product_key);
-                    if (input_device.ManufacturerStr.isEmpty()) {
-                        input_device.ManufacturerStr = deviceInfo.vendorName;;
+                    if (input_device.deviceinfo.ManufacturerStr.isEmpty()) {
+                        input_device.deviceinfo.ManufacturerStr = deviceInfo.vendorName;;
                     }
-                    input_device.ProductStr = deviceInfo.productName;
+                    input_device.deviceinfo.ProductStr = deviceInfo.productName;
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -459,10 +460,10 @@ QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_KEYBOARD(0);
             if (vendorIDStr.isEmpty() && productIDStr.isEmpty()) {
-                qDebug().nospace().noquote() << "[getRefreshedKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
+                qDebug().nospace().noquote() << "[getRefreshedKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << input_device.deviceinfo.hardwareid << ", DeviceDescription=" << input_device.deviceinfo.devicedesc;
             }
             else {
-                qDebug().nospace().noquote() << "[getRefreshedKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
+                qDebug().nospace().noquote() << "[getRefreshedKeyboardDeviceList] [" << index << "]Keyboard -> HardwareID=" << input_device.deviceinfo.hardwareid << ", Vendor=" << input_device.deviceinfo.VendorStr << ", Manufacturer=" << input_device.deviceinfo.ManufacturerStr << ", ProductStr=" << input_device.deviceinfo.ProductStr << ", DeviceDescription=" << input_device.deviceinfo.devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
             }
 #endif
         }
@@ -500,8 +501,8 @@ QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
             input_device.device = device;
             QString hardware_id_str = QString::fromWCharArray(hardware_id);
             QString devicedesc = getDeviceDescriptionByHardwareID(hardware_id_str);
-            input_device.hardwareid = hardware_id_str;
-            input_device.devicedesc = devicedesc;
+            input_device.deviceinfo.hardwareid = hardware_id_str;
+            input_device.deviceinfo.devicedesc = devicedesc;
 
             ushort vendorID = 0;
             ushort productID = 0;
@@ -517,33 +518,33 @@ QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
                 bool ok;
                 vendorID = vendorIDStr.toUShort(&ok, 16);
                 if (ok) {
-                    input_device.vendorid = vendorID;
+                    input_device.deviceinfo.vendorid = vendorID;
                 }
                 productID = productIDStr.toUShort(&ok, 16);
                 if (ok) {
-                    input_device.productid = productID;
+                    input_device.deviceinfo.productid = productID;
                 }
             }
 
             if (vendorID && productID) {
                 if (getUSBDeviceDescriptor(vendorID, productID, iManufacturerStr, iProductStr)) {
-                    input_device.ManufacturerStr = iManufacturerStr;
-                    input_device.ProductStr = iProductStr;
+                    input_device.deviceinfo.ManufacturerStr = iManufacturerStr;
+                    input_device.deviceinfo.ProductStr = iProductStr;
                 }
 
                 QString vendor_key = vendorIDStr.toLower() + QString("0000");
                 if (s_USBIDsMap.contains(vendor_key)) {
                     USBDeviceInfo deviceInfo = s_USBIDsMap.value(vendor_key);
-                    input_device.VendorStr = deviceInfo.vendorName;
+                    input_device.deviceinfo.VendorStr = deviceInfo.vendorName;
                 }
 
                 QString product_key = vendorIDStr.toLower() + productIDStr.toLower();
                 if (s_USBIDsMap.contains(product_key)) {
                     USBDeviceInfo deviceInfo = s_USBIDsMap.value(product_key);
-                    if (input_device.ManufacturerStr.isEmpty()) {
-                        input_device.ManufacturerStr = deviceInfo.vendorName;;
+                    if (input_device.deviceinfo.ManufacturerStr.isEmpty()) {
+                        input_device.deviceinfo.ManufacturerStr = deviceInfo.vendorName;;
                     }
-                    input_device.ProductStr = deviceInfo.productName;
+                    input_device.deviceinfo.ProductStr = deviceInfo.productName;
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -555,10 +556,10 @@ QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
 #ifdef DEBUG_LOGOUT_ON
             int index = device - INTERCEPTION_MOUSE(0);
             if (vendorIDStr.isEmpty() && productIDStr.isEmpty()) {
-                qDebug().nospace().noquote() << "[getRefreshedMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", DeviceDescription=" << devicedesc;
+                qDebug().nospace().noquote() << "[getRefreshedMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << input_device.deviceinfo.hardwareid << ", DeviceDescription=" << input_device.deviceinfo.devicedesc;
             }
             else {
-                qDebug().nospace().noquote() << "[getRefreshedMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << hardware_id_str << ", Vendor=" << input_device.VendorStr << ", Manufacturer=" << input_device.ManufacturerStr << ", ProductStr=" << input_device.ProductStr << ", DeviceDescription=" << devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
+                qDebug().nospace().noquote() << "[getRefreshedMouseDeviceList] [" << index << "]Mouse -> HardwareID=" << input_device.deviceinfo.hardwareid << ", Vendor=" << input_device.deviceinfo.VendorStr << ", Manufacturer=" << input_device.deviceinfo.ManufacturerStr << ", ProductStr=" << input_device.deviceinfo.ProductStr << ", DeviceDescription=" << input_device.deviceinfo.devicedesc << ", VendorID=0x" << vendorIDStr << ", ProductID=0x" << productIDStr;
             }
 #endif
         }
@@ -647,18 +648,32 @@ void Interception_Worker::setInputDeviceDisabled(InterceptionDevice device, bool
 
     if (interception_is_keyboard(device))
     {
-        int index = device - INTERCEPTION_KEYBOARD(0);
-        KeyboardDeviceList[index].disabled = disabled;
+        if (!KeyboardDeviceList.isEmpty()) {
+            int index = device - INTERCEPTION_KEYBOARD(0);
+            KeyboardDeviceList[index].disabled = disabled;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[setInputDeviceDisabled] Keyboard[" << index << "] disabled = " << disabled;
+            qDebug().nospace() << "[setInputDeviceDisabled] Keyboard[" << index << "] disabled = " << disabled;
 #endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[setInputDeviceDisabled]" << " KeyboardDeviceList is Empty!";
+#endif
+        }
     }
     else if(interception_is_mouse(device))
     {
-        int index = device - INTERCEPTION_MOUSE(0);
-        MouseDeviceList[index].disabled = disabled;
+        if (!MouseDeviceList.isEmpty()) {
+            int index = device - INTERCEPTION_MOUSE(0);
+            MouseDeviceList[index].disabled = disabled;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[setInputDeviceDisabled] Mouse[" << index << "] disabled = " << disabled;
+            qDebug().nospace() << "[setInputDeviceDisabled] Mouse[" << index << "] disabled = " << disabled;
 #endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[setInputDeviceDisabled]" << " MouseDeviceList is Empty!";
+#endif
+        }
     }
 }

@@ -667,7 +667,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
-    refreshDeviceListInfo();
 #ifdef QT_NO_DEBUG
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
@@ -1019,7 +1018,6 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 {
     if (false == isHidden()){
         refreshProcessInfoTable();
-        refreshDeviceListInfo();
     }
 }
 
@@ -2038,9 +2036,6 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
         refreshProcessInfoTable();
-        (void)Interception_Worker::getRefreshedKeyboardDeviceList();
-        (void)Interception_Worker::getRefreshedMouseDeviceList();
-        refreshDeviceListInfo();
 
    }
    else if (event->key() != Qt::Key_Escape) {
@@ -4972,14 +4967,6 @@ void QKeyMapper::refreshProcessInfoTable(void)
             ui->processinfoTable->setRangeSelected(selection, true);
         }
     }
-}
-
-void QKeyMapper::refreshDeviceListInfo()
-{
-    QList<InputDevice> keyboardDeviceList = Interception_Worker::getKeyboardDeviceList();
-    QList<InputDevice> mouseDeviceList = Interception_Worker::getMouseDeviceList();
-    Q_UNUSED(keyboardDeviceList);
-    Q_UNUSED(mouseDeviceList);
 }
 
 void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)

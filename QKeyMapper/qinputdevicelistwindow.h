@@ -15,6 +15,11 @@ public:
     explicit QInputDeviceListWindow(QWidget *parent = nullptr);
     ~QInputDeviceListWindow();
 
+    void updateDeviceListInfo(void);
+
+protected:
+    void showEvent(QShowEvent *event);
+
 private:
     Ui::QInputDeviceListWindow *ui;
 };

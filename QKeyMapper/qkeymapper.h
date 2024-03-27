@@ -51,9 +51,8 @@
 #define LANGUAGE_CHINESE    (0)
 #define LANGUAGE_ENGLISH    (1)
 
-struct InputDevice
+struct InputDeviceInfo
 {
-    InterceptionDevice device;
     QString hardwareid;
     QString devicedesc;
     ushort vendorid;
@@ -61,6 +60,12 @@ struct InputDevice
     QString VendorStr;
     QString ManufacturerStr;
     QString ProductStr;
+};
+
+struct InputDevice
+{
+    InterceptionDevice device;
+    InputDeviceInfo deviceinfo;
     QAtomicBool disabled;
 };
 
@@ -367,7 +372,6 @@ private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
     void refreshProcessInfoTable(void);
-    void refreshDeviceListInfo(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void updateSystemTrayDisplay(void);
