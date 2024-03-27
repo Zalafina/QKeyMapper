@@ -363,6 +363,7 @@ QString QKeyMapper::s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
+    m_UI_Scale(UI_SCALE_NORMAL),
     ui(new Ui::QKeyMapper),
     m_KeyMapStatus(KEYMAP_IDLE),
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
@@ -383,7 +384,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
-    m_UI_Scale(UI_SCALE_NORMAL),
     loadSetting_flag(false),
     m_TransParentHandle(NULL),
     m_deviceListWindow(Q_NULLPTR)
@@ -636,10 +636,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
-    reloadUILanguage();
-    resetFontSize();
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
+
+    reloadUILanguage();
+    resetFontSize();
 
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
@@ -5828,6 +5829,10 @@ void QKeyMapper::setUILanguage_Chinese()
                                                                  << KEYMAPDATATABLE_COL2_CHINESE
                                                                  << KEYMAPDATATABLE_COL3_CHINESE
                                                                  << KEYMAPDATATABLE_COL4_CHINESE);
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->setUILanguagee(LANGUAGE_CHINESE);
+    }
 }
 
 void QKeyMapper::setUILanguage_English()
@@ -5901,6 +5906,10 @@ void QKeyMapper::setUILanguage_English()
                                                                  << KEYMAPDATATABLE_COL2_ENGLISH
                                                                  << KEYMAPDATATABLE_COL3_ENGLISH
                                                                  << KEYMAPDATATABLE_COL4_ENGLISH);
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->setUILanguagee(LANGUAGE_ENGLISH);
+    }
 }
 
 void QKeyMapper::resetFontSize()
@@ -5972,6 +5981,10 @@ void QKeyMapper::resetFontSize()
 
         ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+    }
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->resetFontSize();
     }
 }
 

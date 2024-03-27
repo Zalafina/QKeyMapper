@@ -15,10 +15,22 @@ public:
     explicit QInputDeviceListWindow(QWidget *parent = nullptr);
     ~QInputDeviceListWindow();
 
+    void setUILanguagee(int languageindex);
+    void resetFontSize(void);
     void updateDeviceListInfo(void);
+    void writeDeviceListInfo(void);
 
 protected:
     void showEvent(QShowEvent *event);
+
+private:
+    void initKeyboardDeviceTable(void);
+    void initMouseDeviceTable(void);
+
+private slots:
+    void on_confirmButton_clicked();
+
+    void on_cancelButton_clicked();
 
 private:
     Ui::QInputDeviceListWindow *ui;

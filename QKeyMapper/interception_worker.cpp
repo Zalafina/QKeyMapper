@@ -57,12 +57,13 @@ void Interception_Worker::InterceptionThreadStarted()
     InterceptionKeyStroke stroke;
 
     if (s_InterceptStart) {
-        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
 #ifdef QT_DEBUG
         if (!IsDebuggerPresent()) {
+            interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
             interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
         }
 #else
+        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
         interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
 #endif
 #ifdef DEBUG_LOGOUT_ON

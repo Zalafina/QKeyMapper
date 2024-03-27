@@ -446,6 +446,7 @@ public:
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
     static QString s_MappingSwitchKeyString;
+    int m_UI_Scale;
 
 private:
     static QKeyMapper *m_instance;
@@ -470,7 +471,6 @@ private:
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
-    int m_UI_Scale;
     bool loadSetting_flag;
     HWND m_TransParentHandle;
     QInputDeviceListWindow *m_deviceListWindow;

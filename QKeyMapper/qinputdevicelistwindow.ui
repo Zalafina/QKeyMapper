@@ -9,17 +9,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>1200</width>
     <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>DeviceList</string>
   </property>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="confirmButton">
    <property name="geometry">
     <rect>
-     <x>539</x>
+     <x>939</x>
      <y>560</y>
      <width>101</width>
      <height>21</height>
@@ -38,10 +38,10 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="cancelButton">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>1070</x>
      <y>560</y>
      <width>101</width>
      <height>21</height>
@@ -55,6 +55,26 @@
    </property>
    <property name="autoDefault">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QTableWidget" name="keyboardDeviceTable">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>30</y>
+     <width>1091</width>
+     <height>231</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QTableWidget" name="mouseDeviceTable">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>290</y>
+     <width>1091</width>
+     <height>231</height>
+    </rect>
    </property>
   </widget>
  </widget>
