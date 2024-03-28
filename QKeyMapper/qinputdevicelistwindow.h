@@ -18,6 +18,10 @@ public:
     void setUILanguagee(int languageindex);
     void resetFontSize(void);
     void updateDeviceListInfo(void);
+    void updateKeyboardDeviceListInfo(void);
+    void updateMouseDeviceListInfo(void);
+    void selectKeyboardDeviceListRow(int select_rowindex);
+    void selectMouseDeviceListRow(int select_rowindex);
     void writeDeviceListInfo(void);
 
 protected:

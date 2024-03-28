@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>600</height>
+    <width>1220</width>
+    <height>690</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,8 +19,8 @@
   <widget class="QPushButton" name="confirmButton">
    <property name="geometry">
     <rect>
-     <x>939</x>
-     <y>560</y>
+     <x>919</x>
+     <y>640</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -41,8 +41,8 @@
   <widget class="QPushButton" name="cancelButton">
    <property name="geometry">
     <rect>
-     <x>1070</x>
-     <y>560</y>
+     <x>1050</x>
+     <y>640</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -60,21 +60,53 @@
   <widget class="QTableWidget" name="keyboardDeviceTable">
    <property name="geometry">
     <rect>
-     <x>80</x>
+     <x>100</x>
      <y>30</y>
      <width>1091</width>
-     <height>231</height>
+     <height>268</height>
     </rect>
    </property>
   </widget>
   <widget class="QTableWidget" name="mouseDeviceTable">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>290</y>
+     <x>100</x>
+     <y>340</y>
      <width>1091</width>
-     <height>231</height>
+     <height>268</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="keyboardLabel">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>140</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Keyboard</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mouseLabel">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>450</y>
+     <width>81</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Mouse</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
  </widget>
