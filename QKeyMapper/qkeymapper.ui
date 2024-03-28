@@ -321,9 +321,9 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>710</x>
+     <x>690</x>
      <y>445</y>
-     <width>61</width>
+     <width>81</width>
      <height>22</height>
     </rect>
    </property>
@@ -337,9 +337,9 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>710</x>
+     <x>690</x>
      <y>470</y>
-     <width>61</width>
+     <width>81</width>
      <height>22</height>
     </rect>
    </property>
@@ -355,7 +355,7 @@
     <rect>
      <x>30</x>
      <y>550</y>
-     <width>141</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -363,7 +363,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>AutoMappingMinimize</string>
+    <string>AutoStartMinimize</string>
    </property>
    <property name="tristate">
     <bool>true</bool>
@@ -409,7 +409,7 @@
     <rect>
      <x>30</x>
      <y>520</y>
-     <width>121</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -474,14 +474,14 @@
   <widget class="QLabel" name="mappingswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>180</x>
+     <x>169</x>
      <y>550</y>
-     <width>70</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>MappingSwitchKey</string>
+    <string>MappingKey</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -672,14 +672,14 @@
   <widget class="QLabel" name="windowswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>180</x>
+     <x>169</x>
      <y>520</y>
-     <width>70</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>WindowSwitchKey</string>
+    <string>WindowKey</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -861,9 +861,9 @@
   <widget class="QLabel" name="accelThresholdLabel">
    <property name="geometry">
     <rect>
-     <x>375</x>
+     <x>364</x>
      <y>550</y>
-     <width>60</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
@@ -919,14 +919,14 @@
   <widget class="QLabel" name="brakeThresholdLabel">
    <property name="geometry">
     <rect>
-     <x>375</x>
+     <x>364</x>
      <y>520</y>
-     <width>60</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
    <property name="text">
-    <string>AccelThreshold</string>
+    <string>BrakeThreshold</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1079,6 +1079,70 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QComboBox" name="keyboardSelectComboBox">
+   <property name="geometry">
+    <rect>
+     <x>586</x>
+     <y>445</y>
+     <width>101</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="mouseSelectComboBox">
+   <property name="geometry">
+    <rect>
+     <x>586</x>
+     <y>470</y>
+     <width>101</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="keyboardSelectLabel">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>445</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Keyboard</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mouseSelectLabel">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>470</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Mouse</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1138,6 +1202,10 @@
   <zorder>pointDisplayLabel</zorder>
   <zorder>multiInputGroupBox</zorder>
   <zorder>multiInputStatusLabel</zorder>
+  <zorder>keyboardSelectComboBox</zorder>
+  <zorder>mouseSelectComboBox</zorder>
+  <zorder>keyboardSelectLabel</zorder>
+  <zorder>mouseSelectLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

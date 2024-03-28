@@ -316,11 +316,11 @@ static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DATAPORTLABEL_ENGLISH = "DataPort";
 static const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeThreshold";
 static const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelThreshold";
-static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
+static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoStartMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
-static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowSwitchKey";
-static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
+static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowKey";
+static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
 static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Window Title";
@@ -4144,6 +4144,10 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(9);
     }
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(9);
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
@@ -4164,9 +4168,6 @@ void QKeyMapper::setControlFontEnglish()
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
-
-    ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(10);
@@ -4190,31 +4191,31 @@ void QKeyMapper::setControlFontEnglish()
     ui->multiInputStatusLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(12);
+        customFont.setPointSize(9);
     }
     else {
-        customFont.setPointSize(8);
+        customFont.setPointSize(9);
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(10);
+        customFont.setPointSize(9);
     }
     else {
-        customFont.setPointSize(8);
+        customFont.setPointSize(9);
     }
     // ui->disableWinKeyCheckBox->setFont(customFont);
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
 
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-        curGeometry.moveLeft(curGeometry.x() - 10);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+    //     curGeometry.moveLeft(curGeometry.x() - 10);
+    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    // }
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -4291,10 +4292,10 @@ void QKeyMapper::setControlFontChinese()
     ui->multiInputStatusLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(12);
+        customFont.setPointSize(11);
     }
     else {
-        customFont.setPointSize(10);
+        customFont.setPointSize(9);
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
@@ -4311,11 +4312,11 @@ void QKeyMapper::setControlFontChinese()
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
 
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-        curGeometry.moveLeft(curGeometry.x() - 10);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+    //     curGeometry.moveLeft(curGeometry.x() - 10);
+    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    // }
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
