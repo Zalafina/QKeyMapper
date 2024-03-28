@@ -15,8 +15,8 @@ static const int MOUSE_WHEEL_KEYUP_WAITTIME = 20;
 
 static const int SETMOUSEPOSITION_WAITTIME_MAX = 100;
 
-static const int MAPPING_WAITTIME_MIN = 0;
-static const int MAPPING_WAITTIME_MAX = 1000;
+// static const int MAPPING_WAITTIME_MIN = 0;
+// static const int MAPPING_WAITTIME_MAX = 5000;
 
 static const WORD XBUTTON_NONE = 0x0000;
 

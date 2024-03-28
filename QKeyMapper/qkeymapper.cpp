@@ -51,8 +51,8 @@ static const int BURST_TIME_MAX = 5000;
 static const int BURST_PRESS_TIME_DEFAULT   = 40;
 static const int BURST_RELEASE_TIME_DEFAULT = 20;
 
-static const int MAPPING_WAITTIME_MIN = 0;
-static const int MAPPING_WAITTIME_MAX = 5000;
+// static const int MAPPING_WAITTIME_MIN = 0;
+// static const int MAPPING_WAITTIME_MAX = 5000;
 
 static const int DATA_PORT_MIN = 1;
 static const int DATA_PORT_MAX = 65535;

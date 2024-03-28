@@ -629,7 +629,7 @@
     <rect>
      <x>775</x>
      <y>410</y>
-     <width>45</width>
+     <width>55</width>
      <height>22</height>
     </rect>
    </property>
@@ -965,7 +965,7 @@
   <widget class="QLabel" name="pointLabel">
    <property name="geometry">
     <rect>
-     <x>820</x>
+     <x>830</x>
      <y>410</y>
      <width>31</width>
      <height>22</height>
@@ -981,7 +981,7 @@
   <widget class="QLabel" name="pointDisplayLabel">
    <property name="geometry">
     <rect>
-     <x>853</x>
+     <x>863</x>
      <y>412</y>
      <width>96</width>
      <height>20</height>

@@ -43,6 +43,9 @@
 
 #include "qkeymapper_worker.h"
 
+#define MAPPING_WAITTIME_MIN    (0)
+#define MAPPING_WAITTIME_MAX    (9999)
+
 namespace Ui {
 class QKeyMapper;
 }
