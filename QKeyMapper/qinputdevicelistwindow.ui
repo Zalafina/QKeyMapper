@@ -19,10 +19,10 @@
   <widget class="QPushButton" name="confirmButton">
    <property name="geometry">
     <rect>
-     <x>919</x>
-     <y>640</y>
+     <x>880</x>
+     <y>630</y>
      <width>101</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -42,9 +42,9 @@
    <property name="geometry">
     <rect>
      <x>1050</x>
-     <y>640</y>
+     <y>630</y>
      <width>101</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -81,7 +81,7 @@
    <property name="geometry">
     <rect>
      <x>5</x>
-     <y>140</y>
+     <y>155</y>
      <width>81</width>
      <height>22</height>
     </rect>
@@ -97,7 +97,7 @@
    <property name="geometry">
     <rect>
      <x>5</x>
-     <y>450</y>
+     <y>470</y>
      <width>81</width>
      <height>22</height>
     </rect>

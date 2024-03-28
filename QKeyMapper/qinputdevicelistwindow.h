@@ -22,7 +22,9 @@ public:
     void updateMouseDeviceListInfo(void);
     void selectKeyboardDeviceListRow(int select_rowindex);
     void selectMouseDeviceListRow(int select_rowindex);
-    void writeDeviceListInfo(void);
+    void writeDeviceList(void);
+    void writeKeyboardDeviceList(void);
+    void writeMouseDeviceList(void);
 
 protected:
     void showEvent(QShowEvent *event);
@@ -32,6 +34,10 @@ private:
     void initMouseDeviceTable(void);
 
 private slots:
+    void onKeyboardListCellChanged(int row, int col);
+
+    void onMouseListCellChanged(int row, int col);
+
     void on_confirmButton_clicked();
 
     void on_cancelButton_clicked();

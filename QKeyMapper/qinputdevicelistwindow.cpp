@@ -2,6 +2,8 @@
 #include "qinputdevicelistwindow.h"
 #include "ui_qinputdevicelistwindow.h"
 
+static const char *PROGRAM_NAME = "QKeyMapper";
+
 static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 static const char *FONTNAME_CHINESE = "NSimSun";
 
@@ -74,6 +76,9 @@ QInputDeviceListWindow::QInputDeviceListWindow(QWidget *parent)
 
     initKeyboardDeviceTable();
     initMouseDeviceTable();
+
+    QObject::connect(ui->keyboardDeviceTable, &QTableWidget::cellChanged, this, &QInputDeviceListWindow::onKeyboardListCellChanged);
+    QObject::connect(ui->mouseDeviceTable, &QTableWidget::cellChanged, this, &QInputDeviceListWindow::onMouseListCellChanged);
 }
 
 QInputDeviceListWindow::~QInputDeviceListWindow()
@@ -207,6 +212,8 @@ void QInputDeviceListWindow::updateKeyboardDeviceListInfo()
     int rowindex = 0;
     ui->keyboardDeviceTable->setRowCount(keyboardlist.size());
 
+    // Temporarily block the signal emit
+    ui->keyboardDeviceTable->blockSignals(true);
     for (const InputDevice &inputdevice : keyboardlist)
     {
         QTableWidgetItem *number_TableItem = new QTableWidgetItem(QString::number(rowindex));
@@ -224,6 +231,20 @@ void QInputDeviceListWindow::updateKeyboardDeviceListInfo()
         QTableWidgetItem *hardwareid_TableItem = new QTableWidgetItem(inputdevice.deviceinfo.hardwareid);
         hardwareid_TableItem->setToolTip(inputdevice.deviceinfo.hardwareid);
         ui->keyboardDeviceTable->setItem(rowindex, DEVICE_TABLE_HARDWAREID_COLUMN, hardwareid_TableItem);
+
+        QTableWidgetItem *disableBox = new QTableWidgetItem();
+        if (inputdevice.disabled == true) {
+            disableBox->setCheckState(Qt::Checked);
+        }
+        else {
+            disableBox->setCheckState(Qt::Unchecked);
+        }
+        ui->keyboardDeviceTable->setItem(rowindex, DEVICE_TABLE_DISABLE_COLUMN, disableBox);
+
+        if (inputdevice.deviceinfo.vendorid == 0 && inputdevice.deviceinfo.productid == 0) {
+            rowindex += 1;
+            continue;
+        }
 
         QString vendorIdStr = QString("0x%1").arg(QString::number(inputdevice.deviceinfo.vendorid, 16).toUpper(), 4, '0');
         QTableWidgetItem *vendorid_TableItem = new QTableWidgetItem(vendorIdStr);
@@ -249,8 +270,14 @@ void QInputDeviceListWindow::updateKeyboardDeviceListInfo()
 
         rowindex += 1;
     }
+    // Restore the signal emit
+    ui->keyboardDeviceTable->blockSignals(false);
 
-    selectKeyboardDeviceListRow(1);
+    InterceptionDevice lastkeyboard = Interception_Worker::lastOperateKeyboardDevice;
+    if (interception_is_keyboard(lastkeyboard)) {
+        int select_index = lastkeyboard - INTERCEPTION_KEYBOARD(0);
+        selectKeyboardDeviceListRow(select_index);
+    }
 }
 
 void QInputDeviceListWindow::updateMouseDeviceListInfo()
@@ -262,6 +289,8 @@ void QInputDeviceListWindow::updateMouseDeviceListInfo()
     int rowindex = 0;
     ui->mouseDeviceTable->setRowCount(mouselist.size());
 
+    // Temporarily block the signal emit
+    ui->mouseDeviceTable->blockSignals(true);
     for (const InputDevice &inputdevice : mouselist)
     {
         QTableWidgetItem *number_TableItem = new QTableWidgetItem(QString::number(rowindex));
@@ -279,6 +308,20 @@ void QInputDeviceListWindow::updateMouseDeviceListInfo()
         QTableWidgetItem *hardwareid_TableItem = new QTableWidgetItem(inputdevice.deviceinfo.hardwareid);
         hardwareid_TableItem->setToolTip(inputdevice.deviceinfo.hardwareid);
         ui->mouseDeviceTable->setItem(rowindex, DEVICE_TABLE_HARDWAREID_COLUMN, hardwareid_TableItem);
+
+        QTableWidgetItem *disableBox = new QTableWidgetItem();
+        if (inputdevice.disabled == true) {
+            disableBox->setCheckState(Qt::Checked);
+        }
+        else {
+            disableBox->setCheckState(Qt::Unchecked);
+        }
+        ui->mouseDeviceTable->setItem(rowindex, DEVICE_TABLE_DISABLE_COLUMN, disableBox);
+
+        if (inputdevice.deviceinfo.vendorid == 0 && inputdevice.deviceinfo.productid == 0) {
+            rowindex += 1;
+            continue;
+        }
 
         QString vendorIdStr = QString("0x%1").arg(QString::number(inputdevice.deviceinfo.vendorid, 16).toUpper(), 4, '0');
         QTableWidgetItem *vendorid_TableItem = new QTableWidgetItem(vendorIdStr);
@@ -304,8 +347,14 @@ void QInputDeviceListWindow::updateMouseDeviceListInfo()
 
         rowindex += 1;
     }
+    // Restore the signal emit
+    ui->mouseDeviceTable->blockSignals(false);
 
-    selectMouseDeviceListRow(1);
+    InterceptionDevice lastmouse = Interception_Worker::lastOperateMouseDevice;
+    if (interception_is_mouse(lastmouse)) {
+        int select_index = lastmouse - INTERCEPTION_MOUSE(0);
+        selectMouseDeviceListRow(select_index);
+    }
 }
 
 void QInputDeviceListWindow::selectKeyboardDeviceListRow(int select_rowindex)
@@ -320,9 +369,54 @@ void QInputDeviceListWindow::selectMouseDeviceListRow(int select_rowindex)
     ui->mouseDeviceTable->setRangeSelected(selection, true);
 }
 
-void QInputDeviceListWindow::writeDeviceListInfo()
+void QInputDeviceListWindow::writeDeviceList()
 {
+    writeKeyboardDeviceList();
+    writeMouseDeviceList();
+}
 
+void QInputDeviceListWindow::writeKeyboardDeviceList()
+{
+    QList<InputDevice> keyboardlist = Interception_Worker::getKeyboardDeviceList();
+
+    int rowCount = ui->keyboardDeviceTable->rowCount();
+    for (int row = 0; row < rowCount; ++row) {
+        QTableWidgetItem* item = ui->keyboardDeviceTable->item(row, DEVICE_TABLE_DISABLE_COLUMN);
+        if (item != Q_NULLPTR) {
+            if (Qt::Checked == item->checkState()) {
+                if (!keyboardlist.at(row).disabled) {
+                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_KEYBOARD(row), true);
+                }
+            }
+            else {
+                if (keyboardlist.at(row).disabled) {
+                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_KEYBOARD(row), false);
+                }
+            }
+        }
+    }
+}
+
+void QInputDeviceListWindow::writeMouseDeviceList()
+{
+    QList<InputDevice> mouselist = Interception_Worker::getMouseDeviceList();
+
+    int rowCount = ui->mouseDeviceTable->rowCount();
+    for (int row = 0; row < rowCount; ++row) {
+        QTableWidgetItem* item = ui->mouseDeviceTable->item(row, DEVICE_TABLE_DISABLE_COLUMN);
+        if (item != Q_NULLPTR) {
+            if (Qt::Checked == item->checkState()) {
+                if (!mouselist.at(row).disabled) {
+                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_MOUSE(row), true);
+                }
+            }
+            else {
+                if (mouselist.at(row).disabled) {
+                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_MOUSE(row), false);
+                }
+            }
+        }
+    }
 }
 
 void QInputDeviceListWindow::showEvent(QShowEvent *event)
@@ -400,9 +494,126 @@ void QInputDeviceListWindow::initMouseDeviceTable()
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_DISABLE_COLUMN, disable_width);
 }
 
+void QInputDeviceListWindow::onKeyboardListCellChanged(int row, int col)
+{
+    if (col == DEVICE_TABLE_DISABLE_COLUMN) {
+        bool disable = false;
+        if (ui->keyboardDeviceTable->item(row, col)->checkState() == Qt::Checked) {
+            disable = true;
+        }
+        else {
+            disable = false;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[onKeyboardListCellChanged] row(%d) Disable = %s", row, disable == true?"ON":"OFF");
+#endif
+
+        if (disable) {
+            InterceptionDevice lastkeyboard = Interception_Worker::lastOperateKeyboardDevice;
+
+            if (lastkeyboard - INTERCEPTION_KEYBOARD(0) == row) {
+                // Temporarily block the signal emit
+                ui->keyboardDeviceTable->blockSignals(true);
+                ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
+                QString message;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    message = "Disabling the input device that is currently in use will prevent any further operations!";
+                }
+                else {
+                    message = "禁用正在使用的输入设备会导致无法继续进行任何操作！";
+                }
+
+                QMessageBox::StandardButton reply;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+                }
+                else {
+                    reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+                }
+
+                if (reply == QMessageBox::No) {
+                    ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[onKeyboardListCellChanged]" << "User click confirm button of Disabled Warning MessageBox.";
+#endif
+                }
+                else {
+                    ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Checked);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[onKeyboardListCellChanged]" << "User click cancel button of Disabled Warning MessageBox.";
+#endif
+                }
+
+                // Restore the signal emit
+                ui->keyboardDeviceTable->blockSignals(false);
+            }
+        }
+    }
+}
+
+void QInputDeviceListWindow::onMouseListCellChanged(int row, int col)
+{
+    if (col == DEVICE_TABLE_DISABLE_COLUMN) {
+        bool disable = false;
+        if (ui->mouseDeviceTable->item(row, col)->checkState() == Qt::Checked) {
+            disable = true;
+        }
+        else {
+            disable = false;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[onMouseListCellChanged] row(%d) Disable = %s", row, disable == true?"ON":"OFF");
+#endif
+
+        if (disable) {
+            InterceptionDevice lastmouse = Interception_Worker::lastOperateMouseDevice;
+
+            if (lastmouse - INTERCEPTION_MOUSE(0) == row) {
+                // Temporarily block the signal emit
+                ui->mouseDeviceTable->blockSignals(true);
+                ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
+                QString message;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    message = "Disabling the input device that is currently in use will prevent any further operations!";
+                }
+                else {
+                    message = "禁用正在使用的输入设备会导致无法继续进行任何操作！";
+                }
+
+                QMessageBox::StandardButton reply;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+                }
+                else {
+                    reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+                }
+
+                if (reply == QMessageBox::No) {
+                    ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[onMouseListCellChanged]" << "User click confirm button of Disabled Warning MessageBox.";
+#endif
+                }
+                else {
+                    ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Checked);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[onMouseListCellChanged]" << "User click cancel button of Disabled Warning MessageBox.";
+#endif
+                }
+
+                // Restore the signal emit
+                ui->mouseDeviceTable->blockSignals(false);
+            }
+        }
+    }
+}
+
+
 void QInputDeviceListWindow::on_confirmButton_clicked()
 {
-    writeDeviceListInfo();
+    writeDeviceList();
     hide();
 }
 

@@ -57,6 +57,8 @@ public:
     static QAtomicBool s_InterceptStart;
     static QList<InputDevice> KeyboardDeviceList;
     static QList<InputDevice> MouseDeviceList;
+    static InterceptionDevice lastOperateKeyboardDevice;
+    static InterceptionDevice lastOperateMouseDevice;
     static QHash<QString, USBDeviceInfo> s_USBIDsMap;
 };
 

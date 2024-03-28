@@ -5,6 +5,8 @@ bool Interception_Worker::s_libusb_available = false;
 QAtomicBool Interception_Worker::s_InterceptStart = QAtomicBool();
 QList<InputDevice> Interception_Worker::KeyboardDeviceList = QList<InputDevice>();
 QList<InputDevice> Interception_Worker::MouseDeviceList = QList<InputDevice>();
+InterceptionDevice Interception_Worker::lastOperateKeyboardDevice = 0;
+InterceptionDevice Interception_Worker::lastOperateMouseDevice = 0;
 QHash<QString, USBDeviceInfo> Interception_Worker::s_USBIDsMap;
 
 static const char *USBIDS_QRC = ":/usb.ids";
@@ -75,6 +77,7 @@ void Interception_Worker::InterceptionThreadStarted()
     {
         if(interception_is_mouse(device))
         {
+            lastOperateMouseDevice = device;
             int index = device - INTERCEPTION_MOUSE(0);
             if (MouseDeviceList.at(index).disabled) {
 #ifdef DEBUG_LOGOUT_ON
@@ -91,6 +94,7 @@ void Interception_Worker::InterceptionThreadStarted()
         }
         else
         {
+            lastOperateKeyboardDevice = device;
             int index = device - INTERCEPTION_KEYBOARD(0);
             if (KeyboardDeviceList.at(index).disabled) {
 #ifdef DEBUG_LOGOUT_ON
