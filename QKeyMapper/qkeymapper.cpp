@@ -4148,11 +4148,15 @@ void QKeyMapper::setControlFontEnglish()
     ui->addmapdataButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(9);
+        customFont.setPointSize(11);
     }
     else {
         customFont.setPointSize(9);
     }
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(9);
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
@@ -4175,9 +4179,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->mouseYSpeedLabel->setFont(customFont);
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
-
-    ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(10);
