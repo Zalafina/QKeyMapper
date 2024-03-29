@@ -406,8 +406,8 @@ QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
         InputDevice input_device = InputDevice();
         size_t length = interception_get_hardware_id(s_InterceptionContext, device, hardware_id, sizeof(hardware_id));
 
+        input_device.device = device;
         if(length > 0 && length < sizeof(hardware_id)) {
-            input_device.device = device;
             QString hardware_id_str = QString::fromWCharArray(hardware_id);
             QString devicedesc = getDeviceDescriptionByHardwareID(hardware_id_str);
             input_device.deviceinfo.hardwareid = hardware_id_str;
@@ -502,8 +502,9 @@ QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
     {
         InputDevice input_device = InputDevice();
         size_t length = interception_get_hardware_id(s_InterceptionContext, device, hardware_id, sizeof(hardware_id));
+
+        input_device.device = device;
         if(length > 0 && length < sizeof(hardware_id)) {
-            input_device.device = device;
             QString hardware_id_str = QString::fromWCharArray(hardware_id);
             QString devicedesc = getDeviceDescriptionByHardwareID(hardware_id_str);
             input_device.deviceinfo.hardwareid = hardware_id_str;

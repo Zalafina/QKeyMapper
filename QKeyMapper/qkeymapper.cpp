@@ -231,6 +231,8 @@ static const char *FUNC_HIBERNATE       = "Func-Hibernate";
 static const char *VIRTUAL_GAMEPAD_X360 = "X360";
 static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
 
+static const char *NO_INPUTDEVICE  = "No InputDevice";
+
 static const char *REFRESHBUTTON_CHINESE = "刷新";
 static const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
 static const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
@@ -285,9 +287,11 @@ static const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
 static const char *MULTIINPUTDEVICELISTBUTTON_CHINESE = "设备列表";
 static const char *INSTALLINTERCEPTIONBUTTON_CHINESE = "安装驱动";
 static const char *UNINSTALLINTERCEPTIONBUTTON_CHINESE = "卸载驱动";
-static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE = "Multi-Input Unavailable";
-static const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE = "Reboot Required";
-static const char *MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE = "Multi-Input Available";
+static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE = "多输入不可用";
+static const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE = "需要重启系统";
+static const char *MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE = "多输入可用";
+static const char *KEYBOARDSELECTLABEL_CHINESE = "键盘";
+static const char *MOUSESELECTLABEL_CHINESE    = "鼠标";
 
 static const char *REFRESHBUTTON_ENGLISH = "Refresh";
 static const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
@@ -343,9 +347,11 @@ static const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
 static const char *MULTIINPUTDEVICELISTBUTTON_ENGLISH = "DeviceList";
 static const char *INSTALLINTERCEPTIONBUTTON_ENGLISH = "Install Driver";
 static const char *UNINSTALLINTERCEPTIONBUTTON_ENGLISH = "Uninstall Driver";
-static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH = "Multi-Input Unavailable";
-static const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH = "Reboot Required";
-static const char *MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH = "Multi-Input Available";
+static const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH = "Unavailable";
+static const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH = "RebootRequired";
+static const char *MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH = "Available";
+static const char *KEYBOARDSELECTLABEL_ENGLISH = "Keyboard";
+static const char *MOUSESELECTLABEL_ENGLISH    = "Mouse";
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
@@ -427,6 +433,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initMappingSwitchKeyLineEdit();
     // initOriginalKeySeqEdit();
     initCombinationKeyLineEdit();
+    initInputDeviceSelectComboBoxes();
 
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
@@ -1019,6 +1026,7 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 {
     if (false == isHidden()){
         refreshProcessInfoTable();
+        initInputDeviceSelectComboBoxes();
     }
 }
 
@@ -2037,6 +2045,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
         refreshProcessInfoTable();
+        initInputDeviceSelectComboBoxes();
 
    }
    else if (event->key() != Qt::Key_Escape) {
@@ -4139,15 +4148,11 @@ void QKeyMapper::setControlFontEnglish()
     ui->addmapdataButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(11);
+        customFont.setPointSize(9);
     }
     else {
         customFont.setPointSize(9);
     }
-    ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
-
-    customFont.setPointSize(9);
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
@@ -4168,6 +4173,11 @@ void QKeyMapper::setControlFontEnglish()
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
+    ui->keyboardSelectLabel->setFont(customFont);
+    ui->mouseSelectLabel->setFont(customFont);
+
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
 
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(10);
@@ -4210,12 +4220,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
-
-    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-    //     QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-    //     curGeometry.moveLeft(curGeometry.x() - 10);
-    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    // }
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -4266,6 +4270,8 @@ void QKeyMapper::setControlFontChinese()
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
+    ui->keyboardSelectLabel->setFont(customFont);
+    ui->mouseSelectLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -4311,12 +4317,6 @@ void QKeyMapper::setControlFontChinese()
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
-
-    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-    //     QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-    //     curGeometry.moveLeft(curGeometry.x() - 10);
-    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    // }
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -4418,7 +4418,12 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->installInterceptionButton->setEnabled(status);
     ui->multiInputGroupBox->setEnabled(status);
-    ui->installInterceptionButton->setEnabled(status);
+    ui->keyboardSelectLabel->setEnabled(status);
+    ui->mouseSelectLabel->setEnabled(status);
+    if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->keyboardSelectComboBox->setEnabled(status);
+        ui->mouseSelectComboBox->setEnabled(status);
+    }
 
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
@@ -5448,6 +5453,74 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #endif
 }
 
+void QKeyMapper::initInputDeviceSelectComboBoxes()
+{
+    initKeyboardSelectComboBox();
+    initMouseSelectComboBox();
+}
+
+void QKeyMapper::initKeyboardSelectComboBox()
+{
+    if (!ui->keyboardSelectComboBox->isEnabled()) {
+        return;
+    }
+
+    int lastIndex = ui->keyboardSelectComboBox->currentIndex();
+    ui->keyboardSelectComboBox->clear();
+
+    QStringList keyboardDeviceList;
+    keyboardDeviceList.append(QString());
+
+    QList<InputDevice> keyboardlist = Interception_Worker::getKeyboardDeviceList();
+    for (const InputDevice &inputdevice : keyboardlist)
+    {
+        QString deviceStr;
+        if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
+            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), QString(NO_INPUTDEVICE));
+        }
+        else {
+            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), inputdevice.deviceinfo.devicedesc);
+        }
+        keyboardDeviceList.append(deviceStr);
+    }
+    ui->keyboardSelectComboBox->addItems(keyboardDeviceList);
+
+    if (lastIndex != 0) {
+        ui->keyboardSelectComboBox->setCurrentIndex(lastIndex);
+    }
+}
+
+void QKeyMapper::initMouseSelectComboBox()
+{
+    if (!ui->mouseSelectComboBox->isEnabled()) {
+        return;
+    }
+
+    int lastIndex = ui->mouseSelectComboBox->currentIndex();
+    ui->mouseSelectComboBox->clear();
+
+    QStringList mouseDeviceList;
+    mouseDeviceList.append(QString());
+
+    QList<InputDevice> mouselist = Interception_Worker::getMouseDeviceList();
+    for (const InputDevice &inputdevice : mouselist)
+    {
+        QString deviceStr;
+        if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
+            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), QString(NO_INPUTDEVICE));
+        }
+        else {
+            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), inputdevice.deviceinfo.devicedesc);
+        }
+        mouseDeviceList.append(deviceStr);
+    }
+    ui->mouseSelectComboBox->addItems(mouseDeviceList);
+
+    if (lastIndex != 0) {
+        ui->mouseSelectComboBox->setCurrentIndex(lastIndex);
+    }
+}
+
 void QKeyMapper::initWindowSwitchKeyLineEdit()
 {
     // int top = ui->windowswitchkeyLabel->y();
@@ -5754,6 +5827,16 @@ void QKeyMapper::reloadUILanguage()
         setUILanguage_Chinese();
     }
 
+    QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        curGeometry.moveLeft(780);
+        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    }
+    else {
+        curGeometry.moveLeft(790);
+        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    }
+
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
 #endif
@@ -5814,7 +5897,8 @@ void QKeyMapper::setUILanguage_Chinese()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
-    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
+    ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
@@ -5891,6 +5975,8 @@ void QKeyMapper::setUILanguage_English()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
 #endif
+    ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_ENGLISH);
+    ui->mouseSelectLabel->setText(MOUSESELECTLABEL_ENGLISH);
     ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_ENGLISH);
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
@@ -5930,6 +6016,8 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->keyboardSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
+        ui->mouseSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -5960,6 +6048,8 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->keyboardSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
+        ui->mouseSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -6958,6 +7048,7 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     reloadUILanguage();
+    resetFontSize();
 
 #ifdef DEBUG_LOGOUT_ON
     QString languageStr;

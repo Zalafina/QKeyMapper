@@ -553,7 +553,7 @@
      <x>910</x>
      <y>520</y>
      <width>45</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -566,7 +566,7 @@
      <x>910</x>
      <y>550</y>
      <width>45</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -579,7 +579,7 @@
      <x>845</x>
      <y>520</y>
      <width>61</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -595,7 +595,7 @@
      <x>845</x>
      <y>550</y>
      <width>61</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -822,7 +822,7 @@
      <x>790</x>
      <y>550</y>
      <width>56</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -851,7 +851,7 @@
      <x>440</x>
      <y>490</y>
      <width>50</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -864,7 +864,7 @@
      <x>364</x>
      <y>550</y>
      <width>71</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -880,7 +880,7 @@
      <x>440</x>
      <y>550</y>
      <width>60</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -893,7 +893,7 @@
      <x>375</x>
      <y>490</y>
      <width>60</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -909,7 +909,7 @@
      <x>440</x>
      <y>520</y>
      <width>60</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -922,7 +922,7 @@
      <x>364</x>
      <y>520</y>
      <width>71</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -1084,7 +1084,7 @@
     <rect>
      <x>586</x>
      <y>445</y>
-     <width>101</width>
+     <width>121</width>
      <height>22</height>
     </rect>
    </property>
@@ -1100,7 +1100,7 @@
     <rect>
      <x>586</x>
      <y>470</y>
-     <width>101</width>
+     <width>121</width>
      <height>22</height>
     </rect>
    </property>
@@ -1114,9 +1114,9 @@
   <widget class="QLabel" name="keyboardSelectLabel">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>510</x>
      <y>445</y>
-     <width>61</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
@@ -1130,9 +1130,9 @@
   <widget class="QLabel" name="mouseSelectLabel">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>510</x>
      <y>470</y>
-     <width>61</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>

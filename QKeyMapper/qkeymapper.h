@@ -381,6 +381,9 @@ private:
 
     void initKeyMappingDataTable(void);
     void initAddKeyComboBoxes(void);
+    void initInputDeviceSelectComboBoxes(void);
+    void initKeyboardSelectComboBox(void);
+    void initMouseSelectComboBox(void);
     void initWindowSwitchKeyLineEdit(void);
     void initMappingSwitchKeyLineEdit(void);
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
