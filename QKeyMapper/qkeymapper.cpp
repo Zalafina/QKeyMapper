@@ -6356,6 +6356,11 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
+
+    bool multiInputSupport = false;
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        multiInputSupport = true;
+    }
     QString currentOriKeyText;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
@@ -6375,10 +6380,30 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 valid_combinationkey = false;
             }
             else {
-                for (const QString &key : qAsConst(combinationkeyslist)) {
-                    if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
-                        valid_combinationkey = false;
-                        break;
+                if (multiInputSupport) {
+                    static QRegularExpression reg("@[0-9]$");
+                    for (const QString &key : qAsConst(combinationkeyslist)) {
+                        QString splitted_key;
+                        QRegularExpressionMatch match = reg.match(key);
+                        if (match.hasMatch()) {
+                            int atIndex = key.lastIndexOf('@');
+                            splitted_key = key.mid(0, atIndex);
+                        } else {
+                            splitted_key = key;
+                        }
+
+                        if (!QKeyMapper_Worker::CombinationKeysList.contains(splitted_key)) {
+                            valid_combinationkey = false;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    for (const QString &key : qAsConst(combinationkeyslist)) {
+                        if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
+                            valid_combinationkey = false;
+                            break;
+                        }
                     }
                 }
             }
