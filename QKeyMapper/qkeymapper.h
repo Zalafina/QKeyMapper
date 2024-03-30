@@ -371,6 +371,8 @@ private slots:
 
     void on_multiInputDeviceListButton_clicked();
 
+    void on_multiInputEnableCheckBox_stateChanged(int state);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);

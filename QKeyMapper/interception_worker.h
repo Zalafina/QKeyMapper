@@ -34,12 +34,12 @@ public slots:
     void InterceptionThreadStarted(void);
     bool doLoadInterception(void);
     void doUnloadInterception(void);
-    void startInterception(void);
-    void stopInterception(void);
 
 public:
     static bool isInterceptionDriverFileExist(void);
     static Interception_State getInterceptionState(void);
+    static void startInterception(void);
+    static void stopInterception(void);
     static bool getUSBDeviceDescriptor(ushort vendor_id, ushort product_id, QString& iManufacturer, QString& iProduct);
     static QHash<QString, USBDeviceInfo> parseUSBIDs(const QString& filePath);
     static QString getDeviceDescriptionByHardwareID(const QString& hardwareID);

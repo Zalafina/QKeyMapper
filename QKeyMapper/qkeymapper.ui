@@ -1021,44 +1021,6 @@
    <property name="alignment">
     <set>Qt::AlignCenter</set>
    </property>
-   <widget class="QPushButton" name="installInterceptionButton">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>45</y>
-      <width>81</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
-    </property>
-    <property name="text">
-     <string>Install Driver</string>
-    </property>
-    <property name="autoDefault">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="multiInputDeviceListButton">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>15</y>
-      <width>61</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::NoFocus</enum>
-    </property>
-    <property name="text">
-     <string>DeviceList</string>
-    </property>
-    <property name="autoDefault">
-     <bool>false</bool>
-    </property>
-   </widget>
   </widget>
   <widget class="QLabel" name="multiInputStatusLabel">
    <property name="geometry">
@@ -1143,6 +1105,60 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QPushButton" name="multiInputDeviceListButton">
+   <property name="geometry">
+    <rect>
+     <x>540</x>
+     <y>520</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>DeviceList</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="multiInputEnableCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>540</x>
+     <y>550</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Enable</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="installInterceptionButton">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>550</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Install Driver</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1206,6 +1222,9 @@
   <zorder>mouseSelectComboBox</zorder>
   <zorder>keyboardSelectLabel</zorder>
   <zorder>mouseSelectLabel</zorder>
+  <zorder>multiInputDeviceListButton</zorder>
+  <zorder>multiInputEnableCheckBox</zorder>
+  <zorder>installInterceptionButton</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

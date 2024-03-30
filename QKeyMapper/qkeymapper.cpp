@@ -120,6 +120,7 @@ static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 static const char *VIRTUALGAMEPAD_ENABLE = "VirtualGamepadEnable";
 static const char *VIRTUALGAMEPAD_TYPE = "VirtualGamepadType";
 #endif
+static const char *MULTI_INPUT_ENABLE = "MultiInputEnable";
 /* General global settings <<< */
 
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
@@ -284,6 +285,7 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 static const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
+static const char *MULTIINPUTENABLECHECKBOX_CHINESE = "启用";
 static const char *MULTIINPUTDEVICELISTBUTTON_CHINESE = "设备列表";
 static const char *INSTALLINTERCEPTIONBUTTON_CHINESE = "安装驱动";
 static const char *UNINSTALLINTERCEPTIONBUTTON_CHINESE = "卸载驱动";
@@ -344,6 +346,7 @@ static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
 static const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
+static const char *MULTIINPUTENABLECHECKBOX_ENGLISH = "Enable";
 static const char *MULTIINPUTDEVICELISTBUTTON_ENGLISH = "DeviceList";
 static const char *INSTALLINTERCEPTIONBUTTON_ENGLISH = "Install Driver";
 static const char *UNINSTALLINTERCEPTIONBUTTON_ENGLISH = "Uninstall Driver";
@@ -3312,6 +3315,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
         }
 #endif
+
+        if (true == settingFile.contains(MULTI_INPUT_ENABLE)){
+            bool multiInputEnableChecked = settingFile.value(MULTI_INPUT_ENABLE).toBool();
+            if (true == multiInputEnableChecked) {
+                ui->multiInputEnableCheckBox->setChecked(true);
+            }
+            else {
+                ui->multiInputEnableCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "MultiInput Enable Checkbox ->" << multiInputEnableChecked;
+#endif
+        }
+        else {
+            ui->multiInputEnableCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
+#endif
+        }
     }
     else if (GROUPNAME_GLOBALSETTING == settingtext) {
         loadGlobalSetting = true;
@@ -4200,6 +4222,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->installInterceptionButton->setFont(customFont);
     ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
+    ui->multiInputEnableCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -4297,6 +4320,7 @@ void QKeyMapper::setControlFontChinese()
     ui->installInterceptionButton->setFont(customFont);
     ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
+    ui->multiInputEnableCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -4419,9 +4443,11 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->installInterceptionButton->setEnabled(status);
     ui->multiInputGroupBox->setEnabled(status);
-    ui->keyboardSelectLabel->setEnabled(status);
-    ui->mouseSelectLabel->setEnabled(status);
     if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->multiInputEnableCheckBox->setEnabled(status);
+        ui->multiInputDeviceListButton->setEnabled(status);
+        ui->keyboardSelectLabel->setEnabled(status);
+        ui->mouseSelectLabel->setEnabled(status);
         ui->keyboardSelectComboBox->setEnabled(status);
         ui->mouseSelectComboBox->setEnabled(status);
     }
@@ -5900,6 +5926,8 @@ void QKeyMapper::setUILanguage_Chinese()
 #endif
     ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
+    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
@@ -5979,6 +6007,7 @@ void QKeyMapper::setUILanguage_English()
     ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_ENGLISH);
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_ENGLISH);
     ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
+    ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_ENGLISH);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_ENGLISH);
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
@@ -7250,4 +7279,28 @@ void QKeyMapper::on_installInterceptionButton_clicked()
 void QKeyMapper::on_multiInputDeviceListButton_clicked()
 {
     showInputDeviceListWindow();
+}
+
+void QKeyMapper::on_multiInputEnableCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MultiInput] MultiInput Enable state changed ->" << (Qt::CheckState)state;
+#endif
+
+    if (Qt::Checked == state) {
+        Interception_Worker::startInterception();
+    }
+    else {
+        Interception_Worker::stopInterception();
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
+    if (Qt::Checked == state) {
+        settingFile.setValue(MULTI_INPUT_ENABLE , true);
+    }
+    else {
+        settingFile.setValue(MULTI_INPUT_ENABLE , false);
+    }
 }

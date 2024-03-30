@@ -195,6 +195,17 @@ void QInputDeviceListWindow::resetFontSize()
 
     ui->keyboardDeviceTable->setFont(QFont("Microsoft YaHei", 9));
     ui->mouseDeviceTable->setFont(QFont("Microsoft YaHei", 9));
+
+    if (UI_SCALE_4K_PERCENT_150 == scale) {
+        /* change hight to 265 */
+        ui->keyboardDeviceTable->setFixedHeight(265);
+        ui->mouseDeviceTable->setFixedHeight(265);
+    }
+    else {
+        /* change hight to 268 */
+        ui->keyboardDeviceTable->setFixedHeight(268);
+        ui->mouseDeviceTable->setFixedHeight(265);
+    }
 }
 
 void QInputDeviceListWindow::updateDeviceListInfo()

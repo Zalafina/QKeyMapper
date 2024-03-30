@@ -34,8 +34,6 @@ Interception_Worker::Interception_Worker(QObject *parent) :
         /* Must do KeyboardDeviceList & MouseDeviceList Initialize before Interception Start */
         (void)getRefreshedKeyboardDeviceList();
         (void)getRefreshedMouseDeviceList();
-
-        startInterception();
     }
 }
 
@@ -58,23 +56,16 @@ void Interception_Worker::InterceptionThreadStarted()
     InterceptionDevice device;
     InterceptionKeyStroke stroke;
 
-    if (s_InterceptStart) {
-#ifdef QT_DEBUG
-        if (!IsDebuggerPresent()) {
-            interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
-            interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
-        }
-#else
-        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
-        interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
-#endif
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[KeyInterceptionWorker] Start intercept Keyboard&Mouse devices.";
-#endif
-    }
-
-    while(s_InterceptStart && interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), (InterceptionStroke *)&stroke, 1) > 0)
+    while(interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), (InterceptionStroke *)&stroke, 1) > 0)
     {
+        if (!s_InterceptStart) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[KeyInterceptionWorker] Intercept is stopped!";
+#endif
+            interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
+            continue;
+        }
+
         if(interception_is_mouse(device))
         {
             lastOperateMouseDevice = device;
@@ -147,20 +138,9 @@ bool Interception_Worker::doLoadInterception()
 void Interception_Worker::doUnloadInterception()
 {
     if (s_InterceptionContext != Q_NULLPTR) {
-        interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_NONE);
-        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_NONE);
+        stopInterception();
         interception_destroy_context(s_InterceptionContext);
     }
-}
-
-void Interception_Worker::startInterception()
-{
-    s_InterceptStart = true;
-}
-
-void Interception_Worker::stopInterception()
-{
-    s_InterceptStart = false;
 }
 
 bool Interception_Worker::isInterceptionDriverFileExist()
@@ -236,6 +216,44 @@ Interception_Worker::Interception_State Interception_Worker::getInterceptionStat
             return INTERCEPTION_UNAVAILABLE;
         }
     }
+}
+
+void Interception_Worker::startInterception()
+{
+    if (s_InterceptionContext == Q_NULLPTR) {
+        return;
+    }
+
+    s_InterceptStart = true;
+
+#ifdef QT_DEBUG
+    if (!IsDebuggerPresent()) {
+        interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+        interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
+    }
+#else
+    interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_ALL);
+    interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
+#endif
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[startInterception] Start Keyboard&Mouse Interception.";
+#endif
+}
+
+void Interception_Worker::stopInterception()
+{
+    if (s_InterceptionContext == Q_NULLPTR) {
+        return;
+    }
+
+    s_InterceptStart = false;
+
+    interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_NONE);
+    interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_NONE);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[stopInterception] Stop Keyboard&Mouse Interception.";
+#endif
 }
 
 bool Interception_Worker::getUSBDeviceDescriptor(ushort vendor_id, ushort product_id, QString &iManufacturer, QString &iProduct)
