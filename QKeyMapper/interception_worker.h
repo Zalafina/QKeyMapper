@@ -22,7 +22,8 @@ public:
 
     enum Interception_State
     {
-        INTERCEPTION_UNAVAILABLE = 0,
+        INTERCEPTION_INIT = 0,
+        INTERCEPTION_UNAVAILABLE,
         INTERCEPTION_REBOOTREQUIRED,
         INTERCEPTION_AVAILABLE,
     };

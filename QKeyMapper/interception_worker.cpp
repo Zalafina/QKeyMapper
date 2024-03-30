@@ -108,11 +108,10 @@ void Interception_Worker::InterceptionThreadStarted()
         }
     }
 
-    interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_NONE);
-    interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_NONE);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[KeyInterceptionWorker] Stop intercept Keyboard&Mouse devices.";
+    qDebug().nospace() << "[KeyInterceptionWorker] Stop Keyboard & Mouse Interception after interception_receive while loop breaked.";
 #endif
+    stopInterception();
 }
 
 bool Interception_Worker::doLoadInterception()
@@ -236,23 +235,23 @@ void Interception_Worker::startInterception()
     interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_ALL);
 #endif
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[startInterception] Start Keyboard&Mouse Interception.";
+    qDebug().nospace() << "[startInterception] Start Keyboard & Mouse Interception.";
 #endif
 }
 
 void Interception_Worker::stopInterception()
 {
+    s_InterceptStart = false;
+
     if (s_InterceptionContext == Q_NULLPTR) {
         return;
     }
-
-    s_InterceptStart = false;
 
     interception_set_filter(s_InterceptionContext, interception_is_keyboard, INTERCEPTION_FILTER_KEY_NONE);
     interception_set_filter(s_InterceptionContext, interception_is_mouse, INTERCEPTION_FILTER_MOUSE_NONE);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[stopInterception] Stop Keyboard&Mouse Interception.";
+    qDebug().nospace() << "[stopInterception] Stop Keyboard & Mouse Interception.";
 #endif
 }
 

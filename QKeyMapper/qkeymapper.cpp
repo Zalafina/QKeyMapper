@@ -4898,7 +4898,88 @@ void QKeyMapper::reconnectViGEmClient()
 
 void QKeyMapper::updateMultiInputLabelDisplay()
 {
+    Interception_Worker::Interception_State interception_state = Interception_Worker::getInterceptionState();
 
+#ifdef DEBUG_LOGOUT_ON
+    static Interception_Worker::Interception_State lastInterceptionState = Interception_Worker::INTERCEPTION_INIT;
+    if (lastInterceptionState != interception_state) {
+        lastInterceptionState = interception_state;
+        qDebug() << "[updateMultiInputLabelDisplay]" << "Interception State ->" << lastInterceptionState;
+    }
+#endif
+
+    int languageIndex = ui->languageComboBox->currentIndex();
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == interception_state) {
+        if (m_KeyMapStatus == KEYMAP_IDLE){
+            ui->multiInputEnableCheckBox->setEnabled(true);
+            ui->multiInputDeviceListButton->setEnabled(true);
+            ui->keyboardSelectLabel->setEnabled(true);
+            ui->mouseSelectLabel->setEnabled(true);
+            ui->keyboardSelectComboBox->setEnabled(true);
+            ui->mouseSelectComboBox->setEnabled(true);
+        }
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color:green;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE);
+        }
+    }
+    else if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == interception_state) {
+        ui->multiInputEnableCheckBox->setEnabled(false);
+        ui->multiInputDeviceListButton->setEnabled(false);
+        ui->keyboardSelectLabel->setEnabled(false);
+        ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setEnabled(false);
+        ui->mouseSelectComboBox->setEnabled(false);
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color: orange;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE);
+        }
+    }
+    else {
+        ui->multiInputEnableCheckBox->setEnabled(false);
+        ui->multiInputDeviceListButton->setEnabled(false);
+        ui->keyboardSelectLabel->setEnabled(false);
+        ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setEnabled(false);
+        ui->mouseSelectComboBox->setEnabled(false);
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color: red;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE);
+        }
+    }
 }
 
 void QKeyMapper::reloadInterception()
