@@ -92,7 +92,8 @@ static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 #endif
 
-static const int RELOAD_INTERCEPTION_WAIT_TIME = 2000;
+static const int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 10;
+static const int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX = 2000/INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
 
 static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
 static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
@@ -7324,51 +7325,55 @@ void QKeyMapper::on_installInterceptionButton_clicked()
         Interception_Worker::getInstance()->doUnloadInterception();
 
         (void)uninstallInterceptionDriver();
-
-        // emit updateMultiInputStatus_Signal();
-
-        ui->multiInputEnableCheckBox->setChecked(false);
-        ui->multiInputEnableCheckBox->setEnabled(false);
-        ui->multiInputDeviceListButton->setEnabled(false);
-        ui->keyboardSelectLabel->setEnabled(false);
-        ui->mouseSelectLabel->setEnabled(false);
-        ui->keyboardSelectComboBox->setCurrentIndex(0);
-        ui->mouseSelectComboBox->setCurrentIndex(0);
-        ui->keyboardSelectComboBox->setEnabled(false);
-        ui->mouseSelectComboBox->setEnabled(false);
-
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
-        }
-        else {
-            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
-        }
-
-        ui->multiInputStatusLabel->setStyleSheet("color: orange;");
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH);
-        }
-        else {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE);
-        }
-
-        /* Show Reboot Required MessageBox after Uninstall Interception Driver */
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
-        }
-        else {
-            QMessageBox::warning(this, PROGRAM_NAME, "卸载多输入设备驱动后需要重新启动操作系统生效。");
-        }
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, InterceptionState ->" << currentInterceptionState;
-#endif
-        (void)installInterceptionDriver();
+        Interception_Worker::setRebootRequiredFlag();
 
         emit updateMultiInputStatus_Signal();
 
         Interception_Worker::Interception_State newInterceptionState = Interception_Worker::getInterceptionState();
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Uninstall Interception Driver, New InterceptionState ->" << newInterceptionState;
+#endif
+
+        if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == newInterceptionState) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_installViGEmBusButton_clicked]" << "Reboot required after uninstall Interception Driver, InterceptionState ->" << newInterceptionState;
+#endif
+            /* Show Reboot Required MessageBox after Uninstall Interception Driver */
+            if (LANGUAGE_ENGLISH == languageIndex) {
+                QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "卸载多输入设备驱动后需要重新启动操作系统生效。");
+            }
+        }
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, Current InterceptionState ->" << currentInterceptionState;
+#endif
+        (void)installInterceptionDriver();
+
+        int loop = 0;
+        for (loop = 0; loop < INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX; loop++) {
+            if (Interception_Worker::isInterceptionDriverFileExist()) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, InterceptionDriverFileExist() wait time ->" << loop * INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
+#endif
+                break;
+            }
+            else {
+                QThread::msleep(INSTALL_INTERCEPTION_LOOP_WAIT_TIME);
+            }
+        }
+
+        emit updateMultiInputStatus_Signal();
+
+        Interception_Worker::Interception_State newInterceptionState = Interception_Worker::getInterceptionState();
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, New InterceptionState ->" << newInterceptionState;
+#endif
 
         if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == newInterceptionState) {
 #ifdef DEBUG_LOGOUT_ON

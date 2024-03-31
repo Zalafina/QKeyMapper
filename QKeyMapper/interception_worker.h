@@ -39,6 +39,7 @@ public slots:
 public:
     static bool isInterceptionDriverFileExist(void);
     static Interception_State getInterceptionState(void);
+    static void setRebootRequiredFlag(void);
     static void startInterception(void);
     static void stopInterception(void);
     static bool getUSBDeviceDescriptor(ushort vendor_id, ushort product_id, QString& iManufacturer, QString& iProduct);
@@ -54,6 +55,7 @@ public:
     static void setInputDeviceDisabled(InterceptionDevice device, bool disabled);
 
     static InterceptionContext s_InterceptionContext;
+    static QAtomicBool s_RebootRequired;
     static bool s_libusb_available;
     static QAtomicBool s_InterceptStart;
     static QList<InputDevice> KeyboardDeviceList;

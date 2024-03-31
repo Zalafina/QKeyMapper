@@ -1,6 +1,7 @@
 #include "interception_worker.h"
 
 InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
+QAtomicBool Interception_Worker::s_RebootRequired = QAtomicBool();
 bool Interception_Worker::s_libusb_available = false;
 QAtomicBool Interception_Worker::s_InterceptStart = QAtomicBool();
 QList<InputDevice> Interception_Worker::KeyboardDeviceList = QList<InputDevice>();
@@ -208,6 +209,10 @@ bool Interception_Worker::isInterceptionDriverFileExist()
 
 Interception_Worker::Interception_State Interception_Worker::getInterceptionState()
 {
+    if (s_RebootRequired) {
+        return INTERCEPTION_REBOOTREQUIRED;
+    }
+
     if (s_InterceptionContext != Q_NULLPTR) {
         return INTERCEPTION_AVAILABLE;
     }
@@ -219,6 +224,11 @@ Interception_Worker::Interception_State Interception_Worker::getInterceptionStat
             return INTERCEPTION_UNAVAILABLE;
         }
     }
+}
+
+void Interception_Worker::setRebootRequiredFlag()
+{
+    s_RebootRequired = true;
 }
 
 void Interception_Worker::startInterception()
