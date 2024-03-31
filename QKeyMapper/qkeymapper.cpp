@@ -2579,6 +2579,7 @@ bool QKeyMapper::backupFile(const QString &originalFile, const QString &backupFi
     return QFile::copy(originalFile, backupFile);
 }
 
+#ifdef SETTINGSFILE_CONVERT
 bool QKeyMapper::checkSettingsFileNeedtoConvert()
 {
     bool ret = false;
@@ -2707,6 +2708,7 @@ void QKeyMapper::convertSettingsFile()
         }
     }
 }
+#endif
 
 int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle)
 {
@@ -3413,11 +3415,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
 
                     int loadindex = 0;
-                    for (const QString &ori_key : qAsConst(original_keys)){
+                    static QRegularExpression reg("@[0-9]$");
+                    for (const QString &ori_key_nochange : qAsConst(original_keys)){
+                        QString ori_key;
+                        QRegularExpressionMatch match = reg.match(ori_key_nochange);
+                        if (match.hasMatch()) {
+                            int atIndex = ori_key_nochange.lastIndexOf('@');
+                            ori_key = ori_key_nochange.mid(0, atIndex);
+                        } else {
+                            ori_key = ori_key_nochange;
+                        }
+
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                        QString appendOriKey = ori_key;
+                        QString appendOriKey = ori_key_nochange;
                         if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                             keyboardmapcontains = true;
                         }
@@ -3636,11 +3648,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
 
                     int loadindex = 0;
-                    for (const QString &ori_key : qAsConst(original_keys)){
+                    static QRegularExpression reg("@[0-9]$");
+                    for (const QString &ori_key_nochange : qAsConst(original_keys)){
+                        QString ori_key;
+                        QRegularExpressionMatch match = reg.match(ori_key_nochange);
+                        if (match.hasMatch()) {
+                            int atIndex = ori_key_nochange.lastIndexOf('@');
+                            ori_key = ori_key_nochange.mid(0, atIndex);
+                        } else {
+                            ori_key = ori_key_nochange;
+                        }
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                        QString appendOriKey = ori_key;
+                        QString appendOriKey = ori_key_nochange;
                         if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                             keyboardmapcontains = true;
                         }
@@ -6440,7 +6461,6 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
-
     bool multiInputSupport = false;
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         multiInputSupport = true;
@@ -6452,6 +6472,20 @@ void QKeyMapper::on_addmapdataButton_clicked()
     // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
     if (false == currentOriKeyComboBoxText.isEmpty()) {
         currentOriKeyText = currentOriKeyComboBoxText;
+
+        int keyboardselect_index = ui->keyboardSelectComboBox->currentIndex();
+        if (ui->keyboardSelectComboBox->isEnabled() && keyboardselect_index > 0) {
+            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(currentOriKeyText)) {
+                currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(keyboardselect_index - 1));
+            }
+        }
+
+        int mouseselect_index = ui->mouseSelectComboBox->currentIndex();
+        if (ui->mouseSelectComboBox->isEnabled() && mouseselect_index > 0) {
+            if (QKeyMapper_Worker::MultiMouseInputList.contains(currentOriKeyText)) {
+                currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(mouseselect_index - 1));
+            }
+        }
     }
     else if (false == currentOriCombinationKeyText.isEmpty()) {
         bool valid_combinationkey = true;
@@ -6467,18 +6501,32 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (multiInputSupport) {
                     static QRegularExpression reg("@[0-9]$");
                     for (const QString &key : qAsConst(combinationkeyslist)) {
+                        bool multi_input = false;
                         QString splitted_key;
                         QRegularExpressionMatch match = reg.match(key);
                         if (match.hasMatch()) {
                             int atIndex = key.lastIndexOf('@');
                             splitted_key = key.mid(0, atIndex);
+                            multi_input = true;
                         } else {
                             splitted_key = key;
                         }
 
-                        if (!QKeyMapper_Worker::CombinationKeysList.contains(splitted_key)) {
-                            valid_combinationkey = false;
-                            break;
+                        if (multi_input) {
+                            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(splitted_key)) {
+                            }
+                            else if (QKeyMapper_Worker::MultiMouseInputList.contains(splitted_key)) {
+                            }
+                            else {
+                                valid_combinationkey = false;
+                                break;
+                            }
+                        }
+                        else {
+                            if (!QKeyMapper_Worker::CombinationKeysList.contains(splitted_key)) {
+                                valid_combinationkey = false;
+                                break;
+                            }
                         }
                     }
                 }

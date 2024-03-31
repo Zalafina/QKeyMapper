@@ -144,6 +144,8 @@ static const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
 static const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
 static const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
 
+static const char *SHOW_MOUSE_POINTS_KEY = "F9";
+
 static const char *MOUSE_WHEEL_UP_STR   = "Mouse-WheelUp";
 static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
 
@@ -218,6 +220,8 @@ QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QSt
 #ifdef MOUSEBUTTON_CONVERT
 QHash<QString, QString> QKeyMapper_Worker::MouseButtonNameConvertMap = QHash<QString, QString>();
 #endif
+QStringList QKeyMapper_Worker::MultiKeyboardInputList = QStringList();
+QStringList QKeyMapper_Worker::MultiMouseInputList = QStringList();
 QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
@@ -356,6 +360,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
     initCombinationKeysList();
+    initMultiKeyboardInputList();
+    initMultiMouseInputList();
     initJoystickKeyMap();
     // initSkipReleaseModifiersKeysList();
 
@@ -4131,6 +4137,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     }
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
+    QString keycodeString_nochanged = keycodeString;
 
 //#ifdef DEBUG_LOGOUT_ON
 //    qDebug("\"%s\" (0x%02X),  wParam(0x%04X), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, wParam, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
@@ -4167,7 +4174,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
             static bool show_mousepoints = false;
             if (KEY_DOWN == keyupdown){
-                if(keycodeString == "F9") {
+                if(keycodeString == SHOW_MOUSE_POINTS_KEY) {
                         if (!show_mousepoints) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points KEY_DOWN -> ON";
@@ -4178,7 +4185,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
             }
             else {
-                if (keycodeString == "F9") {
+                if (keycodeString == SHOW_MOUSE_POINTS_KEY) {
                     if (show_mousepoints) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points KEY_UP -> OFF";
@@ -4189,10 +4196,23 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
             }
 
+            /* Add extraInfo check for Multi InputDevice */
+            bool multi_input = false;
+            if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
+                InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
+                if (interception_is_keyboard(device)) {
+                    keycodeString = QString("%1@%2").arg(keycodeString, QString::number(device - INTERCEPTION_KEYBOARD(0)));
+                    multi_input = true;
+                }
+            }
+
             int findindex = -1;
             if (hookprocstart) {
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
                 findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+                if (findindex == -1 && multi_input) {
+                    findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_nochanged);
+                }
             }
 
             updatePressedRealKeysList(keycodeString, keyupdown);
@@ -4461,6 +4481,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
         if (true == MouseButtonNameMap.contains(wParam_X)) {
             QString keycodeString = MouseButtonNameMap.value(wParam_X);
+            QString keycodeString_nochanged = keycodeString;
             if (VIRTUAL_MOUSE_CLICK == extraInfo || VIRTUAL_MOUSE_POINTCLICK == extraInfo) {
                 if (!hookprocstart) {
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
@@ -4541,10 +4562,23 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
                 }
 
+                /* Add extraInfo check for Multi InputDevice */
+                bool multi_input = false;
+                if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
+                    InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
+                    if (interception_is_mouse(device)) {
+                        keycodeString = QString("%1@%2").arg(keycodeString, QString::number(device - INTERCEPTION_MOUSE(0)));
+                        multi_input = true;
+                    }
+                }
+
                 int findindex = -1;
                 if (hookprocstart) {
                     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
                     findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+                    if (findindex == -1 && multi_input) {
+                        findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_nochanged);
+                    }
                 }
 
                 updatePressedRealKeysList(keycodeString, keyupdown);
@@ -5491,6 +5525,175 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     MouseButtonNameConvertMap.insert("X1-Mouse",    "Mouse-X1"  );
     MouseButtonNameConvertMap.insert("X2-Mouse",    "Mouse-X2"  );
 #endif
+}
+
+void QKeyMapper_Worker::initMultiKeyboardInputList()
+{
+    MultiKeyboardInputList = QStringList() \
+            /* Keyboard Keys */
+            << "A"
+            << "B"
+            << "C"
+            << "D"
+            << "E"
+            << "F"
+            << "G"
+            << "H"
+            << "I"
+            << "J"
+            << "K"
+            << "L"
+            << "M"
+            << "N"
+            << "O"
+            << "P"
+            << "Q"
+            << "R"
+            << "S"
+            << "T"
+            << "U"
+            << "V"
+            << "W"
+            << "X"
+            << "Y"
+            << "Z"
+            << "1"
+            << "2"
+            << "3"
+            << "4"
+            << "5"
+            << "6"
+            << "7"
+            << "8"
+            << "9"
+            << "0"
+            << "Up"
+            << "Down"
+            << "Left"
+            << "Right"
+            << "Insert"
+            << "Delete"
+            << "Home"
+            << "End"
+            << "PageUp"
+            << "PageDown"
+            << "Space"
+            << "Tab"
+            << "Enter"
+            << "Shift"
+            << "L-Shift"
+            << "R-Shift"
+            << "Ctrl"
+            << "L-Ctrl"
+            << "R-Ctrl"
+            << "Alt"
+            << "L-Alt"
+            << "R-Alt"
+            << "L-Win"
+            << "R-Win"
+            << "Backspace"
+            << "`"
+            << "-"
+            << "="
+            << "["
+            << "]"
+            << "\\"
+            << ";"
+            << "'"
+            << ","
+            << "."
+            << "/"
+            << "Esc"
+            << "F1"
+            << "F2"
+            << "F3"
+            << "F4"
+            << "F5"
+            << "F6"
+            << "F7"
+            << "F8"
+            << "F9"
+            << "F10"
+            << "F11"
+            << "F12"
+            << "F13"
+            << "F14"
+            << "F15"
+            << "F16"
+            << "F17"
+            << "F18"
+            << "F19"
+            << "F20"
+            << "F21"
+            << "F22"
+            << "F23"
+            << "F24"
+            << "CapsLock"
+            << "Application"
+            << "PrintScrn"
+            << "ScrollLock"
+            << "Pause"
+            << "NumLock"
+            << "Num/"
+            << "Num*"
+            << "Num-"
+            << "Num＋"
+            << "Num."
+            << "Num0"
+            << "Num1"
+            << "Num2"
+            << "Num3"
+            << "Num4"
+            << "Num5"
+            << "Num6"
+            << "Num7"
+            << "Num8"
+            << "Num9"
+            << "NumEnter"
+            << "Num.(NumOFF)"
+            << "Num0(NumOFF)"
+            << "Num1(NumOFF)"
+            << "Num2(NumOFF)"
+            << "Num3(NumOFF)"
+            << "Num4(NumOFF)"
+            << "Num5(NumOFF)"
+            << "Num6(NumOFF)"
+            << "Num7(NumOFF)"
+            << "Num8(NumOFF)"
+            << "Num9(NumOFF)"
+            << "Vol Mute"
+            << "Vol Down"
+            << "Vol Up"
+            << "Media Next"
+            << "Media Prev"
+            << "Media Stop"
+            << "Media PlayPause"
+            << "Launch Mail"
+            << "Select Media"
+            << "Launch App1"
+            << "Launch App2"
+            << "Browser Back"
+            << "Browser Forward"
+            << "Browser Refresh"
+            << "Browser Stop"
+            << "Browser Search"
+            << "Browser Favorites"
+            << "Browser Home"
+            ;
+}
+
+void QKeyMapper_Worker::initMultiMouseInputList()
+{
+    MultiMouseInputList = QStringList() \
+            /* Mouse Keys */
+            << "Mouse-L"
+            << "Mouse-R"
+            << "Mouse-M"
+            << "Mouse-X1"
+            << "Mouse-X2"
+            << MOUSE_WHEEL_UP_STR
+            << MOUSE_WHEEL_DOWN_STR
+            ;
 }
 
 void QKeyMapper_Worker::initCombinationKeysList()

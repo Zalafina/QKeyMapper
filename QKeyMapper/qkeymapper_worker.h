@@ -501,6 +501,8 @@ private:
 
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
+    void initMultiKeyboardInputList(void);
+    void initMultiMouseInputList(void);
     void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
     // void initSkipReleaseModifiersKeysList(void);
@@ -536,6 +538,8 @@ public:
 #ifdef MOUSEBUTTON_CONVERT
     static QHash<QString, QString> MouseButtonNameConvertMap;
 #endif
+    static QStringList MultiKeyboardInputList;
+    static QStringList MultiMouseInputList;
     static QStringList CombinationKeysList;
     // static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;

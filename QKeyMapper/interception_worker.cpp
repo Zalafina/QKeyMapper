@@ -60,6 +60,13 @@ void Interception_Worker::InterceptionThreadStarted()
     while(interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), (InterceptionStroke *)&stroke, 1) > 0)
     {
         if (!s_InterceptStart) {
+            if(interception_is_mouse(device))
+            {
+                lastOperateMouseDevice = device;
+            }
+            else {
+                lastOperateKeyboardDevice = device;
+            }
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[KeyInterceptionWorker] Intercept is stopped!";
 #endif
@@ -77,10 +84,8 @@ void Interception_Worker::InterceptionThreadStarted()
 #endif
             }
             else {
-                unsigned int device_index = 1;
                 InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *) &stroke;
-                device_index += device - INTERCEPTION_KEYBOARD(0);
-                mstroke.information = INTERCEPTION_EXTRA_INFO + device_index;
+                mstroke.information = INTERCEPTION_EXTRA_INFO + device;
                 interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
             }
         }
@@ -94,11 +99,9 @@ void Interception_Worker::InterceptionThreadStarted()
 #endif
             }
             else {
-                unsigned int device_index = 1;
                 InterceptionKeyStroke &kstroke = *(InterceptionKeyStroke *) &stroke;
                 // unsigned int ori_information = kstroke.information;
-                device_index += device - INTERCEPTION_KEYBOARD(0);
-                kstroke.information = INTERCEPTION_EXTRA_INFO + device_index;
+                kstroke.information = INTERCEPTION_EXTRA_INFO + device;
                 interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
 // #ifdef DEBUG_LOGOUT_ON
 //                 QString ori_extraInfoStr = QString("0x%1").arg(QString::number(ori_information, 16).toUpper(), 8, '0');
