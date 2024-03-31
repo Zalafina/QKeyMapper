@@ -121,13 +121,13 @@ bool Interception_Worker::doLoadInterception()
     if (s_InterceptionContext == Q_NULLPTR) {
         result = false;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[Interception_Worker] interception_create_context Failed!!!";
+        qDebug().nospace() << "[doLoadInterception] interception_create_context() Failed!!!";
 #endif
     }
     else {
         result = true;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[Interception_Worker] interception_create_context Success.";
+        qDebug().nospace() << "[doLoadInterception] interception_create_context() Success.";
 #endif
     }
 
@@ -139,6 +139,10 @@ void Interception_Worker::doUnloadInterception()
     if (s_InterceptionContext != Q_NULLPTR) {
         stopInterception();
         interception_destroy_context(s_InterceptionContext);
+        s_InterceptionContext = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[doUnloadInterception] interception_destroy_context()";
+#endif
     }
 }
 

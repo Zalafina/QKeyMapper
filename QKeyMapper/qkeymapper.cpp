@@ -554,67 +554,28 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         isWin10Above = false;
     }
 
-    // if (isWin10Above) {
-        ui->vJoyXSensSpinBox->setEnabled(false);
-        ui->vJoyYSensSpinBox->setEnabled(false);
-        ui->vJoyXSensLabel->setEnabled(false);
-        ui->vJoyYSensLabel->setEnabled(false);
-        ui->lockCursorCheckBox->setEnabled(false);
-        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    ui->vJoyXSensSpinBox->setEnabled(false);
+    ui->vJoyYSensSpinBox->setEnabled(false);
+    ui->vJoyXSensLabel->setEnabled(false);
+    ui->vJoyYSensLabel->setEnabled(false);
+    ui->lockCursorCheckBox->setEnabled(false);
+    ui->enableVirtualJoystickCheckBox->setEnabled(false);
 
-        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-        int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
-        Q_UNUSED(retval_alloc);
-        Q_UNUSED(retval_connect);
+    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+    Q_UNUSED(retval_alloc);
+    Q_UNUSED(retval_connect);
 
-        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
 #endif
-        }
-
-        updateViGEmBusLabelDisplay();
-
-        if (!isWin10Above) {
-            ui->installViGEmBusButton->setEnabled(false);
-            ui->installViGEmBusButton->setVisible(false);
-        }
-#if 0
     }
-    else {
-        ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
-        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+
+    if (!isWin10Above) {
         ui->installViGEmBusButton->setEnabled(false);
-        // ui->uninstallViGEmBusButton->setEnabled(false);
-        ui->ViGEmBusStatusLabel->setEnabled(false);
-        ui->vJoyXSensSpinBox->setEnabled(false);
-        ui->vJoyYSensSpinBox->setEnabled(false);
-
-        ui->enableVirtualJoystickCheckBox->setVisible(false);
-        ui->lockCursorCheckBox->setVisible(false);
         ui->installViGEmBusButton->setVisible(false);
-        // ui->uninstallViGEmBusButton->setVisible(false);
-        ui->ViGEmBusStatusLabel->setVisible(false);
-        ui->vJoyXSensSpinBox->setVisible(false);
-        ui->vJoyYSensSpinBox->setVisible(false);
-        ui->vJoyXSensLabel->setVisible(false);
-        ui->vJoyYSensLabel->setVisible(false);
-        ui->virtualgamepadGroupBox->setVisible(false);
-
-        ui->virtualGamepadTypeComboBox->setEnabled(false);
-        ui->dataPortSpinBox->setEnabled(false);
-        ui->brakeThresholdDoubleSpinBox->setEnabled(false);
-        ui->accelThresholdDoubleSpinBox->setEnabled(false);
-
-        ui->virtualGamepadTypeComboBox->setVisible(false);
-        ui->dataPortLabel->setVisible(false);
-        ui->dataPortSpinBox->setVisible(false);
-        ui->brakeThresholdLabel->setVisible(false);
-        ui->accelThresholdLabel->setVisible(false);
-        ui->brakeThresholdDoubleSpinBox->setVisible(false);
-        ui->accelThresholdDoubleSpinBox->setVisible(false);
     }
-#endif
 
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -652,6 +613,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     reloadUILanguage();
     resetFontSize();
 
+    updateMultiInputStatus();
+#ifdef VIGEM_CLIENT_SUPPORT
+    updateViGEmBusStatus();
+#endif
+
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
@@ -671,10 +637,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
-    QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
+    QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
-    QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputLabelDisplay);
+    QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
@@ -4824,7 +4790,7 @@ int QKeyMapper::uninstallViGEmBusDriver()
     return 0;
 }
 
-void QKeyMapper::updateViGEmBusLabelDisplay()
+void QKeyMapper::updateViGEmBusStatus()
 {
     QKeyMapper_Worker::ViGEmClient_ConnectState connectstate = QKeyMapper_Worker::ViGEmClient_getConnectState();
 
@@ -4832,7 +4798,7 @@ void QKeyMapper::updateViGEmBusLabelDisplay()
     static QKeyMapper_Worker::ViGEmClient_ConnectState lastConnectState = QKeyMapper_Worker::VIGEMCLIENT_CONNECTING;
     if (lastConnectState != connectstate) {
         lastConnectState = connectstate;
-        qDebug() << "[updateViGEmBusLabelDisplay]" << "ViGEmClient Connect State ->" << lastConnectState;
+        qDebug() << "[updateViGEmBusStatus]" << "ViGEmClient Connect State ->" << lastConnectState;
     }
 #endif
 
@@ -4896,7 +4862,7 @@ void QKeyMapper::reconnectViGEmClient()
 }
 #endif
 
-void QKeyMapper::updateMultiInputLabelDisplay()
+void QKeyMapper::updateMultiInputStatus()
 {
     Interception_Worker::Interception_State interception_state = Interception_Worker::getInterceptionState();
 
@@ -4904,7 +4870,7 @@ void QKeyMapper::updateMultiInputLabelDisplay()
     static Interception_Worker::Interception_State lastInterceptionState = Interception_Worker::INTERCEPTION_INIT;
     if (lastInterceptionState != interception_state) {
         lastInterceptionState = interception_state;
-        qDebug() << "[updateMultiInputLabelDisplay]" << "Interception State ->" << lastInterceptionState;
+        qDebug() << "[updateMultiInputStatus]" << "Interception State ->" << lastInterceptionState;
     }
 #endif
 
@@ -4935,10 +4901,13 @@ void QKeyMapper::updateMultiInputLabelDisplay()
         }
     }
     else if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == interception_state) {
+        ui->multiInputEnableCheckBox->setChecked(false);
         ui->multiInputEnableCheckBox->setEnabled(false);
         ui->multiInputDeviceListButton->setEnabled(false);
         ui->keyboardSelectLabel->setEnabled(false);
         ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setCurrentIndex(0);
+        ui->mouseSelectComboBox->setCurrentIndex(0);
         ui->keyboardSelectComboBox->setEnabled(false);
         ui->mouseSelectComboBox->setEnabled(false);
 
@@ -4958,10 +4927,13 @@ void QKeyMapper::updateMultiInputLabelDisplay()
         }
     }
     else {
+        ui->multiInputEnableCheckBox->setChecked(false);
         ui->multiInputEnableCheckBox->setEnabled(false);
         ui->multiInputDeviceListButton->setEnabled(false);
         ui->keyboardSelectLabel->setEnabled(false);
         ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setCurrentIndex(0);
+        ui->mouseSelectComboBox->setCurrentIndex(0);
         ui->keyboardSelectComboBox->setEnabled(false);
         ui->mouseSelectComboBox->setEnabled(false);
 
@@ -7341,20 +7313,76 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
 
 void QKeyMapper::on_installInterceptionButton_clicked()
 {
-    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+    Interception_Worker::Interception_State currentInterceptionState = Interception_Worker::getInterceptionState();
+    int languageIndex = ui->languageComboBox->currentIndex();
+
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == currentInterceptionState) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Uninstall Interception Driver.";
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Uninstall Interception Driver, InterceptionState ->" << currentInterceptionState;
 #endif
 
         Interception_Worker::getInstance()->doUnloadInterception();
 
-        // emit updateViGEmBusStatus_Signal();
-        // ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
-        // ui->enableVirtualJoystickCheckBox->setEnabled(false);
-
         (void)uninstallInterceptionDriver();
-    }
 
+        // emit updateMultiInputStatus_Signal();
+
+        ui->multiInputEnableCheckBox->setChecked(false);
+        ui->multiInputEnableCheckBox->setEnabled(false);
+        ui->multiInputDeviceListButton->setEnabled(false);
+        ui->keyboardSelectLabel->setEnabled(false);
+        ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setCurrentIndex(0);
+        ui->mouseSelectComboBox->setCurrentIndex(0);
+        ui->keyboardSelectComboBox->setEnabled(false);
+        ui->mouseSelectComboBox->setEnabled(false);
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color: orange;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE);
+        }
+
+        /* Show Reboot Required MessageBox after Uninstall Interception Driver */
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
+        }
+        else {
+            QMessageBox::warning(this, PROGRAM_NAME, "卸载多输入设备驱动后需要重新启动操作系统生效。");
+        }
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, InterceptionState ->" << currentInterceptionState;
+#endif
+        (void)installInterceptionDriver();
+
+        emit updateMultiInputStatus_Signal();
+
+        Interception_Worker::Interception_State newInterceptionState = Interception_Worker::getInterceptionState();
+
+        if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == newInterceptionState) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_installViGEmBusButton_clicked]" << "Reboot required after install Interception Driver, InterceptionState ->" << newInterceptionState;
+#endif
+            /* Show Reboot Required MessageBox after Install Interception Driver */
+            if (LANGUAGE_ENGLISH == languageIndex) {
+                QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after installing the multi-input device driver.");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "安装多输入设备驱动后需要重新启动操作系统生效。");
+            }
+        }
+    }
 }
 
 void QKeyMapper::on_multiInputDeviceListButton_clicked()

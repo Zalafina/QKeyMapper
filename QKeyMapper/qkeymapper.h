@@ -435,12 +435,12 @@ private:
     int installViGEmBusDriver(void);
     int uninstallViGEmBusDriver(void);
 public slots:
-    void updateViGEmBusLabelDisplay(void);
+    void updateViGEmBusStatus(void);
     Q_INVOKABLE void reconnectViGEmClient(void);
 #endif
 
 public slots:
-    void updateMultiInputLabelDisplay(void);
+    void updateMultiInputStatus(void);
     Q_INVOKABLE void reloadInterception(void);
 
 public:
