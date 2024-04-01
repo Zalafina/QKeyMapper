@@ -1476,6 +1476,26 @@ int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
+    QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    {
+        if (keymapdata.Original_Key == keyname
+            || keymapdata.Original_Key == keyname_RemoveMultiInput){
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
+int QKeyMapper::findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
@@ -1494,10 +1514,12 @@ int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
+    QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataListGlobal))
     {
-        if (keymapdata.Original_Key == keyname){
+        if (keymapdata.Original_Key == keyname
+            || keymapdata.Original_Key == keyname_RemoveMultiInput){
             returnindex = keymapdataindex;
             break;
         }
@@ -6500,22 +6522,28 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else {
                 if (multiInputSupport) {
                     static QRegularExpression reg("@[0-9]$");
+                    QStringList keyslist;
                     for (const QString &key : qAsConst(combinationkeyslist)) {
                         bool multi_input = false;
-                        QString splitted_key;
+                        QString pure_key;
                         QRegularExpressionMatch match = reg.match(key);
                         if (match.hasMatch()) {
                             int atIndex = key.lastIndexOf('@');
-                            splitted_key = key.mid(0, atIndex);
+                            pure_key = key.mid(0, atIndex);
                             multi_input = true;
                         } else {
-                            splitted_key = key;
+                            pure_key = key;
+                        }
+
+                        if (keyslist.contains(pure_key)) {
+                            valid_combinationkey = false;
+                            break;
                         }
 
                         if (multi_input) {
-                            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(splitted_key)) {
+                            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(pure_key)) {
                             }
-                            else if (QKeyMapper_Worker::MultiMouseInputList.contains(splitted_key)) {
+                            else if (QKeyMapper_Worker::MultiMouseInputList.contains(pure_key)) {
                             }
                             else {
                                 valid_combinationkey = false;
@@ -6523,19 +6551,26 @@ void QKeyMapper::on_addmapdataButton_clicked()
                             }
                         }
                         else {
-                            if (!QKeyMapper_Worker::CombinationKeysList.contains(splitted_key)) {
+                            if (!QKeyMapper_Worker::CombinationKeysList.contains(pure_key)) {
                                 valid_combinationkey = false;
                                 break;
                             }
                         }
+                        keyslist.append(pure_key);
                     }
                 }
                 else {
+                    QStringList keyslist;
                     for (const QString &key : qAsConst(combinationkeyslist)) {
+                        if (keyslist.contains(key)) {
+                            valid_combinationkey = false;
+                            break;
+                        }
                         if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
                             valid_combinationkey = false;
                             break;
                         }
+                        keyslist.append(key);
                     }
                 }
             }
@@ -6564,7 +6599,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
     bool already_exist = false;
     int findindex = -1;
-    findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
+    // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
+    findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
     if (findindex != -1){
         if (VJOY_MOUSE2LS_STR == currentOriKeyText
             || VJOY_MOUSE2RS_STR == currentOriKeyText

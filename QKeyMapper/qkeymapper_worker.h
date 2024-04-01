@@ -490,6 +490,7 @@ public:
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
     static QString getWindowsKeyName(uint virtualKeyCode);
+    static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
@@ -548,6 +549,7 @@ public:
     static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
 #endif
     static QStringList pressedRealKeysList;
+    static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
     // static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT

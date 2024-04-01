@@ -230,6 +230,7 @@ QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, XUSB_BUTTON>();
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
+QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 // QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4205,19 +4206,17 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     multi_input = true;
                 }
             }
+            Q_UNUSED(multi_input);
 
             int findindex = -1;
             if (hookprocstart) {
                 returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
                 findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
-                if (findindex == -1 && multi_input) {
-                    findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_nochanged);
-                }
             }
 
             updatePressedRealKeysList(keycodeString, keyupdown);
-            bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
-            bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+            bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
+            bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
             if (!hookprocstart) {
                 if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                     return (LRESULT)TRUE;
@@ -4228,15 +4227,27 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
 
             bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-            if ((mappingswitch_detected || displayswitch_detected || combinationkey_detected) && KEY_DOWN == keyupdown) {
+            if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
+                if (KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[LowLevelKeyboardHookProc] return TRUE");
+                    qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_DOWN return TRUE");
 #endif
-                return (LRESULT)TRUE;
+                    return (LRESULT)TRUE;
+                }
+                else {
+                    if (findindex >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_UP return TRUE");
+#endif
+                        return (LRESULT)TRUE;
+                    }
+                }
             }
 
             if (KEY_UP == keyupdown && false == returnFlag){
-                if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
+                if (findindex >= 0
+                    && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString
+                        || QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
                 }
                 else {
                     if (pressedVirtualKeysList.contains(keycodeString)) {
@@ -4571,19 +4582,17 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         multi_input = true;
                     }
                 }
+                Q_UNUSED(multi_input);
 
                 int findindex = -1;
                 if (hookprocstart) {
                     returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
                     findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
-                    if (findindex == -1 && multi_input) {
-                        findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_nochanged);
-                    }
                 }
 
                 updatePressedRealKeysList(keycodeString, keyupdown);
-                bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
-                bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+                bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
+                bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
                 if (!hookprocstart) {
                     if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                         return (LRESULT)TRUE;
@@ -4594,15 +4603,27 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
 
                 bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-                if ((mappingswitch_detected || displayswitch_detected || combinationkey_detected) && KEY_DOWN == keyupdown) {
+                if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
+                    if (KEY_DOWN == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("[LowLevelMouseHookProc] return TRUE");
+                        qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_DOWN return TRUE");
 #endif
-                    return (LRESULT)TRUE;
+                        return (LRESULT)TRUE;
+                    }
+                    else {
+                        if (findindex >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_UP return TRUE");
+#endif
+                            return (LRESULT)TRUE;
+                        }
+                    }
                 }
 
                 if (KEY_UP == keyupdown && false == returnFlag){
-                    if (findindex >=0 && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString)) {
+                    if (findindex >= 0
+                        && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString
+                            || QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
                     }
                     else {
                         if (pressedVirtualKeysList.contains(keycodeString)) {
@@ -4700,7 +4721,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             short zDelta = GET_WHEEL_DELTA_WPARAM(mousedata);
 
             if (zDelta != 0) {
-#ifdef MOUSE_VERBOSE_LOG
+#ifdef DEBUG_LOGOUT_ON
                 QString extraInfoStr = QString("0x%1").arg(QString::number(extraInfo, 16).toUpper(), 8, '0');
                 if (zDelta > 0) {
                     qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Up -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
@@ -4716,9 +4737,22 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 else {
                     keycodeString = MOUSE_WHEEL_DOWN_STR;
                 }
+
+                /* Add extraInfo check for Multi InputDevice */
+                bool multi_input = false;
+                if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
+                    InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
+                    if (interception_is_mouse(device)) {
+                        keycodeString = QString("%1@%2").arg(keycodeString, QString::number(device - INTERCEPTION_MOUSE(0)));
+                        multi_input = true;
+                    }
+                }
+                Q_UNUSED(multi_input);
+
                 int keyupdown = KEY_DOWN;
                 updatePressedRealKeysList(keycodeString, keyupdown);
                 bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+                Q_UNUSED(combinationkey_detected);
                 keyupdown = KEY_UP;
                 updatePressedRealKeysList(keycodeString, keyupdown);
                 combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
@@ -4734,14 +4768,25 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     bool wheel_up_found = false;
                     bool wheel_down_found = false;
                     bool send_wheel_keys = false;
-                    int findindex = -1;
 
-                    int findWheelUpindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_WHEEL_UP_STR);
+                    QString keycodeString_WheelUp = MOUSE_WHEEL_UP_STR;
+                    QString keycodeString_WheelDown = MOUSE_WHEEL_DOWN_STR;
+                    /* Add extraInfo check for Multi InputDevice */
+                    if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
+                        InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
+                        if (interception_is_mouse(device)) {
+                            keycodeString_WheelUp = QString("%1@%2").arg(keycodeString_WheelUp, QString::number(device - INTERCEPTION_MOUSE(0)));
+                            keycodeString_WheelDown = QString("%1@%2").arg(keycodeString_WheelDown, QString::number(device - INTERCEPTION_MOUSE(0)));
+                        }
+                    }
+
+                    int findindex = -1;
+                    int findWheelUpindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_WheelUp);
                     if (findWheelUpindex >=0){
                         wheel_up_found = true;
                     }
 
-                    int findWheelDownindex = QKeyMapper::findOriKeyInKeyMappingDataList(MOUSE_WHEEL_DOWN_STR);
+                    int findWheelDownindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_WheelDown);
                     if (findWheelDownindex >=0){
                         wheel_down_found = true;
                     }
@@ -4749,14 +4794,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     if (wheel_up_found || wheel_down_found) {
                         if (wheel_up_found && zDelta > 0) {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Up -> Send Wheel Up Mapping Keys";
+                            qDebug() << "[LowLevelMouseHookProc]" << "Real" << keycodeString_WheelUp << "-> Send Wheel Up Mapping Keys";
 #endif
                             send_wheel_keys = true;
                             findindex = findWheelUpindex;
                         }
                         else if (wheel_down_found && zDelta < 0) {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Down -> Send Wheel Down Mapping Keys";
+                            qDebug() << "[LowLevelMouseHookProc]" << "Real" << keycodeString_WheelDown << "-> Send Wheel Down Mapping Keys";
 #endif
                             send_wheel_keys = true;
                             findindex = findWheelDownindex;
@@ -4768,10 +4813,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
 #ifdef DEBUG_LOGOUT_ON
                                 if (wheel_up_found) {
-                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_WHEEL_UP_STR;
+                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelUp;
                                 }
                                 else {
-                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << MOUSE_WHEEL_DOWN_STR;
+                                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelDown;
                                 }
 #endif
                                 returnFlag = true;
@@ -4935,15 +4980,24 @@ void QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, 
         if (false == pressedRealKeysList.contains(keycodeString)){
             pressedRealKeysList.append(keycodeString);
         }
+        QString keycodeString_RemoveMultiInput = getKeycodeStringRemoveMultiInput(keycodeString);
+        if (false == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
+            pressedRealKeysListRemoveMultiInput.append(keycodeString_RemoveMultiInput);
+        }
     }
     else {  /* KEY_UP == keyupdown */
         if (true == pressedRealKeysList.contains(keycodeString)){
             pressedRealKeysList.removeAll(keycodeString);
         }
+        QString keycodeString_RemoveMultiInput = getKeycodeStringRemoveMultiInput(keycodeString);
+        if (true == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
+            pressedRealKeysListRemoveMultiInput.removeAll(keycodeString_RemoveMultiInput);
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[pressedRealKeysList]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : Current Pressed RealKeys -> " << pressedRealKeysList;
+    qDebug() << "[pressedRealKeysList]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << ": Current Pressed RealKeys ->" << pressedRealKeysList;
+    qDebug() << "[pressedRealKeysListRemoveMultiInput]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << ": Current Pressed RealKeys(without MultiInput) ->" << pressedRealKeysListRemoveMultiInput;
 #endif
 }
 
@@ -4956,7 +5010,7 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
 
     for (const QString &key : keys)
     {
-        if (!pressedRealKeysList.contains(key))
+        if (!pressedRealKeysListRemoveMultiInput.contains(key))
         {
             allKeysPressed = false;
             break;
@@ -4984,7 +5038,7 @@ bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int
 
     for (const QString &key : keys)
     {
-        if (!pressedRealKeysList.contains(key))
+        if (!pressedRealKeysListRemoveMultiInput.contains(key))
         {
             allKeysPressed = false;
             break;
@@ -5019,7 +5073,7 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[detectCombinationKeys]" << " Current CombinationKeyList -> " << combinationkeylist;
+    qDebug() << "[detectCombinationKeys]" << "Current CombinationKeyList ->" << combinationkeylist;
 #endif
 
     for (const QString &combinationkey : qAsConst(combinationkeylist))
@@ -5030,14 +5084,25 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
 
         for (const QString &key : keys)
         {
-            if (!pressedRealKeysList.contains(key))
-            {
-                allKeysPressed = false;
-                break;
+            if (key.contains('@')) {
+                if (!pressedRealKeysList.contains(key))
+                {
+                    allKeysPressed = false;
+                    break;
+                }
+            }
+            else {
+                if (!pressedRealKeysListRemoveMultiInput.contains(key))
+                {
+                    allKeysPressed = false;
+                    break;
+                }
             }
         }
 
-        if (KEY_DOWN == keyupdown && allKeysPressed && combinationkey.contains(keycodeString))
+        if (KEY_DOWN == keyupdown && allKeysPressed
+            && (combinationkey.contains(keycodeString)
+               || combinationkey.contains(getKeycodeStringRemoveMultiInput(keycodeString))))
         {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[detectCombinationKeys]" << "CombinationKey Down detected ->" << combinationkey;
@@ -5046,7 +5111,9 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
             detected = true;
         }
         else if (pressedRealKeysList.contains(combinationkeyForSearch)) {
-            if (combinationkey.contains(keycodeString) && KEY_UP == keyupdown)
+            if (KEY_UP == keyupdown
+                && (combinationkey.contains(keycodeString)
+                    || combinationkey.contains(getKeycodeStringRemoveMultiInput(keycodeString))))
             {
                 if (false == allKeysPressed) {
 #ifdef DEBUG_LOGOUT_ON
@@ -5165,6 +5232,14 @@ QString QKeyMapper_Worker::getWindowsKeyName(uint virtualKeyCode)
     }
 
     return keynameStr;
+}
+
+QString QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(const QString &keycodeString)
+{
+    static QRegularExpression regex("@\\d");
+    QString result = keycodeString;
+    result.remove(regex);
+    return result;
 }
 
 bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName)
