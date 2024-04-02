@@ -5109,6 +5109,7 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
 #endif
             CombinationKeyProc(combinationkey, KEY_DOWN);
             detected = true;
+            break;
         }
         else if (pressedRealKeysList.contains(combinationkeyForSearch)) {
             if (KEY_UP == keyupdown
@@ -5121,6 +5122,7 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
 #endif
                     CombinationKeyProc(combinationkey, KEY_UP);
                     detected = true;
+                    break;
                 }
             }
         }

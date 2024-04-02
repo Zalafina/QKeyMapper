@@ -204,7 +204,7 @@ void QInputDeviceListWindow::resetFontSize()
     else {
         /* change hight to 268 */
         ui->keyboardDeviceTable->setFixedHeight(268);
-        ui->mouseDeviceTable->setFixedHeight(265);
+        ui->mouseDeviceTable->setFixedHeight(268);
     }
 }
 
