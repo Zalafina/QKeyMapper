@@ -28,6 +28,7 @@
 #include <QValidator>
 #include <QDir>
 #include <QProcess>
+#include <cmath>
 #include <windows.h>
 #include <process.h>
 #include <tlhelp32.h>
@@ -386,7 +387,7 @@ private:
     int installViGEmBusDriver(void);
     int uninstallViGEmBusDriver(void);
 public slots:
-    void updateViGEmBusLabelDisplay(void);
+    void updateViGEmBusStatus(void);
     Q_INVOKABLE void reconnectViGEmClient(void);
 #endif
 

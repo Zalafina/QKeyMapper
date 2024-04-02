@@ -50,7 +50,7 @@
     <bool>false</bool>
    </property>
    <property name="default">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="savemaplistButton">
@@ -321,9 +321,9 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>710</x>
+     <x>680</x>
      <y>445</y>
-     <width>61</width>
+     <width>91</width>
      <height>22</height>
     </rect>
    </property>
@@ -337,9 +337,9 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>710</x>
+     <x>680</x>
      <y>470</y>
-     <width>61</width>
+     <width>91</width>
      <height>22</height>
     </rect>
    </property>
@@ -355,7 +355,7 @@
     <rect>
      <x>30</x>
      <y>550</y>
-     <width>141</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -363,7 +363,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>AutoMappingMinimize</string>
+    <string>AutoStartMinimize</string>
    </property>
    <property name="tristate">
     <bool>true</bool>
@@ -409,7 +409,7 @@
     <rect>
      <x>30</x>
      <y>520</y>
-     <width>121</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -474,14 +474,14 @@
   <widget class="QLabel" name="mappingswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>180</x>
+     <x>169</x>
      <y>550</y>
-     <width>70</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>MappingSwitchKey</string>
+    <string>MappingKey</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -672,14 +672,14 @@
   <widget class="QLabel" name="windowswitchkeyLabel">
    <property name="geometry">
     <rect>
-     <x>180</x>
+     <x>169</x>
      <y>520</y>
-     <width>70</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>WindowSwitchKey</string>
+    <string>WindowKey</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -822,7 +822,7 @@
      <x>600</x>
      <y>520</y>
      <width>56</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -851,7 +851,7 @@
      <x>440</x>
      <y>490</y>
      <width>50</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -861,10 +861,10 @@
   <widget class="QLabel" name="accelThresholdLabel">
    <property name="geometry">
     <rect>
-     <x>375</x>
+     <x>364</x>
      <y>550</y>
-     <width>60</width>
-     <height>22</height>
+     <width>71</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -880,7 +880,7 @@
      <x>440</x>
      <y>550</y>
      <width>60</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -893,7 +893,7 @@
      <x>375</x>
      <y>490</y>
      <width>60</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -909,7 +909,7 @@
      <x>440</x>
      <y>520</y>
      <width>60</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -919,14 +919,14 @@
   <widget class="QLabel" name="brakeThresholdLabel">
    <property name="geometry">
     <rect>
-     <x>375</x>
+     <x>364</x>
      <y>520</y>
-     <width>60</width>
-     <height>22</height>
+     <width>71</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>AccelThreshold</string>
+    <string>BrakeThreshold</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>

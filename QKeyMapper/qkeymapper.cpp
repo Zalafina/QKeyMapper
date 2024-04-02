@@ -307,11 +307,11 @@ static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 static const char *DATAPORTLABEL_ENGLISH = "DataPort";
 static const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeThreshold";
 static const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelThreshold";
-static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoMappingMinimize";
+static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoStartMinimize";
 static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
-static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowSwitchKey";
-static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingSwitchKey";
+static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowKey";
+static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingKey";
 static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
 static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
 static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Window Title";
@@ -545,7 +545,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
         }
 
-        updateViGEmBusLabelDisplay();
+        updateViGEmBusStatus();
 
         if (!isWin10Above) {
             ui->installViGEmBusButton->setEnabled(false);
@@ -640,7 +640,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
-    QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusLabelDisplay);
+    QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
 
@@ -4104,6 +4104,10 @@ void QKeyMapper::setControlFontEnglish()
     else {
         customFont.setPointSize(9);
     }
+    ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(9);
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
@@ -4125,9 +4129,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
 
-    ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    ui->keymapdataTable->horizontalHeader()->setFont(customFont);
-
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(10);
     // }
@@ -4146,31 +4147,25 @@ void QKeyMapper::setControlFontEnglish()
     ui->virtualgamepadGroupBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(12);
+        customFont.setPointSize(9);
     }
     else {
-        customFont.setPointSize(8);
+        customFont.setPointSize(9);
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(10);
+        customFont.setPointSize(9);
     }
     else {
-        customFont.setPointSize(8);
+        customFont.setPointSize(9);
     }
     // ui->disableWinKeyCheckBox->setFont(customFont);
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
-
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-        curGeometry.moveLeft(curGeometry.x() - 10);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
 }
 
 void QKeyMapper::setControlFontChinese()
@@ -4243,10 +4238,10 @@ void QKeyMapper::setControlFontChinese()
     ui->virtualgamepadGroupBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(12);
+        customFont.setPointSize(11);
     }
     else {
-        customFont.setPointSize(10);
+        customFont.setPointSize(9);
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
@@ -4262,12 +4257,6 @@ void QKeyMapper::setControlFontChinese()
     ui->dataPortLabel->setFont(customFont);
     ui->brakeThresholdLabel->setFont(customFont);
     ui->accelThresholdLabel->setFont(customFont);
-
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-        curGeometry.moveLeft(curGeometry.x() - 10);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
 }
 
 void QKeyMapper::changeControlEnableStatus(bool status)
@@ -4664,7 +4653,7 @@ int QKeyMapper::uninstallViGEmBusDriver()
     return 0;
 }
 
-void QKeyMapper::updateViGEmBusLabelDisplay()
+void QKeyMapper::updateViGEmBusStatus()
 {
     QKeyMapper_Worker::ViGEmClient_ConnectState connectstate = QKeyMapper_Worker::ViGEmClient_getConnectState();
 
@@ -4672,7 +4661,7 @@ void QKeyMapper::updateViGEmBusLabelDisplay()
     static QKeyMapper_Worker::ViGEmClient_ConnectState lastConnectState = QKeyMapper_Worker::VIGEMCLIENT_CONNECTING;
     if (lastConnectState != connectstate) {
         lastConnectState = connectstate;
-        qDebug() << "[updateViGEmBusLabelDisplay]" << "ViGEmClient Connect State ->" << lastConnectState;
+        qDebug() << "[updateViGEmBusStatus]" << "ViGEmClient Connect State ->" << lastConnectState;
     }
 #endif
 
@@ -5616,6 +5605,16 @@ void QKeyMapper::reloadUILanguage()
         setUILanguage_Chinese();
     }
 
+    QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        curGeometry.moveLeft(590);
+        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    }
+    else {
+        curGeometry.moveLeft(600);
+        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    }
+
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
 #endif
@@ -6458,10 +6457,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
 
     if (false == keycodeString.isEmpty()){
-        if (keycodeString == QString("Enter")){
-            QComboBox::keyPressEvent(keyevent);
-        }
-        else if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
+        if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
             this->setCurrentText(QString());
         }
         else{
@@ -6796,6 +6792,7 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     reloadUILanguage();
+    resetFontSize();
 
 #ifdef DEBUG_LOGOUT_ON
     QString languageStr;

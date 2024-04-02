@@ -47,6 +47,7 @@ class QKeyMapper;
 
 #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
 #define KEYSEQUENCE_STR         ("KeySequence")
+#define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
 
 #define MAPPING_KEYS_MAX        (60)
 #define SEND_INPUTS_MAX         (100)
@@ -506,6 +507,7 @@ private:
     bool isCursorAtBottomRight(void);
 #endif
     void clearAllBurstTimersAndLockKeys(void);
+    void clearAllPressedVirtualKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
 public:
@@ -541,7 +543,7 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedVirtualKeysList;
-    static QStringList pressedShortcutKeysList;
+    // static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QStringList pressedvJoyLStickKeys;
     static QStringList pressedvJoyRStickKeys;
