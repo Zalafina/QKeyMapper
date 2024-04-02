@@ -32,6 +32,9 @@
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
+* v1.3.6(Build 20240320)
+    * 修复映射停止时，锁定且处于按下状态的虚拟按键没有释放的问题。
+    * 修复映射按键的延时设置大于1000毫秒以上无法生效的问题，映射按键延时设置上限增大到9999毫秒。
 * v1.3.6(Build 20240316)
     * 映射按键列表加入Mouse-(L/R/M/X1/X2)_Point，用于模拟鼠标按键移动到屏幕上特定坐标点进行点击的效果。"L-Ctrl+鼠标左键"点击屏幕任意位置更新"坐标"显示标签中的“X:???,Y:???”坐标点显示。例如：映射按键选择"Mouse-L_Point"配合"坐标"显示标签，添加后映射列表加入Mouse-L(aaa,bbb)表示模拟鼠标左键点击屏幕横坐标aaa、纵坐标bbb的位置。按下键盘"F9"会用半透明窗口+彩色圆点的形式显示当前映射列表中鼠标点击坐标的位置，不同鼠标按键的圆点颜色不同，左键(红色)、右键(绿色)、中键(黄色)、侧键1(蓝色)、侧键2(紫色)。
     * 原始按键列表加入 Joy-LS_2vJoyLS、Joy-RS_2vJoyRS、Joy-LS_2vJoyRS、Joy-RS_2vJoyLS可以将物理手柄摇杆完全映射到虚拟手柄摇杆。
