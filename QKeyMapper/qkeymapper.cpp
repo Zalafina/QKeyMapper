@@ -4865,7 +4865,9 @@ void QKeyMapper::updateViGEmBusStatus()
 
     int languageIndex = ui->languageComboBox->currentIndex();
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == connectstate) {
-        ui->enableVirtualJoystickCheckBox->setEnabled(true);
+        if (m_KeyMapStatus == KEYMAP_IDLE){
+            ui->enableVirtualJoystickCheckBox->setEnabled(true);
+        }
         // ui->installViGEmBusButton->setEnabled(false);
         if (LANGUAGE_ENGLISH == languageIndex) {
             ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
