@@ -6857,10 +6857,32 @@ void QKeyMapper::on_deleteoneButton_clicked()
 
 void QKeyMapper::on_clearallButton_clicked()
 {
-    ui->keymapdataTable->clearContents();
-    ui->keymapdataTable->setRowCount(0);
-    KeyMappingDataList.clear();
-    MousePointsList.clear();
+    int language_index = ui->languageComboBox->currentIndex();
+    QString message;
+    if (LANGUAGE_ENGLISH == language_index) {
+        message = "Are you sure you want to clear all data in the mapping table?";
+    }
+    else {
+        message = "请确认是否要清除映射表中全部数据？";
+    }
+
+    QMessageBox::StandardButton reply;
+    if (LANGUAGE_ENGLISH == language_index) {
+        reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+    }
+    else {
+        reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+    }
+
+    if (reply == QMessageBox::Yes) {
+        ui->keymapdataTable->clearContents();
+        ui->keymapdataTable->setRowCount(0);
+        KeyMappingDataList.clear();
+        MousePointsList.clear();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
+#endif
+    }
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
