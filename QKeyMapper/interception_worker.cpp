@@ -9,8 +9,13 @@ QList<InputDevice> Interception_Worker::MouseDeviceList = QList<InputDevice>();
 InterceptionDevice Interception_Worker::lastOperateKeyboardDevice = 0;
 InterceptionDevice Interception_Worker::lastOperateMouseDevice = 0;
 QHash<QString, USBDeviceInfo> Interception_Worker::s_USBIDsMap;
+QStringList Interception_Worker::disabledKeyboardList;
+QStringList Interception_Worker::disabledMouseList;
 
 static const char *USBIDS_QRC = ":/usb.ids";
+static const char *CONFIG_FILENAME = "keymapdata.ini";
+static const char *DISABLED_KEYBOARDLIST = "DisabledKeyboardList";
+static const char *DISABLED_MOUSELIST = "DisabledMouseList";
 
 Interception_Worker::Interception_Worker(QObject *parent) :
     QObject{parent}
@@ -521,9 +526,6 @@ QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
 #endif
         }
 
-        if (!KeyboardDeviceList.isEmpty()) {
-            input_device.disabled = KeyboardDeviceList[device - INTERCEPTION_KEYBOARD(0)].disabled;
-        }
         devicelist.append(input_device);
     }
 
@@ -618,9 +620,6 @@ QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
 #endif
         }
 
-        if (!MouseDeviceList.isEmpty()) {
-            input_device.disabled = MouseDeviceList[device - INTERCEPTION_MOUSE(0)].disabled;
-        }
         devicelist.append(input_device);
     }
 
@@ -724,4 +723,148 @@ void Interception_Worker::setInputDeviceDisabled(InterceptionDevice device, bool
 #endif
         }
     }
+}
+
+void Interception_Worker::updateDisabledKeyboardList(const QString &disabled_device, bool disabled)
+{
+    if (disabled) {
+        if (!disabledKeyboardList.contains(disabled_device)) {
+            disabledKeyboardList.append(disabled_device);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateDisabledKeyboardList]" << " Add disabled Keyboard -> " << disabled_device;
+#endif
+        }
+    }
+    else {
+        if (disabledKeyboardList.contains(disabled_device)) {
+            disabledKeyboardList.removeAll(disabled_device);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateDisabledKeyboardList]" << " Remove disabled Keyboard -> " << disabled_device;
+#endif
+        }
+    }
+}
+
+void Interception_Worker::updateDisabledMouseList(const QString &disabled_device, bool disabled)
+{
+    if (disabled) {
+        if (!disabledMouseList.contains(disabled_device)) {
+            disabledMouseList.append(disabled_device);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateDisabledMouseList]" << " Add disabled Mouse -> " << disabled_device;
+#endif
+        }
+    }
+    else {
+        if (disabledMouseList.contains(disabled_device)) {
+            disabledMouseList.removeAll(disabled_device);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateDisabledMouseList]" << " Remove disabled Mouse -> " << disabled_device;
+#endif
+        }
+    }
+}
+
+void Interception_Worker::syncDisabledKeyboardList()
+{
+    for (int i = 0; i < KeyboardDeviceList.size(); ++i) {
+        InputDevice& inputDevice = KeyboardDeviceList[i];
+        QString hardwareid = inputDevice.deviceinfo.hardwareid;
+
+        // Check if hardwareid is empty
+        if (!hardwareid.isEmpty()) {
+            QString disabledDevice = inputDevice.deviceinfo.devicedesc + JOIN_DEVICE + hardwareid;
+
+            // Check if disabledKeyboardList contains disabledDevice
+            if (disabledKeyboardList.contains(disabledDevice)) {
+                if (inputDevice.disabled != true) {
+                    inputDevice.disabled = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[syncDisabledKeyboardList][Changed]" << " KeyboardDeviceList[" << i << "] disabled set TRUE";
+#endif
+                }
+            } else {
+                if (inputDevice.disabled != false) {
+                    inputDevice.disabled = false;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[syncDisabledKeyboardList][Changed]" << " KeyboardDeviceList[" << i << "] disabled set FALSE";
+#endif
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    /* Output All MouseDeviceList disabled status */
+    for (int i = 0; i < KeyboardDeviceList.size(); ++i) {
+        qDebug().nospace() << "[syncDisabledKeyboardList] KeyboardDeviceList[" << i << "] disabled: " << KeyboardDeviceList.at(i).disabled;
+    }
+#endif
+}
+
+void Interception_Worker::syncDisabledMouseList()
+{
+    for (int i = 0; i < MouseDeviceList.size(); ++i) {
+        InputDevice& inputDevice = MouseDeviceList[i];
+        QString hardwareid = inputDevice.deviceinfo.hardwareid;
+
+        // Check if hardwareid is empty
+        if (!hardwareid.isEmpty()) {
+            QString disabledDevice = inputDevice.deviceinfo.devicedesc + JOIN_DEVICE + hardwareid;
+
+            // Check if disabledMouseList contains disabledDevice
+            if (disabledMouseList.contains(disabledDevice)) {
+                if (inputDevice.disabled != true) {
+                    inputDevice.disabled = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[syncDisabledMouseList][Changed]" << " MouseDeviceList[" << i << "] disabled set TRUE";
+#endif
+                }
+            } else {
+                if (inputDevice.disabled != false) {
+                    inputDevice.disabled = false;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[syncDisabledMouseList][Changed]" << " MouseDeviceList[" << i << "] disabled set FALSE";
+#endif
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    /* Output All MouseDeviceList disabled status */
+    for (int i = 0; i < MouseDeviceList.size(); ++i) {
+        qDebug().nospace() << "[syncDisabledMouseList] MouseDeviceList[" << i << "] disabled: " << MouseDeviceList.at(i).disabled;
+    }
+#endif
+}
+
+void Interception_Worker::saveDisabledKeyboardList()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[saveDisabledKeyboardList] Save disabledKeyboardList ->" << disabledKeyboardList;
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    settingFile.setValue(DISABLED_KEYBOARDLIST , disabledKeyboardList);
+}
+
+void Interception_Worker::saveDisabledMouseList()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[saveDisabledMouseList] Save disabledMouseList ->" << disabledMouseList;
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    settingFile.setValue(DISABLED_MOUSELIST , disabledMouseList);
+}
+
+void Interception_Worker::loadDisabledKeyboardList(const QStringList &disabledlist)
+{
+    disabledKeyboardList = disabledlist;
+}
+
+void Interception_Worker::loadDisabledMouseList(const QStringList &disabledlist)
+{
+    disabledMouseList = disabledlist;
 }

@@ -53,6 +53,14 @@ public:
     static QString getHardwareId(InterceptionDevice device);
     static QString getDeviceDescription(InterceptionDevice device);
     static void setInputDeviceDisabled(InterceptionDevice device, bool disabled);
+    static void updateDisabledKeyboardList(const QString& disabled_device, bool disabled);
+    static void updateDisabledMouseList(const QString& disabled_device, bool disabled);
+    static void syncDisabledKeyboardList(void);
+    static void syncDisabledMouseList(void);
+    static void saveDisabledKeyboardList(void);
+    static void saveDisabledMouseList(void);
+    static void loadDisabledKeyboardList(const QStringList& disabledlist);
+    static void loadDisabledMouseList(const QStringList& disabledlist);
 
     static InterceptionContext s_InterceptionContext;
     static QAtomicBool s_RebootRequired;
@@ -63,6 +71,8 @@ public:
     static InterceptionDevice lastOperateKeyboardDevice;
     static InterceptionDevice lastOperateMouseDevice;
     static QHash<QString, USBDeviceInfo> s_USBIDsMap;
+    static QStringList disabledKeyboardList;
+    static QStringList disabledMouseList;
 };
 
 #endif // INTERCEPTION_WORKER_H

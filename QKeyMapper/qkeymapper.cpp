@@ -104,7 +104,9 @@ static const char *PROCESS_UNKNOWN = "QKeyMapperUnknown";
 
 static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 static const char *CONFIG_FILENAME = "keymapdata.ini";
+#ifdef SETTINGSFILE_CONVERT
 static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
+#endif
 
 static const char *DISPLAYSWITCH_KEY_DEFAULT    = "L-Ctrl+`";
 static const char *MAPPINGSWITCH_KEY_DEFAULT    = "L-Ctrl+F6";
@@ -122,6 +124,8 @@ static const char *VIRTUALGAMEPAD_ENABLE = "VirtualGamepadEnable";
 static const char *VIRTUALGAMEPAD_TYPE = "VirtualGamepadType";
 #endif
 static const char *MULTI_INPUT_ENABLE = "MultiInputEnable";
+static const char *DISABLED_KEYBOARDLIST = "DisabledKeyboardList";
+static const char *DISABLED_MOUSELIST = "DisabledMouseList";
 /* General global settings <<< */
 
 static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
@@ -608,6 +612,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+
+    Interception_Worker::syncDisabledKeyboardList();
+    Interception_Worker::syncDisabledMouseList();
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
 
@@ -3324,6 +3331,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
 #endif
+        }
+
+        if (true == settingFile.contains(DISABLED_KEYBOARDLIST)){
+            QStringList disabledKeyboardList = settingFile.value(DISABLED_KEYBOARDLIST).toStringList();
+            Interception_Worker::loadDisabledKeyboardList(disabledKeyboardList);
+        }
+
+        if (true == settingFile.contains(DISABLED_MOUSELIST)){
+            QStringList disabledMouseList = settingFile.value(DISABLED_MOUSELIST).toStringList();
+            Interception_Worker::loadDisabledMouseList(disabledMouseList);
         }
     }
     else if (GROUPNAME_GLOBALSETTING == settingtext) {

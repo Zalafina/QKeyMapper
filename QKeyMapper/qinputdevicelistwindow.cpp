@@ -394,18 +394,20 @@ void QInputDeviceListWindow::writeKeyboardDeviceList()
     for (int row = 0; row < rowCount; ++row) {
         QTableWidgetItem* item = ui->keyboardDeviceTable->item(row, DEVICE_TABLE_DISABLE_COLUMN);
         if (item != Q_NULLPTR) {
+            QString devicedesc_str = ui->keyboardDeviceTable->item(row, DEVICE_TABLE_DEVICEDESC_COLUMN)->text();
+            QString hardwareid_str = ui->keyboardDeviceTable->item(row, DEVICE_TABLE_HARDWAREID_COLUMN)->text();
+            QString disabled_device_str = devicedesc_str + JOIN_DEVICE + hardwareid_str;
             if (Qt::Checked == item->checkState()) {
-                if (!keyboardlist.at(row).disabled) {
-                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_KEYBOARD(row), true);
-                }
+                Interception_Worker::updateDisabledKeyboardList(disabled_device_str, true);
             }
             else {
-                if (keyboardlist.at(row).disabled) {
-                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_KEYBOARD(row), false);
-                }
+                Interception_Worker::updateDisabledKeyboardList(disabled_device_str, false);
             }
         }
     }
+
+    Interception_Worker::syncDisabledKeyboardList();
+    Interception_Worker::saveDisabledKeyboardList();
 }
 
 void QInputDeviceListWindow::writeMouseDeviceList()
@@ -416,24 +418,28 @@ void QInputDeviceListWindow::writeMouseDeviceList()
     for (int row = 0; row < rowCount; ++row) {
         QTableWidgetItem* item = ui->mouseDeviceTable->item(row, DEVICE_TABLE_DISABLE_COLUMN);
         if (item != Q_NULLPTR) {
+            QString devicedesc_str = ui->mouseDeviceTable->item(row, DEVICE_TABLE_DEVICEDESC_COLUMN)->text();
+            QString hardwareid_str = ui->mouseDeviceTable->item(row, DEVICE_TABLE_HARDWAREID_COLUMN)->text();
+            QString disabled_device_str = devicedesc_str + JOIN_DEVICE + hardwareid_str;
             if (Qt::Checked == item->checkState()) {
-                if (!mouselist.at(row).disabled) {
-                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_MOUSE(row), true);
-                }
+                Interception_Worker::updateDisabledMouseList(disabled_device_str, true);
             }
             else {
-                if (mouselist.at(row).disabled) {
-                    Interception_Worker::setInputDeviceDisabled(INTERCEPTION_MOUSE(row), false);
-                }
+                Interception_Worker::updateDisabledMouseList(disabled_device_str, false);
             }
         }
     }
+
+    Interception_Worker::syncDisabledMouseList();
+    Interception_Worker::saveDisabledMouseList();
 }
 
 void QInputDeviceListWindow::showEvent(QShowEvent *event)
 {
     (void)Interception_Worker::getRefreshedKeyboardDeviceList();
     (void)Interception_Worker::getRefreshedMouseDeviceList();
+    Interception_Worker::syncDisabledKeyboardList();
+    Interception_Worker::syncDisabledMouseList();
     updateDeviceListInfo();
 
     QDialog::showEvent(event);

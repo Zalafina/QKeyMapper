@@ -45,6 +45,8 @@ class QKeyMapper;
 
 #define PREFIX_SHORTCUT         ("★")
 
+#define JOIN_DEVICE             ("##")
+
 #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
 #define KEYSEQUENCE_STR         ("KeySequence")
 #define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
