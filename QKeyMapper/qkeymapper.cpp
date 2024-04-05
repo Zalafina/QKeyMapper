@@ -6621,16 +6621,16 @@ void QKeyMapper::on_addmapdataButton_clicked()
     // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
     findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
     if (findindex != -1){
-        if (VJOY_MOUSE2LS_STR == currentOriKeyText
-            || VJOY_MOUSE2RS_STR == currentOriKeyText
-            || JOY_LS2MOUSE_STR == currentOriKeyText
-            || JOY_RS2MOUSE_STR == currentOriKeyText
-            || JOY_LS2VJOYLS_STR == currentOriKeyText
-            || JOY_RS2VJOYRS_STR == currentOriKeyText
-            || JOY_LS2VJOYRS_STR == currentOriKeyText
-            || JOY_RS2VJOYLS_STR == currentOriKeyText
-            || JOY_LT2VJOYLT_STR == currentOriKeyText
-            || JOY_RT2VJOYRT_STR == currentOriKeyText) {
+        if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
+            || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
+            || JOY_LS2MOUSE_STR == currentOriKeyComboBoxText
+            || JOY_RS2MOUSE_STR == currentOriKeyComboBoxText
+            || JOY_LS2VJOYLS_STR == currentOriKeyComboBoxText
+            || JOY_RS2VJOYRS_STR == currentOriKeyComboBoxText
+            || JOY_LS2VJOYRS_STR == currentOriKeyComboBoxText
+            || JOY_RS2VJOYLS_STR == currentOriKeyComboBoxText
+            || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
+            || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
             already_exist = true;
         }
         else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
@@ -6760,17 +6760,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
             KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
         }
         else {
-            if (VJOY_MOUSE2LS_STR == currentOriKeyText
-                || VJOY_MOUSE2RS_STR == currentOriKeyText
-                || JOY_LS2MOUSE_STR == currentOriKeyText
-                || JOY_RS2MOUSE_STR == currentOriKeyText
-                || JOY_LS2VJOYLS_STR == currentOriKeyText
-                || JOY_RS2VJOYRS_STR == currentOriKeyText
-                || JOY_LS2VJOYRS_STR == currentOriKeyText
-                || JOY_RS2VJOYLS_STR == currentOriKeyText
-                || JOY_LT2VJOYLT_STR == currentOriKeyText
-                || JOY_RT2VJOYRT_STR == currentOriKeyText) {
-                currentMapKeyText = currentOriKeyText;
+            if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
+                || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
+                || JOY_LS2MOUSE_STR == currentOriKeyComboBoxText
+                || JOY_RS2MOUSE_STR == currentOriKeyComboBoxText
+                || JOY_LS2VJOYLS_STR == currentOriKeyComboBoxText
+                || JOY_RS2VJOYRS_STR == currentOriKeyComboBoxText
+                || JOY_LS2VJOYRS_STR == currentOriKeyComboBoxText
+                || JOY_RS2VJOYLS_STR == currentOriKeyComboBoxText
+                || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
+                || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
+                currentMapKeyText = currentOriKeyComboBoxText;
             }
             else {
                 if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {

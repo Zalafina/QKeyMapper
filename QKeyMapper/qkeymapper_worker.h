@@ -55,10 +55,12 @@ class QKeyMapper;
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
 
-#define SHOW_MOUSEPOINTS_OFF     (0)
-#define SHOW_MOUSEPOINTS_ON      (1)
+#define SHOW_MOUSEPOINTS_OFF    (0)
+#define SHOW_MOUSEPOINTS_ON     (1)
 
-#define INTERCEPTION_EXTRA_INFO  (0xAAAA0000)
+#define INTERCEPTION_EXTRA_INFO (0xAAAA0000)
+
+#define INVALID_MOUSE_INDEX     (-1)
 
 typedef struct MAP_KEYDATA
 {
@@ -319,21 +321,23 @@ public:
 
     enum Mouse2vJoyState
     {
-        MOUSE2VJOY_NONE,
-        MOUSE2VJOY_LEFT,
-        MOUSE2VJOY_RIGHT,
-        MOUSE2VJOY_BOTH
+        MOUSE2VJOY_NONE     = 0,
+        MOUSE2VJOY_LEFT     = 1,
+        MOUSE2VJOY_RIGHT    = 2,
+        MOUSE2VJOY_BOTH     = MOUSE2VJOY_LEFT | MOUSE2VJOY_RIGHT
     };
     Q_ENUM(Mouse2vJoyState)
+    Q_DECLARE_FLAGS(Mouse2vJoyStates, Mouse2vJoyState)
 
     enum GripDetectState
     {
-        GRIPDETECT_NONE,
-        GRIPDETECT_BRAKE,
-        GRIPDETECT_ACCEL,
-        GRIPDETECT_BOTH
+        GRIPDETECT_NONE     = 0,
+        GRIPDETECT_BRAKE    = 1,
+        GRIPDETECT_ACCEL    = 2,
+        GRIPDETECT_BOTH     = GRIPDETECT_BRAKE | GRIPDETECT_ACCEL
     };
     Q_ENUM(GripDetectState)
+    Q_DECLARE_FLAGS(GripDetectStates, GripDetectState)
 
     Q_ENUM(Joy2vJoyTriggerState)
     Q_ENUM(Joy2vJoyLeftStickState)
@@ -359,7 +363,7 @@ public slots:
     void setMouseToScreenBottomRight(void);
     POINT mousePositionAfterSetMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
-    void onMouseMove(int x, int y);
+    void onMouseMove(int x, int y, int mouse_index);
     void onMouse2vJoyResetTimeout(void);
 #endif
     void onKey2MouseCycleTimeout(void);
@@ -401,8 +405,9 @@ public:
     static void ViGEmClient_CheckJoysticksReportData(void);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
 
-    static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
-    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
+    static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
+    static QHash<int, Mouse2vJoyStates> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
+    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState);
     void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
     void ViGEmClient_JoysticksReset(void);
@@ -419,7 +424,7 @@ signals:
 #endif
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
 #ifdef VIGEM_CLIENT_SUPPORT
-    void onMouseMove_Signal(int point_x, int point_y);
+    void onMouseMove_Signal(int point_x, int point_y, int mouse_index);
 #endif
 #if 0
     void onMouseWheel_Signal(int wheel_updown);
@@ -443,7 +448,7 @@ public slots:
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
-    GripDetectState checkGripDetectEnableState(void);
+    GripDetectStates checkGripDetectEnableState(void);
     Joy2vJoyState checkJoy2vJoyState(void);
     void processUdpPendingDatagrams(void);
     void processForzaFormatData(const QByteArray &forzadata);
@@ -581,7 +586,7 @@ public:
     static BYTE s_Auto_Accel;
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
-    static GripDetectState s_GripDetect_EnableState;
+    static GripDetectStates s_GripDetect_EnableState;
     static Joy2vJoyState s_Joy2vJoyState;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;
@@ -590,7 +595,10 @@ public:
 #endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
-    static Mouse2vJoyState s_Mouse2vJoy_EnableState;
+    static QList<QPoint> s_Mouse2vJoy_delta_List;
+    static QList<QPoint> s_Mouse2vJoy_prev_List;
+    // static Mouse2vJoyStates s_Mouse2vJoy_EnableState;
+    static QHash<int, Mouse2vJoyStates> s_Mouse2vJoy_EnableStateMap;
 #endif
 
     static bool s_Key2Mouse_EnableState;
