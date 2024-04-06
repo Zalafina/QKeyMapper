@@ -60,7 +60,7 @@ class QKeyMapper;
 
 #define INTERCEPTION_EXTRA_INFO (0xAAAA0000)
 
-#define INVALID_MOUSE_INDEX     (-1)
+#define INITIAL_MOUSE_INDEX     (-1)
 
 typedef struct MAP_KEYDATA
 {

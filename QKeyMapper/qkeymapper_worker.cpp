@@ -594,7 +594,16 @@ void QKeyMapper_Worker::onMouseMove(int x, int y, int mouse_index)
     Q_UNUSED(x);
     Q_UNUSED(y);
 
-    if (s_Mouse2vJoy_EnableStateMap.contains(mouse_index)) {
+    bool mouse2vjoy_update = false;
+    if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
+        mouse_index = -1;
+        mouse2vjoy_update = true;
+    }
+    else if (s_Mouse2vJoy_EnableStateMap.contains(mouse_index)) {
+        mouse2vjoy_update = true;
+    }
+
+    if (mouse2vjoy_update) {
         QPoint Mouse2vJoy_delta;
         Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index);
         if (mouse_index >= 0) {
@@ -2332,7 +2341,7 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
 {
     /* To be modified for MultiInput Device */
     // if (MOUSE2VJOY_NONE == s_Mouse2vJoy_EnableState) {
-    if (false == s_Mouse2vJoy_EnableStateMap.contains(INVALID_MOUSE_INDEX)) {
+    if (false == s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
         return;
     }
 
@@ -2499,7 +2508,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #ifdef VIGEM_CLIENT_SUPPORT
     /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
-    if (s_Mouse2vJoy_EnableStateMap.contains(INVALID_MOUSE_INDEX) && QKeyMapper::getLockCursorStatus()) {
+    if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX) && QKeyMapper::getLockCursorStatus()) {
         POINT pt;
         if (GetCursorPos(&pt)) {
             m_LastMouseCursorPoint = pt;
@@ -2609,7 +2618,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #ifdef VIGEM_CLIENT_SUPPORT
     /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
-    if (s_Mouse2vJoy_EnableStateMap.contains(INVALID_MOUSE_INDEX) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
+    if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
         setMouseToPoint(m_LastMouseCursorPoint);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3506,7 +3515,7 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
     if (mouse2joy_keystr == MOUSE2VJOY_DIRECT_KEY_STR) {
         /* To be modified for MultiInput Device */
         // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-        if (s_Mouse2vJoy_EnableStateMap.contains(INVALID_MOUSE_INDEX)) {
+        if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
             if (s_Mouse2vJoy_Hold) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Skip Mouse2vJoyReset for Mouse2vJoy_Hold is KEY_DOWN State.";
@@ -4472,7 +4481,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
                 /* To be modified for MultiInput Device */
                 // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                if (s_Mouse2vJoy_EnableStateMap.contains(INVALID_MOUSE_INDEX)) {
+                if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
                     if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR
                         || keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
                         if (keyupdown == KEY_UP) {
@@ -4926,7 +4935,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             if (!s_Mouse2vJoy_EnableStateMap.isEmpty()) {
                 /* Add extraInfo check for Multi InputDevice */
                 InterceptionDevice mouse_device = 0;
-                int mouse_index = INVALID_MOUSE_INDEX;
+                int mouse_index = INITIAL_MOUSE_INDEX;
                 if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
                     InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
                     if (interception_is_mouse(device)) {
