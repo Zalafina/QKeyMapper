@@ -272,9 +272,9 @@ QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List(INTERCEPTION_MAX_MOUSE);
-QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_prev_List(INTERCEPTION_MAX_MOUSE);
 // QKeyMapper_Worker::Mouse2vJoyStates QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 QHash<int, QKeyMapper_Worker::Mouse2vJoyStates> QKeyMapper_Worker::s_Mouse2vJoy_EnableStateMap;
+QMutex QKeyMapper_Worker::s_MouseMove_delta_List_Mutex;
 #endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
@@ -609,7 +609,9 @@ void QKeyMapper_Worker::onMouseMove(int x, int y, int mouse_index)
         QPoint Mouse2vJoy_delta;
         Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index);
         if (mouse_index >= 0) {
+            QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
             Mouse2vJoy_delta = s_Mouse2vJoy_delta_List.at(mouse_index);
+            s_Mouse2vJoy_delta_List[mouse_index] = QPoint();
         }
         else {
             Mouse2vJoy_delta = s_Mouse2vJoy_delta;
@@ -2492,10 +2494,11 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Joy2vJoyState = checkJoy2vJoyState();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
-    s_Mouse2vJoy_delta_List.clear();
-    s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
-    s_Mouse2vJoy_prev_List.clear();
-    s_Mouse2vJoy_prev_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
+    {
+        QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
+        s_Mouse2vJoy_delta_List.clear();
+        s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
+    }
     pressedvJoyLStickKeys.clear();
     pressedvJoyRStickKeys.clear();
     pressedvJoyButtons.clear();
@@ -2639,10 +2642,11 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Joy2vJoyState = Joy2vJoyState();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
-    s_Mouse2vJoy_delta_List.clear();
-    s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
-    s_Mouse2vJoy_prev_List.clear();
-    s_Mouse2vJoy_prev_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
+    {
+        QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
+        s_Mouse2vJoy_delta_List.clear();
+        s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
+    }
     pressedvJoyLStickKeys.clear();
     pressedvJoyRStickKeys.clear();
     pressedvJoyButtons.clear();
@@ -3615,10 +3619,14 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
     }
     else if (func_keystring == FUNC_LOCKSCREEN) {
         if( !LockWorkStation() ) {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "LockWorkStation Failed with ->" << GetLastError();
+#endif
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "LockWorkStation Success.";
+#endif
         }
     }
     else if (func_keystring == FUNC_SHUTDOWN) {
@@ -3626,19 +3634,27 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
         if (adjust_priv) {
             if (!ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Shutdown Failed with ->" << GetLastError();
+#endif
             }
             else {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Shutdown Success.";
+#endif
             }
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Shutdown EnablePrivilege Failed with ->" << GetLastError();
+#endif
         }
         adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
 
         if (!adjust_priv) {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Shutdown DisablePrivilege Failed with ->" << GetLastError();
+#endif
         }
     }
     else if (func_keystring == FUNC_REBOOT) {
@@ -3646,27 +3662,39 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
         if (adjust_priv) {
             if (!ExitWindowsEx(EWX_REBOOT | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Reboot Failed with ->" << GetLastError();
+#endif
             }
             else {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Reboot Success.";
+#endif
             }
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Reboot EnablePrivilege Failed with ->" << GetLastError();
+#endif
         }
         adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
 
         if (!adjust_priv) {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Reboot DisablePrivilege Failed with ->" << GetLastError();
+#endif
         }
     }
     else if (func_keystring == FUNC_LOGOFF) {
         if (!ExitWindowsEx(EWX_LOGOFF | EWX_FORCEIFHUNG, SHTDN_REASON_FLAG_PLANNED)) {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Logoff Failed with ->" << GetLastError();
+#endif
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Logoff Success.";
+#endif
         }
     }
     else if (func_keystring == FUNC_SLEEP) {
@@ -3674,19 +3702,27 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
         if (adjust_priv) {
             if (!SetSuspendState(FALSE, FALSE, FALSE)) {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Sleep Failed with ->" << GetLastError();
+#endif
             }
             else {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Sleep Success.";
+#endif
             }
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Sleep EnablePrivilege Failed with ->" << GetLastError();
+#endif
         }
         adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
 
         if (!adjust_priv) {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Sleep DisablePrivilege Failed with ->" << GetLastError();
+#endif
         }
     }
     else if (func_keystring == FUNC_HIBERNATE) {
@@ -3694,19 +3730,27 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         adjust_priv = EnablePrivilege(SE_SHUTDOWN_NAME);
         if (adjust_priv) {
             if (!SetSuspendState(TRUE, FALSE, FALSE)) {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Sleep Failed with ->" << GetLastError();
+#endif
             }
             else {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[doFunctionMappingProc]" << "System Sleep Success.";
+#endif
             }
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Sleep EnablePrivilege Failed with ->" << GetLastError();
+#endif
         }
         adjust_priv = DisablePrivilege(SE_SHUTDOWN_NAME);
 
         if (!adjust_priv) {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[doFunctionMappingProc]" << "System Sleep DisablePrivilege Failed with ->" << GetLastError();
+#endif
         }
     }
 }
@@ -4968,10 +5012,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
                 s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
                 s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
-                if (mouse_index >= 0) {
-                    s_Mouse2vJoy_delta_List[mouse_index].rx() = pMouse->pt.x - s_Mouse2vJoy_prev_List.at(mouse_index).x();
-                    s_Mouse2vJoy_delta_List[mouse_index].ry() = pMouse->pt.y - s_Mouse2vJoy_prev_List.at(mouse_index).y();
-                }
 
                 if (QKeyMapper::getLockCursorStatus()) {
                     returnFlag = true;
@@ -4979,10 +5019,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 else {
                     s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
                     s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
-                    if (mouse_index >= 0) {
-                        s_Mouse2vJoy_prev_List[mouse_index].rx() = pMouse->pt.x;
-                        s_Mouse2vJoy_prev_List[mouse_index].ry() = pMouse->pt.y;
-                    }
                 }
 // #ifdef MOUSE_VERBOSE_LOG
 //                 qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> Delta X =" << s_Mouse2vJoy_delta.x() << ", Delta Y = " << s_Mouse2vJoy_delta.y();

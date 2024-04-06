@@ -598,9 +598,9 @@ public:
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
     static QList<QPoint> s_Mouse2vJoy_delta_List;
-    static QList<QPoint> s_Mouse2vJoy_prev_List;
     // static Mouse2vJoyStates s_Mouse2vJoy_EnableState;
     static QHash<int, Mouse2vJoyStates> s_Mouse2vJoy_EnableStateMap;
+    static QMutex s_MouseMove_delta_List_Mutex;
 #endif
 
     static bool s_Key2Mouse_EnableState;

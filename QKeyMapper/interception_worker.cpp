@@ -92,6 +92,11 @@ void Interception_Worker::InterceptionThreadStarted()
                 InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *) &stroke;
                 mstroke.information = INTERCEPTION_EXTRA_INFO + device;
                 interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
+                {
+                    QMutexLocker locker(&QKeyMapper_Worker::s_MouseMove_delta_List_Mutex);
+                    QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].rx() += mstroke.x;
+                    QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].ry() += mstroke.y;
+                }
             }
         }
         else
@@ -105,13 +110,11 @@ void Interception_Worker::InterceptionThreadStarted()
             }
             else {
                 InterceptionKeyStroke &kstroke = *(InterceptionKeyStroke *) &stroke;
-                // unsigned int ori_information = kstroke.information;
                 kstroke.information = INTERCEPTION_EXTRA_INFO + device;
                 interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
 // #ifdef DEBUG_LOGOUT_ON
-//                 QString ori_extraInfoStr = QString("0x%1").arg(QString::number(ori_information, 16).toUpper(), 8, '0');
 //                 QString extraInfoStr = QString("0x%1").arg(QString::number(kstroke.information, 16).toUpper(), 8, '0');
-//                 qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << device << "] extraInfo (" << ori_extraInfoStr << " -> " << extraInfoStr << ")";
+//                 qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << index << "] extraInfo (" << extraInfoStr << ")";
 // #endif
             }
         }
