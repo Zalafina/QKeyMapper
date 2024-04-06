@@ -2462,6 +2462,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     Q_UNUSED(hWnd);
     clearAllBurstTimersAndLockKeys();
     clearAllPressedVirtualKeys();
+    clearAllPressedRealCombinationKeys();
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     // pressedShortcutKeysList.clear();
@@ -2563,6 +2564,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
     clearAllBurstTimersAndLockKeys();
     clearAllPressedVirtualKeys();
+    clearAllPressedRealCombinationKeys();
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
     // pressedShortcutKeysList.clear();
@@ -6288,6 +6290,25 @@ void QKeyMapper_Worker::clearAllPressedVirtualKeys()
     //     QStringList mappingKeyList = pressedMappingKeysMap.value(original_key);;
     //     emit sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     // }
+}
+
+void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
+{
+    QStringList newPressedRealKeysList;
+    for (const QString& key : qAsConst(pressedRealKeysList)) {
+        if (!key.startsWith(PREFIX_SHORTCUT)) {
+            newPressedRealKeysList.append(key);
+        }
+    }
+    pressedRealKeysList = newPressedRealKeysList;
+
+    newPressedRealKeysList.clear();
+    for (const QString& key : qAsConst(pressedRealKeysListRemoveMultiInput)) {
+        if (!key.startsWith(PREFIX_SHORTCUT)) {
+            newPressedRealKeysList.append(key);
+        }
+    }
+    pressedRealKeysListRemoveMultiInput = newPressedRealKeysList;
 }
 
 void QKeyMapper_Worker::collectExchangeKeysList()

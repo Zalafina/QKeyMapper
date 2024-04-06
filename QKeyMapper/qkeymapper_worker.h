@@ -520,6 +520,7 @@ private:
 #endif
     void clearAllBurstTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
+    void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
 public:
