@@ -281,6 +281,7 @@ signals:
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int onoff);
+    void showCarOrdinal_Signal(qint32 car_ordinal);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
 #endif
@@ -300,6 +301,8 @@ public slots:
     void updateMousePointLabelDisplay(const QPoint &point);
 
     void showMousePoints(int onoff);
+
+    void showCarOrdinal(qint32 car_ordinal);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);

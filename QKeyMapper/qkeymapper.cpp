@@ -644,6 +644,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
@@ -6274,6 +6275,16 @@ void QKeyMapper::showMousePoints(int onoff)
     else {
         ShowWindow(m_TransParentHandle, SW_HIDE);
     }
+}
+
+void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[showCarOrdinal]" << "CarOrdinal =" << car_ordinal;
+#endif
+
+    QString car_ordinal_str = QString::number(car_ordinal);
+    ui->pointDisplayLabel->setText(car_ordinal_str);
 }
 
 #ifdef SINGLE_APPLICATION

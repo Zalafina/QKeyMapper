@@ -144,7 +144,8 @@ static const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
 static const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
 static const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
 
-static const char *SHOW_MOUSE_POINTS_KEY = "F9";
+static const char *SHOW_MOUSE_POINTS_KEY    = "F9";
+static const char *SHOW_CAR_ORDINAL_KEY     = "F10";
 
 static const char *MOUSE_WHEEL_UP_STR   = "Mouse-WheelUp";
 static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
@@ -214,6 +215,7 @@ QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Right = QAtomicBool();
 bool QKeyMapper_Worker::s_forceSendVirtualKey = false;
+qint32 QKeyMapper_Worker::s_LastCarOrdinal = 0;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
 QHash<WPARAM, QString> QKeyMapper_Worker::MouseButtonNameMap = QHash<WPARAM, QString>();
@@ -3062,6 +3064,9 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     // double max_slip_ratio = qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR));
     double average_slip_ratio = (qAbs(tire_combined_slip_FL) + qAbs(tire_combined_slip_FR) + qAbs(tire_combined_slip_RL) + qAbs(tire_combined_slip_RR)) / 4;
     double max_slip_ratio = qMax(qMax(qAbs(tire_combined_slip_FL), qAbs(tire_combined_slip_FR)), qMax(qAbs(tire_combined_slip_RL), qAbs(tire_combined_slip_RR)));
+    if (s_LastCarOrdinal != car_ordinal) {
+        s_LastCarOrdinal = car_ordinal;
+    }
 
 #ifdef GRIP_VERBOSE_LOG
     // qDebug().nospace() << "[processForzaFormatData]" << " secondPartData = " << secondPartData.toHex();
@@ -4256,13 +4261,21 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
             static bool show_mousepoints = false;
             if (KEY_DOWN == keyupdown){
-                if(keycodeString == SHOW_MOUSE_POINTS_KEY) {
+                if (keycodeString == SHOW_MOUSE_POINTS_KEY) {
                         if (!show_mousepoints) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points KEY_DOWN -> ON";
 #endif
                             show_mousepoints = true;
                             emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_MOUSEPOINTS_ON);
+                        }
+                }
+                else if (keycodeString == SHOW_CAR_ORDINAL_KEY) {
+                        if (s_LastCarOrdinal > 0) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[LowLevelKeyboardHookProc]" << "Show CarOrdinal Key Pressed, CarOrdinal =" << s_LastCarOrdinal;
+#endif
+                            emit QKeyMapper::getInstance()->showCarOrdinal_Signal(s_LastCarOrdinal);
                         }
                 }
             }
