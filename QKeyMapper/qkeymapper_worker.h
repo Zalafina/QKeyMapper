@@ -363,7 +363,7 @@ public slots:
     void setMouseToScreenBottomRight(void);
     POINT mousePositionAfterSetMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
-    void onMouseMove(int x, int y, int mouse_index);
+    void onMouseMove(int delta_x, int delta_y, int mouse_index);
     void onMouse2vJoyResetTimeout(void);
 #endif
     void onKey2MouseCycleTimeout(void);
@@ -407,7 +407,7 @@ public:
 
     static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
     static QHash<int, Mouse2vJoyStates> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
-    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState, int mouse_index);
+    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index);
     void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
     void ViGEmClient_JoysticksReset(void);
@@ -424,7 +424,7 @@ signals:
 #endif
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
 #ifdef VIGEM_CLIENT_SUPPORT
-    void onMouseMove_Signal(int point_x, int point_y, int mouse_index);
+    void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif
 #if 0
     void onMouseWheel_Signal(int wheel_updown);

@@ -592,10 +592,10 @@ POINT QKeyMapper_Worker::mousePositionAfterSetMouseToScreenBottomRight()
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
-void QKeyMapper_Worker::onMouseMove(int x, int y, int mouse_index)
+void QKeyMapper_Worker::onMouseMove(int delta_x, int delta_y, int mouse_index)
 {
-    Q_UNUSED(x);
-    Q_UNUSED(y);
+    Q_UNUSED(delta_x);
+    Q_UNUSED(delta_y);
 
     bool mouse2vjoy_update = false;
     if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
@@ -607,29 +607,33 @@ void QKeyMapper_Worker::onMouseMove(int x, int y, int mouse_index)
     }
 
     if (mouse2vjoy_update) {
-        QPoint Mouse2vJoy_delta;
-        Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index);
+        int input_delta_x = 0;
+        int input_delta_y = 0;
         if (mouse_index >= 0) {
             QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
-            Mouse2vJoy_delta = s_Mouse2vJoy_delta_List.at(mouse_index);
+            input_delta_x = s_Mouse2vJoy_delta_List.at(mouse_index).x();
+            input_delta_y = s_Mouse2vJoy_delta_List.at(mouse_index).y();
             s_Mouse2vJoy_delta_List[mouse_index] = QPoint();
         }
         else {
             if (Interception_Worker::s_InterceptStart) {
-                Mouse2vJoy_delta = s_Mouse2vJoy_delta_interception;
+                input_delta_x = s_Mouse2vJoy_delta_interception.x();
+                input_delta_y = s_Mouse2vJoy_delta_interception.y();
                 s_Mouse2vJoy_delta_interception = QPoint();
-                qDebug() << "[onMouseMove]" << "s_Mouse2vJoy_delta_interception -> Delta X =" << Mouse2vJoy_delta.x() << ", Delta Y =" << Mouse2vJoy_delta.y() << ", index =" << mouse_index;
             }
             else {
-                Mouse2vJoy_delta = s_Mouse2vJoy_delta;
+                input_delta_x = delta_x;
+                input_delta_y = delta_y;
             }
         }
 
 // #ifdef MOUSE_VERBOSE_LOG
-//         qDebug() << "[onMouseMove]" << "Mouse Move -> Delta X =" << Mouse2vJoy_delta.x() << ", Delta Y =" << Mouse2vJoy_delta.y() << ", index =" << mouse_index;
+//         qDebug() << "[onMouseMove]" << "Mouse Move -> Delta X =" << input_delta_x << ", Delta Y =" << input_delta_y << ", index =" << mouse_index;
 // #endif
 
-        ViGEmClient_Mouse2JoystickUpdate(Mouse2vJoy_delta.x(), Mouse2vJoy_delta.y(), Mouse2vJoy_EnableState, mouse_index);
+        if (input_delta_x != 0 || input_delta_y != 0) {
+            ViGEmClient_Mouse2JoystickUpdate(input_delta_x, input_delta_y, mouse_index);
+        }
     }
 }
 
@@ -2046,7 +2050,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyStates> QKeyMapper_Worker::ViGEmClient_c
     return Mouse2vJoy_EnableStateMap;
 }
 
-void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState, int mouse_index)
+void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index)
 {
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
@@ -2060,8 +2064,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         return;
     }
 
-    QMutexLocker locker(&s_ViGEmClient_Mutex);
-
+    Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index);
     bool leftJoystickUpdate = false;
     bool rightJoystickUpdate = false;
 
@@ -2145,14 +2148,17 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
 
         VIGEM_ERROR error;
-        if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
-            DS4_REPORT ds4_report;
-            DS4_REPORT_INIT(&ds4_report);
-            XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
-            error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
-        }
-        else {
-            error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+        {
+            QMutexLocker locker(&s_ViGEmClient_Mutex);
+            if (DualShock4Wired == vigem_target_get_type(s_ViGEmTarget)) {
+                DS4_REPORT ds4_report;
+                DS4_REPORT_INIT(&ds4_report);
+                XUSB_TO_DS4_REPORT(&s_ViGEmTarget_Report, &ds4_report);
+                error = vigem_target_ds4_update(s_ViGEmClient, s_ViGEmTarget, ds4_report);
+            }
+            else {
+                error = vigem_target_x360_update(s_ViGEmClient, s_ViGEmTarget, s_ViGEmTarget_Report);
+            }
         }
         Q_UNUSED(error);
         if (false == s_Mouse2vJoy_Hold && false == s_Mouse2vJoy_Direct) {
@@ -5033,7 +5039,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 // #ifdef MOUSE_VERBOSE_LOG
 //                 qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> Delta X =" << s_Mouse2vJoy_delta.x() << ", Delta Y = " << s_Mouse2vJoy_delta.y();
 // #endif
-                emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(pMouse->pt.x, pMouse->pt.y, mouse_index);
+                emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(s_Mouse2vJoy_delta.x(), s_Mouse2vJoy_delta.y(), mouse_index);
             }
         }
     }
