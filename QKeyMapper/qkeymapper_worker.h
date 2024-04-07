@@ -366,6 +366,7 @@ public slots:
     void onMouseMove(int delta_x, int delta_y, int mouse_index);
     void onMouse2vJoyResetTimeout(void);
     void initMouse2vJoyResetTimerMap(void);
+    void stopMouse2vJoyResetTimerMap(void);
     void onMouse2vJoyResetTimeoutForMap(int mouse_index);
 #endif
     void onKey2MouseCycleTimeout(void);

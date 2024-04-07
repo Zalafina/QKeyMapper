@@ -677,6 +677,14 @@ void QKeyMapper_Worker::initMouse2vJoyResetTimerMap()
     }
 }
 
+void QKeyMapper_Worker::stopMouse2vJoyResetTimerMap()
+{
+    /* stop all the timers in m_Mouse2vJoyResetTimerMap */
+    for (QTimer *timer : qAsConst(m_Mouse2vJoyResetTimerMap)) {
+        timer->stop();
+    }
+}
+
 void QKeyMapper_Worker::onMouse2vJoyResetTimeoutForMap(int mouse_index)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -2545,6 +2553,8 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedvJoyLStickKeys.clear();
     pressedvJoyRStickKeys.clear();
     pressedvJoyButtons.clear();
+    m_Mouse2vJoyResetTimer.stop();
+    stopMouse2vJoyResetTimerMap();
     ViGEmClient_GamepadReset();
     // s_Mouse2vJoy_EnableState = ViGEmClient_checkMouse2JoystickEnableState();
     s_Mouse2vJoy_EnableStateMap = ViGEmClient_checkMouse2JoystickEnableStateMap();
@@ -2692,6 +2702,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedvJoyLStickKeys.clear();
     pressedvJoyRStickKeys.clear();
     pressedvJoyButtons.clear();
+    m_Mouse2vJoyResetTimer.stop();
+    stopMouse2vJoyResetTimerMap();
     ViGEmClient_GamepadReset();
     // s_Mouse2vJoy_EnableState = MOUSE2VJOY_NONE;
     s_Mouse2vJoy_EnableStateMap.clear();
