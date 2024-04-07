@@ -386,6 +386,7 @@ private:
     void updateSystemTrayDisplay(void);
 
     void initKeyMappingDataTable(void);
+    void resizeKeyMappingDataTableColumnWidth(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);

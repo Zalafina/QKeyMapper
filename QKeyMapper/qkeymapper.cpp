@@ -5247,7 +5247,7 @@ void QKeyMapper::initKeyMappingDataTable(void)
 
     ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
-    ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    // ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
     int original_key_width = ui->keymapdataTable->width()/4 - 15;
     int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
@@ -5270,6 +5270,28 @@ void QKeyMapper::initKeyMappingDataTable(void)
 //    qDebug() << "editTriggers" << ui->keymapdataTable->editTriggers();
 //    qDebug() << "verticalHeader-DefaultSectionSize" << ui->keymapdataTable->verticalHeader()->defaultSectionSize();
 #endif
+}
+
+void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
+{
+    ui->keymapdataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
+
+    int original_key_width_min = ui->keymapdataTable->width()/4 - 15;
+    int original_key_width = ui->keymapdataTable->columnWidth(ORIGINAL_KEY_COLUMN);
+
+    int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
+    int lock_width = ui->keymapdataTable->width()/5 - 40;
+
+    if (original_key_width < original_key_width_min) {
+        original_key_width = original_key_width_min;
+    }
+
+    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
+
+    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
+    ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
+    ui->keymapdataTable->setColumnWidth(LOCK_COLUMN, lock_width);
 }
 
 void QKeyMapper::initAddKeyComboBoxes(void)
@@ -5899,6 +5921,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
 #endif
     }
 
+    resizeKeyMappingDataTableColumnWidth();
     updateMousePointsList();
 }
 
