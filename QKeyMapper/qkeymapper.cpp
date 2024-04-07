@@ -653,6 +653,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
+    resizeKeyMappingDataTableColumnWidth();
 #ifdef QT_NO_DEBUG
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
