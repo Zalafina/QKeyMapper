@@ -303,6 +303,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     m_Mouse2vJoyResetTimer(this),
+    m_Mouse2vJoyResetTimerMap(),
 #endif
     m_Key2MouseCycleTimer(this),
     m_UdpSocket(Q_NULLPTR),
@@ -352,6 +353,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(&m_Mouse2vJoyResetTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onMouse2vJoyResetTimeout);
     QObject::connect(this, &QKeyMapper_Worker::startMouse2vJoyResetTimer_Signal, this, &QKeyMapper_Worker::startMouse2vJoyResetTimer, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::stopMouse2vJoyResetTimer_Signal, this, &QKeyMapper_Worker::stopMouse2vJoyResetTimer, Qt::QueuedConnection);
+
+    initMouse2vJoyResetTimerMap();
 #endif
 
     m_Key2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
@@ -639,9 +642,8 @@ void QKeyMapper_Worker::onMouseMove(int delta_x, int delta_y, int mouse_index)
 
 void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
 {
-    /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-    if (!s_Mouse2vJoy_EnableStateMap.isEmpty()) {
+    if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
         if (s_Mouse2vJoy_Hold) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[onMouse2vJoyResetTimeout]" << "Skip Mouse2vJoyReset for Mouse2vJoy_Hold is KEY_DOWN State.";
@@ -655,11 +657,33 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeout()
             return;
         }
     }
-    ViGEmClient_JoysticksReset();
+    ViGEmClient_JoysticksReset(INITIAL_MOUSE_INDEX);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onMouse2vJoyResetTimeout]" << "Reset the Joysticks to Release Center State.";
 #endif
+}
+
+void QKeyMapper_Worker::initMouse2vJoyResetTimerMap()
+{
+    for (int mouse_index = 0; mouse_index < INTERCEPTION_MAX_MOUSE; ++mouse_index) {
+        QTimer *timer = new QTimer(this);
+        timer->setTimerType(Qt::PreciseTimer);
+        timer->setSingleShot(true);
+        QObject::connect(timer, &QTimer::timeout, this, [this, mouse_index]() {
+            onMouse2vJoyResetTimeoutForMap(mouse_index);
+        });
+        m_Mouse2vJoyResetTimerMap.insert(mouse_index, timer);
+    }
+}
+
+void QKeyMapper_Worker::onMouse2vJoyResetTimeoutForMap(int mouse_index)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onMouse2vJoyResetTimeoutForMap]" << "Mouse Index =" << mouse_index;
+#endif
+
+    ViGEmClient_JoysticksReset(mouse_index);
 }
 
 void QKeyMapper_Worker::onKey2MouseCycleTimeout()
@@ -2162,7 +2186,12 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
         Q_UNUSED(error);
         if (false == s_Mouse2vJoy_Hold && false == s_Mouse2vJoy_Direct) {
-            m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+            if (mouse_index >= 0) {
+                m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(MOUSE2VJOY_RESET_TIMEOUT);
+            }
+            else {
+                m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+            }
         }
 #ifdef DEBUG_LOGOUT_ON
         if (error != VIGEM_ERROR_NONE) {
@@ -2355,11 +2384,10 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset()
 #endif
 }
 
-void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
+void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index)
 {
-    /* To be modified for MultiInput Device */
     // if (MOUSE2VJOY_NONE == s_Mouse2vJoy_EnableState) {
-    if (false == s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
+    if (!s_Mouse2vJoy_EnableStateMap.contains(mouse_index)) {
         return;
     }
 
@@ -2377,7 +2405,7 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset()
         return;
     }
 
-    Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(-1);
+    Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index);
     if (MOUSE2VJOY_LEFT == Mouse2vJoy_EnableState) {
         s_ViGEmTarget_Report.sThumbLX = 0;
         s_ViGEmTarget_Report.sThumbLY = 0;
@@ -2526,7 +2554,6 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getLockCursorStatus()) {
         POINT pt;
@@ -2636,7 +2663,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     //    setWorkerDInputKeyUnHook();
 
 #ifdef VIGEM_CLIENT_SUPPORT
-    /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
         setMouseToPoint(m_LastMouseCursorPoint);
@@ -3550,7 +3576,7 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
         }
 
         if (s_Mouse2vJoy_Direct) {
-            ViGEmClient_JoysticksReset();
+            ViGEmClient_JoysticksReset(INITIAL_MOUSE_INDEX);
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[stopMouse2vJoyResetTimer]" << "Mouse2vJoy-Direct -> Reset the Joysticks to Release Center State.";

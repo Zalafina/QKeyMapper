@@ -365,6 +365,8 @@ public slots:
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int delta_x, int delta_y, int mouse_index);
     void onMouse2vJoyResetTimeout(void);
+    void initMouse2vJoyResetTimerMap(void);
+    void onMouse2vJoyResetTimeoutForMap(int mouse_index);
 #endif
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
@@ -410,7 +412,7 @@ public:
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index);
     void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
-    void ViGEmClient_JoysticksReset(void);
+    void ViGEmClient_JoysticksReset(int mouse_index);
 #endif
 
 signals:
@@ -624,6 +626,7 @@ private:
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     QTimer m_Mouse2vJoyResetTimer;
+    QHash<int, QTimer*> m_Mouse2vJoyResetTimerMap;
 #endif
     QTimer m_Key2MouseCycleTimer;
     QUdpSocket *m_UdpSocket;
