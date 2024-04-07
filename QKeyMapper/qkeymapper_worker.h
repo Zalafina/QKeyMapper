@@ -407,7 +407,7 @@ public:
 
     static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
     static QHash<int, Mouse2vJoyStates> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
-    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState);
+    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState, int mouse_index);
     void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
     void ViGEmClient_JoysticksReset(void);
@@ -598,6 +598,7 @@ public:
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
     static QList<QPoint> s_Mouse2vJoy_delta_List;
+    static QPoint s_Mouse2vJoy_delta_interception;
     // static Mouse2vJoyStates s_Mouse2vJoy_EnableState;
     static QHash<int, Mouse2vJoyStates> s_Mouse2vJoy_EnableStateMap;
     static QMutex s_MouseMove_delta_List_Mutex;

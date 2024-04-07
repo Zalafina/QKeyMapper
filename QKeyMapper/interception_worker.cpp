@@ -92,6 +92,8 @@ void Interception_Worker::InterceptionThreadStarted()
                 InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *) &stroke;
                 mstroke.information = INTERCEPTION_EXTRA_INFO + device;
                 interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
+                QKeyMapper_Worker::s_Mouse2vJoy_delta_interception.rx() += mstroke.x;
+                QKeyMapper_Worker::s_Mouse2vJoy_delta_interception.ry() += mstroke.y;
                 {
                     QMutexLocker locker(&QKeyMapper_Worker::s_MouseMove_delta_List_Mutex);
                     QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].rx() += mstroke.x;

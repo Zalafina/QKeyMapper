@@ -272,6 +272,7 @@ QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List(INTERCEPTION_MAX_MOUSE);
+QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta_interception = QPoint();
 // QKeyMapper_Worker::Mouse2vJoyStates QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 QHash<int, QKeyMapper_Worker::Mouse2vJoyStates> QKeyMapper_Worker::s_Mouse2vJoy_EnableStateMap;
 QMutex QKeyMapper_Worker::s_MouseMove_delta_List_Mutex;
@@ -614,14 +615,21 @@ void QKeyMapper_Worker::onMouseMove(int x, int y, int mouse_index)
             s_Mouse2vJoy_delta_List[mouse_index] = QPoint();
         }
         else {
-            Mouse2vJoy_delta = s_Mouse2vJoy_delta;
+            if (Interception_Worker::s_InterceptStart) {
+                Mouse2vJoy_delta = s_Mouse2vJoy_delta_interception;
+                s_Mouse2vJoy_delta_interception = QPoint();
+                qDebug() << "[onMouseMove]" << "s_Mouse2vJoy_delta_interception -> Delta X =" << Mouse2vJoy_delta.x() << ", Delta Y =" << Mouse2vJoy_delta.y() << ", index =" << mouse_index;
+            }
+            else {
+                Mouse2vJoy_delta = s_Mouse2vJoy_delta;
+            }
         }
 
 // #ifdef MOUSE_VERBOSE_LOG
 //         qDebug() << "[onMouseMove]" << "Mouse Move -> Delta X =" << Mouse2vJoy_delta.x() << ", Delta Y =" << Mouse2vJoy_delta.y() << ", index =" << mouse_index;
 // #endif
 
-        ViGEmClient_Mouse2JoystickUpdate(Mouse2vJoy_delta.x(), Mouse2vJoy_delta.y(), Mouse2vJoy_EnableState);
+        ViGEmClient_Mouse2JoystickUpdate(Mouse2vJoy_delta.x(), Mouse2vJoy_delta.y(), Mouse2vJoy_EnableState, mouse_index);
     }
 }
 
@@ -2038,7 +2046,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyStates> QKeyMapper_Worker::ViGEmClient_c
     return Mouse2vJoy_EnableStateMap;
 }
 
-void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState)
+void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, Mouse2vJoyStates Mouse2vJoy_EnableState, int mouse_index)
 {
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
@@ -2494,6 +2502,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_Joy2vJoyState = checkJoy2vJoyState();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
+    s_Mouse2vJoy_delta_interception = QPoint();
     {
         QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
         s_Mouse2vJoy_delta_List.clear();
@@ -2513,7 +2522,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #ifdef VIGEM_CLIENT_SUPPORT
     /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
-    if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX) && QKeyMapper::getLockCursorStatus()) {
+    if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getLockCursorStatus()) {
         POINT pt;
         if (GetCursorPos(&pt)) {
             m_LastMouseCursorPoint = pt;
@@ -2623,7 +2632,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #ifdef VIGEM_CLIENT_SUPPORT
     /* To be modified for MultiInput Device */
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
-    if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
+    if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
         setMouseToPoint(m_LastMouseCursorPoint);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -2642,6 +2651,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Joy2vJoyState = Joy2vJoyState();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
+    s_Mouse2vJoy_delta_interception = QPoint();
     {
         QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
         s_Mouse2vJoy_delta_List.clear();

@@ -2045,6 +2045,11 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
         refreshProcessInfoTable();
+        (void)Interception_Worker::getRefreshedKeyboardDeviceList();
+        (void)Interception_Worker::getRefreshedMouseDeviceList();
+        Interception_Worker::syncDisabledKeyboardList();
+        Interception_Worker::syncDisabledMouseList();
+        // m_deviceListWindow->updateDeviceListInfo();
         initInputDeviceSelectComboBoxes();
 
    }
@@ -5286,12 +5291,20 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
         original_key_width = original_key_width_min;
     }
 
+    int mapping_key_width_min = ui->keymapdataTable->width()/4 - 15;
     int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
+    if (mapping_key_width < mapping_key_width_min) {
+        mapping_key_width = mapping_key_width_min;
+    }
 
     ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
     ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
     ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
     ui->keymapdataTable->setColumnWidth(LOCK_COLUMN, lock_width);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "ui->keymapdataTable->rowCount" << ui->keymapdataTable->rowCount();
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width;
+#endif
 }
 
 void QKeyMapper::initAddKeyComboBoxes(void)
