@@ -395,6 +395,7 @@ public:
     static int ViGEmClient_Add(void);
     static PVIGEM_TARGET ViGEmClient_AddTarget_byType(const QString &gamepadtype);
     static void ViGEmClient_Remove(void);
+    static void ViGEmClient_RemoveTarget(PVIGEM_TARGET target);
     static void ViGEmClient_Disconnect(void);
     static void ViGEmClient_Free(void);
 
@@ -417,7 +418,7 @@ public:
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index);
     void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
-    void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
+    static void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
     void ViGEmClient_JoysticksReset(int mouse_index);
 #endif
 

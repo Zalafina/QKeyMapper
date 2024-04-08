@@ -6018,15 +6018,15 @@ void QKeyMapper::reloadUILanguage()
         setUILanguage_Chinese();
     }
 
-    QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X - 10);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
-    else {
-        curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
+    // QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X - 10);
+    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    // }
+    // else {
+    //     curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X);
+    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    // }
 
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
@@ -7363,7 +7363,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[EnableVirtualJoystick] Enable Virtual Joystick state changed ->" << (Qt::CheckState)state;
+    qDebug() << "[EnableVirtualGamepad] Enable Virtual Gamepad state changed ->" << (Qt::CheckState)state;
 #endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -7371,24 +7371,60 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 
     if (Qt::Checked == state) {
-        int retval = QKeyMapper_Worker::ViGEmClient_Add();
+        bool enable_result = false;
+        if (QKeyMapper_Worker::s_VirtualGamepadList.size() <= VIRTUAL_GAMEPAD_NUMBER_MAX
+            && QKeyMapper_Worker::s_ViGEmTargetList.isEmpty()
+            && QKeyMapper_Worker::s_ViGEmTarget_ReportList.isEmpty()) {
+            int gamepad_index = 0;
+            for (const QString &gamepad_type : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList)){
+                PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
+                if (added_target != Q_NULLPTR) {
+                    QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
+                    QKeyMapper_Worker::s_ViGEmTargetList.append(added_target);
+                    QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_index);
+                    gamepad_index++;
+                }
+            }
 
-        if (retval != 0) {
-            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+            if (QKeyMapper_Worker::s_ViGEmTargetList.size() == QKeyMapper_Worker::s_VirtualGamepadList.size()) {
+                enable_result = true;
+            }
+        }
+
+        if (enable_result) {
+            checked = true;
 #ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[EnableVirtualJoystick] Enable Virtual Joystick failed!!!";
+            qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Enable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
         }
         else {
-            checked = true;
+            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[EnableVirtualJoystick] Enable All Virtual Gamepad failed!!!";
+#endif
         }
     }
     else {
-        QKeyMapper_Worker::ViGEmClient_Remove();
+        if (QKeyMapper_Worker::s_ViGEmTargetList.size() > 0 ) {
+            int gamepad_index = QKeyMapper_Worker::s_ViGEmTargetList.size() - 1;
+            for (auto it = QKeyMapper_Worker::s_ViGEmTargetList.rbegin(); it != QKeyMapper_Worker::s_ViGEmTargetList.rend(); ++it) {
+                const PVIGEM_TARGET &target_toremove = *it;
+                if (target_toremove != Q_NULLPTR) {
+                    QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_index);
+                    QKeyMapper_Worker::ViGEmClient_RemoveTarget(target_toremove);
+                }
+                gamepad_index--;
+            }
+        }
+        QKeyMapper_Worker::s_ViGEmTargetList.clear();
+        QKeyMapper_Worker::s_ViGEmTarget_ReportList.clear();
         checked = false;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Disable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
     }
 
-    if (true == checked && QKeyMapper_Worker::s_ViGEmTarget != Q_NULLPTR) {
+    if (true == checked) {
         ui->vJoyXSensSpinBox->setEnabled(true);
         ui->vJoyYSensSpinBox->setEnabled(true);
         ui->vJoyXSensLabel->setEnabled(true);
@@ -7621,17 +7657,49 @@ void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
         ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
     }
 
-    if (number == gamepad_number + 1) {
+    if ((number == gamepad_number + 1)
+        && (number == QKeyMapper_Worker::s_ViGEmTargetList.size() + 1)
+        && (number == QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() + 1)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] Virtual Gamepad number increased," << gamepad_number << "->" << number;
 #endif
+        QString gamepad_type = getVirtualGamepadType();
+        PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
+        if (added_target != Q_NULLPTR) {
+            QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
+            QKeyMapper_Worker::s_VirtualGamepadList.append(gamepad_type);
+            QKeyMapper_Worker::s_ViGEmTargetList.append(added_target);
+            QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_number);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << " Add Virtual Gamepad(" << gamepad_type << ") success -> " << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
+        }
     }
-    else if (number == gamepad_number - 1) {
+    else if ((number == gamepad_number - 1)
+         && (number == QKeyMapper_Worker::s_ViGEmTargetList.size() - 1)
+         && (number == QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() - 1)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] Virtual Gamepad number decreased," << gamepad_number << "->" << number;
 #endif
+        PVIGEM_TARGET target_toremove = QKeyMapper_Worker::s_ViGEmTargetList.at(number);
+        if (target_toremove != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+            QString removed_gamepadtype = QKeyMapper_Worker::s_VirtualGamepadList.last();
+#endif
+            QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(number);
+            QKeyMapper_Worker::ViGEmClient_RemoveTarget(target_toremove);
+            QKeyMapper_Worker::s_ViGEmTargetList.removeLast();
+            QKeyMapper_Worker::s_ViGEmTarget_ReportList.removeLast();
+            QKeyMapper_Worker::s_VirtualGamepadList.removeLast();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << " Remove Virtual Gamepad(" << removed_gamepadtype << ") success -> " << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
+        }
     }
     else {
         ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << "Size error! s_ViGEmTargetList.size =" << QKeyMapper_Worker::s_ViGEmTargetList.size() << ", s_ViGEmTarget_ReportList.size =" << QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() << ", s_VirtualGamepadList ->" << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
     }
 }

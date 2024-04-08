@@ -1108,7 +1108,7 @@
   <widget class="QPushButton" name="multiInputDeviceListButton">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>610</x>
      <y>605</y>
      <width>81</width>
      <height>21</height>
@@ -1143,7 +1143,7 @@
   <widget class="QPushButton" name="installInterceptionButton">
    <property name="geometry">
     <rect>
-     <x>880</x>
+     <x>874</x>
      <y>605</y>
      <width>81</width>
      <height>21</height>

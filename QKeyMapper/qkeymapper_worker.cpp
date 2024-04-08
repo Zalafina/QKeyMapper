@@ -262,7 +262,7 @@ PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
 QList<PVIGEM_TARGET> QKeyMapper_Worker::s_ViGEmTargetList;
 XUSB_REPORT QKeyMapper_Worker::s_ViGEmTarget_Report = XUSB_REPORT();
 QList<XUSB_REPORT> QKeyMapper_Worker::s_ViGEmTarget_ReportList;
-QStringList QKeyMapper_Worker::s_VirtualGamepadList;
+QStringList QKeyMapper_Worker::s_VirtualGamepadList = QStringList() << VIRTUAL_GAMEPAD_X360;
 BYTE QKeyMapper_Worker::s_Auto_Brake = AUTO_BRAKE_DEFAULT;
 BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
@@ -385,8 +385,6 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initViGEmKeyMap();
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
-
-    s_VirtualGamepadList.append(VIRTUAL_GAMEPAD_X360);
 #endif
 }
 
@@ -1569,23 +1567,51 @@ void QKeyMapper_Worker::ViGEmClient_Remove()
                     s_ViGEmTarget = Q_NULLPTR;
                 }
                 else {
-                    s_ViGEmTarget = Q_NULLPTR;
 #ifdef DEBUG_LOGOUT_ON
                     qWarning("[ViGEmClient_Remove] ViGEmTarget Remove failed!!!, Error=0x%08X -> [0x%08X]", error, s_ViGEmTarget);
 #endif
+                    s_ViGEmTarget = Q_NULLPTR;
                 }
             }
             else {
-                s_ViGEmTarget = Q_NULLPTR;
 #ifdef DEBUG_LOGOUT_ON
                 qWarning("[ViGEmClient_Remove] Reset VirtualGamepad Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", error, s_ViGEmTarget);
+#endif
+                s_ViGEmTarget = Q_NULLPTR;
+            }
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[ViGEmClient_Remove]" << "ViGEmClient ConnectState or ViGEmTarget AttachState error!!! ->" << "ConnectState =" << s_ViGEmClient_ConnectState << ", Attached =" << vigem_target_is_attached(s_ViGEmTarget);
+#endif
+            s_ViGEmTarget = Q_NULLPTR;
+        }
+    }
+}
+
+void QKeyMapper_Worker::ViGEmClient_RemoveTarget(PVIGEM_TARGET target)
+{
+    PVIGEM_TARGET ViGEmTarget = target;
+    if (s_ViGEmClient != Q_NULLPTR && ViGEmTarget != Q_NULLPTR) {
+        QMutexLocker locker(&s_ViGEmClient_Mutex);
+        if (s_ViGEmClient_ConnectState == VIGEMCLIENT_CONNECT_SUCCESS && vigem_target_is_attached(ViGEmTarget)) {
+            VIGEM_ERROR error;
+            error = vigem_target_remove(s_ViGEmClient, ViGEmTarget);
+            if (error == VIGEM_ERROR_NONE) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[ViGEmClient_RemoveTarget] ViGEmTarget Remove Success. -> [0x%08X]", ViGEmTarget);
+#endif
+                vigem_target_free(ViGEmTarget);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[ViGEmClient_RemoveTarget] ViGEmTarget Remove failed!!!, Error=0x%08X -> [0x%08X]", error, ViGEmTarget);
 #endif
             }
         }
         else {
-            s_ViGEmTarget = Q_NULLPTR;
 #ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[ViGEmClient_Remove]" << "ViGEmClient ConnectState or ViGEmTarget AttachState error!!! ->" << "ConnectState =" << s_ViGEmClient_ConnectState << ", Attached =" << vigem_target_is_attached(s_ViGEmTarget);
+            qWarning() << "[ViGEmClient_RemoveTarget]" << "ViGEmClient ConnectState or ViGEmTarget AttachState error!!! ->" << "ConnectState =" << s_ViGEmClient_ConnectState << ", Attached =" << vigem_target_is_attached(ViGEmTarget);
 #endif
         }
     }
@@ -3480,8 +3506,15 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
 void QKeyMapper_Worker::onJoystickcountChanged()
 {
     QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+
+    if (joysticklist.size() != s_ViGEmTargetList.size()) {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onJoystickcountChanged]" << "JoystickList Start >>>";
+        qWarning() << "[onJoystickcountChanged]" << "Size error! QJoysticks size =" << joysticklist.size() << "ViGEmTargetList size =" << s_ViGEmTargetList.size();
+#endif
+        return;
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onJoystickcountChanged]" << "JoystickList Start >>>" << joysticklist.size();
 #endif
     int joystick_index = 0;
     for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
