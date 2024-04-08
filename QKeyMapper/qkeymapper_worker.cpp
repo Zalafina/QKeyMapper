@@ -204,6 +204,9 @@ static const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
 static const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
 static const ULONG_PTR VIRTUAL_WIN_PLUS_D       = 0xDBDBDBDB;
 
+static const char *CONFIG_FILENAME = "keymapdata.ini";
+static const char *VIRTUAL_GAMEPADLIST = "VirtualGamdpadList";
+
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 #ifdef HOOKSTART_ONSTARTUP
 QAtomicBool QKeyMapper_Worker::s_AtomicHookProcStart = QAtomicBool();
@@ -256,7 +259,10 @@ int QKeyMapper_Worker::dinput_timerid = 0;
 #ifdef VIGEM_CLIENT_SUPPORT
 PVIGEM_CLIENT QKeyMapper_Worker::s_ViGEmClient = Q_NULLPTR;
 PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
+QList<PVIGEM_TARGET> QKeyMapper_Worker::s_ViGEmTargetList;
 XUSB_REPORT QKeyMapper_Worker::s_ViGEmTarget_Report = XUSB_REPORT();
+QList<XUSB_REPORT> QKeyMapper_Worker::s_ViGEmTarget_ReportList;
+QStringList QKeyMapper_Worker::s_VirtualGamepadList;
 BYTE QKeyMapper_Worker::s_Auto_Brake = AUTO_BRAKE_DEFAULT;
 BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
@@ -379,6 +385,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initViGEmKeyMap();
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
+
+    s_VirtualGamepadList.append(VIRTUAL_GAMEPAD_X360);
 #endif
 }
 
@@ -1462,6 +1470,77 @@ int QKeyMapper_Worker::ViGEmClient_Add()
     return 0;
 }
 
+PVIGEM_TARGET QKeyMapper_Worker::ViGEmClient_AddTarget_byType(const QString &gamepadtype)
+{
+    PVIGEM_TARGET addedTarget = Q_NULLPTR;
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+    if (s_ViGEmClient == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[ViGEmClient_AddTarget_byType]" << "Null Pointer s_ViGEmClient!!!";
+#endif
+        return addedTarget;
+    }
+
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[ViGEmClient_AddTarget_byType]" << "ViGEmClient ConnectState is not Success!!! ->" << s_ViGEmClient_ConnectState;
+#endif
+        return addedTarget;
+    }
+
+    if (VIRTUAL_GAMEPAD_DS4 == gamepadtype) {
+        addedTarget = vigem_target_ds4_alloc();
+    }
+    else {
+        addedTarget = vigem_target_x360_alloc();
+    }
+
+    if (addedTarget == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[ViGEmClient_AddTarget_byType] ViGEmTarget Alloc failed with NULLPTR!!!");
+#endif
+        return addedTarget;
+    }
+
+    if (Xbox360Wired == vigem_target_get_type(addedTarget)) {
+        vigem_target_set_vid(addedTarget, VIRTUALGAMPAD_VENDORID_X360);
+        vigem_target_set_pid(addedTarget, VIRTUALGAMPAD_PRODUCTID_X360);
+    }
+
+    //
+    // Add client to the bus, this equals a plug-in event
+    //
+    const auto pir = vigem_target_add(s_ViGEmClient, addedTarget);
+
+    //
+    // Error handling
+    //
+    if (!VIGEM_SUCCESS(pir))
+    {
+        addedTarget = Q_NULLPTR;
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[ViGEmClient_AddTarget_byType] Target plugin failed with error code: 0x%08X", pir);
+#endif
+        return addedTarget;
+    }
+
+    ULONG index = 255;
+    VIGEM_ERROR error;
+    Q_UNUSED(index);
+    Q_UNUSED(error);
+    if (addedTarget != Q_NULLPTR) {
+        index = vigem_target_get_index(addedTarget);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[ViGEmClient_AddTarget_byType] ViGEmTarget Add Success, index(%lu) -> [0x%08X]", index, addedTarget);
+#endif
+    }
+    else {
+        return addedTarget;
+    }
+
+    return addedTarget;
+}
+
 void QKeyMapper_Worker::ViGEmClient_Remove()
 {
     QMutexLocker locker(&s_ViGEmClient_Mutex);
@@ -1541,6 +1620,25 @@ void QKeyMapper_Worker::ViGEmClient_Free()
     }
     s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
     updateViGEmBusStatus();
+}
+
+void QKeyMapper_Worker::saveVirtualGamepadList()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[saveVirtualGamepadList] Save VirtualGamepadList ->" << s_VirtualGamepadList;
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    settingFile.setValue(VIRTUAL_GAMEPADLIST, s_VirtualGamepadList);
+}
+
+void QKeyMapper_Worker::loadVirtualGamepadList(const QStringList &gamepadlist)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadVirtualGamepadList] load VirtualGamepadList ->" << gamepadlist;
+#endif
+
+    s_VirtualGamepadList = gamepadlist;
 }
 
 void QKeyMapper_Worker::updateViGEmBusStatus()
@@ -2388,6 +2486,51 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset()
 #ifdef JOYSTICK_VERBOSE_LOG
         qDebug("[ViGEmClient_GamepadReset] Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", s_ViGEmTarget_Report.sThumbLX, s_ViGEmTarget_Report.sThumbLY, s_ViGEmTarget_Report.sThumbRX, s_ViGEmTarget_Report.sThumbRY);
 #endif
+    }
+#endif
+}
+
+void QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(int gamepad_index)
+{
+    if (s_ViGEmTargetList.size() <= gamepad_index
+        || s_ViGEmTarget_ReportList.size() <= gamepad_index
+        || s_ViGEmTargetList.size() != s_ViGEmTarget_ReportList.size()) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[ViGEmClient_GamepadReset_byIndex] Size error！ s_ViGEmTargetList.size = %d, s_ViGEmTarget_ReportList.size = %d", s_ViGEmTargetList.size(), s_ViGEmTarget_ReportList.size());
+#endif
+        return;
+    }
+
+    PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
+
+    if (ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+
+    if (vigem_target_is_attached(ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT_INIT(&ViGEmTarget_Report);
+    ViGEmTarget_Report.sThumbLY = 1;
+    VIGEM_ERROR error;
+    if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
+        DS4_REPORT ds4_report;
+        DS4_REPORT_INIT(&ds4_report);
+        XUSB_TO_DS4_REPORT(&ViGEmTarget_Report, &ds4_report);
+        error = vigem_target_ds4_update(s_ViGEmClient, ViGEmTarget, ds4_report);
+    }
+    else {
+        error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
+    }
+    Q_UNUSED(error);
+#ifdef DEBUG_LOGOUT_ON
+    if (error != VIGEM_ERROR_NONE) {
+        qWarning("[ViGEmClient_GamepadReset_byIndex] Reset VirtualGamepad(%d) Report State Failed!!!, Error=0x%08X -> ViGEmTarget[0x%08X]", gamepad_index, error, ViGEmTarget);
+    }
+    else {
+        qDebug("[ViGEmClient_GamepadReset_byIndex] Reset VirtualGamepad(%d) -> ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", gamepad_index, ViGEmTarget_Report.sThumbLX, ViGEmTarget_Report.sThumbLY, ViGEmTarget_Report.sThumbRX, ViGEmTarget_Report.sThumbRY);
     }
 #endif
 }

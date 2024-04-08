@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1070</width>
-    <height>590</height>
+    <height>645</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>1070</width>
-    <height>590</height>
+    <height>645</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>1070</width>
-    <height>590</height>
+    <height>645</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -354,7 +354,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>550</y>
+     <y>560</y>
      <width>131</width>
      <height>21</height>
     </rect>
@@ -408,7 +408,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>520</y>
+     <y>530</y>
      <width>131</width>
      <height>21</height>
     </rect>
@@ -475,7 +475,7 @@
    <property name="geometry">
     <rect>
      <x>169</x>
-     <y>550</y>
+     <y>560</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -490,7 +490,7 @@
   <widget class="QCheckBox" name="enableVirtualJoystickCheckBox">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>540</x>
      <y>550</y>
      <width>80</width>
      <height>21</height>
@@ -511,7 +511,7 @@
     <rect>
      <x>970</x>
      <y>550</y>
-     <width>80</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -530,7 +530,7 @@
     <rect>
      <x>970</x>
      <y>520</y>
-     <width>80</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -608,7 +608,7 @@
   <widget class="QCheckBox" name="lockCursorCheckBox">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>540</x>
      <y>520</y>
      <width>80</width>
      <height>21</height>
@@ -673,7 +673,7 @@
    <property name="geometry">
     <rect>
      <x>169</x>
-     <y>520</y>
+     <y>530</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -688,9 +688,9 @@
   <widget class="QGroupBox" name="virtualgamepadGroupBox">
    <property name="geometry">
     <rect>
-     <x>710</x>
+     <x>530</x>
      <y>505</y>
-     <width>351</width>
+     <width>531</width>
      <height>75</height>
     </rect>
    </property>
@@ -705,7 +705,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>490</y>
+     <y>500</y>
      <width>91</width>
      <height>21</height>
     </rect>
@@ -819,7 +819,7 @@
   <widget class="QComboBox" name="virtualGamepadTypeComboBox">
    <property name="geometry">
     <rect>
-     <x>790</x>
+     <x>610</x>
      <y>550</y>
      <width>56</width>
      <height>21</height>
@@ -849,7 +849,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>490</y>
+     <y>500</y>
      <width>50</width>
      <height>21</height>
     </rect>
@@ -862,7 +862,7 @@
    <property name="geometry">
     <rect>
      <x>364</x>
-     <y>550</y>
+     <y>560</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -878,7 +878,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>550</y>
+     <y>560</y>
      <width>60</width>
      <height>21</height>
     </rect>
@@ -891,7 +891,7 @@
    <property name="geometry">
     <rect>
      <x>375</x>
-     <y>490</y>
+     <y>500</y>
      <width>60</width>
      <height>21</height>
     </rect>
@@ -907,7 +907,7 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>520</y>
+     <y>530</y>
      <width>60</width>
      <height>21</height>
     </rect>
@@ -920,7 +920,7 @@
    <property name="geometry">
     <rect>
      <x>364</x>
-     <y>520</y>
+     <y>530</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -946,7 +946,7 @@
    <property name="geometry">
     <rect>
      <x>255</x>
-     <y>520</y>
+     <y>530</y>
      <width>110</width>
      <height>21</height>
     </rect>
@@ -956,7 +956,7 @@
    <property name="geometry">
     <rect>
      <x>255</x>
-     <y>550</y>
+     <y>560</y>
      <width>110</width>
      <height>21</height>
     </rect>
@@ -1010,9 +1010,9 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>505</y>
-     <width>171</width>
-     <height>75</height>
+     <y>590</y>
+     <width>531</width>
+     <height>45</height>
     </rect>
    </property>
    <property name="title">
@@ -1025,8 +1025,8 @@
   <widget class="QLabel" name="multiInputStatusLabel">
    <property name="geometry">
     <rect>
-     <x>610</x>
-     <y>520</y>
+     <x>970</x>
+     <y>605</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -1108,9 +1108,9 @@
   <widget class="QPushButton" name="multiInputDeviceListButton">
    <property name="geometry">
     <rect>
-     <x>540</x>
-     <y>520</y>
-     <width>61</width>
+     <x>620</x>
+     <y>605</y>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -1128,8 +1128,8 @@
    <property name="geometry">
     <rect>
      <x>540</x>
-     <y>550</y>
-     <width>61</width>
+     <y>605</y>
+     <width>71</width>
      <height>21</height>
     </rect>
    </property>
@@ -1143,8 +1143,8 @@
   <widget class="QPushButton" name="installInterceptionButton">
    <property name="geometry">
     <rect>
-     <x>610</x>
-     <y>550</y>
+     <x>880</x>
+     <y>605</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -1157,6 +1157,35 @@
    </property>
    <property name="autoDefault">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="virtualGamepadNumberSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>670</x>
+     <y>550</y>
+     <width>35</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="value">
+    <number>1</number>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="virtualGamepadListComboBox">
+   <property name="geometry">
+    <rect>
+     <x>710</x>
+     <y>550</y>
+     <width>121</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -1225,6 +1254,8 @@
   <zorder>multiInputDeviceListButton</zorder>
   <zorder>multiInputEnableCheckBox</zorder>
   <zorder>installInterceptionButton</zorder>
+  <zorder>virtualGamepadNumberSpinBox</zorder>
+  <zorder>virtualGamepadListComboBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

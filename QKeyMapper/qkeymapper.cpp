@@ -10,6 +10,8 @@ static const uint CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 
 static const uint GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
 
+static const int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
+
 static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
 static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
 
@@ -90,6 +92,9 @@ static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
 static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
+
+static const int VIRTUAL_GAMEPAD_NUMBER_MIN = 1;
+static const int VIRTUAL_GAMEPAD_NUMBER_MAX = 4;
 #endif
 
 static const int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 10;
@@ -549,6 +554,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
     ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->virtualGamepadNumberSpinBox->setRange(VIRTUAL_GAMEPAD_NUMBER_MIN, VIRTUAL_GAMEPAD_NUMBER_MAX);
 
     bool isWin10Above = false;
     QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
@@ -565,6 +571,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensLabel->setEnabled(false);
     ui->lockCursorCheckBox->setEnabled(false);
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    ui->virtualGamepadNumberSpinBox->setEnabled(false);
+    ui->virtualGamepadListComboBox->setEnabled(false);
 
     int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
@@ -4472,6 +4480,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->vJoyXSensSpinBox->setEnabled(status);
         ui->vJoyYSensSpinBox->setEnabled(status);
         ui->lockCursorCheckBox->setEnabled(status);
+        ui->virtualGamepadNumberSpinBox->setEnabled(status);
+        ui->virtualGamepadListComboBox->setEnabled(status);
     }
 #endif
 
@@ -6010,11 +6020,11 @@ void QKeyMapper::reloadUILanguage()
 
     QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        curGeometry.moveLeft(780);
+        curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X - 10);
         ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
     }
     else {
-        curGeometry.moveLeft(790);
+        curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X);
         ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
     }
 
@@ -6224,6 +6234,8 @@ void QKeyMapper::resetFontSize()
 
         ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadNumberSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadListComboBox->setFont(QFont("Microsoft YaHei", 9));
     }
     else {
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -6256,6 +6268,8 @@ void QKeyMapper::resetFontSize()
 
         ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadNumberSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadListComboBox->setFont(QFont("Microsoft YaHei", 9));
     }
 
     if (m_deviceListWindow != Q_NULLPTR) {
@@ -7380,6 +7394,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyXSensLabel->setEnabled(true);
         ui->vJoyYSensLabel->setEnabled(true);
         ui->lockCursorCheckBox->setEnabled(true);
+        ui->virtualGamepadNumberSpinBox->setEnabled(true);
+        ui->virtualGamepadListComboBox->setEnabled(true);
 
         settingFile.setValue(VIRTUALGAMEPAD_ENABLE , true);
     }
@@ -7389,6 +7405,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyXSensLabel->setEnabled(false);
         ui->vJoyYSensLabel->setEnabled(false);
         ui->lockCursorCheckBox->setEnabled(false);
+        ui->virtualGamepadNumberSpinBox->setEnabled(false);
+        ui->virtualGamepadListComboBox->setEnabled(false);
 
         settingFile.setValue(VIRTUALGAMEPAD_ENABLE , false);
     }
@@ -7589,5 +7607,31 @@ void QKeyMapper::on_multiInputEnableCheckBox_stateChanged(int state)
     }
     else {
         settingFile.setValue(MULTI_INPUT_ENABLE , false);
+    }
+}
+
+void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] number changed ->" << number;
+#endif
+    int gamepad_number = QKeyMapper_Worker::s_VirtualGamepadList.size();
+
+    if (number < VIRTUAL_GAMEPAD_NUMBER_MIN || number > VIRTUAL_GAMEPAD_NUMBER_MAX) {
+        ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+    }
+
+    if (number == gamepad_number + 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] Virtual Gamepad number increased," << gamepad_number << "->" << number;
+#endif
+    }
+    else if (number == gamepad_number - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] Virtual Gamepad number decreased," << gamepad_number << "->" << number;
+#endif
+    }
+    else {
+        ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
     }
 }
