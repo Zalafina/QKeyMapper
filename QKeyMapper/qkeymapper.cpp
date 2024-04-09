@@ -633,6 +633,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     updateMultiInputStatus();
 #ifdef VIGEM_CLIENT_SUPPORT
     updateViGEmBusStatus();
+    updateVirtualGamepadListDisplay();
 #endif
 
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
@@ -656,6 +657,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus);
+    QObject::connect(this, &QKeyMapper::updateVirtualGamepadListDisplay_Signal, this, &QKeyMapper::updateVirtualGamepadListDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
@@ -4941,6 +4943,40 @@ void QKeyMapper::updateViGEmBusStatus()
     }
 }
 
+void QKeyMapper::updateVirtualGamepadListDisplay()
+{
+    int gamepad_number = QKeyMapper_Worker::s_VirtualGamepadList.size();
+
+    if (gamepad_number < VIRTUAL_GAMEPAD_NUMBER_MIN || gamepad_number > VIRTUAL_GAMEPAD_NUMBER_MAX) {
+        return;
+    }
+
+    ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+
+    int lastIndex = ui->virtualGamepadListComboBox->currentIndex();
+    ui->virtualGamepadListComboBox->clear();
+
+    QStringList gamepadList;
+    int gamepad_index = 0;
+    for (const QString &gamepad : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList))
+    {
+        QString gamepad_Str;
+        if (gamepad == VIRTUAL_GAMEPAD_DS4) {
+            gamepad_Str = QString("[%1] %2").arg(QString::number(gamepad_index), VIRTUAL_GAMEPAD_DS4);
+        }
+        else {
+            gamepad_Str = QString("[%1] %2").arg(QString::number(gamepad_index), VIRTUAL_GAMEPAD_X360);
+        }
+        gamepadList.append(gamepad_Str);
+        gamepad_index++;
+    }
+    ui->virtualGamepadListComboBox->addItems(gamepadList);
+
+    if (0 <= lastIndex && lastIndex < ui->virtualGamepadListComboBox->count()) {
+        ui->virtualGamepadListComboBox->setCurrentIndex(lastIndex);
+    }
+}
+
 void QKeyMapper::reconnectViGEmClient()
 {
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
@@ -5686,10 +5722,10 @@ void QKeyMapper::initKeyboardSelectComboBox()
     {
         QString deviceStr;
         if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
-            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), QString(NO_INPUTDEVICE));
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), QString(NO_INPUTDEVICE));
         }
         else {
-            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), inputdevice.deviceinfo.devicedesc);
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), inputdevice.deviceinfo.devicedesc);
         }
         keyboardDeviceList.append(deviceStr);
     }
@@ -5717,10 +5753,10 @@ void QKeyMapper::initMouseSelectComboBox()
     {
         QString deviceStr;
         if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
-            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), QString(NO_INPUTDEVICE));
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), QString(NO_INPUTDEVICE));
         }
         else {
-            deviceStr = QString("[%1] : %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), inputdevice.deviceinfo.devicedesc);
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), inputdevice.deviceinfo.devicedesc);
         }
         mouseDeviceList.append(deviceStr);
     }
@@ -7472,6 +7508,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         settingFile.setValue(VIRTUALGAMEPAD_ENABLE , false);
     }
 #endif
+
+    emit updateVirtualGamepadListDisplay_Signal();
 }
 
 
@@ -7680,6 +7718,7 @@ void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
 
     if (number < VIRTUAL_GAMEPAD_NUMBER_MIN || number > VIRTUAL_GAMEPAD_NUMBER_MAX) {
         ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+        return;
     }
 
     if ((number == gamepad_number + 1)
@@ -7699,6 +7738,8 @@ void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
             qDebug().nospace().noquote() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << " Add Virtual Gamepad(" << gamepad_type << ") success -> " << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
         }
+
+        emit updateVirtualGamepadListDisplay_Signal();
     }
     else if ((number == gamepad_number - 1)
          && (number == QKeyMapper_Worker::s_ViGEmTargetList.size() - 1)
@@ -7720,6 +7761,8 @@ void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
             qDebug().nospace().noquote() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << " Remove Virtual Gamepad(" << removed_gamepadtype << ") success -> " << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
         }
+
+        emit updateVirtualGamepadListDisplay_Signal();
     }
     else {
         ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);

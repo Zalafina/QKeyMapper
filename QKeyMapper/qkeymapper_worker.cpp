@@ -1529,7 +1529,8 @@ PVIGEM_TARGET QKeyMapper_Worker::ViGEmClient_AddTarget_byType(const QString &gam
     if (addedTarget != Q_NULLPTR) {
         index = vigem_target_get_index(addedTarget);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[ViGEmClient_AddTarget_byType] ViGEmTarget Add Success, index(%lu) -> [0x%08X]", index, addedTarget);
+        QString target_str = QString("0x%1").arg(QString::number((qulonglong)addedTarget, 16).toUpper(), 8, '0');
+        qDebug().noquote().nospace() << "[ViGEmClient_AddTarget_byType]" << " ViGEmTarget(" << gamepadtype << ") Add Success, index(" << index << ") -> " << target_str;
 #endif
     }
     else {
@@ -1595,11 +1596,21 @@ void QKeyMapper_Worker::ViGEmClient_RemoveTarget(PVIGEM_TARGET target)
     if (s_ViGEmClient != Q_NULLPTR && ViGEmTarget != Q_NULLPTR) {
         QMutexLocker locker(&s_ViGEmClient_Mutex);
         if (s_ViGEmClient_ConnectState == VIGEMCLIENT_CONNECT_SUCCESS && vigem_target_is_attached(ViGEmTarget)) {
+#ifdef DEBUG_LOGOUT_ON
+            QString gamepadtype;
+            if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
+                gamepadtype = VIRTUAL_GAMEPAD_DS4;
+            }
+            else {
+                gamepadtype = VIRTUAL_GAMEPAD_X360;
+            }
+#endif
             VIGEM_ERROR error;
             error = vigem_target_remove(s_ViGEmClient, ViGEmTarget);
             if (error == VIGEM_ERROR_NONE) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[ViGEmClient_RemoveTarget] ViGEmTarget Remove Success. -> [0x%08X]", ViGEmTarget);
+                QString target_str = QString("0x%1").arg(QString::number((qulonglong)ViGEmTarget, 16).toUpper(), 8, '0');
+                qDebug().noquote().nospace() << "[ViGEmClient_RemoveTarget]" << " ViGEmTarget(" << gamepadtype << ") Remove Success. -> " << target_str;
 #endif
                 vigem_target_free(ViGEmTarget);
             }

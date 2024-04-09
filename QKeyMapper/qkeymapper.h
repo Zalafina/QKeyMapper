@@ -284,6 +284,7 @@ signals:
     void showCarOrdinal_Signal(qint32 car_ordinal);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
+    void updateVirtualGamepadListDisplay_Signal(void);
 #endif
     void updateMultiInputStatus_Signal(void);
 
@@ -445,6 +446,7 @@ private:
     int uninstallViGEmBusDriver(void);
 public slots:
     void updateViGEmBusStatus(void);
+    void updateVirtualGamepadListDisplay(void);
     Q_INVOKABLE void reconnectViGEmClient(void);
 #endif
 
