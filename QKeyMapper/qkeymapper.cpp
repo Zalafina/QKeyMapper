@@ -127,6 +127,7 @@ static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 #ifdef VIGEM_CLIENT_SUPPORT
 static const char *VIRTUALGAMEPAD_ENABLE = "VirtualGamepadEnable";
 static const char *VIRTUALGAMEPAD_TYPE = "VirtualGamepadType";
+static const char *VIRTUAL_GAMEPADLIST = "VirtualGamdpadList";
 #endif
 static const char *MULTI_INPUT_ENABLE = "MultiInputEnable";
 static const char *DISABLED_KEYBOARDLIST = "DisabledKeyboardList";
@@ -2909,6 +2910,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
+        settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
 
 //         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
@@ -3237,6 +3239,24 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             ui->virtualGamepadTypeComboBox->setCurrentText(VIRTUAL_GAMEPAD_X360);
         }
+
+        QStringList virtualGamepadList;
+        if (true == settingFile.contains(VIRTUAL_GAMEPADLIST)){
+            virtualGamepadList = settingFile.value(VIRTUAL_GAMEPADLIST).toStringList();
+            if (!virtualGamepadList.isEmpty()) {
+                if (virtualGamepadList.size() == 1
+                    && virtualGamepadList.constFirst() != getVirtualGamepadType()) {
+                    virtualGamepadList[0] = getVirtualGamepadType();
+                }
+            }
+            else {
+                virtualGamepadList = QStringList() << getVirtualGamepadType();
+            }
+        }
+        else {
+            virtualGamepadList = QStringList() << getVirtualGamepadType();
+        }
+        QKeyMapper_Worker::loadVirtualGamepadList(virtualGamepadList);
 
 //         QString loadedwindowswitchKeySeqStr;
 //         if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
@@ -7375,6 +7395,11 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         if (QKeyMapper_Worker::s_VirtualGamepadList.size() <= VIRTUAL_GAMEPAD_NUMBER_MAX
             && QKeyMapper_Worker::s_ViGEmTargetList.isEmpty()
             && QKeyMapper_Worker::s_ViGEmTarget_ReportList.isEmpty()) {
+            if (QKeyMapper_Worker::s_VirtualGamepadList.size() == 1
+                && QKeyMapper_Worker::s_VirtualGamepadList.constFirst() != getVirtualGamepadType()) {
+                QKeyMapper_Worker::s_VirtualGamepadList[0] = getVirtualGamepadType();
+            }
+
             int gamepad_index = 0;
             for (const QString &gamepad_type : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList)){
                 PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
