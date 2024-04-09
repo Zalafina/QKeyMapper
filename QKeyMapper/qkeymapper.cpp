@@ -203,6 +203,9 @@ static const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
 static const char *MOUSE_WHEEL_UP_STR   = "Mouse-WheelUp";
 static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
 
+static const char *JOY_KEY_PREFIX  = "Joy-";
+static const char *VJOY_KEY_PREFIX  = "vJoy-";
+
 static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 static const char *MOUSE2VJOY_PREFIX = "Mouse2vJoy-";
@@ -4114,7 +4117,9 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
             && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
-            && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+            // && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+            && false == mapping_key.startsWith(JOY_KEY_PREFIX)
+            && false == mapping_key.startsWith(VJOY_KEY_PREFIX)
             && false == mapping_key.startsWith("Func-")
             && false == mapping_key.contains(SEPARATOR_WAITTIME)){
             checkResult = false;
@@ -4957,6 +4962,7 @@ void QKeyMapper::updateVirtualGamepadListDisplay()
     ui->virtualGamepadListComboBox->clear();
 
     QStringList gamepadList;
+    gamepadList.append(QString());
     int gamepad_index = 0;
     for (const QString &gamepad : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList))
     {
@@ -6626,6 +6632,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
     QString currentOriKeyText;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
+    QString currentMapKeyComboBoxText = currentMapKeyText;
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
     QString currentOriCombinationKeyText = ui->combinationKeyLineEdit->text();
     // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
@@ -6820,7 +6827,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 QMessageBox::warning(this, PROGRAM_NAME, message);
                 return;
             }
-            if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+
+            int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+            if (virtualgamepad_index > 0
+                && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
+                currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+            }
+            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
                 QString mousepointstr = ui->pointDisplayLabel->text();
                 if (mousepointstr.isEmpty()) {
                     QString message;
@@ -6889,9 +6902,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
                 || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
                 currentMapKeyText = currentOriKeyComboBoxText;
+
+                int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+                if (virtualgamepad_index > 0) {
+                    currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+                }
             }
             else {
-                if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+                int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+                if (virtualgamepad_index > 0
+                    && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
+                    currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+                }
+                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
                     QString mousepointstr = ui->pointDisplayLabel->text();
                     if (mousepointstr.isEmpty()) {
                         QString message;
@@ -6917,15 +6940,15 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
-                    && currentMapKeyText != KEY_BLOCKED_STR
-                    && currentMapKeyText.startsWith(KEY2MOUSE_PREFIX) == false
-                    && currentMapKeyText.startsWith(FUNC_PREFIX) == false
-                    && currentMapKeyText != MOUSE2VJOY_HOLD_KEY_STR
-                    && currentMapKeyText != MOUSE2VJOY_DIRECT_KEY_STR
-                    && currentMapKeyText != VJOY_LT_BRAKE_STR
-                    && currentMapKeyText != VJOY_RT_BRAKE_STR
-                    && currentMapKeyText != VJOY_LT_ACCEL_STR
-                    && currentMapKeyText != VJOY_RT_ACCEL_STR) {
+                    && currentMapKeyComboBoxText != KEY_BLOCKED_STR
+                    && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
+                    && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
+                    && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
+                    && currentMapKeyComboBoxText != MOUSE2VJOY_DIRECT_KEY_STR
+                    && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
+                    && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
+                    && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR
+                    && currentMapKeyComboBoxText != VJOY_RT_ACCEL_STR) {
                     currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
             }

@@ -408,9 +408,9 @@ public:
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
     static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
-    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust);
-    static void ViGEmClient_ReleaseButton(const QString &joystickButton);
-    static void ViGEmClient_CheckJoysticksReportData(void);
+    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index);
+    static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
+    static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
 
     static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
@@ -419,7 +419,7 @@ public:
     void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
     void ViGEmClient_GamepadReset(void);
     static void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
-    void ViGEmClient_JoysticksReset(int mouse_index);
+    void ViGEmClient_JoysticksReset(int mouse_index, int gamepad_index);
 #endif
 
 signals:
@@ -520,6 +520,7 @@ private:
     void initVirtualMouseButtonMap(void);
     void initMultiKeyboardInputList(void);
     void initMultiMouseInputList(void);
+    void initMultiVirtualGamepadInputList(void);
     void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
     // void initSkipReleaseModifiersKeysList(void);
@@ -559,6 +560,7 @@ public:
 #endif
     static QStringList MultiKeyboardInputList;
     static QStringList MultiMouseInputList;
+    static QStringList MultiVirtualGamepadInputList;
     static QStringList CombinationKeysList;
     // static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;
@@ -574,6 +576,9 @@ public:
     static QStringList pressedvJoyLStickKeys;
     static QStringList pressedvJoyRStickKeys;
     static QStringList pressedvJoyButtons;
+    static QList<QStringList> pressedvJoyLStickKeysList;
+    static QList<QStringList> pressedvJoyRStickKeysList;
+    static QList<QStringList> pressedvJoyButtonsList;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QStringList pressedLockKeysList;
