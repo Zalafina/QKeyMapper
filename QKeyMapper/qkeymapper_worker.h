@@ -380,7 +380,7 @@ public slots:
     POINT mousePositionAfterSetMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove(int delta_x, int delta_y, int mouse_index);
-    void onMouse2vJoyResetTimeout(void);
+    // void onMouse2vJoyResetTimeout(void);
     void initMouse2vJoyResetTimerMap(void);
     void stopMouse2vJoyResetTimerMap(void);
     void onMouse2vJoyResetTimeoutForMap(int mouse_index);
@@ -461,8 +461,8 @@ signals:
 #if 0
     void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);
 #endif
-    void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
-    void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
+    void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
+    void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
     void doFunctionMappingProc_Signal(const QString &func_keystring);
 
 protected:
@@ -495,8 +495,8 @@ public slots:
     void checkJoystickPOV(const QJoystickPOVEvent &e);
     void checkJoystickAxis(const QJoystickAxisEvent &e);
 
-    void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
-    void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
+    void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index);
+    void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index);
     Joy2MouseState checkJoystick2MouseEnableState(void);
     bool checkKey2MouseEnableState(void);
     void doFunctionMappingProc(const QString &func_keystring);
@@ -655,7 +655,7 @@ private:
     IDirectInput8* m_DirectInput;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
-    QTimer m_Mouse2vJoyResetTimer;
+    // QTimer m_Mouse2vJoyResetTimer;
     QHash<int, QTimer*> m_Mouse2vJoyResetTimerMap;
 #endif
     QTimer m_Key2MouseCycleTimer;
