@@ -664,6 +664,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
+    QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
@@ -5096,9 +5097,9 @@ void QKeyMapper::updateMultiInputStatus()
     }
 }
 
-void QKeyMapper::reloadInterception()
+void QKeyMapper::updateInputDeviceSelectComboBoxes()
 {
-
+    initInputDeviceSelectComboBoxes();
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()
@@ -5740,6 +5741,10 @@ void QKeyMapper::initKeyboardSelectComboBox()
     if (lastIndex != 0) {
         ui->keyboardSelectComboBox->setCurrentIndex(lastIndex);
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[initKeyboardSelectComboBox]" << "keyboardDeviceList ->" << keyboardDeviceList;
+#endif
 }
 
 void QKeyMapper::initMouseSelectComboBox()
@@ -5771,6 +5776,10 @@ void QKeyMapper::initMouseSelectComboBox()
     if (lastIndex != 0) {
         ui->mouseSelectComboBox->setCurrentIndex(lastIndex);
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[initMouseSelectComboBox]" << "mouseDeviceList ->" << mouseDeviceList;
+#endif
 }
 
 void QKeyMapper::initWindowSwitchKeyLineEdit()

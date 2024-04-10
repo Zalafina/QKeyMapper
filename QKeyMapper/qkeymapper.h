@@ -287,6 +287,7 @@ signals:
     void updateVirtualGamepadListDisplay_Signal(void);
 #endif
     void updateMultiInputStatus_Signal(void);
+    void updateInputDeviceSelectComboBoxes_Signal(void);
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -452,7 +453,7 @@ public slots:
 
 public slots:
     void updateMultiInputStatus(void);
-    Q_INVOKABLE void reloadInterception(void);
+    void updateInputDeviceSelectComboBoxes(void);
 
 public:
     static bool s_isDestructing;

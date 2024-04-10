@@ -441,6 +441,7 @@ void QInputDeviceListWindow::showEvent(QShowEvent *event)
     Interception_Worker::syncDisabledKeyboardList();
     Interception_Worker::syncDisabledMouseList();
     updateDeviceListInfo();
+    emit QKeyMapper::getInstance()->updateInputDeviceSelectComboBoxes_Signal();
 
     QDialog::showEvent(event);
 }
