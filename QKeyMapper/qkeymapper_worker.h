@@ -321,13 +321,29 @@ public:
 
     enum Mouse2vJoyState
     {
-        MOUSE2VJOY_NONE     = 0,
-        MOUSE2VJOY_LEFT     = 1,
-        MOUSE2VJOY_RIGHT    = 2,
-        MOUSE2VJOY_BOTH     = MOUSE2VJOY_LEFT | MOUSE2VJOY_RIGHT
+        MOUSE2VJOY_NONE     = 0x00,
+        MOUSE2VJOY_LEFT     = 0x01,
+        MOUSE2VJOY_RIGHT    = 0x02,
+        MOUSE2VJOY_BOTH     = MOUSE2VJOY_LEFT | MOUSE2VJOY_RIGHT,
     };
     Q_ENUM(Mouse2vJoyState)
     Q_DECLARE_FLAGS(Mouse2vJoyStates, Mouse2vJoyState)
+
+    struct Mouse2vJoyData {
+        Mouse2vJoyStates states;
+        int gamepad_index;
+
+#ifdef DEBUG_LOGOUT_ON
+        friend QDebug operator<<(QDebug debug, const Mouse2vJoyData& data) {
+            QDebugStateSaver saver(debug);
+            debug.nospace() << "Mouse2vJoyData("
+                            << "gamepad_index:" << data.gamepad_index
+                            << ", states:" << data.states
+                            << ")";
+            return debug;
+        }
+#endif
+    };
 
     enum GripDetectState
     {
@@ -392,10 +408,11 @@ public:
 public:
     static int ViGEmClient_Alloc(void);
     static int ViGEmClient_Connect(void);
-    static int ViGEmClient_Add(void);
+    // static int ViGEmClient_Add(void);
     static PVIGEM_TARGET ViGEmClient_AddTarget_byType(const QString &gamepadtype);
-    static void ViGEmClient_Remove(void);
+    // static void ViGEmClient_Remove(void);
     static void ViGEmClient_RemoveTarget(PVIGEM_TARGET target);
+    static void ViGEmClient_RemoveAllTargets(void);
     static void ViGEmClient_Disconnect(void);
     static void ViGEmClient_Free(void);
 
@@ -413,11 +430,12 @@ public:
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
 
-    static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
-    static QHash<int, Mouse2vJoyStates> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
-    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index);
-    void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
-    void ViGEmClient_GamepadReset(void);
+    // static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
+    static QHash<int, Mouse2vJoyData> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
+    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index, int gamepad_index);
+    void ViGEmClient_Joy2vJoystickUpdate(int sticktype, int gamepad_index);
+    // void ViGEmClient_GamepadReset(void);
+    void ViGEmClient_AllGamepadReset(void);
     static void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
     void ViGEmClient_JoysticksReset(int mouse_index, int gamepad_index);
 #endif
@@ -573,7 +591,6 @@ public:
     static QStringList pressedVirtualKeysList;
     // static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT
-    static QStringList pressedvJoyButtons;
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;
     static QList<QStringList> pressedvJoyButtonsList;
@@ -593,10 +610,10 @@ public:
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;
-    static PVIGEM_TARGET s_ViGEmTarget;
+    // static PVIGEM_TARGET s_ViGEmTarget;
     static QList<PVIGEM_TARGET> s_ViGEmTargetList;
     static ViGEmClient_ConnectState s_ViGEmClient_ConnectState;
-    static XUSB_REPORT s_ViGEmTarget_Report;
+    // static XUSB_REPORT s_ViGEmTarget_Report;
     static QList<XUSB_REPORT> s_ViGEmTarget_ReportList;
     static QStringList s_VirtualGamepadList;
     static BYTE s_Auto_Brake;
@@ -615,7 +632,7 @@ public:
     static QList<QPoint> s_Mouse2vJoy_delta_List;
     static QPoint s_Mouse2vJoy_delta_interception;
     // static Mouse2vJoyStates s_Mouse2vJoy_EnableState;
-    static QHash<int, Mouse2vJoyStates> s_Mouse2vJoy_EnableStateMap;
+    static QHash<int, Mouse2vJoyData> s_Mouse2vJoy_EnableStateMap;
     static QMutex s_MouseMove_delta_List_Mutex;
 #endif
 

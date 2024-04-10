@@ -7489,19 +7489,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         }
     }
     else {
-        if (QKeyMapper_Worker::s_ViGEmTargetList.size() > 0 ) {
-            int gamepad_index = QKeyMapper_Worker::s_ViGEmTargetList.size() - 1;
-            for (auto it = QKeyMapper_Worker::s_ViGEmTargetList.rbegin(); it != QKeyMapper_Worker::s_ViGEmTargetList.rend(); ++it) {
-                const PVIGEM_TARGET &target_toremove = *it;
-                if (target_toremove != Q_NULLPTR) {
-                    QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_index);
-                    QKeyMapper_Worker::ViGEmClient_RemoveTarget(target_toremove);
-                }
-                gamepad_index--;
-            }
-        }
-        QKeyMapper_Worker::s_ViGEmTargetList.clear();
-        QKeyMapper_Worker::s_ViGEmTarget_ReportList.clear();
+        QKeyMapper_Worker::ViGEmClient_RemoveAllTargets();
         checked = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Disable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
@@ -7544,7 +7532,8 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         qDebug() << "Uninstall ViGEm Bus.";
 #endif
 
-        QKeyMapper_Worker::ViGEmClient_Remove();
+        // QKeyMapper_Worker::ViGEmClient_Remove();
+        QKeyMapper_Worker::ViGEmClient_RemoveAllTargets();
         QKeyMapper_Worker::ViGEmClient_Disconnect();
         QKeyMapper_Worker::ViGEmClient_Free();
 
