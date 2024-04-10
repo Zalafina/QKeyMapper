@@ -573,8 +573,6 @@ public:
     static QStringList pressedVirtualKeysList;
     // static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT
-    static QStringList pressedvJoyLStickKeys;
-    static QStringList pressedvJoyRStickKeys;
     static QStringList pressedvJoyButtons;
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;

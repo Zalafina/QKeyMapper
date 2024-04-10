@@ -246,8 +246,6 @@ QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 // QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
 #ifdef VIGEM_CLIENT_SUPPORT
-QStringList QKeyMapper_Worker::pressedvJoyLStickKeys;
-QStringList QKeyMapper_Worker::pressedvJoyRStickKeys;
 QStringList QKeyMapper_Worker::pressedvJoyButtons;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
@@ -2119,7 +2117,7 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
 
     // Update thumb values based on pressed keys
-    for (const QString &key : pressedvJoyLStickKeys) {
+    for (const QString &key : pressedvJoyLStickKeys_ref) {
         if (key == "vJoy-LS-Up") {
             ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MAX;
         } else if (key == "vJoy-LS-Down") {
@@ -2131,7 +2129,7 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
         }
     }
 
-    for (const QString &key : pressedvJoyRStickKeys) {
+    for (const QString &key : pressedvJoyRStickKeys_ref) {
         if (key == "vJoy-RS-Up") {
             ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MAX;
         } else if (key == "vJoy-RS-Down") {
@@ -2814,8 +2812,6 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
         s_Mouse2vJoy_delta_List.clear();
         s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
     }
-    pressedvJoyLStickKeys.clear();
-    pressedvJoyRStickKeys.clear();
     pressedvJoyButtons.clear();
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
@@ -2969,8 +2965,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
         s_Mouse2vJoy_delta_List.clear();
         s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
     }
-    pressedvJoyLStickKeys.clear();
-    pressedvJoyRStickKeys.clear();
     pressedvJoyButtons.clear();
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
