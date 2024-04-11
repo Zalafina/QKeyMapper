@@ -1,4 +1,5 @@
 #include "interception_worker.h"
+#include "qkeymapper_constants.h"
 
 InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
 QAtomicBool Interception_Worker::s_RebootRequired = QAtomicBool();
@@ -11,11 +12,6 @@ InterceptionDevice Interception_Worker::lastOperateMouseDevice = 0;
 QHash<QString, USBDeviceInfo> Interception_Worker::s_USBIDsMap;
 QStringList Interception_Worker::disabledKeyboardList;
 QStringList Interception_Worker::disabledMouseList;
-
-static const char *USBIDS_QRC = ":/usb.ids";
-static const char *CONFIG_FILENAME = "keymapdata.ini";
-static const char *DISABLED_KEYBOARDLIST = "DisabledKeyboardList";
-static const char *DISABLED_MOUSELIST = "DisabledMouseList";
 
 Interception_Worker::Interception_Worker(QObject *parent) :
     QObject{parent}

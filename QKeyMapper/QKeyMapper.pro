@@ -152,12 +152,14 @@ SOURCES     += \
     main.cpp \
     qinputdevicelistwindow.cpp \
     qkeymapper.cpp \
+    qkeymapper_constants.cpp \
     qkeymapper_worker.cpp
 
 HEADERS     += \
     interception_worker.h \
     qinputdevicelistwindow.h \
     qkeymapper.h \
+    qkeymapper_constants.h \
     qkeymapper_worker.h
 
 contains( DEFINES, SINGLE_APPLICATION ) {

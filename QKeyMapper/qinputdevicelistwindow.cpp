@@ -1,72 +1,7 @@
 #include "interception_worker.h"
 #include "qinputdevicelistwindow.h"
 #include "ui_qinputdevicelistwindow.h"
-
-static const char *PROGRAM_NAME = "QKeyMapper";
-
-static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
-static const char *FONTNAME_CHINESE = "NSimSun";
-
-static const int UI_SCALE_NORMAL = 0;
-static const int UI_SCALE_1K_PERCENT_100 = 1;
-static const int UI_SCALE_1K_PERCENT_125 = 2;
-static const int UI_SCALE_1K_PERCENT_150 = 3;
-static const int UI_SCALE_2K_PERCENT_100 = 4;
-static const int UI_SCALE_2K_PERCENT_125 = 5;
-static const int UI_SCALE_2K_PERCENT_150 = 6;
-static const int UI_SCALE_4K_PERCENT_100 = 7;
-static const int UI_SCALE_4K_PERCENT_125 = 8;
-static const int UI_SCALE_4K_PERCENT_150 = 9;
-
-static const int DEVICE_TABLE_NUMBER_COLUMN         = 0;
-static const int DEVICE_TABLE_DEVICEDESC_COLUMN     = 1;
-static const int DEVICE_TABLE_HARDWAREID_COLUMN     = 2;
-static const int DEVICE_TABLE_VENDORID_COLUMN       = 3;
-static const int DEVICE_TABLE_PRODUCTID_COLUMN      = 4;
-static const int DEVICE_TABLE_VENDORSTR_COLUMN      = 5;
-static const int DEVICE_TABLE_PRODUCTSTR_COLUMN     = 6;
-static const int DEVICE_TABLE_MANUFACTURER_COLUMN   = 7;
-static const int DEVICE_TABLE_DISABLE_COLUMN        = 8;
-
-static const int KEYBOARD_TABLE_COLUMN_COUNT    = 9;
-static const int MOUSE_TABLE_COLUMN_COUNT       = 9;
-
-static const char *DEVICELIST_WINDOWTITLE_ENGLISH = "Input Device List";
-
-static const char *DEVICELIST_WINDOWTITLE_CHINESE = "输入设备列表";
-
-static const char *KEYBOARDLABEL_ENGLISH    = "Keyboard";
-static const char *MOUSELABEL_ENGLISH       = "Mouse";
-
-static const char *KEYBOARDLABEL_CHINESE    = "键盘";
-static const char *MOUSELABEL_CHINESE       = "鼠标";
-
-static const char *CONFIRMBUTTON_ENGLISH    = "OK";
-static const char *CANCELBUTTON_ENGLISH     = "Cancel";
-
-static const char *CONFIRMBUTTON_CHINESE    = "确认";
-static const char *CANCELBUTTON_CHINESE     = "取消";
-
-static const char *DEVICE_TABLE_COL0_ENGLISH = "No.";
-static const char *DEVICE_TABLE_COL1_ENGLISH = "Device Description";
-static const char *DEVICE_TABLE_COL2_ENGLISH = "HardwareID";
-static const char *DEVICE_TABLE_COL3_ENGLISH = "VendorID";
-static const char *DEVICE_TABLE_COL4_ENGLISH = "ProductID";
-static const char *DEVICE_TABLE_COL5_ENGLISH = "Vendor";
-static const char *DEVICE_TABLE_COL6_ENGLISH = "Product";
-static const char *DEVICE_TABLE_COL7_ENGLISH = "Manufacturer";
-static const char *DEVICE_TABLE_COL8_ENGLISH = "Disable";
-
-static const char *DEVICE_TABLE_COL0_CHINESE = "No.";
-static const char *DEVICE_TABLE_COL1_CHINESE = "设备描述";
-static const char *DEVICE_TABLE_COL2_CHINESE = "硬件ID";
-static const char *DEVICE_TABLE_COL3_CHINESE = "VendorID";
-static const char *DEVICE_TABLE_COL4_CHINESE = "ProductID";
-static const char *DEVICE_TABLE_COL5_CHINESE = "厂商";
-static const char *DEVICE_TABLE_COL6_CHINESE = "产品名";
-static const char *DEVICE_TABLE_COL7_CHINESE = "制造商";
-static const char *DEVICE_TABLE_COL8_CHINESE = "禁用";
-
+#include "qkeymapper_constants.h"
 
 QInputDeviceListWindow::QInputDeviceListWindow(QWidget *parent)
     : QDialog(parent)
