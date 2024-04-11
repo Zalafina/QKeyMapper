@@ -27,7 +27,7 @@ DEFINES += SINGLE_APPLICATION
 DEFINES += VIGEM_CLIENT_SUPPORT
 DEFINES += HOOKSTART_ONSTARTUP
 DEFINES += SDL_JOYSTICK_BLACKLIST
-DEFINES += MULTI_INPUTDEVICE_SUPPORT
+# DEFINES += INTERCEPTION_VERBOSE_LOG
 
 lessThan(QT_MAJOR_VERSION, 6) {
     message("Qt5 Version")
@@ -123,26 +123,28 @@ contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
         ViGEm\include\ViGEm\Util.h
 }
 
-contains( DEFINES, MULTI_INPUTDEVICE_SUPPORT ) {
-    contains(DEFINES, WIN64) {
-    # Interception x64 dll library
-    LIBS        += -L$$PWD/Interception/lib/x64
-    LIBS        += -L$$PWD/libusb/lib/x64
-    } else {
-    # Interception x86 dll library
-    LIBS        += -L$$PWD/Interception/lib/x86
-    LIBS        += -L$$PWD/libusb/lib/x86
-    }
-    LIBS        += interception.lib
-    LIBS        += libusb-1.0.lib
 
-    INCLUDEPATH += $$PWD/Interception/include
-    INCLUDEPATH += $$PWD/libusb/include
-
-    HEADERS     += \
-        Interception/include/interception.h \
-        libusb/include/libusb.h
+# Interception Driver Support >>>
+contains(DEFINES, WIN64) {
+# Interception x64 dll library
+LIBS        += -L$$PWD/Interception/lib/x64
+LIBS        += -L$$PWD/libusb/lib/x64
+} else {
+# Interception x86 dll library
+LIBS        += -L$$PWD/Interception/lib/x86
+LIBS        += -L$$PWD/libusb/lib/x86
 }
+LIBS        += interception.lib
+LIBS        += libusb-1.0.lib
+
+INCLUDEPATH += $$PWD/Interception/include
+INCLUDEPATH += $$PWD/libusb/include
+
+HEADERS     += \
+    Interception/include/interception.h \
+    libusb/include/libusb.h
+# Interception Driver Support <<<
+
 
 # UAC for Administrator
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
