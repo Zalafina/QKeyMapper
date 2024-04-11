@@ -2876,7 +2876,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // m_Mouse2vJoyResetTimer.stop();
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();
-    ViGEmClient_AllGamepadReset();
+    if (!s_isWorkerDestructing) {
+        ViGEmClient_AllGamepadReset();
+    }
     // s_Mouse2vJoy_EnableState = MOUSE2VJOY_NONE;
     s_Mouse2vJoy_EnableStateMap.clear();
     m_LastMouseCursorPoint.x = -1;
