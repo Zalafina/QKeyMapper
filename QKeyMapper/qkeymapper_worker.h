@@ -512,7 +512,7 @@ private:
     void key2MouseMoveProc(void);
 
 public:
-    static bool InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag);
+    static bool InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag, int keyboard_index);
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -590,6 +590,7 @@ public:
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
+    static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;

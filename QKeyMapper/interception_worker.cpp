@@ -125,7 +125,7 @@ void Interception_Worker::InterceptionThreadStarted()
                     ExtenedFlag = true;
                 }
 
-                bool intercept = QKeyMapper_Worker::InterceptionKeyboardHookProc(vkcode, scancode, keyupdown, extraInfo, ExtenedFlag);
+                bool intercept = QKeyMapper_Worker::InterceptionKeyboardHookProc(vkcode, scancode, keyupdown, extraInfo, ExtenedFlag, index);
                 if (intercept) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace() << "[KeyInterceptionWorker] Keyboard input blocked.";
@@ -281,6 +281,8 @@ void Interception_Worker::startInterception()
         return;
     }
 
+    QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.clear();
+    QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.resize(INTERCEPTION_MAX_KEYBOARD);
     s_InterceptStart = true;
 
 #ifdef QT_DEBUG
@@ -300,6 +302,8 @@ void Interception_Worker::startInterception()
 void Interception_Worker::stopInterception()
 {
     s_InterceptStart = false;
+    QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.clear();
+    QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.resize(INTERCEPTION_MAX_KEYBOARD);
 
     if (s_InterceptionContext == Q_NULLPTR) {
         return;

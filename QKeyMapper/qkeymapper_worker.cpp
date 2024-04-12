@@ -33,11 +33,12 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
+QList<QList<quint8>> QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList(INTERCEPTION_MAX_KEYBOARD);
 // QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
 #ifdef VIGEM_CLIENT_SUPPORT
-QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
-QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
-QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
+QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList(VIRTUAL_GAMEPAD_NUMBER_MAX);
+QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList(VIRTUAL_GAMEPAD_NUMBER_MAX);
+QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList(VIRTUAL_GAMEPAD_NUMBER_MAX);
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
@@ -4489,7 +4490,7 @@ void QKeyMapper_Worker::key2MouseMoveProc()
     }
 }
 
-bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag)
+bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag, int keyboard_index)
 {
     Q_UNUSED(scan_code);
 #ifdef HOOKSTART_ONSTARTUP
@@ -4499,10 +4500,26 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code
     bool returnFlag = false;
     ULONG_PTR extraInfo = extra_info;
     V_KEYCODE vkeycode;
-    vkeycode.KeyCode = vkcode;
+    vkeycode.KeyCode = (quint8)vkcode;
     vkeycode.ExtenedFlag = Extened_Flag;
     if (VK_NUMLOCK == vkeycode.KeyCode) {
         vkeycode.ExtenedFlag = true;
+    }
+    Q_UNUSED(extraInfo);
+
+    QList<quint8>& pressedVKeyCodeList = pressedMultiKeyboardVKeyCodeList[keyboard_index];
+    if (KEY_DOWN == keyupdown){
+        if (pressedVKeyCodeList.contains(vkeycode.KeyCode)) {
+            return true;
+        }
+        else {
+            pressedVKeyCodeList.append(vkeycode.KeyCode);
+        }
+    }
+    else {  /* KEY_UP == keyupdown */
+        if (pressedVKeyCodeList.contains(vkeycode.KeyCode)){
+            pressedVKeyCodeList.removeAll(vkeycode.KeyCode);
+        }
     }
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
@@ -4677,114 +4694,6 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code
                 }
             }
         }
-#if 0
-        else {
-            if (!hookprocstart) {
-                return false;
-            }
-
-#ifdef DEBUG_LOGOUT_ON
-            if (KEY_DOWN == keyupdown){
-                qDebug("[InterceptionKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), vkcode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
-            }
-            else {
-                qDebug("[InterceptionKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), vkcode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
-            }
-#endif
-
-            if (KEY_DOWN == keyupdown){
-                if (false == pressedVirtualKeysList.contains(keycodeString)){
-                    pressedVirtualKeysList.append(keycodeString);
-
-                    if (keycodeString == KEY2MOUSE_UP_STR) {
-                        s_Key2Mouse_Up = true;
-                    }
-                    else if (keycodeString == KEY2MOUSE_DOWN_STR) {
-                        s_Key2Mouse_Down = true;
-                    }
-                    else if (keycodeString == KEY2MOUSE_LEFT_STR) {
-                        s_Key2Mouse_Left = true;
-                    }
-                    else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
-                        s_Key2Mouse_Right = true;
-                    }
-                    else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
-                        s_Mouse2vJoy_Hold = true;
-                    }
-                    else if (keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
-                        s_Mouse2vJoy_Direct = true;
-                    }
-                }
-            }
-            /* KEY_UP == keyupdown */
-            else {
-                if (s_forceSendVirtualKey != true) {
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
-                    if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("[InterceptionKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
-#endif
-                        returnFlag = true;
-                    }
-                }
-
-                pressedVirtualKeysList.removeAll(keycodeString);
-
-                if (keycodeString == KEY2MOUSE_UP_STR) {
-                    s_Key2Mouse_Up = false;
-                }
-                else if (keycodeString == KEY2MOUSE_DOWN_STR) {
-                    s_Key2Mouse_Down = false;
-                }
-                else if (keycodeString == KEY2MOUSE_LEFT_STR) {
-                    s_Key2Mouse_Left = false;
-                }
-                else if (keycodeString == KEY2MOUSE_RIGHT_STR) {
-                    s_Key2Mouse_Right = false;
-                }
-                else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
-                    s_Mouse2vJoy_Hold = false;
-                }
-                else if (keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
-                    s_Mouse2vJoy_Direct = false;
-                }
-            }
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[InterceptionKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
-#endif
-            if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
-                /* To be modified for MultiInput Device */
-                // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                if (s_Mouse2vJoy_EnableStateMap.contains(INITIAL_MOUSE_INDEX)) {
-                    if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR
-                        || keycodeString == MOUSE2VJOY_DIRECT_KEY_STR) {
-                        if (keyupdown == KEY_UP) {
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionKeyboardHookProc]" << keycodeString << "KEY_UP Start Mouse2vJoyResetTimer.";
-#endif
-                            emit QKeyMapper_Worker::getInstance()->startMouse2vJoyResetTimer_Signal(keycodeString, INITIAL_MOUSE_INDEX);
-                        }
-                        else {
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionKeyboardHookProc]" << keycodeString << "KEY_DOWN Stop Mouse2vJoyResetTimer.";
-#endif
-                            emit QKeyMapper_Worker::getInstance()->stopMouse2vJoyResetTimer_Signal(keycodeString, INITIAL_MOUSE_INDEX);
-                        }
-                    }
-                }
-            }
-
-            if (s_Key2Mouse_EnableState && keycodeString.startsWith(KEY2MOUSE_PREFIX)) {
-                returnFlag = true;
-            }
-            else if (keycodeString.startsWith(MOUSE2VJOY_PREFIX)) {
-                returnFlag = true;
-            }
-            else if (keycodeString.startsWith(FUNC_PREFIX)) {
-                returnFlag = true;
-            }
-        }
-#endif
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
