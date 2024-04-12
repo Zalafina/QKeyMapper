@@ -4703,7 +4703,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
 #endif
 
-    if (nCode != HC_ACTION) {
+    if (Interception_Worker::s_InterceptStart || nCode != HC_ACTION) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 

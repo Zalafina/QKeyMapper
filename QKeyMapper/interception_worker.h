@@ -33,10 +33,10 @@ signals:
 
 public slots:
     void InterceptionThreadStarted(void);
-    bool doLoadInterception(void);
-    void doUnloadInterception(void);
 
 public:
+    static bool doLoadInterception(void);
+    static void doUnloadInterception(void);
     static bool isInterceptionDriverFileExist(void);
     static Interception_State getInterceptionState(void);
     static void setRebootRequiredFlag(void);

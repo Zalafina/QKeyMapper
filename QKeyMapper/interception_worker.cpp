@@ -125,12 +125,7 @@ void Interception_Worker::InterceptionThreadStarted()
                 }
 
                 bool intercept = QKeyMapper_Worker::InterceptionKeyboardHookProc(scancode, keyupdown, extraInfo, ExtenedFlag, index);
-                if (intercept) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[KeyInterceptionWorker] Keyboard input blocked.";
-#endif
-                }
-                else {
+                if (intercept == false) {
                     interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
                 }
 
@@ -150,8 +145,6 @@ void Interception_Worker::InterceptionThreadStarted()
                 QString codeStr = QString("0x%1").arg(QString::number(vkcode, 16).toUpper(), 4, '0');
                 QString keystateStr = QString("0x%1").arg(QString::number(kstroke.state, 16).toUpper(), 4, '0');
                 qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << index << "] " << codeStr << " " << keyupdownStr << ", Intercept = " << intercept << ", E0 = " << ExtenedFlag << ", E1 = " << extend_e1 << ", State =" << keystateStr;
-#elif DEBUG_LOGOUT_ON
-                qDebug() << "";
 #endif
             }
         }
