@@ -37,6 +37,7 @@ public slots:
 public:
     static bool doLoadInterception(void);
     static void doUnloadInterception(void);
+    static void sendMousemoveToBreakLoop(void);
     static bool isInterceptionDriverFileExist(void);
     static Interception_State getInterceptionState(void);
     static void setRebootRequiredFlag(void);
@@ -66,6 +67,7 @@ public:
     static QAtomicBool s_RebootRequired;
     static bool s_libusb_available;
     static QAtomicBool s_InterceptStart;
+    static QAtomicBool s_InterceptBreakFlag;
     static QList<InputDevice> KeyboardDeviceList;
     static QList<InputDevice> MouseDeviceList;
     static InterceptionDevice lastOperateKeyboardDevice;

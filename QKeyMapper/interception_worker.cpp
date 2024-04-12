@@ -5,10 +5,11 @@ InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
 QAtomicBool Interception_Worker::s_RebootRequired = QAtomicBool();
 bool Interception_Worker::s_libusb_available = false;
 QAtomicBool Interception_Worker::s_InterceptStart = QAtomicBool();
+QAtomicBool Interception_Worker::s_InterceptBreakFlag = QAtomicBool();
 QList<InputDevice> Interception_Worker::KeyboardDeviceList = QList<InputDevice>();
 QList<InputDevice> Interception_Worker::MouseDeviceList = QList<InputDevice>();
-InterceptionDevice Interception_Worker::lastOperateKeyboardDevice = 0;
-InterceptionDevice Interception_Worker::lastOperateMouseDevice = 0;
+InterceptionDevice Interception_Worker::lastOperateKeyboardDevice = INTERCEPTION_KEYBOARD(0);
+InterceptionDevice Interception_Worker::lastOperateMouseDevice = INTERCEPTION_MOUSE(0);
 QHash<QString, USBDeviceInfo> Interception_Worker::s_USBIDsMap;
 QStringList Interception_Worker::disabledKeyboardList;
 QStringList Interception_Worker::disabledMouseList;
@@ -60,6 +61,12 @@ void Interception_Worker::InterceptionThreadStarted()
 
     while(interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), &stroke, 1) > 0)
     {
+        if (s_InterceptBreakFlag) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[KeyInterceptionWorker] Keyboard & Mouse Interception interception_receive while loop breaked.";
+#endif
+            break;
+        }
         if (!s_InterceptStart) {
             if(interception_is_mouse(device))
             {
@@ -150,9 +157,6 @@ void Interception_Worker::InterceptionThreadStarted()
         }
     }
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[KeyInterceptionWorker] Stop Keyboard & Mouse Interception after interception_receive while loop breaked.";
-#endif
     stopInterception();
 }
 
@@ -186,6 +190,21 @@ void Interception_Worker::doUnloadInterception()
         qDebug().nospace() << "[doUnloadInterception] interception_destroy_context()";
 #endif
     }
+}
+
+void Interception_Worker::sendMousemoveToBreakLoop()
+{
+    if (s_InterceptionContext == Q_NULLPTR) {
+        return;
+    }
+
+    InterceptionStroke stroke;
+    InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *)&stroke;
+    mstroke.flags = INTERCEPTION_MOUSE_MOVE_RELATIVE;
+    mstroke.x = 1;
+    mstroke.y = 0;
+
+    interception_send(s_InterceptionContext, lastOperateMouseDevice, &stroke, 1);
 }
 
 bool Interception_Worker::isInterceptionDriverFileExist()
