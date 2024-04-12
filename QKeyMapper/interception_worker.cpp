@@ -56,9 +56,9 @@ void Interception_Worker::InterceptionThreadStarted()
     }
 
     InterceptionDevice device;
-    InterceptionKeyStroke stroke;
+    InterceptionStroke stroke;
 
-    while(interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), (InterceptionStroke *)&stroke, 1) > 0)
+    while(interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), &stroke, 1) > 0)
     {
         if (!s_InterceptStart) {
             if(interception_is_mouse(device))
@@ -109,7 +109,6 @@ void Interception_Worker::InterceptionThreadStarted()
             else {
                 InterceptionKeyStroke &kstroke = *(InterceptionKeyStroke *) &stroke;
                 kstroke.information = INTERCEPTION_EXTRA_INFO + device;
-                UINT vkcode = MapVirtualKey(kstroke.code, MAPVK_VSC_TO_VK);
                 UINT scancode = kstroke.code;
                 int keyupdown;
                 ULONG_PTR extraInfo = kstroke.information;
@@ -125,7 +124,7 @@ void Interception_Worker::InterceptionThreadStarted()
                     ExtenedFlag = true;
                 }
 
-                bool intercept = QKeyMapper_Worker::InterceptionKeyboardHookProc(vkcode, scancode, keyupdown, extraInfo, ExtenedFlag, index);
+                bool intercept = QKeyMapper_Worker::InterceptionKeyboardHookProc(scancode, keyupdown, extraInfo, ExtenedFlag, index);
                 if (intercept) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace() << "[KeyInterceptionWorker] Keyboard input blocked.";
@@ -143,9 +142,14 @@ void Interception_Worker::InterceptionThreadStarted()
                 else {
                     keyupdownStr = "KEY_DOWN";
                 }
+                bool extend_e1 = false;
+                if ((kstroke.state & INTERCEPTION_KEY_E1) == INTERCEPTION_KEY_E1) {
+                    extend_e1 = true;
+                }
+                UINT vkcode = MapVirtualKey(scancode, MAPVK_VSC_TO_VK);
                 QString codeStr = QString("0x%1").arg(QString::number(vkcode, 16).toUpper(), 4, '0');
                 QString keystateStr = QString("0x%1").arg(QString::number(kstroke.state, 16).toUpper(), 4, '0');
-                qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << index << "] " << codeStr << " " << keyupdownStr << " -> " << keystateStr;
+                qDebug().nospace() << "[KeyInterceptionWorker] Keyboard[" << index << "] " << codeStr << " " << keyupdownStr << ", Intercept = " << intercept << ", E0 = " << ExtenedFlag << ", E1 = " << extend_e1 << ", State =" << keystateStr;
 #elif DEBUG_LOGOUT_ON
                 qDebug() << "";
 #endif

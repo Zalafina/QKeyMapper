@@ -233,6 +233,10 @@ int main(int argc, char *argv[])
     delete logfile_mutex;
 #endif
 
+    interceptionThread->quit();
+    interceptionThread->wait();
+    delete interceptionThread;
+
     hookprocThread->quit();
     hookprocThread->wait();
     delete hookprocThread;

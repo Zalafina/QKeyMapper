@@ -4490,7 +4490,7 @@ void QKeyMapper_Worker::key2MouseMoveProc()
     }
 }
 
-bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag, int keyboard_index)
+bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag, int keyboard_index)
 {
     Q_UNUSED(scan_code);
 #ifdef HOOKSTART_ONSTARTUP
@@ -4500,7 +4500,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code
     bool returnFlag = false;
     ULONG_PTR extraInfo = extra_info;
     V_KEYCODE vkeycode;
-    vkeycode.KeyCode = (quint8)vkcode;
+    vkeycode.KeyCode = (quint8)MapVirtualKey(scan_code, MAPVK_VSC_TO_VK);
     vkeycode.ExtenedFlag = Extened_Flag;
     if (VK_NUMLOCK == vkeycode.KeyCode) {
         vkeycode.ExtenedFlag = true;
@@ -4536,10 +4536,10 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code
 
 #ifdef DEBUG_LOGOUT_ON
         if (KEY_DOWN == keyupdown){
-            qDebug("[InterceptionKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), vkcode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
+            qDebug("[InterceptionKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), vkeycode.KeyCode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
         }
         else {
-            qDebug("[InterceptionKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), vkcode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
+            qDebug("[InterceptionKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyUp, scanCode(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), vkeycode.KeyCode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
         }
 #endif
 
@@ -4575,16 +4575,9 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code
             }
         }
 
-        /* Add extraInfo check for Multi InputDevice */
-        bool multi_input = false;
-        if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
-            InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
-            if (interception_is_keyboard(device)) {
-                keycodeString = QString("%1@%2").arg(keycodeString, QString::number(device - INTERCEPTION_KEYBOARD(0)));
-                multi_input = true;
-            }
+        if (0 <= keyboard_index && keyboard_index < INTERCEPTION_MAX_KEYBOARD) {
+            keycodeString = QString("%1@%2").arg(keycodeString, QString::number(keyboard_index));
         }
-        Q_UNUSED(multi_input);
 
         int findindex = -1;
         if (hookprocstart) {
@@ -4697,7 +4690,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT vkcode, UINT scan_code
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[InterceptionKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), ExtenedFlag(%s)", vkcode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
+        qDebug("[InterceptionKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), ExtenedFlag(%s)", vkeycode.KeyCode, scan_code, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
 #endif
     }
 
