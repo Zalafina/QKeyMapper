@@ -33,12 +33,12 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
-QList<QList<quint8>> QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList(INTERCEPTION_MAX_KEYBOARD);
+QList<QList<quint8>> QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList;
 // QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
 #ifdef VIGEM_CLIENT_SUPPORT
-QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList(VIRTUAL_GAMEPAD_NUMBER_MAX);
-QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList(VIRTUAL_GAMEPAD_NUMBER_MAX);
-QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList(VIRTUAL_GAMEPAD_NUMBER_MAX);
+QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
+QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
+QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
@@ -74,7 +74,7 @@ QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
 #endif
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
-QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List(INTERCEPTION_MAX_MOUSE);
+QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List;
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta_interception = QPoint();
 // QKeyMapper_Worker::Mouse2vJoyStates QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
 QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::s_Mouse2vJoy_EnableStateMap;
@@ -127,6 +127,23 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     qRegisterMetaType<Qt::KeyboardModifiers>("Qt::KeyboardModifiers");
 
     Q_UNUSED(parent);
+
+    pressedMultiKeyboardVKeyCodeList.clear();
+    pressedvJoyLStickKeysList.clear();
+    pressedvJoyRStickKeysList.clear();
+    pressedvJoyButtonsList.clear();
+    s_Mouse2vJoy_delta_List.clear();
+    for (int i = 0; i < INTERCEPTION_MAX_KEYBOARD; ++i) {
+        pressedMultiKeyboardVKeyCodeList.append(QList<quint8>());
+    }
+    for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
+        pressedvJoyLStickKeysList.append(QStringList());
+        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyButtonsList.append(QStringList());
+    }
+    for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
+        s_Mouse2vJoy_delta_List.append(QPoint());
+    }
 
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
@@ -2713,14 +2730,18 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     {
         QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
         s_Mouse2vJoy_delta_List.clear();
-        s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
+        for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
+            s_Mouse2vJoy_delta_List.append(QPoint());
+        }
     }
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
-    pressedvJoyLStickKeysList.resize(VIRTUAL_GAMEPAD_NUMBER_MAX);
-    pressedvJoyRStickKeysList.resize(VIRTUAL_GAMEPAD_NUMBER_MAX);
-    pressedvJoyButtonsList.resize(VIRTUAL_GAMEPAD_NUMBER_MAX);
+    for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
+        pressedvJoyLStickKeysList.append(QStringList());
+        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyButtonsList.append(QStringList());
+    }
     // m_Mouse2vJoyResetTimer.stop();
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();
@@ -2866,14 +2887,18 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     {
         QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
         s_Mouse2vJoy_delta_List.clear();
-        s_Mouse2vJoy_delta_List.resize(INTERCEPTION_MAX_MOUSE, QPoint());
+        for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
+            s_Mouse2vJoy_delta_List.append(QPoint());
+        }
     }
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
-    pressedvJoyLStickKeysList.resize(VIRTUAL_GAMEPAD_NUMBER_MAX);
-    pressedvJoyRStickKeysList.resize(VIRTUAL_GAMEPAD_NUMBER_MAX);
-    pressedvJoyButtonsList.resize(VIRTUAL_GAMEPAD_NUMBER_MAX);
+    for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
+        pressedvJoyLStickKeysList.append(QStringList());
+        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyButtonsList.append(QStringList());
+    }
     // m_Mouse2vJoyResetTimer.stop();
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();

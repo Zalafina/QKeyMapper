@@ -297,7 +297,9 @@ void Interception_Worker::startInterception()
     }
 
     QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.clear();
-    QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.resize(INTERCEPTION_MAX_KEYBOARD);
+    for (int i = 0; i < INTERCEPTION_MAX_KEYBOARD; ++i) {
+        QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.append(QList<quint8>());
+    }
     s_InterceptStart = true;
 
 #ifdef QT_DEBUG
@@ -318,7 +320,9 @@ void Interception_Worker::stopInterception()
 {
     s_InterceptStart = false;
     QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.clear();
-    QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.resize(INTERCEPTION_MAX_KEYBOARD);
+    for (int i = 0; i < INTERCEPTION_MAX_KEYBOARD; ++i) {
+        QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList.append(QList<quint8>());
+    }
 
     if (s_InterceptionContext == Q_NULLPTR) {
         return;
