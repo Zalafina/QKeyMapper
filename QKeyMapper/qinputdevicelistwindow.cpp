@@ -559,11 +559,11 @@ void QInputDeviceListWindow::onMouseListCellChanged(int row, int col)
 void QInputDeviceListWindow::on_confirmButton_clicked()
 {
     writeDeviceList();
-    hide();
+    close();
 }
 
 
 void QInputDeviceListWindow::on_cancelButton_clicked()
 {
-    hide();
+    close();
 }
