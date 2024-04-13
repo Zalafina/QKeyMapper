@@ -4490,22 +4490,80 @@ void QKeyMapper_Worker::key2MouseMoveProc()
     }
 }
 
-bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool Extened_Flag, int keyboard_index)
+bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index)
 {
     Q_UNUSED(scan_code);
+    Q_UNUSED(ExtenedFlag_e1);
 #ifdef HOOKSTART_ONSTARTUP
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
 #endif
 
     bool returnFlag = false;
     ULONG_PTR extraInfo = extra_info;
+    Q_UNUSED(extraInfo);
     V_KEYCODE vkeycode;
     vkeycode.KeyCode = (quint8)MapVirtualKey(scan_code, MAPVK_VSC_TO_VK);
-    vkeycode.ExtenedFlag = Extened_Flag;
-    if (VK_NUMLOCK == vkeycode.KeyCode) {
+    vkeycode.ExtenedFlag = ExtenedFlag_e0;
+
+    /* Virtual KeyCode Convert >>> */
+    if (SCANCODE_CTRL == scan_code) {
+        if (ExtenedFlag_e1) {
+            vkeycode.KeyCode = VK_PAUSE;
+        }
+        else if (ExtenedFlag_e0) {
+            vkeycode.KeyCode = VK_RCONTROL;
+        }
+        else {
+            vkeycode.KeyCode = VK_LCONTROL;
+        }
+    }
+    else if (SCANCODE_ALT == scan_code) {
+        if (ExtenedFlag_e0) {
+            vkeycode.KeyCode = VK_RMENU;
+        }
+        else {
+            vkeycode.KeyCode = VK_LMENU;
+        }
+    }
+    else if (SCANCODE_LSHIFT == scan_code) {
+        vkeycode.KeyCode = VK_LSHIFT;
+    }
+    else if (SCANCODE_RSHIFT == scan_code) {
+        vkeycode.KeyCode = VK_RSHIFT;
         vkeycode.ExtenedFlag = true;
     }
-    Q_UNUSED(extraInfo);
+    else if (SCANCODE_LWIN == scan_code) {
+        vkeycode.KeyCode = VK_LWIN;
+        vkeycode.ExtenedFlag = true;
+    }
+    else if (SCANCODE_RWIN == scan_code) {
+        vkeycode.KeyCode = VK_RWIN;
+        vkeycode.ExtenedFlag = true;
+    }
+    else if (SCANCODE_APPS == scan_code) {
+        vkeycode.KeyCode = VK_APPS;
+        vkeycode.ExtenedFlag = true;
+    }
+    else if (SCANCODE_DIVIDE == scan_code) {
+        if (ExtenedFlag_e0) {
+            vkeycode.KeyCode = VK_DIVIDE;
+        }
+    }
+    else if (SCANCODE_NUMLOCK == scan_code) {
+        vkeycode.KeyCode = VK_NUMLOCK;
+        vkeycode.ExtenedFlag = true;
+    }
+    else if (SCANCODE_PRINTSCREEN == scan_code) {
+        if (ExtenedFlag_e0) {
+            vkeycode.KeyCode = VK_SNAPSHOT;
+            vkeycode.ExtenedFlag = true;
+        }
+    }
+    else if (SCANCODE_SNAPSHOT == scan_code) {
+        vkeycode.KeyCode = VK_SNAPSHOT;
+        vkeycode.ExtenedFlag = true;
+    }
+    /* Virtual KeyCode Convert <<< */
 
     QList<quint8>& pressedVKeyCodeList = pressedMultiKeyboardVKeyCodeList[keyboard_index];
     if (KEY_DOWN == keyupdown){
@@ -4719,6 +4777,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     else{
         vkeycode.ExtenedFlag = EXTENED_FLAG_FALSE;
     }
+
+    /* Virtual KeyCode Convert >>> */
+    if (SCANCODE_SNAPSHOT == pKeyBoard->scanCode) {
+        vkeycode.KeyCode = VK_SNAPSHOT;
+        vkeycode.ExtenedFlag = EXTENED_FLAG_TRUE;
+    }
+    /* Virtual KeyCode Convert <<< */
 
     QString keycodeString = VirtualKeyCodeMap.key(vkeycode);
     QString keycodeString_nochanged = keycodeString;
@@ -6078,9 +6143,9 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        ("R-Ctrl",      V_KEYCODE(VK_RCONTROL,      EXTENED_FLAG_TRUE ));   // 0xA3 + E
     VirtualKeyCodeMap.insert        ("R-Win",       V_KEYCODE(VK_RWIN,          EXTENED_FLAG_TRUE ));   // 0x5C + E
     // Old special keys
-    VirtualKeyCodeMap.insert        ("Shift",       V_KEYCODE(VK_SHIFT,         EXTENED_FLAG_FALSE));   // 0x10
-    VirtualKeyCodeMap.insert        ("Ctrl",        V_KEYCODE(VK_CONTROL,       EXTENED_FLAG_FALSE));   // 0x11
-    VirtualKeyCodeMap.insert        ("Alt",         V_KEYCODE(VK_MENU,          EXTENED_FLAG_FALSE));   // 0x12
+    // VirtualKeyCodeMap.insert        ("Shift",       V_KEYCODE(VK_SHIFT,         EXTENED_FLAG_FALSE));   // 0x10
+    // VirtualKeyCodeMap.insert        ("Ctrl",        V_KEYCODE(VK_CONTROL,       EXTENED_FLAG_FALSE));   // 0x11
+    // VirtualKeyCodeMap.insert        ("Alt",         V_KEYCODE(VK_MENU,          EXTENED_FLAG_FALSE));   // 0x12
 
     // Function Keys
     VirtualKeyCodeMap.insert        ("Esc",         V_KEYCODE(VK_ESCAPE,        EXTENED_FLAG_FALSE));   // 0x1B
@@ -6262,13 +6327,10 @@ void QKeyMapper_Worker::initMultiKeyboardInputList()
             << "Space"
             << "Tab"
             << "Enter"
-            << "Shift"
             << "L-Shift"
             << "R-Shift"
-            << "Ctrl"
             << "L-Ctrl"
             << "R-Ctrl"
-            << "Alt"
             << "L-Alt"
             << "R-Alt"
             << "L-Win"

@@ -5079,13 +5079,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Space"
             << "Tab"
             << "Enter"
-            << "Shift"
             << "L-Shift"
             << "R-Shift"
-            << "Ctrl"
             << "L-Ctrl"
             << "R-Ctrl"
-            << "Alt"
             << "L-Alt"
             << "R-Alt"
             << "L-Win"
@@ -5283,10 +5280,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(MOUSE_M_POINT_STR);
     orikeycodelist.removeOne(MOUSE_X1_POINT_STR);
     orikeycodelist.removeOne(MOUSE_X2_POINT_STR);
-    orikeycodelist.removeOne("Shift");
-    orikeycodelist.removeOne("Ctrl");
-    orikeycodelist.removeOne("Alt");
-    orikeycodelist.removeOne("Alt");
     orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);

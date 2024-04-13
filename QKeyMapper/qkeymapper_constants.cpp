@@ -237,6 +237,18 @@ const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
 const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
 const ULONG_PTR VIRTUAL_WIN_PLUS_D       = 0xDBDBDBDB;
 
+const UINT SCANCODE_CTRL            = 0x1D;
+const UINT SCANCODE_ALT             = 0x38;
+const UINT SCANCODE_LSHIFT          = 0x2A;
+const UINT SCANCODE_RSHIFT          = 0x36;
+const UINT SCANCODE_DIVIDE          = 0x35;
+const UINT SCANCODE_NUMLOCK         = 0x45;
+const UINT SCANCODE_SNAPSHOT        = 0x54;
+const UINT SCANCODE_PRINTSCREEN     = 0x37;
+const UINT SCANCODE_LWIN            = 0x5B;
+const UINT SCANCODE_RWIN            = 0x5C;
+const UINT SCANCODE_APPS            = 0x5D;
+
 /* constant chars for QKeyMapper */
 const char *PROGRAM_NAME = "QKeyMapper";
 

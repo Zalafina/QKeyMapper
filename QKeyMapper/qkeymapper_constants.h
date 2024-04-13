@@ -213,6 +213,18 @@ extern const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS;
 extern const ULONG_PTR VIRTUAL_MOUSE_WHEEL;
 extern const ULONG_PTR VIRTUAL_WIN_PLUS_D;
 
+extern const UINT SCANCODE_CTRL;
+extern const UINT SCANCODE_ALT;
+extern const UINT SCANCODE_LSHIFT;
+extern const UINT SCANCODE_RSHIFT;
+extern const UINT SCANCODE_DIVIDE;
+extern const UINT SCANCODE_NUMLOCK;
+extern const UINT SCANCODE_SNAPSHOT;
+extern const UINT SCANCODE_PRINTSCREEN;
+extern const UINT SCANCODE_LWIN;
+extern const UINT SCANCODE_RWIN;
+extern const UINT SCANCODE_APPS;
+
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;
 extern const char* PROCESS_UNKNOWN;
