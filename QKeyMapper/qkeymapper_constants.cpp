@@ -277,6 +277,7 @@ const char *VIRTUALGAMEPAD_TYPE = "VirtualGamepadType";
 const char *VIRTUAL_GAMEPADLIST = "VirtualGamdpadList";
 #endif
 const char *MULTI_INPUT_ENABLE = "MultiInputEnable";
+const char* FILTER_KEYS = "FilterKeys";
 const char *DISABLED_KEYBOARDLIST = "DisabledKeyboardList";
 const char *DISABLED_MOUSELIST = "DisabledMouseList";
 /* General global settings <<< */
@@ -400,6 +401,7 @@ const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
 
 const char *NO_INPUTDEVICE  = "No InputDevice";
 
+/* Chinese const Strings */
 const char *REFRESHBUTTON_CHINESE = "刷新";
 const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
 const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
@@ -451,8 +453,9 @@ const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
 #endif
 const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
-const char *MULTIINPUTENABLECHECKBOX_CHINESE = "启用";
+const char *MULTIINPUTENABLECHECKBOX_CHINESE = "多设备";
 const char *MULTIINPUTDEVICELISTBUTTON_CHINESE = "设备列表";
+const char *FILTERKEYSCHECKBOX_CHINESE = "筛选键";
 const char *INSTALLINTERCEPTIONBUTTON_CHINESE = "安装驱动";
 const char *UNINSTALLINTERCEPTIONBUTTON_CHINESE = "卸载驱动";
 const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE = "多输入不可用";
@@ -461,6 +464,7 @@ const char *MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE = "多输入可用";
 const char *KEYBOARDSELECTLABEL_CHINESE = "键盘";
 const char *MOUSESELECTLABEL_CHINESE    = "鼠标";
 
+/* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
 const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
 const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
@@ -512,8 +516,9 @@ const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
 #endif
 const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
-const char *MULTIINPUTENABLECHECKBOX_ENGLISH = "Enable";
+const char *MULTIINPUTENABLECHECKBOX_ENGLISH = "MultiDevice";
 const char *MULTIINPUTDEVICELISTBUTTON_ENGLISH = "DeviceList";
+const char *FILTERKEYSCHECKBOX_ENGLISH = "FilterKeys";
 const char *INSTALLINTERCEPTIONBUTTON_ENGLISH = "Install Driver";
 const char *UNINSTALLINTERCEPTIONBUTTON_ENGLISH = "Uninstall Driver";
 const char *MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH = "Unavailable";

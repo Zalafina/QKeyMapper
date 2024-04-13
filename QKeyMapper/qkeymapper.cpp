@@ -3006,6 +3006,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
         }
 
+        if (true == settingFile.contains(FILTER_KEYS)){
+            bool filterKeysChecked = settingFile.value(FILTER_KEYS).toBool();
+            if (true == filterKeysChecked) {
+                ui->filterKeysCheckBox->setChecked(true);
+            }
+            else {
+                ui->filterKeysCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Filter Keys Checkbox ->" << filterKeysChecked;
+#endif
+        }
+        else {
+            ui->filterKeysCheckBox->setChecked(true);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains FilterKeys, FilterKeys set to Checked.";
+#endif
+        }
+
         if (true == settingFile.contains(DISABLED_KEYBOARDLIST)){
             QStringList disabledKeyboardList = settingFile.value(DISABLED_KEYBOARDLIST).toStringList();
             Interception_Worker::loadDisabledKeyboardList(disabledKeyboardList);
@@ -3925,6 +3944,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
     ui->multiInputEnableCheckBox->setFont(customFont);
+    ui->filterKeysCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -4023,6 +4043,7 @@ void QKeyMapper::setControlFontChinese()
     ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
     ui->multiInputEnableCheckBox->setFont(customFont);
+    ui->filterKeysCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -4150,6 +4171,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->multiInputEnableCheckBox->setEnabled(status);
         ui->multiInputDeviceListButton->setEnabled(status);
+        ui->filterKeysCheckBox->setEnabled(status);
         ui->keyboardSelectLabel->setEnabled(status);
         ui->mouseSelectLabel->setEnabled(status);
         ui->keyboardSelectComboBox->setEnabled(status);
@@ -4654,6 +4676,7 @@ void QKeyMapper::updateMultiInputStatus()
         if (m_KeyMapStatus == KEYMAP_IDLE){
             ui->multiInputEnableCheckBox->setEnabled(true);
             ui->multiInputDeviceListButton->setEnabled(true);
+            ui->filterKeysCheckBox->setEnabled(true);
             ui->keyboardSelectLabel->setEnabled(true);
             ui->mouseSelectLabel->setEnabled(true);
             ui->keyboardSelectComboBox->setEnabled(true);
@@ -4679,6 +4702,7 @@ void QKeyMapper::updateMultiInputStatus()
         ui->multiInputEnableCheckBox->setChecked(false);
         ui->multiInputEnableCheckBox->setEnabled(false);
         ui->multiInputDeviceListButton->setEnabled(false);
+        ui->filterKeysCheckBox->setEnabled(false);
         ui->keyboardSelectLabel->setEnabled(false);
         ui->mouseSelectLabel->setEnabled(false);
         ui->keyboardSelectComboBox->setCurrentIndex(0);
@@ -4705,6 +4729,7 @@ void QKeyMapper::updateMultiInputStatus()
         ui->multiInputEnableCheckBox->setChecked(false);
         ui->multiInputEnableCheckBox->setEnabled(false);
         ui->multiInputDeviceListButton->setEnabled(false);
+        ui->filterKeysCheckBox->setEnabled(false);
         ui->keyboardSelectLabel->setEnabled(false);
         ui->mouseSelectLabel->setEnabled(false);
         ui->keyboardSelectComboBox->setCurrentIndex(0);
@@ -5788,6 +5813,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
     ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
     ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
+    ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_CHINESE);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
@@ -5868,6 +5894,7 @@ void QKeyMapper::setUILanguage_English()
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_ENGLISH);
     ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
     ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_ENGLISH);
+    ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_ENGLISH);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_ENGLISH);
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
@@ -7415,5 +7442,29 @@ void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << "Size error! s_ViGEmTargetList.size =" << QKeyMapper_Worker::s_ViGEmTargetList.size() << ", s_ViGEmTarget_ReportList.size =" << QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() << ", s_VirtualGamepadList ->" << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
+    }
+}
+
+void QKeyMapper::on_filterKeysCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MultiInput] Filter Keys state changed ->" << (Qt::CheckState)state;
+#endif
+
+    if (Qt::Checked == state) {
+        Interception_Worker::s_FilterKeys = true;
+    }
+    else {
+        Interception_Worker::s_FilterKeys = false;
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
+    if (Qt::Checked == state) {
+        settingFile.setValue(FILTER_KEYS , true);
+    }
+    else {
+        settingFile.setValue(FILTER_KEYS , false);
     }
 }

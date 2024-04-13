@@ -7,6 +7,12 @@
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 
+typedef struct
+{
+    void *handle;
+    void *unempty;
+} *InterceptionDeviceArray;
+
 class Interception_Worker : public QObject
 {
     Q_OBJECT
@@ -37,7 +43,7 @@ public slots:
 public:
     static bool doLoadInterception(void);
     static void doUnloadInterception(void);
-    static void sendMousemoveToBreakLoop(void);
+    static void interceptionLoopBreak(void);
     static bool isInterceptionDriverFileExist(void);
     static Interception_State getInterceptionState(void);
     static void setRebootRequiredFlag(void);
@@ -67,7 +73,7 @@ public:
     static QAtomicBool s_RebootRequired;
     static bool s_libusb_available;
     static QAtomicBool s_InterceptStart;
-    static QAtomicBool s_InterceptBreakFlag;
+    static QAtomicBool s_FilterKeys;
     static QList<InputDevice> KeyboardDeviceList;
     static QList<InputDevice> MouseDeviceList;
     static InterceptionDevice lastOperateKeyboardDevice;

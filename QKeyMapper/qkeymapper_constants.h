@@ -248,6 +248,7 @@ extern const char* VIRTUALGAMEPAD_TYPE;
 extern const char* VIRTUAL_GAMEPADLIST;
 #endif
 extern const char* MULTI_INPUT_ENABLE;
+extern const char* FILTER_KEYS;
 extern const char* DISABLED_KEYBOARDLIST;
 extern const char* DISABLED_MOUSELIST;
 extern const char* GROUPNAME_EXECUTABLE_SUFFIX;
@@ -344,6 +345,8 @@ extern const char* FUNC_HIBERNATE;
 extern const char* VIRTUAL_GAMEPAD_X360;
 extern const char* VIRTUAL_GAMEPAD_DS4;
 extern const char* NO_INPUTDEVICE;
+
+/* Chinese const Strings */
 extern const char* REFRESHBUTTON_CHINESE;
 extern const char* KEYMAPBUTTON_START_CHINESE;
 extern const char* KEYMAPBUTTON_STOP_CHINESE;
@@ -392,6 +395,7 @@ extern const char* LOCKCURSORCHECKBOX_CHINESE;
 extern const char* MULTIINPUTGROUPBOX_CHINESE;
 extern const char* MULTIINPUTENABLECHECKBOX_CHINESE;
 extern const char* MULTIINPUTDEVICELISTBUTTON_CHINESE;
+extern const char *FILTERKEYSCHECKBOX_CHINESE;
 extern const char* INSTALLINTERCEPTIONBUTTON_CHINESE;
 extern const char* UNINSTALLINTERCEPTIONBUTTON_CHINESE;
 extern const char* MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE;
@@ -399,6 +403,8 @@ extern const char* MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE;
 extern const char* MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE;
 extern const char* KEYBOARDSELECTLABEL_CHINESE;
 extern const char* MOUSESELECTLABEL_CHINESE;
+
+/* English const Strings */
 extern const char* REFRESHBUTTON_ENGLISH;
 extern const char* KEYMAPBUTTON_START_ENGLISH;
 extern const char* KEYMAPBUTTON_STOP_ENGLISH;
@@ -447,6 +453,7 @@ extern const char* LOCKCURSORCHECKBOX_ENGLISH;
 extern const char* MULTIINPUTGROUPBOX_ENGLISH;
 extern const char* MULTIINPUTENABLECHECKBOX_ENGLISH;
 extern const char* MULTIINPUTDEVICELISTBUTTON_ENGLISH;
+extern const char *FILTERKEYSCHECKBOX_ENGLISH;
 extern const char* INSTALLINTERCEPTIONBUTTON_ENGLISH;
 extern const char* UNINSTALLINTERCEPTIONBUTTON_ENGLISH;
 extern const char* MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH;

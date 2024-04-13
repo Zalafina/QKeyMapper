@@ -4593,7 +4593,9 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
     QList<quint8>& pressedVKeyCodeList = pressedMultiKeyboardVKeyCodeList[keyboard_index];
     if (KEY_DOWN == keyupdown){
         if (pressedVKeyCodeList.contains(vkeycode.KeyCode)) {
-            return true;
+            if (Interception_Worker::s_FilterKeys) {
+                return true;
+            }
         }
         else {
             pressedVKeyCodeList.append(vkeycode.KeyCode);

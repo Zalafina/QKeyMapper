@@ -1137,7 +1137,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Enable</string>
+    <string>MultiDevice</string>
    </property>
   </widget>
   <widget class="QPushButton" name="installInterceptionButton">
@@ -1186,6 +1186,25 @@
    </property>
    <property name="focusPolicy">
     <enum>Qt::NoFocus</enum>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="filterKeysCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>710</x>
+     <y>600</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>FilterKeys</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -1256,6 +1275,7 @@
   <zorder>installInterceptionButton</zorder>
   <zorder>virtualGamepadNumberSpinBox</zorder>
   <zorder>virtualGamepadListComboBox</zorder>
+  <zorder>filterKeysCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

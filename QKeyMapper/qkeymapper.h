@@ -381,6 +381,8 @@ private slots:
 
     void on_virtualGamepadNumberSpinBox_valueChanged(int number);
 
+    void on_filterKeysCheckBox_stateChanged(int state);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);

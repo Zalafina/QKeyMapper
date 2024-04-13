@@ -233,11 +233,10 @@ int main(int argc, char *argv[])
     delete logfile_mutex;
 #endif
 
-    Interception_Worker::s_InterceptBreakFlag = true;
-    // Interception_Worker::sendMousemoveToBreakLoop();
-    // interceptionThread->quit();
-    // interceptionThread->wait();
-    // delete interceptionThread;
+    Interception_Worker::interceptionLoopBreak();
+    interceptionThread->quit();
+    interceptionThread->wait();
+    delete interceptionThread;
 
     hookprocThread->quit();
     hookprocThread->wait();
