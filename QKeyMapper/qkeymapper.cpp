@@ -2782,6 +2782,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         gripThresholdAccel = round(gripThresholdAccel * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
         settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_ACCEL, gripThresholdAccel);
 
+        settingFile.setValue(saveSettingSelectStr+FILTER_KEYS, ui->filterKeysCheckBox->isChecked());
+
 //         if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
 //                 m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->defaultKeySequence()));
@@ -3003,25 +3005,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->multiInputEnableCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
-#endif
-        }
-
-        if (true == settingFile.contains(FILTER_KEYS)){
-            bool filterKeysChecked = settingFile.value(FILTER_KEYS).toBool();
-            if (true == filterKeysChecked) {
-                ui->filterKeysCheckBox->setChecked(true);
-            }
-            else {
-                ui->filterKeysCheckBox->setChecked(false);
-            }
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Filter Keys Checkbox ->" << filterKeysChecked;
-#endif
-        }
-        else {
-            ui->filterKeysCheckBox->setChecked(true);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Do not contains FilterKeys, FilterKeys set to Checked.";
 #endif
         }
 
@@ -3646,6 +3629,28 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->lockCursorCheckBox->setChecked(false);
     }
 #endif
+
+    if (true == settingFile.contains(settingSelectStr+FILTER_KEYS)){
+        bool filterKeysChecked = settingFile.value(settingSelectStr+FILTER_KEYS).toBool();
+        if (true == filterKeysChecked) {
+            ui->filterKeysCheckBox->setChecked(true);
+            Interception_Worker::s_FilterKeys = true;
+        }
+        else {
+            ui->filterKeysCheckBox->setChecked(false);
+            Interception_Worker::s_FilterKeys = false;
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "FilterKeys Checked =" << filterKeysChecked;
+#endif
+    }
+    else {
+        ui->filterKeysCheckBox->setChecked(true);
+        Interception_Worker::s_FilterKeys = true;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains FilterKeys, FilterKeys set to Checked.";
+#endif
+    }
 
     if (true == settingFile.contains(settingSelectStr+DATAPORT_NUMBER)){
         int dataPortNumber = settingFile.value(settingSelectStr+DATAPORT_NUMBER).toInt();
@@ -7457,14 +7462,5 @@ void QKeyMapper::on_filterKeysCheckBox_stateChanged(int state)
     }
     else {
         Interception_Worker::s_FilterKeys = false;
-    }
-
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-
-    if (Qt::Checked == state) {
-        settingFile.setValue(FILTER_KEYS , true);
-    }
-    else {
-        settingFile.setValue(FILTER_KEYS , false);
     }
 }
