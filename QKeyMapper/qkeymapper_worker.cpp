@@ -4788,7 +4788,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
 #endif
 
-    if (Interception_Worker::s_InterceptStart || nCode != HC_ACTION) {
+    if (nCode != HC_ACTION) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
@@ -4832,7 +4832,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+        if (Interception_Worker::s_InterceptStart != true && extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
 #ifdef DEBUG_LOGOUT_ON
             if (WM_KEYDOWN == wParam){
                 qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
