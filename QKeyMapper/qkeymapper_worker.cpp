@@ -4784,6 +4784,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
 
 bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int delta_x, int delta_y, short delta_wheel, unsigned short flags, ULONG_PTR extra_info, int mouse_index)
 {
+    Q_UNUSED(flags);
 #ifdef HOOKSTART_ONSTARTUP
     bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
 #endif
@@ -4796,10 +4797,302 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
         || (mouse_event == EVENT_MBUTTONDOWN || mouse_event == EVENT_MBUTTONUP)
         || (mouse_event == EVENT_X1BUTTONDOWN || mouse_event == EVENT_X1BUTTONUP)
         || (mouse_event == EVENT_X2BUTTONDOWN || mouse_event == EVENT_X2BUTTONUP)) {
+        int keyupdown;
+        if (mouse_event == EVENT_LBUTTONUP
+            || mouse_event == EVENT_RBUTTONUP
+            || mouse_event == EVENT_MBUTTONUP
+            || mouse_event == EVENT_X1BUTTONUP
+            || mouse_event == EVENT_X2BUTTONUP) {
+            keyupdown = KEY_DOWN;
+        }
+        else {
+            keyupdown = KEY_UP;
+        }
+        QString keycodeString;
+        if ((mouse_event == EVENT_LBUTTONDOWN || mouse_event == EVENT_LBUTTONUP)) {
+            keycodeString = MOUSE_L_STR;
+        }
+        else if ((mouse_event == EVENT_RBUTTONDOWN || mouse_event == EVENT_RBUTTONUP)) {
+            keycodeString = MOUSE_R_STR;
+        }
+        else if ((mouse_event == EVENT_MBUTTONDOWN || mouse_event == EVENT_MBUTTONUP)) {
+            keycodeString = MOUSE_M_STR;
+        }
+        else if ((mouse_event == EVENT_X1BUTTONDOWN || mouse_event == EVENT_X1BUTTONUP)) {
+            keycodeString = MOUSE_X1_STR;
+        }
+        else if ((mouse_event == EVENT_X2BUTTONDOWN || mouse_event == EVENT_X2BUTTONUP)) {
+            keycodeString = MOUSE_X2_STR;
+        }
+        else {
+            keycodeString = MOUSE_L_STR;
+        }
+        QString keycodeString_nochanged = keycodeString;
 
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[InterceptionMouseHookProc] Real \"%s\" %s, extraInfo(0x%08X)", keycodeString.toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
+#endif
+        if (mouse_event == EVENT_LBUTTONDOWN && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+            POINT pt;
+            if (GetCursorPos(&pt)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[InterceptionMouseHookProc]" << "L-Ctrl + Mouse-Left Click Capture MousePoint -> X =" << pt.x << ", Y=" << pt.y;
+#endif
+                QPoint point = QPoint(pt.x, pt.y);
+                emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
+            }
+        }
+        else if (mouse_event == EVENT_RBUTTONDOWN && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[InterceptionMouseHookProc]" << "L-Ctrl + Mouse-Right Click Clear MousePoint";
+#endif
+            QPoint point = QPoint(-500, -500);
+            emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
+        }
+
+        if (0 <= mouse_index && mouse_index < INTERCEPTION_MAX_MOUSE) {
+            keycodeString = QString("%1@%2").arg(keycodeString, QString::number(mouse_index));
+        }
+
+        int findindex = -1;
+        if (hookprocstart) {
+            returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+            findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+        }
+
+        updatePressedRealKeysList(keycodeString, keyupdown);
+        bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
+        bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
+        if (!hookprocstart) {
+            if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+        if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
+            if (KEY_DOWN == keyupdown) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_DOWN return TRUE");
+#endif
+                return true;
+            }
+            else {
+                if (findindex >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_UP return TRUE");
+#endif
+                    return true;
+                }
+            }
+        }
+
+        if (KEY_UP == keyupdown && false == returnFlag){
+            if (findindex >= 0
+                && (QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == keycodeString
+                    || QKeyMapper::KeyMappingDataList.at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
+            }
+            else {
+                if (pressedVirtualKeysList.contains(keycodeString)) {
+                    returnFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[InterceptionMouseHookProc] Virtual \"%s\" is pressed down, skip Real \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+#endif
+                }
+            }
+        }
+
+        if (false == returnFlag) {
+            if (findindex >=0){
+                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                QString firstmappingkey = mappingKeyList.constFirst();
+                int mappingkeylist_size = mappingKeyList.size();
+                if (firstmappingkey == KEY_BLOCKED_STR && mappingkeylist_size == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                    if (KEY_DOWN == keyupdown){
+                        qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Button Down Blocked ->" << original_key;
+                    }
+                    else {
+                        qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Button Up Blocked ->" << original_key;
+                    }
+#endif
+                    returnFlag = true;
+                }
+                else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                    if (KEY_DOWN == keyupdown){
+                        qDebug() << "[InterceptionMouseHookProc]" << "Function KEY_DOWN ->" << firstmappingkey;
+                    }
+                    else {
+                        qDebug() << "[InterceptionMouseHookProc]" << "Function KEY_UP ->" << firstmappingkey;
+                    }
+#endif
+                    if (KEY_DOWN == keyupdown){
+                        emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
+                    }
+
+                    returnFlag = true;
+                }
+                else {
+                    if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
+                        if (KEY_DOWN == keyupdown){
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[InterceptionMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << firstmappingkey;
+#endif
+                        }
+                        else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[InterceptionMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << firstmappingkey;
+#endif
+                        }
+                    }
+
+                    if (KEY_DOWN == keyupdown){
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        returnFlag = true;
+                    }
+                    else { /* KEY_UP == keyupdown */
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        returnFlag = true;
+                    }
+                }
+            }
+        }
     }
     else if (mouse_event == EVENT_MOUSEWHEEL || mouse_event == EVENT_MOUSEHWHEEL) {
+        if (!hookprocstart) {
+            return false;
+        }
 
+        short zDelta = delta_wheel;
+
+        if (zDelta != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            QString extraInfoStr = QString("0x%1").arg(QString::number(extraInfo, 16).toUpper(), 8, '0');
+            if (zDelta > 0) {
+                if (mouse_event == EVENT_MOUSEHWHEEL) {
+                    qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Right -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                }
+                else {
+                    qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Up -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                }
+            }
+            else {
+                if (mouse_event == EVENT_MOUSEHWHEEL) {
+                    qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Left -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                }
+                else {
+                    qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Down -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                }
+            }
+#endif
+            QString keycodeString;
+            if (zDelta > 0) {
+                if (mouse_event == EVENT_MOUSEHWHEEL) {
+                    keycodeString = MOUSE_WHEEL_RIGHT_STR;
+                }
+                else {
+                    keycodeString = MOUSE_WHEEL_UP_STR;
+                }
+            }
+            else {
+                if (mouse_event == EVENT_MOUSEHWHEEL) {
+                    keycodeString = MOUSE_WHEEL_LEFT_STR;
+                }
+                else {
+                    keycodeString = MOUSE_WHEEL_DOWN_STR;
+                }
+            }
+
+            if (0 <= mouse_index && mouse_index < INTERCEPTION_MAX_MOUSE) {
+                keycodeString = QString("%1@%2").arg(keycodeString, QString::number(mouse_index));
+            }
+
+            int keyupdown = KEY_DOWN;
+            updatePressedRealKeysList(keycodeString, keyupdown);
+            bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+            Q_UNUSED(combinationkey_detected);
+            keyupdown = KEY_UP;
+            updatePressedRealKeysList(keycodeString, keyupdown);
+            combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+            if (combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[InterceptionMouseHookProc] return TRUE");
+#endif
+                return true;
+            }
+
+            short delta_abs = qAbs(zDelta);
+            if (delta_abs >= WHEEL_DELTA) {
+                bool wheel_up_found = false;
+                bool wheel_down_found = false;
+                bool send_wheel_keys = false;
+
+                QString keycodeString_WheelUp = MOUSE_WHEEL_UP_STR;
+                QString keycodeString_WheelDown = MOUSE_WHEEL_DOWN_STR;
+                if (0 <= mouse_index && mouse_index < INTERCEPTION_MAX_MOUSE) {
+                    keycodeString_WheelUp = QString("%1@%2").arg(keycodeString_WheelUp, QString::number(mouse_index));
+                    keycodeString_WheelDown = QString("%1@%2").arg(keycodeString_WheelDown, QString::number(mouse_index));
+                }
+
+                int findindex = -1;
+                int findWheelUpindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_WheelUp);
+                if (findWheelUpindex >=0){
+                    wheel_up_found = true;
+                }
+
+                int findWheelDownindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString_WheelDown);
+                if (findWheelDownindex >=0){
+                    wheel_down_found = true;
+                }
+
+                if (wheel_up_found || wheel_down_found) {
+                    if (wheel_up_found && zDelta > 0) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << "Real" << keycodeString_WheelUp << "-> Send Wheel Up Mapping Keys";
+#endif
+                        send_wheel_keys = true;
+                        findindex = findWheelUpindex;
+                    }
+                    else if (wheel_down_found && zDelta < 0) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << "Real" << keycodeString_WheelDown << "-> Send Wheel Down Mapping Keys";
+#endif
+                        send_wheel_keys = true;
+                        findindex = findWheelDownindex;
+                    }
+
+                    if (send_wheel_keys) {
+                        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+
+                        if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                            if (wheel_up_found) {
+                                qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelUp;
+                            }
+                            else {
+                                qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelDown;
+                            }
+#endif
+                            returnFlag = true;
+                        }
+                        else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+                            returnFlag = true;
+                        }
+                        else {
+                            QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            returnFlag = true;
+                        }
+                    }
+                }
+            }
+        }
     }
     else if (mouse_event == EVENT_MOUSEMOVE) {
 
