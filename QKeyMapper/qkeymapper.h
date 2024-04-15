@@ -38,14 +38,46 @@
 #include <dwmapi.h>
 #include <Shlobj.h>
 #include <powrprof.h>
+#include <setupapi.h>
+#include <interception.h>
+#include <libusb.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
 
 #include "qkeymapper_worker.h"
+#include "qinputdevicelistwindow.h"
+
+#define LANGUAGE_CHINESE    (0)
+#define LANGUAGE_ENGLISH    (1)
 
 #define MAPPING_WAITTIME_MIN    (0)
 #define MAPPING_WAITTIME_MAX    (9999)
+
+struct InputDeviceInfo
+{
+    QString hardwareid;
+    QString devicedesc;
+    ushort vendorid;
+    ushort productid;
+    QString VendorStr;
+    QString ManufacturerStr;
+    QString ProductStr;
+};
+
+struct InputDevice
+{
+    InterceptionDevice device;
+    InputDeviceInfo deviceinfo;
+    QAtomicBool disabled;
+};
+
+struct USBDeviceInfo {
+    QString vendorName;
+    QString productName;
+};
+
+#include "interception_worker.h"
 
 namespace Ui {
 class QKeyMapper;
@@ -211,6 +243,7 @@ public:
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static int findOriKeyInKeyMappingDataList(const QString &keyname);
+    static int findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname);
     static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
 
@@ -227,6 +260,7 @@ public:
 
     Qt::CheckState getAutoStartMappingStatus(void);
     // static bool getDisableWinKeyStatus(void);
+    static int getLanguageIndex(void);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
@@ -247,9 +281,13 @@ signals:
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int onoff);
+    void showCarOrdinal_Signal(qint32 car_ordinal);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
+    void updateVirtualGamepadListDisplay_Signal(void);
 #endif
+    void updateMultiInputStatus_Signal(void);
+    void updateInputDeviceSelectComboBoxes_Signal(void);
 
 protected:
     void changeEvent(QEvent *event) override;
@@ -265,6 +303,8 @@ public slots:
     void updateMousePointLabelDisplay(const QPoint &point);
 
     void showMousePoints(int onoff);
+
+    void showCarOrdinal(qint32 car_ordinal);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
@@ -333,6 +373,16 @@ private slots:
 
     void on_soundEffectCheckBox_stateChanged(int state);
 
+    void on_installInterceptionButton_clicked();
+
+    void on_multiInputDeviceListButton_clicked();
+
+    void on_multiInputEnableCheckBox_stateChanged(int state);
+
+    void on_virtualGamepadNumberSpinBox_valueChanged(int number);
+
+    void on_filterKeysCheckBox_stateChanged(int state);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -342,7 +392,11 @@ private:
     void updateSystemTrayDisplay(void);
 
     void initKeyMappingDataTable(void);
+    void resizeKeyMappingDataTableColumnWidth(void);
     void initAddKeyComboBoxes(void);
+    void initInputDeviceSelectComboBoxes(void);
+    void initKeyboardSelectComboBox(void);
+    void initMouseSelectComboBox(void);
     void initWindowSwitchKeyLineEdit(void);
     void initMappingSwitchKeyLineEdit(void);
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
@@ -359,9 +413,11 @@ private:
     void resetFontSize(void);
 
     bool backupFile(const QString &originalFile, const QString &backupFile);
+#ifdef SETTINGSFILE_CONVERT
     bool checkSettingsFileNeedtoConvert(void);
     void renameSettingsGroup(QSettings &settings, const QString &oldName, const QString &newName);
     void convertSettingsFile(void);
+#endif
     int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
     int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
@@ -383,16 +439,26 @@ private:
     void playStartSound();
     void playStopSound();
 
+    void showInputDeviceListWindow(void);
+
+    int installInterceptionDriver(void);
+    int uninstallInterceptionDriver(void);
+
 #ifdef VIGEM_CLIENT_SUPPORT
     int installViGEmBusDriver(void);
     int uninstallViGEmBusDriver(void);
 public slots:
     void updateViGEmBusStatus(void);
+    void updateVirtualGamepadListDisplay(void);
     Q_INVOKABLE void reconnectViGEmClient(void);
 #endif
 
+public slots:
+    void updateMultiInputStatus(void);
+    void updateInputDeviceSelectComboBoxes(void);
+
 public:
-    static bool m_isDestructing;
+    static bool s_isDestructing;
     static int s_GlobalSettingAutoStart;
     static uint s_CycleCheckLoopCount;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
@@ -402,6 +468,7 @@ public:
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
     static QString s_MappingSwitchKeyString;
+    int m_UI_Scale;
 
 private:
     static QKeyMapper *m_instance;
@@ -426,9 +493,9 @@ private:
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
-    int m_UI_Scale;
     bool loadSetting_flag;
     HWND m_TransParentHandle;
+    QInputDeviceListWindow *m_deviceListWindow;
 };
 
 #endif // QKEYMAPPER_H

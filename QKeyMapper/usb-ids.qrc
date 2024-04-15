@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="usb.ids">usb-ids/usb.ids</file>
+    </qresource>
+</RCC>

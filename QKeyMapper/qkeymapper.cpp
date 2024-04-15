@@ -1,340 +1,11 @@
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
-
-//static const uint WIN_TITLESTR_MAX = 200U;
-static const uint CYCLE_CHECK_TIMEOUT = 300U;
-static const uint CYCLE_CHECK_LOOPCOUNT_MAX = 100000U;
-static const uint CYCLE_CHECK_LOOPCOUNT_RESET = 500U;
-
-static const uint CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
-
-static const uint GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
-
-static const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
-static const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
-
-static const int INITIAL_WINDOW_POSITION = -1;
-
-static const int PROCESS_NAME_COLUMN = 0;
-static const int PROCESS_PID_COLUMN = 1;
-static const int PROCESS_TITLE_COLUMN = 2;
-
-static const int PROCESS_NAME_COLUMN_WIDTH_MAX = 200;
-
-static const int ORIGINAL_KEY_COLUMN = 0;
-static const int MAPPING_KEY_COLUMN = 1;
-static const int BURST_MODE_COLUMN = 2;
-static const int LOCK_COLUMN = 3;
-
-static const int DEFAULT_ICON_WIDTH = 48;
-static const int DEFAULT_ICON_HEIGHT = 48;
-
-static const int MOUSEWHEEL_SCROLL_NONE = 0;
-static const int MOUSEWHEEL_SCROLL_UP = 1;
-static const int MOUSEWHEEL_SCROLL_DOWN = 2;
-
-static const int KEY_UP = 0;
-static const int KEY_DOWN = 1;
-
-static const int LANGUAGE_CHINESE = 0;
-static const int LANGUAGE_ENGLISH = 1;
-
-static const int CUSTOMSETTING_INDEX_MAX = 30;
-
-static const int TITLESETTING_INDEX_INVALID = -1;
-static const int TITLESETTING_INDEX_ANYTITLE = 0;
-static const int TITLESETTING_INDEX_MAX = 9;
-
-static const int BURST_TIME_MIN = 1;
-static const int BURST_TIME_MAX = 5000;
-
-static const int BURST_PRESS_TIME_DEFAULT   = 40;
-static const int BURST_RELEASE_TIME_DEFAULT = 20;
-
-// static const int MAPPING_WAITTIME_MIN = 0;
-// static const int MAPPING_WAITTIME_MAX = 5000;
-
-static const int DATA_PORT_MIN = 1;
-static const int DATA_PORT_MAX = 65535;
-static const int DATA_PORT_DEFAULT = 5300;
-
-static const int GRIP_THRESHOLD_DECIMALS = 5;
-static const double GRIP_THRESHOLD_BRAKE_MIN = 0.00001;
-static const double GRIP_THRESHOLD_BRAKE_MAX = 1000.00000;
-static const double GRIP_THRESHOLD_BRAKE_DEFAULT = 0.47000;
-static const double GRIP_THRESHOLD_ACCEL_MIN = 0.00001;
-static const double GRIP_THRESHOLD_ACCEL_MAX = 1000.00000;
-static const double GRIP_THRESHOLD_ACCEL_DEFAULT = 1.00000;
-static const double GRIP_THRESHOLD_SINGLE_STEP = 0.01;
-
-static const int MOUSE_SPEED_MIN = 1;
-static const int MOUSE_SPEED_MAX = 15;
-static const int MOUSE_SPEED_DEFAULT = 3;
-
-static const int UI_SCALE_NORMAL = 0;
-static const int UI_SCALE_1K_PERCENT_100 = 1;
-static const int UI_SCALE_1K_PERCENT_125 = 2;
-static const int UI_SCALE_1K_PERCENT_150 = 3;
-static const int UI_SCALE_2K_PERCENT_100 = 4;
-static const int UI_SCALE_2K_PERCENT_125 = 5;
-static const int UI_SCALE_2K_PERCENT_150 = 6;
-static const int UI_SCALE_4K_PERCENT_100 = 7;
-static const int UI_SCALE_4K_PERCENT_125 = 8;
-static const int UI_SCALE_4K_PERCENT_150 = 9;
-
-static const int MOUSE_POINT_RADIUS = 12;
-
-#ifdef VIGEM_CLIENT_SUPPORT
-static const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
-
-static const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
-static const int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 1000;
-static const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
-#endif
-
-static const ULONG_PTR VIRTUAL_KEYBOARD_PRESS = 0xACBDACBD;
-static const ULONG_PTR VIRTUAL_MOUSE_CLICK = 0xCEDFCEDF;
-
-static const char *PROGRAM_NAME = "QKeyMapper";
-
-static const char *PROCESS_UNKNOWN = "QKeyMapperUnknown";
-
-static const char *DEFAULT_NAME = "ForzaHorizon4.exe";
-static const char *CONFIG_FILENAME = "keymapdata.ini";
-static const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
-
-static const char *DISPLAYSWITCH_KEY_DEFAULT    = "L-Ctrl+`";
-static const char *MAPPINGSWITCH_KEY_DEFAULT    = "L-Ctrl+F6";
-static const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_SHORTCUT;
-
-/* General global settings >>> */
-static const char *LAST_WINDOWPOSITION = "LastWindowPosition";
-static const char *LANGUAGE_INDEX = "LanguageIndex";
-static const char *SETTINGSELECT = "SettingSelect";
-static const char *AUTO_STARTUP = "AutoStartup";
-static const char *PLAY_SOUNDEFFECT = "PlaySoundEffect";
-static const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
-#ifdef VIGEM_CLIENT_SUPPORT
-static const char *VIRTUALGAMEPAD_ENABLE = "VirtualGamepadEnable";
-static const char *VIRTUALGAMEPAD_TYPE = "VirtualGamepadType";
-#endif
-/* General global settings <<< */
-
-static const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
-static const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
-static const char *GROUPNAME_CUSTOMGLOBALSETTING = "CustomGlobalSetting ";
-static const char *GROUPNAME_GLOBALSETTING = "QKeyMapperGlobalSetting";
-static const char *WINDOWTITLE_STRING = "Title";
-static const char *ANYWINDOWTITLE_STRING = "AnyTitle";
-
-static const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
-static const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
-static const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
-static const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
-static const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
-static const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
-static const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
-static const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
-#ifdef VIGEM_CLIENT_SUPPORT
-static const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
-static const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
-static const char *MOUSE2VJOY_LOCKCURSOR = "Mouse2vJoy_LockCursor";
-#endif
-static const char *CLEARALL = "KeyMapData_ClearAll";
-
-static const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
-static const char *PROCESSINFO_WINDOWTITLE = "ProcessInfo_WindowTitle";
-static const char *PROCESSINFO_FILEPATH = "ProcessInfo_FilePath";
-static const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
-static const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
-
-static const char *DATAPORT_NUMBER = "DataPortNumber";
-static const char *GRIP_THRESHOLD_BRAKE = "GripThresholdBrake";
-static const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
-// static const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
-static const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
-static const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
-
-static const char *SAO_FONTFILENAME = ":/sao_ui.otf";
-
-static const char *SOUNDFILE_START_QRC = ":/QKeyMapperStart.wav";
-static const char *SOUNDFILE_START = "QKeyMapperStart.wav";
-static const char *SOUNDFILE_STOP_QRC = ":/QKeyMapperStop.wav";
-static const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
-
-static const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
-static const char *FONTNAME_CHINESE = "NSimSun";
-
-static const char *ORIKEY_COMBOBOX_NAME = "orikeyComboBox";
-static const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
-
-static const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
-static const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";
-
-static const char *KEY_BLOCKED_STR = "BLOCKED";
-
-static const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
-static const char *MOUSE_POINT_POSTFIX  = "_Point";
-static const char *MOUSE_L_STR  = "Mouse-L";
-static const char *MOUSE_R_STR  = "Mouse-R";
-static const char *MOUSE_M_STR  = "Mouse-M";
-static const char *MOUSE_X1_STR = "Mouse-X1";
-static const char *MOUSE_X2_STR = "Mouse-X2";
-static const char *MOUSE_L_POINT_STR  = "Mouse-L_Point";
-static const char *MOUSE_R_POINT_STR  = "Mouse-R_Point";
-static const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
-static const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
-static const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
-
-static const char *MOUSE_WHEEL_UP_STR   = "Mouse-WheelUp";
-static const char *MOUSE_WHEEL_DOWN_STR = "Mouse-WheelDown";
-
-static const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
-static const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
-static const char *MOUSE2VJOY_PREFIX = "Mouse2vJoy-";
-static const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
-static const char *MOUSE2VJOY_DIRECT_KEY_STR = "Mouse2vJoy-Direct";
-
-static const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
-static const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
-static const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
-static const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
-
-static const char *JOY_LS2VJOYLS_STR = "Joy-LS_2vJoyLS";
-static const char *JOY_RS2VJOYRS_STR = "Joy-RS_2vJoyRS";
-static const char *JOY_LS2VJOYRS_STR = "Joy-LS_2vJoyRS";
-static const char *JOY_RS2VJOYLS_STR = "Joy-RS_2vJoyLS";
-
-static const char *JOY_LT2VJOYLT_STR = "Joy-Key11(LT)_2vJoyLT";
-static const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
-
-static const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
-static const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
-
-static const char *KEY2MOUSE_PREFIX     = "Key2Mouse-";
-static const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";
-static const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
-static const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
-static const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
-
-static const char *FUNC_PREFIX          = "Func-";
-static const char *FUNC_REFRESH         = "Func-Refresh";
-static const char *FUNC_LOCKSCREEN      = "Func-LockScreen";
-static const char *FUNC_SHUTDOWN        = "Func-Shutdown";
-static const char *FUNC_REBOOT          = "Func-Reboot";
-static const char *FUNC_LOGOFF          = "Func-Logoff";
-static const char *FUNC_SLEEP           = "Func-Sleep";
-static const char *FUNC_HIBERNATE       = "Func-Hibernate";
-
-static const char *VIRTUAL_GAMEPAD_X360 = "X360";
-static const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
-
-static const char *REFRESHBUTTON_CHINESE = "刷新";
-static const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
-static const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
-static const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
-static const char *DELETEONEBUTTON_CHINESE = "删除";
-static const char *CLEARALLBUTTON_CHINESE = "清空";
-static const char *ADDMAPDATABUTTON_CHINESE = "添加";
-static const char *NAMECHECKBOX_CHINESE = "进程";
-static const char *TITLECHECKBOX_CHINESE = "标题";
-static const char *ORIKEYLABEL_CHINESE = "原始按键";
-static const char *ORIKEYSEQLABEL_CHINESE = "原始组合键";
-static const char *MAPKEYLABEL_CHINESE = "映射按键";
-static const char *BURSTPRESSLABEL_CHINESE = "连发按下";
-static const char *BURSTRELEASE_CHINESE = "连发抬起";
-// static const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
-// static const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
-static const char *WAITTIME_CHINESE = "延时";
-static const char *POINT_CHINESE = "坐标";
-// static const char *WAITTIME_MSLABEL_CHINESE = "毫秒";
-static const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
-static const char *MOUSEYSPEEDLABEL_CHINESE = "Y轴速度";
-// static const char *SETTINGSELECTLABEL_CHINESE = "设定";
-static const char *REMOVESETTINGBUTTON_CHINESE = "移除";
-// static const char *DISABLEWINKEYCHECKBOX_CHINESE = "禁用WIN键";
-static const char *DATAPORTLABEL_CHINESE = "数据端口";
-static const char *BRAKETHRESHOLDLABEL_CHINESE = "刹车阈值";
-static const char *ACCELTHRESHOLDLABEL_CHINESE = "油门阈值";
-static const char *AUTOSTARTMAPPINGCHECKBOX_CHINESE = "自动映射并最小化";
-static const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
-static const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
-static const char *WINDOWSWITCHKEYLABEL_CHINESE = "显示切换键";
-static const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
-static const char *PROCESSINFOTABLE_COL1_CHINESE = "进程";
-static const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
-static const char *PROCESSINFOTABLE_COL3_CHINESE = "窗口标题";
-static const char *KEYMAPDATATABLE_COL1_CHINESE = "原始按键";
-static const char *KEYMAPDATATABLE_COL2_CHINESE = "映射按键";
-static const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
-static const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
-#ifdef VIGEM_CLIENT_SUPPORT
-static const char *VIRTUALGAMEPADGROUPBOX_CHINESE = "虚拟游戏手柄";
-static const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
-static const char *VJOYYSENSLABEL_CHINESE = "Y轴灵敏度";
-static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE = "ViGEm不可用";
-static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE = "ViGEm可用";
-static const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEm";
-static const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEm";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
-static const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
-#endif
-
-static const char *REFRESHBUTTON_ENGLISH = "Refresh";
-static const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
-static const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
-static const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
-static const char *DELETEONEBUTTON_ENGLISH = "Delete";
-static const char *CLEARALLBUTTON_ENGLISH = "Clear";
-static const char *ADDMAPDATABUTTON_ENGLISH = "ADD";
-static const char *NAMECHECKBOX_ENGLISH = "Process";
-static const char *TITLECHECKBOX_ENGLISH = "Title";
-static const char *ORIKEYLABEL_ENGLISH = "OriKey";
-static const char *ORIKEYSEQLABEL_ENGLISH = "OriKeySeq";
-static const char *MAPKEYLABEL_ENGLISH = "MapKey";
-static const char *BURSTPRESSLABEL_ENGLISH = "BurstPress";
-static const char *BURSTRELEASE_ENGLISH = "BurstRelease";
-// static const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
-// static const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
-static const char *WAITTIME_ENGLISH = "Delay";
-static const char *POINT_ENGLISH = "Point";
-// static const char *WAITTIME_MSLABEL_ENGLISH = "ms";
-static const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";
-static const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
-// static const char *SETTINGSELECTLABEL_ENGLISH = "Setting";
-static const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
-// static const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
-static const char *DATAPORTLABEL_ENGLISH = "DataPort";
-static const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeThreshold";
-static const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelThreshold";
-static const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "AutoStartMinimize";
-static const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
-static const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
-static const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowKey";
-static const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingKey";
-static const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
-static const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
-static const char *PROCESSINFOTABLE_COL3_ENGLISH = "Window Title";
-static const char *KEYMAPDATATABLE_COL1_ENGLISH = "OriginalKey";
-static const char *KEYMAPDATATABLE_COL2_ENGLISH = "MappingKey";
-static const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
-static const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
-#ifdef VIGEM_CLIENT_SUPPORT
-static const char *VIRTUALGAMEPADGROUPBOX_ENGLISH = "Virtual Gamepad";
-static const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
-static const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
-static const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmUnavailable";
-static const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmAvailable";
-static const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "InstallViGEm";
-static const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "UninstallViGEm";
-static const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
-static const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
-#endif
+#include "qkeymapper_constants.h"
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 
-bool QKeyMapper::m_isDestructing = false;
+bool QKeyMapper::s_isDestructing = false;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
 uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
@@ -347,6 +18,7 @@ QString QKeyMapper::s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
+    m_UI_Scale(UI_SCALE_NORMAL),
     ui(new Ui::QKeyMapper),
     m_KeyMapStatus(KEYMAP_IDLE),
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
@@ -367,9 +39,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
-    m_UI_Scale(UI_SCALE_NORMAL),
     loadSetting_flag(false),
-    m_TransParentHandle(NULL)
+    m_TransParentHandle(NULL),
+    m_deviceListWindow(Q_NULLPTR)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -381,6 +53,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
     QStyle* defaultStyle = QStyleFactory::create("windows");
     ui->virtualgamepadGroupBox->setStyle(defaultStyle);
+    ui->multiInputGroupBox->setStyle(defaultStyle);
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
 #endif
@@ -409,6 +82,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initMappingSwitchKeyLineEdit();
     // initOriginalKeySeqEdit();
     initCombinationKeyLineEdit();
+    initInputDeviceSelectComboBoxes();
 
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
@@ -516,6 +190,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
     ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->virtualGamepadNumberSpinBox->setRange(VIRTUAL_GAMEPAD_NUMBER_MIN, VIRTUAL_GAMEPAD_NUMBER_MAX);
 
     bool isWin10Above = false;
     QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
@@ -526,67 +201,30 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         isWin10Above = false;
     }
 
-    // if (isWin10Above) {
-        ui->vJoyXSensSpinBox->setEnabled(false);
-        ui->vJoyYSensSpinBox->setEnabled(false);
-        ui->vJoyXSensLabel->setEnabled(false);
-        ui->vJoyYSensLabel->setEnabled(false);
-        ui->lockCursorCheckBox->setEnabled(false);
-        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    ui->vJoyXSensSpinBox->setEnabled(false);
+    ui->vJoyYSensSpinBox->setEnabled(false);
+    ui->vJoyXSensLabel->setEnabled(false);
+    ui->vJoyYSensLabel->setEnabled(false);
+    ui->lockCursorCheckBox->setEnabled(false);
+    ui->enableVirtualJoystickCheckBox->setEnabled(false);
+    ui->virtualGamepadNumberSpinBox->setEnabled(false);
+    ui->virtualGamepadListComboBox->setEnabled(false);
 
-        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-        int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
-        Q_UNUSED(retval_alloc);
-        Q_UNUSED(retval_connect);
+    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+    Q_UNUSED(retval_alloc);
+    Q_UNUSED(retval_connect);
 
-        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
 #endif
-        }
-
-        updateViGEmBusStatus();
-
-        if (!isWin10Above) {
-            ui->installViGEmBusButton->setEnabled(false);
-            ui->installViGEmBusButton->setVisible(false);
-        }
-#if 0
     }
-    else {
-        ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
-        ui->enableVirtualJoystickCheckBox->setEnabled(false);
+
+    if (!isWin10Above) {
         ui->installViGEmBusButton->setEnabled(false);
-        // ui->uninstallViGEmBusButton->setEnabled(false);
-        ui->ViGEmBusStatusLabel->setEnabled(false);
-        ui->vJoyXSensSpinBox->setEnabled(false);
-        ui->vJoyYSensSpinBox->setEnabled(false);
-
-        ui->enableVirtualJoystickCheckBox->setVisible(false);
-        ui->lockCursorCheckBox->setVisible(false);
         ui->installViGEmBusButton->setVisible(false);
-        // ui->uninstallViGEmBusButton->setVisible(false);
-        ui->ViGEmBusStatusLabel->setVisible(false);
-        ui->vJoyXSensSpinBox->setVisible(false);
-        ui->vJoyYSensSpinBox->setVisible(false);
-        ui->vJoyXSensLabel->setVisible(false);
-        ui->vJoyYSensLabel->setVisible(false);
-        ui->virtualgamepadGroupBox->setVisible(false);
-
-        ui->virtualGamepadTypeComboBox->setEnabled(false);
-        ui->dataPortSpinBox->setEnabled(false);
-        ui->brakeThresholdDoubleSpinBox->setEnabled(false);
-        ui->accelThresholdDoubleSpinBox->setEnabled(false);
-
-        ui->virtualGamepadTypeComboBox->setVisible(false);
-        ui->dataPortLabel->setVisible(false);
-        ui->dataPortSpinBox->setVisible(false);
-        ui->brakeThresholdLabel->setVisible(false);
-        ui->accelThresholdLabel->setVisible(false);
-        ui->brakeThresholdDoubleSpinBox->setVisible(false);
-        ui->accelThresholdDoubleSpinBox->setVisible(false);
     }
-#endif
 
 #else
     ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
@@ -618,8 +256,20 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+
+    Interception_Worker::syncDisabledKeyboardList();
+    Interception_Worker::syncDisabledMouseList();
+
+    m_deviceListWindow = new QInputDeviceListWindow(this);
+
     reloadUILanguage();
     resetFontSize();
+
+    updateMultiInputStatus();
+#ifdef VIGEM_CLIENT_SUPPORT
+    updateViGEmBusStatus();
+    updateVirtualGamepadListDisplay();
+#endif
 
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
@@ -639,13 +289,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus);
+    QObject::connect(this, &QKeyMapper::updateVirtualGamepadListDisplay_Signal, this, &QKeyMapper::updateVirtualGamepadListDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
 #endif
+    QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
+    QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     refreshProcessInfoTable();
+    resizeKeyMappingDataTableColumnWidth();
 #ifdef QT_NO_DEBUG
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
@@ -662,7 +317,7 @@ QKeyMapper::~QKeyMapper()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper() called.";
 #endif
-    m_isDestructing = true;
+    s_isDestructing = true;
 
     destoryTransparentWindow(m_TransParentHandle);
     m_TransParentHandle = NULL;
@@ -696,6 +351,11 @@ QKeyMapper::~QKeyMapper()
 
     delete m_KeyMappingDataTableDelegate;
     m_KeyMappingDataTableDelegate = Q_NULLPTR;
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        delete m_deviceListWindow;
+        m_deviceListWindow = Q_NULLPTR;
+    }
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -992,6 +652,7 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 {
     if (false == isHidden()){
         refreshProcessInfoTable();
+        initInputDeviceSelectComboBoxes();
     }
 }
 
@@ -1471,6 +1132,26 @@ int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
+    QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    {
+        if (keymapdata.Original_Key == keyname
+            || keymapdata.Original_Key == keyname_RemoveMultiInput){
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
+int QKeyMapper::findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
@@ -1489,10 +1170,12 @@ int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
 {
     int returnindex = -1;
     int keymapdataindex = 0;
+    QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataListGlobal))
     {
-        if (keymapdata.Original_Key == keyname){
+        if (keymapdata.Original_Key == keyname
+            || keymapdata.Original_Key == keyname_RemoveMultiInput){
             returnindex = keymapdataindex;
             break;
         }
@@ -1895,10 +1578,15 @@ Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
     return ui->autoStartMappingCheckBox->checkState();
 }
 
+int QKeyMapper::getLanguageIndex()
+{
+    return getInstance()->ui->languageComboBox->currentIndex();
+}
+
 #if 0
 bool QKeyMapper::getDisableWinKeyStatus()
 {
-    if (m_isDestructing) {
+    if (s_isDestructing) {
         return false;
     }
 
@@ -2005,6 +1693,12 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
         refreshProcessInfoTable();
+        (void)Interception_Worker::getRefreshedKeyboardDeviceList();
+        (void)Interception_Worker::getRefreshedMouseDeviceList();
+        Interception_Worker::syncDisabledKeyboardList();
+        Interception_Worker::syncDisabledMouseList();
+        // m_deviceListWindow->updateDeviceListInfo();
+        initInputDeviceSelectComboBoxes();
 
    }
    else if (event->key() != Qt::Key_Escape) {
@@ -2205,6 +1899,10 @@ static BOOL CALLBACK focusChildProcWindow(HWND hwnd, LPARAM lParam)
 
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 {
+    if (m_deviceListWindow->isVisible()) {
+        return;
+    }
+
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     Q_UNUSED(hotkey_string);
     Q_UNUSED(keymapstatusEnum);
@@ -2249,6 +1947,10 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 
 void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
 {
+    if (m_deviceListWindow->isVisible()) {
+        return;
+    }
+
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     Q_UNUSED(hotkey_string);
     Q_UNUSED(keymapstatusEnum);
@@ -2560,6 +2262,7 @@ bool QKeyMapper::backupFile(const QString &originalFile, const QString &backupFi
     return QFile::copy(originalFile, backupFile);
 }
 
+#ifdef SETTINGSFILE_CONVERT
 bool QKeyMapper::checkSettingsFileNeedtoConvert()
 {
     bool ret = false;
@@ -2688,6 +2391,7 @@ void QKeyMapper::convertSettingsFile()
         }
     }
 }
+#endif
 
 int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle)
 {
@@ -2844,6 +2548,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
+        settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
 
 //         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
@@ -3077,6 +2782,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         gripThresholdAccel = round(gripThresholdAccel * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
         settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_ACCEL, gripThresholdAccel);
 
+        settingFile.setValue(saveSettingSelectStr+FILTER_KEYS, ui->filterKeysCheckBox->isChecked());
+
 //         if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
 //                 m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(m_mappingswitchKeySeqEdit->defaultKeySequence()));
@@ -3173,6 +2880,24 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->virtualGamepadTypeComboBox->setCurrentText(VIRTUAL_GAMEPAD_X360);
         }
 
+        QStringList virtualGamepadList;
+        if (true == settingFile.contains(VIRTUAL_GAMEPADLIST)){
+            virtualGamepadList = settingFile.value(VIRTUAL_GAMEPADLIST).toStringList();
+            if (!virtualGamepadList.isEmpty()) {
+                if (virtualGamepadList.size() == 1
+                    && virtualGamepadList.constFirst() != getVirtualGamepadType()) {
+                    virtualGamepadList[0] = getVirtualGamepadType();
+                }
+            }
+            else {
+                virtualGamepadList = QStringList() << getVirtualGamepadType();
+            }
+        }
+        else {
+            virtualGamepadList = QStringList() << getVirtualGamepadType();
+        }
+        QKeyMapper_Worker::loadVirtualGamepadList(virtualGamepadList);
+
 //         QString loadedwindowswitchKeySeqStr;
 //         if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
 //             loadedwindowswitchKeySeqStr = settingFile.value(WINDOWSWITCH_KEYSEQ).toString();
@@ -3263,6 +2988,35 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
         }
 #endif
+
+        if (true == settingFile.contains(MULTI_INPUT_ENABLE)){
+            bool multiInputEnableChecked = settingFile.value(MULTI_INPUT_ENABLE).toBool();
+            if (true == multiInputEnableChecked) {
+                ui->multiInputEnableCheckBox->setChecked(true);
+            }
+            else {
+                ui->multiInputEnableCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "MultiInput Enable Checkbox ->" << multiInputEnableChecked;
+#endif
+        }
+        else {
+            ui->multiInputEnableCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(DISABLED_KEYBOARDLIST)){
+            QStringList disabledKeyboardList = settingFile.value(DISABLED_KEYBOARDLIST).toStringList();
+            Interception_Worker::loadDisabledKeyboardList(disabledKeyboardList);
+        }
+
+        if (true == settingFile.contains(DISABLED_MOUSELIST)){
+            QStringList disabledMouseList = settingFile.value(DISABLED_MOUSELIST).toStringList();
+            Interception_Worker::loadDisabledMouseList(disabledMouseList);
+        }
     }
     else if (GROUPNAME_GLOBALSETTING == settingtext) {
         loadGlobalSetting = true;
@@ -3375,11 +3129,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
 
                     int loadindex = 0;
-                    for (const QString &ori_key : qAsConst(original_keys)){
+                    static QRegularExpression reg("@[0-9]$");
+                    for (const QString &ori_key_nochange : qAsConst(original_keys)){
+                        QString ori_key;
+                        QRegularExpressionMatch match = reg.match(ori_key_nochange);
+                        if (match.hasMatch()) {
+                            int atIndex = ori_key_nochange.lastIndexOf('@');
+                            ori_key = ori_key_nochange.mid(0, atIndex);
+                        } else {
+                            ori_key = ori_key_nochange;
+                        }
+
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                        QString appendOriKey = ori_key;
+                        QString appendOriKey = ori_key_nochange;
                         if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                             keyboardmapcontains = true;
                         }
@@ -3598,11 +3362,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
 
                     int loadindex = 0;
-                    for (const QString &ori_key : qAsConst(original_keys)){
+                    static QRegularExpression reg("@[0-9]$");
+                    for (const QString &ori_key_nochange : qAsConst(original_keys)){
+                        QString ori_key;
+                        QRegularExpressionMatch match = reg.match(ori_key_nochange);
+                        if (match.hasMatch()) {
+                            int atIndex = ori_key_nochange.lastIndexOf('@');
+                            ori_key = ori_key_nochange.mid(0, atIndex);
+                        } else {
+                            ori_key = ori_key_nochange;
+                        }
                         bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
                         bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
                         bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                        QString appendOriKey = ori_key;
+                        QString appendOriKey = ori_key_nochange;
                         if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                             keyboardmapcontains = true;
                         }
@@ -3857,6 +3630,28 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 #endif
 
+    if (true == settingFile.contains(settingSelectStr+FILTER_KEYS)){
+        bool filterKeysChecked = settingFile.value(settingSelectStr+FILTER_KEYS).toBool();
+        if (true == filterKeysChecked) {
+            ui->filterKeysCheckBox->setChecked(true);
+            Interception_Worker::s_FilterKeys = true;
+        }
+        else {
+            ui->filterKeysCheckBox->setChecked(false);
+            Interception_Worker::s_FilterKeys = false;
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "FilterKeys Checked =" << filterKeysChecked;
+#endif
+    }
+    else {
+        ui->filterKeysCheckBox->setChecked(true);
+        Interception_Worker::s_FilterKeys = true;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains FilterKeys, FilterKeys set to Checked.";
+#endif
+    }
+
     if (true == settingFile.contains(settingSelectStr+DATAPORT_NUMBER)){
         int dataPortNumber = settingFile.value(settingSelectStr+DATAPORT_NUMBER).toInt();
         ui->dataPortSpinBox->setValue(dataPortNumber);
@@ -3979,7 +3774,9 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
             // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
             && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
-            && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+            // && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+            && false == mapping_key.startsWith(JOY_KEY_PREFIX)
+            && false == mapping_key.startsWith(VJOY_KEY_PREFIX)
             && false == mapping_key.startsWith("Func-")
             && false == mapping_key.contains(SEPARATOR_WAITTIME)){
             checkResult = false;
@@ -4128,6 +3925,8 @@ void QKeyMapper::setControlFontEnglish()
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
+    ui->keyboardSelectLabel->setFont(customFont);
+    ui->mouseSelectLabel->setFont(customFont);
 
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(10);
@@ -4145,6 +3944,12 @@ void QKeyMapper::setControlFontEnglish()
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
     ui->virtualgamepadGroupBox->setFont(customFont);
+    ui->multiInputGroupBox->setFont(customFont);
+    ui->installInterceptionButton->setFont(customFont);
+    ui->multiInputDeviceListButton->setFont(customFont);
+    ui->multiInputStatusLabel->setFont(customFont);
+    ui->multiInputEnableCheckBox->setFont(customFont);
+    ui->filterKeysCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -4216,6 +4021,8 @@ void QKeyMapper::setControlFontChinese()
     // ui->waitTime_msLabel->setFont(customFont);
     ui->mouseXSpeedLabel->setFont(customFont);
     ui->mouseYSpeedLabel->setFont(customFont);
+    ui->keyboardSelectLabel->setFont(customFont);
+    ui->mouseSelectLabel->setFont(customFont);
 
     ui->processinfoTable->horizontalHeader()->setFont(customFont);
     ui->keymapdataTable->horizontalHeader()->setFont(customFont);
@@ -4236,6 +4043,12 @@ void QKeyMapper::setControlFontChinese()
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
     ui->virtualgamepadGroupBox->setFont(customFont);
+    ui->multiInputGroupBox->setFont(customFont);
+    ui->installInterceptionButton->setFont(customFont);
+    ui->multiInputDeviceListButton->setFont(customFont);
+    ui->multiInputStatusLabel->setFont(customFont);
+    ui->multiInputEnableCheckBox->setFont(customFont);
+    ui->filterKeysCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -4353,8 +4166,22 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->vJoyXSensSpinBox->setEnabled(status);
         ui->vJoyYSensSpinBox->setEnabled(status);
         ui->lockCursorCheckBox->setEnabled(status);
+        ui->virtualGamepadNumberSpinBox->setEnabled(status);
+        ui->virtualGamepadListComboBox->setEnabled(status);
     }
 #endif
+
+    ui->installInterceptionButton->setEnabled(status);
+    ui->multiInputGroupBox->setEnabled(status);
+    if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->multiInputEnableCheckBox->setEnabled(status);
+        ui->multiInputDeviceListButton->setEnabled(status);
+        ui->filterKeysCheckBox->setEnabled(status);
+        ui->keyboardSelectLabel->setEnabled(status);
+        ui->mouseSelectLabel->setEnabled(status);
+        ui->keyboardSelectComboBox->setEnabled(status);
+        ui->mouseSelectComboBox->setEnabled(status);
+    }
 
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
@@ -4461,6 +4288,81 @@ void QKeyMapper::playStopSound()
         qWarning() << "[playStopSound]" << "Sound file do not exist ->" << SOUNDFILE_STOP;
 #endif
     }
+}
+
+void QKeyMapper::showInputDeviceListWindow()
+{
+    if (!m_deviceListWindow->isVisible()) {
+        m_deviceListWindow->show();
+    }
+}
+
+int QKeyMapper::installInterceptionDriver()
+{
+    QString operate_str = QString("runas");
+    QString executable_str = QString("InterceptionDriver\\install-interception.exe");
+    QString argument_str = QString("/install");
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* Install Interception Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installInterceptionDriver] Install Interception Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installInterceptionDriver] Install Interception Driver Failed!!! ->" << ret;
+#endif
+        return -1;
+    }
+
+    return 0;
+}
+
+int QKeyMapper::uninstallInterceptionDriver()
+{
+    QString operate_str = QString("runas");
+    QString executable_str = QString("InterceptionDriver\\install-interception.exe");
+    QString argument_str = QString("/uninstall");
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* Install Interception Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallInterceptionDriver] Uninstall Interception Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallInterceptionDriver] Uninstall Interception Driver Failed!!! ->" << ret;
+#endif
+        return -1;
+    }
+
+    return 0;
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4667,7 +4569,9 @@ void QKeyMapper::updateViGEmBusStatus()
 
     int languageIndex = ui->languageComboBox->currentIndex();
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == connectstate) {
-        ui->enableVirtualJoystickCheckBox->setEnabled(true);
+        if (m_KeyMapStatus == KEYMAP_IDLE){
+            ui->enableVirtualJoystickCheckBox->setEnabled(true);
+        }
         // ui->installViGEmBusButton->setEnabled(false);
         if (LANGUAGE_ENGLISH == languageIndex) {
             ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
@@ -4704,6 +4608,41 @@ void QKeyMapper::updateViGEmBusStatus()
     }
 }
 
+void QKeyMapper::updateVirtualGamepadListDisplay()
+{
+    int gamepad_number = QKeyMapper_Worker::s_VirtualGamepadList.size();
+
+    if (gamepad_number < VIRTUAL_GAMEPAD_NUMBER_MIN || gamepad_number > VIRTUAL_GAMEPAD_NUMBER_MAX) {
+        return;
+    }
+
+    ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+
+    int lastIndex = ui->virtualGamepadListComboBox->currentIndex();
+    ui->virtualGamepadListComboBox->clear();
+
+    QStringList gamepadList;
+    gamepadList.append(QString());
+    int gamepad_index = 0;
+    for (const QString &gamepad : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList))
+    {
+        QString gamepad_Str;
+        if (gamepad == VIRTUAL_GAMEPAD_DS4) {
+            gamepad_Str = QString("[%1] %2").arg(QString::number(gamepad_index), VIRTUAL_GAMEPAD_DS4);
+        }
+        else {
+            gamepad_Str = QString("[%1] %2").arg(QString::number(gamepad_index), VIRTUAL_GAMEPAD_X360);
+        }
+        gamepadList.append(gamepad_Str);
+        gamepad_index++;
+    }
+    ui->virtualGamepadListComboBox->addItems(gamepadList);
+
+    if (0 <= lastIndex && lastIndex < ui->virtualGamepadListComboBox->count()) {
+        ui->virtualGamepadListComboBox->setCurrentIndex(lastIndex);
+    }
+}
+
 void QKeyMapper::reconnectViGEmClient()
 {
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
@@ -4724,6 +4663,106 @@ void QKeyMapper::reconnectViGEmClient()
     }
 }
 #endif
+
+void QKeyMapper::updateMultiInputStatus()
+{
+    Interception_Worker::Interception_State interception_state = Interception_Worker::getInterceptionState();
+
+#ifdef DEBUG_LOGOUT_ON
+    static Interception_Worker::Interception_State lastInterceptionState = Interception_Worker::INTERCEPTION_INIT;
+    if (lastInterceptionState != interception_state) {
+        lastInterceptionState = interception_state;
+        qDebug() << "[updateMultiInputStatus]" << "Interception State ->" << lastInterceptionState;
+    }
+#endif
+
+    int languageIndex = ui->languageComboBox->currentIndex();
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == interception_state) {
+        if (m_KeyMapStatus == KEYMAP_IDLE){
+            ui->multiInputEnableCheckBox->setEnabled(true);
+            ui->multiInputDeviceListButton->setEnabled(true);
+            ui->filterKeysCheckBox->setEnabled(true);
+            ui->keyboardSelectLabel->setEnabled(true);
+            ui->mouseSelectLabel->setEnabled(true);
+            ui->keyboardSelectComboBox->setEnabled(true);
+            ui->mouseSelectComboBox->setEnabled(true);
+        }
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color:green;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE);
+        }
+    }
+    else if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == interception_state) {
+        ui->multiInputEnableCheckBox->setChecked(false);
+        ui->multiInputEnableCheckBox->setEnabled(false);
+        ui->multiInputDeviceListButton->setEnabled(false);
+        ui->filterKeysCheckBox->setEnabled(false);
+        ui->keyboardSelectLabel->setEnabled(false);
+        ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setCurrentIndex(0);
+        ui->mouseSelectComboBox->setCurrentIndex(0);
+        ui->keyboardSelectComboBox->setEnabled(false);
+        ui->mouseSelectComboBox->setEnabled(false);
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color: orange;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE);
+        }
+    }
+    else {
+        ui->multiInputEnableCheckBox->setChecked(false);
+        ui->multiInputEnableCheckBox->setEnabled(false);
+        ui->multiInputDeviceListButton->setEnabled(false);
+        ui->filterKeysCheckBox->setEnabled(false);
+        ui->keyboardSelectLabel->setEnabled(false);
+        ui->mouseSelectLabel->setEnabled(false);
+        ui->keyboardSelectComboBox->setCurrentIndex(0);
+        ui->mouseSelectComboBox->setCurrentIndex(0);
+        ui->keyboardSelectComboBox->setEnabled(false);
+        ui->mouseSelectComboBox->setEnabled(false);
+
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+        }
+        else {
+            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+        }
+
+        ui->multiInputStatusLabel->setStyleSheet("color: red;");
+        if (LANGUAGE_ENGLISH == languageIndex) {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH);
+        }
+        else {
+            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE);
+        }
+    }
+}
+
+void QKeyMapper::updateInputDeviceSelectComboBoxes()
+{
+    initInputDeviceSelectComboBoxes();
+}
 
 void QKeyMapper::on_savemaplistButton_clicked()
 {
@@ -4949,7 +4988,7 @@ void QKeyMapper::initKeyMappingDataTable(void)
 
     ui->keymapdataTable->horizontalHeader()->setStretchLastSection(true);
     ui->keymapdataTable->horizontalHeader()->setHighlightSections(false);
-    ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    // ui->keymapdataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
     int original_key_width = ui->keymapdataTable->width()/4 - 15;
     int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
@@ -4971,6 +5010,36 @@ void QKeyMapper::initKeyMappingDataTable(void)
 //    qDebug() << "selectionMode" << ui->keymapdataTable->selectionMode();
 //    qDebug() << "editTriggers" << ui->keymapdataTable->editTriggers();
 //    qDebug() << "verticalHeader-DefaultSectionSize" << ui->keymapdataTable->verticalHeader()->defaultSectionSize();
+#endif
+}
+
+void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
+{
+    ui->keymapdataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
+
+    int original_key_width_min = ui->keymapdataTable->width()/4 - 15;
+    int original_key_width = ui->keymapdataTable->columnWidth(ORIGINAL_KEY_COLUMN);
+
+    int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
+    int lock_width = ui->keymapdataTable->width()/5 - 40;
+
+    if (original_key_width < original_key_width_min) {
+        original_key_width = original_key_width_min;
+    }
+
+    int mapping_key_width_min = ui->keymapdataTable->width()/4 - 15;
+    int mapping_key_width = ui->keymapdataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
+    if (mapping_key_width < mapping_key_width_min) {
+        mapping_key_width = mapping_key_width_min;
+    }
+
+    ui->keymapdataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
+    ui->keymapdataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    ui->keymapdataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
+    ui->keymapdataTable->setColumnWidth(LOCK_COLUMN, lock_width);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "ui->keymapdataTable->rowCount" << ui->keymapdataTable->rowCount();
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width;
 #endif
 }
 
@@ -5040,13 +5109,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Space"
             << "Tab"
             << "Enter"
-            << "Shift"
             << "L-Shift"
             << "R-Shift"
-            << "Ctrl"
             << "L-Ctrl"
             << "R-Ctrl"
-            << "Alt"
             << "L-Alt"
             << "R-Alt"
             << "L-Win"
@@ -5244,10 +5310,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(MOUSE_M_POINT_STR);
     orikeycodelist.removeOne(MOUSE_X1_POINT_STR);
     orikeycodelist.removeOne(MOUSE_X2_POINT_STR);
-    orikeycodelist.removeOne("Shift");
-    orikeycodelist.removeOne("Ctrl");
-    orikeycodelist.removeOne("Alt");
-    orikeycodelist.removeOne("Alt");
     orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
@@ -5296,6 +5358,82 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #else
     QBrush colorBrush(Qt::darkMagenta);
     m_mapkeyComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
+#endif
+}
+
+void QKeyMapper::initInputDeviceSelectComboBoxes()
+{
+    initKeyboardSelectComboBox();
+    initMouseSelectComboBox();
+}
+
+void QKeyMapper::initKeyboardSelectComboBox()
+{
+    if (!ui->keyboardSelectComboBox->isEnabled()) {
+        return;
+    }
+
+    int lastIndex = ui->keyboardSelectComboBox->currentIndex();
+    ui->keyboardSelectComboBox->clear();
+
+    QStringList keyboardDeviceList;
+    keyboardDeviceList.append(QString());
+
+    QList<InputDevice> keyboardlist = Interception_Worker::getKeyboardDeviceList();
+    for (const InputDevice &inputdevice : keyboardlist)
+    {
+        QString deviceStr;
+        if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), QString(NO_INPUTDEVICE));
+        }
+        else {
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_KEYBOARD(0)), inputdevice.deviceinfo.devicedesc);
+        }
+        keyboardDeviceList.append(deviceStr);
+    }
+    ui->keyboardSelectComboBox->addItems(keyboardDeviceList);
+
+    if (lastIndex != 0) {
+        ui->keyboardSelectComboBox->setCurrentIndex(lastIndex);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[initKeyboardSelectComboBox]" << "keyboardDeviceList ->" << keyboardDeviceList;
+#endif
+}
+
+void QKeyMapper::initMouseSelectComboBox()
+{
+    if (!ui->mouseSelectComboBox->isEnabled()) {
+        return;
+    }
+
+    int lastIndex = ui->mouseSelectComboBox->currentIndex();
+    ui->mouseSelectComboBox->clear();
+
+    QStringList mouseDeviceList;
+    mouseDeviceList.append(QString());
+
+    QList<InputDevice> mouselist = Interception_Worker::getMouseDeviceList();
+    for (const InputDevice &inputdevice : mouselist)
+    {
+        QString deviceStr;
+        if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), QString(NO_INPUTDEVICE));
+        }
+        else {
+            deviceStr = QString("[%1] %2").arg(QString::number(inputdevice.device - INTERCEPTION_MOUSE(0)), inputdevice.deviceinfo.devicedesc);
+        }
+        mouseDeviceList.append(deviceStr);
+    }
+    ui->mouseSelectComboBox->addItems(mouseDeviceList);
+
+    if (lastIndex != 0) {
+        ui->mouseSelectComboBox->setCurrentIndex(lastIndex);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[initMouseSelectComboBox]" << "mouseDeviceList ->" << mouseDeviceList;
 #endif
 }
 
@@ -5533,6 +5671,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
 #endif
     }
 
+    resizeKeyMappingDataTableColumnWidth();
     updateMousePointsList();
 }
 
@@ -5605,15 +5744,15 @@ void QKeyMapper::reloadUILanguage()
         setUILanguage_Chinese();
     }
 
-    QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        curGeometry.moveLeft(590);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
-    else {
-        curGeometry.moveLeft(600);
-        ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
-    }
+    // QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X - 10);
+    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    // }
+    // else {
+    //     curGeometry.moveLeft(VIRTUALGAMEPADTYPECOMBOBOX_X);
+    //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
+    // }
 
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
@@ -5675,6 +5814,18 @@ void QKeyMapper::setUILanguage_Chinese()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
+    ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
+    ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
+    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
+    ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_CHINESE);
+    ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
+    }
+    else {
+        ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+    }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
                                                                   << PROCESSINFOTABLE_COL2_CHINESE
@@ -5683,6 +5834,10 @@ void QKeyMapper::setUILanguage_Chinese()
                                                                  << KEYMAPDATATABLE_COL2_CHINESE
                                                                  << KEYMAPDATATABLE_COL3_CHINESE
                                                                  << KEYMAPDATATABLE_COL4_CHINESE);
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->setUILanguagee(LANGUAGE_CHINESE);
+    }
 }
 
 void QKeyMapper::setUILanguage_English()
@@ -5740,6 +5895,18 @@ void QKeyMapper::setUILanguage_English()
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
 #endif
+    ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_ENGLISH);
+    ui->mouseSelectLabel->setText(MOUSESELECTLABEL_ENGLISH);
+    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
+    ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_ENGLISH);
+    ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_ENGLISH);
+    ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_ENGLISH);
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
+    }
+    else {
+        ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
+    }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
                                                                   << PROCESSINFOTABLE_COL2_ENGLISH
@@ -5748,6 +5915,10 @@ void QKeyMapper::setUILanguage_English()
                                                                  << KEYMAPDATATABLE_COL2_ENGLISH
                                                                  << KEYMAPDATATABLE_COL3_ENGLISH
                                                                  << KEYMAPDATATABLE_COL4_ENGLISH);
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->setUILanguagee(LANGUAGE_ENGLISH);
+    }
 }
 
 void QKeyMapper::resetFontSize()
@@ -5767,6 +5938,8 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->keyboardSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
+        ui->mouseSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -5789,6 +5962,8 @@ void QKeyMapper::resetFontSize()
 
         ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadNumberSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadListComboBox->setFont(QFont("Microsoft YaHei", 9));
     }
     else {
         ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -5797,6 +5972,8 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
         m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->keyboardSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
+        ui->mouseSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
         ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -5819,6 +5996,12 @@ void QKeyMapper::resetFontSize()
 
         ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadNumberSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->virtualGamepadListComboBox->setFont(QFont("Microsoft YaHei", 9));
+    }
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->resetFontSize();
     }
 }
 
@@ -5871,6 +6054,16 @@ void QKeyMapper::showMousePoints(int onoff)
     else {
         ShowWindow(m_TransParentHandle, SW_HIDE);
     }
+}
+
+void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[showCarOrdinal]" << "CarOrdinal =" << car_ordinal;
+#endif
+
+    QString car_ordinal_str = QString::number(car_ordinal);
+    ui->pointDisplayLabel->setText(car_ordinal_str);
 }
 
 #ifdef SINGLE_APPLICATION
@@ -6099,13 +6292,32 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
+    bool multiInputSupport = false;
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        multiInputSupport = true;
+    }
     QString currentOriKeyText;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
+    QString currentMapKeyComboBoxText = currentMapKeyText;
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
     QString currentOriCombinationKeyText = ui->combinationKeyLineEdit->text();
     // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
     if (false == currentOriKeyComboBoxText.isEmpty()) {
         currentOriKeyText = currentOriKeyComboBoxText;
+
+        int keyboardselect_index = ui->keyboardSelectComboBox->currentIndex();
+        if (ui->keyboardSelectComboBox->isEnabled() && keyboardselect_index > 0) {
+            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(currentOriKeyText)) {
+                currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(keyboardselect_index - 1));
+            }
+        }
+
+        int mouseselect_index = ui->mouseSelectComboBox->currentIndex();
+        if (ui->mouseSelectComboBox->isEnabled() && mouseselect_index > 0) {
+            if (QKeyMapper_Worker::MultiMouseInputList.contains(currentOriKeyText)) {
+                currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(mouseselect_index - 1));
+            }
+        }
     }
     else if (false == currentOriCombinationKeyText.isEmpty()) {
         bool valid_combinationkey = true;
@@ -6118,10 +6330,57 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 valid_combinationkey = false;
             }
             else {
-                for (const QString &key : qAsConst(combinationkeyslist)) {
-                    if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
-                        valid_combinationkey = false;
-                        break;
+                if (multiInputSupport) {
+                    static QRegularExpression reg("@[0-9]$");
+                    QStringList keyslist;
+                    for (const QString &key : qAsConst(combinationkeyslist)) {
+                        bool multi_input = false;
+                        QString pure_key;
+                        QRegularExpressionMatch match = reg.match(key);
+                        if (match.hasMatch()) {
+                            int atIndex = key.lastIndexOf('@');
+                            pure_key = key.mid(0, atIndex);
+                            multi_input = true;
+                        } else {
+                            pure_key = key;
+                        }
+
+                        if (keyslist.contains(pure_key)) {
+                            valid_combinationkey = false;
+                            break;
+                        }
+
+                        if (multi_input) {
+                            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(pure_key)) {
+                            }
+                            else if (QKeyMapper_Worker::MultiMouseInputList.contains(pure_key)) {
+                            }
+                            else {
+                                valid_combinationkey = false;
+                                break;
+                            }
+                        }
+                        else {
+                            if (!QKeyMapper_Worker::CombinationKeysList.contains(pure_key)) {
+                                valid_combinationkey = false;
+                                break;
+                            }
+                        }
+                        keyslist.append(pure_key);
+                    }
+                }
+                else {
+                    QStringList keyslist;
+                    for (const QString &key : qAsConst(combinationkeyslist)) {
+                        if (keyslist.contains(key)) {
+                            valid_combinationkey = false;
+                            break;
+                        }
+                        if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
+                            valid_combinationkey = false;
+                            break;
+                        }
+                        keyslist.append(key);
                     }
                 }
             }
@@ -6150,18 +6409,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
     bool already_exist = false;
     int findindex = -1;
-    findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
+    // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
+    findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
     if (findindex != -1){
-        if (VJOY_MOUSE2LS_STR == currentOriKeyText
-            || VJOY_MOUSE2RS_STR == currentOriKeyText
-            || JOY_LS2MOUSE_STR == currentOriKeyText
-            || JOY_RS2MOUSE_STR == currentOriKeyText
-            || JOY_LS2VJOYLS_STR == currentOriKeyText
-            || JOY_RS2VJOYRS_STR == currentOriKeyText
-            || JOY_LS2VJOYRS_STR == currentOriKeyText
-            || JOY_RS2VJOYLS_STR == currentOriKeyText
-            || JOY_LT2VJOYLT_STR == currentOriKeyText
-            || JOY_RT2VJOYRT_STR == currentOriKeyText) {
+        if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
+            || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
+            || JOY_LS2MOUSE_STR == currentOriKeyComboBoxText
+            || JOY_RS2MOUSE_STR == currentOriKeyComboBoxText
+            || JOY_LS2VJOYLS_STR == currentOriKeyComboBoxText
+            || JOY_RS2VJOYRS_STR == currentOriKeyComboBoxText
+            || JOY_LS2VJOYRS_STR == currentOriKeyComboBoxText
+            || JOY_RS2VJOYLS_STR == currentOriKeyComboBoxText
+            || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
+            || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
             already_exist = true;
         }
         else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
@@ -6233,7 +6493,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 QMessageBox::warning(this, PROGRAM_NAME, message);
                 return;
             }
-            if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+
+            int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+            if (virtualgamepad_index > 0
+                && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
+                currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+            }
+            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
                 QString mousepointstr = ui->pointDisplayLabel->text();
                 if (mousepointstr.isEmpty()) {
                     QString message;
@@ -6291,20 +6557,30 @@ void QKeyMapper::on_addmapdataButton_clicked()
             KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
         }
         else {
-            if (VJOY_MOUSE2LS_STR == currentOriKeyText
-                || VJOY_MOUSE2RS_STR == currentOriKeyText
-                || JOY_LS2MOUSE_STR == currentOriKeyText
-                || JOY_RS2MOUSE_STR == currentOriKeyText
-                || JOY_LS2VJOYLS_STR == currentOriKeyText
-                || JOY_RS2VJOYRS_STR == currentOriKeyText
-                || JOY_LS2VJOYRS_STR == currentOriKeyText
-                || JOY_RS2VJOYLS_STR == currentOriKeyText
-                || JOY_LT2VJOYLT_STR == currentOriKeyText
-                || JOY_RT2VJOYRT_STR == currentOriKeyText) {
-                currentMapKeyText = currentOriKeyText;
+            if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
+                || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
+                || JOY_LS2MOUSE_STR == currentOriKeyComboBoxText
+                || JOY_RS2MOUSE_STR == currentOriKeyComboBoxText
+                || JOY_LS2VJOYLS_STR == currentOriKeyComboBoxText
+                || JOY_RS2VJOYRS_STR == currentOriKeyComboBoxText
+                || JOY_LS2VJOYRS_STR == currentOriKeyComboBoxText
+                || JOY_RS2VJOYLS_STR == currentOriKeyComboBoxText
+                || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
+                || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
+                currentMapKeyText = currentOriKeyComboBoxText;
+
+                int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+                if (virtualgamepad_index > 0) {
+                    currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+                }
             }
             else {
-                if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+                int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+                if (virtualgamepad_index > 0
+                    && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
+                    currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+                }
+                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
                     QString mousepointstr = ui->pointDisplayLabel->text();
                     if (mousepointstr.isEmpty()) {
                         QString message;
@@ -6330,15 +6606,15 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
-                    && currentMapKeyText != KEY_BLOCKED_STR
-                    && currentMapKeyText.startsWith(KEY2MOUSE_PREFIX) == false
-                    && currentMapKeyText.startsWith(FUNC_PREFIX) == false
-                    && currentMapKeyText != MOUSE2VJOY_HOLD_KEY_STR
-                    && currentMapKeyText != MOUSE2VJOY_DIRECT_KEY_STR
-                    && currentMapKeyText != VJOY_LT_BRAKE_STR
-                    && currentMapKeyText != VJOY_RT_BRAKE_STR
-                    && currentMapKeyText != VJOY_LT_ACCEL_STR
-                    && currentMapKeyText != VJOY_RT_ACCEL_STR) {
+                    && currentMapKeyComboBoxText != KEY_BLOCKED_STR
+                    && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
+                    && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
+                    && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
+                    && currentMapKeyComboBoxText != MOUSE2VJOY_DIRECT_KEY_STR
+                    && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
+                    && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
+                    && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR
+                    && currentMapKeyComboBoxText != VJOY_RT_ACCEL_STR) {
                     currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
             }
@@ -6390,10 +6666,32 @@ void QKeyMapper::on_deleteoneButton_clicked()
 
 void QKeyMapper::on_clearallButton_clicked()
 {
-    ui->keymapdataTable->clearContents();
-    ui->keymapdataTable->setRowCount(0);
-    KeyMappingDataList.clear();
-    MousePointsList.clear();
+    int language_index = ui->languageComboBox->currentIndex();
+    QString message;
+    if (LANGUAGE_ENGLISH == language_index) {
+        message = "Are you sure you want to clear all data in the mapping table?";
+    }
+    else {
+        message = "请确认是否要清除映射表中全部数据？";
+    }
+
+    QMessageBox::StandardButton reply;
+    if (LANGUAGE_ENGLISH == language_index) {
+        reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+    }
+    else {
+        reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+    }
+
+    if (reply == QMessageBox::Yes) {
+        ui->keymapdataTable->clearContents();
+        ui->keymapdataTable->setRowCount(0);
+        KeyMappingDataList.clear();
+        MousePointsList.clear();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
+#endif
+    }
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -6415,7 +6713,6 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBox_Press]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
     qDebug("[KeyListComboBox_Press] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
-    qDebug("[CAPS Status] KeyState(0x%04X)", GetAsyncKeyState(VK_CAPITAL));
 #endif
 
     V_KEYCODE vkeycode;
@@ -6811,7 +7108,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[EnableVirtualJoystick] Enable Virtual Joystick state changed ->" << (Qt::CheckState)state;
+    qDebug() << "[EnableVirtualGamepad] Enable Virtual Gamepad state changed ->" << (Qt::CheckState)state;
 #endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -6819,29 +7116,60 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 
     if (Qt::Checked == state) {
-        int retval = QKeyMapper_Worker::ViGEmClient_Add();
+        bool enable_result = false;
+        if (QKeyMapper_Worker::s_VirtualGamepadList.size() <= VIRTUAL_GAMEPAD_NUMBER_MAX
+            && QKeyMapper_Worker::s_ViGEmTargetList.isEmpty()
+            && QKeyMapper_Worker::s_ViGEmTarget_ReportList.isEmpty()) {
+            if (QKeyMapper_Worker::s_VirtualGamepadList.size() == 1
+                && QKeyMapper_Worker::s_VirtualGamepadList.constFirst() != getVirtualGamepadType()) {
+                QKeyMapper_Worker::s_VirtualGamepadList[0] = getVirtualGamepadType();
+            }
 
-        if (retval != 0) {
-            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+            int gamepad_index = 0;
+            for (const QString &gamepad_type : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList)){
+                PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
+                if (added_target != Q_NULLPTR) {
+                    QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
+                    QKeyMapper_Worker::s_ViGEmTargetList.append(added_target);
+                    QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_index);
+                    gamepad_index++;
+                }
+            }
+
+            if (QKeyMapper_Worker::s_ViGEmTargetList.size() == QKeyMapper_Worker::s_VirtualGamepadList.size()) {
+                enable_result = true;
+            }
+        }
+
+        if (enable_result) {
+            checked = true;
 #ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[EnableVirtualJoystick] Enable Virtual Joystick failed!!!";
+            qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Enable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
         }
         else {
-            checked = true;
+            ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[EnableVirtualJoystick] Enable All Virtual Gamepad failed!!!";
+#endif
         }
     }
     else {
-        QKeyMapper_Worker::ViGEmClient_Remove();
+        QKeyMapper_Worker::ViGEmClient_RemoveAllTargets();
         checked = false;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Disable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
     }
 
-    if (true == checked && QKeyMapper_Worker::s_ViGEmTarget != Q_NULLPTR) {
+    if (true == checked) {
         ui->vJoyXSensSpinBox->setEnabled(true);
         ui->vJoyYSensSpinBox->setEnabled(true);
         ui->vJoyXSensLabel->setEnabled(true);
         ui->vJoyYSensLabel->setEnabled(true);
         ui->lockCursorCheckBox->setEnabled(true);
+        ui->virtualGamepadNumberSpinBox->setEnabled(true);
+        ui->virtualGamepadListComboBox->setEnabled(true);
 
         settingFile.setValue(VIRTUALGAMEPAD_ENABLE , true);
     }
@@ -6851,10 +7179,14 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyXSensLabel->setEnabled(false);
         ui->vJoyYSensLabel->setEnabled(false);
         ui->lockCursorCheckBox->setEnabled(false);
+        ui->virtualGamepadNumberSpinBox->setEnabled(false);
+        ui->virtualGamepadListComboBox->setEnabled(false);
 
         settingFile.setValue(VIRTUALGAMEPAD_ENABLE , false);
     }
 #endif
+
+    emit updateVirtualGamepadListDisplay_Signal();
 }
 
 
@@ -6866,7 +7198,8 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         qDebug() << "Uninstall ViGEm Bus.";
 #endif
 
-        QKeyMapper_Worker::ViGEmClient_Remove();
+        // QKeyMapper_Worker::ViGEmClient_Remove();
+        QKeyMapper_Worker::ViGEmClient_RemoveAllTargets();
         QKeyMapper_Worker::ViGEmClient_Disconnect();
         QKeyMapper_Worker::ViGEmClient_Free();
 
@@ -6944,5 +7277,190 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
     }
     else {
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
+    }
+}
+
+void QKeyMapper::on_installInterceptionButton_clicked()
+{
+    Interception_Worker::Interception_State currentInterceptionState = Interception_Worker::getInterceptionState();
+    int languageIndex = ui->languageComboBox->currentIndex();
+
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == currentInterceptionState) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Uninstall Interception Driver, InterceptionState ->" << currentInterceptionState;
+#endif
+
+        Interception_Worker::getInstance()->doUnloadInterception();
+
+        (void)uninstallInterceptionDriver();
+        Interception_Worker::setRebootRequiredFlag();
+
+        emit updateMultiInputStatus_Signal();
+
+        Interception_Worker::Interception_State newInterceptionState = Interception_Worker::getInterceptionState();
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Uninstall Interception Driver, New InterceptionState ->" << newInterceptionState;
+#endif
+
+        if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == newInterceptionState) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_installViGEmBusButton_clicked]" << "Reboot required after uninstall Interception Driver, InterceptionState ->" << newInterceptionState;
+#endif
+            /* Show Reboot Required MessageBox after Uninstall Interception Driver */
+            if (LANGUAGE_ENGLISH == languageIndex) {
+                QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "卸载多输入设备驱动后需要重新启动操作系统生效。");
+            }
+        }
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, Current InterceptionState ->" << currentInterceptionState;
+#endif
+        (void)installInterceptionDriver();
+
+        int loop = 0;
+        for (loop = 0; loop < INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX; loop++) {
+            if (Interception_Worker::isInterceptionDriverFileExist()) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, InterceptionDriverFileExist() wait time ->" << loop * INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
+#endif
+                break;
+            }
+            else {
+                QThread::msleep(INSTALL_INTERCEPTION_LOOP_WAIT_TIME);
+            }
+        }
+
+        emit updateMultiInputStatus_Signal();
+
+        Interception_Worker::Interception_State newInterceptionState = Interception_Worker::getInterceptionState();
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installViGEmBusButton_clicked]" << "Install Interception Driver, New InterceptionState ->" << newInterceptionState;
+#endif
+
+        if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == newInterceptionState) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_installViGEmBusButton_clicked]" << "Reboot required after install Interception Driver, InterceptionState ->" << newInterceptionState;
+#endif
+            /* Show Reboot Required MessageBox after Install Interception Driver */
+            if (LANGUAGE_ENGLISH == languageIndex) {
+                QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after installing the multi-input device driver.");
+            }
+            else {
+                QMessageBox::warning(this, PROGRAM_NAME, "安装多输入设备驱动后需要重新启动操作系统生效。");
+            }
+        }
+    }
+}
+
+void QKeyMapper::on_multiInputDeviceListButton_clicked()
+{
+    showInputDeviceListWindow();
+}
+
+void QKeyMapper::on_multiInputEnableCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MultiInput] MultiInput Enable state changed ->" << (Qt::CheckState)state;
+#endif
+
+    if (Qt::Checked == state) {
+        Interception_Worker::startInterception();
+    }
+    else {
+        Interception_Worker::stopInterception();
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
+    if (Qt::Checked == state) {
+        settingFile.setValue(MULTI_INPUT_ENABLE , true);
+    }
+    else {
+        settingFile.setValue(MULTI_INPUT_ENABLE , false);
+    }
+}
+
+void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] number changed ->" << number;
+#endif
+    int gamepad_number = QKeyMapper_Worker::s_VirtualGamepadList.size();
+
+    if (number < VIRTUAL_GAMEPAD_NUMBER_MIN || number > VIRTUAL_GAMEPAD_NUMBER_MAX) {
+        ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+        return;
+    }
+
+    if ((number == gamepad_number + 1)
+        && (number == QKeyMapper_Worker::s_ViGEmTargetList.size() + 1)
+        && (number == QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() + 1)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] Virtual Gamepad number increased," << gamepad_number << "->" << number;
+#endif
+        QString gamepad_type = getVirtualGamepadType();
+        PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
+        if (added_target != Q_NULLPTR) {
+            QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
+            QKeyMapper_Worker::s_VirtualGamepadList.append(gamepad_type);
+            QKeyMapper_Worker::s_ViGEmTargetList.append(added_target);
+            QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_number);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << " Add Virtual Gamepad(" << gamepad_type << ") success -> " << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
+        }
+
+        emit updateVirtualGamepadListDisplay_Signal();
+    }
+    else if ((number == gamepad_number - 1)
+         && (number == QKeyMapper_Worker::s_ViGEmTargetList.size() - 1)
+         && (number == QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() - 1)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged] Virtual Gamepad number decreased," << gamepad_number << "->" << number;
+#endif
+        PVIGEM_TARGET target_toremove = QKeyMapper_Worker::s_ViGEmTargetList.at(number);
+        if (target_toremove != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+            QString removed_gamepadtype = QKeyMapper_Worker::s_VirtualGamepadList.last();
+#endif
+            QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(number);
+            QKeyMapper_Worker::ViGEmClient_RemoveTarget(target_toremove);
+            QKeyMapper_Worker::s_ViGEmTargetList.removeLast();
+            QKeyMapper_Worker::s_ViGEmTarget_ReportList.removeLast();
+            QKeyMapper_Worker::s_VirtualGamepadList.removeLast();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << " Remove Virtual Gamepad(" << removed_gamepadtype << ") success -> " << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
+        }
+
+        emit updateVirtualGamepadListDisplay_Signal();
+    }
+    else {
+        ui->virtualGamepadNumberSpinBox->setValue(gamepad_number);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_virtualGamepadNumberSpinBox_valueChanged]" << "Size error! s_ViGEmTargetList.size =" << QKeyMapper_Worker::s_ViGEmTargetList.size() << ", s_ViGEmTarget_ReportList.size =" << QKeyMapper_Worker::s_ViGEmTarget_ReportList.size() << ", s_VirtualGamepadList ->" << QKeyMapper_Worker::s_VirtualGamepadList;
+#endif
+    }
+}
+
+void QKeyMapper::on_filterKeysCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MultiInput] Filter Keys state changed ->" << (Qt::CheckState)state;
+#endif
+
+    if (Qt::Checked == state) {
+        Interception_Worker::s_FilterKeys = true;
+    }
+    else {
+        Interception_Worker::s_FilterKeys = false;
     }
 }

@@ -22,11 +22,12 @@ DEFINES += SINGLE_APPLICATION
 # DEFINES += JOYSTICK_VERBOSE_LOG
 # DEFINES += MOUSE_VERBOSE_LOG
 # DEFINES += GRIP_VERBOSE_LOG
-DEFINES += MOUSEBUTTON_CONVERT
-DEFINES += SETTINGSFILE_CONVERT
+# DEFINES += MOUSEBUTTON_CONVERT
+# DEFINES += SETTINGSFILE_CONVERT
 DEFINES += VIGEM_CLIENT_SUPPORT
 DEFINES += HOOKSTART_ONSTARTUP
 DEFINES += SDL_JOYSTICK_BLACKLIST
+# DEFINES += INTERCEPTION_VERBOSE_LOG
 
 lessThan(QT_MAJOR_VERSION, 6) {
     message("Qt5 Version")
@@ -98,6 +99,7 @@ LIBS        += Version.Lib
 LIBS        += SDL2.lib
 LIBS        += AdvAPI32.Lib
 LIBS        += powrprof.lib
+LIBS        += SetupAPI.Lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
 }
@@ -112,7 +114,6 @@ contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
     }
 
     LIBS    += ViGEmClient.lib
-    LIBS    += SetupAPI.Lib
 
     INCLUDEPATH += $$PWD/ViGEm/include
 
@@ -122,16 +123,45 @@ contains( DEFINES, VIGEM_CLIENT_SUPPORT ) {
         ViGEm\include\ViGEm\Util.h
 }
 
+
+# Interception Driver Support >>>
+contains(DEFINES, WIN64) {
+# Interception x64 dll library
+LIBS        += -L$$PWD/Interception/lib/x64
+LIBS        += -L$$PWD/libusb/lib/x64
+} else {
+# Interception x86 dll library
+LIBS        += -L$$PWD/Interception/lib/x86
+LIBS        += -L$$PWD/libusb/lib/x86
+}
+LIBS        += interception.lib
+LIBS        += libusb-1.0.lib
+
+INCLUDEPATH += $$PWD/Interception/include
+INCLUDEPATH += $$PWD/libusb/include
+
+HEADERS     += \
+    Interception/include/interception.h \
+    libusb/include/libusb.h
+# Interception Driver Support <<<
+
+
 # UAC for Administrator
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
 
 SOURCES     += \
+    interception_worker.cpp \
     main.cpp \
+    qinputdevicelistwindow.cpp \
     qkeymapper.cpp \
+    qkeymapper_constants.cpp \
     qkeymapper_worker.cpp
 
 HEADERS     += \
+    interception_worker.h \
+    qinputdevicelistwindow.h \
     qkeymapper.h \
+    qkeymapper_constants.h \
     qkeymapper_worker.h
 
 contains( DEFINES, SINGLE_APPLICATION ) {
@@ -145,11 +175,13 @@ contains( DEFINES, SINGLE_APPLICATION ) {
 }
 
 FORMS       += \
+    qinputdevicelistwindow.ui \
     qkeymapper.ui
 
 RESOURCES   += \
     image.qrc \
-    sound.qrc
+    sound.qrc \
+    usb-ids.qrc
 
 contains( DEFINES, USE_SAOFONT ) {
 RESOURCES   += font.qrc

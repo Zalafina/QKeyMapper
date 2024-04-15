@@ -45,6 +45,8 @@ class QKeyMapper;
 
 #define PREFIX_SHORTCUT         ("★")
 
+#define JOIN_DEVICE             ("##")
+
 #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
 #define KEYSEQUENCE_STR         ("KeySequence")
 #define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
@@ -53,8 +55,12 @@ class QKeyMapper;
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
 
-#define SHOW_MOUSEPOINTS_OFF     (0)
-#define SHOW_MOUSEPOINTS_ON      (1)
+#define SHOW_MOUSEPOINTS_OFF    (0)
+#define SHOW_MOUSEPOINTS_ON     (1)
+
+#define INTERCEPTION_EXTRA_INFO (0xAAAA0000)
+
+#define INITIAL_MOUSE_INDEX     (-1)
 
 typedef struct MAP_KEYDATA
 {
@@ -315,21 +321,39 @@ public:
 
     enum Mouse2vJoyState
     {
-        MOUSE2VJOY_NONE,
-        MOUSE2VJOY_LEFT,
-        MOUSE2VJOY_RIGHT,
-        MOUSE2VJOY_BOTH
+        MOUSE2VJOY_NONE     = 0x00,
+        MOUSE2VJOY_LEFT     = 0x01,
+        MOUSE2VJOY_RIGHT    = 0x02,
+        MOUSE2VJOY_BOTH     = MOUSE2VJOY_LEFT | MOUSE2VJOY_RIGHT,
     };
     Q_ENUM(Mouse2vJoyState)
+    Q_DECLARE_FLAGS(Mouse2vJoyStates, Mouse2vJoyState)
+
+    struct Mouse2vJoyData {
+        Mouse2vJoyStates states;
+        int gamepad_index;
+
+#ifdef DEBUG_LOGOUT_ON
+        friend QDebug operator<<(QDebug debug, const Mouse2vJoyData& data) {
+            QDebugStateSaver saver(debug);
+            debug.nospace() << "Mouse2vJoyData("
+                            << "gamepad_index:" << data.gamepad_index
+                            << ", states:" << data.states
+                            << ")";
+            return debug;
+        }
+#endif
+    };
 
     enum GripDetectState
     {
-        GRIPDETECT_NONE,
-        GRIPDETECT_BRAKE,
-        GRIPDETECT_ACCEL,
-        GRIPDETECT_BOTH
+        GRIPDETECT_NONE     = 0,
+        GRIPDETECT_BRAKE    = 1,
+        GRIPDETECT_ACCEL    = 2,
+        GRIPDETECT_BOTH     = GRIPDETECT_BRAKE | GRIPDETECT_ACCEL
     };
     Q_ENUM(GripDetectState)
+    Q_DECLARE_FLAGS(GripDetectStates, GripDetectState)
 
     Q_ENUM(Joy2vJoyTriggerState)
     Q_ENUM(Joy2vJoyLeftStickState)
@@ -355,8 +379,11 @@ public slots:
     void setMouseToScreenBottomRight(void);
     POINT mousePositionAfterSetMouseToScreenBottomRight(void);
 #ifdef VIGEM_CLIENT_SUPPORT
-    void onMouseMove(int x, int y);
-    void onMouse2vJoyResetTimeout(void);
+    void onMouseMove(int delta_x, int delta_y, int mouse_index);
+    // void onMouse2vJoyResetTimeout(void);
+    void initMouse2vJoyResetTimerMap(void);
+    void stopMouse2vJoyResetTimerMap(void);
+    void onMouse2vJoyResetTimeoutForMap(int mouse_index);
 #endif
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
@@ -381,10 +408,16 @@ public:
 public:
     static int ViGEmClient_Alloc(void);
     static int ViGEmClient_Connect(void);
-    static int ViGEmClient_Add(void);
-    static void ViGEmClient_Remove(void);
+    // static int ViGEmClient_Add(void);
+    static PVIGEM_TARGET ViGEmClient_AddTarget_byType(const QString &gamepadtype);
+    // static void ViGEmClient_Remove(void);
+    static void ViGEmClient_RemoveTarget(PVIGEM_TARGET target);
+    static void ViGEmClient_RemoveAllTargets(void);
     static void ViGEmClient_Disconnect(void);
     static void ViGEmClient_Free(void);
+
+    static void saveVirtualGamepadList(void);
+    static void loadVirtualGamepadList(const QStringList& gamepadlist);
 
     static void updateViGEmBusStatus(void);
     static void updateLockStatus(void);
@@ -392,16 +425,19 @@ public:
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
     static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
-    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust);
-    static void ViGEmClient_ReleaseButton(const QString &joystickButton);
-    static void ViGEmClient_CheckJoysticksReportData(void);
+    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index);
+    static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
+    static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
 
-    static Mouse2vJoyState ViGEmClient_checkMouse2JoystickEnableState(void);
-    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y);
-    void ViGEmClient_Joy2vJoystickUpdate(int sticktype);
-    void ViGEmClient_GamepadReset(void);
-    void ViGEmClient_JoysticksReset(void);
+    // static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
+    static QHash<int, Mouse2vJoyData> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
+    void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index, int gamepad_index);
+    void ViGEmClient_Joy2vJoystickUpdate(int sticktype, int gamepad_index);
+    // void ViGEmClient_GamepadReset(void);
+    void ViGEmClient_AllGamepadReset(void);
+    static void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
+    void ViGEmClient_JoysticksReset(int mouse_index, int gamepad_index);
 #endif
 
 signals:
@@ -415,7 +451,7 @@ signals:
 #endif
     void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
 #ifdef VIGEM_CLIENT_SUPPORT
-    void onMouseMove_Signal(int point_x, int point_y);
+    void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif
 #if 0
     void onMouseWheel_Signal(int wheel_updown);
@@ -425,8 +461,8 @@ signals:
 #if 0
     void sendSpecialVirtualKey_Signal(const QString &keycodeString, int keyupdown);
 #endif
-    void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
-    void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr);
+    void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
+    void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
     void doFunctionMappingProc_Signal(const QString &func_keystring);
 
 protected:
@@ -439,7 +475,7 @@ public slots:
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
-    GripDetectState checkGripDetectEnableState(void);
+    GripDetectStates checkGripDetectEnableState(void);
     Joy2vJoyState checkJoy2vJoyState(void);
     void processUdpPendingDatagrams(void);
     void processForzaFormatData(const QByteArray &forzadata);
@@ -459,8 +495,8 @@ public slots:
     void checkJoystickPOV(const QJoystickPOVEvent &e);
     void checkJoystickAxis(const QJoystickAxisEvent &e);
 
-    void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
-    void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr);
+    void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index);
+    void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index);
     Joy2MouseState checkJoystick2MouseEnableState(void);
     bool checkKey2MouseEnableState(void);
     void doFunctionMappingProc(const QString &func_keystring);
@@ -476,6 +512,7 @@ private:
     void key2MouseMoveProc(void);
 
 public:
+    static bool InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index);
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
@@ -488,6 +525,7 @@ public:
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
     static QString getWindowsKeyName(uint virtualKeyCode);
+    static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
@@ -499,6 +537,9 @@ private:
 
     void initVirtualKeyCodeMap(void);
     void initVirtualMouseButtonMap(void);
+    void initMultiKeyboardInputList(void);
+    void initMultiMouseInputList(void);
+    void initMultiVirtualGamepadInputList(void);
     void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
     // void initSkipReleaseModifiersKeysList(void);
@@ -508,6 +549,7 @@ private:
 #endif
     void clearAllBurstTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
+    void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
 public:
@@ -528,12 +570,16 @@ public:
     static QAtomicBool s_Key2Mouse_Left;
     static QAtomicBool s_Key2Mouse_Right;
     static bool s_forceSendVirtualKey;
+    static qint32 s_LastCarOrdinal;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
     static QHash<WPARAM, QString> MouseButtonNameMap;
 #ifdef MOUSEBUTTON_CONVERT
     static QHash<QString, QString> MouseButtonNameConvertMap;
 #endif
+    static QStringList MultiKeyboardInputList;
+    static QStringList MultiMouseInputList;
+    static QStringList MultiVirtualGamepadInputList;
     static QStringList CombinationKeysList;
     // static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;
@@ -542,12 +588,14 @@ public:
     static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
 #endif
     static QStringList pressedRealKeysList;
+    static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
+    static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
 #ifdef VIGEM_CLIENT_SUPPORT
-    static QStringList pressedvJoyLStickKeys;
-    static QStringList pressedvJoyRStickKeys;
-    static QStringList pressedvJoyButtons;
+    static QList<QStringList> pressedvJoyLStickKeysList;
+    static QList<QStringList> pressedvJoyRStickKeysList;
+    static QList<QStringList> pressedvJoyButtonsList;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QStringList pressedLockKeysList;
@@ -564,14 +612,17 @@ public:
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;
-    static PVIGEM_TARGET s_ViGEmTarget;
+    // static PVIGEM_TARGET s_ViGEmTarget;
+    static QList<PVIGEM_TARGET> s_ViGEmTargetList;
     static ViGEmClient_ConnectState s_ViGEmClient_ConnectState;
-    static XUSB_REPORT s_ViGEmTarget_Report;
+    // static XUSB_REPORT s_ViGEmTarget_Report;
+    static QList<XUSB_REPORT> s_ViGEmTarget_ReportList;
+    static QStringList s_VirtualGamepadList;
     static BYTE s_Auto_Brake;
     static BYTE s_Auto_Accel;
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
-    static GripDetectState s_GripDetect_EnableState;
+    static GripDetectStates s_GripDetect_EnableState;
     static Joy2vJoyState s_Joy2vJoyState;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;
@@ -580,7 +631,11 @@ public:
 #endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
-    static Mouse2vJoyState s_Mouse2vJoy_EnableState;
+    static QList<QPoint> s_Mouse2vJoy_delta_List;
+    static QPoint s_Mouse2vJoy_delta_interception;
+    // static Mouse2vJoyStates s_Mouse2vJoy_EnableState;
+    static QHash<int, Mouse2vJoyData> s_Mouse2vJoy_EnableStateMap;
+    static QMutex s_MouseMove_delta_List_Mutex;
 #endif
 
     static bool s_Key2Mouse_EnableState;
@@ -602,7 +657,8 @@ private:
     IDirectInput8* m_DirectInput;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
-    QTimer m_Mouse2vJoyResetTimer;
+    // QTimer m_Mouse2vJoyResetTimer;
+    QHash<int, QTimer*> m_Mouse2vJoyResetTimerMap;
 #endif
     QTimer m_Key2MouseCycleTimer;
     QUdpSocket *m_UdpSocket;
