@@ -7,7 +7,7 @@
     <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg"/></a>
 </p>
 
-## 在Win10和Win11下可以正常使用的按键映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231220)新增游戏手柄按键和虚拟游戏手柄支持。
+## 在Win10和Win11下可以正常使用的按键映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231220)新增游戏手柄按键和虚拟游戏手柄支持。v1.3.7(Build 20240410)增加多键鼠+多虚拟手柄支持。
 ---------------
 ### 最新Release版本压缩包下载:
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
