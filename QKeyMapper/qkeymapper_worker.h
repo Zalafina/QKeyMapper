@@ -238,6 +238,25 @@ public:
     };
     Q_ENUM(VirtualKeyCode)
 
+    enum MouseEvent
+    {
+        EVENT_NONE = 0,
+        EVENT_MOUSEMOVE,
+        EVENT_LBUTTONDOWN,
+        EVENT_LBUTTONUP,
+        EVENT_RBUTTONDOWN,
+        EVENT_RBUTTONUP,
+        EVENT_MBUTTONDOWN,
+        EVENT_MBUTTONUP,
+        EVENT_X1BUTTONDOWN,
+        EVENT_X1BUTTONUP,
+        EVENT_X2BUTTONDOWN,
+        EVENT_X2BUTTONUP,
+        EVENT_MOUSEWHEEL,
+        EVENT_MOUSEHWHEEL
+    };
+    Q_ENUM(MouseEvent)
+
     enum JoystickButtonCode
     {
         JOYSTICK_BUTTON_0 = 0,
@@ -513,6 +532,7 @@ private:
 
 public:
     static bool InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index);
+    static bool InterceptionMouseHookProc(MouseEvent mouse_event, int delta_x, int delta_y, short delta_wheel, unsigned short flags, ULONG_PTR extra_info, int mouse_index);
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 

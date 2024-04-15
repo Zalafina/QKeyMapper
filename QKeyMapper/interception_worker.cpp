@@ -96,6 +96,57 @@ void Interception_Worker::InterceptionThreadStarted()
                     QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].rx() += mstroke.x;
                     QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].ry() += mstroke.y;
                 }
+
+                ULONG_PTR extraInfo = mstroke.information;
+                QKeyMapper_Worker::MouseEvent mouse_event = QKeyMapper_Worker::EVENT_NONE;
+                if (mstroke.state != 0) {
+                    if ((mstroke.state & INTERCEPTION_MOUSE_LEFT_BUTTON_DOWN) == INTERCEPTION_MOUSE_LEFT_BUTTON_DOWN) {
+                        mouse_event = QKeyMapper_Worker::EVENT_LBUTTONDOWN;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_LEFT_BUTTON_UP) == INTERCEPTION_MOUSE_LEFT_BUTTON_UP) {
+                        mouse_event = QKeyMapper_Worker::EVENT_LBUTTONUP;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_RIGHT_BUTTON_DOWN) == INTERCEPTION_MOUSE_RIGHT_BUTTON_DOWN) {
+                        mouse_event = QKeyMapper_Worker::EVENT_RBUTTONDOWN;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_RIGHT_BUTTON_UP) == INTERCEPTION_MOUSE_RIGHT_BUTTON_UP) {
+                        mouse_event = QKeyMapper_Worker::EVENT_RBUTTONUP;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_MIDDLE_BUTTON_DOWN) == INTERCEPTION_MOUSE_MIDDLE_BUTTON_DOWN) {
+                        mouse_event = QKeyMapper_Worker::EVENT_MBUTTONDOWN;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_MIDDLE_BUTTON_UP) == INTERCEPTION_MOUSE_MIDDLE_BUTTON_UP) {
+                        mouse_event = QKeyMapper_Worker::EVENT_MBUTTONUP;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_BUTTON_4_DOWN) == INTERCEPTION_MOUSE_BUTTON_4_DOWN) {
+                        mouse_event = QKeyMapper_Worker::EVENT_X1BUTTONDOWN;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_BUTTON_4_UP) == INTERCEPTION_MOUSE_BUTTON_4_UP) {
+                        mouse_event = QKeyMapper_Worker::EVENT_X1BUTTONUP;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_BUTTON_5_DOWN) == INTERCEPTION_MOUSE_BUTTON_5_DOWN) {
+                        mouse_event = QKeyMapper_Worker::EVENT_X2BUTTONDOWN;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_BUTTON_5_UP) == INTERCEPTION_MOUSE_BUTTON_5_UP) {
+                        mouse_event = QKeyMapper_Worker::EVENT_X2BUTTONUP;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_WHEEL) == INTERCEPTION_MOUSE_WHEEL) {
+                        mouse_event = QKeyMapper_Worker::EVENT_MOUSEWHEEL;
+                    }
+                    else if ((mstroke.state & INTERCEPTION_MOUSE_HWHEEL) == INTERCEPTION_MOUSE_HWHEEL) {
+                        mouse_event = QKeyMapper_Worker::EVENT_MOUSEHWHEEL;
+                    }
+                }
+                else {
+                    if (mstroke.x != 0 || mstroke.y != 0) {
+                        mouse_event = QKeyMapper_Worker::EVENT_MOUSEMOVE;
+                    }
+                }
+
+#ifdef DEBUG_LOGOUT_ON
+                QString stateStr = QString("0x%1").arg(QString::number(mstroke.state, 16).toUpper(), 8, '0');
+                qDebug().nospace() << "[KeyInterceptionWorker] Mouse[" << index << "] " << "State=" << stateStr << ", mouse_event=" << mouse_event << ", x=" << mstroke.x << ", y=" << mstroke.y <<", rolling=" << mstroke.rolling;
+#endif
             }
         }
         else

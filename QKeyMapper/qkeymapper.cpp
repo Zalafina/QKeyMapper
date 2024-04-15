@@ -5060,6 +5060,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << MOUSE_X2_POINT_STR
             << MOUSE_WHEEL_UP_STR
             << MOUSE_WHEEL_DOWN_STR
+            << MOUSE_WHEEL_LEFT_STR
+            << MOUSE_WHEEL_RIGHT_STR
             << "A"
             << "B"
             << "C"
@@ -5574,6 +5576,11 @@ void QKeyMapper::refreshKeyMappingDataTable()
             }
 
             if (keymapdata.Original_Key.contains(MOUSE_WHEEL_UP_STR) || keymapdata.Original_Key.contains(MOUSE_WHEEL_DOWN_STR)) {
+                disable_burst = true;
+                disable_lock = true;
+            }
+
+            if (keymapdata.Original_Key.contains(MOUSE_WHEEL_LEFT_STR) || keymapdata.Original_Key.contains(MOUSE_WHEEL_RIGHT_STR)) {
                 disable_burst = true;
                 disable_lock = true;
             }

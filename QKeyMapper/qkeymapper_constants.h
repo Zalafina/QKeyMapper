@@ -310,6 +310,8 @@ extern const char *SHOW_MOUSE_POINTS_KEY;
 extern const char *SHOW_CAR_ORDINAL_KEY;
 extern const char* MOUSE_WHEEL_UP_STR;
 extern const char* MOUSE_WHEEL_DOWN_STR;
+extern const char *MOUSE_WHEEL_LEFT_STR;
+extern const char *MOUSE_WHEEL_RIGHT_STR;
 extern const char* JOY_KEY_PREFIX;
 extern const char* VJOY_KEY_PREFIX;
 extern const char* VJOY_MOUSE2LS_STR;

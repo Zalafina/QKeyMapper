@@ -4782,6 +4782,32 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
     return returnFlag;
 }
 
+bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int delta_x, int delta_y, short delta_wheel, unsigned short flags, ULONG_PTR extra_info, int mouse_index)
+{
+#ifdef HOOKSTART_ONSTARTUP
+    bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
+#endif
+
+    bool returnFlag = false;
+    ULONG_PTR extraInfo = extra_info;
+
+    if ((mouse_event == EVENT_LBUTTONDOWN || mouse_event == EVENT_LBUTTONUP)
+        || (mouse_event == EVENT_RBUTTONDOWN || mouse_event == EVENT_RBUTTONUP)
+        || (mouse_event == EVENT_MBUTTONDOWN || mouse_event == EVENT_MBUTTONUP)
+        || (mouse_event == EVENT_X1BUTTONDOWN || mouse_event == EVENT_X1BUTTONUP)
+        || (mouse_event == EVENT_X2BUTTONDOWN || mouse_event == EVENT_X2BUTTONUP)) {
+
+    }
+    else if (mouse_event == EVENT_MOUSEWHEEL || mouse_event == EVENT_MOUSEHWHEEL) {
+
+    }
+    else if (mouse_event == EVENT_MOUSEMOVE) {
+
+    }
+
+    return returnFlag;
+}
+
 LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 #ifdef HOOKSTART_ONSTARTUP
@@ -5380,7 +5406,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             }
         }
     }
-    else if (wParam == WM_MOUSEWHEEL) {
+    else if (wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL) {
         if (!hookprocstart) {
             return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
         }
@@ -5391,13 +5417,28 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
             if (zDelta != 0) {
 #ifdef MOUSE_VERBOSE_LOG
-                qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel -> Delta =" << zDelta;
-#endif
-                if (zDelta > 0) {
-                    qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Up";
+                if (wParam == WM_MOUSEHWHEEL) {
+                    qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Horizontal -> Delta =" << zDelta;
                 }
                 else {
-                    qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Down";
+                    qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Vertical -> Delta =" << zDelta;
+                }
+#endif
+                if (zDelta > 0) {
+                    if (wParam == WM_MOUSEHWHEEL) {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Right";
+                    }
+                    else {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Up";
+                    }
+                }
+                else {
+                    if (wParam == WM_MOUSEHWHEEL) {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Left";
+                    }
+                    else {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Virtual Mouse Wheel Down";
+                    }
                 }
             }
 #endif
@@ -5409,18 +5450,38 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 QString extraInfoStr = QString("0x%1").arg(QString::number(extraInfo, 16).toUpper(), 8, '0');
                 if (zDelta > 0) {
-                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Up -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                    if (wParam == WM_MOUSEHWHEEL) {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Right -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                    }
+                    else {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Up -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                    }
                 }
                 else {
-                    qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Down -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                    if (wParam == WM_MOUSEHWHEEL) {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Left -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                    }
+                    else {
+                        qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Down -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                    }
                 }
 #endif
                 QString keycodeString;
                 if (zDelta > 0) {
-                    keycodeString = MOUSE_WHEEL_UP_STR;
+                    if (wParam == WM_MOUSEHWHEEL) {
+                        keycodeString = MOUSE_WHEEL_RIGHT_STR;
+                    }
+                    else {
+                        keycodeString = MOUSE_WHEEL_UP_STR;
+                    }
                 }
                 else {
-                    keycodeString = MOUSE_WHEEL_DOWN_STR;
+                    if (wParam == WM_MOUSEHWHEEL) {
+                        keycodeString = MOUSE_WHEEL_LEFT_STR;
+                    }
+                    else {
+                        keycodeString = MOUSE_WHEEL_DOWN_STR;
+                    }
                 }
 
                 /* Add extraInfo check for Multi InputDevice */
@@ -6280,6 +6341,8 @@ void QKeyMapper_Worker::initVirtualMouseButtonMap()
     VirtualMouseButtonMap.insert("Mouse-X2",            V_MOUSECODE(MOUSEEVENTF_XDOWN,          MOUSEEVENTF_XUP,        XBUTTON2    )); // Mouse Button X2
     VirtualMouseButtonMap.insert(MOUSE_WHEEL_UP_STR,    V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Up
     VirtualMouseButtonMap.insert(MOUSE_WHEEL_DOWN_STR,  V_MOUSECODE(MOUSEEVENTF_WHEEL,          MOUSEEVENTF_WHEEL,      0           )); // Mouse Wheel Down
+    VirtualMouseButtonMap.insert(MOUSE_WHEEL_LEFT_STR,  V_MOUSECODE(MOUSEEVENTF_HWHEEL,         MOUSEEVENTF_HWHEEL,     0           )); // Mouse Wheel Left
+    VirtualMouseButtonMap.insert(MOUSE_WHEEL_RIGHT_STR, V_MOUSECODE(MOUSEEVENTF_HWHEEL,         MOUSEEVENTF_HWHEEL,     0           )); // Mouse Wheel Right
 
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONDOWN,  XBUTTON_NONE),   "Mouse-L");
     MouseButtonNameMap.insert(MAKELONG(WM_LBUTTONUP,    XBUTTON_NONE),   "Mouse-L");
@@ -6464,6 +6527,8 @@ void QKeyMapper_Worker::initMultiMouseInputList()
             << "Mouse-X2"
             << MOUSE_WHEEL_UP_STR
             << MOUSE_WHEEL_DOWN_STR
+            << MOUSE_WHEEL_LEFT_STR
+            << MOUSE_WHEEL_RIGHT_STR
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
                ;
@@ -6512,6 +6577,8 @@ void QKeyMapper_Worker::initCombinationKeysList()
             << "Mouse-X2"
             << MOUSE_WHEEL_UP_STR
             << MOUSE_WHEEL_DOWN_STR
+            << MOUSE_WHEEL_LEFT_STR
+            << MOUSE_WHEEL_RIGHT_STR
             /* Keyboard Keys */
             << "A"
             << "B"
