@@ -4806,6 +4806,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
 
     bool returnFlag = false;
     ULONG_PTR extraInfo = extra_info;
+    Q_UNUSED(extraInfo);
 
     if ((mouse_event == EVENT_LBUTTONDOWN || mouse_event == EVENT_LBUTTONUP)
         || (mouse_event == EVENT_RBUTTONDOWN || mouse_event == EVENT_RBUTTONUP)
