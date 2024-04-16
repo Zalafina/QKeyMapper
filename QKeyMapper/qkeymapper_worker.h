@@ -651,11 +651,11 @@ public:
 #endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
-    static QList<QPoint> s_Mouse2vJoy_delta_List;
-    static QPoint s_Mouse2vJoy_delta_interception;
+    // static QList<QPoint> s_Mouse2vJoy_delta_List;
+    // static QPoint s_Mouse2vJoy_delta_interception;
     // static Mouse2vJoyStates s_Mouse2vJoy_EnableState;
     static QHash<int, Mouse2vJoyData> s_Mouse2vJoy_EnableStateMap;
-    static QMutex s_MouseMove_delta_List_Mutex;
+    // static QMutex s_MouseMove_delta_List_Mutex;
 #endif
 
     static bool s_Key2Mouse_EnableState;

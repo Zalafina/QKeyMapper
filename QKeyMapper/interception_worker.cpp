@@ -88,15 +88,18 @@ void Interception_Worker::InterceptionThreadStarted()
             else {
                 InterceptionMouseStroke &mstroke = *(InterceptionMouseStroke *) &stroke;
                 mstroke.information = INTERCEPTION_EXTRA_INFO + device;
-                interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
-                QKeyMapper_Worker::s_Mouse2vJoy_delta_interception.rx() += mstroke.x;
-                QKeyMapper_Worker::s_Mouse2vJoy_delta_interception.ry() += mstroke.y;
-                {
-                    QMutexLocker locker(&QKeyMapper_Worker::s_MouseMove_delta_List_Mutex);
-                    QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].rx() += mstroke.x;
-                    QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].ry() += mstroke.y;
-                }
+                // QKeyMapper_Worker::s_Mouse2vJoy_delta_interception.rx() += mstroke.x;
+                // QKeyMapper_Worker::s_Mouse2vJoy_delta_interception.ry() += mstroke.y;
+                // {
+                //     QMutexLocker locker(&QKeyMapper_Worker::s_MouseMove_delta_List_Mutex);
+                //     QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].rx() += mstroke.x;
+                //     QKeyMapper_Worker::s_Mouse2vJoy_delta_List[index].ry() += mstroke.y;
+                // }
 
+                int delta_x = mstroke.x;
+                int delta_y = mstroke.y;
+                short delta_wheel = mstroke.rolling;
+                unsigned short flags = mstroke.flags;
                 ULONG_PTR extraInfo = mstroke.information;
                 QKeyMapper_Worker::MouseEvent mouse_event = QKeyMapper_Worker::EVENT_NONE;
                 if (mstroke.state != 0) {
@@ -143,7 +146,12 @@ void Interception_Worker::InterceptionThreadStarted()
                     }
                 }
 
-#ifdef DEBUG_LOGOUT_ON
+                bool intercept = QKeyMapper_Worker::InterceptionMouseHookProc(mouse_event, delta_x, delta_y, delta_wheel, flags, extraInfo, index);
+                if (intercept == false) {
+                    interception_send(s_InterceptionContext, device, (InterceptionStroke *)&stroke, 1);
+                }
+
+#ifdef INTERCEPTION_VERBOSE_LOG
                 QString stateStr = QString("0x%1").arg(QString::number(mstroke.state, 16).toUpper(), 8, '0');
                 qDebug().nospace() << "[KeyInterceptionWorker] Mouse[" << index << "] " << "State=" << stateStr << ", mouse_event=" << mouse_event << ", x=" << mstroke.x << ", y=" << mstroke.y <<", rolling=" << mstroke.rolling;
 #endif
