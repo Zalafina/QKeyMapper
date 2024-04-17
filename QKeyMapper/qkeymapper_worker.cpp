@@ -3801,7 +3801,8 @@ void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keyst
     Q_UNUSED(mouse2joy_keystr);
     // m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
 
-    for (const int& mouse_index : s_Mouse2vJoy_EnableStateMap.keys()) {
+    QList<int> mouse_index_list = s_Mouse2vJoy_EnableStateMap.keys();
+    for (const int& mouse_index : mouse_index_list) {
         m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(MOUSE2VJOY_RESET_TIMEOUT);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[startMouse2vJoyResetTimer]" << mouse2joy_keystr << "-> Start Mouse2vJoyResetTimer, MouseIndex =" << mouse_index;
@@ -3814,7 +3815,8 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
     Q_UNUSED(mouse_index_param);
     // m_Mouse2vJoyResetTimer.stop();
 
-    for (const int& mouse_index : s_Mouse2vJoy_EnableStateMap.keys()) {
+    QList<int> mouse_index_list = s_Mouse2vJoy_EnableStateMap.keys();
+    for (const int& mouse_index : mouse_index_list) {
         m_Mouse2vJoyResetTimerMap.value(mouse_index)->stop();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[stopMouse2vJoyResetTimer]" << mouse2joy_keystr << "-> Stop Mouse2vJoyResetTimer, MouseIndex =" << mouse_index;
