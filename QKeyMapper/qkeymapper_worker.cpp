@@ -3611,9 +3611,7 @@ void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
     }
 #endif
 
-    if (m_JoystickCapture) {
-        checkJoystickPOV(e);
-    }
+    checkJoystickPOV(e);
 }
 
 void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
@@ -3628,19 +3626,17 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
     }
 #endif
 
-    if (m_JoystickCapture) {
-        QJoystickAxisEvent axisEvent = e;
-        #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        if (qFabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
-            axisEvent.value = 0;
-        }
-        #else
-        if (std::fabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
-            axisEvent.value = 0;
-        }
-        #endif
-        checkJoystickAxis(axisEvent);
+    QJoystickAxisEvent axisEvent = e;
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    if (qFabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
+        axisEvent.value = 0;
     }
+    #else
+    if (std::fabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
+        axisEvent.value = 0;
+    }
+    #endif
+    checkJoystickAxis(axisEvent);
 }
 
 void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
