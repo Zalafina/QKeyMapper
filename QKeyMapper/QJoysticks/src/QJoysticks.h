@@ -59,6 +59,7 @@ class QJoysticks : public QObject
 
 signals:
    void countChanged();
+   void joystickAdded(const QJoystickDevice *joystick);
    void enabledChanged(const bool enabled);
    void POVEvent(const QJoystickPOVEvent &event);
    void axisEvent(const QJoystickAxisEvent &event);
@@ -91,6 +92,7 @@ public:
    QList<QJoystickDevice *> inputDevices() const;
 
 public slots:
+   void onJoystickAdded(const QJoystickDevice *joystick);
    void updateInterfaces();
    void setVirtualJoystickRange(qreal range);
    void setVirtualJoystickEnabled(bool enabled);

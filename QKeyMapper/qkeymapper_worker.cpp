@@ -182,7 +182,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     /* Connect QJoysticks Signals */
     QJoysticks *instance = QJoysticks::getInstance();
-    QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
+    // QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::joystickAdded, this, &QKeyMapper_Worker::onJoystickAdded, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
@@ -3597,6 +3598,38 @@ void QKeyMapper_Worker::onJoystickcountChanged()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onJoystickcountChanged]" << "JoystickList End <<<";
 #endif
+}
+
+void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
+{
+    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+
+    int joystick_index = 0;
+    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
+        if (joystick_added == joystick) {
+            // bool virtualgamepad = false;
+            // USHORT vendorid = joystick->vendorid;
+            // USHORT productid = joystick->productid;
+            // int numbuttons = joystick->numbuttons;
+            // Q_UNUSED(numbuttons);
+
+            // if (vendorid == VIRTUALGAMPAD_VENDORID_X360
+            //     && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
+            //     virtualgamepad = true;
+            // }
+            // else if (joystick->serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
+            //     && vendorid == VIRTUALGAMPAD_VENDORID_DS4
+            //     && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
+            //     virtualgamepad = true;
+            // }
+
+            // if (virtualgamepad) {
+            //     QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+            // }
+        }
+
+        joystick_index += 1;
+    }
 }
 
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)

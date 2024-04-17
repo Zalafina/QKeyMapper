@@ -37,6 +37,7 @@ QJoysticks::QJoysticks()
    connect(sdlJoysticks(), &SDL_Joysticks::axisEvent, this, &QJoysticks::axisEvent);
    connect(sdlJoysticks(), &SDL_Joysticks::buttonEvent, this, &QJoysticks::buttonEvent);
    connect(sdlJoysticks(), &SDL_Joysticks::countChanged, this, &QJoysticks::updateInterfaces);
+   connect(sdlJoysticks(), &SDL_Joysticks::joystickAdded, this, &QJoysticks::onJoystickAdded);
 
    /* Configure virtual joysticks */
    connect(virtualJoystick(), &VirtualJoystick::povEvent, this, &QJoysticks::POVEvent);
@@ -251,7 +252,12 @@ QJoystickDevice *QJoysticks::getInputDevice(const int index)
  */
 QList<QJoystickDevice *> QJoysticks::inputDevices() const
 {
-   return m_devices;
+    return m_devices;
+}
+
+void QJoysticks::joystickAdded(const QJoystickDevice *joystick)
+{
+    emit joystickAdded(joystick);
 }
 
 /**

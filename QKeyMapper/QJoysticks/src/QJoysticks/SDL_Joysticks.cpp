@@ -274,6 +274,8 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
         delete m_joysticks[joystick->instanceID];
       }
       m_joysticks[joystick->instanceID] = joystick;
+
+      emit joystickAdded(joystick);
    }
    else
    {
