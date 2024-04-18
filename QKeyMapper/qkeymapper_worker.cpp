@@ -5565,7 +5565,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X), ExtenedFlag(%s)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false");
+        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
 #endif
     }
 
@@ -6628,8 +6628,9 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        (KEY2MOUSE_DOWN_STR,        V_KEYCODE(VK_KEY2MOUSE_DOWN,    EXTENED_FLAG_TRUE));   // 0x8B (Key2Mouse-Down)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_LEFT_STR,        V_KEYCODE(VK_KEY2MOUSE_LEFT,    EXTENED_FLAG_TRUE));   // 0x8C (Key2Mouse-Left)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_KEY2MOUSE_RIGHT,   EXTENED_FLAG_TRUE));   // 0x8D (Key2Mouse-Right)
-    VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2VJOY_HOLD,    EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
-    VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2VJOY_DIRECT,  EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
+    VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2VJOY_HOLD,   EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
+    VirtualKeyCodeMap.insert        (MOUSE2VJOY_DIRECT_KEY_STR, V_KEYCODE(VK_MOUSE2VJOY_DIRECT, EXTENED_FLAG_TRUE));   // 0x3B (Mouse2vJoy-Direct)
+    VirtualKeyCodeMap.insert        (GAMEPAD_HOME_STR,          V_KEYCODE(VK_GAMEPAD_HOME,      EXTENED_FLAG_FALSE));  // 0x07 (GamepadHome)
 
     // US 104 Keyboard Main Area
     // Row 1

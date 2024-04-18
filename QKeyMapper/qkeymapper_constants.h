@@ -203,6 +203,7 @@ extern const quint8 VK_KEY2MOUSE_UP;
 extern const quint8 VK_KEY2MOUSE_DOWN;
 extern const quint8 VK_KEY2MOUSE_LEFT;
 extern const quint8 VK_KEY2MOUSE_RIGHT;
+extern const quint8 VK_GAMEPAD_HOME;
 
 extern const ULONG_PTR VIRTUAL_KEYBOARD_PRESS;
 extern const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS;
@@ -294,6 +295,7 @@ extern const char* MAPKEY_COMBOBOX_NAME;
 extern const char* WINDOWSWITCHKEY_LINEEDIT_NAME;
 extern const char* MAPPINGSWITCHKEY_LINEEDIT_NAME;
 extern const char* KEY_BLOCKED_STR;
+extern const char *GAMEPAD_HOME_STR;
 extern const char* MOUSE_BUTTON_PREFIX;
 extern const char* MOUSE_POINT_POSTFIX;
 extern const char* MOUSE_L_STR;

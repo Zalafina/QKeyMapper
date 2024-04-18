@@ -227,6 +227,7 @@ const quint8 VK_KEY2MOUSE_UP    = 0x8A;
 const quint8 VK_KEY2MOUSE_DOWN  = 0x8B;
 const quint8 VK_KEY2MOUSE_LEFT  = 0x8C;
 const quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
+const quint8 VK_GAMEPAD_HOME    = 0x07;
 
 const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
 const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
@@ -336,6 +337,7 @@ const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
 const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";
 
 const char *KEY_BLOCKED_STR = "BLOCKED";
+const char *GAMEPAD_HOME_STR = "GamepadHome";
 
 const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
 const char *MOUSE_POINT_POSTFIX  = "_Point";
