@@ -255,11 +255,6 @@ QList<QJoystickDevice *> QJoysticks::inputDevices() const
     return m_devices;
 }
 
-void QJoysticks::joystickAdded(const QJoystickDevice *joystick)
-{
-    emit joystickAdded(joystick);
-}
-
 /**
  * If \a sort is set to true, then the device list will put all blacklisted
  * joysticks at the end of the list
@@ -307,6 +302,11 @@ void QJoysticks::setBlacklisted(const int index, bool blacklisted)
    // if (changed)
    //    updateInterfaces();
    Q_UNUSED(changed);
+}
+
+void QJoysticks::onJoystickAdded(const QJoystickDevice *joystick)
+{
+    emit joystickAdded(joystick);
 }
 
 /**

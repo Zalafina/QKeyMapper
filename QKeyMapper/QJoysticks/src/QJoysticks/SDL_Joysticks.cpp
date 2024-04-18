@@ -246,11 +246,11 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
       joystick->vendorid = SDL_JoystickGetVendor(sdl_joystick);
       joystick->productid = SDL_JoystickGetProduct(sdl_joystick);
       joystick->numbuttons = SDL_JoystickNumButtons(sdl_joystick);
-#ifdef DEBUG_LOGOUT_ON
-      QString vendorIdStr = QString("0x%1").arg(QString::number(joystick->vendorid, 16).toUpper(), 4, '0');
-      QString productIdStr = QString("0x%1").arg(QString::number(joystick->productid, 16).toUpper(), 4, '0');
-      qDebug().nospace() << "[SDL_Joysticks] getJoystick -> " << "Name = " << joystick->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick->numbuttons << ", Serial = " << joystick->serial;
-#endif
+// #ifdef DEBUG_LOGOUT_ON
+//       QString vendorIdStr = QString("0x%1").arg(QString::number(joystick->vendorid, 16).toUpper(), 4, '0');
+//       QString productIdStr = QString("0x%1").arg(QString::number(joystick->productid, 16).toUpper(), 4, '0');
+//       qDebug().nospace() << "[SDL_Joysticks] getJoystick -> " << "Name = " << joystick->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick->numbuttons << ", Serial = " << joystick->serial;
+// #endif
 
       /* Get joystick properties */
       int povs = SDL_JoystickNumHats(sdl_joystick);
