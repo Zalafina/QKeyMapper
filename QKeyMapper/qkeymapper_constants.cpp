@@ -335,6 +335,7 @@ const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
 const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
 const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";
 
+const char *KEY_NONE_STR = "NONE";
 const char *KEY_BLOCKED_STR = "BLOCKED";
 const char *GAMEPAD_HOME_STR = "GamepadHome";
 

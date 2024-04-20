@@ -703,7 +703,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
             }
 
-            if (key.isEmpty()) {
+            if (key.isEmpty() || key == KEY_NONE_STR) {
                 continue;
             }
 
@@ -879,7 +879,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     key = waitTimeKeyList.first();
                 }
 
-                if (key.isEmpty()) {
+                if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
 #endif

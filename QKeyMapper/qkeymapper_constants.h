@@ -293,6 +293,7 @@ extern const char* ORIKEY_COMBOBOX_NAME;
 extern const char* MAPKEY_COMBOBOX_NAME;
 extern const char* WINDOWSWITCHKEY_LINEEDIT_NAME;
 extern const char* MAPPINGSWITCHKEY_LINEEDIT_NAME;
+extern const char *KEY_NONE_STR;
 extern const char* KEY_BLOCKED_STR;
 extern const char *GAMEPAD_HOME_STR;
 extern const char* MOUSE_BUTTON_PREFIX;

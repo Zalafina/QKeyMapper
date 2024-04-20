@@ -3772,6 +3772,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
+            && mapping_key != KEY_NONE_STR
             && mapping_key != KEY_BLOCKED_STR
             // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
             && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
@@ -5048,6 +5049,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 {
     QStringList keycodelist = QStringList() \
             << ""
+            << KEY_NONE_STR
             << KEY_BLOCKED_STR
             << MOUSE_L_STR
             << MOUSE_R_STR
@@ -5307,6 +5309,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
 
     QStringList orikeycodelist = keycodelist;
+    orikeycodelist.removeOne(KEY_NONE_STR);
     orikeycodelist.removeOne(KEY_BLOCKED_STR);
     orikeycodelist.removeOne(MOUSE_L_POINT_STR);
     orikeycodelist.removeOne(MOUSE_R_POINT_STR);
@@ -5357,6 +5360,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_mapkeyComboBox->model());
     QStandardItem* item = model->item(1);
+    item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+    item = model->item(2);
     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
 #else
     QBrush colorBrush(Qt::darkMagenta);
