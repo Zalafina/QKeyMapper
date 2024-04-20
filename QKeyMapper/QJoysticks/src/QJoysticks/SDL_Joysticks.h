@@ -47,6 +47,7 @@ class SDL_Joysticks : public QObject
 signals:
    void countChanged();
    void joystickAdded(const QJoystickDevice *joystick);
+   void joystickRemoved(const QJoystickDevice joystick);
    void POVEvent(const QJoystickPOVEvent &event);
    void axisEvent(const QJoystickAxisEvent &event);
    void buttonEvent(const QJoystickButtonEvent &event);

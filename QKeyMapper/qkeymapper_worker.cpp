@@ -184,6 +184,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QJoysticks *instance = QJoysticks::getInstance();
     // QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::joystickAdded, this, &QKeyMapper_Worker::onJoystickAdded, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::joystickRemoved, this, &QKeyMapper_Worker::onJoystickRemoved, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
@@ -3605,9 +3606,9 @@ void QKeyMapper_Worker::onJoystickcountChanged()
 void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
 {
 #ifdef DEBUG_LOGOUT_ON
-      QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
-      QString productIdStr = QString("0x%1").arg(QString::number(joystick_added->productid, 16).toUpper(), 4, '0');
-      qDebug().nospace() << "[onJoystickAdded] Added a New Gamepad -> " << "Name = " << joystick_added->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick_added->numbuttons << ", Serial = " << joystick_added->serial;
+    QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
+    QString productIdStr = QString("0x%1").arg(QString::number(joystick_added->productid, 16).toUpper(), 4, '0');
+    qDebug().nospace() << "[onJoystickAdded] Added a New Gamepad -> " << "Name = " << joystick_added->name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick_added->numbuttons << ", Serial = " << joystick_added->serial;
 #endif
 
     QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
@@ -3640,6 +3641,16 @@ void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
 
         joystick_index += 1;
     }
+}
+
+void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed)
+{
+    Q_UNUSED(joystick_removed);
+#ifdef DEBUG_LOGOUT_ON
+    QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_removed.vendorid, 16).toUpper(), 4, '0');
+    QString productIdStr = QString("0x%1").arg(QString::number(joystick_removed.productid, 16).toUpper(), 4, '0');
+    qDebug().nospace() << "[onJoystickRemoved] Removed a Gamepad -> " << "Name = " << joystick_removed.name << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick_removed.numbuttons << ", Serial = " << joystick_removed.serial;
+#endif
 }
 
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)

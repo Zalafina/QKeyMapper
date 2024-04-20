@@ -158,12 +158,15 @@ void SDL_Joysticks::update()
             {
                SDL_GameControllerClose(gc);
             }
-         }
+
+            const QJoystickDevice joystick_removed = *m_joysticks[event.jdevice.which];
+            emit joystickRemoved(joystick_removed);
 
             delete m_joysticks[event.jdevice.which];
             m_joysticks.remove(event.jdevice.which);
 
             emit countChanged();
+         }
             break;
          case SDL_JOYAXISMOTION:
             if (!SDL_IsGameController(event.cdevice.which))
