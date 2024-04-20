@@ -6634,7 +6634,6 @@ HRESULT QKeyMapper_Worker::hookGetDeviceData(IDirectInputDevice8W *pThis, DWORD 
 
 void QKeyMapper_Worker::initVirtualKeyCodeMap()
 {
-    VirtualKeyCodeMap.insert        (KEY_BLOCKED_STR,           V_KEYCODE(VK_BLOCKED,           EXTENED_FLAG_TRUE));   // 0x0F (Key Blocked)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_UP_STR,          V_KEYCODE(VK_KEY2MOUSE_UP,      EXTENED_FLAG_TRUE));   // 0x8A (Key2Mouse-Up)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_DOWN_STR,        V_KEYCODE(VK_KEY2MOUSE_DOWN,    EXTENED_FLAG_TRUE));   // 0x8B (Key2Mouse-Down)
     VirtualKeyCodeMap.insert        (KEY2MOUSE_LEFT_STR,        V_KEYCODE(VK_KEY2MOUSE_LEFT,    EXTENED_FLAG_TRUE));   // 0x8C (Key2Mouse-Left)

@@ -3772,6 +3772,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
     for (const QString &mapping_key : qAsConst(Mapping_Keys)){
         if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
+            && mapping_key != KEY_BLOCKED_STR
             // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
             && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
             // && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)

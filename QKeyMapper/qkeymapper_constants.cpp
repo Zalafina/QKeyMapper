@@ -222,7 +222,6 @@ const quint8 VK_MOUSE2VJOY_HOLD = 0x3A;
 const quint8 VK_MOUSE2VJOY_DIRECT = 0x3B;
 #endif
 
-const quint8 VK_BLOCKED         = 0x0F;
 const quint8 VK_KEY2MOUSE_UP    = 0x8A;
 const quint8 VK_KEY2MOUSE_DOWN  = 0x8B;
 const quint8 VK_KEY2MOUSE_LEFT  = 0x8C;

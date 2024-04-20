@@ -198,7 +198,6 @@ extern const quint8 VK_MOUSE2VJOY_HOLD;
 extern const quint8 VK_MOUSE2VJOY_DIRECT;
 #endif
 
-extern const quint8 VK_BLOCKED;
 extern const quint8 VK_KEY2MOUSE_UP;
 extern const quint8 VK_KEY2MOUSE_DOWN;
 extern const quint8 VK_KEY2MOUSE_LEFT;
