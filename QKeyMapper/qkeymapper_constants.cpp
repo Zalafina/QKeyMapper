@@ -297,6 +297,7 @@ const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
 const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
 const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
+const char *KEYMAPDATA_PASSTHROUGH = "KeyMapData_PassThrough";
 const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";

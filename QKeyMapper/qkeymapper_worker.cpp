@@ -4873,8 +4873,8 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                     }
                 }
 
-                bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                if (NotBlock && returnFlag) {
+                bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                if (PassThrough && returnFlag) {
                     returnFlag = false;
 #ifdef DEBUG_LOGOUT_ON
                     QString keyUpDown;
@@ -4884,7 +4884,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                     else {
                         keyUpDown = "KEY_UP";
                     }
-                    qDebug().noquote().nospace() << "[InterceptionKeyboardHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+                    qDebug().noquote().nospace() << "[InterceptionKeyboardHookProc]" << "PassThrough Key[" << original_key << "] " << keyUpDown;
 #endif
                 }
             }
@@ -5100,8 +5100,8 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                     }
                 }
 
-                bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                if (NotBlock && returnFlag) {
+                bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                if (PassThrough && returnFlag) {
                     returnFlag = false;
 #ifdef DEBUG_LOGOUT_ON
                     QString keyUpDown;
@@ -5111,7 +5111,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                     else {
                         keyUpDown = "KEY_UP";
                     }
-                    qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+                    qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "PassThrough Key[" << original_key << "] " << keyUpDown;
 #endif
                 }
             }
@@ -5291,11 +5291,11 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         returnFlag = true;
                     }
 
-                    bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                    if (NotBlock && returnFlag) {
+                    bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                    if (PassThrough && returnFlag) {
                         returnFlag = false;
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "NotBlock MouseWheel[" << original_key << "]";
+                        qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "PassThrough MouseWheel[" << original_key << "]";
 #endif
                     }
                 }
@@ -5573,8 +5573,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         }
                     }
 
-                    bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                    if (NotBlock && returnFlag) {
+                    bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                    if (PassThrough && returnFlag) {
                         returnFlag = false;
 #ifdef DEBUG_LOGOUT_ON
                         QString keyUpDown;
@@ -5584,7 +5584,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         else {
                             keyUpDown = "KEY_UP";
                         }
-                        qDebug().noquote().nospace() << "[LowLevelKeyboardHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+                        qDebug().noquote().nospace() << "[LowLevelKeyboardHookProc]" << "PassThrough Key[" << original_key << "] " << keyUpDown;
 #endif
                     }
                 }
@@ -5990,8 +5990,8 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             }
                         }
 
-                        bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                        if (NotBlock && returnFlag) {
+                        bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                        if (PassThrough && returnFlag) {
                             returnFlag = false;
 #ifdef DEBUG_LOGOUT_ON
                             QString keyUpDown;
@@ -6001,7 +6001,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             else {
                                 keyUpDown = "KEY_UP";
                             }
-                            qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+                            qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "PassThrough Key[" << original_key << "] " << keyUpDown;
 #endif
                         }
                     }
@@ -6229,11 +6229,11 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             returnFlag = true;
                         }
 
-                        bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                        if (NotBlock && returnFlag) {
+                        bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                        if (PassThrough && returnFlag) {
                             returnFlag = false;
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "NotBlock MouseWheel[" << original_key << "]";
+                            qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "PassThrough MouseWheel[" << original_key << "]";
 #endif
                         }
                     }
@@ -6478,7 +6478,7 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
 {
     int intercept = KEY_INTERCEPT_NONE;
     int findindex = -1;
-    bool NotBlock = false;
+    bool PassThrough = false;
     QStringList combinationkeylist;
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
@@ -6527,8 +6527,8 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             qDebug() << "[detectCombinationKeys]" << "CombinationKey Down detected ->" << combinationkey;
 #endif
             findindex = CombinationKeyProc(combinationkey, KEY_DOWN);
-            NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-            if (NotBlock) {
+            PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+            if (PassThrough) {
                 intercept = KEY_INTERCEPT_PASSTHROUGH;
             }
             else {
@@ -6546,8 +6546,8 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
                     qDebug() << "[detectCombinationKeys]" << "CombinationKey Up detected ->" << combinationkey;
 #endif
                     findindex = CombinationKeyProc(combinationkey, KEY_UP);
-                    NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
-                    if (NotBlock) {
+                    PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                    if (PassThrough) {
                         intercept = KEY_INTERCEPT_PASSTHROUGH;
                     }
                     else {

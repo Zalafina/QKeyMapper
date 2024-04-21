@@ -70,18 +70,18 @@ typedef struct MAP_KEYDATA
     bool Burst;
     bool Lock;
     bool LockStatus;
-    bool NotBlock;
+    bool PassThrough;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false), NotBlock(false) {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false), PassThrough(false) {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock, bool passthrough)
     {
         Original_Key = originalkey;
         Mapping_Keys = mappingkeys.split(SEPARATOR_NEXTARROW);
         Burst = burst;
         Lock = lock;
         LockStatus = false;
-        NotBlock = false;
+        PassThrough = passthrough;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -90,7 +90,7 @@ typedef struct MAP_KEYDATA
                 && (Mapping_Keys == other.Mapping_Keys)
                 && (Burst == other.Burst)
                 && (Lock == other.Lock)
-                && (NotBlock == other.NotBlock));
+                && (PassThrough == other.PassThrough));
     }
 }MAP_KEYDATA_st;
 

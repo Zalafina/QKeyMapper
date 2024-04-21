@@ -1709,14 +1709,14 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
                 QTableWidgetItem* selectedItem = items.at(0);
                 currentrowindex = ui->keymapdataTable->row(selectedItem);
 
-                if (KeyMappingDataList.at(currentrowindex).NotBlock) {
-                    KeyMappingDataList[currentrowindex].NotBlock = false;
+                if (KeyMappingDataList.at(currentrowindex).PassThrough) {
+                    KeyMappingDataList[currentrowindex].PassThrough = false;
                 }
                 else {
-                    KeyMappingDataList[currentrowindex].NotBlock = true;
+                    KeyMappingDataList[currentrowindex].PassThrough = true;
                 }
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().noquote().nospace() << "[NotBlockStatus]" << "F2 Key Pressed -> Selected mappingdata original_key[" << KeyMappingDataList.at(currentrowindex).Original_Key << "] NotBlock = " << KeyMappingDataList[currentrowindex].NotBlock;
+                qDebug().noquote().nospace() << "[PassThroughStatus]" << "F2 Key Pressed -> Selected mappingdata original_key[" << KeyMappingDataList.at(currentrowindex).Original_Key << "] PassThrough = " << KeyMappingDataList[currentrowindex].PassThrough;
 #endif
                 refreshKeyMappingDataTable();
                 // int reselectrow = currentrowindex;
@@ -1726,7 +1726,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[NotBlockStatus]" << "F2 Key Pressed -> There is no selected mapping data";
+                qDebug() << "[PassThroughStatus]" << "F2 Key Pressed -> There is no selected mapping data";
 #endif
             }
        }
@@ -2554,6 +2554,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList mapping_keysList;
         QStringList burstList;
         QStringList lockList;
+        QStringList passthroughList;
         int burstpressTime = ui->burstpressSpinBox->value();
         int burstreleaseTime = ui->burstreleaseSpinBox->value();
         int key2mouse_XSpeed = ui->mouseXSpeedSpinBox->value();
@@ -2732,11 +2733,18 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     lockList.append("OFF");
                 }
+                if (true == keymapdata.PassThrough) {
+                    passthroughList.append("ON");
+                }
+                else {
+                    passthroughList.append("OFF");
+                }
             }
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
@@ -2753,6 +2761,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
@@ -3121,20 +3130,34 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList mapping_keys;
         QStringList burstStringList;
         QStringList lockStringList;
+        QStringList passthroughStringList;
         QList<bool> burstList;
         QList<bool> lockList;
+        QList<bool> passthroughList;
         QList<MAP_KEYDATA> loadkeymapdata;
         bool global_datavalid = false;
 
         if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
-            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))
-            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST))
-            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK))
-            && (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED))){
-            original_keys   = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toStringList();
-            mapping_keys    = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
-            burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
-            lockStringList  = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
+            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))){
+            original_keys           = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toStringList();
+            mapping_keys            = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
+            int mappingdata_size = original_keys.size();
+            QStringList stringListAllOFF;
+            for (int i = 0; i < mappingdata_size; ++i) {
+                stringListAllOFF << "OFF";
+            }
+            burstStringList         = stringListAllOFF;
+            lockStringList          = stringListAllOFF;
+            passthroughStringList   = stringListAllOFF;
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
+                burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK)) {
+                lockStringList = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_PASSTHROUGH)) {
+                passthroughStringList = settingFile.value(settingSelectStr+KEYMAPDATA_PASSTHROUGH).toStringList();
+            }
 
             if ((original_keys.size() == mapping_keys.size())
                 && (original_keys.size() == burstStringList.size())){
@@ -3158,6 +3181,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             lockList.append(false);
                         }
                     }
+
+                    for (const QString &passthrough : qAsConst(passthroughStringList)){
+                        if (passthrough == "ON") {
+                            passthroughList.append(true);
+                        }
+                        else {
+                            passthroughList.append(false);
+                        }
+                    }
+
 
                     int loadindex = 0;
                     static QRegularExpression reg("@[0-9]$");
@@ -3188,7 +3221,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                         if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                             && (true == checkmappingstr)){
-                            loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
+                            loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex)));
                         }
                         else{
                             global_datavalid = false;
@@ -3306,9 +3339,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
-                    && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))
-                    && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST))
-                    && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK))){
+                    && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))){
                 selectSettingContainsFlag = true;
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading contains Setting" << settingSelectStr;
@@ -3356,18 +3387,34 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList mapping_keys;
         QStringList burstStringList;
         QStringList lockStringList;
+        QStringList passthroughStringList;
         QList<bool> burstList;
         QList<bool> lockList;
+        QList<bool> passthroughList;
         QList<MAP_KEYDATA> loadkeymapdata;
 
         if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
-                && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))
-                && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST))
-                && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK))){
+            && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))){
             original_keys   = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toStringList();
             mapping_keys    = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
-            burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
-            lockStringList  = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
+
+            int mappingdata_size = original_keys.size();
+            QStringList stringListAllOFF;
+            for (int i = 0; i < mappingdata_size; ++i) {
+                stringListAllOFF << "OFF";
+            }
+            burstStringList         = stringListAllOFF;
+            lockStringList          = stringListAllOFF;
+            passthroughStringList   = stringListAllOFF;
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
+                burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK)) {
+                lockStringList = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_PASSTHROUGH)) {
+                passthroughStringList = settingFile.value(settingSelectStr+KEYMAPDATA_PASSTHROUGH).toStringList();
+            }
 
             if ((original_keys.size() == mapping_keys.size())
                     && (original_keys.size() == burstStringList.size())){
@@ -3389,6 +3436,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         }
                         else {
                             lockList.append(false);
+                        }
+                    }
+
+                    for (const QString &passthrough : qAsConst(passthroughStringList)){
+                        if (passthrough == "ON") {
+                            passthroughList.append(true);
+                        }
+                        else {
+                            passthroughList.append(false);
                         }
                     }
 
@@ -3420,7 +3476,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                         if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                                 && (true == checkmappingstr)){
-                            loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex)));
+                            loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex)));
                         }
                         else{
                             datavalidflag = false;
@@ -3444,11 +3500,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 KeyMappingDataList.clear();
-                KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false,  false));
-                KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false,  false));
-                KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false,  false));
-                KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false,  false));
-                KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false,  false));
+                KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false,  false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false,  false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false,  false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false,  false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false,  false, false));
                 loadDefault = true;
             }
         }
@@ -5659,7 +5715,7 @@ void QKeyMapper::refreshKeyMappingDataTable()
             /* ORIGINAL_KEY_COLUMN */
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
             ori_TableItem->setToolTip(keymapdata.Original_Key);
-            if (keymapdata.NotBlock) {
+            if (keymapdata.PassThrough) {
                 ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
             }
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , ori_TableItem);
@@ -6601,7 +6657,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
-            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock));
+            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock, keymapdata.PassThrough));
         }
         else {
             if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
@@ -6666,7 +6722,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
 
-            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, false));
+            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, false, false));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
 #endif
