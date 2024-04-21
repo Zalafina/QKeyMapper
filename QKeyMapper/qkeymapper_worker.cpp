@@ -4762,21 +4762,42 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                 return false;
             }
         }
-
-        bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-        if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
-            if (KEY_DOWN == keyupdown) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_DOWN return TRUE");
-#endif
+        else {
+            if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
+            }
+        }
+
+        int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+        if (combinationkey_detected) {
+            if (KEY_DOWN == keyupdown) {
+                if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_PASSTHROUGH");
+#endif
+                    return false;
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_BLOCK");
+#endif
+                    return true;
+                }
             }
             else {
                 if (findindex >= 0) {
+                    if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_UP return TRUE");
+                        qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
 #endif
-                    return true;
+                        return false;
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+#endif
+                        return true;
+                    }
                 }
             }
         }
@@ -4850,6 +4871,21 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         returnFlag = true;
                     }
+                }
+
+                bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                if (NotBlock && returnFlag) {
+                    returnFlag = false;
+#ifdef DEBUG_LOGOUT_ON
+                    QString keyUpDown;
+                    if (KEY_DOWN == keyupdown){
+                        keyUpDown = "KEY_DOWN";
+                    }
+                    else {
+                        keyUpDown = "KEY_UP";
+                    }
+                    qDebug().noquote().nospace() << "[InterceptionKeyboardHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+#endif
                 }
             }
         }
@@ -4953,21 +4989,42 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 return false;
             }
         }
-
-        bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-        if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
-            if (KEY_DOWN == keyupdown) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_DOWN return TRUE");
-#endif
+        else {
+            if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
+            }
+        }
+
+        int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+        if (combinationkey_detected) {
+            if (KEY_DOWN == keyupdown) {
+                if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_PASSTHROUGH");
+#endif
+                    return false;
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_BLOCK");
+#endif
+                    return true;
+                }
             }
             else {
                 if (findindex >= 0) {
+                    if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_UP return TRUE");
+                        qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
 #endif
-                    return true;
+                        return false;
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+#endif
+                        return true;
+                    }
                 }
             }
         }
@@ -5042,6 +5099,21 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         returnFlag = true;
                     }
                 }
+
+                bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                if (NotBlock && returnFlag) {
+                    returnFlag = false;
+#ifdef DEBUG_LOGOUT_ON
+                    QString keyUpDown;
+                    if (KEY_DOWN == keyupdown){
+                        keyUpDown = "KEY_DOWN";
+                    }
+                    else {
+                        keyUpDown = "KEY_UP";
+                    }
+                    qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+#endif
+                }
             }
         }
     }
@@ -5099,16 +5171,24 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
 
         int keyupdown = KEY_DOWN;
         updatePressedRealKeysList(keycodeString, keyupdown);
-        bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+        int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
         Q_UNUSED(combinationkey_detected);
         keyupdown = KEY_UP;
         updatePressedRealKeysList(keycodeString, keyupdown);
         combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
         if (combinationkey_detected) {
+            if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[InterceptionMouseHookProc] return TRUE");
+                qDebug("[InterceptionMouseHookProc] detectCombinationKeys MouseWheel return -> KEY_INTERCEPT_PASSTHROUGH");
 #endif
-            return true;
+                return false;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[InterceptionMouseHookProc] detectCombinationKeys MouseWheel return -> KEY_INTERCEPT_BLOCK");
+#endif
+                return true;
+            }
         }
 
         short delta_abs = qAbs(zDelta);
@@ -5182,6 +5262,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 }
 
                 if (send_wheel_keys) {
+                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
 
                     if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
@@ -5205,10 +5286,17 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         returnFlag = true;
                     }
                     else {
-                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         returnFlag = true;
+                    }
+
+                    bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                    if (NotBlock && returnFlag) {
+                        returnFlag = false;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "NotBlock MouseWheel[" << original_key << "]";
+#endif
                     }
                 }
             }
@@ -5294,7 +5382,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        if (Interception_Worker::s_InterceptStart != true && extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+            if (Interception_Worker::s_InterceptStart) {
+                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+            }
+
 #ifdef DEBUG_LOGOUT_ON
             if (WM_KEYDOWN == wParam){
                 qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
@@ -5370,21 +5462,42 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
             }
-
-            bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-            if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
-                if (KEY_DOWN == keyupdown) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_DOWN return TRUE");
-#endif
+            else {
+                if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                     return (LRESULT)TRUE;
+                }
+            }
+
+            int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+            if (combinationkey_detected) {
+                if (KEY_DOWN == keyupdown) {
+                    if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_PASSTHROUGH");
+#endif
+                        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_BLOCK");
+#endif
+                        return (LRESULT)TRUE;
+                    }
                 }
                 else {
                     if (findindex >= 0) {
+                        if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_UP return TRUE");
+                            qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
 #endif
-                        return (LRESULT)TRUE;
+                            return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                        }
+                        else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+#endif
+                            return (LRESULT)TRUE;
+                        }
                     }
                 }
             }
@@ -5458,6 +5571,21 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             returnFlag = true;
                         }
+                    }
+
+                    bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                    if (NotBlock && returnFlag) {
+                        returnFlag = false;
+#ifdef DEBUG_LOGOUT_ON
+                        QString keyUpDown;
+                        if (KEY_DOWN == keyupdown){
+                            keyUpDown = "KEY_DOWN";
+                        }
+                        else {
+                            keyUpDown = "KEY_UP";
+                        }
+                        qDebug().noquote().nospace() << "[LowLevelKeyboardHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+#endif
                     }
                 }
             }
@@ -5751,21 +5879,42 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                     }
                 }
-
-                bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
-                if (mappingswitch_detected || displayswitch_detected || combinationkey_detected) {
-                    if (KEY_DOWN == keyupdown) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_DOWN return TRUE");
-#endif
+                else {
+                    if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                         return (LRESULT)TRUE;
+                    }
+                }
+
+                int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+                if (combinationkey_detected) {
+                    if (KEY_DOWN == keyupdown) {
+                        if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_PASSTHROUGH");
+#endif
+                            return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                        }
+                        else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_BLOCK");
+#endif
+                            return (LRESULT)TRUE;
+                        }
                     }
                     else {
                         if (findindex >= 0) {
+                            if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_UP return TRUE");
+                                qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
 #endif
-                            return (LRESULT)TRUE;
+                                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                            }
+                            else {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+#endif
+                                return (LRESULT)TRUE;
+                            }
                         }
                     }
                 }
@@ -5839,6 +5988,21 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                                 returnFlag = true;
                             }
+                        }
+
+                        bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                        if (NotBlock && returnFlag) {
+                            returnFlag = false;
+#ifdef DEBUG_LOGOUT_ON
+                            QString keyUpDown;
+                            if (KEY_DOWN == keyupdown){
+                                keyUpDown = "KEY_DOWN";
+                            }
+                            else {
+                                keyUpDown = "KEY_UP";
+                            }
+                            qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "NotBlock Key[" << original_key << "] " << keyUpDown;
+#endif
                         }
                     }
                 }
@@ -5941,16 +6105,24 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
             int keyupdown = KEY_DOWN;
             updatePressedRealKeysList(keycodeString, keyupdown);
-            bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+            int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
             Q_UNUSED(combinationkey_detected);
             keyupdown = KEY_UP;
             updatePressedRealKeysList(keycodeString, keyupdown);
             combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
             if (combinationkey_detected) {
+                if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[LowLevelMouseHookProc] return TRUE");
+                    qDebug("[LowLevelMouseHookProc] detectCombinationKeys MouseWheel return -> KEY_INTERCEPT_PASSTHROUGH");
 #endif
-                return (LRESULT)TRUE;
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[LowLevelMouseHookProc] detectCombinationKeys MouseWheel return -> KEY_INTERCEPT_BLOCK");
+#endif
+                    return (LRESULT)TRUE;
+                }
             }
 
             short delta_abs = qAbs(zDelta);
@@ -6028,6 +6200,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
 
                     if (send_wheel_keys) {
+                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
 
                         if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
@@ -6051,10 +6224,17 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             returnFlag = true;
                         }
                         else {
-                            QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             returnFlag = true;
+                        }
+
+                        bool NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                        if (NotBlock && returnFlag) {
+                            returnFlag = false;
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "NotBlock MouseWheel[" << original_key << "]";
+#endif
                         }
                     }
                 }
@@ -6294,9 +6474,11 @@ bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int
     return detected;
 }
 
-bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int keyupdown)
+int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int keyupdown)
 {
-    bool detected = false;
+    int intercept = KEY_INTERCEPT_NONE;
+    int findindex = -1;
+    bool NotBlock = false;
     QStringList combinationkeylist;
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
@@ -6344,8 +6526,14 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[detectCombinationKeys]" << "CombinationKey Down detected ->" << combinationkey;
 #endif
-            CombinationKeyProc(combinationkey, KEY_DOWN);
-            detected = true;
+            findindex = CombinationKeyProc(combinationkey, KEY_DOWN);
+            NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+            if (NotBlock) {
+                intercept = KEY_INTERCEPT_PASSTHROUGH;
+            }
+            else {
+                intercept = KEY_INTERCEPT_BLOCK;
+            }
             break;
         }
         else if (pressedRealKeysList.contains(combinationkeyForSearch)) {
@@ -6357,18 +6545,24 @@ bool QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int 
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[detectCombinationKeys]" << "CombinationKey Up detected ->" << combinationkey;
 #endif
-                    CombinationKeyProc(combinationkey, KEY_UP);
-                    detected = true;
+                    findindex = CombinationKeyProc(combinationkey, KEY_UP);
+                    NotBlock = QKeyMapper::KeyMappingDataList.at(findindex).NotBlock;
+                    if (NotBlock) {
+                        intercept = KEY_INTERCEPT_PASSTHROUGH;
+                    }
+                    else {
+                        intercept = KEY_INTERCEPT_BLOCK;
+                    }
                     break;
                 }
             }
         }
     }
 
-    return detected;
+    return intercept;
 }
 
-void QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyupdown)
+int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
     QString keycodeStringForSearch = QString(PREFIX_SHORTCUT) + keycodeString;
@@ -6390,6 +6584,8 @@ void QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int key
             }
         }
     }
+
+    return findindex;
 }
 
 void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers)
@@ -6514,7 +6710,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
         return false;
     }
 
-    bool combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
+    int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
     Q_UNUSED(combinationkey_detected);
 
     if (false == returnFlag) {

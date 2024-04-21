@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QThread>
 #include <QHash>
+#include <QColor>
 // #include <QHotkey>
 #include <QThreadPool>
 #include <QWaitCondition>
@@ -69,8 +70,9 @@ typedef struct MAP_KEYDATA
     bool Burst;
     bool Lock;
     bool LockStatus;
+    bool NotBlock;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false) {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false), NotBlock(false) {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock)
     {
@@ -79,6 +81,7 @@ typedef struct MAP_KEYDATA
         Burst = burst;
         Lock = lock;
         LockStatus = false;
+        NotBlock = false;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -86,7 +89,8 @@ typedef struct MAP_KEYDATA
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
                 && (Burst == other.Burst)
-                && (Lock == other.Lock));
+                && (Lock == other.Lock)
+                && (NotBlock == other.NotBlock));
     }
 }MAP_KEYDATA_st;
 
@@ -542,8 +546,8 @@ public:
     static void updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
-    static bool detectCombinationKeys(const QString &keycodeString, int keyupdown);
-    static void CombinationKeyProc(const QString &keycodeString, int keyupdown);
+    static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
+    static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
     static QString getWindowsKeyName(uint virtualKeyCode);

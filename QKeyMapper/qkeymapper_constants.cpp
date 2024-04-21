@@ -96,6 +96,10 @@ const int KEY_INIT = -1;
 const int KEY_UP = 0;
 const int KEY_DOWN = 1;
 
+const int KEY_INTERCEPT_NONE            = 0;
+const int KEY_INTERCEPT_BLOCK           = 1;
+const int KEY_INTERCEPT_PASSTHROUGH     = 2;
+
 const int SENDMODE_NORMAL        = 1;
 const int SENDMODE_FORCE_STOP    = 2;
 
@@ -328,6 +332,8 @@ const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
 
 const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
 const char *FONTNAME_CHINESE = "NSimSun";
+
+const QColor STATUS_ON_COLOR = QColor(236, 165, 56);
 
 const char *ORIKEY_COMBOBOX_NAME = "orikeyComboBox";
 const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";

@@ -26,8 +26,6 @@ extern const int DEFAULT_ICON_HEIGHT;
 extern const int MOUSEWHEEL_SCROLL_NONE;
 extern const int MOUSEWHEEL_SCROLL_UP;
 extern const int MOUSEWHEEL_SCROLL_DOWN;
-extern const int KEY_UP;
-extern const int KEY_DOWN;
 extern const int CUSTOMSETTING_INDEX_MAX;
 extern const int TITLESETTING_INDEX_INVALID;
 extern const int TITLESETTING_INDEX_ANYTITLE;
@@ -78,6 +76,10 @@ extern const ULONG_PTR VIRTUAL_MOUSE_CLICK;
 extern const int KEY_INIT;
 extern const int KEY_UP;
 extern const int KEY_DOWN;
+
+extern const int KEY_INTERCEPT_NONE;
+extern const int KEY_INTERCEPT_BLOCK;
+extern const int KEY_INTERCEPT_PASSTHROUGH;
 
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
@@ -289,6 +291,7 @@ extern const char* SOUNDFILE_STOP_QRC;
 extern const char* SOUNDFILE_STOP;
 extern const char* FONTNAME_ENGLISH;
 extern const char* FONTNAME_CHINESE;
+extern const QColor STATUS_ON_COLOR;
 extern const char* ORIKEY_COMBOBOX_NAME;
 extern const char* MAPKEY_COMBOBOX_NAME;
 extern const char* WINDOWSWITCHKEY_LINEEDIT_NAME;

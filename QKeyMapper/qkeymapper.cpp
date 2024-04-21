@@ -1699,11 +1699,43 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         Interception_Worker::syncDisabledMouseList();
         // m_deviceListWindow->updateDeviceListInfo();
         initInputDeviceSelectComboBoxes();
+        return;
+   }
+   else if (event->key() == Qt::Key_F2) {
+       if (m_KeyMapStatus == KEYMAP_IDLE){
+            int currentrowindex = -1;
+            QList<QTableWidgetItem*> items = ui->keymapdataTable->selectedItems();
+            if (items.size() > 0) {
+                QTableWidgetItem* selectedItem = items.at(0);
+                currentrowindex = ui->keymapdataTable->row(selectedItem);
 
+                if (KeyMappingDataList.at(currentrowindex).NotBlock) {
+                    KeyMappingDataList[currentrowindex].NotBlock = false;
+                }
+                else {
+                    KeyMappingDataList[currentrowindex].NotBlock = true;
+                }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace() << "[NotBlockStatus]" << "F2 Key Pressed -> Selected mappingdata original_key[" << KeyMappingDataList.at(currentrowindex).Original_Key << "] NotBlock = " << KeyMappingDataList[currentrowindex].NotBlock;
+#endif
+                refreshKeyMappingDataTable();
+                // int reselectrow = currentrowindex;
+                // QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+                // ui->keymapdataTable->setRangeSelected(selection, true);
+                return;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[NotBlockStatus]" << "F2 Key Pressed -> There is no selected mapping data";
+#endif
+            }
+       }
    }
-   else if (event->key() != Qt::Key_Escape) {
-       QDialog::keyPressEvent(event);
+   else if (event->key() == Qt::Key_Escape) {
+       return;
    }
+
+   QDialog::keyPressEvent(event);
 }
 
 void QKeyMapper::on_keymapButton_clicked()
@@ -1938,7 +1970,6 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 #endif
 #endif
         /* Remove BringWindowToTopEx() because of it will cause other program registered shortcut be invalid. <<< */
-
         showNormal();
         activateWindow();
         raise();
@@ -5022,8 +5053,11 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
     int original_key_width_min = ui->keymapdataTable->width()/4 - 15;
     int original_key_width = ui->keymapdataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
-    int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
-    int lock_width = ui->keymapdataTable->width()/5 - 40;
+    ui->keymapdataTable->resizeColumnToContents(BURST_MODE_COLUMN);
+    int burst_mode_width = ui->keymapdataTable->columnWidth(BURST_MODE_COLUMN);
+    int lock_width = burst_mode_width;
+    // int burst_mode_width = ui->keymapdataTable->width()/5 - 40;
+    // int lock_width = ui->keymapdataTable->width()/5 - 40;
 
     if (original_key_width < original_key_width_min) {
         original_key_width = original_key_width_min;
@@ -5625,6 +5659,9 @@ void QKeyMapper::refreshKeyMappingDataTable()
             /* ORIGINAL_KEY_COLUMN */
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
             ori_TableItem->setToolTip(keymapdata.Original_Key);
+            if (keymapdata.NotBlock) {
+                ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
+            }
             ui->keymapdataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , ori_TableItem);
 
             /* MAPPING_KEY_COLUMN */
@@ -6021,14 +6058,13 @@ void QKeyMapper::updateLockStatusDisplay()
     int rowindex = 0;
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
-        if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED) {
+        if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
+            || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
             if (keymapdata.Lock == true) {
                 if (keymapdata.LockStatus == true) {
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("ON");
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::darkMagenta);
+                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(QBrush(STATUS_ON_COLOR));
                 }
                 else {
-                    ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setText("OFF");
                     ui->keymapdataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
                 }
             }
@@ -7101,6 +7137,8 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
     Q_UNUSED(index);
     reloadUILanguage();
     resetFontSize();
+    refreshProcessInfoTable();
+    resizeKeyMappingDataTableColumnWidth();
 
 #ifdef DEBUG_LOGOUT_ON
     QString languageStr;
