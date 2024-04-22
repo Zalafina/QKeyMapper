@@ -59,6 +59,8 @@ extern const int UI_SCALE_4K_PERCENT_100;
 extern const int UI_SCALE_4K_PERCENT_125;
 extern const int UI_SCALE_4K_PERCENT_150;
 extern const int MOUSE_POINT_RADIUS;
+extern const int SHOW_MOUSEPOINTS_OFF;
+extern const int SHOW_MOUSEPOINTS_ON;
 #ifdef VIGEM_CLIENT_SUPPORT
 extern const int RECONNECT_VIGEMCLIENT_WAIT_TIME;
 extern const int VIRTUAL_JOYSTICK_SENSITIVITY_MIN;
@@ -69,13 +71,17 @@ extern const int VIRTUAL_GAMEPAD_NUMBER_MAX;
 #endif
 extern const int INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
 extern const int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX;
-extern const ULONG_PTR VIRTUAL_KEYBOARD_PRESS;
-extern const ULONG_PTR VIRTUAL_MOUSE_CLICK;
 
 /* constant values for QKeyMapper_Worker */
 extern const int KEY_INIT;
 extern const int KEY_UP;
 extern const int KEY_DOWN;
+
+extern const bool EXTENED_FLAG_TRUE;
+extern const bool EXTENED_FLAG_FALSE;
+
+extern const int INITIAL_KEYBOARD_INDEX;
+extern const int INITIAL_MOUSE_INDEX;
 
 extern const int KEY_INTERCEPT_NONE;
 extern const int KEY_INTERCEPT_BLOCK;
@@ -206,6 +212,8 @@ extern const quint8 VK_KEY2MOUSE_LEFT;
 extern const quint8 VK_KEY2MOUSE_RIGHT;
 extern const quint8 VK_GAMEPAD_HOME;
 
+extern const unsigned int INTERCEPTION_EXTRA_INFO;
+
 extern const ULONG_PTR VIRTUAL_KEYBOARD_PRESS;
 extern const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS;
 extern const ULONG_PTR VIRTUAL_MOUSE_CLICK;
@@ -229,6 +237,11 @@ extern const UINT SCANCODE_APPS;
 
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;
+extern const char *PREFIX_SHORTCUT;
+extern const char *JOIN_DEVICE;
+extern const char *KEYBOARD_MODIFIERS;
+extern const char *KEYSEQUENCE_STR;
+extern const char *CLEAR_VIRTUALKEYS;
 extern const char* PROCESS_UNKNOWN;
 extern const char* DEFAULT_NAME;
 extern const char* CONFIG_FILENAME;

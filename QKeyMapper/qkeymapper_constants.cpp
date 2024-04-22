@@ -84,6 +84,9 @@ const int UI_SCALE_4K_PERCENT_150 = 9;
 
 const int MOUSE_POINT_RADIUS = 12;
 
+const int SHOW_MOUSEPOINTS_OFF  = 0;
+const int SHOW_MOUSEPOINTS_ON   = 1;
+
 #ifdef VIGEM_CLIENT_SUPPORT
 const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 #endif
@@ -95,6 +98,12 @@ const int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX = 2000/INSTALL_INTERCEPTION_LO
 const int KEY_INIT = -1;
 const int KEY_UP = 0;
 const int KEY_DOWN = 1;
+
+const bool EXTENED_FLAG_TRUE = true;
+const bool EXTENED_FLAG_FALSE = false;
+
+const int INITIAL_KEYBOARD_INDEX = -1;
+const int INITIAL_MOUSE_INDEX = -1;
 
 const int KEY_INTERCEPT_NONE            = 0;
 const int KEY_INTERCEPT_BLOCK           = 1;
@@ -232,6 +241,8 @@ const quint8 VK_KEY2MOUSE_LEFT  = 0x8C;
 const quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
 const quint8 VK_GAMEPAD_HOME    = 0x07;
 
+const unsigned int INTERCEPTION_EXTRA_INFO = 0xAAAA0000;
+
 const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
 const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
 const ULONG_PTR VIRTUAL_MOUSE_CLICK      = 0xCEDFCEDF;
@@ -255,6 +266,13 @@ const UINT SCANCODE_APPS            = 0x5D;
 
 /* constant chars for QKeyMapper */
 const char *PROGRAM_NAME = "QKeyMapper";
+
+const char *PREFIX_SHORTCUT = "★";
+const char *JOIN_DEVICE     = "##";
+
+const char *KEYBOARD_MODIFIERS  = "KeyboardModifiers";
+const char *KEYSEQUENCE_STR     = "KeySequence";
+const char *CLEAR_VIRTUALKEYS   = "ClearVirtualKeys";
 
 const char *PROCESS_UNKNOWN = "QKeyMapperUnknown";
 

@@ -34,34 +34,18 @@
 using QAtomicBool = QAtomicInteger<bool>;
 #endif
 
-class QKeyMapper;
-
-#define EXTENED_FLAG_TRUE   true
-#define EXTENED_FLAG_FALSE  false
-
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME      ("⏱")
 #define SEPARATOR_TITLESETTING  ("|")
 
-#define PREFIX_SHORTCUT         ("★")
-
-#define JOIN_DEVICE             ("##")
-
-#define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
-#define KEYSEQUENCE_STR         ("KeySequence")
-#define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
+// #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
+// #define KEYSEQUENCE_STR         ("KeySequence")
+// #define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
 
 #define MAPPING_KEYS_MAX        (60)
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
-
-#define SHOW_MOUSEPOINTS_OFF    (0)
-#define SHOW_MOUSEPOINTS_ON     (1)
-
-#define INTERCEPTION_EXTRA_INFO (0xAAAA0000)
-
-#define INITIAL_MOUSE_INDEX     (-1)
 
 typedef struct MAP_KEYDATA
 {
