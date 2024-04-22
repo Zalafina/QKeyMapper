@@ -4265,11 +4265,18 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->multiInputEnableCheckBox->setEnabled(status);
         ui->multiInputDeviceListButton->setEnabled(status);
-        ui->filterKeysCheckBox->setEnabled(status);
         ui->keyboardSelectLabel->setEnabled(status);
         ui->mouseSelectLabel->setEnabled(status);
         ui->keyboardSelectComboBox->setEnabled(status);
         ui->mouseSelectComboBox->setEnabled(status);
+        if (status
+            && Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()
+            && ui->multiInputEnableCheckBox->isChecked()) {
+            ui->filterKeysCheckBox->setEnabled(true);
+        }
+        else {
+            ui->filterKeysCheckBox->setEnabled(false);
+        }
     }
 
     ui->moveupButton->setEnabled(status);
@@ -4770,11 +4777,16 @@ void QKeyMapper::updateMultiInputStatus()
         if (m_KeyMapStatus == KEYMAP_IDLE){
             ui->multiInputEnableCheckBox->setEnabled(true);
             ui->multiInputDeviceListButton->setEnabled(true);
-            ui->filterKeysCheckBox->setEnabled(true);
             ui->keyboardSelectLabel->setEnabled(true);
             ui->mouseSelectLabel->setEnabled(true);
             ui->keyboardSelectComboBox->setEnabled(true);
             ui->mouseSelectComboBox->setEnabled(true);
+            if (ui->multiInputEnableCheckBox->isChecked()) {
+                ui->filterKeysCheckBox->setEnabled(true);
+            }
+            else {
+                ui->filterKeysCheckBox->setEnabled(false);
+            }
         }
 
         if (LANGUAGE_ENGLISH == languageIndex) {
@@ -7490,6 +7502,8 @@ void QKeyMapper::on_multiInputEnableCheckBox_stateChanged(int state)
     else {
         settingFile.setValue(MULTI_INPUT_ENABLE , false);
     }
+
+    updateMultiInputStatus();
 }
 
 void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
