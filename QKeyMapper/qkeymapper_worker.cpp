@@ -6622,7 +6622,10 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 
-    if (modifiers == Qt::AltModifier) {
+    if (modifiers.testFlag(Qt::AltModifier)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[releaseKeyboardModifiers]" << "AltModifier Special Release!";
+#endif
         QStringList mappingKeyList;
         if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
             mappingKeyList = QStringList() << "L-Alt";
@@ -6630,12 +6633,22 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
         else if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
             mappingKeyList = QStringList() << "R-Alt";
         }
-        else {
-            mappingKeyList = QStringList() << "L-Alt";
+
+        if (!mappingKeyList.isEmpty()) {
+            QString original_key = QString(KEYBOARD_MODIFIERS);
+            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+
+            BYTE keyState[256];
+            GetKeyboardState(keyState);
+            if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
+                keyState[VK_LMENU] &= ~0x80;
+            }
+            if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+                keyState[VK_RMENU] &= ~0x80;
+            }
+            SetKeyboardState(keyState);
         }
-        QString original_key = QString(KEYBOARD_MODIFIERS);
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 }
 
