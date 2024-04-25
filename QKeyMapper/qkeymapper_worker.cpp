@@ -6623,9 +6623,6 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     }
 
     if (modifiers.testFlag(Qt::AltModifier)) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[releaseKeyboardModifiers]" << "AltModifier Special Release!";
-#endif
         QStringList mappingKeyList;
         if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
             mappingKeyList = QStringList() << "L-Alt";
@@ -6635,6 +6632,10 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
         }
 
         if (!mappingKeyList.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[releaseKeyboardModifiers]" << "AltModifier Special Release!";
+#endif
+
             QString original_key = QString(KEYBOARD_MODIFIERS);
             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
