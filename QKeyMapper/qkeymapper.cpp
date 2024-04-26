@@ -169,7 +169,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->accelThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
     ui->accelThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
-    ui->longPressTimeSpinBox->setRange(LONGPRESS_TIME_MIN, LONGPRESS_TIME_MAX);
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
@@ -4010,7 +4009,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
-    ui->longPressTimeLabel->setFont(customFont);
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
@@ -4107,7 +4105,6 @@ void QKeyMapper::setControlFontChinese()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
-    ui->longPressTimeLabel->setFont(customFont);
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
@@ -4196,7 +4193,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->burstreleaseLabel->setEnabled(status);
     // ui->burstrelease_msLabel->setEnabled(status);
     ui->waitTimeLabel->setEnabled(status);
-    ui->longPressTimeLabel->setEnabled(status);
     ui->pointLabel->setEnabled(status);
     // ui->waitTime_msLabel->setEnabled(status);
     ui->waitTimeSpinBox->setEnabled(status);
@@ -5905,7 +5901,6 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
-    ui->longPressTimeLabel->setText(LONGPRESSTIME_CHINESE);
     ui->pointLabel->setText(POINT_CHINESE);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
@@ -5987,7 +5982,6 @@ void QKeyMapper::setUILanguage_English()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
-    ui->longPressTimeLabel->setText(LONGPRESSTIME_ENGLISH);
     ui->pointLabel->setText(POINT_ENGLISH);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_ENGLISH);

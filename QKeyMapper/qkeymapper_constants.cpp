@@ -36,8 +36,8 @@ const int MOUSEWHEEL_SCROLL_NONE = 0;
 const int MOUSEWHEEL_SCROLL_UP = 1;
 const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
-const int LANGUAGE_CHINESE = 0;
-const int LANGUAGE_ENGLISH = 1;
+// const int LANGUAGE_CHINESE = 0;
+// const int LANGUAGE_ENGLISH = 1;
 
 const int CUSTOMSETTING_INDEX_MAX = 30;
 
@@ -51,11 +51,8 @@ const int BURST_TIME_MAX = 5000;
 const int BURST_PRESS_TIME_DEFAULT   = 40;
 const int BURST_RELEASE_TIME_DEFAULT = 20;
 
-const int MAPPING_WAITTIME_MIN = 0;
-const int MAPPING_WAITTIME_MAX = 9999;
-
-const int LONGPRESS_TIME_MIN = 0;
-const int LONGPRESS_TIME_MAX = 9999;
+// const int MAPPING_WAITTIME_MIN = 0;
+// const int MAPPING_WAITTIME_MAX = 5000;
 
 const int DATA_PORT_MIN = 1;
 const int DATA_PORT_MAX = 65535;
@@ -121,6 +118,9 @@ const int MOUSE_WHEEL_DOWN = 2;
 const int MOUSE_WHEEL_KEYUP_WAITTIME = 20;
 
 const int SETMOUSEPOSITION_WAITTIME_MAX = 100;
+
+// const int MAPPING_WAITTIME_MIN = 0;
+// const int MAPPING_WAITTIME_MAX = 5000;
 
 const WORD XBUTTON_NONE = 0x0000;
 
@@ -448,7 +448,6 @@ const char *BURSTRELEASE_CHINESE = "连发抬起";
 // const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 // const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 const char *WAITTIME_CHINESE = "延时";
-const char *LONGPRESSTIME_CHINESE = "长按时间";
 const char *POINT_CHINESE = "坐标";
 // const char *WAITTIME_MSLABEL_CHINESE = "毫秒";
 const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
@@ -512,7 +511,6 @@ const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 // const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 // const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 const char *WAITTIME_ENGLISH = "Delay";
-const char* LONGPRESSTIME_ENGLISH = "LongPress";
 const char *POINT_ENGLISH = "Point";
 // const char *WAITTIME_MSLABEL_ENGLISH = "ms";
 const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";
