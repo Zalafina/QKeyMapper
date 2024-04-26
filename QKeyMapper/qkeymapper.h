@@ -48,12 +48,6 @@
 #include "qkeymapper_worker.h"
 #include "qinputdevicelistwindow.h"
 
-#define LANGUAGE_CHINESE    (0)
-#define LANGUAGE_ENGLISH    (1)
-
-#define MAPPING_WAITTIME_MIN    (0)
-#define MAPPING_WAITTIME_MAX    (9999)
-
 struct InputDeviceInfo
 {
     QString hardwareid;

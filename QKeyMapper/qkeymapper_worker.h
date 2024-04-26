@@ -37,6 +37,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME      ("⏱")
+#define SEPARATOR_PRESSTIME     ("⏲")
 #define SEPARATOR_TITLESETTING  ("|")
 
 // #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
