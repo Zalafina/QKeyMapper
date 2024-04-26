@@ -6623,6 +6623,13 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     }
 
     if (modifiers.testFlag(Qt::AltModifier)) {
+        bool shift_ctrl_modifier_status = false;
+        if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0
+            || (GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0
+            || (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0
+            || (GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0) {
+            shift_ctrl_modifier_status = true;
+        }
         QStringList mappingKeyList;
         if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
             mappingKeyList = QStringList() << "L-Alt";
@@ -6631,7 +6638,7 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             mappingKeyList = QStringList() << "R-Alt";
         }
 
-        if (!mappingKeyList.isEmpty()) {
+        if (!mappingKeyList.isEmpty() && !shift_ctrl_modifier_status) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[releaseKeyboardModifiers]" << "AltModifier Special Release!";
 #endif
