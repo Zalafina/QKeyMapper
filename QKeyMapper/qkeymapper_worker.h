@@ -38,6 +38,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME      ("⏱")
 #define SEPARATOR_PRESSTIME     ("⏲")
+#define POSTFIX_DOUBLECLICK     ("✖")
 #define SEPARATOR_TITLESETTING  ("|")
 
 // #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
@@ -535,6 +536,8 @@ public:
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
+    static void collectCombinationOriginalKeysList(void);
+    static void collectlongPressOriginalKeysMap(void);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
@@ -603,6 +606,9 @@ public:
     static QStringList pressedVirtualKeysList;
     static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
+    static QStringList combinationOriginalKeysList;
+    static QHash<QString, QList<int>> longPressOriginalKeysMap;
+    static QHash<QString, QTimer*> s_longPressTimerMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;

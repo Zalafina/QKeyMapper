@@ -35,6 +35,9 @@ QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QList<QList<quint8>> QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList;
 // QStringList QKeyMapper_Worker::pressedShortcutKeysList = QStringList();
+QStringList QKeyMapper_Worker::combinationOriginalKeysList;
+QHash<QString, QList<int>> QKeyMapper_Worker::longPressOriginalKeysMap;
+QHash<QString, QTimer*> QKeyMapper_Worker::s_longPressTimerMap;
 #ifdef VIGEM_CLIENT_SUPPORT
 QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
@@ -2728,6 +2731,12 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     // pressedShortcutKeysList.clear();
+
+    combinationOriginalKeysList.clear();
+    collectCombinationOriginalKeysList();
+    longPressOriginalKeysMap.clear();
+    collectlongPressOriginalKeysMap();
+
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
@@ -2841,6 +2850,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
     // pressedShortcutKeysList.clear();
+    combinationOriginalKeysList.clear();
+    longPressOriginalKeysMap.clear();
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
@@ -6479,23 +6490,12 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
     int intercept = KEY_INTERCEPT_NONE;
     int findindex = -1;
     bool PassThrough = false;
-    QStringList combinationkeylist;
-
-    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
-    {
-        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
-        {
-            QString combinationkey = keymapdata.Original_Key;
-            combinationkey.remove(PREFIX_SHORTCUT);
-            combinationkeylist.append(combinationkey);
-        }
-    }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[detectCombinationKeys]" << "Current CombinationKeyList ->" << combinationkeylist;
+    qDebug() << "[detectCombinationKeys]" << "Current combinationOriginalKeysList ->" << combinationOriginalKeysList;
 #endif
 
-    for (const QString &combinationkey : qAsConst(combinationkeylist))
+    for (const QString &combinationkey : qAsConst(combinationOriginalKeysList))
     {
         QString combinationkeyForSearch = QString(PREFIX_SHORTCUT) + combinationkey;
         QStringList keys = combinationkey.split("+");
@@ -6658,6 +6658,49 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             SetKeyboardState(keyState);
         }
     }
+}
+
+void QKeyMapper_Worker::collectCombinationOriginalKeysList()
+{
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
+    {
+        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
+        {
+            QString combinationkey = keymapdata.Original_Key;
+            combinationkey.remove(PREFIX_SHORTCUT);
+            combinationOriginalKeysList.append(combinationkey);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[collectCombinationOriginalKeysList]" << "combinationOriginalKeysList ->" << combinationOriginalKeysList;
+#endif
+}
+
+void QKeyMapper_Worker::collectlongPressOriginalKeysMap()
+{
+    static QRegularExpression regex("^(.+)⏲([0-9]{1,4})$");
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
+    {
+        QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
+        if (match.hasMatch()) {
+            QString original_key = match.captured(1);
+            QString longPressTimeString = match.captured(2);
+            int longpresstime = longPressTimeString.toInt();
+            if (longPressOriginalKeysMap[original_key].contains(longpresstime) == false) {
+                longPressOriginalKeysMap[original_key].append(longpresstime);
+            }
+        }
+    }
+
+    // Sort the QList<int> values in longPressOriginalKeysMap using range-based for loop
+    for (QList<int> &valueList : longPressOriginalKeysMap) {
+        std::sort(valueList.begin(), valueList.end());
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[collectlongPressOriginalKeysMap]" << "longPressOriginalKeysMap ->" << longPressOriginalKeysMap;
+#endif
 }
 
 QString QKeyMapper_Worker::getWindowsKeyName(uint virtualKeyCode)
