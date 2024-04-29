@@ -400,6 +400,7 @@ public slots:
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
+    static void onLongPressTimeOut(QString keycodeStringWithPressTime);
 
 public:
     void sendBurstKeyDown(const QString &burstKey);
@@ -537,7 +538,11 @@ public:
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
     static void collectCombinationOriginalKeysList(void);
-    static void collectlongPressOriginalKeysMap(void);
+    static void collectLongPressOriginalKeysMap(void);
+    static void sendLongPressTimers(const QString &keycodeString);
+    static void clearLongPressTimer(const QString &keycodeString);
+    static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
+    static void clearAllLongPressTimers(void);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
@@ -604,6 +609,7 @@ public:
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
+    static QStringList pressedLongPressKeysList;
     static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
     static QStringList combinationOriginalKeysList;
