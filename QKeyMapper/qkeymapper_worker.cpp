@@ -1069,27 +1069,6 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::onLongPressTimeOut(QString keycodeStringWithPressTime)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onLongPressTimeOut] keycodeStringWithPressTime ->" << keycodeStringWithPressTime;
-#endif
-
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeStringWithPressTime);
-
-    if (findindex >=0){
-        /* Need to remove at LowlevelKeyHookProc Real Key Up Process */
-        if (false == pressedLongPressKeysList.contains(keycodeStringWithPressTime)) {
-            pressedLongPressKeysList.append(keycodeStringWithPressTime);
-        }
-        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-    }
-
-    removeLongPressTimerOnTimeout(keycodeStringWithPressTime);
-}
-
 #if 0
 void QKeyMapper_Worker::send_WINplusD()
 {
@@ -6444,6 +6423,7 @@ void QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, 
         if (true == pressedRealKeysList.contains(keycodeString)){
             pressedRealKeysList.removeAll(keycodeString);
             clearLongPressTimer(keycodeString);
+            longPressKeyProc(keycodeString, KEY_UP);
         }
         QString keycodeString_RemoveMultiInput = getKeycodeStringRemoveMultiInput(keycodeString);
         if (true == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
@@ -6806,6 +6786,50 @@ void QKeyMapper_Worker::clearAllLongPressTimers(void)
     s_longPressTimerMap.clear();
 }
 
+void QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupdown)
+{
+    if (KEY_DOWN == keyupdown) {
+        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+
+        if (findindex >=0){
+            if (false == pressedLongPressKeysList.contains(keycodeString)) {
+                pressedLongPressKeysList.append(keycodeString);
+
+                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[longPressKeyProc]" << "pressedLongPressKeysList KEY_DOWN already contains [" << keycodeString << "]";
+#endif
+            }
+        }
+    }
+    else {
+        if (pressedLongPressKeysList.isEmpty()) {
+            return;
+        }
+
+        QStringList releaseKeys;
+        for (const QString &key : pressedLongPressKeysList) {
+            if (key.startsWith(keycodeString)) {
+                releaseKeys.append(key);
+                int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+                if (findindex >=0){
+                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                }
+            }
+        }
+
+        for (const QString &key : releaseKeys) {
+            pressedLongPressKeysList.removeAll(key);
+        }
+    }
+}
+
 QString QKeyMapper_Worker::getWindowsKeyName(uint virtualKeyCode)
 {
     QString keynameStr;
@@ -6842,6 +6866,17 @@ QString QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(const QString &keyco
     QString result = keycodeString;
     result.remove(regex);
     return result;
+}
+
+void QKeyMapper_Worker::onLongPressTimeOut(QString keycodeStringWithPressTime)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onLongPressTimeOut] keycodeStringWithPressTime ->" << keycodeStringWithPressTime;
+#endif
+
+    longPressKeyProc(keycodeStringWithPressTime, KEY_DOWN);
+
+    removeLongPressTimerOnTimeout(keycodeStringWithPressTime);
 }
 
 bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName)

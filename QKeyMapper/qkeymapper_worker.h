@@ -400,7 +400,6 @@ public slots:
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
-    static void onLongPressTimeOut(QString keycodeStringWithPressTime);
 
 public:
     void sendBurstKeyDown(const QString &burstKey);
@@ -543,8 +542,12 @@ public:
     static void clearLongPressTimer(const QString &keycodeString);
     static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
     static void clearAllLongPressTimers(void);
+    static void longPressKeyProc(const QString &keycodeString, int keyupdown);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
+
+public slots:
+    static void onLongPressTimeOut(QString keycodeStringWithPressTime);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
