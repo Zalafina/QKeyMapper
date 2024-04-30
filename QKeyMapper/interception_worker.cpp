@@ -1,3 +1,4 @@
+#include <QCoreApplication>
 #include "interception_worker.h"
 #include "qkeymapper_constants.h"
 
@@ -207,6 +208,8 @@ void Interception_Worker::InterceptionThreadStarted()
 #endif
             }
         }
+
+        QCoreApplication::processEvents();
     }
 
 #ifdef DEBUG_LOGOUT_ON
