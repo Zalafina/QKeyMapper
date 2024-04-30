@@ -735,6 +735,7 @@ signals:
     void setKeyUnHook_Signal(void);
 
 public slots:
+    void HookProcThreadStarted(void);
 #ifndef HOOKSTART_ONSTARTUP
     void onSetHookProcKeyHook(HWND hWnd);
     void onSetHookProcKeyUnHook(void);

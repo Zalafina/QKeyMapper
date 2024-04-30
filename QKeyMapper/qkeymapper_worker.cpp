@@ -8101,33 +8101,6 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 #endif
     }
 #endif
-
-#ifdef HOOKSTART_ONSTARTUP
-    if (s_LowLevelKeyboardHook_Enable) {
-        if (s_KeyHook == Q_NULLPTR) {
-            s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef DEBUG_LOGOUT_ON
-            if (s_KeyHook != Q_NULLPTR) {
-                qDebug("[SetHookProc] QKeyMapper_Hook_Proc() Keyboard SetWindowsHookEx Success. -> 0x%08X", s_KeyHook);
-            }
-#endif
-        }
-    }
-    if (s_LowLevelMouseHook_Enable) {
-        if (s_MouseHook == Q_NULLPTR) {
-            s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef DEBUG_LOGOUT_ON
-            if (s_MouseHook != Q_NULLPTR) {
-                qDebug("[SetHookProc] QKeyMapper_Hook_Proc() Mouse SetWindowsHookEx Success. -> 0x%08X", s_MouseHook);
-            }
-#endif
-        }
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qInfo("[SetHookProc] QKeyMapper_Hook_Proc() Keyboard Hook & Mouse Hook Started.");
-#endif
-#endif
 }
 
 QKeyMapper_Hook_Proc::~QKeyMapper_Hook_Proc()
@@ -8173,6 +8146,36 @@ QKeyMapper_Hook_Proc::~QKeyMapper_Hook_Proc()
 
 #ifdef DEBUG_LOGOUT_ON
     qInfo("[SetHookProc] ~QKeyMapper_Hook_Proc() Keyboard Hook & Mouse Hook Stopped.");
+#endif
+#endif
+}
+
+void QKeyMapper_Hook_Proc::HookProcThreadStarted()
+{
+#ifdef HOOKSTART_ONSTARTUP
+    if (s_LowLevelKeyboardHook_Enable) {
+        if (s_KeyHook == Q_NULLPTR) {
+            s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#ifdef DEBUG_LOGOUT_ON
+            if (s_KeyHook != Q_NULLPTR) {
+                qDebug("[SetHookProc] HookProcThreadStarted() Keyboard SetWindowsHookEx Success. -> 0x%08X", s_KeyHook);
+            }
+#endif
+        }
+    }
+    if (s_LowLevelMouseHook_Enable) {
+        if (s_MouseHook == Q_NULLPTR) {
+            s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
+#ifdef DEBUG_LOGOUT_ON
+            if (s_MouseHook != Q_NULLPTR) {
+                qDebug("[SetHookProc] HookProcThreadStarted() Mouse SetWindowsHookEx Success. -> 0x%08X", s_MouseHook);
+            }
+#endif
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qInfo("[SetHookProc] HookProcThreadStarted() Keyboard Hook & Mouse Hook Started.");
 #endif
 #endif
 }
