@@ -5144,18 +5144,18 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
         QString extraInfoStr = QString("0x%1").arg(QString::number(extraInfo, 16).toUpper(), 8, '0');
         if (zDelta > 0) {
             if (mouse_event == EVENT_MOUSEHWHEEL) {
-                qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Right -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << " Real Mouse Wheel Right -> Delta =  " << zDelta << ", extraInfoStr = " << extraInfoStr;
             }
             else {
-                qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Up -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << " Real Mouse Wheel Up    -> Delta =  " << zDelta << ", extraInfoStr = " << extraInfoStr;
             }
         }
         else {
             if (mouse_event == EVENT_MOUSEHWHEEL) {
-                qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Left -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << " Real Mouse Wheel Left  -> Delta = " << zDelta << ", extraInfoStr = " << extraInfoStr;
             }
             else {
-                qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Down -> Delta =" << zDelta << ", extraInfoStr =" << extraInfoStr;
+                qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << " Real Mouse Wheel Down  -> Delta = " << zDelta << ", extraInfoStr = " << extraInfoStr;
             }
         }
 #endif
