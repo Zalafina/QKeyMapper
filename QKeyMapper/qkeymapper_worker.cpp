@@ -6535,7 +6535,9 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             qDebug() << "[detectCombinationKeys]" << "CombinationKey Down detected ->" << combinationkey;
 #endif
             findindex = CombinationKeyProc(combinationkey, KEY_DOWN);
-            PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+            if (findindex >= 0) {
+                PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+            }
             if (PassThrough) {
                 intercept = KEY_INTERCEPT_PASSTHROUGH;
             }
@@ -6554,7 +6556,9 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
                     qDebug() << "[detectCombinationKeys]" << "CombinationKey Up detected ->" << combinationkey;
 #endif
                     findindex = CombinationKeyProc(combinationkey, KEY_UP);
-                    PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                    if (findindex >= 0) {
+                        PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
+                    }
                     if (PassThrough) {
                         intercept = KEY_INTERCEPT_PASSTHROUGH;
                     }
@@ -6697,6 +6701,13 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
             int longpresstime = longPressTimeString.toInt();
             if (longPressOriginalKeysMap[original_key].contains(longpresstime) == false) {
                 longPressOriginalKeysMap[original_key].append(longpresstime);
+                if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                    QString combinationkey = original_key;
+                    combinationkey.remove(PREFIX_SHORTCUT);
+                    if (combinationOriginalKeysList.contains(combinationkey) == false) {
+                        combinationOriginalKeysList.append(combinationkey);
+                    }
+                }
             }
         }
     }
@@ -6707,7 +6718,12 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[collectLongPressOriginalKeysMap]" << "longPressOriginalKeysMap ->" << longPressOriginalKeysMap;
+    if (longPressOriginalKeysMap.isEmpty() == false) {
+        qDebug() << "[collectLongPressOriginalKeysMap]" << "longPressOriginalKeysMap ->" << longPressOriginalKeysMap;
+    }
+    if (combinationOriginalKeysList.isEmpty() == false) {
+        qDebug() << "[collectLongPressOriginalKeysMap]" << "combinationOriginalKeysList ->" << combinationOriginalKeysList;
+    }
 #endif
 }
 
@@ -6797,6 +6813,10 @@ void QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyup
 
                 QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                 QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                    releaseKeyboardModifiers(modifiers_arg);
+                }
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             }
             else {
