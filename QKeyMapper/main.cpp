@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
     keymapper_hook_proc->moveToThread(hookprocThread);
     hookprocThread->setObjectName("QKeyMapper_Hook_Proc");
     QObject::connect(hookprocThread, &QThread::started, keymapper_hook_proc, &QKeyMapper_Hook_Proc::HookProcThreadStarted);
+    QObject::connect(hookprocThread, &QThread::finished, keymapper_hook_proc, &QKeyMapper_Hook_Proc::HookProcThreadFinished);
     hookprocThread->start();
 
     QKeyMapper_Worker * const keymapper_worker = QKeyMapper_Worker::getInstance();

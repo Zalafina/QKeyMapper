@@ -736,6 +736,7 @@ signals:
 
 public slots:
     void HookProcThreadStarted(void);
+    void HookProcThreadFinished(void);
 #ifndef HOOKSTART_ONSTARTUP
     void onSetHookProcKeyHook(HWND hWnd);
     void onSetHookProcKeyUnHook(void);

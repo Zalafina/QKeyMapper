@@ -8108,50 +8108,14 @@ QKeyMapper_Hook_Proc::~QKeyMapper_Hook_Proc()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper_Hook_Proc() Called.";
 #endif
-
-#ifdef HOOKSTART_ONSTARTUP
-    bool unhook_ret = 0;
-    if (s_KeyHook != Q_NULLPTR){
-        void* keyboardhook_p = (void*)s_KeyHook;
-        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
-        s_KeyHook = Q_NULLPTR;
-        Q_UNUSED(keyboardhook_p);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (0 == unhook_ret) {
-            qDebug() << "[SetHookProc]" << "~QKeyMapper_Hook_Proc() Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
-        }
-        else {
-            qDebug("[SetHookProc] ~QKeyMapper_Hook_Proc() Keyboard UnhookWindowsHookEx Success. -> 0x%08X", keyboardhook_p);
-        }
-#endif
-    }
-
-    if (s_MouseHook != Q_NULLPTR) {
-        void* mousehook_p = (void*)s_MouseHook;
-        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
-        s_MouseHook = Q_NULLPTR;
-        Q_UNUSED(mousehook_p);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (0 == unhook_ret) {
-            qDebug() << "[SetHookProc]" << "~QKeyMapper_Hook_Proc() Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
-        }
-        else {
-            qDebug("[SetHookProc] ~QKeyMapper_Hook_Proc() Mouse UnhookWindowsHookEx Success. -> 0x%08X", mousehook_p);
-        }
-#endif
-    }
-    Q_UNUSED(unhook_ret);
-
-#ifdef DEBUG_LOGOUT_ON
-    qInfo("[SetHookProc] ~QKeyMapper_Hook_Proc() Keyboard Hook & Mouse Hook Stopped.");
-#endif
-#endif
 }
 
 void QKeyMapper_Hook_Proc::HookProcThreadStarted()
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[HookProcThreadStarted] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+#endif
+
 #ifdef HOOKSTART_ONSTARTUP
     if (s_LowLevelKeyboardHook_Enable) {
         if (s_KeyHook == Q_NULLPTR) {
@@ -8176,6 +8140,53 @@ void QKeyMapper_Hook_Proc::HookProcThreadStarted()
 
 #ifdef DEBUG_LOGOUT_ON
     qInfo("[SetHookProc] HookProcThreadStarted() Keyboard Hook & Mouse Hook Started.");
+#endif
+#endif
+}
+
+void QKeyMapper_Hook_Proc::HookProcThreadFinished()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[HookProcThreadFinished] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+#endif
+
+#ifdef HOOKSTART_ONSTARTUP
+    bool unhook_ret = 0;
+    if (s_KeyHook != Q_NULLPTR){
+        void* keyboardhook_p = (void*)s_KeyHook;
+        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
+        s_KeyHook = Q_NULLPTR;
+        Q_UNUSED(keyboardhook_p);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (0 == unhook_ret) {
+            qDebug() << "[SetHookProc]" << "HookProcThreadFinished() Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
+        }
+        else {
+            qDebug("[SetHookProc] HookProcThreadFinished() Keyboard UnhookWindowsHookEx Success. -> 0x%08X", keyboardhook_p);
+        }
+#endif
+    }
+
+    if (s_MouseHook != Q_NULLPTR) {
+        void* mousehook_p = (void*)s_MouseHook;
+        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
+        s_MouseHook = Q_NULLPTR;
+        Q_UNUSED(mousehook_p);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (0 == unhook_ret) {
+            qDebug() << "[SetHookProc]" << "HookProcThreadFinished() Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
+        }
+        else {
+            qDebug("[SetHookProc] HookProcThreadFinished() Mouse UnhookWindowsHookEx Success. -> 0x%08X", mousehook_p);
+        }
+#endif
+    }
+    Q_UNUSED(unhook_ret);
+
+#ifdef DEBUG_LOGOUT_ON
+    qInfo("[SetHookProc] HookProcThreadFinished() Keyboard Hook & Mouse Hook Stopped.");
 #endif
 #endif
 }
