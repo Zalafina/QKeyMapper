@@ -6729,11 +6729,34 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
 
 void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
 {
+    QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
+
     if (longPressOriginalKeysMap.contains(keycodeString)) {
         QList<int> timeoutValueList = longPressOriginalKeysMap.value(keycodeString);
 
         for (int timeout : timeoutValueList) {
             QString keycodeStringWithPressTime = keycodeString + QString(SEPARATOR_PRESSTIME) + QString::number(timeout);
+            if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
+                s_longPressTimerMap[keycodeStringWithPressTime]->start(timeout);
+            }
+            else {
+                QKeyMapper_Worker *instance = QKeyMapper_Worker::getInstance();
+                QTimer* timer = new QTimer();
+                timer->setTimerType(Qt::PreciseTimer);
+                timer->setSingleShot(true);
+                QObject::connect(timer, &QTimer::timeout, instance, [instance, keycodeStringWithPressTime]() {
+                    onLongPressTimeOut(keycodeStringWithPressTime);
+                });
+                timer->start(timeout);
+                s_longPressTimerMap.insert(keycodeStringWithPressTime, timer);
+            }
+        }
+    }
+    else if (longPressOriginalKeysMap.contains(keycodeString_RemoveMultiInput)) {
+        QList<int> timeoutValueList = longPressOriginalKeysMap.value(keycodeString_RemoveMultiInput);
+
+        for (int timeout : timeoutValueList) {
+            QString keycodeStringWithPressTime = keycodeString_RemoveMultiInput + QString(SEPARATOR_PRESSTIME) + QString::number(timeout);
             if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
                 s_longPressTimerMap[keycodeStringWithPressTime]->start(timeout);
             }
@@ -6832,8 +6855,10 @@ void QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyup
         }
 
         QStringList releaseKeys;
+        QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
         for (const QString &key : pressedLongPressKeysList) {
-            if (key.startsWith(keycodeString)) {
+            if (key.startsWith(keycodeString)
+                || key.startsWith(keycodeString_RemoveMultiInput)) {
                 releaseKeys.append(key);
                 int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
                 if (findindex >=0){
