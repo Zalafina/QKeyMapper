@@ -39,6 +39,7 @@ QList<QList<quint8>> QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList;
 QStringList QKeyMapper_Worker::combinationOriginalKeysList;
 QHash<QString, QList<int>> QKeyMapper_Worker::longPressOriginalKeysMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_longPressTimerMap;
+QHash<QString, int> QKeyMapper_Worker::doubleClickOriginalKeysMap;
 #ifdef VIGEM_CLIENT_SUPPORT
 QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
@@ -2739,6 +2740,13 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     collectCombinationOriginalKeysList();
     longPressOriginalKeysMap.clear();
     collectLongPressOriginalKeysMap();
+    doubleClickOriginalKeysMap.clear();
+    collectDoubleClickOriginalKeysMap();
+#ifdef DEBUG_LOGOUT_ON
+    if (combinationOriginalKeysList.isEmpty() == false) {
+        qDebug() << "[setWorkerKeyHook]" << "combinationOriginalKeysList ->" << combinationOriginalKeysList;
+    }
+#endif
 
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
@@ -2857,6 +2865,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllLongPressTimers();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
+    doubleClickOriginalKeysMap.clear();
     pressedMappingKeysMap.clear();
     m_BurstTimerMap.clear();
     m_BurstKeyUpTimerMap.clear();
@@ -6721,9 +6730,6 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
     if (longPressOriginalKeysMap.isEmpty() == false) {
         qDebug() << "[collectLongPressOriginalKeysMap]" << "longPressOriginalKeysMap ->" << longPressOriginalKeysMap;
     }
-    if (combinationOriginalKeysList.isEmpty() == false) {
-        qDebug() << "[collectLongPressOriginalKeysMap]" << "combinationOriginalKeysList ->" << combinationOriginalKeysList;
-    }
 #endif
 }
 
@@ -6873,6 +6879,36 @@ void QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyup
             pressedLongPressKeysList.removeAll(key);
         }
     }
+}
+
+void QKeyMapper_Worker::collectDoubleClickOriginalKeysMap()
+{
+    int keymapdataindex = 0;
+    static QRegularExpression regex("^(.+)✖$");
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
+    {
+        QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
+        if (match.hasMatch()) {
+            QString original_key = match.captured(1);
+            if (doubleClickOriginalKeysMap.contains(original_key) == false) {
+                doubleClickOriginalKeysMap.insert(original_key, keymapdataindex);
+                if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                    QString combinationkey = original_key;
+                    combinationkey.remove(PREFIX_SHORTCUT);
+                    if (combinationOriginalKeysList.contains(combinationkey) == false) {
+                        combinationOriginalKeysList.append(combinationkey);
+                    }
+                }
+            }
+        }
+        keymapdataindex += 1;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (doubleClickOriginalKeysMap.isEmpty() == false) {
+        qDebug() << "[collectDoubleClickOriginalKeysMap]" << "doubleClickOriginalKeysMap ->" << doubleClickOriginalKeysMap;
+    }
+#endif
 }
 
 QString QKeyMapper_Worker::getWindowsKeyName(uint virtualKeyCode)

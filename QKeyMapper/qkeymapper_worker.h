@@ -543,6 +543,7 @@ public:
     static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
     static void clearAllLongPressTimers(void);
     static void longPressKeyProc(const QString &keycodeString, int keyupdown);
+    static void collectDoubleClickOriginalKeysMap(void);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
@@ -618,6 +619,7 @@ public:
     static QStringList combinationOriginalKeysList;
     static QHash<QString, QList<int>> longPressOriginalKeysMap;
     static QHash<QString, QTimer*> s_longPressTimerMap;
+    static QHash<QString, int> doubleClickOriginalKeysMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;
