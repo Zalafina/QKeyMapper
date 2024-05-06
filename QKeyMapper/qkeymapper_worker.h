@@ -544,11 +544,17 @@ public:
     static void clearAllLongPressTimers(void);
     static void longPressKeyProc(const QString &keycodeString, int keyupdown);
     static void collectDoubleClickOriginalKeysMap(void);
+    static void sendDoubleClickTimers(const QString &keycodeString);
+    static void clearDoubleClickTimer(const QString &keycodeString);
+    static void removeDoubleClickTimerOnTimeout(const QString &keycodeString);
+    static void clearAllDoubleClickTimers(void);
+    static void doubleClickKeyProc(const QString &keycodeString, int keyupdown);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
 public slots:
-    static void onLongPressTimeOut(QString keycodeStringWithPressTime);
+    static void onLongPressTimeOut(const QString keycodeStringWithPressTime);
+    static void onDoubleClickTimeOut(const QString keycodeString);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
@@ -620,6 +626,7 @@ public:
     static QHash<QString, QList<int>> longPressOriginalKeysMap;
     static QHash<QString, QTimer*> s_longPressTimerMap;
     static QHash<QString, int> doubleClickOriginalKeysMap;
+    static QHash<QString, QTimer*> s_doubleClickTimerMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;

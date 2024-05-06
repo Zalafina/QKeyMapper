@@ -103,6 +103,8 @@ extern const int MOUSE_WHEEL_KEYUP_WAITTIME;
 
 extern const int SETMOUSEPOSITION_WAITTIME_MAX;
 
+extern const int DOUBLE_CLICK_TIMEOUT;
+
 extern const WORD XBUTTON_NONE;
 
 extern const int JOYSTICK_POV_ANGLE_RELEASE;
