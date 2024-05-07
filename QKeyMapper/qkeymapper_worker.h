@@ -620,6 +620,7 @@ public:
     static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLongPressKeysList;
+    static QStringList pressedDoubleClickKeysList;
     static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
     static QStringList combinationOriginalKeysList;
