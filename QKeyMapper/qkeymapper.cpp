@@ -169,7 +169,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->accelThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
     ui->accelThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
-    ui->longPressTimeSpinBox->setRange(LONGPRESS_TIME_MIN, LONGPRESS_TIME_MAX);
+    ui->pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
@@ -3209,10 +3209,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                         keyboardmapcontains = true;
                     }
-                    else if (ori_key.contains(SEPARATOR_PRESSTIME)) {
+                    else if (ori_key.contains(SEPARATOR_LONGPRESS)) {
                         keyboardmapcontains = true;
                     }
-                    else if (ori_key.endsWith(POSTFIX_DOUBLECLICK)) {
+                    else if (ori_key.contains(SEPARATOR_DOUBLEPRESS)) {
                         keyboardmapcontains = true;
                     }
 #ifdef MOUSEBUTTON_CONVERT
@@ -3467,10 +3467,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     if (ori_key.startsWith(PREFIX_SHORTCUT)) {
                         keyboardmapcontains = true;
                     }
-                    else if (ori_key.contains(SEPARATOR_PRESSTIME)) {
+                    else if (ori_key.contains(SEPARATOR_LONGPRESS)) {
                         keyboardmapcontains = true;
                     }
-                    else if (ori_key.endsWith(POSTFIX_DOUBLECLICK)) {
+                    else if (ori_key.contains(SEPARATOR_DOUBLEPRESS)) {
                         keyboardmapcontains = true;
                     }
 #ifdef MOUSEBUTTON_CONVERT
@@ -4015,8 +4015,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
-    ui->longPressTimeLabel->setFont(customFont);
-    ui->doubleClickCheckBox->setFont(customFont);
+    ui->keyPressTypeComboBox->setFont(customFont);
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
@@ -4113,8 +4112,7 @@ void QKeyMapper::setControlFontChinese()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
-    ui->longPressTimeLabel->setFont(customFont);
-    ui->doubleClickCheckBox->setFont(customFont);
+    ui->keyPressTypeComboBox->setFont(customFont);
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
@@ -4194,6 +4192,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->soundEffectCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
     ui->virtualGamepadTypeComboBox->setEnabled(status);
+    ui->keyPressTypeComboBox->setEnabled(status);
     ui->burstpressSpinBox->setEnabled(status);
     ui->burstreleaseSpinBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
@@ -4203,12 +4202,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->burstreleaseLabel->setEnabled(status);
     // ui->burstrelease_msLabel->setEnabled(status);
     ui->waitTimeLabel->setEnabled(status);
-    ui->longPressTimeLabel->setEnabled(status);
-    ui->doubleClickCheckBox->setEnabled(status);
     ui->pointLabel->setEnabled(status);
     // ui->waitTime_msLabel->setEnabled(status);
     ui->waitTimeSpinBox->setEnabled(status);
-    ui->longPressTimeSpinBox->setEnabled(status);
+    ui->pressTimeSpinBox->setEnabled(status);
     ui->mouseXSpeedLabel->setEnabled(status);
     ui->mouseYSpeedLabel->setEnabled(status);
     ui->mouseXSpeedSpinBox->setEnabled(status);
@@ -5914,8 +5911,9 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
-    ui->longPressTimeLabel->setText(LONGPRESSTIME_CHINESE);
-    ui->doubleClickCheckBox->setText(DOUBLECLICKCHECKBOX_CHINESE);
+    ui->keyPressTypeComboBox->clear();
+    ui->keyPressTypeComboBox->addItem(LONGPRESS_CHINESE);
+    ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_CHINESE);
     ui->pointLabel->setText(POINT_CHINESE);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
@@ -5997,8 +5995,9 @@ void QKeyMapper::setUILanguage_English()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
-    ui->longPressTimeLabel->setText(LONGPRESSTIME_ENGLISH);
-    ui->doubleClickCheckBox->setText(DOUBLECLICKCHECKBOX_ENGLISH);
+    ui->keyPressTypeComboBox->clear();
+    ui->keyPressTypeComboBox->addItem(LONGPRESS_ENGLISH);
+    ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_ENGLISH);
     ui->pointLabel->setText(POINT_ENGLISH);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_ENGLISH);
@@ -6081,7 +6080,7 @@ void QKeyMapper::resetFontSize()
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->longPressTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->pressTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->pointDisplayLabel->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -6116,7 +6115,7 @@ void QKeyMapper::resetFontSize()
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->longPressTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->pressTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->pointDisplayLabel->setFont(QFont("Microsoft YaHei", 9));
         ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
         ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
@@ -6541,12 +6540,12 @@ void QKeyMapper::on_addmapdataButton_clicked()
         return;
     }
 
-    int longpressTime = ui->longPressTimeSpinBox->value();
-    if (longpressTime > 0) {
-        currentOriKeyText = currentOriKeyText + QString(SEPARATOR_PRESSTIME) + QString::number(longpressTime);
+    int pressTime = ui->pressTimeSpinBox->value();
+    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0) {
+        currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
     }
-    else if (ui->doubleClickCheckBox->isChecked()){
-        currentOriKeyText = currentOriKeyText + QString(POSTFIX_DOUBLECLICK);
+    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0){
+        currentOriKeyText = currentOriKeyText + QString(SEPARATOR_DOUBLEPRESS) + QString::number(pressTime);
     }
 
     bool already_exist = false;

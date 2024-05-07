@@ -1207,7 +1207,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QSpinBox" name="longPressTimeSpinBox">
+  <widget class="QSpinBox" name="pressTimeSpinBox">
    <property name="geometry">
     <rect>
      <x>586</x>
@@ -1220,39 +1220,23 @@
     <enum>Qt::ClickFocus</enum>
    </property>
   </widget>
-  <widget class="QLabel" name="longPressTimeLabel">
+  <widget class="QComboBox" name="keyPressTypeComboBox">
    <property name="geometry">
     <rect>
-     <x>500</x>
+     <x>525</x>
      <y>440</y>
-     <width>81</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>LongPress</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="doubleClickCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>660</x>
-     <y>440</y>
-     <width>71</width>
-     <height>22</height>
+     <width>56</width>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
     <enum>Qt::NoFocus</enum>
    </property>
-   <property name="text">
-    <string>DoubleClick</string>
+   <property name="currentText">
+    <string/>
    </property>
-   <property name="checked">
-    <bool>false</bool>
+   <property name="currentIndex">
+    <number>-1</number>
    </property>
   </widget>
   <zorder>virtualgamepadGroupBox</zorder>
@@ -1324,9 +1308,8 @@
   <zorder>virtualGamepadNumberSpinBox</zorder>
   <zorder>virtualGamepadListComboBox</zorder>
   <zorder>filterKeysCheckBox</zorder>
-  <zorder>longPressTimeSpinBox</zorder>
-  <zorder>longPressTimeLabel</zorder>
-  <zorder>doubleClickCheckBox</zorder>
+  <zorder>pressTimeSpinBox</zorder>
+  <zorder>keyPressTypeComboBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

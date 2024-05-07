@@ -37,8 +37,8 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME      ("⏱")
-#define SEPARATOR_PRESSTIME     ("⏲")
-#define POSTFIX_DOUBLECLICK     ("✖")
+#define SEPARATOR_LONGPRESS     ("⏲")
+#define SEPARATOR_DOUBLEPRESS     ("✖")
 #define SEPARATOR_TITLESETTING  ("|")
 
 // #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
@@ -543,18 +543,18 @@ public:
     static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
     static void clearAllLongPressTimers(void);
     static void longPressKeyProc(const QString &keycodeString, int keyupdown);
-    static void collectDoubleClickOriginalKeysMap(void);
-    static void sendDoubleClickTimers(const QString &keycodeString);
-    static void clearDoubleClickTimer(const QString &keycodeString);
-    static void removeDoubleClickTimerOnTimeout(const QString &keycodeString);
-    static void clearAllDoubleClickTimers(void);
-    static void doubleClickKeyProc(const QString &keycodeString, int keyupdown);
+    static void collectDoublePressOriginalKeysMap(void);
+    static void sendDoublePressTimers(const QString &keycodeString);
+    static void clearDoublePressTimer(const QString &keycodeString);
+    static void removeDoublePressTimerOnTimeout(const QString &keycodeString);
+    static void clearAllDoublePressTimers(void);
+    static void doublePressKeyProc(const QString &keycodeString, int keyupdown);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
 public slots:
     static void onLongPressTimeOut(const QString keycodeStringWithPressTime);
-    static void onDoubleClickTimeOut(const QString keycodeString);
+    static void onDoublePressTimeOut(const QString keycodeString);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
@@ -620,14 +620,14 @@ public:
     static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLongPressKeysList;
-    static QStringList pressedDoubleClickKeysList;
+    static QStringList pressedDoublePressKeysList;
     static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
     static QStringList combinationOriginalKeysList;
     static QHash<QString, QList<int>> longPressOriginalKeysMap;
     static QHash<QString, QTimer*> s_longPressTimerMap;
-    static QHash<QString, int> doubleClickOriginalKeysMap;
-    static QHash<QString, QTimer*> s_doubleClickTimerMap;
+    static QHash<QString, int> doublePressOriginalKeysMap;
+    static QHash<QString, QTimer*> s_doublePressTimerMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;
