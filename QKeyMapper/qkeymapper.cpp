@@ -1167,6 +1167,25 @@ int QKeyMapper::findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &
     return returnindex;
 }
 
+int QKeyMapper::findOriKeyInKeyMappingDataList_ForDoublePress(const QString &keyname)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
+    QString keyname_doublepress = keyname + QString(SEPARATOR_DOUBLEPRESS);
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    {
+        if (keymapdata.Original_Key.startsWith(keyname_doublepress)){
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
 int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
 {
     int returnindex = -1;
@@ -6425,11 +6444,13 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
+    bool isDoublePress = false;
     bool multiInputSupport = false;
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         multiInputSupport = true;
     }
     QString currentOriKeyText;
+    QString currentOriKeyTextWithoutPostfix;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentMapKeyComboBoxText = currentMapKeyText;
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
@@ -6540,18 +6561,25 @@ void QKeyMapper::on_addmapdataButton_clicked()
         return;
     }
 
+    currentOriKeyTextWithoutPostfix = currentOriKeyText;
     int pressTime = ui->pressTimeSpinBox->value();
     if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0) {
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
     }
     else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0){
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_DOUBLEPRESS) + QString::number(pressTime);
+        isDoublePress = true;
     }
 
     bool already_exist = false;
     int findindex = -1;
     // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
-    findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
+    if (isDoublePress) {
+        findindex = findOriKeyInKeyMappingDataList_ForDoublePress(currentOriKeyTextWithoutPostfix);
+    }
+    else {
+        findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
+    }
     if (findindex != -1){
         if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
             || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
@@ -6695,6 +6723,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
+
             KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock, keymapdata.PassThrough));
         }
         else {
