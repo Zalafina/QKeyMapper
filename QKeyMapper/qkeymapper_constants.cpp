@@ -36,6 +36,10 @@ const int MOUSEWHEEL_SCROLL_NONE = 0;
 const int MOUSEWHEEL_SCROLL_UP = 1;
 const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
+const Qt::Key KEY_REFRESH       = Qt::Key_F5;
+const Qt::Key KEY_PASSTHROUGH   = Qt::Key_F12;
+const Qt::Key KEY_KEYUP_ACTION  = Qt::Key_F2;
+
 const int LANGUAGE_CHINESE = 0;
 const int LANGUAGE_ENGLISH = 1;
 
@@ -319,6 +323,7 @@ const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
 const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 const char *KEYMAPDATA_PASSTHROUGH = "KeyMapData_PassThrough";
+const char *KEYMAPDATA_KEYUP_ACTION = "KeyMapData_KeyUp_Action";
 const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
