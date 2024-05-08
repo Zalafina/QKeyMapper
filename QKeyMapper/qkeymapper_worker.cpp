@@ -6758,7 +6758,7 @@ void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
                 QTimer* timer = new QTimer();
                 timer->setTimerType(Qt::PreciseTimer);
                 timer->setSingleShot(true);
-                QObject::connect(timer, &QTimer::timeout, instance, [instance, keycodeStringWithPressTime]() {
+                QObject::connect(timer, &QTimer::timeout, instance, [keycodeStringWithPressTime]() {
                     onLongPressTimeOut(keycodeStringWithPressTime);
                 });
                 timer->start(timeout);
@@ -6779,7 +6779,7 @@ void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
                 QTimer* timer = new QTimer();
                 timer->setTimerType(Qt::PreciseTimer);
                 timer->setSingleShot(true);
-                QObject::connect(timer, &QTimer::timeout, instance, [instance, keycodeStringWithPressTime]() {
+                QObject::connect(timer, &QTimer::timeout, instance, [keycodeStringWithPressTime]() {
                     onLongPressTimeOut(keycodeStringWithPressTime);
                 });
                 timer->start(timeout);
@@ -6959,7 +6959,7 @@ void QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
             QTimer* timer = new QTimer();
             timer->setTimerType(Qt::PreciseTimer);
             timer->setSingleShot(true);
-            QObject::connect(timer, &QTimer::timeout, instance, [instance, keycodeString]() {
+            QObject::connect(timer, &QTimer::timeout, instance, [keycodeString]() {
                 onDoublePressTimeOut(keycodeString);
             });
             timer->start(timeout);
@@ -7001,7 +7001,7 @@ void QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
             QTimer* timer = new QTimer();
             timer->setTimerType(Qt::PreciseTimer);
             timer->setSingleShot(true);
-            QObject::connect(timer, &QTimer::timeout, instance, [instance, keycodeString_RemoveMultiInput]() {
+            QObject::connect(timer, &QTimer::timeout, instance, [keycodeString_RemoveMultiInput]() {
                 onDoublePressTimeOut(keycodeString_RemoveMultiInput);
             });
             timer->start(timeout);
