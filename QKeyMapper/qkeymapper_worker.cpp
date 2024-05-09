@@ -7203,6 +7203,25 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
     int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
     Q_UNUSED(combinationkey_detected);
 
+    if (combinationkey_detected) {
+        if (KEY_DOWN == keyupdown) {
+            if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[JoyStickKeysProc] detectCombinationKeys KEY_DOWN return -> KEY_INTERCEPT_BLOCK");
+#endif
+                return true;
+            }
+        }
+        else {
+            if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+#endif
+                return true;
+            }
+        }
+    }
+
     if (false == returnFlag) {
         if (findindex >=0){
             QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
