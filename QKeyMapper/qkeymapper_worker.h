@@ -37,6 +37,8 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEPARATOR_PLUS          (" + ")
 #define SEPARATOR_NEXTARROW     (" » ")
 #define SEPARATOR_WAITTIME      ("⏱")
+#define SEPARATOR_LONGPRESS     ("⏲")
+#define SEPARATOR_DOUBLEPRESS     ("✖")
 #define SEPARATOR_TITLESETTING  ("|")
 
 // #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
@@ -55,10 +57,11 @@ typedef struct MAP_KEYDATA
     bool Lock;
     bool LockStatus;
     bool PassThrough;
+    bool KeyUp_Action;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false), PassThrough(false) {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false), PassThrough(false), KeyUp_Action(false) {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock, bool passthrough)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock, bool passthrough, bool keyup_action)
     {
         Original_Key = originalkey;
         Mapping_Keys = mappingkeys.split(SEPARATOR_NEXTARROW);
@@ -66,6 +69,7 @@ typedef struct MAP_KEYDATA
         Lock = lock;
         LockStatus = false;
         PassThrough = passthrough;
+        KeyUp_Action = keyup_action;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -74,7 +78,8 @@ typedef struct MAP_KEYDATA
                 && (Mapping_Keys == other.Mapping_Keys)
                 && (Burst == other.Burst)
                 && (Lock == other.Lock)
-                && (PassThrough == other.PassThrough));
+                && (PassThrough == other.PassThrough)
+                && (KeyUp_Action == other.KeyUp_Action));
     }
 }MAP_KEYDATA_st;
 
@@ -527,15 +532,32 @@ public:
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
     static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
-    static void updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
+    static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
 
+    static void collectCombinationOriginalKeysList(void);
+    static void collectLongPressOriginalKeysMap(void);
+    static void sendLongPressTimers(const QString &keycodeString);
+    static void clearLongPressTimer(const QString &keycodeString);
+    static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
+    static void clearAllLongPressTimers(void);
+    static int longPressKeyProc(const QString &keycodeString, int keyupdown);
+    static void collectDoublePressOriginalKeysMap(void);
+    static int sendDoublePressTimers(const QString &keycodeString);
+    static void clearDoublePressTimer(const QString &keycodeString);
+    static void removeDoublePressTimerOnTimeout(const QString &keycodeString);
+    static void clearAllDoublePressTimers(void);
+    static int doublePressKeyProc(const QString &keycodeString, int keyupdown);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
+
+public slots:
+    static void onLongPressTimeOut(const QString keycodeStringWithPressTime);
+    static void onDoublePressTimeOut(const QString keycodeString);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
@@ -600,8 +622,15 @@ public:
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
     static QStringList pressedVirtualKeysList;
+    static QStringList pressedLongPressKeysList;
+    static QStringList pressedDoublePressKeysList;
     static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
     // static QStringList pressedShortcutKeysList;
+    static QStringList combinationOriginalKeysList;
+    static QHash<QString, QList<int>> longPressOriginalKeysMap;
+    static QHash<QString, QTimer*> s_longPressTimerMap;
+    static QHash<QString, int> doublePressOriginalKeysMap;
+    static QHash<QString, QTimer*> s_doublePressTimerMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;
@@ -719,6 +748,8 @@ signals:
     void setKeyUnHook_Signal(void);
 
 public slots:
+    void HookProcThreadStarted(void);
+    void HookProcThreadFinished(void);
 #ifndef HOOKSTART_ONSTARTUP
     void onSetHookProcKeyHook(HWND hWnd);
     void onSetHookProcKeyUnHook(void);

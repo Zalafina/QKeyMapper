@@ -36,8 +36,15 @@ const int MOUSEWHEEL_SCROLL_NONE = 0;
 const int MOUSEWHEEL_SCROLL_UP = 1;
 const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
-// const int LANGUAGE_CHINESE = 0;
-// const int LANGUAGE_ENGLISH = 1;
+const Qt::Key KEY_REFRESH       = Qt::Key_F5;
+const Qt::Key KEY_PASSTHROUGH   = Qt::Key_F12;
+const Qt::Key KEY_KEYUP_ACTION  = Qt::Key_F2;
+
+const int LANGUAGE_CHINESE = 0;
+const int LANGUAGE_ENGLISH = 1;
+
+const int KEYPRESS_TYPE_LONGPRESS   = 0;
+const int KEYPRESS_TYPE_DOUBLEPRESS = 1;
 
 const int CUSTOMSETTING_INDEX_MAX = 30;
 
@@ -51,8 +58,11 @@ const int BURST_TIME_MAX = 5000;
 const int BURST_PRESS_TIME_DEFAULT   = 40;
 const int BURST_RELEASE_TIME_DEFAULT = 20;
 
-// const int MAPPING_WAITTIME_MIN = 0;
-// const int MAPPING_WAITTIME_MAX = 5000;
+const int MAPPING_WAITTIME_MIN = 0;
+const int MAPPING_WAITTIME_MAX = 9999;
+
+const int PRESSTIME_MIN = 0;
+const int PRESSTIME_MAX = 9999;
 
 const int DATA_PORT_MIN = 1;
 const int DATA_PORT_MAX = 65535;
@@ -316,6 +326,7 @@ const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
 const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 const char *KEYMAPDATA_PASSTHROUGH = "KeyMapData_PassThrough";
+const char *KEYMAPDATA_KEYUP_ACTION = "KeyMapData_KeyUp_Action";
 const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
@@ -448,6 +459,8 @@ const char *BURSTRELEASE_CHINESE = "连发抬起";
 // const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 // const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 const char *WAITTIME_CHINESE = "延时";
+const char *LONGPRESS_CHINESE = "长按";
+const char* DOUBLEPRESS_CHINESE = "双击";
 const char *POINT_CHINESE = "坐标";
 // const char *WAITTIME_MSLABEL_CHINESE = "毫秒";
 const char *MOUSEXSPEEDLABEL_CHINESE = "X轴速度";
@@ -511,6 +524,8 @@ const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 // const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 // const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 const char *WAITTIME_ENGLISH = "Delay";
+const char* LONGPRESS_ENGLISH = "LongPress";
+const char* DOUBLEPRESS_ENGLISH = "DoublePress";
 const char *POINT_ENGLISH = "Point";
 // const char *WAITTIME_MSLABEL_ENGLISH = "ms";
 const char *MOUSEXSPEEDLABEL_ENGLISH = "X Speed";

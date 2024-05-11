@@ -73,6 +73,7 @@ public:
     static QAtomicBool s_RebootRequired;
     static bool s_libusb_available;
     static QAtomicBool s_InterceptStart;
+    static QAtomicBool s_InterceptLoopbreak;
     static QAtomicBool s_FilterKeys;
     static QList<InputDevice> KeyboardDeviceList;
     static QList<InputDevice> MouseDeviceList;

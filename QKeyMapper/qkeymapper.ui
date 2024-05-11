@@ -1207,6 +1207,38 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QSpinBox" name="pressTimeSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>586</x>
+     <y>440</y>
+     <width>55</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="keyPressTypeComboBox">
+   <property name="geometry">
+    <rect>
+     <x>525</x>
+     <y>440</y>
+     <width>56</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string/>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1276,6 +1308,8 @@
   <zorder>virtualGamepadNumberSpinBox</zorder>
   <zorder>virtualGamepadListComboBox</zorder>
   <zorder>filterKeysCheckBox</zorder>
+  <zorder>pressTimeSpinBox</zorder>
+  <zorder>keyPressTypeComboBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

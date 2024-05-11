@@ -1,3 +1,4 @@
+#include <QCoreApplication>
 #include "interception_worker.h"
 #include "qkeymapper_constants.h"
 
@@ -5,6 +6,7 @@ InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
 QAtomicBool Interception_Worker::s_RebootRequired = QAtomicBool();
 bool Interception_Worker::s_libusb_available = false;
 QAtomicBool Interception_Worker::s_InterceptStart = QAtomicBool();
+QAtomicBool Interception_Worker::s_InterceptLoopbreak = QAtomicBool();
 QAtomicBool Interception_Worker::s_FilterKeys = QAtomicBool(true);
 QList<InputDevice> Interception_Worker::KeyboardDeviceList = QList<InputDevice>();
 QList<InputDevice> Interception_Worker::MouseDeviceList = QList<InputDevice>();
@@ -59,8 +61,22 @@ void Interception_Worker::InterceptionThreadStarted()
     InterceptionDevice device;
     InterceptionStroke stroke;
 
-    while(interception_receive(s_InterceptionContext, device = interception_wait(s_InterceptionContext), &stroke, 1) > 0)
+    while(s_InterceptLoopbreak == false)
     {
+        int receive_ret = interception_receive(s_InterceptionContext, device = interception_wait_with_timeout(s_InterceptionContext, 1), &stroke, 1);
+
+        if (s_InterceptLoopbreak) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[KeyInterceptionWorker] Interception Loop Breaked!";
+#endif
+            break;
+        }
+
+        QCoreApplication::processEvents();
+        if (receive_ret <= 0) {
+            continue;
+        }
+
         if (!s_InterceptStart) {
             if(interception_is_mouse(device))
             {
@@ -249,25 +265,27 @@ void Interception_Worker::doUnloadInterception()
 
 void Interception_Worker::interceptionLoopBreak()
 {
-    if(s_InterceptionContext == Q_NULLPTR) {
-        return;
-    }
+    s_InterceptLoopbreak = true;
 
-    InterceptionDeviceArray device_array = (InterceptionDeviceArray)s_InterceptionContext;
-    QList<HANDLE> wait_handles;
-    for(int i = 0; i < INTERCEPTION_MAX_DEVICE; ++i)
-    {
-        if (device_array[i].unempty) {
-            wait_handles.append(device_array[i].unempty);
-        }
-    }
+//     if(s_InterceptionContext == Q_NULLPTR) {
+//         return;
+//     }
 
-    bool setevent_result = SetEvent(wait_handles.constFirst());
-    Q_UNUSED(setevent_result);
+//     InterceptionDeviceArray device_array = (InterceptionDeviceArray)s_InterceptionContext;
+//     QList<HANDLE> wait_handles;
+//     for(int i = 0; i < INTERCEPTION_MAX_DEVICE; ++i)
+//     {
+//         if (device_array[i].unempty) {
+//             wait_handles.append(device_array[i].unempty);
+//         }
+//     }
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[interceptionLoopBreak]" << "wait_handles.size() =" << wait_handles.size() << ", setevent_result =" << setevent_result;
-#endif
+//     bool setevent_result = SetEvent(wait_handles.constFirst());
+//     Q_UNUSED(setevent_result);
+
+// #ifdef DEBUG_LOGOUT_ON
+//     qDebug() << "[interceptionLoopBreak]" << "wait_handles.size() =" << wait_handles.size() << ", setevent_result =" << setevent_result;
+// #endif
 }
 
 bool Interception_Worker::isInterceptionDriverFileExist()
