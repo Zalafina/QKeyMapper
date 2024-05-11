@@ -532,7 +532,7 @@ public:
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
     static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
-    static void updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
+    static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
@@ -545,13 +545,13 @@ public:
     static void clearLongPressTimer(const QString &keycodeString);
     static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
     static void clearAllLongPressTimers(void);
-    static void longPressKeyProc(const QString &keycodeString, int keyupdown);
+    static int longPressKeyProc(const QString &keycodeString, int keyupdown);
     static void collectDoublePressOriginalKeysMap(void);
-    static void sendDoublePressTimers(const QString &keycodeString);
+    static int sendDoublePressTimers(const QString &keycodeString);
     static void clearDoublePressTimer(const QString &keycodeString);
     static void removeDoublePressTimerOnTimeout(const QString &keycodeString);
     static void clearAllDoublePressTimers(void);
-    static void doublePressKeyProc(const QString &keycodeString, int keyupdown);
+    static int doublePressKeyProc(const QString &keycodeString, int keyupdown);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
 
