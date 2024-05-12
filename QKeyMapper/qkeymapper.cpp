@@ -1603,6 +1603,21 @@ int QKeyMapper::getLanguageIndex()
     return getInstance()->ui->languageComboBox->currentIndex();
 }
 
+QString QKeyMapper::getCurrentOriKeyText()
+{
+    return getInstance()->m_orikeyComboBox->currentText();
+}
+
+QString QKeyMapper::getCurrentOriCombinationKeyText()
+{
+    return getInstance()->ui->combinationKeyLineEdit->text();
+}
+
+void QKeyMapper::setCurrentOriCombinationKeyText(const QString &newcombinationkeytext)
+{
+    return getInstance()->ui->combinationKeyLineEdit->setText(newcombinationkeytext);
+}
+
 #if 0
 bool QKeyMapper::getDisableWinKeyStatus()
 {
@@ -6955,8 +6970,8 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
 void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[KeyListComboBox_Press]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
-    qDebug("[KeyListComboBox_Press] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
+    qDebug() << "[KeyListComboBox_KeyPress]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
+    qDebug("[KeyListComboBox_KeyPress] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
 #endif
 
     V_KEYCODE vkeycode;
@@ -7005,17 +7020,43 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
             this->setCurrentText(keycodeString);
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[KeyListComboBox_Press]" << "convert to VirtualKeyCodeMap:" << keycodeString;
+            qDebug() << "[KeyListComboBox_KeyPress]" << "convert to VirtualKeyCodeMap:" << keycodeString;
 #endif
         }
     }
     else{
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[KeyListComboBox_Press]" << "Unknown key not found in VirtualKeyCodeMap.";
+        qDebug() << "[KeyListComboBox_KeyPress]" << "Unknown key not found in VirtualKeyCodeMap.";
 #endif
     }
 
-    //QComboBox::keyPressEvent(keyevent);
+    // QComboBox::keyPressEvent(keyevent);
+}
+
+void KeyListComboBox::mousePressEvent(QMouseEvent *event)
+{
+    if (objectName() == ORIKEY_COMBOBOX_NAME) {
+        if (event->button() == Qt::RightButton) {
+            QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
+            QString currentOriCombinationKeyText = QKeyMapper::getCurrentOriCombinationKeyText();
+            if (currentOriKeyText.isEmpty() == false
+                && QKeyMapper_Worker::CombinationKeysList.contains(currentOriKeyText)) {
+                QString newCombinationKeyText;
+                if (currentOriCombinationKeyText.isEmpty()) {
+                    newCombinationKeyText = currentOriKeyText;
+                }
+                else {
+                    newCombinationKeyText = currentOriCombinationKeyText + QString("+") + currentOriKeyText;
+                }
+                QKeyMapper::getInstance()->setCurrentOriCombinationKeyText(newCombinationKeyText);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[KeyListComboBox_MousePress]" << "Set new CombinationKeyText ->" << newCombinationKeyText;
+#endif
+            }
+        }
+    }
+
+    QComboBox::mousePressEvent(event);
 }
 
 #if 0

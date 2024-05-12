@@ -128,7 +128,8 @@ public:
     }
 
 protected:
-    void keyPressEvent(QKeyEvent *keyevent);
+    void keyPressEvent(QKeyEvent *keyevent) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     QWidget *m_KeyMapper_ptr;
@@ -256,6 +257,9 @@ public:
     Qt::CheckState getAutoStartMappingStatus(void);
     // static bool getDisableWinKeyStatus(void);
     static int getLanguageIndex(void);
+    static QString getCurrentOriKeyText(void);
+    static QString getCurrentOriCombinationKeyText(void);
+    static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
     static int getBurstPressTime(void);
     static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
