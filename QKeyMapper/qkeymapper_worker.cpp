@@ -32,6 +32,7 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+QStringList QKeyMapper_Worker::pressedCombinationRealKeysList;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedLongPressKeysList;
 QStringList QKeyMapper_Worker::pressedDoublePressKeysList;
@@ -2734,6 +2735,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     clearAllPressedRealCombinationKeys();
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
+    pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     // pressedShortcutKeysList.clear();
@@ -2864,6 +2866,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllPressedRealCombinationKeys();
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
+    pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     // pressedShortcutKeysList.clear();
@@ -4906,8 +4909,16 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         returnFlag = true;
                     }
                     else { /* KEY_UP == keyupdown */
-                        if (KeyUp_Action) {
-                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
+                            pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[InterceptionKeyboardHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
+#endif
+                        }
+                        else {
+                            if (KeyUp_Action) {
+                                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                            }
                         }
                         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         returnFlag = true;
@@ -5143,8 +5154,16 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         returnFlag = true;
                     }
                     else { /* KEY_UP == keyupdown */
-                        if (KeyUp_Action) {
-                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
+                            pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[InterceptionMouseHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
+#endif
+                        }
+                        else {
+                            if (KeyUp_Action) {
+                                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                            }
                         }
                         emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         returnFlag = true;
@@ -5626,8 +5645,16 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             returnFlag = true;
                         }
                         else { /* KEY_UP == keyupdown */
-                            if (KeyUp_Action) {
-                                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                            if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
+                                pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug() << "[LowLevelKeyboardHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
+#endif
+                            }
+                            else {
+                                if (KeyUp_Action) {
+                                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                }
                             }
                             emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             returnFlag = true;
@@ -6053,8 +6080,16 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                 returnFlag = true;
                             }
                             else { /* KEY_UP == keyupdown */
-                                if (KeyUp_Action) {
-                                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
+                                    pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
+#ifdef DEBUG_LOGOUT_ON
+                                    qDebug() << "[LowLevelMouseHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
+#endif
+                                }
+                                else {
+                                    if (KeyUp_Action) {
+                                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                    }
                                 }
                                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                                 returnFlag = true;
@@ -6574,6 +6609,7 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
         QString combinationkeyForSearch = QString(PREFIX_SHORTCUT) + combinationkey;
         QStringList keys = combinationkey.split("+");
         bool allKeysPressed = true;
+        QStringList pressedCombinationRealKeys;
 
         for (const QString &key : keys)
         {
@@ -6583,12 +6619,18 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
                     allKeysPressed = false;
                     break;
                 }
+                else {
+                    pressedCombinationRealKeys.append(key);
+                }
             }
             else {
                 if (!pressedRealKeysListRemoveMultiInput.contains(key))
                 {
                     allKeysPressed = false;
                     break;
+                }
+                else {
+                    pressedCombinationRealKeys.append(key);
                 }
             }
         }
@@ -6603,12 +6645,17 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             findindex = CombinationKeyProc(combinationkey, KEY_DOWN);
             if (findindex >= 0) {
                 PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
-            }
-            if (PassThrough) {
-                intercept = KEY_INTERCEPT_PASSTHROUGH;
-            }
-            else {
-                intercept = KEY_INTERCEPT_BLOCK;
+                if (PassThrough) {
+                    intercept = KEY_INTERCEPT_PASSTHROUGH;
+                }
+                else {
+                    intercept = KEY_INTERCEPT_BLOCK;
+                }
+
+                pressedCombinationRealKeysList.append(pressedCombinationRealKeys);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[detectCombinationKeys]" << "CombinationKey Down pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
+#endif
             }
             break;
         }
@@ -6624,12 +6671,17 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
                     findindex = CombinationKeyProc(combinationkey, KEY_UP);
                     if (findindex >= 0) {
                         PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
-                    }
-                    if (PassThrough) {
-                        intercept = KEY_INTERCEPT_PASSTHROUGH;
-                    }
-                    else {
-                        intercept = KEY_INTERCEPT_BLOCK;
+                        if (PassThrough) {
+                            intercept = KEY_INTERCEPT_PASSTHROUGH;
+                        }
+                        else {
+                            intercept = KEY_INTERCEPT_BLOCK;
+                        }
+
+                        pressedCombinationRealKeysList.removeAll(getKeycodeStringRemoveMultiInput(keycodeString));
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[detectCombinationKeys]" << "CombinationKey Up pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
+#endif
                     }
                     break;
                 }
@@ -6665,10 +6717,18 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                 }
             }
             else { /* KEY_UP == keyupdown */
-                if (KeyUp_Action) {
-                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    releaseKeyboardModifiers(modifiers_arg);
-                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                if (pressedCombinationRealKeysList.contains(keycodeString)) {
+                    pressedCombinationRealKeysList.removeAll(keycodeString);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[CombinationKeyProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
+#endif
+                }
+                else {
+                    if (KeyUp_Action) {
+                        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                        releaseKeyboardModifiers(modifiers_arg);
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                    }
                 }
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
             }
@@ -7324,7 +7384,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
         else {
             if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+                qDebug("[JoyStickKeysProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
 #endif
                 return true;
             }
@@ -7335,11 +7395,25 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
         if (findindex >=0){
             QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
             QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+            bool KeyUp_Action = QKeyMapper::KeyMappingDataList.at(findindex).KeyUp_Action;
             if (KEY_DOWN == keyupdown){
-                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                if (!KeyUp_Action) {
+                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                }
                 returnFlag = true;
             }
             else { /* KEY_UP == keyupdown */
+                if (pressedCombinationRealKeysList.contains(keycodeString)) {
+                    pressedCombinationRealKeysList.removeAll(keycodeString);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[JoyStickKeysProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
+#endif
+                }
+                else {
+                    if (KeyUp_Action) {
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                    }
+                }
                 emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                 returnFlag = true;
             }

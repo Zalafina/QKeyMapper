@@ -621,6 +621,7 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
+    static QStringList pressedCombinationRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLongPressKeysList;
     static QStringList pressedDoublePressKeysList;
