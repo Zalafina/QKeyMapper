@@ -1784,14 +1784,76 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
                 qDebug().noquote().nospace() << "[KeyUp_ActionStatus]" << "F2 Key Pressed -> Selected mappingdata original_key[" << KeyMappingDataList.at(currentrowindex).Original_Key << "] KeyUp_Action = " << KeyMappingDataList[currentrowindex].KeyUp_Action;
 #endif
                 refreshKeyMappingDataTable();
-                // int reselectrow = currentrowindex;
-                // QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-                // ui->keymapdataTable->setRangeSelected(selection, true);
+                int reselectrow = currentrowindex;
+                QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+                ui->keymapdataTable->setRangeSelected(selection, true);
                 return;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[KeyUp_ActionStatus]" << "F2 Key Pressed -> There is no selected mapping data";
+#endif
+            }
+       }
+   }
+   else if (event->key() == KEY_REMOVE_LAST) {
+       if (m_KeyMapStatus == KEYMAP_IDLE) {
+            int currentrowindex = -1;
+            QList<QTableWidgetItem*> items = ui->keymapdataTable->selectedItems();
+            if (items.size() > 0) {
+                QTableWidgetItem* selectedItem = items.at(0);
+                currentrowindex = ui->keymapdataTable->row(selectedItem);
+
+                bool refresh_flag = false;
+                QStringList newMappingKeyList;
+                QStringList mappingKeyList = KeyMappingDataList.at(currentrowindex).Mapping_Keys;
+                // QString original_key = KeyMappingDataList.at(currentrowindex).Original_Key;
+                QString firstmappingkey = mappingKeyList.constFirst();
+                int mappingkeylist_size = mappingKeyList.size();
+
+                if (mappingkeylist_size > 1) {
+                    QString lastmappingkey = mappingKeyList.constLast();
+
+                    if (lastmappingkey.contains(SEPARATOR_PLUS)) {
+                        QStringList splitList = lastmappingkey.split(SEPARATOR_PLUS);
+                        splitList.removeLast();
+                        QString newLastMappingkey = splitList.join(SEPARATOR_PLUS);
+                        mappingKeyList.removeLast();
+                        mappingKeyList.append(newLastMappingkey);
+                        newMappingKeyList = mappingKeyList;
+                        refresh_flag = true;
+                    }
+                    else {
+                        mappingKeyList.removeLast();
+                        newMappingKeyList = mappingKeyList;
+                        refresh_flag = true;
+                    }
+                }
+                else {
+                    if (firstmappingkey.contains(SEPARATOR_PLUS)) {
+                        QStringList splitList = firstmappingkey.split(SEPARATOR_PLUS);
+                        splitList.removeLast();
+                        newMappingKeyList.append(splitList.join(SEPARATOR_PLUS));
+                        refresh_flag = true;
+                    }
+                }
+
+                if (refresh_flag) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote().nospace() << "[Remove_Last]" << "Backspace Key Pressed, newMappingKeyList after remove last -> [" << newMappingKeyList << "]";
+#endif
+                    KeyMappingDataList[currentrowindex].Mapping_Keys = newMappingKeyList;
+
+                    refreshKeyMappingDataTable();
+                    int reselectrow = currentrowindex;
+                    QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+                    ui->keymapdataTable->setRangeSelected(selection, true);
+                    return;
+                }
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[Remove_Last]" << "Backspace Key Pressed -> There is no selected mapping data";
 #endif
             }
        }
@@ -7751,5 +7813,24 @@ void QKeyMapper::on_filterKeysCheckBox_stateChanged(int state)
     }
     else {
         Interception_Worker::s_FilterKeys = false;
+    }
+}
+
+void QKeyMapper::on_keymapdataTable_itemSelectionChanged()
+{
+    QList<QTableWidgetItem*> selectedItems = ui->keymapdataTable->selectedItems();
+    if (selectedItems.isEmpty() == false) {
+        QTableWidgetItem* selectedItem = selectedItems.at(0);
+        int currentrowindex = ui->keymapdataTable->row(selectedItem);
+        ui->keymapdataTable->setFocus();
+        ui->keymapdataTable->clearFocus();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_keymapdataTable_itemSelectionChanged] Selected Item Index =" << currentrowindex;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_keymapdataTable_itemSelectionChanged] No Item Selected.";
+#endif
     }
 }

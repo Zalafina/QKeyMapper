@@ -29,6 +29,7 @@ extern const int MOUSEWHEEL_SCROLL_DOWN;
 extern const Qt::Key KEY_REFRESH;
 extern const Qt::Key KEY_PASSTHROUGH;
 extern const Qt::Key KEY_KEYUP_ACTION;
+extern const Qt::Key KEY_REMOVE_LAST;
 extern const int LANGUAGE_CHINESE;
 extern const int LANGUAGE_ENGLISH;
 extern const int KEYPRESS_TYPE_LONGPRESS;

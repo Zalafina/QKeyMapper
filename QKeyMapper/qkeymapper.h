@@ -382,6 +382,8 @@ private slots:
 
     void on_filterKeysCheckBox_stateChanged(int state);
 
+    void on_keymapdataTable_itemSelectionChanged();
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
