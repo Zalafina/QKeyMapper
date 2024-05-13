@@ -142,6 +142,7 @@
 ---------------
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
+![Removemappingkey](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/remove_last_mappingkey.gif)
 ---------------
 ## VirScan result
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_VirScan.png)
