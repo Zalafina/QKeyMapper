@@ -7818,6 +7818,10 @@ void QKeyMapper::on_filterKeysCheckBox_stateChanged(int state)
 
 void QKeyMapper::on_keymapdataTable_itemSelectionChanged()
 {
+    if (m_KeyMapStatus != KEYMAP_IDLE){
+        return;
+    }
+
     QList<QTableWidgetItem*> selectedItems = ui->keymapdataTable->selectedItems();
     if (selectedItems.isEmpty() == false) {
         QTableWidgetItem* selectedItem = selectedItems.at(0);
