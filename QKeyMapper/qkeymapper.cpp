@@ -7822,6 +7822,7 @@ void QKeyMapper::on_keymapdataTable_itemSelectionChanged()
     if (selectedItems.isEmpty() == false) {
         QTableWidgetItem* selectedItem = selectedItems.at(0);
         int currentrowindex = ui->keymapdataTable->row(selectedItem);
+        Q_UNUSED(currentrowindex);
         ui->keymapdataTable->setFocus();
         ui->keymapdataTable->clearFocus();
 #ifdef DEBUG_LOGOUT_ON
