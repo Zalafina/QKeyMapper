@@ -289,6 +289,7 @@ signals:
     void updateInputDeviceSelectComboBoxes_Signal(void);
 
 protected:
+    void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
 

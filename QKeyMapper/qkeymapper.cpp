@@ -1709,6 +1709,27 @@ double QKeyMapper::getAccelThreshold()
     return getInstance()->ui->accelThresholdDoubleSpinBox->value();
 }
 
+void QKeyMapper::showEvent(QShowEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::showEvent]" << "QKeyMapper show ->" << event->spontaneous();
+#endif
+
+    if (false == event->spontaneous()) {
+        QTimer::singleShot(100, this, [=]() {
+            if (m_KeyMapStatus == KEYMAP_IDLE){
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[QKeyMapper::showEvent]" << "Set and Clear Focus.";
+#endif
+                ui->keymapdataTable->setFocus();
+                ui->keymapdataTable->clearFocus();
+            }
+        });
+    }
+
+    QDialog::showEvent(event);
+}
+
 void QKeyMapper::changeEvent(QEvent *event)
 {
     if(event->type()==QEvent::WindowStateChange)
