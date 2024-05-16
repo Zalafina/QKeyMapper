@@ -6414,7 +6414,8 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+    bool removemultiinput = false;
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString, removemultiinput);
 
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
