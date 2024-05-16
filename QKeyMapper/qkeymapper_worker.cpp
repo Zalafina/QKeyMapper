@@ -3525,7 +3525,7 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
     if (true == m_BurstTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstTimerMap.value(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("startBurstTimer(): Key \"%s\" BurstTimer(%d) already started!!!", burstKey.toStdString().c_str(), existTimerID);
+        qDebug("[startBurstTimer] Key \"%s\" BurstTimer(%d) already started!!!", burstKey.toStdString().c_str(), existTimerID);
 #endif
         killTimer(existTimerID);
         m_BurstTimerMap.remove(burstKey);
@@ -3533,7 +3533,7 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
     if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("startBurstTimer(): Key \"%s\" BurstKeyUpTimer(%d) already started!!!", burstKey.toStdString().c_str(), existTimerID);
+        qDebug("[startBurstTimer] Key \"%s\" BurstKeyUpTimer(%d) already started!!!", burstKey.toStdString().c_str(), existTimerID);
 #endif
         killTimer(existTimerID);
         m_BurstKeyUpTimerMap.remove(burstKey);
@@ -3548,14 +3548,14 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
     m_BurstKeyUpTimerMap.insert(burstKey, keyupTimerID);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("startBurstTimer(): Key \"%s\", Timer:%d, ID:%d", burstKey.toStdString().c_str(), burstTime, timerID);
+    qDebug("[startBurstTimer] Key \"%s\", Timer:%d, ID:%d", burstKey.toStdString().c_str(), burstTime, timerID);
 #endif
 }
 
 void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("stopBurstTimer(): Key \"%s\"", burstKey.toStdString().c_str());
+    qDebug("[stopBurstTimer] Key \"%s\"", burstKey.toStdString().c_str());
 #endif
     Q_UNUSED(mappingIndex);
 
@@ -3567,12 +3567,12 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
         if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
             sendBurstKeyUp(burstKey, true);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("stopBurstTimer(): sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
+            qDebug("[stopBurstTimer] sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
 #endif
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("stopBurstTimer(): Do not need to sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
+            qDebug("[stopBurstTimer] Do not need to sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
 #endif
         }
     }
@@ -3580,7 +3580,7 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
     if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("stopBurstTimer(): Key \"%s\" kill BurstKeyUpTimer(%d)", burstKey.toStdString().c_str(), existTimerID);
+        qDebug("[stopBurstTimer] Key \"%s\" kill BurstKeyUpTimer(%d)", burstKey.toStdString().c_str(), existTimerID);
 #endif
         killTimer(existTimerID);
         m_BurstKeyUpTimerMap.remove(burstKey);
@@ -6414,8 +6414,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
-    bool removemultiinput = false;
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString, removemultiinput);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
 
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
@@ -6457,7 +6456,8 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
         }
     }
     else {  /* KEY_UP == keyupdown */
-        if (true == pressedRealKeysList.contains(keycodeString)){
+        if (true == pressedRealKeysList.contains(keycodeString)
+            || true == pressedLongPressKeysList.contains(keycodeString)){
             if (findindex >=0) {
                 if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
                     /* Lock ON &  Burst ON */
@@ -6521,7 +6521,8 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
             int intercept_doublepress = doublePressKeyProc(keycodeString, KEY_UP);
             if (intercept_longpress != KEY_INTERCEPT_NONE) {
                 intercept = intercept_longpress;
-            } else {
+            }
+            else if (intercept_doublepress != KEY_INTERCEPT_NONE) {
                 intercept = intercept_doublepress;
             }
         }
@@ -6965,10 +6966,16 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
 {
     int intercept = KEY_INTERCEPT_NONE;
 
+    bool hookprocstart = QKeyMapper_Worker::s_AtomicHookProcStart;
+    if (!hookprocstart) {
+        return intercept;
+    }
+
     if (KEY_DOWN == keyupdown) {
+        int returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
 
-        if (findindex >=0){
+        if (false == returnFlag && findindex >=0){
             if (false == pressedLongPressKeysList.contains(keycodeString)) {
                 pressedLongPressKeysList.append(keycodeString);
 
@@ -6987,6 +6994,9 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 else {
                     intercept = KEY_INTERCEPT_BLOCK;
                 }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[longPressKeyProc]" << keycodeString << "KEY_DOWN pressedLongPressKeysList ->" << pressedLongPressKeysList;
+#endif
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -7006,8 +7016,9 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
             if (key.startsWith(keycodeString)
                 || key.startsWith(keycodeString_RemoveMultiInput)) {
                 releaseKeys.append(key);
+                int returnFlag = hookBurstAndLockProc(key, keyupdown);
                 int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
-                if (findindex >=0){
+                if (false == returnFlag && findindex >=0){
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                     emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
@@ -7026,6 +7037,12 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
         for (const QString &key : releaseKeys) {
             pressedLongPressKeysList.removeAll(key);
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        if (!releaseKeys.isEmpty()) {
+            qDebug() << "[longPressKeyProc]" << releaseKeys << "KEY_UP pressedLongPressKeysList ->" << pressedLongPressKeysList;
+        }
+#endif
     }
 
     return intercept;
@@ -7210,8 +7227,9 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
     int intercept = KEY_INTERCEPT_NONE;
 
     if (KEY_DOWN == keyupdown) {
+        int returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
         int findindex = doublePressOriginalKeysMap.value(keycodeString, -1);
-        if (findindex >= 0){
+        if (false == returnFlag && findindex >= 0){
             if (false == pressedDoublePressKeysList.contains(keycodeString)) {
                 pressedDoublePressKeysList.append(keycodeString);
 
@@ -7230,6 +7248,9 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                 else {
                     intercept = KEY_INTERCEPT_BLOCK;
                 }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[doublePressKeyProc]" << keycodeString << "KEY_DOWN pressedDoublePressKeysList ->" << pressedDoublePressKeysList;
+#endif
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -7249,8 +7270,9 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
             if (key == keycodeString
                 || key == keycodeString_RemoveMultiInput) {
                 releaseKeys.append(key);
+                int returnFlag = hookBurstAndLockProc(key, keyupdown);
                 int findindex = doublePressOriginalKeysMap.value(key, -1);
-                if (findindex >= 0){
+                if (false == returnFlag && findindex >= 0){
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
                     emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
@@ -7269,6 +7291,12 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
         for (const QString &key : releaseKeys) {
             pressedDoublePressKeysList.removeAll(key);
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        if (!releaseKeys.isEmpty()) {
+            qDebug() << "[doublePressKeyProc]" << releaseKeys << "KEY_UP pressedDoublePressKeysList ->" << pressedDoublePressKeysList;
+        }
+#endif
     }
 
     return intercept;
