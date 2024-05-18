@@ -1142,6 +1142,12 @@ int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
             returnindex = keymapdataindex;
             break;
         }
+        else if (keyname.endsWith(SEPARATOR_DOUBLEPRESS)
+            && (keymapdata.Original_Key.startsWith(keyname)
+                || keymapdata.Original_Key.startsWith(keyname_RemoveMultiInput))) {
+            returnindex = keymapdataindex;
+            break;
+        }
 
         keymapdataindex += 1;
     }
