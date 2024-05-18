@@ -7022,9 +7022,11 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
         for (const QString &key : pressedLongPressKeysList) {
             if (key.startsWith(keycodeString)
                 || key.startsWith(keycodeString_RemoveMultiInput)) {
-                releaseKeys.append(key);
                 int returnFlag = hookBurstAndLockProc(key, keyupdown);
                 int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+                if (false == returnFlag) {
+                    releaseKeys.append(key);
+                }
                 if (false == returnFlag && findindex >=0){
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
@@ -7281,9 +7283,11 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
             key.chop(1);
             if (key == keycodeString
                 || key == keycodeString_RemoveMultiInput) {
-                releaseKeys.append(doublepress_key);
                 int returnFlag = hookBurstAndLockProc(doublepress_key, keyupdown);
                 int findindex = doublePressOriginalKeysMap.value(doublepress_key, -1);
+                if (false == returnFlag) {
+                    releaseKeys.append(doublepress_key);
+                }
                 if (false == returnFlag && findindex >= 0) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
