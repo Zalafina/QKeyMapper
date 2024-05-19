@@ -1,5 +1,12 @@
 # QKeyMapper
----------------
+
+<p align="left">
+    <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?color=09e"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=ccf"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg"/></a>
+</p>
+
 ## A key mapping tool that works well on Win10 and Win11, developed using Qt Widget + WinAPI. Support for Qt6 was updated starting from v1.2.8 (2022-12-24). The versions of the Release after v1.2.8 are compiled with Qt6. v1.3.6 (Build 20231220) added support for gamepad keys and virtual gamepads. v1.3.7 (Build 20240410) added support for multi-key mouse + multiple virtual gamepads.
 ---------------
 ### Download the latest Release version zip package:
