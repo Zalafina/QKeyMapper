@@ -1,11 +1,108 @@
 # QKeyMapper
 ---------------
-## A keyboard remap tool of Qt Widget + WinAPI which could working under Win10 & Win11. v1.2.8 (2022-12-24) has update the support for Qt6，v1.2.8 and later Releases will build by Qt6，v1.3.6(Build 20231125) add joystick keys support.
+## A key mapping tool that works well on Win10 and Win11, developed using Qt Widget + WinAPI. Support for Qt6 was updated starting from v1.2.8 (2022-12-24). The versions of the Release after v1.2.8 are compiled with Qt6. v1.3.6 (Build 20231220) added support for gamepad keys and virtual gamepads. v1.3.7 (Build 20240410) added support for multi-key mouse + multiple virtual gamepads.
 ---------------
-### Qt6 version is recommended for Win10 and Win11 OS, and the provision of Qt5 version is only for compatibility with Win7 OS. If the Qt6 version could not be used under Win7, please download the Qt5 version for it.
-### Note: Visual C++ Redistributable for Visual Studio 2015 64-bit Runtime needs to be installed when using this software.<br>VC++ 2015 64-bit Runtime, Microsoft download link:<br>https://www.microsoft.com/en-us/download/confirmation.aspx?id=48145
-### Note: Version 1.3.6 has changed the names of mouse buttons stored in the ini configuration file. If you select settings stored before version 1.3.6 that include mouse buttons, there may be loading errors. If the error tolerance handling added by the software does not take effect, you can try to manually replace L-Mouse, R-Mouse, M-Mouse, X1-Mouse, X2-Mouse with Mouse-L, Mouse-R, Mouse-M, Mouse-X1, Mouse-X2 in the ini file.
-### Note: The newly added virtual game controller feature in version v1.3.6(Build 20231220) requires the installation of the ViGEmBus driver. Frequent installation and uninstallation of the ViGEmBus driver may lead to system blue screen restart risks, so please use it with caution and avoid repeated installation and uninstallation of the driver. If the "Install ViGEmBus" button on the software cannot install the driver normally, you can also manually install the ViGEmBus driver using the "ViGEmBus_1.22.0_x64_x86_arm64.exe" driver installer included in the software zip package.
+### Download the latest Release version zip package:
+### https://github.com/Zalafina/QKeyMapper/releases/latest
+### https://gitee.com/asukavov/QKeyMapper/releases/latest
+### ※ The ZIP packages starting with QKeyMapper_vX.Y.Z_x64/x86 are compiled executable file zip packages. Build_YYYYMMDD represents the compilation date, and the newer compilation date has corresponding new feature descriptions.
+---------------
+### License change: Please note that the software license has been changed from the MIT license to the GNU General Public License v3.0 (GPL v3). Before using, modifying, or distributing the software, please make sure you have viewed and understood the terms of the new license.
+### Win10 and Win11 systems are recommended to use the Qt6 version, and the Qt5 version is provided just to be compatible with the Win7 system. If you cannot use the Qt6 version under Win7, please download the Qt5 version for use.
+### Note: You may need to install the Visual C++ Redistributable 64-bit runtime library when using.<br>VC++ 2015-2022 64-bit runtime library, Microsoft download address:<br>[https://aka.ms/vs/17/release/vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+* (For 32-bit systems, download and install the 32-bit runtime library [https://aka.ms/vs/17/release/vc_redist.x86.exe](https://aka.ms/vs/17/release/vc_redist.x86.exe) )
+
+### [Note: Win7 system needs to install ViGEMBus v1.16.116 by itself to use the virtual gamepad function](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
+* [https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
+---------------
+## For tips on using the key mapping tool, refer to the Wiki page:
+* [QKeyMapper Tips and More Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
+---------------
+## For a collection of tutorial videos, click the image below
+[![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
+---------------
+## If you have any questions during use, you can also join the Q group for consultation (Group number: 906963961)
+![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
+---------------
+### New features list (sorted in descending order of update time)
+* v1.3.7(Build 20240519)
+    * Added "Long Press" and "Double Click" time value adjustment boxes (select the type of press through the drop-down list in front of the value box). You can map keys by long pressing for a specific time (within the range of 1~9999 milliseconds), or by double clicking twice within a specific time interval.
+    * The switch key for the PassThrough mode of key mapping has been changed from the "F2" key to the "F12" key.
+    * Added the KeyUp_Action mode for mapping. Select a mapping in the mapping table, press the "F2" key, and the original key string will be displayed in underscore font. This mapping will not be triggered when the original key is pressed, but when the original key is released.
+    * Right-click the "original key" list control, you can append the currently displayed "original key" key name to the "original combination key" edit box, which is more convenient than manually filling in or copying and filling in the combination key name.
+    * After clicking the mouse to highlight and select a mapping table item, pressing the keyboard "Backspace" key can delete the last mapped key connected by "»" or "+". It will not be deleted when there is only one mapping key.
+    * Fixed the support of "long press" and "double click" mapping for "continuous firing" and "locking" functions (Build 20240519).
+* v1.3.7(Build 20240416)
+    * Supports adding up to 4 virtual gamepads and each can be controlled independently.
+        * Multi-virtual gamepad feature 1: A "spin box" has been added behind the virtual gamepad type combo box to increase or decrease the number of gamepads. The range is between 1 and 4. Click the up arrow of the spin box to increase the number of gamepads (the type of gamepad added is determined by the gamepad type selection box X360/DS4), and click the down arrow to delete the last added gamepad each time.
+        * Multi-virtual gamepad feature 2: The added gamepads can be viewed and selected through the virtual gamepad list combo box. When adding a mapped virtual gamepad key, "@+ digital number 0~3" is added after the gamepad key according to the currently selected virtual gamepad, indicating which virtual gamepad key is mapped. When the virtual gamepad selection combo box is empty, no "@+ digital number" is added after the mapping, and it is mapped to the 0th virtual gamepad key by default.
+    * When multiple input devices are enabled, you can use the "Filter Key" checkbox to turn on and off whether to filter out the repeated sending of keys when the same key on the same keyboard is continuously pressed. This is the same as the filter key switch function of the Windows Control Panel, but the filter key built into Windows will fail when different keys on multiple keyboards connected to the same PC are pressed at the same time. This multiple input device filter key solves this problem. The filter key setting is saved in each mapping configuration file, and different filter key switch states can be set for different application windows. The corresponding filter key settings will be loaded when the mapping configuration is automatically switched according to the foreground window.
+    * When multiple input devices are enabled, the Interception driver is used to listen for keyboard and mouse input, which is a lower-level interception than the WinAPI low-level keyboard and mouse hook function, and can map keys to games that cannot intercept input with low-level keyboard and mouse hooks.
+    * Added the PassThrough mode for mapping. Select a mapping in the mapping table, press the "F2" key, and the color of the original key string display will become "orange", indicating that this mapping has become PassThrough mode, that is, after the original key is pressed, the mapped key will be sent, but the original key will not be intercepted and will be triggered with the mapped key.
+* v1.3.7(Build 20240330)
+    * Supports multi-input device differentiation function (up to 10 different keyboard and 10 different mouse devices can be received).
+        * Multi-input device function 1: The "Install Driver" and "Uninstall Driver" buttons in the multi-input device GroupBox are used to uninstall and install the multi-input device support driver (the driver needs to be restarted to take effect after installation and uninstallation).
+        * Multi-input device function 2: The "Enable" checkbox in the multi-input device GroupBox will distinguish the input of different keyboard and mouse devices when checked, and will not distinguish input device operations when not checked.
+        * Multi-input device function 3: The "Device List" button in the multi-input device GroupBox pops up the keyboard and mouse input device list, which will display the keyboard and mouse devices currently connected in the system, and display the "Device Description", "Hardware ID", "VID", "PID", "Manufacturer", "Product Name", "Manufacturer" information of each device. When the multi-input device is enabled, the last operated keyboard and mouse device will be highlighted in the device list.
+        * Multi-input device function 4: The disable checkbox in the keyboard and mouse input device list popped up by the "Device List" button can disable keyboard and mouse devices. After checking the disable and clicking the confirm button to exit the device list, the disable takes effect and saves the disabled keyboard and mouse devices to the disable list. The next time the program starts, it will automatically load the previously saved disable device list. (When a device is disabled, any input from this device cannot be received, so use it with caution. Do not disable the input device currently in use and cannot operate)
+        * Multi-input device function 5: The "Keyboard" and "Mouse" drop-down combo boxes are used in conjunction with the "Original Key" list to select the input device number of the original key mapping. According to the selected device, the "@+ digital number 0~9" will be appended after adding the original key mapping. For example: "A@0" represents the A key of the 0th keyboard, and "Mouse-L@1" represents the left key of the 1st mouse.
+        * Multi-input device function 6: You can directly input the combination key of a specific input device number in the "Original Combination Key" text edit box. For example: "L-Ctrl@2+F@2" represents the combination key of the LCtrl key and F key of the 2nd keyboard, and "L-Alt+3@1" represents the combination key of the L-Alt key of any keyboard and the 3 key of the 1st keyboard.
+        * Multi-input device function 7: When the multi-input device is enabled, if there are multiple mappings in the key mapping list that match the current key, the first matching mapping entry from top to bottom will take effect, and others will not. For example: There are mappings for "W@2" and "W" in the mapping list. When the W key of the 2nd keyboard is pressed, if "W@2" is on top, "W@2" will be triggered, and if "W" is on top, "W" will be triggered.
+#### ※ Note: After installing the multi-device driver, do not repeatedly plug and unplug the USB device connected to the system. The keyboard/mouse device ID upper limit of the Interception driver is 10. Each time the device is plugged and unplugged, the device ID upper limit will increase by 1. Exceeding the upper limit will cause the device to be unable to detect input, and only restarting the operating system can reset it. The system enters the sleep state and then returns, which is similar to the increase in device ID caused by plugging and unplugging devices, and the problem of increasing the device ID to more than the upper limit of 10 will also occur, which needs to be avoided. It is recommended to use the multi-device driver, first connect all the input devices that need to be used, restart the system for use, and do not plug and unplug the device during use.
+* v1.3.6(Build 20240320)
+    * Fixed the problem that the virtual key that is locked and pressed down is not released when the key mapping stops.
+    * Fixed the problem that the delay setting of the mapped key is greater than 1000 milliseconds and cannot take effect. The upper limit of the delay setting of the mapped key is increased to 9999 milliseconds.
+* v1.3.6(Build 20240316)
+    * The UI control overall layout changes.
+    * Added support for virtual gamepad type selection (X360/DS4), if you use the settings of the previous version, it prompts "Invalid settings data loaded from INI file", after backing up keymapdata.ini in the program path, use a text editing tool to replace text in keymapdata.ini to continue using the old configuration file. Replace content: (A) -> (A/×), (B) -> (B/○), (X) -> (X/□), (Y) -> (Y/△)
+* v1.3.6(Build 20240131)
+    * UI control position fine-tuning, setting selection list is placed under the process name and title name text box. Added a GroupBox frame for virtual gamepad settings.
+    * When the window is visible, the process list displayed on the left is automatically refreshed every 3 seconds.
+    * ADD button right side "»" checkbox added key sequence can support "vJoy" prefix virtual gamepad keys.
+    * "Save Settings" button can save the current window position, after hiding and then displaying the window, it will be displayed at the window position before hiding. The program starts to display according to the window position when the last saved setting is saved.
+    * Use the "»" checkbox to add a key sequence to use the delay function.
+    * Window title added Build Number display.
+    * Added "sound effect" checkbox, after checking, start mapping and stop mapping will play sound effects.
+    * Added the function of controlling the virtual gamepad left/right joystick with the mouse (Mouse2Joystick).
+* v1.3.6(Build 20240125)
+    * Added a fixed global mapping setting item (QKeyMapperGlobalSetting). If the global mapping is checked to automatically start mapping, after exiting from the matching window in the start mapping state, it will automatically switch to the global mapping setting and enable mapping after a few seconds. A special tray icon is added for the global mapping state.
+    * The "original shortcut key" edit box has been added, and the combination keys containing Ctrl, Shift, and Alt keys can be set as original input (when the original key drop-down box is empty, the setting key in the original shortcut key edit box will be added).
+    * Added sound effect when stopping key mapping.
+* v1.3.6(Build 20240112)
+    * Added "Delay" numeric adjustment box for mapped keys, which can appropriately increase the waiting time between pressing and releasing of combination keys.
+* v1.3.6(Build 20240106)
+    * Added "Lock Cursor" checkbox. When checked, when the mouse controls the virtual gamepad joystick, the mouse cursor is locked at the lower right corner of the screen (please confirm that the mapping switch combination key is available before using this function to avoid the mouse being unable to move and the key mapping cannot be turned off to restore mouse movement).
+    * Added support for mouse wheel scrolling up and down mapping function.
+* v1.3.6(Build 20231230)
+    * Added "Delay" numeric adjustment box for mapped keys, which can appropriately increase the waiting time between pressing and releasing of combination keys.
+* v1.3.6(Build 20231225)
+    * Added "Lock Cursor" checkbox. When checked, when the mouse controls the virtual gamepad joystick, the mouse cursor is locked at the lower right corner of the screen (please confirm that the mapping switch combination key is available before using this function to avoid the mouse being unable to move and the key mapping cannot be turned off to restore mouse movement).
+    * Added support for mouse wheel scrolling up and down mapping function.
+* v1.3.6(Build 20231223)
+    * Added the function of controlling the virtual gamepad left/right joystick with the mouse (Mouse2Joystick). It can be used by adding "vJoy-Mouse2LS" or "vJoy-Mouse2RS" in the mapping table. The sensitivity of the X-axis and Y-axis of the joystick controlled by the mouse is in the range of "1~1000", and the smaller the value, the more sensitive.
+    * The "Auto Mapping and Minimize" button has been changed to a tri-state checkbox. When set to the middle state, the software only minimizes to the tray when it starts, and does not automatically start key mapping.
+* v1.3.6(Build 20231220)
+    * Added virtual gamepad function (implemented through ViGEmBus). Click "Install ViGEmBus", after the green word "ViGEmBus available" is displayed, check "Enable Virtual Gamepad", then you can map keyboard keys to "vJoy" prefixed virtual gamepad keys.
+* v1.3.6(Build 20231125)
+    * Added the function of mapping gamepad keys as original keys to keyboard keys. Select keys starting with "Joy" in the original key list, then select the keyboard key you want to trigger in the mapped keys.
+* v1.3.5(Build 20230806)
+    * The shortcut key to switch between start and stop mapping can be customized through the KeySequenceEdit widget. Click the KeySequenceEdit widget with the mouse and press the shortcut key you want to set. This custom shortcut key setting can save different values for each configuration.
+* v1.3.5(Build 20230805)
+    * Added a shortcut key that can directly switch between start and stop mapping in any state. Press "Ctrl + F6", no matter whether it is displayed in the foreground or the tray, you can immediately switch between start mapping and stop mapping.
+* v1.3.5
+    * Added Chinese interface, you can use the language switch drop-down list to switch between Chinese and English interfaces, supporting 4K/2K/1K resolution.
+* v1.3.3
+    * Added support for mouse side keys XButton1 and XButton2 in the key list.
+* v1.3.3
+    * Added "»" checkbox to the right of the ADD button for adding key sequences, for example: Ctrl + X then Ctrl + S, the effect after setting is referenced in the screenshot displayed in README.
+* v1.3.2
+    * In the "KeyMappingStart" (loop detection) state, if it is detected that the foreground window matches the key mapping configuration setting of the current SelectSetting, a sound effect will be played to prompt the entry into the effective state of key mapping.
+* v1.3.1
+    * Added support for single-instance process, only one QKeyMapper program can run at the same time, when running the second QKeyMapper program, the window of the first running instance program will be displayed in the foreground.
+* v1.3.1
+    * The "Auto Startup" checkbox allows the QKeyMapper key mapping program to automatically start when the Windows user logs in. With the "Auto Start Mapping" checkbox, it can automatically minimize to the system tray icon after startup, unchecking the checkbox cancels automatic startup when logging in.
+* v1.3.0
+    * Started to support "SaveMapData" which can save different key mapping configurations of multiple programs to the "keymapdata.ini" file. If the "Auto Start Mapping" function is configured, then in the "KeyMappingStart" state, it will automatically match and switch to the corresponding key mapping configuration based on the executable file name of the current foreground window.
 ---------------
 ### Feature details
 1. Display a ProcessList of visible windows for select process name & title to match the current ForegroundWindow.
@@ -37,6 +134,7 @@
 ---------------
 ## Screenshot
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
+![Removemappingkey](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/remove_last_mappingkey.gif)
 ---------------
 ## VirScan result
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_VirScan.png)
