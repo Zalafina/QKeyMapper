@@ -5113,6 +5113,7 @@ void QKeyMapper::updateInputDeviceSelectComboBoxes()
 void QKeyMapper::on_savemaplistButton_clicked()
 {
     saveKeyMapSetting();
+    showPopupMessage("保存成功Popup测试");
 }
 
 #if 0
@@ -6520,6 +6521,36 @@ void QKeyMapper::showMousePoints(int onoff)
     else {
         ShowWindow(m_TransParentHandle, SW_HIDE);
     }
+}
+
+void QKeyMapper::showPopupMessage(const QString& message) {
+    QLabel* label = new QLabel;
+    label->setStyleSheet("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; font-size: 16px; font-weight: bold; color: #44bd32;");
+    label->setText(message);
+    label->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+    label->setAttribute(Qt::WA_TranslucentBackground);
+    label->setAttribute(Qt::WA_ShowWithoutActivating);
+    label->setAlignment(Qt::AlignCenter);
+    label->adjustSize();  // 调整大小以适应文本
+
+    // 获取应用窗口的几何信息
+    QRect windowGeometry = this->geometry();
+
+    // 计算中心点的坐标
+    int x = windowGeometry.x() + (windowGeometry.width() - label->width()) / 2;
+    int y = windowGeometry.y() + (windowGeometry.height() - label->height()) / 2;
+
+    // 移动标签到中心点
+    label->move(x, y);
+    label->show();
+
+    QPropertyAnimation* animation = new QPropertyAnimation(label, "windowOpacity");
+    animation->setDuration(3000);
+    animation->setStartValue(1.0);
+    animation->setEndValue(0.0);
+    animation->start(QAbstractAnimation::DeleteWhenStopped);
+
+    QTimer::singleShot(2000, label, &QLabel::deleteLater);
 }
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)

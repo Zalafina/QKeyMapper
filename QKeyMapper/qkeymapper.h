@@ -22,7 +22,7 @@
 #include <QStyledItemDelegate>
 #include <QMenu>
 #include <QTableWidget>
-#include <QLayout>
+#include <QPropertyAnimation>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QKeyEvent>
@@ -323,6 +323,8 @@ public slots:
     void updateMousePointLabelDisplay(const QPoint &point);
 
     void showMousePoints(int onoff);
+
+    void showPopupMessage(const QString &message);
 
     void showCarOrdinal(qint32 car_ordinal);
 
