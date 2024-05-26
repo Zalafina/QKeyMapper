@@ -21,6 +21,8 @@
 #include <QFontDatabase>
 #include <QStyledItemDelegate>
 #include <QMenu>
+#include <QTableWidget>
+#include <QLayout>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QKeyEvent>
@@ -104,6 +106,21 @@ struct MousePoint_Info
         return debug;
     }
 #endif
+};
+
+class KeyMappingDataTableWidget : public QTableWidget
+{
+    Q_OBJECT
+
+public:
+    explicit KeyMappingDataTableWidget(QWidget *parent = Q_NULLPTR)
+        : QTableWidget(parent), m_DraggedRow(-1) {}
+
+    void startDrag(Qt::DropActions supportedActions) override;
+    void dropEvent(QDropEvent *event) override;
+
+private:
+    int m_DraggedRow;
 };
 
 class StyledDelegate : public QStyledItemDelegate
@@ -289,6 +306,7 @@ signals:
 #endif
     void updateMultiInputStatus_Signal(void);
     void updateInputDeviceSelectComboBoxes_Signal(void);
+    void keyMappingTableDragDropMove_Signal(int from, int to);
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -307,6 +325,8 @@ public slots:
     void showMousePoints(int onoff);
 
     void showCarOrdinal(qint32 car_ordinal);
+
+    void keyMappingTableDragDropMove(int from, int to);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
@@ -496,8 +516,9 @@ private:
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
 #endif
+    KeyMappingDataTableWidget *m_KeyMappingDataTable;
     StyledDelegate *m_ProcessInfoTableDelegate;
-    StyledDelegate *m_KeyMappingDataTableDelegate;
+    // StyledDelegate *m_KeyMappingDataTableDelegate;
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;

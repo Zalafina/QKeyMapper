@@ -145,24 +145,6 @@
     </rect>
    </property>
   </widget>
-  <widget class="QTableWidget" name="keymapdataTable">
-   <property name="geometry">
-    <rect>
-     <x>530</x>
-     <y>30</y>
-     <width>450</width>
-     <height>330</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="columnCount">
-    <number>0</number>
-   </property>
-  </widget>
   <widget class="QPushButton" name="addmapdataButton">
    <property name="geometry">
     <rect>
@@ -1246,7 +1228,6 @@
   <zorder>titleCheckBox</zorder>
   <zorder>nameLineEdit</zorder>
   <zorder>titleLineEdit</zorder>
-  <zorder>keymapdataTable</zorder>
   <zorder>addmapdataButton</zorder>
   <zorder>orikeyLabel</zorder>
   <zorder>mapkeyLabel</zorder>
