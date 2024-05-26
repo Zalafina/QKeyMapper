@@ -20,6 +20,7 @@
 #include <QStyleFactory>
 #include <QFontDatabase>
 #include <QStyledItemDelegate>
+#include <QMenu>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QKeyEvent>
@@ -334,6 +335,8 @@ private slots:
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
+    void onTrayIconMenuShowHideAction(void);
+
     void cellChanged_slot(int row, int col);
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -389,10 +392,13 @@ private slots:
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
+    void initSysTrayIcon(void);
+    void updateSysTrayIconMenuText(void);
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void updateSystemTrayDisplay(void);
+    void switchShowHide(void);
 
     void initKeyMappingDataTable(void);
     void resizeKeyMappingDataTableColumnWidth(void);
@@ -483,6 +489,9 @@ private:
     QTimer m_ProcessInfoTableRefreshTimer;
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
+    QMenu *m_SysTrayIconMenu;
+    QAction *m_TrayIconMenu_ShowHideAction;
+    QAction *m_TrayIconMenu_QuitAction;
 #ifdef USE_SAOFONT
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;

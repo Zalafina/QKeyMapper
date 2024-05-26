@@ -503,6 +503,9 @@ const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE = "需要重启系统";
 const char *MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE = "多输入可用";
 const char *KEYBOARDSELECTLABEL_CHINESE = "键盘";
 const char *MOUSESELECTLABEL_CHINESE    = "鼠标";
+const char *TRAYMENU_SHOWACTION_CHINESE = "显示";
+const char *TRAYMENU_HIDEACTION_CHINESE = "隐藏";
+const char *TRAYMENU_QUITACTION_CHINESE = "退出";
 
 /* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -568,6 +571,9 @@ const char *MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH = "RebootRequired";
 const char *MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH = "Available";
 const char *KEYBOARDSELECTLABEL_ENGLISH = "Keyboard";
 const char *MOUSESELECTLABEL_ENGLISH    = "Mouse";
+const char *TRAYMENU_SHOWACTION_ENGLISH = "Show";
+const char *TRAYMENU_HIDEACTION_ENGLISH = "Hide";
+const char *TRAYMENU_QUITACTION_ENGLISH = "Quit";
 
 /* constant values for QInputDeviceListWindow */
 const int DEVICE_TABLE_NUMBER_COLUMN         = 0;

@@ -439,6 +439,9 @@ extern const char* MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE;
 extern const char* MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE;
 extern const char* KEYBOARDSELECTLABEL_CHINESE;
 extern const char* MOUSESELECTLABEL_CHINESE;
+extern const char *TRAYMENU_SHOWACTION_CHINESE;
+extern const char *TRAYMENU_HIDEACTION_CHINESE;
+extern const char *TRAYMENU_QUITACTION_CHINESE;
 
 /* English const Strings */
 extern const char* REFRESHBUTTON_ENGLISH;
@@ -499,6 +502,9 @@ extern const char* MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH;
 extern const char* MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH;
 extern const char* KEYBOARDSELECTLABEL_ENGLISH;
 extern const char* MOUSESELECTLABEL_ENGLISH;
+extern const char *TRAYMENU_SHOWACTION_ENGLISH;
+extern const char *TRAYMENU_HIDEACTION_ENGLISH;
+extern const char *TRAYMENU_QUITACTION_ENGLISH;
 
 /* constant values for QInputDeviceListWindow */
 extern const int DEVICE_TABLE_NUMBER_COLUMN;

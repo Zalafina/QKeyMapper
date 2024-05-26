@@ -26,6 +26,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_ProcessInfoTableRefreshTimer(this),
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
+    m_SysTrayIconMenu(Q_NULLPTR),
+    m_TrayIconMenu_ShowHideAction(Q_NULLPTR),
+    m_TrayIconMenu_QuitAction(Q_NULLPTR),
 #ifdef USE_SAOFONT
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
@@ -181,11 +184,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
     ui->accelThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
 
-    m_SysTrayIcon = new QSystemTrayIcon(this);
-    m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
-    m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
-    m_SysTrayIcon->show();
-
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->vJoyXSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
     ui->vJoyYSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
@@ -263,6 +261,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
 
+    initSysTrayIcon();
     reloadUILanguage();
     resetFontSize();
 
@@ -2372,15 +2371,32 @@ void QKeyMapper::onOriginalKeySequenceEditingFinished()
 
 void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    if (QSystemTrayIcon::DoubleClick == reason){
+    if (QSystemTrayIcon::DoubleClick == reason) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[SystrayIconActivated]" << "SystemTray double clicked: showNormal()!!";
+        qDebug() << "[SystrayIconActivated]" << "SystemTray double clicked: switch show or hide!";
+#endif
+        switchShowHide();
+    }
+    else if (QSystemTrayIcon::Context == reason) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[SystrayIconActivated]" << "SystemTray right clicked: context menu display!";
+#endif
+        updateSysTrayIconMenuText();
+
+        QPoint pos = QCursor::pos();
+        int menu_height = m_SysTrayIconMenu->sizeHint().height();
+        pos.setY(pos.y() - menu_height);
+        m_SysTrayIconMenu->popup(pos);
+    }
+}
+
+void QKeyMapper::onTrayIconMenuShowHideAction()
+{
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[onTrayIconMenuShowHideAction]" << "ShowHideAction Triggered.";
 #endif
 
-        showNormal();
-        activateWindow();
-        raise();
-    }
+    switchShowHide();
 }
 
 void QKeyMapper::cellChanged_slot(int row, int col)
@@ -5135,6 +5151,60 @@ void QKeyMapper::initProcessInfoTable(void)
 #endif
 }
 
+void QKeyMapper::initSysTrayIcon()
+{
+    m_SysTrayIcon = new QSystemTrayIcon(this);
+    m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
+    m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
+
+    m_SysTrayIconMenu = new QMenu(this);
+    m_TrayIconMenu_ShowHideAction = new QAction(this);
+    m_TrayIconMenu_QuitAction = new QAction(this);
+
+    // When the Show/Hide menu item is clicked, toggle the visibility of the window
+    connect(m_TrayIconMenu_ShowHideAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuShowHideAction);
+    // When the Quit menu item is clicked, close the application
+    connect(m_TrayIconMenu_QuitAction, &QAction::triggered, qApp, &QApplication::quit);
+
+    updateSysTrayIconMenuText();
+
+    m_SysTrayIconMenu->addAction(m_TrayIconMenu_ShowHideAction);
+    m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
+    m_SysTrayIconMenu->addAction(m_TrayIconMenu_QuitAction);
+
+    // Add the created menu to the system tray icon
+    m_SysTrayIcon->setContextMenu(m_SysTrayIconMenu);
+
+    m_SysTrayIcon->show();
+}
+
+void QKeyMapper::updateSysTrayIconMenuText()
+{
+    QString showActionText;
+    QString hideActionText;
+    QString quitActionText;
+
+    int languageIndex = ui->languageComboBox->currentIndex();
+    if (LANGUAGE_ENGLISH == languageIndex) {
+        showActionText = TRAYMENU_SHOWACTION_ENGLISH;
+        hideActionText = TRAYMENU_HIDEACTION_ENGLISH;
+        quitActionText = TRAYMENU_QUITACTION_ENGLISH;
+    }
+    else {
+        showActionText = TRAYMENU_SHOWACTION_CHINESE;
+        hideActionText = TRAYMENU_HIDEACTION_CHINESE;
+        quitActionText = TRAYMENU_QUITACTION_CHINESE;
+    }
+
+    if (false == isHidden()) {
+        m_TrayIconMenu_ShowHideAction->setText(hideActionText);
+    }
+    else {
+        m_TrayIconMenu_ShowHideAction->setText(showActionText);
+    }
+    m_TrayIconMenu_QuitAction->setText(quitActionText);
+}
+
 void QKeyMapper::refreshProcessInfoTable(void)
 {
     bool isSelected = false;
@@ -5301,6 +5371,36 @@ void QKeyMapper::updateSystemTrayDisplay()
         /* Need to make a new global mapping status ICO */
         m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping_global.ico"));
         m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : Global)");
+    }
+}
+
+void QKeyMapper::switchShowHide()
+{
+    if (m_deviceListWindow->isVisible()) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[switchShowHide]" << "DeviceList Windows isVisible!";
+#endif
+        return;
+    }
+
+    if (false == isHidden()) {
+        m_LastWindowPosition = pos(); // Save the current position before hiding
+        hide();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+        if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
+            move(m_LastWindowPosition); // Restore the position before showing
+        }
+
+        showNormal();
+        activateWindow();
+        raise();
     }
 }
 
