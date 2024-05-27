@@ -3063,14 +3063,35 @@ void QKeyMapper::saveKeyMapSetting(void)
         bool loadresult = loadKeyMapSetting(savedSettingName);
         Q_UNUSED(loadresult);
         loadSetting_flag = false;
-#ifdef DEBUG_LOGOUT_ON
+
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
         if (true == loadresult) {
+            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                popupMessage = "Save success : " + savedSettingName;
+            }
+            else {
+                popupMessage = "保存成功 : " + savedSettingName;
+            }
+            popupMessageColor = "#44bd32";
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << savedSettingName;
+#endif
         }
         else {
+            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                popupMessage = "Save failure : " + savedSettingName;
+            }
+            else {
+                popupMessage = "保存失败 : " + savedSettingName;
+            }
+            popupMessageColor = "#d63031";
+#ifdef DEBUG_LOGOUT_ON
             qWarning() << "[saveKeyMapSetting]" << "Save setting failure!!! ->" << savedSettingName;
-        }
 #endif
+        }
+        showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
     else{
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
@@ -5113,7 +5134,6 @@ void QKeyMapper::updateInputDeviceSelectComboBoxes()
 void QKeyMapper::on_savemaplistButton_clicked()
 {
     saveKeyMapSetting();
-    showPopupMessage("保存成功Popup测试");
 }
 
 #if 0
@@ -6523,9 +6543,12 @@ void QKeyMapper::showMousePoints(int onoff)
     }
 }
 
-void QKeyMapper::showPopupMessage(const QString& message) {
+void QKeyMapper::showPopupMessage(const QString& message, const QString& color, int displayTime)
+{
     QLabel* label = new QLabel;
-    label->setStyleSheet("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; font-size: 16px; font-weight: bold; color: #44bd32;");
+    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; font-size: 16px; font-weight: bold; color: %1;").arg(color);
+    label->setStyleSheet(styleSheet);
+    // label->setStyleSheet("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; font-size: 16px; font-weight: bold; color: #44bd32;");
     label->setText(message);
     label->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
     label->setAttribute(Qt::WA_TranslucentBackground);
@@ -6545,12 +6568,12 @@ void QKeyMapper::showPopupMessage(const QString& message) {
     label->show();
 
     QPropertyAnimation* animation = new QPropertyAnimation(label, "windowOpacity");
-    animation->setDuration(3000);
+    animation->setDuration(displayTime);
     animation->setStartValue(1.0);
     animation->setEndValue(0.0);
     animation->start(QAbstractAnimation::DeleteWhenStopped);
 
-    QTimer::singleShot(2000, label, &QLabel::deleteLater);
+    QTimer::singleShot(displayTime, label, &QLabel::deleteLater);
 }
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)

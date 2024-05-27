@@ -324,7 +324,7 @@ public slots:
 
     void showMousePoints(int onoff);
 
-    void showPopupMessage(const QString &message);
+    void showPopupMessage(const QString &message, const QString &color, int displayTime);
 
     void showCarOrdinal(qint32 car_ordinal);
 
