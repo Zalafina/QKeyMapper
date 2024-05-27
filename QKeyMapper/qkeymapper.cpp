@@ -6584,6 +6584,9 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     // customFont.setPointSize(16);
     // customFont.setBold(true);
     QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(20);
+    }
     m_PopupMessageLabel->setFont(customFont);
     m_PopupMessageLabel->setText(message);
     m_PopupMessageLabel->adjustSize();
