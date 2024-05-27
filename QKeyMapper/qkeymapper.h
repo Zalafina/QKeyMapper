@@ -415,6 +415,7 @@ private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
     void initSysTrayIcon(void);
+    void initPopupMessage(void);
     void updateSysTrayIconMenuText(void);
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
@@ -514,6 +515,9 @@ private:
     QMenu *m_SysTrayIconMenu;
     QAction *m_TrayIconMenu_ShowHideAction;
     QAction *m_TrayIconMenu_QuitAction;
+    QLabel* m_PopupMessageLabel;
+    QPropertyAnimation* m_PopupMessageAnimation;
+    QTimer m_PopupMessageTimer;
 #ifdef USE_SAOFONT
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;

@@ -29,6 +29,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIconMenu(Q_NULLPTR),
     m_TrayIconMenu_ShowHideAction(Q_NULLPTR),
     m_TrayIconMenu_QuitAction(Q_NULLPTR),
+    m_PopupMessageLabel(Q_NULLPTR),
+    m_PopupMessageAnimation(Q_NULLPTR),
+    m_PopupMessageTimer(this),
 #ifdef USE_SAOFONT
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
@@ -87,6 +90,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // initOriginalKeySeqEdit();
     initCombinationKeyLineEdit();
     initInputDeviceSelectComboBoxes();
+    initPopupMessage();
 
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
@@ -185,6 +189,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
     ui->accelThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
 
+    initSysTrayIcon();
+
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->vJoyXSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
     ui->vJoyYSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
@@ -262,7 +268,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
 
-    initSysTrayIcon();
+    updateSysTrayIconMenuText();
     reloadUILanguage();
     resetFontSize();
 
@@ -5201,6 +5207,19 @@ void QKeyMapper::initSysTrayIcon()
     m_SysTrayIcon->show();
 }
 
+void QKeyMapper::initPopupMessage()
+{
+    m_PopupMessageLabel = new QLabel(this);
+    m_PopupMessageLabel->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+    m_PopupMessageLabel->setAttribute(Qt::WA_TranslucentBackground);
+    m_PopupMessageLabel->setAttribute(Qt::WA_ShowWithoutActivating);
+    m_PopupMessageLabel->setAlignment(Qt::AlignCenter);
+
+    m_PopupMessageAnimation = new QPropertyAnimation(m_PopupMessageLabel, "windowOpacity", this);
+    m_PopupMessageAnimation->setStartValue(1.0);
+    m_PopupMessageAnimation->setEndValue(0.0);
+}
+
 void QKeyMapper::updateSysTrayIconMenuText()
 {
     QString showActionText;
@@ -6545,35 +6564,49 @@ void QKeyMapper::showMousePoints(int onoff)
 
 void QKeyMapper::showPopupMessage(const QString& message, const QString& color, int displayTime)
 {
-    QLabel* label = new QLabel;
-    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; font-size: 16px; font-weight: bold; color: %1;").arg(color);
-    label->setStyleSheet(styleSheet);
-    // label->setStyleSheet("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; font-size: 16px; font-weight: bold; color: #44bd32;");
-    label->setText(message);
-    label->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
-    label->setAttribute(Qt::WA_TranslucentBackground);
-    label->setAttribute(Qt::WA_ShowWithoutActivating);
-    label->setAlignment(Qt::AlignCenter);
-    label->adjustSize();  // 调整大小以适应文本
+    if (!m_PopupMessageLabel || !m_PopupMessageAnimation) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[showPopupMessage]" << "PopupMessage not initialized!";
+#endif
+        return;
+    }
 
-    // 获取应用窗口的几何信息
+    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
+    m_PopupMessageLabel->setStyleSheet(styleSheet);
+
+    // QFont customFont;
+    // if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+    //     customFont.setFamily(FONTNAME_ENGLISH);
+    // }
+    // else {
+    //     customFont.setFamily(FONTNAME_CHINESE);
+    // }
+    // customFont.setPointSize(16);
+    // customFont.setBold(true);
+    QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
+    m_PopupMessageLabel->setFont(customFont);
+    m_PopupMessageLabel->setText(message);
+    m_PopupMessageLabel->adjustSize();
+
+#ifdef DEBUG_LOGOUT_ON
+    customFont = m_PopupMessageLabel->font();
+    QString fontFamily = customFont.family();
+    qDebug() << "[showPopupMessage]" << "PopupMessage font :" << fontFamily;
+#endif
+
     QRect windowGeometry = this->geometry();
+    int x = windowGeometry.x() + (windowGeometry.width() - m_PopupMessageLabel->width()) / 2;
+    int y = windowGeometry.y() + (windowGeometry.height() - m_PopupMessageLabel->height()) / 2;
+    m_PopupMessageLabel->move(x, y);
+    m_PopupMessageLabel->show();
 
-    // 计算中心点的坐标
-    int x = windowGeometry.x() + (windowGeometry.width() - label->width()) / 2;
-    int y = windowGeometry.y() + (windowGeometry.height() - label->height()) / 2;
+    m_PopupMessageAnimation->stop();
+    m_PopupMessageAnimation->setDuration(displayTime);
+    m_PopupMessageAnimation->start(QAbstractAnimation::KeepWhenStopped);
 
-    // 移动标签到中心点
-    label->move(x, y);
-    label->show();
-
-    QPropertyAnimation* animation = new QPropertyAnimation(label, "windowOpacity");
-    animation->setDuration(displayTime);
-    animation->setStartValue(1.0);
-    animation->setEndValue(0.0);
-    animation->start(QAbstractAnimation::DeleteWhenStopped);
-
-    QTimer::singleShot(displayTime, label, &QLabel::deleteLater);
+    m_PopupMessageTimer.setSingleShot(true);
+    connect(&m_PopupMessageTimer, &QTimer::timeout, m_PopupMessageLabel, &QLabel::hide);
+    m_PopupMessageTimer.start(displayTime);
 }
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
