@@ -273,7 +273,7 @@ public:
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
 
-    Qt::CheckState getAutoStartMappingStatus(void);
+    static bool getStartupMinimizedStatus(void);
     // static bool getDisableWinKeyStatus(void);
     static int getLanguageIndex(void);
     static QString getCurrentOriKeyText(void);
@@ -410,6 +410,8 @@ private slots:
     void on_filterKeysCheckBox_stateChanged(int state);
 
     void on_keymapdataTable_itemSelectionChanged();
+
+    void on_startupMinimizedCheckBox_stateChanged(int state);
 
 private:
     // void initHotKeySequence(void);

@@ -335,8 +335,8 @@
   <widget class="QCheckBox" name="autoStartMappingCheckBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>560</y>
+     <x>195</x>
+     <y>500</y>
      <width>131</width>
      <height>21</height>
     </rect>
@@ -346,9 +346,6 @@
    </property>
    <property name="text">
     <string>AutoStartMinimize</string>
-   </property>
-   <property name="tristate">
-    <bool>true</bool>
    </property>
   </widget>
   <widget class="QComboBox" name="settingselectComboBox">
@@ -1221,6 +1218,22 @@
     <number>-1</number>
    </property>
   </widget>
+  <widget class="QCheckBox" name="startupMinimizedCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>560</y>
+     <width>131</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Startup Minimized</string>
+   </property>
+  </widget>
   <zorder>virtualgamepadGroupBox</zorder>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
@@ -1291,6 +1304,7 @@
   <zorder>filterKeysCheckBox</zorder>
   <zorder>pressTimeSpinBox</zorder>
   <zorder>keyPressTypeComboBox</zorder>
+  <zorder>startupMinimizedCheckBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

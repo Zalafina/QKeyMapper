@@ -1631,9 +1631,14 @@ QPoint QKeyMapper::getMousePointFromLabelString(QString &labelstr)
     return mousepoint;
 }
 
-Qt::CheckState QKeyMapper::getAutoStartMappingStatus()
+bool QKeyMapper::getStartupMinimizedStatus()
 {
-    return ui->autoStartMappingCheckBox->checkState();
+    if (true == getInstance()->ui->startupMinimizedCheckBox->isChecked()) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 int QKeyMapper::getLanguageIndex()
@@ -3241,6 +3246,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
         }
 
+        if (true == settingFile.contains(STARTUP_MINIMIZED)){
+            bool startupminimizedChecked = settingFile.value(STARTUP_MINIMIZED).toBool();
+            if (true == startupminimizedChecked) {
+                ui->startupMinimizedCheckBox->setChecked(true);
+            }
+            else {
+                ui->startupMinimizedCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Startup Minimized Checkbox ->" << startupminimizedChecked;
+#endif
+        }
+        else {
+            ui->startupMinimizedCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupMinimized, StartupMinimized set to Unchecked.";
+#endif
+        }
+
 #ifdef VIGEM_CLIENT_SUPPORT
         if (true == settingFile.contains(VIRTUALGAMEPAD_ENABLE)){
             bool virtualjoystickenableChecked = settingFile.value(VIRTUALGAMEPAD_ENABLE).toBool();
@@ -4317,6 +4341,7 @@ void QKeyMapper::setControlFontEnglish()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+    ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
@@ -4417,6 +4442,7 @@ void QKeyMapper::setControlFontChinese()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
+    ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
@@ -4451,6 +4477,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->titleLineEdit->setReadOnly(!status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
+    ui->startupMinimizedCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
     ui->virtualGamepadTypeComboBox->setEnabled(status);
@@ -6299,6 +6326,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
+    ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
@@ -6383,6 +6411,7 @@ void QKeyMapper::setUILanguage_English()
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
+    ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
@@ -7894,7 +7923,6 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 
 void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
 {
-    Q_UNUSED(state);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[SoundEffect] Play Sound Effect state changed ->" << (Qt::CheckState)state;
 #endif
@@ -8138,5 +8166,21 @@ void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
         emit QKeyMapper::getInstance()->keyMappingTableDragDropMove_Signal(m_DraggedRow, droppedRow);
 
         // blockSignals(false);
+    }
+}
+
+void QKeyMapper::on_startupMinimizedCheckBox_stateChanged(int state)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[StartupMinimized] Startup Minimized state changed ->" << (Qt::CheckState)state;
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
+    if (Qt::Checked == state) {
+        settingFile.setValue(STARTUP_MINIMIZED , true);
+    }
+    else {
+        settingFile.setValue(STARTUP_MINIMIZED , false);
     }
 }
