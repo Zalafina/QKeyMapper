@@ -5272,6 +5272,13 @@ void QKeyMapper::updateSysTrayIconMenuText()
         m_TrayIconMenu_ShowHideAction->setText(showActionText);
     }
     m_TrayIconMenu_QuitAction->setText(quitActionText);
+
+#ifdef DEBUG_LOGOUT_ON
+    QFont ShowHideActionFont = m_TrayIconMenu_ShowHideAction->font();
+    QFont QuitActionFont = m_TrayIconMenu_QuitAction->font();
+    qDebug() << "ShowHideActionFont ->" << ShowHideActionFont;
+    qDebug() << "QuitActionFont ->" << QuitActionFont;
+#endif
 }
 
 void QKeyMapper::refreshProcessInfoTable(void)
