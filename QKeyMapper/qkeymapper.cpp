@@ -1760,14 +1760,14 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::nativeEvent]" << "WM_DISPLAYCHANGE";
 #endif
-            updateQtDisplayEnvironment();
-            const QObjectList& child_list = children();
-            for (QObject* child : child_list)
-            {
-                QWidget* w = dynamic_cast<QWidget*>(child);
-                if (w)
-                    w->repaint();
-            }
+            // updateQtDisplayEnvironment();
+            // const QObjectList& child_list = children();
+            // for (QObject* child : child_list)
+            // {
+            //     QWidget* w = dynamic_cast<QWidget*>(child);
+            //     if (w)
+            //         w->repaint();
+            // }
         }
         else if (msg->message == WM_DPICHANGED) {
 #ifdef DEBUG_LOGOUT_ON
