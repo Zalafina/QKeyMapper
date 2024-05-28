@@ -5279,7 +5279,7 @@ void QKeyMapper::updateSysTrayIconMenuText()
         || UI_SCALE_4K_PERCENT_100 == m_UI_Scale) {
     }
     else {
-        customFont.setPointSize(8);
+        customFont.setPointSize(9);
     }
     m_TrayIconMenu_ShowHideAction->setFont(customFont);
     m_TrayIconMenu_QuitAction->setFont(customFont);
