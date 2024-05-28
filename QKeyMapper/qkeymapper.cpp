@@ -5273,6 +5273,17 @@ void QKeyMapper::updateSysTrayIconMenuText()
     }
     m_TrayIconMenu_QuitAction->setText(quitActionText);
 
+    QFont customFont = m_TrayIconMenu_ShowHideAction->font();
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale
+        || UI_SCALE_4K_PERCENT_125 == m_UI_Scale
+        || UI_SCALE_4K_PERCENT_100 == m_UI_Scale) {
+    }
+    else {
+        customFont.setPointSize(8);
+    }
+    m_TrayIconMenu_ShowHideAction->setFont(customFont);
+    m_TrayIconMenu_QuitAction->setFont(customFont);
+
 #ifdef DEBUG_LOGOUT_ON
     QFont ShowHideActionFont = m_TrayIconMenu_ShowHideAction->font();
     QFont QuitActionFont = m_TrayIconMenu_QuitAction->font();
