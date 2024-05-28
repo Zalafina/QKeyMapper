@@ -1752,6 +1752,33 @@ double QKeyMapper::getAccelThreshold()
     return getInstance()->ui->accelThresholdDoubleSpinBox->value();
 }
 
+bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+{
+    if (eventType == "windows_generic_MSG") {
+        MSG* msg = static_cast<MSG*>(message);
+        if (msg->message == WM_DISPLAYCHANGE) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::nativeEvent]" << "WM_DISPLAYCHANGE";
+#endif
+            updateQtDisplayEnvironment();
+            const QObjectList& child_list = children();
+            for (QObject* child : child_list)
+            {
+                QWidget* w = dynamic_cast<QWidget*>(child);
+                if (w)
+                    w->repaint();
+            }
+        }
+        else if (msg->message == WM_DPICHANGED) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::nativeEvent]" << "WM_DPICHANGED";
+#endif
+        }
+    }
+
+    return QWidget::nativeEvent(eventType, message, result);
+}
+
 void QKeyMapper::showEvent(QShowEvent *event)
 {
 #ifdef DEBUG_LOGOUT_ON

@@ -69,19 +69,10 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 }
 #endif
 
-int main(int argc, char *argv[])
+void updateQtDisplayEnvironment(void)
 {
-    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
-
-    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
-        qputenv("QT_OPENGL", "software");
-        qputenv("QT_ANGLE_PLATFORM", "d3d9");
-    }
-
-    qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
-
     int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-//    HWND hwd = GetDesktopWindow();
+    //    HWND hwd = GetDesktopWindow();
     HDC hdc = GetDC(NULL);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
     int height = GetDeviceCaps(hdc, DESKTOPVERTRES);
@@ -124,26 +115,38 @@ int main(int argc, char *argv[])
     else if (1.24 <= scale &&  scale <= 1.26) {
         if (dWidth >= 3840) {
             Flag_4K = true;
+            qputenv("QT_SCALE_FACTOR", "");
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.25");
         }
         else if (dWidth >= 2560) {
+            qputenv("QT_SCALE_FACTOR", "");
             qputenv("WINDOWS_SCALE_FACTOR", "2K_1.25");
         }
         else {
+            qputenv("QT_SCALE_FACTOR", "");
             qputenv("WINDOWS_SCALE_FACTOR", "1K_1.25");
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Updated QT_SCALE_FACTOR ->" << qgetenv("QT_SCALE_FACTOR") << ", for screen ->" << width << "*" << height;
+#endif
     }
     else if (1.49 <= scale &&  scale <= 1.51) {
         if (dWidth >= 3840) {
             Flag_4K = true;
+            qputenv("QT_SCALE_FACTOR", "");
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.5");
         }
         else if (dWidth >= 2560) {
+            qputenv("QT_SCALE_FACTOR", "");
             qputenv("WINDOWS_SCALE_FACTOR", "2K_1.5");
         }
         else {
+            qputenv("QT_SCALE_FACTOR", "");
             qputenv("WINDOWS_SCALE_FACTOR", "1K_1.5");
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Updated QT_SCALE_FACTOR ->" << qgetenv("QT_SCALE_FACTOR") << ", for screen ->" << width << "*" << height;
+#endif
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
@@ -161,6 +164,20 @@ int main(int argc, char *argv[])
 #elif (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
+}
+
+int main(int argc, char *argv[])
+{
+    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+
+    if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
+        qputenv("QT_OPENGL", "software");
+        qputenv("QT_ANGLE_PLATFORM", "d3d9");
+    }
+
+    qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
+
+    updateQtDisplayEnvironment();
 
 #ifdef SINGLE_APPLICATION
     QApplication::setApplicationName("QKeyMapper");
