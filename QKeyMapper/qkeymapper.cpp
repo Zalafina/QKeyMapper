@@ -269,6 +269,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
     m_ItemSetupDialog = new QItemSetupDialog(this);
+    m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
     updateSysTrayIconMenuText();
     reloadUILanguage();
@@ -380,7 +381,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!";
 #endif
-        closeItemSetupDialog();
+        // closeItemSetupDialog();
         hide();
     }
 }
@@ -2174,7 +2175,7 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 
     if (false == isHidden()){
         m_LastWindowPosition = pos(); // Save the current position before hiding
-        closeItemSetupDialog();
+        // closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[HotKeyDisplaySwitchActivated] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -4735,6 +4736,14 @@ void QKeyMapper::showInputDeviceListWindow()
 void QKeyMapper::showItemSetupDialog(int row)
 {
     if (!m_ItemSetupDialog->isVisible()) {
+        int y_offset = m_KeyMappingDataTable->rowViewportPosition(row);
+        int width = m_ItemSetupDialog->width();
+        int height = m_ItemSetupDialog->height();
+        QPoint globalPos = m_KeyMappingDataTable->mapToGlobal(QPoint(0, 0));
+        int top = globalPos.y() + y_offset + m_KeyMappingDataTable->horizontalHeader()->height();
+        int left = globalPos.x() - width - 5;
+
+        m_ItemSetupDialog->setGeometry(QRect(left, top, width, height));
         m_ItemSetupDialog->setItemRow(row);
         m_ItemSetupDialog->show();
     }
@@ -5527,7 +5536,7 @@ void QKeyMapper::switchShowHide()
 
     if (false == isHidden()) {
         m_LastWindowPosition = pos(); // Save the current position before hiding
-        closeItemSetupDialog();
+        // closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -6760,7 +6769,7 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 
     int rowindex = item->row();
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "DoubleClicked.";
+    qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "DoubleClicked";
 #endif
 
     showItemSetupDialog(rowindex);

@@ -25,7 +25,22 @@ void QItemSetupDialog::setItemRow(int row)
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QItemSetupDialog::closeEvent]" << "Item Row initialize to -1";
+#endif
+
     m_ItemRow = -1;
 
     QDialog::closeEvent(event);
+}
+
+void QItemSetupDialog::showEvent(QShowEvent *event)
+{
+    if (m_ItemRow >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::showEvent]" << "Load Item Mapping Data ->";
+#endif
+    }
+
+    QDialog::showEvent(event);
 }
