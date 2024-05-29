@@ -1752,6 +1752,7 @@ double QKeyMapper::getAccelThreshold()
     return getInstance()->ui->accelThresholdDoubleSpinBox->value();
 }
 
+#if 0
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 {
     if (eventType == "windows_generic_MSG") {
@@ -1778,6 +1779,7 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr
 
     return QWidget::nativeEvent(eventType, message, result);
 }
+#endif
 
 void QKeyMapper::showEvent(QShowEvent *event)
 {

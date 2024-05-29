@@ -311,7 +311,7 @@ signals:
     void keyMappingTableDragDropMove_Signal(int from, int to);
 
 protected:
-    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+    // bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
     void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
