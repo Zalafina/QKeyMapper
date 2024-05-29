@@ -25,6 +25,7 @@
 #include <QPropertyAnimation>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QSpinBox>
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
 #include <QStandardItemModel>
@@ -50,6 +51,7 @@
 
 #include "qkeymapper_worker.h"
 #include "qinputdevicelistwindow.h"
+#include "qitemsetupdialog.h"
 
 extern void updateQtDisplayEnvironment(void);
 
@@ -333,6 +335,8 @@ public slots:
 
     void keyMappingTableDragDropMove(int from, int to);
 
+    void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
+
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
 #endif
@@ -477,6 +481,8 @@ private:
     void playStopSound();
 
     void showInputDeviceListWindow(void);
+    void showItemSetupDialog(int row);
+    void closeItemSetupDialog(void);
 
     int installInterceptionDriver(void);
     int uninstallInterceptionDriver(void);
@@ -540,6 +546,7 @@ private:
     bool loadSetting_flag;
     HWND m_TransParentHandle;
     QInputDeviceListWindow *m_deviceListWindow;
+    QItemSetupDialog *m_ItemSetupDialog;
 };
 
 #endif // QKEYMAPPER_H

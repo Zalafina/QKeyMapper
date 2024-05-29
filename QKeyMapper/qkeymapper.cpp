@@ -48,7 +48,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_StartStop(new QHotkey(this)),
     loadSetting_flag(false),
     m_TransParentHandle(NULL),
-    m_deviceListWindow(Q_NULLPTR)
+    m_deviceListWindow(Q_NULLPTR),
+    m_ItemSetupDialog(Q_NULLPTR)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -267,6 +268,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Interception_Worker::syncDisabledMouseList();
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
+    m_ItemSetupDialog = new QItemSetupDialog(this);
 
     updateSysTrayIconMenuText();
     reloadUILanguage();
@@ -283,6 +285,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
+    QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
 
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
@@ -364,6 +367,11 @@ QKeyMapper::~QKeyMapper()
         delete m_deviceListWindow;
         m_deviceListWindow = Q_NULLPTR;
     }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        delete m_ItemSetupDialog;
+        m_ItemSetupDialog = Q_NULLPTR;
+    }
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -372,6 +380,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!";
 #endif
+        closeItemSetupDialog();
         hide();
     }
 }
@@ -2036,6 +2045,7 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
     }
 
     if (m_KeyMapStatus != KEYMAP_IDLE){
+        closeItemSetupDialog();
         changeControlEnableStatus(false);
     }
     else{
@@ -2164,6 +2174,7 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 
     if (false == isHidden()){
         m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[HotKeyDisplaySwitchActivated] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -4721,6 +4732,21 @@ void QKeyMapper::showInputDeviceListWindow()
     }
 }
 
+void QKeyMapper::showItemSetupDialog(int row)
+{
+    if (!m_ItemSetupDialog->isVisible()) {
+        m_ItemSetupDialog->setItemRow(row);
+        m_ItemSetupDialog->show();
+    }
+}
+
+void QKeyMapper::closeItemSetupDialog()
+{
+    if (m_ItemSetupDialog->isVisible()) {
+        m_ItemSetupDialog->close();
+    }
+}
+
 int QKeyMapper::installInterceptionDriver()
 {
     QString operate_str = QString("runas");
@@ -5501,6 +5527,7 @@ void QKeyMapper::switchShowHide()
 
     if (false == isHidden()) {
         m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -6723,6 +6750,20 @@ void QKeyMapper::keyMappingTableDragDropMove(int from, int to)
         }
 #endif
     }
+}
+
+void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
+{
+    if (item == Q_NULLPTR) {
+        return;
+    }
+
+    int rowindex = item->row();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "DoubleClicked.";
+#endif
+
+    showItemSetupDialog(rowindex);
 }
 
 #ifdef SINGLE_APPLICATION
