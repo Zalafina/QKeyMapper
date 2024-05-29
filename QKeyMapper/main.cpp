@@ -115,15 +115,15 @@ void updateQtDisplayEnvironment(void)
     else if (1.24 <= scale &&  scale <= 1.26) {
         if (dWidth >= 3840) {
             Flag_4K = true;
-            qputenv("QT_SCALE_FACTOR", "");
+            qunsetenv("QT_SCALE_FACTOR");
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.25");
         }
         else if (dWidth >= 2560) {
-            qputenv("QT_SCALE_FACTOR", "");
+            qunsetenv("QT_SCALE_FACTOR");
             qputenv("WINDOWS_SCALE_FACTOR", "2K_1.25");
         }
         else {
-            qputenv("QT_SCALE_FACTOR", "");
+            qunsetenv("QT_SCALE_FACTOR");
             qputenv("WINDOWS_SCALE_FACTOR", "1K_1.25");
         }
 #ifdef DEBUG_LOGOUT_ON
@@ -133,15 +133,15 @@ void updateQtDisplayEnvironment(void)
     else if (1.49 <= scale &&  scale <= 1.51) {
         if (dWidth >= 3840) {
             Flag_4K = true;
-            qputenv("QT_SCALE_FACTOR", "");
+            qunsetenv("QT_SCALE_FACTOR");
             qputenv("WINDOWS_SCALE_FACTOR", "4K_1.5");
         }
         else if (dWidth >= 2560) {
-            qputenv("QT_SCALE_FACTOR", "");
+            qunsetenv("QT_SCALE_FACTOR");
             qputenv("WINDOWS_SCALE_FACTOR", "2K_1.5");
         }
         else {
-            qputenv("QT_SCALE_FACTOR", "");
+            qunsetenv("QT_SCALE_FACTOR");
             qputenv("WINDOWS_SCALE_FACTOR", "1K_1.5");
         }
 #ifdef DEBUG_LOGOUT_ON
