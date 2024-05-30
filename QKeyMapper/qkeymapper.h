@@ -538,8 +538,10 @@ private:
     KeyMappingDataTableWidget *m_KeyMappingDataTable;
     StyledDelegate *m_ProcessInfoTableDelegate;
     // StyledDelegate *m_KeyMappingDataTableDelegate;
+public:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
+private:
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;

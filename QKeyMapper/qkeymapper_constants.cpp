@@ -366,6 +366,8 @@ const QColor STATUS_ON_COLOR = QColor(236, 165, 56);
 
 const char *ORIKEY_COMBOBOX_NAME = "orikeyComboBox";
 const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
+const char *SETUPDIALOG_ORIKEY_COMBOBOX_NAME = "SetupDialog_OriginalKeyListComboBox";
+const char *SETUPDIALOG_MAPKEY_COMBOBOX_NAME = "SetupDialog_MappingKeyListComboBox";
 
 const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
 const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";

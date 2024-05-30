@@ -287,7 +287,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
-    QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellDoubleClicked, this, &QKeyMapper::keyMappingTableCellDoubleClicked);
+    // QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellDoubleClicked, this, &QKeyMapper::keyMappingTableCellDoubleClicked);
 
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
@@ -4741,14 +4741,14 @@ void QKeyMapper::showItemSetupDialog(int row)
     }
 
     if (!m_ItemSetupDialog->isVisible()) {
-        int y_offset = m_KeyMappingDataTable->rowViewportPosition(row);
-        int width = m_ItemSetupDialog->width();
-        int height = m_ItemSetupDialog->height();
-        QPoint globalPos = m_KeyMappingDataTable->mapToGlobal(QPoint(0, 0));
-        int top = globalPos.y() + y_offset + m_KeyMappingDataTable->horizontalHeader()->height();
-        int left = globalPos.x() - width - 5;
+        // int y_offset = m_KeyMappingDataTable->rowViewportPosition(row);
+        // int width = m_ItemSetupDialog->width();
+        // int height = m_ItemSetupDialog->height();
+        // QPoint globalPos = m_KeyMappingDataTable->mapToGlobal(QPoint(0, 0));
+        // int top = globalPos.y() + y_offset + m_KeyMappingDataTable->horizontalHeader()->height();
+        // int left = globalPos.x() - width - 5;
+        // m_ItemSetupDialog->setGeometry(QRect(left, top, width, height));
 
-        m_ItemSetupDialog->setGeometry(QRect(left, top, width, height));
         m_ItemSetupDialog->setItemRow(row);
         m_ItemSetupDialog->show();
     }

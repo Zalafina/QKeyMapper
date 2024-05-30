@@ -322,6 +322,8 @@ extern const char* FONTNAME_CHINESE;
 extern const QColor STATUS_ON_COLOR;
 extern const char* ORIKEY_COMBOBOX_NAME;
 extern const char* MAPKEY_COMBOBOX_NAME;
+extern const char* SETUPDIALOG_ORIKEY_COMBOBOX_NAME;
+extern const char* SETUPDIALOG_MAPKEY_COMBOBOX_NAME;
 extern const char* WINDOWSWITCHKEY_LINEEDIT_NAME;
 extern const char* MAPPINGSWITCHKEY_LINEEDIT_NAME;
 extern const char *KEY_NONE_STR;
