@@ -337,6 +337,8 @@ public slots:
 
     void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
 
+    void keyMappingTableCellDoubleClicked(int row, int column);
+
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
 #endif

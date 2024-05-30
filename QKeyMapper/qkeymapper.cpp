@@ -287,6 +287,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
+    QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellDoubleClicked, this, &QKeyMapper::keyMappingTableCellDoubleClicked);
 
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
@@ -4735,6 +4736,10 @@ void QKeyMapper::showInputDeviceListWindow()
 
 void QKeyMapper::showItemSetupDialog(int row)
 {
+    if (Q_NULLPTR == m_ItemSetupDialog) {
+        return;
+    }
+
     if (!m_ItemSetupDialog->isVisible()) {
         int y_offset = m_KeyMappingDataTable->rowViewportPosition(row);
         int width = m_ItemSetupDialog->width();
@@ -4751,6 +4756,10 @@ void QKeyMapper::showItemSetupDialog(int row)
 
 void QKeyMapper::closeItemSetupDialog()
 {
+    if (Q_NULLPTR == m_ItemSetupDialog) {
+        return;
+    }
+
     if (m_ItemSetupDialog->isVisible()) {
         m_ItemSetupDialog->close();
     }
@@ -6773,6 +6782,15 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 #endif
 
     showItemSetupDialog(rowindex);
+}
+
+void QKeyMapper::keyMappingTableCellDoubleClicked(int row, int column)
+{
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTableCellDoubleClicked]" << "L-Ctrl Pressed + DoubleClicked ->" << "Row =" << row << ", Column =" << column;
+#endif
+    }
 }
 
 #ifdef SINGLE_APPLICATION
