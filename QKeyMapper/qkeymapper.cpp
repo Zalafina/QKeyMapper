@@ -179,8 +179,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->accelThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
-    ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
-    ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
+    // ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
+    // ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
@@ -1688,6 +1688,7 @@ bool QKeyMapper::getDisableWinKeyStatus()
 }
 #endif
 
+#if 0
 int QKeyMapper::getBurstPressTime()
 {
     return getInstance()->ui->burstpressSpinBox->value();
@@ -1697,6 +1698,7 @@ int QKeyMapper::getBurstReleaseTime()
 {
     return getInstance()->ui->burstreleaseSpinBox->value();
 }
+#endif
 
 int QKeyMapper::getJoystick2MouseSpeedX()
 {
@@ -2803,11 +2805,13 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList original_keys;
         QStringList mapping_keysList;
         QStringList burstList;
+        QList<int> burstpresstimeList;
+        QList<int> burstreleasetimeList;
         QStringList lockList;
         QStringList passthroughList;
         QStringList keyup_actionList;
-        int burstpressTime = ui->burstpressSpinBox->value();
-        int burstreleaseTime = ui->burstreleaseSpinBox->value();
+        // int burstpressTime = ui->burstpressSpinBox->value();
+        // int burstreleaseTime = ui->burstreleaseSpinBox->value();
         int key2mouse_XSpeed = ui->mouseXSpeedSpinBox->value();
         int key2mouse_YSpeed = ui->mouseYSpeedSpinBox->value();
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -2978,6 +2982,18 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     burstList.append("OFF");
                 }
+                if (BURST_TIME_MIN <= keymapdata.BurstPressTime && keymapdata.BurstPressTime <= BURST_TIME_MAX) {
+                    burstpresstimeList.append(keymapdata.BurstPressTime);
+                }
+                else {
+                    burstpresstimeList.append(BURST_PRESS_TIME_DEFAULT);
+                }
+                if (BURST_TIME_MIN <= keymapdata.BurstReleaseTime && keymapdata.BurstReleaseTime <= BURST_TIME_MAX) {
+                    burstreleasetimeList.append(keymapdata.BurstPressTime);
+                }
+                else {
+                    burstreleasetimeList.append(BURST_PRESS_TIME_DEFAULT);
+                }
                 if (true == keymapdata.Lock) {
                     lockList.append("ON");
                 }
@@ -2998,13 +3014,17 @@ void QKeyMapper::saveKeyMapSetting(void)
                 }
             }
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList  );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList );
+
+            QVariant burstpressVariant = QVariant::fromValue(burstpresstimeList);
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressVariant );
+            QVariant burstreleaseVariant = QVariant::fromValue(burstreleasetimeList);
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseVariant );
+
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3018,11 +3038,15 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList  );
+
+            QVariant burstpressVariant = QVariant::fromValue(burstpresstimeList);
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressVariant );
+            QVariant burstreleaseVariant = QVariant::fromValue(burstreleasetimeList);
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseVariant );
+
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpressTime  );
-            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleaseTime  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3428,10 +3452,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList original_keys;
         QStringList mapping_keys;
         QStringList burstStringList;
+        QList<int> burstpressIntList;
+        QList<int> burstreleaseIntList;
         QStringList lockStringList;
         QStringList passthroughStringList;
         QStringList keyup_actionStringList;
         QList<bool> burstList;
+        QList<int> burstpresstimeList;
+        QList<int> burstreleasetimeList;
         QList<bool> lockList;
         QList<bool> passthroughList;
         QList<bool> keyup_actionList;
@@ -3444,15 +3472,49 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             mapping_keys            = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toStringList();
             int mappingdata_size = original_keys.size();
             QStringList stringListAllOFF;
+            QList<int> burstpressIntListDefault;
+            QList<int> burstreleaseIntListDefault;
             for (int i = 0; i < mappingdata_size; ++i) {
                 stringListAllOFF << "OFF";
+                burstpressIntListDefault.append(BURST_PRESS_TIME_DEFAULT);
+                burstreleaseIntListDefault.append(BURST_RELEASE_TIME_DEFAULT);
             }
             burstStringList         = stringListAllOFF;
+            burstpressIntList       = burstpressIntListDefault;
+            burstreleaseIntList     = burstreleaseIntListDefault;
             lockStringList          = stringListAllOFF;
             passthroughStringList   = stringListAllOFF;
             keyup_actionStringList  = stringListAllOFF;
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME)) {
+                QList<QVariant> readedBurstPressList = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME).toList();
+                QList<int> tempBurstPressList;
+                for (const QVariant& variant : readedBurstPressList) {
+                    bool ok;
+                    int value = variant.toInt(&ok);
+                    if (ok) {
+                        tempBurstPressList.append(value);
+                    } else {
+                        tempBurstPressList.append(BURST_PRESS_TIME_DEFAULT);
+                    }
+                }
+                burstpressIntList = tempBurstPressList;
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME)) {
+                QList<QVariant> readedBurstReleaseList = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME).toList();
+                QList<int> tempBurstReleaseList;
+                for (const QVariant& variant : readedBurstReleaseList) {
+                    bool ok;
+                    int value = variant.toInt(&ok);
+                    if (ok) {
+                        tempBurstReleaseList.append(value);
+                    } else {
+                        tempBurstReleaseList.append(BURST_RELEASE_TIME_DEFAULT);
+                    }
+                }
+                burstreleaseIntList = tempBurstReleaseList;
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK)) {
                 lockStringList = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
@@ -3473,6 +3535,24 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         burstList.append(true);
                     } else {
                         burstList.append(false);
+                    }
+                }
+
+                for (int i = 0; i < original_keys.size(); i++) {
+                    const int &burstpresstime = (i < burstpressIntList.size()) ? burstpressIntList.at(i) : BURST_PRESS_TIME_DEFAULT;
+                    if (BURST_TIME_MIN <= burstpresstime && burstpresstime <= BURST_TIME_MAX) {
+                        burstpresstimeList.append(burstpresstime);
+                    } else {
+                        burstpresstimeList.append(BURST_PRESS_TIME_DEFAULT);
+                    }
+                }
+
+                for (int i = 0; i < original_keys.size(); i++) {
+                    const int &burstreleasetime = (i < burstreleaseIntList.size()) ? burstreleaseIntList.at(i) : BURST_RELEASE_TIME_DEFAULT;
+                    if (BURST_TIME_MIN <= burstreleasetime && burstreleasetime <= BURST_TIME_MAX) {
+                        burstreleasetimeList.append(burstreleasetime);
+                    } else {
+                        burstreleasetimeList.append(BURST_RELEASE_TIME_DEFAULT);
                     }
                 }
 
@@ -3538,7 +3618,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                         && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex)));
+                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex)));
                     }
                     else{
                         global_datavalid = false;
@@ -3702,10 +3782,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList original_keys;
         QStringList mapping_keys;
         QStringList burstStringList;
+        QList<int> burstpressIntList;
+        QList<int> burstreleaseIntList;
         QStringList lockStringList;
         QStringList passthroughStringList;
         QStringList keyup_actionStringList;
         QList<bool> burstList;
+        QList<int> burstpresstimeList;
+        QList<int> burstreleasetimeList;
         QList<bool> lockList;
         QList<bool> passthroughList;
         QList<bool> keyup_actionList;
@@ -3718,15 +3802,49 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
             int mappingdata_size = original_keys.size();
             QStringList stringListAllOFF;
+            QList<int> burstpressIntListDefault;
+            QList<int> burstreleaseIntListDefault;
             for (int i = 0; i < mappingdata_size; ++i) {
                 stringListAllOFF << "OFF";
+                burstpressIntListDefault.append(BURST_PRESS_TIME_DEFAULT);
+                burstreleaseIntListDefault.append(BURST_RELEASE_TIME_DEFAULT);
             }
             burstStringList         = stringListAllOFF;
+            burstpressIntList       = burstpressIntListDefault;
+            burstreleaseIntList     = burstreleaseIntListDefault;
             lockStringList          = stringListAllOFF;
             passthroughStringList   = stringListAllOFF;
             keyup_actionStringList   = stringListAllOFF;
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME)) {
+                QList<QVariant> readedBurstPressList = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME).toList();
+                QList<int> tempBurstPressList;
+                for (const QVariant& variant : readedBurstPressList) {
+                    bool ok;
+                    int value = variant.toInt(&ok);
+                    if (ok) {
+                        tempBurstPressList.append(value);
+                    } else {
+                        tempBurstPressList.append(BURST_PRESS_TIME_DEFAULT);
+                    }
+                }
+                burstpressIntList = tempBurstPressList;
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME)) {
+                QList<QVariant> readedBurstReleaseList = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME).toList();
+                QList<int> tempBurstReleaseList;
+                for (const QVariant& variant : readedBurstReleaseList) {
+                    bool ok;
+                    int value = variant.toInt(&ok);
+                    if (ok) {
+                        tempBurstReleaseList.append(value);
+                    } else {
+                        tempBurstReleaseList.append(BURST_RELEASE_TIME_DEFAULT);
+                    }
+                }
+                burstreleaseIntList = tempBurstReleaseList;
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_LOCK)) {
                 lockStringList = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toStringList();
@@ -3747,6 +3865,24 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         burstList.append(true);
                     } else {
                         burstList.append(false);
+                    }
+                }
+
+                for (int i = 0; i < original_keys.size(); i++) {
+                    const int &burstpresstime = (i < burstpressIntList.size()) ? burstpressIntList.at(i) : BURST_PRESS_TIME_DEFAULT;
+                    if (BURST_TIME_MIN <= burstpresstime && burstpresstime <= BURST_TIME_MAX) {
+                        burstpresstimeList.append(burstpresstime);
+                    } else {
+                        burstpresstimeList.append(BURST_PRESS_TIME_DEFAULT);
+                    }
+                }
+
+                for (int i = 0; i < original_keys.size(); i++) {
+                    const int &burstreleasetime = (i < burstreleaseIntList.size()) ? burstreleaseIntList.at(i) : BURST_RELEASE_TIME_DEFAULT;
+                    if (BURST_TIME_MIN <= burstreleasetime && burstreleasetime <= BURST_TIME_MAX) {
+                        burstreleasetimeList.append(burstreleasetime);
+                    } else {
+                        burstreleasetimeList.append(BURST_RELEASE_TIME_DEFAULT);
                     }
                 }
 
@@ -3811,7 +3947,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                             && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex)));
+                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex)));
                     }
                     else{
                         datavalidflag = false;
@@ -3834,11 +3970,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 KeyMappingDataList.clear();
-                KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false,  false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false,  false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false,  false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false,  false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false,  false, false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
                 loadDefault = true;
             }
         }
@@ -3963,6 +4099,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
 
+#if 0
     if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME)){
         int burstpressTime = settingFile.value(settingSelectStr+KEYMAPDATA_BURSTPRESS_TIME).toInt();
         if (BURST_TIME_MIN <= burstpressTime && burstpressTime <= BURST_TIME_MAX) {
@@ -3988,6 +4125,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     else {
         ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
     }
+#endif
 
     if (true == settingFile.contains(settingSelectStr+KEY2MOUSE_X_SPEED)){
         int mouseXSpeed = settingFile.value(settingSelectStr+KEY2MOUSE_X_SPEED).toInt();
@@ -4524,8 +4662,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->languageComboBox->setEnabled(status);
     ui->virtualGamepadTypeComboBox->setEnabled(status);
     ui->keyPressTypeComboBox->setEnabled(status);
-    ui->burstpressSpinBox->setEnabled(status);
-    ui->burstreleaseSpinBox->setEnabled(status);
+    // ui->burstpressSpinBox->setEnabled(status);
+    // ui->burstreleaseSpinBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
     // ui->settingselectLabel->setEnabled(status);
     ui->burstpressLabel->setEnabled(status);
@@ -6460,6 +6598,10 @@ void QKeyMapper::setUILanguage_Chinese()
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguagee(LANGUAGE_CHINESE);
     }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->setUILanguagee(LANGUAGE_CHINESE);
+    }
 }
 
 void QKeyMapper::setUILanguage_English()
@@ -6545,12 +6687,17 @@ void QKeyMapper::setUILanguage_English()
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguagee(LANGUAGE_ENGLISH);
     }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->setUILanguagee(LANGUAGE_ENGLISH);
+    }
 }
 
 void QKeyMapper::resetFontSize()
 {
     ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
 
+    QFont customFont(FONTNAME_ENGLISH, 9);
     if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
         || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
         || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
@@ -6558,78 +6705,82 @@ void QKeyMapper::resetFontSize()
         || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
         || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
 
-        ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->keyboardSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
-        ui->mouseSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
-        ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->nameLineEdit->setFont(customFont);
+        ui->titleLineEdit->setFont(customFont);
+        ui->languageComboBox->setFont(customFont);
+        ui->virtualGamepadTypeComboBox->setFont(customFont);
+        m_orikeyComboBox->setFont(customFont);
+        m_mapkeyComboBox->setFont(customFont);
+        ui->keyboardSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->mouseSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->settingselectComboBox->setFont(customFont);
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->windowswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->mappingswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->windowswitchkeyLineEdit->setFont(customFont);
+        ui->mappingswitchkeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->pressTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->pointDisplayLabel->setFont(QFont("Microsoft YaHei", 9));
-        ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->accelThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->combinationKeyLineEdit->setFont(customFont);
+        ui->waitTimeSpinBox->setFont(customFont);
+        ui->pressTimeSpinBox->setFont(customFont);
+        ui->pointDisplayLabel->setFont(customFont);
+        ui->dataPortSpinBox->setFont(customFont);
+        ui->brakeThresholdDoubleSpinBox->setFont(customFont);
+        ui->accelThresholdDoubleSpinBox->setFont(customFont);
+        ui->mouseXSpeedSpinBox->setFont(customFont);
+        ui->mouseYSpeedSpinBox->setFont(customFont);
 
-        ui->burstpressSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->burstreleaseSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
-        m_KeyMappingDataTable->setFont(QFont("Microsoft YaHei", 9));
+        // ui->burstpressSpinBox->setFont(customFont);
+        // ui->burstreleaseSpinBox->setFont(customFont);
+        ui->processinfoTable->setFont(customFont);
+        m_KeyMappingDataTable->setFont(customFont);
 
-        ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->virtualGamepadNumberSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->virtualGamepadListComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->vJoyXSensSpinBox->setFont(customFont);
+        ui->vJoyYSensSpinBox->setFont(customFont);
+        ui->virtualGamepadNumberSpinBox->setFont(customFont);
+        ui->virtualGamepadListComboBox->setFont(customFont);
     }
     else {
-        ui->nameLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->titleLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->languageComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->virtualGamepadTypeComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_orikeyComboBox->setFont(QFont("Microsoft YaHei", 9));
-        m_mapkeyComboBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->keyboardSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
-        ui->mouseSelectComboBox->setFont(QFont("Microsoft YaHei", 8));
-        ui->settingselectComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->nameLineEdit->setFont(customFont);
+        ui->titleLineEdit->setFont(customFont);
+        ui->languageComboBox->setFont(customFont);
+        ui->virtualGamepadTypeComboBox->setFont(customFont);
+        m_orikeyComboBox->setFont(customFont);
+        m_mapkeyComboBox->setFont(customFont);
+        ui->keyboardSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->mouseSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->settingselectComboBox->setFont(customFont);
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->windowswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->mappingswitchkeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
+        ui->windowswitchkeyLineEdit->setFont(customFont);
+        ui->mappingswitchkeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->combinationKeyLineEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->waitTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->pressTimeSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->pointDisplayLabel->setFont(QFont("Microsoft YaHei", 9));
-        ui->dataPortSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->brakeThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->accelThresholdDoubleSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->mouseXSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->mouseYSpeedSpinBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->combinationKeyLineEdit->setFont(customFont);
+        ui->waitTimeSpinBox->setFont(customFont);
+        ui->pressTimeSpinBox->setFont(customFont);
+        ui->pointDisplayLabel->setFont(customFont);
+        ui->dataPortSpinBox->setFont(customFont);
+        ui->brakeThresholdDoubleSpinBox->setFont(customFont);
+        ui->accelThresholdDoubleSpinBox->setFont(customFont);
+        ui->mouseXSpeedSpinBox->setFont(customFont);
+        ui->mouseYSpeedSpinBox->setFont(customFont);
 
-        ui->burstpressSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->burstreleaseSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->processinfoTable->setFont(QFont("Microsoft YaHei", 9));
-        m_KeyMappingDataTable->setFont(QFont("Microsoft YaHei", 9));
+        // ui->burstpressSpinBox->setFont(customFont);
+        // ui->burstreleaseSpinBox->setFont(customFont);
+        ui->processinfoTable->setFont(customFont);
+        m_KeyMappingDataTable->setFont(customFont);
 
-        ui->vJoyXSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->vJoyYSensSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->virtualGamepadNumberSpinBox->setFont(QFont("Microsoft YaHei", 9));
-        ui->virtualGamepadListComboBox->setFont(QFont("Microsoft YaHei", 9));
+        ui->vJoyXSensSpinBox->setFont(customFont);
+        ui->vJoyYSensSpinBox->setFont(customFont);
+        ui->virtualGamepadNumberSpinBox->setFont(customFont);
+        ui->virtualGamepadListComboBox->setFont(customFont);
     }
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->resetFontSize();
+    }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->resetFontSize();
     }
 }
 
@@ -6784,6 +6935,7 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
     showItemSetupDialog(rowindex);
 }
 
+#if 0
 void QKeyMapper::keyMappingTableCellDoubleClicked(int row, int column)
 {
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
@@ -6792,6 +6944,7 @@ void QKeyMapper::keyMappingTableCellDoubleClicked(int row, int column)
 #endif
     }
 }
+#endif
 
 #ifdef SINGLE_APPLICATION
 void QKeyMapper::raiseQKeyMapperWindow()
@@ -7299,7 +7452,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
 
-            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.Lock, keymapdata.PassThrough, keymapdata.KeyUp_Action));
+            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.BurstPressTime, keymapdata.BurstReleaseTime, keymapdata.Lock, keymapdata.PassThrough, keymapdata.KeyUp_Action));
         }
         else {
             if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
@@ -7364,7 +7517,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
 
-            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, false, false, false));
+            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
 #endif

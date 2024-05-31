@@ -283,8 +283,8 @@ public:
     static QString getCurrentOriKeyText(void);
     static QString getCurrentOriCombinationKeyText(void);
     static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
-    static int getBurstPressTime(void);
-    static int getBurstReleaseTime(void);
+    // static int getBurstPressTime(void);
+    // static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
     static int getJoystick2MouseSpeedY(void);
     static int getvJoyXSensitivity(void);
@@ -337,7 +337,7 @@ public slots:
 
     void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
 
-    void keyMappingTableCellDoubleClicked(int row, int column);
+    // void keyMappingTableCellDoubleClicked(int row, int column);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);

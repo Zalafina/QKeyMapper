@@ -1132,6 +1132,28 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
     }
 }
 
+void QKeyMapper_Worker::sendBurstKeyDown(int findindex)
+{
+    if (findindex >= 0){
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+        sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+    }
+}
+
+void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
+{
+    if (findindex >= 0){
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+        int sendmode = SENDMODE_NORMAL;
+        if (true == stop) {
+            sendmode = SENDMODE_FORCE_STOP;
+        }
+        sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
+    }
+}
+
 void QKeyMapper_Worker::startDataPortListener()
 {
     if (s_GripDetect_EnableState != GRIPDETECT_NONE) {
@@ -2672,7 +2694,15 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
         if (false == burstKey.isEmpty()) {
             killTimer(timerID);
             m_BurstKeyUpTimerMap.remove(burstKey);
-            sendBurstKeyUp(burstKey, false);
+            // sendBurstKeyUp(burstKey, false);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
+            if (findindex == -1) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[QKeyMapper_Worker::timerEvent]" << "sendBurstKeyUp [" << burstKey << "] could not found in KeyMappingDataList!" ;
+#endif
+                return;
+            }
+            sendBurstKeyUp(findindex, false);
 //#ifdef DEBUG_LOGOUT_ON
 //            qDebug("timerEvent(): Key \"%s\" BurstPress timeout.", burstKey.toStdString().c_str());
 //#endif
@@ -2689,7 +2719,15 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 //#ifdef DEBUG_LOGOUT_ON
 //            qDebug("timerEvent(): Key \"%s\" BurstTimer timeout.", burstKey.toStdString().c_str());
 //#endif
-            sendBurstKeyDown(burstKey);
+            // sendBurstKeyDown(burstKey);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
+            if (findindex == -1) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[QKeyMapper_Worker::timerEvent]" << "sendBurstKeyDown [" << burstKey << "] could not found in KeyMappingDataList!" ;
+#endif
+                return;
+            }
+            sendBurstKeyDown(findindex);
 
             if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
                 int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
@@ -2699,7 +2737,8 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
                 killTimer(existTimerID);
                 m_BurstKeyUpTimerMap.remove(burstKey);
             }
-            int burstpressTime = QKeyMapper::getBurstPressTime();
+            // int burstpressTime = QKeyMapper::getBurstPressTime();
+            int burstpressTime = QKeyMapper::KeyMappingDataList.at(findindex).BurstPressTime;
             int keyupTimerID = startTimer(burstpressTime, Qt::PreciseTimer);
             m_BurstKeyUpTimerMap.insert(burstKey, keyupTimerID);
         }
@@ -3538,8 +3577,10 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
         killTimer(existTimerID);
         m_BurstKeyUpTimerMap.remove(burstKey);
     }
-    int burstpressTime = QKeyMapper::getBurstPressTime();
-    int burstreleaseTime = QKeyMapper::getBurstReleaseTime();
+    // int burstpressTime = QKeyMapper::getBurstPressTime();
+    // int burstreleaseTime = QKeyMapper::getBurstReleaseTime();
+    int burstpressTime = QKeyMapper::KeyMappingDataList.at(mappingIndex).BurstPressTime;
+    int burstreleaseTime = QKeyMapper::KeyMappingDataList.at(mappingIndex).BurstReleaseTime;
     int burstTime = burstpressTime + burstreleaseTime;
     int timerID = startTimer(burstTime, Qt::PreciseTimer);
     m_BurstTimerMap.insert(burstKey, timerID);
@@ -3548,14 +3589,14 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
     m_BurstKeyUpTimerMap.insert(burstKey, keyupTimerID);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[startBurstTimer] Key \"%s\", Timer:%d, ID:%d", burstKey.toStdString().c_str(), burstTime, timerID);
+    qDebug("[startBurstTimer] Key \"%s\", Timer: %d, ID: %d, MappingDataIndex: %d", burstKey.toStdString().c_str(), burstTime, timerID, mappingIndex);
 #endif
 }
 
 void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[stopBurstTimer] Key \"%s\"", burstKey.toStdString().c_str());
+    qDebug().nospace().noquote() << "[stopBurstTimer] Key [" << burstKey << "], MappingIndex =" << mappingIndex;
 #endif
     Q_UNUSED(mappingIndex);
 
@@ -3565,7 +3606,8 @@ void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex
         m_BurstTimerMap.remove(burstKey);
 
         if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
-            sendBurstKeyUp(burstKey, true);
+            // sendBurstKeyUp(burstKey, true);
+            sendBurstKeyUp(mappingIndex, true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[stopBurstTimer] sendBurstKeyUp(\"%s\"), BurstTimer(%d) stoped.", burstKey.toStdString().c_str(), existTimerID);
 #endif

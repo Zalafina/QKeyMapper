@@ -54,7 +54,7 @@ const int TITLESETTING_INDEX_ANYTITLE = 0;
 const int TITLESETTING_INDEX_MAX = 9;
 
 const int BURST_TIME_MIN = 1;
-const int BURST_TIME_MAX = 5000;
+const int BURST_TIME_MAX = 9999;
 
 const int BURST_PRESS_TIME_DEFAULT   = 40;
 const int BURST_RELEASE_TIME_DEFAULT = 20;
@@ -455,6 +455,8 @@ const char *TITLECHECKBOX_CHINESE = "标题";
 const char *ORIKEYLABEL_CHINESE = "原始按键";
 const char *ORIKEYSEQLABEL_CHINESE = "原始组合键";
 const char *MAPKEYLABEL_CHINESE = "映射按键";
+const char *ORIKEYLISTLABEL_CHINESE = "原始按键列表";
+const char *MAPKEYLISTLABEL_CHINESE = "映射按键列表";
 const char *BURSTPRESSLABEL_CHINESE = "连发按下";
 const char *BURSTRELEASE_CHINESE = "连发抬起";
 // const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
@@ -510,6 +512,11 @@ const char *MOUSESELECTLABEL_CHINESE    = "鼠标";
 const char *TRAYMENU_SHOWACTION_CHINESE = "显示";
 const char *TRAYMENU_HIDEACTION_CHINESE = "隐藏";
 const char *TRAYMENU_QUITACTION_CHINESE = "退出";
+const char *BURSTCHECKBOX_CHINESE = "连发";
+const char *LOCKCHECKBOX_CHINESE = "锁定";
+const char *KEYUPACTIONCHECKBOX_CHINESE = "按键抬起时动作";
+const char *PASSTHROUGHCHECKBOX_CHINESE = "原始按键穿透";
+const char *UPDATEBUTTON_CHINESE = "更新";
 
 /* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -524,6 +531,8 @@ const char *TITLECHECKBOX_ENGLISH = "Title";
 const char *ORIKEYLABEL_ENGLISH = "OriKey";
 const char *ORIKEYSEQLABEL_ENGLISH = "OriKeySeq";
 const char *MAPKEYLABEL_ENGLISH = "MapKey";
+const char *ORIKEYLISTLABEL_ENGLISH = "OriginalKeyList";
+const char *MAPKEYLISTLABEL_ENGLISH = "MappingKeyList";
 const char *BURSTPRESSLABEL_ENGLISH = "BurstPress";
 const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 // const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
@@ -579,6 +588,11 @@ const char *MOUSESELECTLABEL_ENGLISH    = "Mouse";
 const char *TRAYMENU_SHOWACTION_ENGLISH = "Show";
 const char *TRAYMENU_HIDEACTION_ENGLISH = "Hide";
 const char *TRAYMENU_QUITACTION_ENGLISH = "Quit";
+const char *BURSTCHECKBOX_ENGLISH = "Burst";
+const char *LOCKCHECKBOX_ENGLISH = "Lock";
+const char *KEYUPACTIONCHECKBOX_ENGLISH = "KeyUpAction";
+const char *PASSTHROUGHCHECKBOX_ENGLISH = "PassThrough";
+const char *UPDATEBUTTON_ENGLISH = "Update";
 
 /* constant values for QInputDeviceListWindow */
 const int DEVICE_TABLE_NUMBER_COLUMN         = 0;

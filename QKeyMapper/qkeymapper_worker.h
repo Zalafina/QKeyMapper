@@ -49,23 +49,30 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
 
+extern const int BURST_PRESS_TIME_DEFAULT;
+extern const int BURST_RELEASE_TIME_DEFAULT;
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;
     QStringList Mapping_Keys;
     bool Burst;
+    int BurstPressTime;
+    int BurstReleaseTime;
     bool Lock;
     bool LockStatus;
     bool PassThrough;
     bool KeyUp_Action;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), Lock(false), LockStatus(false), PassThrough(false), KeyUp_Action(false) {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), BurstPressTime(BURST_PRESS_TIME_DEFAULT), BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT), Lock(false), LockStatus(false), PassThrough(false), KeyUp_Action(false) {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, bool lock, bool passthrough, bool keyup_action)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, int burstpresstime, int burstreleasetime, bool lock, bool passthrough, bool keyup_action)
     {
         Original_Key = originalkey;
         Mapping_Keys = mappingkeys.split(SEPARATOR_NEXTARROW);
         Burst = burst;
+        BurstPressTime = burstpresstime;
+        BurstReleaseTime = burstreleasetime;
         Lock = lock;
         LockStatus = false;
         PassThrough = passthrough;
@@ -77,10 +84,31 @@ typedef struct MAP_KEYDATA
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
                 && (Burst == other.Burst)
+                && (BurstPressTime == other.BurstPressTime)
+                && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
                 && (PassThrough == other.PassThrough)
                 && (KeyUp_Action == other.KeyUp_Action));
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    friend QDebug operator<<(QDebug debug, const MAP_KEYDATA& data)
+    {
+        QDebugStateSaver saver(debug);
+        debug.nospace() << "\nMAP_KEYDATA["
+                        << "Original_Key:" << data.Original_Key
+                        << ", Mapping_Keys:" << data.Mapping_Keys
+                        << ", Burst:" << data.Burst
+                        << ", BurstPressTime:" << data.BurstPressTime
+                        << ", BurstReleaseTime:" << data.BurstReleaseTime
+                        << ", Lock:" << data.Lock
+                        << ", LockStatus:" << data.LockStatus
+                        << ", PassThrough:" << data.PassThrough
+                        << ", KeyUp_Action:" << data.KeyUp_Action
+                        << "]";
+        return debug;
+    }
+#endif
 }MAP_KEYDATA_st;
 
 typedef struct V_KEYCODE
@@ -407,6 +435,8 @@ public slots:
 public:
     void sendBurstKeyDown(const QString &burstKey);
     void sendBurstKeyUp(const QString &burstKey, bool stop);
+    void sendBurstKeyDown(int findindex);
+    void sendBurstKeyUp(int findindex, bool stop);
 #if 0
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);

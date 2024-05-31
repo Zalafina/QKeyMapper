@@ -22,6 +22,8 @@ public:
         return m_instance;
     }
 
+    void setUILanguagee(int languageindex);
+    void resetFontSize(void);
     void setItemRow(int row);
 
 public:
