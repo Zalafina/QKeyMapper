@@ -50,8 +50,8 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
         ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
-        ui->originalKeyLabel->setText(ORIKEYLABEL_ENGLISH);
-        ui->mappingKeyLabel->setText(MAPKEYLABEL_ENGLISH);
+        ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
+        ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_ENGLISH);
         ui->orikeyListLabel->setText(ORIKEYLISTLABEL_ENGLISH);
         ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_ENGLISH);
         ui->originalKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
@@ -64,8 +64,8 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
         ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
-        ui->originalKeyLabel->setText(ORIKEYLABEL_CHINESE);
-        ui->mappingKeyLabel->setText(MAPKEYLABEL_CHINESE);
+        ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
+        ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_CHINESE);
         ui->orikeyListLabel->setText(ORIKEYLISTLABEL_CHINESE);
         ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_CHINESE);
         ui->originalKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
@@ -150,6 +150,7 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 
 void QItemSetupDialog::showEvent(QShowEvent *event)
 {
+
     if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList.size()) {
         MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList.at(m_ItemRow);
 #ifdef DEBUG_LOGOUT_ON
@@ -214,6 +215,35 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         else {
             ui->passThroughCheckBox->setChecked(false);
         }
+
+        ui->burstpressSpinBox->setFocus();
+        ui->burstpressSpinBox->clearFocus();
+
+        bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
+        bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::showEvent] Burst item in row" << m_ItemRow << " enabled =" << burstEnabled;
+        qDebug() << "[QItemSetupDialog::showEvent] Lock item in row" << m_ItemRow << " enabled =" << lockEnabled;
+#endif
+
+        if (burstEnabled) {
+            ui->burstCheckBox->setEnabled(true);
+            ui->burstpressSpinBox->setEnabled(true);
+            ui->burstreleaseSpinBox->setEnabled(true);
+        }
+        else {
+            ui->burstCheckBox->setEnabled(false);
+            ui->burstpressSpinBox->setEnabled(false);
+            ui->burstreleaseSpinBox->setEnabled(false);
+        }
+
+        if (lockEnabled) {
+            ui->lockCheckBox->setEnabled(true);
+        }
+        else {
+            ui->lockCheckBox->setEnabled(false);
+        }
     }
 
     QDialog::showEvent(event);
@@ -247,13 +277,35 @@ void QItemSetupDialog::initKeyListComboBoxes()
 
 void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
 {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
 
+    int current_value = ui->burstpressSpinBox->value();
+
+    if (current_value != QKeyMapper::KeyMappingDataList.at(m_ItemRow).BurstPressTime) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].BurstPressTime = current_value;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[on_burstpressSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
+#endif
+    }
 }
 
 
 void QItemSetupDialog::on_burstreleaseSpinBox_editingFinished()
 {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
 
+    int current_value = ui->burstreleaseSpinBox->value();
+
+    if (current_value != QKeyMapper::KeyMappingDataList.at(m_ItemRow).BurstReleaseTime) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].BurstReleaseTime = current_value;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
+#endif
+    }
 }
 
 

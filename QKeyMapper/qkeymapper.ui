@@ -300,38 +300,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="burstpressLabel">
-   <property name="geometry">
-    <rect>
-     <x>690</x>
-     <y>470</y>
-     <width>81</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>BurstPress</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QLabel" name="burstreleaseLabel">
-   <property name="geometry">
-    <rect>
-     <x>690</x>
-     <y>500</y>
-     <width>81</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>BurstRelease</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-   </property>
-  </widget>
   <widget class="QCheckBox" name="autoStartMappingCheckBox">
    <property name="geometry">
     <rect>
@@ -702,9 +670,9 @@
   <widget class="QLabel" name="mouseXSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>820</x>
+     <x>740</x>
      <y>470</y>
-     <width>50</width>
+     <width>51</width>
      <height>22</height>
     </rect>
    </property>
@@ -718,7 +686,7 @@
   <widget class="QSpinBox" name="mouseXSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>875</x>
+     <x>796</x>
      <y>470</y>
      <width>35</width>
      <height>22</height>
@@ -734,7 +702,7 @@
   <widget class="QSpinBox" name="mouseYSpeedSpinBox">
    <property name="geometry">
     <rect>
-     <x>875</x>
+     <x>796</x>
      <y>500</y>
      <width>35</width>
      <height>22</height>
@@ -750,9 +718,9 @@
   <widget class="QLabel" name="mouseYSpeedLabel">
    <property name="geometry">
     <rect>
-     <x>820</x>
+     <x>740</x>
      <y>500</y>
-     <width>50</width>
+     <width>51</width>
      <height>22</height>
     </rect>
    </property>
@@ -761,38 +729,6 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="burstpressSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>775</x>
-     <y>470</y>
-     <width>45</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="value">
-    <number>40</number>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="burstreleaseSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>775</x>
-     <y>500</y>
-     <width>45</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
-   </property>
-   <property name="value">
-    <number>20</number>
    </property>
   </widget>
   <widget class="QComboBox" name="virtualGamepadTypeComboBox">
@@ -1249,8 +1185,6 @@
   <zorder>iconLabel</zorder>
   <zorder>moveupButton</zorder>
   <zorder>movedownButton</zorder>
-  <zorder>burstpressLabel</zorder>
-  <zorder>burstreleaseLabel</zorder>
   <zorder>autoStartMappingCheckBox</zorder>
   <zorder>settingselectComboBox</zorder>
   <zorder>removeSettingButton</zorder>
@@ -1276,8 +1210,6 @@
   <zorder>mouseXSpeedSpinBox</zorder>
   <zorder>mouseYSpeedSpinBox</zorder>
   <zorder>mouseYSpeedLabel</zorder>
-  <zorder>burstpressSpinBox</zorder>
-  <zorder>burstreleaseSpinBox</zorder>
   <zorder>virtualGamepadTypeComboBox</zorder>
   <zorder>dataPortSpinBox</zorder>
   <zorder>accelThresholdLabel</zorder>

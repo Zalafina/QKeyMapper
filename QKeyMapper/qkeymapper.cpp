@@ -1658,6 +1658,22 @@ int QKeyMapper::getLanguageIndex()
     return getInstance()->ui->languageComboBox->currentIndex();
 }
 
+bool QKeyMapper::getKeyMappingDataTableItemBurstStatus(int rowindex)
+{
+    QTableWidgetItem* burstItem = getInstance()->m_KeyMappingDataTable->item(rowindex, BURST_MODE_COLUMN);
+    bool isBurstItemEnabled = burstItem && (burstItem->flags() & Qt::ItemIsEnabled);
+
+    return isBurstItemEnabled;
+}
+
+bool QKeyMapper::getKeyMappingDataTableItemLockStatus(int rowindex)
+{
+    QTableWidgetItem* lockItem = getInstance()->m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN);
+    bool isLockItemEnabled = lockItem && (lockItem->flags() & Qt::ItemIsEnabled);
+
+    return isLockItemEnabled;
+}
+
 QString QKeyMapper::getCurrentOriKeyText()
 {
     return getInstance()->m_orikeyComboBox->currentText();
@@ -4426,9 +4442,9 @@ void QKeyMapper::setControlFontEnglish()
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
-    ui->burstpressLabel->setFont(customFont);
+    // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
-    ui->burstreleaseLabel->setFont(customFont);
+    // ui->burstreleaseLabel->setFont(customFont);
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
@@ -4524,9 +4540,9 @@ void QKeyMapper::setControlFontChinese()
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
-    ui->burstpressLabel->setFont(customFont);
+    // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
-    ui->burstreleaseLabel->setFont(customFont);
+    // ui->burstreleaseLabel->setFont(customFont);
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
@@ -4619,9 +4635,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->burstreleaseSpinBox->setEnabled(status);
     ui->settingselectComboBox->setEnabled(status);
     // ui->settingselectLabel->setEnabled(status);
-    ui->burstpressLabel->setEnabled(status);
+    // ui->burstpressLabel->setEnabled(status);
     // ui->burstpress_msLabel->setEnabled(status);
-    ui->burstreleaseLabel->setEnabled(status);
+    // ui->burstreleaseLabel->setEnabled(status);
     // ui->burstrelease_msLabel->setEnabled(status);
     ui->waitTimeLabel->setEnabled(status);
     ui->pointLabel->setEnabled(status);
@@ -6502,8 +6518,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
     ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_CHINESE);
     ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
-    ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
-    ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
+    // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
+    // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
@@ -6591,8 +6607,8 @@ void QKeyMapper::setUILanguage_English()
     ui->orikeyLabel->setText(ORIKEYLABEL_ENGLISH);
     ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_ENGLISH);
     ui->mapkeyLabel->setText(MAPKEYLABEL_ENGLISH);
-    ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
-    ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
+    // ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
+    // ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);

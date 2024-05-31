@@ -280,6 +280,8 @@ public:
     static bool getStartupMinimizedStatus(void);
     // static bool getDisableWinKeyStatus(void);
     static int getLanguageIndex(void);
+    static bool getKeyMappingDataTableItemBurstStatus(int rowindex);
+    static bool getKeyMappingDataTableItemLockStatus(int rowindex);
     static QString getCurrentOriKeyText(void);
     static QString getCurrentOriCombinationKeyText(void);
     static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
