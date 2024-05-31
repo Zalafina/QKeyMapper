@@ -47,6 +47,13 @@ private:
 public:
     KeyListComboBox *m_OriginalKeyListComboBox;
     KeyListComboBox *m_MappingKeyListComboBox;
+private slots:
+    void on_burstpressSpinBox_editingFinished();
+    void on_burstreleaseSpinBox_editingFinished();
+    void on_burstCheckBox_stateChanged(int state);
+    void on_lockCheckBox_stateChanged(int state);
+    void on_keyupActionCheckBox_stateChanged(int state);
+    void on_passThroughCheckBox_stateChanged(int state);
 };
 
 #endif // QITEMSETUPDIALOG_H

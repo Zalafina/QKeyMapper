@@ -138,8 +138,9 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QItemSetupDialog::closeEvent]" << "Item Row initialize to -1";
 #endif
-
     m_ItemRow = -1;
+
+    emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
 
     QDialog::closeEvent(event);
 }
@@ -240,3 +241,83 @@ void QItemSetupDialog::initKeyListComboBoxes()
     m_MappingKeyListComboBox->setObjectName(SETUPDIALOG_MAPKEY_COMBOBOX_NAME);
     m_MappingKeyListComboBox->setGeometry(QRect(left, top, 142, 22));
 }
+
+void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
+{
+
+}
+
+
+void QItemSetupDialog::on_burstreleaseSpinBox_editingFinished()
+{
+
+}
+
+
+void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
+    bool burst = ui->burstCheckBox->isChecked();
+    if (burst != QKeyMapper::KeyMappingDataList.at(m_ItemRow).Burst) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].Burst = burst;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst -> " << burst;
+#endif
+    }
+}
+
+
+void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
+    bool lock = ui->lockCheckBox->isChecked();
+    if (lock != QKeyMapper::KeyMappingDataList.at(m_ItemRow).Lock) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].Lock = lock;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Lock -> " << lock;
+#endif
+    }
+}
+
+
+void QItemSetupDialog::on_keyupActionCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
+    bool keyup_action = ui->keyupActionCheckBox->isChecked();
+    if (keyup_action != QKeyMapper::KeyMappingDataList.at(m_ItemRow).KeyUp_Action) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].KeyUp_Action = keyup_action;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
+#endif
+    }
+}
+
+
+void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
+    bool passthrough = ui->passThroughCheckBox->isChecked();
+    if (passthrough != QKeyMapper::KeyMappingDataList.at(m_ItemRow).PassThrough) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].PassThrough = passthrough;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
+#endif
+    }
+}
+

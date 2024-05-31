@@ -311,6 +311,7 @@ signals:
     void updateMultiInputStatus_Signal(void);
     void updateInputDeviceSelectComboBoxes_Signal(void);
     void keyMappingTableDragDropMove_Signal(int from, int to);
+    void setupDialogClosed_Signal(void);
 
 protected:
     // bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
@@ -338,6 +339,8 @@ public slots:
     void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
 
     // void keyMappingTableCellDoubleClicked(int row, int column);
+
+    void setupDialogClosed(void);
 
 #ifdef SINGLE_APPLICATION
     void raiseQKeyMapperWindow(void);
