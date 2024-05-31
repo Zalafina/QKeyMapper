@@ -31,6 +31,9 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
+
+    ui->originalKeyUpdateButton->setVisible(false);
+    ui->mappingKeyUpdateButton->setVisible(false);
 }
 
 QItemSetupDialog::~QItemSetupDialog()
