@@ -14,3 +14,4 @@ QKeyMapper/ui_*.h
 QKeyMapper/Makefile*
 QKeyMapper/*-build-*
 QKeyMapper/build/
+QKeyMapper/out/

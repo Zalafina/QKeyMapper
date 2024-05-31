@@ -4887,6 +4887,17 @@ void QKeyMapper::showItemSetupDialog(int row)
         // int left = globalPos.x() - width - 5;
         // m_ItemSetupDialog->setGeometry(QRect(left, top, width, height));
 
+        // QRect windowGeometry = this->geometry();
+        // int x = windowGeometry.x() + (windowGeometry.width() - m_ItemSetupDialog->width()) / 2;
+        // int y = windowGeometry.y() + (windowGeometry.height() - m_ItemSetupDialog->height()) / 2;
+        // m_ItemSetupDialog->move(x, y);
+
+        QRect windowGeometry = this->geometry();
+        QRect tableGeometry = m_KeyMappingDataTable->geometry();
+        int x = windowGeometry.x() + (windowGeometry.width() - m_ItemSetupDialog->width()) / 2;
+        int y = windowGeometry.y() +  tableGeometry.y() + tableGeometry.height() + m_KeyMappingDataTable->horizontalHeader()->height();
+        m_ItemSetupDialog->move(x, y);
+
         m_ItemSetupDialog->setItemRow(row);
         m_ItemSetupDialog->show();
     }

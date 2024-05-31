@@ -147,19 +147,69 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 void QItemSetupDialog::showEvent(QShowEvent *event)
 {
     if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList.size()) {
-        MAP_KEYDATA mapping_data = QKeyMapper::KeyMappingDataList.at(m_ItemRow);
+        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList.at(m_ItemRow);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QItemSetupDialog::showEvent]" << "Load Item Mapping Data ->" << mapping_data;
+        qDebug().nospace().noquote() << "[QItemSetupDialog::showEvent]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
 #endif
 
-        QString originalkey_str = mapping_data.Original_Key;
+        /* Load Original Key String */
+        QString originalkey_str = keymapdata.Original_Key;
         if (originalkey_str.startsWith(PREFIX_SHORTCUT)) {
             originalkey_str.remove(PREFIX_SHORTCUT);
         }
         ui->originalKeyLineEdit->setText(originalkey_str);
 
-        QString mappingkeys_str = mapping_data.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        /* Load Mapping Keys String */
+        QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
         ui->mappingKeyLineEdit->setText(mappingkeys_str);
+
+        /* Load Burst */
+        if (true == keymapdata.Burst) {
+            ui->burstCheckBox->setChecked(true);
+        }
+        else {
+            ui->burstCheckBox->setChecked(false);
+        }
+
+        /* Load Burst press time */
+        if (BURST_TIME_MIN <= keymapdata.BurstPressTime && keymapdata.BurstPressTime <= BURST_TIME_MAX) {
+            ui->burstpressSpinBox->setValue(keymapdata.BurstPressTime);
+        }
+        else {
+            ui->burstpressSpinBox->setValue(BURST_PRESS_TIME_DEFAULT);
+        }
+
+        /* Load Burst release time */
+        if (BURST_TIME_MIN <= keymapdata.BurstReleaseTime && keymapdata.BurstReleaseTime <= BURST_TIME_MAX) {
+            ui->burstreleaseSpinBox->setValue(keymapdata.BurstReleaseTime);
+        }
+        else {
+            ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
+        }
+
+        /* Load Lock */
+        if (true == keymapdata.Lock) {
+            ui->lockCheckBox->setChecked(true);
+        }
+        else {
+            ui->lockCheckBox->setChecked(false);
+        }
+
+        /* Load KeyUp Action Status */
+        if (true == keymapdata.KeyUp_Action) {
+            ui->keyupActionCheckBox->setChecked(true);
+        }
+        else {
+            ui->keyupActionCheckBox->setChecked(false);
+        }
+
+        /* Load PassThrough Status */
+        if (true == keymapdata.PassThrough) {
+            ui->passThroughCheckBox->setChecked(true);
+        }
+        else {
+            ui->passThroughCheckBox->setChecked(false);
+        }
     }
 
     QDialog::showEvent(event);
