@@ -26,10 +26,10 @@
 * [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
 ---------------
 ## 使用教学视频合集请点击下方图片
-[![](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png)](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
+[<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png" width="572" height="auto"/></div>](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
 ---------------
 ## 使用中有疑问也可以加Q群咨询 (群号: 906963961)
-![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
+[<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png" width="357" height="auto"/></div>](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png)
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
 * v1.3.7(Build 20240602)
