@@ -257,6 +257,7 @@ extern const char *CLEAR_VIRTUALKEYS;
 extern const char* PROCESS_UNKNOWN;
 extern const char* DEFAULT_NAME;
 extern const char* CONFIG_FILENAME;
+extern const char *CONFIG_LATEST_FILENAME;
 #ifdef SETTINGSFILE_CONVERT
 extern const char* CONFIG_BACKUP_FILENAME;
 #endif

@@ -286,6 +286,7 @@ const char *PROCESS_UNKNOWN = "QKeyMapperUnknown";
 
 const char *DEFAULT_NAME = "ForzaHorizon4.exe";
 const char *CONFIG_FILENAME = "keymapdata.ini";
+const char *CONFIG_LATEST_FILENAME = "keymapdata_latest.ini";
 #ifdef SETTINGSFILE_CONVERT
 const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
 #endif

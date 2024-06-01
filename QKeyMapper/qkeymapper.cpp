@@ -2563,6 +2563,11 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 
 bool QKeyMapper::backupFile(const QString &originalFile, const QString &backupFile)
 {
+    QFile targetFile(backupFile);
+    if (targetFile.exists()) {
+        targetFile.remove();
+    }
+
     return QFile::copy(originalFile, backupFile);
 }
 
@@ -3149,6 +3154,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         const QString savedSettingName = saveSettingSelectStr.remove("/");
+
         loadSetting_flag = true;
         bool loadresult = loadKeyMapSetting(savedSettingName);
         Q_UNUSED(loadresult);
@@ -3165,31 +3171,42 @@ void QKeyMapper::saveKeyMapSetting(void)
                 popupMessage = "保存成功 : " + savedSettingName;
             }
             popupMessageColor = "#44bd32";
+            bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
+            if (backupRet) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << savedSettingName;
+                qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << savedSettingName;
 #endif
+            }
         }
         else {
             if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
                 popupMessage = "Save failure : " + savedSettingName;
             }
             else {
-                popupMessage = "保存失败 : " + savedSettingName;
+                popupMessage = "映射数据错误 : " + savedSettingName;
             }
             popupMessageColor = "#d63031";
 #ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[saveKeyMapSetting]" << "Save setting failure!!! ->" << savedSettingName;
+            qWarning() << "[saveKeyMapSetting]" << "Mapping data error, Save setting failure!!! ->" << savedSettingName;
 #endif
         }
         showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
     else{
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            QMessageBox::warning(this, PROGRAM_NAME, "Invalid KeyMap Data to save!");
+            popupMessage = "Mapping list length error, unable to save.";
         }
         else {
-            QMessageBox::warning(this, PROGRAM_NAME, "错误的映射数据，保存失败！");
+            popupMessage = "映射列表长度错误，无法保存";
         }
+        popupMessageColor = "#d63031";
+        showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[saveKeyMapSetting]" << "KeyMappingDataList size error!!!";
+#endif
     }
 }
 
@@ -3943,11 +3960,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 KeyMappingDataList.clear();
-                KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                // KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                // KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                // KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                // KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+                // KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
                 loadDefault = true;
             }
         }
@@ -3964,7 +3981,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     refreshKeyMappingDataTable();
 
-    if (loadGlobalSetting) {
+    if (loadGlobalSetting && loadDefault != true) {
         ui->nameLineEdit->setText(QString());
         ui->titleLineEdit->setText(QString());
         ui->nameCheckBox->setChecked(false);
@@ -4011,7 +4028,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->iconLabel->clear();
 
         if (true == loadDefault) {
-            setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
+            // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
+            ui->nameLineEdit->setText(QString());
+            ui->titleLineEdit->setText(QString());
+            ui->nameCheckBox->setChecked(false);
+            ui->titleCheckBox->setChecked(false);
+            m_MapProcessInfo = MAP_PROCESSINFO();
         }
 
         updateProcessInfoDisplay();
@@ -4049,8 +4071,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 
         if (true == loadDefault) {
-            ui->nameCheckBox->setChecked(true);
-            ui->titleCheckBox->setChecked(true);
+            ui->nameCheckBox->setChecked(false);
+            ui->titleCheckBox->setChecked(false);
         }
 
 #if 0
@@ -4262,12 +4284,23 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
 
     if (false == datavalidflag){
+        // if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+        //     QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">Load invalid keymapdata from INI file.</p><p align=\"center\">Reset to default values.</p></body></html>");
+        // }
+        // else {
+        //     QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">从INI文件加载了无效的设定数据。</p><p align=\"center\">显示默认设定。</p></body></html>");
+        // }
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">Load invalid keymapdata from INI file.</p><p align=\"center\">Reset to default values.</p></body></html>");
+            popupMessage = "Invalid mapping data : " + settingtext;
         }
         else {
-            QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">从INI文件加载了无效的设定数据。</p><p align=\"center\">显示默认设定。</p></body></html>");
+            popupMessage = "无效的映射数据 : " + settingtext;
         }
+        popupMessageColor = "#d63031";
+        showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
     else {
@@ -4300,7 +4333,8 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
 
     bool checkResult = true;
-    static QRegularExpression regexp("[+»]");
+    static QRegularExpression regexp("\\s[+»]\\s");
+    // static QRegularExpression regexp("[+»]");
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
 #else
@@ -6852,12 +6886,6 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageLabel->setFont(customFont);
     m_PopupMessageLabel->setText(message);
     m_PopupMessageLabel->adjustSize();
-
-#ifdef DEBUG_LOGOUT_ON
-    customFont = m_PopupMessageLabel->font();
-    QString fontFamily = customFont.family();
-    qDebug() << "[showPopupMessage]" << "PopupMessage font :" << fontFamily;
-#endif
 
     QRect windowGeometry = this->geometry();
     int x = windowGeometry.x() + (windowGeometry.width() - m_PopupMessageLabel->width()) / 2;
