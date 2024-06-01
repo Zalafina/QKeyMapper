@@ -285,6 +285,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
+    QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::on_keymapdataTable_itemSelectionChanged);
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
     // QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellDoubleClicked, this, &QKeyMapper::keyMappingTableCellDoubleClicked);
@@ -1920,7 +1921,10 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
        }
    }
    else if (event->key() == KEY_REMOVE_LAST) {
-       if (m_KeyMapStatus == KEYMAP_IDLE) {
+        if (m_KeyMapStatus == KEYMAP_IDLE) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[Remove_Last]" << "Backspace Key Pressed -> remove last mapping key.";
+#endif
             int currentrowindex = -1;
             QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
             if (items.size() > 0) {
@@ -4289,6 +4293,10 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     for (const QString &mousekey : qAsConst(mouseNameConvertList)){
         mappingkeystr.replace(mousekey, QKeyMapper_Worker::MouseButtonNameConvertMap.value(mousekey));
     }
+#endif
+#ifdef SEPARATOR_CONVERT
+    mappingkeystr.replace(OLD_SEPARATOR_PLUS, SEPARATOR_PLUS);
+    mappingkeystr.replace(OLD_SEPARATOR_NEXTARROW, SEPARATOR_NEXTARROW);
 #endif
 
     bool checkResult = true;

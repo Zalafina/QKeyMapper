@@ -34,11 +34,14 @@
 using QAtomicBool = QAtomicInteger<bool>;
 #endif
 
+#define OLD_SEPARATOR_PLUS      (" + ")
+#define OLD_SEPARATOR_NEXTARROW (" » ")
+
 #define SEPARATOR_PLUS          ("+")
 #define SEPARATOR_NEXTARROW     ("»")
 #define SEPARATOR_WAITTIME      ("⏱")
 #define SEPARATOR_LONGPRESS     ("⏲")
-#define SEPARATOR_DOUBLEPRESS     ("✖")
+#define SEPARATOR_DOUBLEPRESS   ("✖")
 #define SEPARATOR_TITLESETTING  ("|")
 
 // #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
