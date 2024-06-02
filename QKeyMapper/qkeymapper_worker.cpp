@@ -2698,7 +2698,7 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
             if (findindex == -1) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[QKeyMapper_Worker::timerEvent]" << "sendBurstKeyUp [" << burstKey << "] could not found in KeyMappingDataList!" ;
+                qDebug().nospace().noquote() << "[QKeyMapper_Worker::timerEvent]" << "sendBurstKeyUp [" << burstKey << "] could not found in KeyMappingDataList!";
 #endif
                 return;
             }
@@ -2709,7 +2709,7 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning("timerEvent(): Could not find TimerID(%d) in m_BurstKeyUpTimerMap!!!", timerID);
+            qWarning("[QKeyMapper_Worker::timerEvent] Could not find TimerID(%d) in m_BurstKeyUpTimerMap!!!", timerID);
 #endif
         }
     }
@@ -2732,7 +2732,7 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
             if (true == m_BurstKeyUpTimerMap.contains(burstKey)) {
                 int existTimerID = m_BurstKeyUpTimerMap.value(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("timerEvent(): Key \"%s\" BurstKeyUpTimer(%d) already started!!!", burstKey.toStdString().c_str(), existTimerID);
+                qDebug("[QKeyMapper_Worker::timerEvent] Key \"%s\" BurstKeyUpTimer(%d) already started, kill it first!", burstKey.toStdString().c_str(), existTimerID);
 #endif
                 killTimer(existTimerID);
                 m_BurstKeyUpTimerMap.remove(burstKey);
@@ -2741,16 +2741,19 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
             int burstpressTime = QKeyMapper::KeyMappingDataList.at(findindex).BurstPressTime;
             int keyupTimerID = startTimer(burstpressTime, Qt::PreciseTimer);
             m_BurstKeyUpTimerMap.insert(burstKey, keyupTimerID);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[QKeyMapper_Worker::timerEvent] Key \"%s\" Send BurstKeyUpTimer(%d), ID(%d), MappingDataIndex(%d)", burstKey.toStdString().c_str(), burstpressTime, keyupTimerID, findindex);
+#endif
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning("timerEvent(): Could not find TimerID(%d) in BurstTimerMap!!!", timerID);
+            qWarning("[QKeyMapper_Worker::timerEvent] Could not find TimerID(%d) in BurstTimerMap!!!", timerID);
 #endif
         }
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("timerEvent(): Could not find TimerID(%d) in both m_BurstKeyUpTimerMap & BurstTimerMap!!!", timerID);
+        qWarning("[QKeyMapper_Worker::timerEvent] Could not find TimerID(%d) in both m_BurstKeyUpTimerMap & BurstTimerMap!!!", timerID);
 #endif
     }
 }
@@ -3589,7 +3592,7 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
     m_BurstKeyUpTimerMap.insert(burstKey, keyupTimerID);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[startBurstTimer] Key \"%s\", Timer: %d, ID: %d, MappingDataIndex: %d", burstKey.toStdString().c_str(), burstTime, timerID, mappingIndex);
+    qDebug("[startBurstTimer] Key \"%s\", BurstTimer: %d, ID: %d, BurstUpTimer: %d, ID: %d, MappingDataIndex: %d", burstKey.toStdString().c_str(), burstTime, timerID, burstpressTime, keyupTimerID, mappingIndex);
 #endif
 }
 
