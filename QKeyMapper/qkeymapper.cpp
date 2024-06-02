@@ -3437,8 +3437,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
-        if (group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
-            || group.contains(GROUPNAME_EXECUTABLE_SUFFIX+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
+        if (group.endsWith(QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
+            || group.contains(QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
             || group.startsWith(PROCESS_UNKNOWN+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
             QString tempSettingSelectStr = group + "/";
             if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
