@@ -120,6 +120,11 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_UdpSocket(Q_NULLPTR),
     m_BurstTimerMap(),
     m_BurstKeyUpTimerMap(),
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    m_BurstTimerMutex(),
+#else
+    m_BurstTimerMutex(QMutex::Recursive),
+#endif
     m_JoystickButtonMap(),
     m_JoystickDPadMap(),
     m_JoystickLStickMap(),
@@ -2686,6 +2691,8 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
 
 void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 {
+    QMutexLocker locker(&m_BurstTimerMutex);
+
     int timerID = event->timerId();
     auto it_burst_timer_keyup = std::find(m_BurstKeyUpTimerMap.cbegin(), m_BurstKeyUpTimerMap.cend(), timerID);
     auto it_burst_timer = std::find(m_BurstTimerMap.cbegin(), m_BurstTimerMap.cend(), timerID);
@@ -2797,8 +2804,6 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #endif
 
     pressedMappingKeysMap.clear();
-    m_BurstTimerMap.clear();
-    m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
     collectExchangeKeysList();
 
@@ -2918,8 +2923,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
     pressedMappingKeysMap.clear();
-    m_BurstTimerMap.clear();
-    m_BurstKeyUpTimerMap.clear();
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
 
@@ -3563,6 +3566,8 @@ void QKeyMapper_Worker::setWorkerDInputKeyUnHook()
 
 void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingIndex)
 {
+    QMutexLocker locker(&m_BurstTimerMutex);
+
     Q_UNUSED(mappingIndex);
     if (true == m_BurstTimerMap.contains(burstKey)) {
         int existTimerID = m_BurstTimerMap.value(burstKey);
@@ -3598,6 +3603,8 @@ void QKeyMapper_Worker::startBurstTimer(const QString &burstKey, int mappingInde
 
 void QKeyMapper_Worker::stopBurstTimer(const QString &burstKey, int mappingIndex)
 {
+    QMutexLocker locker(&m_BurstTimerMutex);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[stopBurstTimer] Key [" << burstKey << "], MappingIndex =" << mappingIndex;
 #endif
@@ -8393,6 +8400,8 @@ bool QKeyMapper_Worker::isCursorAtBottomRight()
 
 void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
 {
+    QMutexLocker locker(&m_BurstTimerMutex);
+
     QList<QString> burstKeys = m_BurstTimerMap.keys();
     for (const QString &key : qAsConst(burstKeys)) {
         int timerID = m_BurstTimerMap.value(key, 0);
@@ -8419,6 +8428,7 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
         int timerID = m_BurstKeyUpTimerMap.value(key, 0);
         if (timerID > 0) {
             killTimer(timerID);
+            m_BurstKeyUpTimerMap.remove(key);
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
@@ -8430,6 +8440,9 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
     for (int index = 0; index < QKeyMapper::KeyMappingDataList.size(); index++) {
         QKeyMapper::KeyMappingDataList[index].LockStatus = false;
     }
+
+    m_BurstTimerMap.clear();
+    m_BurstKeyUpTimerMap.clear();
 }
 
 void QKeyMapper_Worker::clearAllPressedVirtualKeys()

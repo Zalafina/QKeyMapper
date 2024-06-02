@@ -737,6 +737,11 @@ private:
     QUdpSocket *m_UdpSocket;
     QHash<QString, int> m_BurstTimerMap;
     QHash<QString, int> m_BurstKeyUpTimerMap;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QRecursiveMutex m_BurstTimerMutex;
+#else
+    QMutex m_BurstTimerMutex;
+#endif
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
     QHash<JoystickDPadCode, QString> m_JoystickDPadMap;
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
