@@ -4333,8 +4333,8 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
 
     bool checkResult = true;
-    static QRegularExpression regexp("\\s[+»]\\s");
-    // static QRegularExpression regexp("[+»]");
+    // static QRegularExpression regexp("\\s[+»]\\s");
+    static QRegularExpression regexp("[+»]");
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
 #else
