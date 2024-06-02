@@ -8403,36 +8403,36 @@ void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
     QMutexLocker locker(&m_BurstTimerMutex);
 
     QList<QString> burstKeys = m_BurstTimerMap.keys();
-    for (const QString &key : qAsConst(burstKeys)) {
-        int timerID = m_BurstTimerMap.value(key, 0);
+    for (const QString &burstKey : qAsConst(burstKeys)) {
+        int timerID = m_BurstTimerMap.value(burstKey, 0);
         if (timerID > 0) {
-            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
             if (findindex >= 0) {
                 if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
-                    if (true == pressedLockKeysList.contains(key)){
+                    if (true == pressedLockKeysList.contains(burstKey)){
                         QKeyMapper::KeyMappingDataList[findindex].LockStatus = false;
-                        pressedLockKeysList.removeAll(key);
+                        pressedLockKeysList.removeAll(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("clearAllBurstTimersAndLockKeys() : Key \"%s\" KeyDown LockStatus -> OFF", key.toStdString().c_str());
+                        qDebug("clearAllBurstTimersAndLockKeys() : Key \"%s\" KeyDown LockStatus -> OFF", burstKey.toStdString().c_str());
 #endif
                     }
                 }
 
-                stopBurstTimer(key, findindex);
+                stopBurstTimer(burstKey, findindex);
             }
         }
     }
 
     QList<QString> burstKeyUpKeys = m_BurstKeyUpTimerMap.keys();
-    for (const QString &key : qAsConst(burstKeyUpKeys)) {
-        int timerID = m_BurstKeyUpTimerMap.value(key, 0);
+    for (const QString &burstKey : qAsConst(burstKeyUpKeys)) {
+        int timerID = m_BurstKeyUpTimerMap.value(burstKey, 0);
         if (timerID > 0) {
             killTimer(timerID);
-            m_BurstKeyUpTimerMap.remove(key);
+            m_BurstKeyUpTimerMap.remove(burstKey);
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qWarning("[clearAllBurstTimersAndLockKeys] Key \"%s\" could not find in m_BurstKeyUpTimerMap!!!", key.toStdString().c_str());
+            qWarning("[clearAllBurstTimersAndLockKeys] Key \"%s\" could not find in m_BurstKeyUpTimerMap!!!", burstKey.toStdString().c_str());
 #endif
         }
     }
