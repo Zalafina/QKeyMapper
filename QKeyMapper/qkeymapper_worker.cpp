@@ -8660,7 +8660,8 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
                 }
             }
 
-            stopBurstKeyTimerDirect(burstKey, findindex);
+            stopBurstKeyTimer(burstKey, findindex);
+            // stopBurstKeyTimerDirect(burstKey, findindex);
         }
     }
 
