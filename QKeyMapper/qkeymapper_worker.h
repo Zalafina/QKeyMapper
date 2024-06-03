@@ -436,10 +436,11 @@ public slots:
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
 
 public:
-    void sendBurstKeyDown(const QString &burstKey);
-    void sendBurstKeyUp(const QString &burstKey, bool stop);
-    void sendBurstKeyDown(int findindex);
-    void sendBurstKeyUp(int findindex, bool stop);
+    static void sendBurstKeyDown(const QString &burstKey);
+    static void sendBurstKeyUp(const QString &burstKey, bool stop);
+    static void sendBurstKeyDown(int findindex);
+    static void sendBurstKeyUp(int findindex, bool stop);
+    void sendBurstKeyUpDirect(int findindex, bool stop);
 #if 0
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
@@ -488,8 +489,10 @@ public:
 signals:
     void setKeyHook_Signal(HWND hWnd);
     void setKeyUnHook_Signal(void);
-    void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
-    void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+    // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+    // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
+    void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex);
+    void stopBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex);
 #if 0
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
@@ -510,8 +513,8 @@ signals:
     void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
     void doFunctionMappingProc_Signal(const QString &func_keystring);
 
-protected:
-    void timerEvent(QTimerEvent *event) override;
+// protected:
+//     void timerEvent(QTimerEvent *event) override;
 
 public slots:
     void threadStarted(void);
@@ -529,8 +532,8 @@ public slots:
     void setWorkerDInputKeyHook(HWND hWnd);
     void setWorkerDInputKeyUnHook(void);
 #endif
-    void startBurstTimer(const QString &burstKey, int mappingIndex);
-    void stopBurstTimer(const QString &burstKey, int mappingIndex);
+    // void startBurstTimer(const QString &burstKey, int mappingIndex);
+    // void stopBurstTimer(const QString &burstKey, int mappingIndex);
     // void onJoystickcountChanged(void);
     void onJoystickAdded(const QJoystickDevice *joystick_added);
     void onJoystickRemoved(const QJoystickDevice joystick_removed);
@@ -571,6 +574,9 @@ public:
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
+    static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
+    static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
+    void stopBurstKeyTimerDirect(const QString &burstKey, int mappingIndex);
 
     static void collectCombinationOriginalKeysList(void);
     static void collectLongPressOriginalKeysMap(void);
@@ -591,6 +597,8 @@ public:
 public slots:
     static void onLongPressTimeOut(const QString keycodeStringWithPressTime);
     static void onDoublePressTimeOut(const QString keycodeString);
+    static void onBurstKeyPressTimeOut(const QString burstKey, int mappingIndex);
+    static void onBurstKeyTimeOut(const QString burstKey, int mappingIndex);
 
 private:
     bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
@@ -613,6 +621,7 @@ private:
     bool isCursorAtBottomRight(void);
 #endif
     void clearAllBurstTimersAndLockKeys(void);
+    void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
@@ -665,6 +674,8 @@ public:
     static QHash<QString, QTimer*> s_longPressTimerMap;
     static QHash<QString, int> doublePressOriginalKeysMap;
     static QHash<QString, QTimer*> s_doublePressTimerMap;
+    static QHash<QString, QTimer*> s_BurstKeyTimerMap;
+    static QHash<QString, QTimer*> s_BurstKeyPressTimerMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;
@@ -677,6 +688,11 @@ public:
     static QRecursiveMutex sendinput_mutex;
 #else
     static QMutex sendinput_mutex;
+#endif
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    static QRecursiveMutex s_BurstKeyTimerMutex;
+#else
+    static QMutex s_BurstKeyTimerMutex;
 #endif
 #ifdef DINPUT_TEST
     static GetDeviceStateT FuncPtrGetDeviceState;
@@ -735,13 +751,13 @@ private:
 #endif
     QTimer m_Key2MouseCycleTimer;
     QUdpSocket *m_UdpSocket;
-    QHash<QString, int> m_BurstTimerMap;
-    QHash<QString, int> m_BurstKeyUpTimerMap;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QRecursiveMutex m_BurstTimerMutex;
-#else
-    QMutex m_BurstTimerMutex;
-#endif
+//     QHash<QString, int> m_BurstTimerMap;
+//     QHash<QString, int> m_BurstKeyUpTimerMap;
+// #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+//     QRecursiveMutex m_BurstTimerMutex;
+// #else
+//     QMutex m_BurstTimerMutex;
+// #endif
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
     QHash<JoystickDPadCode, QString> m_JoystickDPadMap;
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
