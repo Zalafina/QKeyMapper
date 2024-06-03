@@ -620,7 +620,7 @@ private:
     void initViGEmKeyMap(void);
     bool isCursorAtBottomRight(void);
 #endif
-    void clearAllBurstTimersAndLockKeys(void);
+    // void clearAllBurstTimersAndLockKeys(void);
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
     void clearAllPressedRealCombinationKeys(void);
