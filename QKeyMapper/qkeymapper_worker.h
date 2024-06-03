@@ -66,10 +66,11 @@ typedef struct MAP_KEYDATA
     bool LockStatus;
     bool PassThrough;
     bool KeyUp_Action;
+    bool KeySeqHoldDown;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), BurstPressTime(BURST_PRESS_TIME_DEFAULT), BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT), Lock(false), LockStatus(false), PassThrough(false), KeyUp_Action(false) {}
+    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), BurstPressTime(BURST_PRESS_TIME_DEFAULT), BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT), Lock(false), LockStatus(false), PassThrough(false), KeyUp_Action(false), KeySeqHoldDown(false) {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, int burstpresstime, int burstreleasetime, bool lock, bool passthrough, bool keyup_action)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, int burstpresstime, int burstreleasetime, bool lock, bool passthrough, bool keyup_action, bool keyseqholddown)
     {
         Original_Key = originalkey;
         Mapping_Keys = mappingkeys.split(SEPARATOR_NEXTARROW);
@@ -80,6 +81,7 @@ typedef struct MAP_KEYDATA
         LockStatus = false;
         PassThrough = passthrough;
         KeyUp_Action = keyup_action;
+        KeySeqHoldDown = keyseqholddown;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -91,7 +93,8 @@ typedef struct MAP_KEYDATA
                 && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
                 && (PassThrough == other.PassThrough)
-                && (KeyUp_Action == other.KeyUp_Action));
+                && (KeyUp_Action == other.KeyUp_Action)
+                && (KeySeqHoldDown == other.KeySeqHoldDown));
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -108,6 +111,7 @@ typedef struct MAP_KEYDATA
                         << ", LockStatus:" << data.LockStatus
                         << ", PassThrough:" << data.PassThrough
                         << ", KeyUp_Action:" << data.KeyUp_Action
+                        << ", KeySeqHoldDown:" << data.KeySeqHoldDown
                         << "]";
         return debug;
     }

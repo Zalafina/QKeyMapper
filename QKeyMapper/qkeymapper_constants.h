@@ -455,6 +455,7 @@ extern const char *BURSTCHECKBOX_CHINESE;
 extern const char *LOCKCHECKBOX_CHINESE;
 extern const char *KEYUPACTIONCHECKBOX_CHINESE;
 extern const char *PASSTHROUGHCHECKBOX_CHINESE;
+extern const char *KEYSEQHOLDDOWNCHECKBOX_CHINESE;
 extern const char *UPDATEBUTTON_CHINESE;
 
 /* English const Strings */
@@ -528,6 +529,7 @@ extern const char *BURSTCHECKBOX_ENGLISH;
 extern const char *LOCKCHECKBOX_ENGLISH;
 extern const char *KEYUPACTIONCHECKBOX_ENGLISH;
 extern const char *PASSTHROUGHCHECKBOX_ENGLISH;
+extern const char *KEYSEQHOLDDOWNCHECKBOX_ENGLISH;
 extern const char *UPDATEBUTTON_ENGLISH;
 
 /* constant values for QInputDeviceListWindow */

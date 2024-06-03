@@ -519,6 +519,7 @@ const char *BURSTCHECKBOX_CHINESE = "连发";
 const char *LOCKCHECKBOX_CHINESE = "锁定";
 const char *KEYUPACTIONCHECKBOX_CHINESE = "按键抬起时动作";
 const char *PASSTHROUGHCHECKBOX_CHINESE = "原始按键穿透";
+const char *KEYSEQHOLDDOWNCHECKBOX_CHINESE = "按键序列按下保持";
 const char *UPDATEBUTTON_CHINESE = "更新";
 
 /* English const Strings */
@@ -597,6 +598,7 @@ const char *BURSTCHECKBOX_ENGLISH = "Burst";
 const char *LOCKCHECKBOX_ENGLISH = "Lock";
 const char *KEYUPACTIONCHECKBOX_ENGLISH = "KeyUpAction";
 const char *PASSTHROUGHCHECKBOX_ENGLISH = "PassThrough";
+const char *KEYSEQHOLDDOWNCHECKBOX_ENGLISH = "KeySeqHoldDown";
 const char *UPDATEBUTTON_ENGLISH = "Update";
 
 /* constant values for QInputDeviceListWindow */

@@ -48,6 +48,7 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
+        ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
         ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
@@ -62,6 +63,7 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
+        ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
         ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
@@ -97,6 +99,7 @@ void QItemSetupDialog::resetFontSize()
     ui->lockCheckBox->setFont(customFont);
     ui->keyupActionCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
+    ui->keySeqHoldDownCheckBox->setFont(customFont);
     ui->burstpressLabel->setFont(customFont);
     ui->burstreleaseLabel->setFont(customFont);
     ui->originalKeyLabel->setFont(customFont);
@@ -214,6 +217,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->passThroughCheckBox->setChecked(false);
+        }
+
+        /* Load KeySequenceHoldDown Status */
+        if (true == keymapdata.PassThrough) {
+            ui->keySeqHoldDownCheckBox->setChecked(true);
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setChecked(false);
         }
 
         ui->burstpressSpinBox->setFocus();

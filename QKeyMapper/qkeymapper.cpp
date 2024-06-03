@@ -3628,7 +3628,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                         && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex)));
+                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), false));
                     }
                     else{
                         global_datavalid = false;
@@ -3937,7 +3937,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                             && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex)));
+                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), false));
                     }
                     else{
                         datavalidflag = false;
@@ -7491,7 +7491,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
 
-            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.BurstPressTime, keymapdata.BurstReleaseTime, keymapdata.Lock, keymapdata.PassThrough, keymapdata.KeyUp_Action));
+            KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.BurstPressTime, keymapdata.BurstReleaseTime, keymapdata.Lock, keymapdata.PassThrough, keymapdata.KeyUp_Action, keymapdata.KeySeqHoldDown));
         }
         else {
             if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
@@ -7556,7 +7556,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
 
-            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
+            KeyMappingDataList.append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false, false));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
 #endif
