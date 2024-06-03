@@ -101,6 +101,7 @@ extern const int KEY_INTERCEPT_PASSTHROUGH;
 
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
+extern const int SENDMODE_KEYSEQ_HOLDDOWN;
 
 extern const int MOUSE_WHEEL_UP;
 extern const int MOUSE_WHEEL_DOWN;
@@ -253,6 +254,7 @@ extern const char *PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;
 extern const char *KEYBOARD_MODIFIERS;
 extern const char *KEYSEQUENCE_STR;
+extern const char *HOLDDOWN_STR;
 extern const char *CLEAR_VIRTUALKEYS;
 extern const char* PROCESS_UNKNOWN;
 extern const char* DEFAULT_NAME;

@@ -54,6 +54,7 @@ private slots:
     void on_lockCheckBox_stateChanged(int state);
     void on_keyupActionCheckBox_stateChanged(int state);
     void on_passThroughCheckBox_stateChanged(int state);
+    void on_keySeqHoldDownCheckBox_stateChanged(int state);
 };
 
 #endif // QITEMSETUPDIALOG_H

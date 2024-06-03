@@ -220,7 +220,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
 
         /* Load KeySequenceHoldDown Status */
-        if (true == keymapdata.PassThrough) {
+        if (true == keymapdata.KeySeqHoldDown) {
             ui->keySeqHoldDownCheckBox->setChecked(true);
         }
         else {
@@ -387,3 +387,19 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
     }
 }
 
+
+void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
+    bool keyseqholddown = ui->keySeqHoldDownCheckBox->isChecked();
+    if (keyseqholddown != QKeyMapper::KeyMappingDataList.at(m_ItemRow).KeySeqHoldDown) {
+        QKeyMapper::KeyMappingDataList[m_ItemRow].KeySeqHoldDown = keyseqholddown;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
+#endif
+    }
+}

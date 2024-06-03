@@ -634,7 +634,7 @@ public:
 #if 0
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 #endif
-    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key);
+    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode);
 
 public:
     static bool s_isWorkerDestructing;

@@ -120,8 +120,9 @@ const int KEY_INTERCEPT_NONE            = 0;
 const int KEY_INTERCEPT_BLOCK           = 1;
 const int KEY_INTERCEPT_PASSTHROUGH     = 2;
 
-const int SENDMODE_NORMAL        = 1;
-const int SENDMODE_FORCE_STOP    = 2;
+const int SENDMODE_NORMAL           = 1;
+const int SENDMODE_FORCE_STOP       = 2;
+const int SENDMODE_KEYSEQ_HOLDDOWN  = 3;
 
 const int MOUSE_WHEEL_UP = 1;
 const int MOUSE_WHEEL_DOWN = 2;
@@ -280,6 +281,7 @@ const char *JOIN_DEVICE     = "##";
 
 const char *KEYBOARD_MODIFIERS  = "KeyboardModifiers";
 const char *KEYSEQUENCE_STR     = "KeySequence";
+const char *HOLDDOWN_STR        = "HoldDown";
 const char *CLEAR_VIRTUALKEYS   = "ClearVirtualKeys";
 
 const char *PROCESS_UNKNOWN = "QKeyMapperUnknown";
