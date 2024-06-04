@@ -294,6 +294,7 @@ extern const char* KEYMAPDATA_BURST;
 extern const char* KEYMAPDATA_LOCK;
 extern const char *KEYMAPDATA_PASSTHROUGH;
 extern const char *KEYMAPDATA_KEYUP_ACTION;
+extern const char *KEYMAPDATA_KEYSEQHOLDDOWN;
 extern const char* KEYMAPDATA_BURSTPRESS_TIME;
 extern const char* KEYMAPDATA_BURSTRELEASE_TIME;
 extern const char* KEY2MOUSE_X_SPEED;

@@ -206,9 +206,11 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         /* Load KeyUp Action Status */
         if (true == keymapdata.KeyUp_Action) {
             ui->keyupActionCheckBox->setChecked(true);
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
         }
         else {
             ui->keyupActionCheckBox->setChecked(false);
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
         }
 
         /* Load PassThrough Status */
@@ -227,8 +229,8 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->keySeqHoldDownCheckBox->setChecked(false);
         }
 
-        ui->burstpressSpinBox->setFocus();
-        ui->burstpressSpinBox->clearFocus();
+        ui->originalKeyLineEdit->setFocus();
+        ui->originalKeyLineEdit->clearFocus();
 
         bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
         bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
@@ -367,6 +369,14 @@ void QItemSetupDialog::on_keyupActionCheckBox_stateChanged(int state)
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
 #endif
+
+        /* Update KeySeqHoldDown Status */
+        if (true == keyup_action) {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
+        }
     }
 }
 

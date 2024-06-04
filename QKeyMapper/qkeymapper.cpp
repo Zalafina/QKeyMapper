@@ -2836,6 +2836,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QStringList passthroughList;
         QStringList keyup_actionList;
+        QStringList keyseqholddownList;
         // int burstpressTime = ui->burstpressSpinBox->value();
         // int burstreleaseTime = ui->burstreleaseSpinBox->value();
         int key2mouse_XSpeed = ui->mouseXSpeedSpinBox->value();
@@ -3038,6 +3039,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     keyup_actionList.append("OFF");
                 }
+                if (true == keymapdata.KeySeqHoldDown) {
+                    keyseqholddownList.append("ON");
+                }
+                else {
+                    keyseqholddownList.append("OFF");
+                }
             }
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList );
@@ -3047,6 +3054,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3065,6 +3073,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList  );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
+            settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3487,12 +3496,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList lockStringList;
         QStringList passthroughStringList;
         QStringList keyup_actionStringList;
+        QStringList keyseqholddownStringList;
         QList<bool> burstList;
         QList<int> burstpresstimeList;
         QList<int> burstreleasetimeList;
         QList<bool> lockList;
         QList<bool> passthroughList;
         QList<bool> keyup_actionList;
+        QList<bool> keyseqholddownList;
         QList<MAP_KEYDATA> loadkeymapdata;
         bool global_datavalid = false;
 
@@ -3515,6 +3526,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             lockStringList          = stringListAllOFF;
             passthroughStringList   = stringListAllOFF;
             keyup_actionStringList  = stringListAllOFF;
+            keyseqholddownStringList  = stringListAllOFF;
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
             }
@@ -3532,6 +3544,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_KEYUP_ACTION)) {
                 keyup_actionStringList = settingFile.value(settingSelectStr+KEYMAPDATA_KEYUP_ACTION).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN)) {
+                keyseqholddownStringList = settingFile.value(settingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN).toStringList();
             }
 
             if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -3593,6 +3608,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                 }
 
+                for (int i = 0; i < original_keys.size(); i++) {
+                    const QString &keyseqholddown = (i < keyseqholddownStringList.size()) ? keyseqholddownStringList.at(i) : "OFF";
+                    if (keyseqholddown == "ON") {
+                        keyseqholddownList.append(true);
+                    } else {
+                        keyseqholddownList.append(false);
+                    }
+                }
+
                 int loadindex = 0;
                 static QRegularExpression reg("@[0-9]$");
                 for (const QString &ori_key_nochange : qAsConst(original_keys)){
@@ -3628,7 +3652,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                         && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), false));
+                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
                     }
                     else{
                         global_datavalid = false;
@@ -3797,12 +3821,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList lockStringList;
         QStringList passthroughStringList;
         QStringList keyup_actionStringList;
+        QStringList keyseqholddownStringList;
         QList<bool> burstList;
         QList<int> burstpresstimeList;
         QList<int> burstreleasetimeList;
         QList<bool> lockList;
         QList<bool> passthroughList;
         QList<bool> keyup_actionList;
+        QList<bool> keyseqholddownList;
         QList<MAP_KEYDATA> loadkeymapdata;
 
         if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
@@ -3825,6 +3851,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             lockStringList          = stringListAllOFF;
             passthroughStringList   = stringListAllOFF;
             keyup_actionStringList   = stringListAllOFF;
+            keyseqholddownStringList = stringListAllOFF;
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstStringList = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toStringList();
             }
@@ -3842,6 +3869,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_KEYUP_ACTION)) {
                 keyup_actionStringList = settingFile.value(settingSelectStr+KEYMAPDATA_KEYUP_ACTION).toStringList();
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN)) {
+                keyseqholddownStringList = settingFile.value(settingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN).toStringList();
             }
 
             if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -3903,6 +3933,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                 }
 
+                for (int i = 0; i < original_keys.size(); i++) {
+                    const QString &keyseqholddown = (i < keyseqholddownStringList.size()) ? keyseqholddownStringList.at(i) : "OFF";
+                    if (keyseqholddown == "ON") {
+                        keyseqholddownList.append(true);
+                    } else {
+                        keyseqholddownList.append(false);
+                    }
+                }
+
                 int loadindex = 0;
                 static QRegularExpression reg("@[0-9]$");
                 for (const QString &ori_key_nochange : qAsConst(original_keys)){
@@ -3937,7 +3976,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
                             && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), false));
+                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
                     }
                     else{
                         datavalidflag = false;
