@@ -717,17 +717,33 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             QRegularExpressionMatch match = regex.match(original_key);
             if (match.hasMatch()) {
                 QString original_key_holddown = match.captured(1);
-                if (pressedRealKeysList.contains(original_key_holddown)) {
+                if (original_key_holddown.contains('@')) {
+                    if (pressedRealKeysList.contains(original_key_holddown)) {
 #ifdef DEBUG_LOGOUT_ON
-                    /* \033[1;34m (Blue Bold Text) \033[0m */
-                    /* \033[34m (Blue Text) */
-                    /* \033[31m (Red Text) */
-                    /* \033[32m (Green Text) */
-                    qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
+                        /* \033[1;34m (Blue Bold Text) \033[0m */
+                        /* \033[34m (Blue Text) */
+                        /* \033[31m (Red Text) */
+                        /* \033[32m (Green Text) */
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] MultiInput KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
 #endif
-                    /* return for KeySequenceHoldDown to skip KeyUp of last mappingkey. */
-                    return;
+                        /* return for KeySequenceHoldDown to skip KeyUp of last mappingkey. */
+                        return;
+                    }
                 }
+                else {
+                    if (pressedRealKeysListRemoveMultiInput.contains(original_key_holddown)) {
+#ifdef DEBUG_LOGOUT_ON
+                        /* \033[1;34m (Blue Bold Text) \033[0m */
+                        /* \033[34m (Blue Text) */
+                        /* \033[31m (Red Text) */
+                        /* \033[32m (Green Text) */
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
+#endif
+                        /* return for KeySequenceHoldDown to skip KeyUp of last mappingkey. */
+                        return;
+                    }
+                }
+
             }
         }
         /* Add for KeySequenceHoldDown <<< */
