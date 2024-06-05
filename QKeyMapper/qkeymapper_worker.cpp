@@ -1176,8 +1176,8 @@ void QKeyMapper_Worker::sendBurstKeyDown(const QString &burstKey)
     if (findindex >=0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-        // sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        // emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
     }
 }
 
@@ -1192,8 +1192,8 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
         if (true == stop) {
             sendmode = SENDMODE_FORCE_STOP;
         }
-        // sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, sendmode);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
+        // emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, sendmode);
     }
 }
 
@@ -1202,8 +1202,8 @@ void QKeyMapper_Worker::sendBurstKeyDown(int findindex)
     if (findindex >= 0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-        // sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        // emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
     }
 }
 
@@ -1216,8 +1216,8 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
         if (true == stop) {
             sendmode = SENDMODE_FORCE_STOP;
         }
-        // sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
-        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, sendmode);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode);
+        // emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, sendmode);
     }
 }
 
@@ -7244,10 +7244,13 @@ void QKeyMapper_Worker::clearLongPressTimer(const QString &keycodeString)
         return;
     }
 
+    QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
     QStringList removeKeys;
     QStringList longpressKeys = s_longPressTimerMap.keys();
     for (const QString &key : longpressKeys) {
-        if (key.contains(keycodeString)) {
+        QString keyWithoutTime = key.split(SEPARATOR_LONGPRESS).first();
+        if (keyWithoutTime == keycodeString
+            || keyWithoutTime == keycodeString_RemoveMultiInput) {
             QTimer *timer = s_longPressTimerMap.value(key);
             timer->stop();
             delete timer;
