@@ -1844,7 +1844,7 @@ void QKeyMapper::changeEvent(QEvent *event)
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == KEY_REFRESH) {
+    if (event->key() == KEY_REFRESH) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
 #endif
@@ -1859,9 +1859,9 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         // m_deviceListWindow->updateDeviceListInfo();
         initInputDeviceSelectComboBoxes();
         return;
-   }
-   else if (event->key() == KEY_PASSTHROUGH) {
-       if (m_KeyMapStatus == KEYMAP_IDLE){
+    }
+    else if (event->key() == KEY_PASSTHROUGH) {
+        if (m_KeyMapStatus == KEYMAP_IDLE){
             int currentrowindex = -1;
             QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
             if (items.size() > 0) {
@@ -1888,10 +1888,10 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
                 qDebug() << "[PassThroughStatus]" << "F12 Key Pressed -> There is no selected mapping data";
 #endif
             }
-       }
-   }
-   else if (event->key() == KEY_KEYUP_ACTION) {
-       if (m_KeyMapStatus == KEYMAP_IDLE){
+        }
+    }
+    else if (event->key() == KEY_KEYUP_ACTION) {
+        if (m_KeyMapStatus == KEYMAP_IDLE){
             int currentrowindex = -1;
             QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
             if (items.size() > 0) {
@@ -1918,9 +1918,9 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
                 qDebug() << "[KeyUp_ActionStatus]" << "F2 Key Pressed -> There is no selected mapping data";
 #endif
             }
-       }
-   }
-   else if (event->key() == KEY_REMOVE_LAST) {
+        }
+    }
+    else if (event->key() == KEY_REMOVE_LAST) {
         if (m_KeyMapStatus == KEYMAP_IDLE) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[Remove_Last]" << "Backspace Key Pressed -> remove last mapping key.";
@@ -1983,13 +1983,13 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
                 qDebug() << "[Remove_Last]" << "Backspace Key Pressed -> There is no selected mapping data";
 #endif
             }
-       }
-   }
-   else if (event->key() == Qt::Key_Escape) {
+        }
+    }
+    else if (event->key() == Qt::Key_Escape) {
        return;
-   }
+    }
 
-   QDialog::keyPressEvent(event);
+    QDialog::keyPressEvent(event);
 }
 
 void QKeyMapper::on_keymapButton_clicked()
