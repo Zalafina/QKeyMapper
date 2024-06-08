@@ -70,6 +70,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         QWidget *tabPage = ui->settingTabWidget->widget(tabindex);
         tabPage->setStyle(fusionStyle);
     }
+    ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->mapping));
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
