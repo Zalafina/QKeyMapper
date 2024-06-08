@@ -59,9 +59,20 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_instance = this;
     ui->setupUi(this);
-    QStyle* defaultStyle = QStyleFactory::create("windows");
-    ui->virtualgamepadGroupBox->setStyle(defaultStyle);
-    ui->multiInputGroupBox->setStyle(defaultStyle);
+
+    QStyle* windowsStyle = QStyleFactory::create("windows");
+    QStyle* fusionStyle = QStyleFactory::create("Fusion");
+
+    ui->settingTabWidget->setStyle(windowsStyle);
+
+    // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
+    for (int tabindex = 0; tabindex < ui->settingTabWidget->count(); ++tabindex) {
+        QWidget *tabPage = ui->settingTabWidget->widget(tabindex);
+        tabPage->setStyle(fusionStyle);
+    }
+    // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
+    // ui->multiInputGroupBox->setStyle(defaultStyle);
+
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
 #endif
@@ -4546,6 +4557,7 @@ void QKeyMapper::setControlFontEnglish()
     // else {
     //     customFont.setPointSize(8);
     // }
+    ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -4555,8 +4567,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
-    ui->virtualgamepadGroupBox->setFont(customFont);
-    ui->multiInputGroupBox->setFont(customFont);
+    // ui->virtualgamepadGroupBox->setFont(customFont);
+    // ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
     ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
@@ -4647,6 +4659,7 @@ void QKeyMapper::setControlFontChinese()
     // else {
     //     customFont.setPointSize(8);
     // }
+    ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->mappingswitchkeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -4656,8 +4669,8 @@ void QKeyMapper::setControlFontChinese()
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
-    ui->virtualgamepadGroupBox->setFont(customFont);
-    ui->multiInputGroupBox->setFont(customFont);
+    // ui->virtualgamepadGroupBox->setFont(customFont);
+    // ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
     ui->multiInputDeviceListButton->setFont(customFont);
     ui->multiInputStatusLabel->setFont(customFont);
@@ -4770,13 +4783,15 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
 
+    ui->settingTabWidget->setEnabled(status);
+
 #ifdef VIGEM_CLIENT_SUPPORT
     if (false == status) {
         ui->enableVirtualJoystickCheckBox->setEnabled(status);
     }
     ui->installViGEmBusButton->setEnabled(status);
     // ui->uninstallViGEmBusButton->setEnabled(status);
-    ui->virtualgamepadGroupBox->setEnabled(status);
+    // ui->virtualgamepadGroupBox->setEnabled(status);
 
     if (false == status || ui->enableVirtualJoystickCheckBox->isChecked()) {
         ui->vJoyXSensLabel->setEnabled(status);
@@ -4790,7 +4805,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 #endif
 
     ui->installInterceptionButton->setEnabled(status);
-    ui->multiInputGroupBox->setEnabled(status);
+    // ui->multiInputGroupBox->setEnabled(status);
     if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
         ui->multiInputEnableCheckBox->setEnabled(status);
         ui->multiInputDeviceListButton->setEnabled(status);
@@ -6623,8 +6638,16 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
+
+    QTabWidget *tabWidget = ui->settingTabWidget;
+    tabWidget->setTabText(tabWidget->indexOf(ui->general),          SETTINGTAB_GENERAL_CHINESE      );
+    tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          SETTINGTAB_MAPPING_CHINESE      );
+    tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  SETTINGTAB_VGAMEPAD_CHINESE     );
+    tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      SETTINGTAB_MULTIINPUT_CHINESE   );
+    tabWidget->setTabText(tabWidget->indexOf(ui->forza),            SETTINGTAB_FORZA_CHINESE        );
+
 #ifdef VIGEM_CLIENT_SUPPORT
-    ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
+    // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
@@ -6639,7 +6662,7 @@ void QKeyMapper::setUILanguage_Chinese()
 #endif
     ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
-    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
     ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
     ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_CHINESE);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
@@ -6712,8 +6735,16 @@ void QKeyMapper::setUILanguage_English()
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
+
+    QTabWidget *tabWidget = ui->settingTabWidget;
+    tabWidget->setTabText(tabWidget->indexOf(ui->general),          SETTINGTAB_GENERAL_ENGLISH      );
+    tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          SETTINGTAB_MAPPING_ENGLISH      );
+    tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  SETTINGTAB_VGAMEPAD_ENGLISH     );
+    tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      SETTINGTAB_MULTIINPUT_ENGLISH   );
+    tabWidget->setTabText(tabWidget->indexOf(ui->forza),            SETTINGTAB_FORZA_ENGLISH        );
+
 #ifdef VIGEM_CLIENT_SUPPORT
-    ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_ENGLISH);
+    // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_ENGLISH);
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_ENGLISH);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
@@ -6728,7 +6759,7 @@ void QKeyMapper::setUILanguage_English()
 #endif
     ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_ENGLISH);
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_ENGLISH);
-    ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
+    // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
     ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_ENGLISH);
     ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_ENGLISH);
     ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_ENGLISH);

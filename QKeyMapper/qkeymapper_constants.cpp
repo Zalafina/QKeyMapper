@@ -524,6 +524,11 @@ const char *KEYUPACTIONCHECKBOX_CHINESE = "按键抬起时动作";
 const char *PASSTHROUGHCHECKBOX_CHINESE = "原始按键穿透";
 const char *KEYSEQHOLDDOWNCHECKBOX_CHINESE = "按键序列按下保持";
 const char *UPDATEBUTTON_CHINESE = "更新";
+const char *SETTINGTAB_GENERAL_CHINESE = "通用";
+const char *SETTINGTAB_MAPPING_CHINESE = "映射设定";
+const char *SETTINGTAB_VGAMEPAD_CHINESE = "虚拟游戏手柄";
+const char *SETTINGTAB_MULTIINPUT_CHINESE = "多输入设备";
+const char *SETTINGTAB_FORZA_CHINESE = "极限竞速";
 
 /* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -555,8 +560,8 @@ const char *MOUSEYSPEEDLABEL_ENGLISH = "Y Speed";
 const char *REMOVESETTINGBUTTON_ENGLISH = "Remove";
 // const char *DISABLEWINKEYCHECKBOX_ENGLISH = "Disable WIN";
 const char *DATAPORTLABEL_ENGLISH = "DataPort";
-const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeThreshold";
-const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelThreshold";
+const char *BRAKETHRESHOLDLABEL_ENGLISH = "BrakeValue";
+const char *ACCELTHRESHOLDLABEL_ENGLISH = "AccelValue";
 const char *AUTOSTARTMAPPINGCHECKBOX_ENGLISH = "Auto Match Foreground";
 const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 const char *STARTUPMINIMIZEDCHECKBOX_ENGLISH = "Startup Minimized";
@@ -572,8 +577,8 @@ const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
 const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
 #ifdef VIGEM_CLIENT_SUPPORT
 const char *VIRTUALGAMEPADGROUPBOX_ENGLISH = "Virtual Gamepad";
-const char *VJOYXSENSLABEL_ENGLISH = "X Sensitivity";
-const char *VJOYYSENSLABEL_ENGLISH = "Y Sensitivity";
+const char *VJOYXSENSLABEL_ENGLISH = "X Sens";
+const char *VJOYYSENSLABEL_ENGLISH = "Y Sens";
 const char *VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH = "ViGEmUnavailable";
 const char *VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH = "ViGEmAvailable";
 const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "InstallViGEm";
@@ -603,6 +608,11 @@ const char *KEYUPACTIONCHECKBOX_ENGLISH = "KeyUpAction";
 const char *PASSTHROUGHCHECKBOX_ENGLISH = "PassThrough";
 const char *KEYSEQHOLDDOWNCHECKBOX_ENGLISH = "KeySeqHoldDown";
 const char *UPDATEBUTTON_ENGLISH = "Update";
+const char *SETTINGTAB_GENERAL_ENGLISH = "General";
+const char *SETTINGTAB_MAPPING_ENGLISH = "Mapping";
+const char *SETTINGTAB_VGAMEPAD_ENGLISH = "V-Gamepad";
+const char *SETTINGTAB_MULTIINPUT_ENGLISH = "Multi-Input";
+const char *SETTINGTAB_FORZA_ENGLISH = "Forza";
 
 /* constant values for QInputDeviceListWindow */
 const int DEVICE_TABLE_NUMBER_COLUMN         = 0;

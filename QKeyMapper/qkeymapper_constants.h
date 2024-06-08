@@ -460,6 +460,11 @@ extern const char *KEYUPACTIONCHECKBOX_CHINESE;
 extern const char *PASSTHROUGHCHECKBOX_CHINESE;
 extern const char *KEYSEQHOLDDOWNCHECKBOX_CHINESE;
 extern const char *UPDATEBUTTON_CHINESE;
+extern const char *SETTINGTAB_GENERAL_CHINESE;
+extern const char *SETTINGTAB_MAPPING_CHINESE;
+extern const char *SETTINGTAB_VGAMEPAD_CHINESE;
+extern const char *SETTINGTAB_MULTIINPUT_CHINESE;
+extern const char *SETTINGTAB_FORZA_CHINESE;
 
 /* English const Strings */
 extern const char* REFRESHBUTTON_ENGLISH;
@@ -534,6 +539,11 @@ extern const char *KEYUPACTIONCHECKBOX_ENGLISH;
 extern const char *PASSTHROUGHCHECKBOX_ENGLISH;
 extern const char *KEYSEQHOLDDOWNCHECKBOX_ENGLISH;
 extern const char *UPDATEBUTTON_ENGLISH;
+extern const char *SETTINGTAB_GENERAL_ENGLISH;
+extern const char *SETTINGTAB_MAPPING_ENGLISH;
+extern const char *SETTINGTAB_VGAMEPAD_ENGLISH;
+extern const char *SETTINGTAB_MULTIINPUT_ENGLISH;
+extern const char *SETTINGTAB_FORZA_ENGLISH;
 
 /* constant values for QInputDeviceListWindow */
 extern const int DEVICE_TABLE_NUMBER_COLUMN;
