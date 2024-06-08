@@ -17,8 +17,6 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 
     initKeyListComboBoxes();
 
-    ui->originalKeyLineEdit->setReadOnly(true);
-    ui->mappingKeyLineEdit->setReadOnly(true);
     ui->originalKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->mappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
@@ -32,8 +30,10 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
 
-    ui->originalKeyUpdateButton->setVisible(false);
-    ui->mappingKeyUpdateButton->setVisible(false);
+    // ui->originalKeyLineEdit->setReadOnly(true);
+    // ui->mappingKeyLineEdit->setReadOnly(true);
+    // ui->originalKeyUpdateButton->setVisible(false);
+    // ui->mappingKeyUpdateButton->setVisible(false);
 }
 
 QItemSetupDialog::~QItemSetupDialog()
@@ -137,6 +137,16 @@ QString QItemSetupDialog::getMappingKeyText()
 void QItemSetupDialog::setMappingKeyText(const QString &new_keytext)
 {
     return getInstance()->ui->mappingKeyLineEdit->setText(new_keytext);
+}
+
+QString QItemSetupDialog::getCurrentOriKeyListText()
+{
+    return getInstance()->m_OriginalKeyListComboBox->currentText();
+}
+
+QString QItemSetupDialog::getCurrentMapKeyListText()
+{
+    return getInstance()->m_MappingKeyListComboBox->currentText();
 }
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)
@@ -272,7 +282,9 @@ void QItemSetupDialog::initKeyListComboBoxes()
         m_OriginalKeyListComboBox->addItem(text);
     }
 
-    for(int i = 0; i < mapkeyComboBox->count(); i++) {
+    m_MappingKeyListComboBox->addItem(QString());
+    m_MappingKeyListComboBox->addItem(SEPARATOR_WAITTIME);
+    for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QString text = mapkeyComboBox->itemText(i);
         m_MappingKeyListComboBox->addItem(text);
     }
@@ -280,12 +292,12 @@ void QItemSetupDialog::initKeyListComboBoxes()
     int left = ui->orikeyListLabel->x() + ui->orikeyListLabel->width() + 5;
     int top = ui->orikeyListLabel->y();
     m_OriginalKeyListComboBox->setObjectName(SETUPDIALOG_ORIKEY_COMBOBOX_NAME);
-    m_OriginalKeyListComboBox->setGeometry(QRect(left, top, 142, 22));
+    m_OriginalKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
 
     left = ui->mapkeyListLabel->x() + ui->mapkeyListLabel->width() + 5;
     top = ui->mapkeyListLabel->y();
     m_MappingKeyListComboBox->setObjectName(SETUPDIALOG_MAPKEY_COMBOBOX_NAME);
-    m_MappingKeyListComboBox->setGeometry(QRect(left, top, 142, 22));
+    m_MappingKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
 }
 
 void QItemSetupDialog::on_burstpressSpinBox_editingFinished()

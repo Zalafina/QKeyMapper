@@ -31,6 +31,8 @@ public:
     static void setOriginalKeyText(const QString &new_keytext);
     static QString getMappingKeyText(void);
     static void setMappingKeyText(const QString &new_keytext);
+    static QString getCurrentOriKeyListText(void);
+    static QString getCurrentMapKeyListText(void);
 
 protected:
     void closeEvent(QCloseEvent *event) override;

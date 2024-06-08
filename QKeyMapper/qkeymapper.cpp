@@ -7744,7 +7744,9 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
     else if (VK_CONTROL == vkeycode.KeyCode){
         if (QT_KEY_L_CTRL == (keyevent->nativeModifiers() & QT_KEY_L_CTRL)){
-            keycodeString = QString("L-Ctrl");
+            if (objectName() != SETUPDIALOG_MAPKEY_COMBOBOX_NAME) {
+                keycodeString = QString("L-Ctrl");
+            }
         }
         else if (QT_KEY_R_CTRL == (keyevent->nativeModifiers() & QT_KEY_R_CTRL)){
             keycodeString = QString("R-Ctrl");
@@ -7800,6 +7802,57 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                 QKeyMapper::getInstance()->setCurrentOriCombinationKeyText(newCombinationKeyText);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[KeyListComboBox_MousePress]" << "Set new CombinationKeyText ->" << newCombinationKeyText;
+#endif
+            }
+        }
+    }
+    else if (objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME) {
+        if (event->button() == Qt::RightButton) {
+            QString currentOriKeyText = QItemSetupDialog::getOriginalKeyText();
+            QString currentOriKeyListText = QItemSetupDialog::getCurrentOriKeyListText();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeyListComboBox_MousePress]" << "Mouse Right Click on SetupDialog_OriginalKeyListComboBox.";
+            qDebug().nospace() << "[KeyListComboBox_MousePress]" << " currentOriKeyText -> " << currentOriKeyText << ", currentOriKeyListText -> " << currentOriKeyListText;
+#endif
+            if (currentOriKeyListText.isEmpty() == false) {
+                QString newOriKeyText;
+                if (currentOriKeyText.isEmpty()) {
+                    newOriKeyText = currentOriKeyListText;
+                }
+                else {
+                    newOriKeyText = currentOriKeyText + QString("+") + currentOriKeyListText;
+                }
+                QItemSetupDialog::getInstance()->setOriginalKeyText(newOriKeyText);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new OriginalKeyText ->" << newOriKeyText;
+#endif
+            }
+        }
+    }
+    else if (objectName() == SETUPDIALOG_MAPKEY_COMBOBOX_NAME) {
+        if (event->button() == Qt::RightButton) {
+            QString currentMapKeyText = QItemSetupDialog::getMappingKeyText();
+            QString currentMapKeyListText = QItemSetupDialog::getCurrentMapKeyListText();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeyListComboBox_MousePress]" << "Mouse Right Click on SetupDialog_MappingKeyListComboBox.";
+            qDebug().nospace() << "[KeyListComboBox_MousePress]" << " currentMapKeyText -> " << currentMapKeyText << ", currentMapKeyListText -> " << currentMapKeyListText;
+#endif
+            if (currentMapKeyListText.isEmpty() == false) {
+                QString newMapKeyText;
+                if (currentMapKeyText.isEmpty()) {
+                    newMapKeyText = currentMapKeyListText;
+                }
+                else {
+                    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                        newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                    }
+                    else {
+                        newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
+                    }
+                }
+                QItemSetupDialog::getInstance()->setMappingKeyText(newMapKeyText);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new MappingKeyText ->" << newMapKeyText;
 #endif
             }
         }
