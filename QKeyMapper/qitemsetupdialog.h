@@ -28,8 +28,10 @@ public:
 
 public:
     static QString getOriginalKeyText(void);
+    static int getOriginalKeyCursorPosition(void);
     static void setOriginalKeyText(const QString &new_keytext);
     static QString getMappingKeyText(void);
+    static int getMappingKeyCursorPosition(void);
     static void setMappingKeyText(const QString &new_keytext);
     static QString getCurrentOriKeyListText(void);
     static QString getCurrentMapKeyListText(void);

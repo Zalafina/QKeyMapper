@@ -7969,7 +7969,15 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     newOriKeyText = currentOriKeyListText;
                 }
                 else {
-                    newOriKeyText = currentOriKeyText + QString("+") + currentOriKeyListText;
+                    int cursorPos = QItemSetupDialog::getOriginalKeyCursorPosition();
+                    bool isCursorAtEnd = (cursorPos == currentOriKeyText.length());
+
+                    if (isCursorAtEnd) {
+                        newOriKeyText = currentOriKeyText + QString(SEPARATOR_PLUS) + currentOriKeyListText;
+                    }
+                    else {
+                        newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
+                    }
                 }
                 QItemSetupDialog::getInstance()->setOriginalKeyText(newOriKeyText);
 #ifdef DEBUG_LOGOUT_ON
@@ -7992,11 +8000,19 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     newMapKeyText = currentMapKeyListText;
                 }
                 else {
+                    int cursorPos = QItemSetupDialog::getMappingKeyCursorPosition();
+                    bool isCursorAtEnd = (cursorPos == currentMapKeyText.length());
+
                     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
                         newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
                     }
                     else {
-                        newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
+                        if (isCursorAtEnd) {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                        }
                     }
                 }
                 QItemSetupDialog::getInstance()->setMappingKeyText(newMapKeyText);

@@ -126,6 +126,11 @@ QString QItemSetupDialog::getOriginalKeyText()
     return getInstance()->ui->originalKeyLineEdit->text();
 }
 
+int QItemSetupDialog::getOriginalKeyCursorPosition()
+{
+    return getInstance()->ui->originalKeyLineEdit->cursorPosition();
+}
+
 void QItemSetupDialog::setOriginalKeyText(const QString &new_keytext)
 {
     return getInstance()->ui->originalKeyLineEdit->setText(new_keytext);
@@ -134,6 +139,11 @@ void QItemSetupDialog::setOriginalKeyText(const QString &new_keytext)
 QString QItemSetupDialog::getMappingKeyText()
 {
     return getInstance()->ui->mappingKeyLineEdit->text();
+}
+
+int QItemSetupDialog::getMappingKeyCursorPosition()
+{
+    return getInstance()->ui->mappingKeyLineEdit->cursorPosition();
 }
 
 void QItemSetupDialog::setMappingKeyText(const QString &new_keytext)
