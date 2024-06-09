@@ -4,6 +4,8 @@
 #include "qkeymapper_constants.h"
 
 QItemSetupDialog *QItemSetupDialog::m_instance = Q_NULLPTR;
+QStringList QItemSetupDialog::s_valiedOriginalKeyList;
+QStringList QItemSetupDialog::s_valiedMappingKeyList;
 
 QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     : QDialog(parent)
@@ -277,9 +279,13 @@ void QItemSetupDialog::initKeyListComboBoxes()
     KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
     KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
 
-    for(int i = 0; i < orikeyComboBox->count(); i++) {
+    m_OriginalKeyListComboBox->addItem(QString());
+    m_OriginalKeyListComboBox->addItem(SEPARATOR_LONGPRESS);
+    m_OriginalKeyListComboBox->addItem(SEPARATOR_DOUBLEPRESS);
+    for(int i = 1; i < orikeyComboBox->count(); i++) {
         QString text = orikeyComboBox->itemText(i);
         m_OriginalKeyListComboBox->addItem(text);
+        s_valiedOriginalKeyList.append(text);
     }
 
     m_MappingKeyListComboBox->addItem(QString());
@@ -287,6 +293,7 @@ void QItemSetupDialog::initKeyListComboBoxes()
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QString text = mapkeyComboBox->itemText(i);
         m_MappingKeyListComboBox->addItem(text);
+        s_valiedMappingKeyList.append(text);
     }
 
     int left = ui->orikeyListLabel->x() + ui->orikeyListLabel->width() + 5;
@@ -345,7 +352,7 @@ void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
     if (burst != QKeyMapper::KeyMappingDataList.at(m_ItemRow).Burst) {
         QKeyMapper::KeyMappingDataList[m_ItemRow].Burst = burst;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst -> " << burst;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst -> " << burst;
 #endif
     }
 }
@@ -362,7 +369,7 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
     if (lock != QKeyMapper::KeyMappingDataList.at(m_ItemRow).Lock) {
         QKeyMapper::KeyMappingDataList[m_ItemRow].Lock = lock;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Lock -> " << lock;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Lock -> " << lock;
 #endif
     }
 }
@@ -379,7 +386,7 @@ void QItemSetupDialog::on_keyupActionCheckBox_stateChanged(int state)
     if (keyup_action != QKeyMapper::KeyMappingDataList.at(m_ItemRow).KeyUp_Action) {
         QKeyMapper::KeyMappingDataList[m_ItemRow].KeyUp_Action = keyup_action;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
 #endif
 
         /* Update KeySeqHoldDown Status */
@@ -404,7 +411,7 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
     if (passthrough != QKeyMapper::KeyMappingDataList.at(m_ItemRow).PassThrough) {
         QKeyMapper::KeyMappingDataList[m_ItemRow].PassThrough = passthrough;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
 #endif
     }
 }
@@ -421,7 +428,63 @@ void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
     if (keyseqholddown != QKeyMapper::KeyMappingDataList.at(m_ItemRow).KeySeqHoldDown) {
         QKeyMapper::KeyMappingDataList[m_ItemRow].KeySeqHoldDown = keyseqholddown;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "]: Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
 #endif
     }
+}
+
+void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
+{
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
+    static QRegularExpression whitespace_reg("\\s+");
+    QString originalKey = ui->originalKeyLineEdit->text();
+    originalKey.remove(whitespace_reg);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] OriginalKeyText remove whitespace -> " << originalKey;
+#endif
+
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey);
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (result.isValid) {
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = "OriginalKey update success.";
+        }
+        else {
+            popupMessage = "原始按键更新成功";
+        }
+
+        QStringList originalKeyList = originalKey.split("+");
+        if (originalKeyList.size() > 1) {
+            QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = QString(PREFIX_SHORTCUT) + originalKey;
+        }
+        else {
+            QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = originalKey;
+        }
+    }
+    else {
+        popupMessageColor = "#d63031";
+        popupMessage = result.errorMessage;
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
+{
+    static QRegularExpression whitespace_reg("\\s+");
+    QString mappingKey = ui->mappingKeyLineEdit->text();
+    mappingKey.remove(whitespace_reg);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
+#endif
+
+    bool validated = QKeyMapper::validateMappingKeyString(mappingKey);
 }

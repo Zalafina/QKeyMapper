@@ -24,6 +24,7 @@ QStringList QKeyMapper_Worker::MultiKeyboardInputList = QStringList();
 QStringList QKeyMapper_Worker::MultiMouseInputList = QStringList();
 QStringList QKeyMapper_Worker::MultiVirtualGamepadInputList;
 QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
+QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 // QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
@@ -218,6 +219,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initMultiMouseInputList();
     initMultiVirtualGamepadInputList();
     initJoystickKeyMap();
+    initSpecialOriginalKeysList();
     // initSkipReleaseModifiersKeysList();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -7410,6 +7412,36 @@ void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
 #endif
 }
 
+QHash<QString, int> QKeyMapper_Worker::currentDoublePressOriginalKeysMap()
+{
+    QHash<QString, int> currentDoublePressOriginalKeysMap;
+
+    int keymapdataindex = 0;
+    static QRegularExpression regex("^(.+✖)(\\d{1,4})$");
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
+    {
+        QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
+        if (match.hasMatch()) {
+            QString original_key = match.captured(1);
+            if (currentDoublePressOriginalKeysMap.contains(original_key) == false) {
+                currentDoublePressOriginalKeysMap.insert(original_key, keymapdataindex);
+            }
+        }
+        keymapdataindex += 1;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (currentDoublePressOriginalKeysMap.isEmpty()) {
+        qDebug() << "[currentDoublePressOriginalKeysMap]" << "currentDoublePressOriginalKeysMap is Empty.";
+    }
+    else {
+        qDebug() << "[currentDoublePressOriginalKeysMap]" << "currentDoublePressOriginalKeysMap ->" << currentDoublePressOriginalKeysMap;
+    }
+#endif
+
+    return currentDoublePressOriginalKeysMap;
+}
+
 int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
 {
     int intercept = KEY_INTERCEPT_NONE;
@@ -8648,6 +8680,22 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_L_DOWN,  JOYSTICK_DPAD_L_DOWN            );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_UP,    JOYSTICK_DPAD_R_UP              );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
+}
+
+void QKeyMapper_Worker::initSpecialOriginalKeysList()
+{
+    SpecialOriginalKeysList = QStringList() \
+            << VJOY_MOUSE2LS_STR
+            << VJOY_MOUSE2RS_STR
+            << JOY_LS2MOUSE_STR
+            << JOY_RS2MOUSE_STR
+            << JOY_LS2VJOYLS_STR
+            << JOY_RS2VJOYRS_STR
+            << JOY_LS2VJOYRS_STR
+            << JOY_RS2VJOYLS_STR
+            << JOY_LT2VJOYLT_STR
+            << JOY_RT2VJOYRT_STR
+            ;
 }
 
 #if 0

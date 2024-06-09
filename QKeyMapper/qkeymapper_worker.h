@@ -584,12 +584,14 @@ public:
 
     static void collectCombinationOriginalKeysList(void);
     static void collectLongPressOriginalKeysMap(void);
+    static QHash<QString, int> currentLongPressOriginalKeysMap(void);
     static void sendLongPressTimers(const QString &keycodeString);
     static void clearLongPressTimer(const QString &keycodeString);
     static void removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime);
     static void clearAllLongPressTimers(void);
     static int longPressKeyProc(const QString &keycodeString, int keyupdown);
     static void collectDoublePressOriginalKeysMap(void);
+    static QHash<QString, int> currentDoublePressOriginalKeysMap(void);
     static int sendDoublePressTimers(const QString &keycodeString);
     static void clearDoublePressTimer(const QString &keycodeString);
     static void removeDoublePressTimerOnTimeout(const QString &keycodeString);
@@ -619,6 +621,7 @@ private:
     void initMultiVirtualGamepadInputList(void);
     void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
+    void initSpecialOriginalKeysList(void);
     // void initSkipReleaseModifiersKeysList(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
@@ -659,6 +662,7 @@ public:
     static QStringList MultiMouseInputList;
     static QStringList MultiVirtualGamepadInputList;
     static QStringList CombinationKeysList;
+    static QStringList SpecialOriginalKeysList;
     // static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;
     // static QHash<QString, QHotkey*> ShortcutsMap;

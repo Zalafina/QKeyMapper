@@ -112,6 +112,12 @@ struct MousePoint_Info
 #endif
 };
 
+struct ValidationResult
+{
+    bool isValid;
+    QString errorMessage;
+};
+
 class KeyMappingDataTableWidget : public QTableWidget
 {
     Q_OBJECT
@@ -265,6 +271,8 @@ public:
     static int findOriKeyInKeyMappingDataList_ForDoublePress(const QString &keyname);
     static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
+    static ValidationResult validateOriginalKeyString(const QString &originalkeystr);
+    static bool validateMappingKeyString(const QString &mappingkeystr);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -314,6 +322,7 @@ signals:
     void updateInputDeviceSelectComboBoxes_Signal(void);
     void keyMappingTableDragDropMove_Signal(int from, int to);
     void setupDialogClosed_Signal(void);
+    void showPopupMessage_Signal(const QString &message, const QString &color, int displayTime);
 
 protected:
     // bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
