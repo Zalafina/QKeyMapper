@@ -6744,7 +6744,7 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
 {
     bool detected = false;
     QString displayswitchKey = QKeyMapper::s_WindowSwitchKeyString;
-    QStringList keys = displayswitchKey.split("+");
+    QStringList keys = displayswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
 
     for (const QString &key : keys)
@@ -6772,7 +6772,7 @@ bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int
 {
     bool detected = false;
     QString mappingswitchKey = QKeyMapper::s_MappingSwitchKeyString;
-    QStringList keys = mappingswitchKey.split("+");
+    QStringList keys = mappingswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
 
     for (const QString &key : keys)
@@ -6809,7 +6809,7 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
     for (const QString &combinationkey : qAsConst(combinationOriginalKeysList))
     {
         QString combinationkeyForSearch = QString(PREFIX_SHORTCUT) + combinationkey;
-        QStringList keys = combinationkey.split("+");
+        QStringList keys = combinationkey.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
         QStringList pressedCombinationRealKeys;
 

@@ -1293,7 +1293,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     ValidationResult result;
     result.isValid = true;
 
-    QStringList orikeylist = originalkeystr.split("+");
+    QStringList orikeylist = originalkeystr.split(SEPARATOR_PLUS);
     if (orikeylist.isEmpty()) {
         result.isValid = false;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
@@ -1514,9 +1514,31 @@ ValidationResult QKeyMapper::validateSingleKeyInOriginalCombinationKey(const QSt
     return result;
 }
 
-bool QKeyMapper::validateMappingKeyString(const QString &mappingkeystr)
+ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr)
 {
-    return false;
+    ValidationResult result;
+    result.isValid = true;
+
+    static QRegularExpression regexp("[+»]");
+    QStringList Mapping_Keys = mappingkeystr.split(regexp);
+
+    for (const QString &mappingkey : qAsConst(Mapping_Keys)){
+        // if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
+        //     && mapping_key != KEY_NONE_STR
+        //     && mapping_key != KEY_BLOCKED_STR
+        //     // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
+        //     && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
+        //     // && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
+        //     && false == mapping_key.startsWith(JOY_KEY_PREFIX)
+        //     && false == mapping_key.startsWith(VJOY_KEY_PREFIX)
+        //     && false == mapping_key.startsWith("Func-")
+        //     && false == mapping_key.contains(SEPARATOR_WAITTIME)){
+        //     checkResult = false;
+        //     break;
+        // }
+    }
+
+    return result;
 }
 
 void QKeyMapper::EnumProcessFunction(void)
@@ -4646,7 +4668,7 @@ bool QKeyMapper::validateCombinationKey(QString &input)
 {
     bool isvalid = true;
 
-    QStringList keylist = input.split("+");
+    QStringList keylist = input.split(SEPARATOR_PLUS);
     if (keylist.isEmpty())
     {
         isvalid = false;
@@ -7546,11 +7568,11 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
     else if (false == currentOriCombinationKeyText.isEmpty()) {
         bool valid_combinationkey = true;
-        if (currentOriCombinationKeyText.startsWith("+") || currentOriCombinationKeyText.endsWith("+")) {
+        if (currentOriCombinationKeyText.startsWith(SEPARATOR_PLUS) || currentOriCombinationKeyText.endsWith(SEPARATOR_PLUS)) {
             valid_combinationkey = false;
         }
         else {
-            QStringList combinationkeyslist = currentOriCombinationKeyText.split("+");
+            QStringList combinationkeyslist = currentOriCombinationKeyText.split(SEPARATOR_PLUS);
             if (combinationkeyslist.size() <= 1) {
                 valid_combinationkey = false;
             }
@@ -8031,7 +8053,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     newCombinationKeyText = currentOriKeyText;
                 }
                 else {
-                    newCombinationKeyText = currentOriCombinationKeyText + QString("+") + currentOriKeyText;
+                    newCombinationKeyText = currentOriCombinationKeyText + QString(SEPARATOR_PLUS) + currentOriKeyText;
                 }
                 QKeyMapper::getInstance()->setCurrentOriCombinationKeyText(newCombinationKeyText);
 #ifdef DEBUG_LOGOUT_ON

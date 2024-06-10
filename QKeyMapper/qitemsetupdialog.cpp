@@ -474,7 +474,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
             popupMessage = "原始按键更新成功";
         }
 
-        QStringList originalKeyList = originalKey.split("+");
+        QStringList originalKeyList = originalKey.split(SEPARATOR_PLUS);
         if (originalKeyList.size() > 1) {
             QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = QString(PREFIX_SHORTCUT) + originalKey;
         }
@@ -491,6 +491,10 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 
 void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+        return;
+    }
+
     static QRegularExpression whitespace_reg("\\s+");
     QString mappingKey = ui->mappingKeyLineEdit->text();
     mappingKey.remove(whitespace_reg);
@@ -499,5 +503,26 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
 #endif
 
-    bool validated = QKeyMapper::validateMappingKeyString(mappingKey);
+    QStringList mappingKeyList = mappingKey.split(SEPARATOR_NEXTARROW);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey);
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (result.isValid) {
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = "MappingKey update success.";
+        }
+        else {
+            popupMessage = "映射按键更新成功";
+        }
+
+        QKeyMapper::KeyMappingDataList[m_ItemRow].Mapping_Keys = mappingKeyList;
+    }
+    else {
+        popupMessageColor = "#d63031";
+        popupMessage = result.errorMessage;
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }

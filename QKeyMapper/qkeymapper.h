@@ -274,7 +274,7 @@ public:
     static ValidationResult validateOriginalKeyString(const QString &originalkeystr);
     static ValidationResult validateSingleOriginalKey(const QString &orikey);
     static ValidationResult validateSingleKeyInOriginalCombinationKey(const QString &orikey);
-    static bool validateMappingKeyString(const QString &mappingkeystr);
+    static ValidationResult validateMappingKeyString(const QString &mappingkeystr);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
