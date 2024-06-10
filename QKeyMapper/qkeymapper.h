@@ -272,6 +272,8 @@ public:
     static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
     static ValidationResult validateOriginalKeyString(const QString &originalkeystr);
+    static ValidationResult validateSingleOriginalKey(const QString &orikey);
+    static ValidationResult validateSingleKeyInOriginalCombinationKey(const QString &orikey);
     static bool validateMappingKeyString(const QString &mappingkeystr);
 
     // unused enum all process function >>>
