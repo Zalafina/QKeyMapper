@@ -33,9 +33,9 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
 
     // ui->originalKeyLineEdit->setReadOnly(true);
-    // ui->mappingKeyLineEdit->setReadOnly(true);
+    ui->mappingKeyLineEdit->setReadOnly(true);
     // ui->originalKeyUpdateButton->setVisible(false);
-    // ui->mappingKeyUpdateButton->setVisible(false);
+    ui->mappingKeyUpdateButton->setVisible(false);
 
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_originalKeyUpdateButton_clicked);
     QObject::connect(ui->mappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
