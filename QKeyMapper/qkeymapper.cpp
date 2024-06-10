@@ -8058,10 +8058,22 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     bool isCursorAtEnd = (cursorPos == currentOriKeyText.length());
 
                     if (isCursorAtEnd) {
-                        newOriKeyText = currentOriKeyText + QString(SEPARATOR_PLUS) + currentOriKeyListText;
+                        if (currentOriKeyListText == SEPARATOR_LONGPRESS
+                            || currentOriKeyListText == SEPARATOR_DOUBLEPRESS) {
+                            newOriKeyText = currentOriKeyText + currentOriKeyListText;
+                        }
+                        else {
+                            newOriKeyText = currentOriKeyText + QString(SEPARATOR_PLUS) + currentOriKeyListText;
+                        }
                     }
                     else {
-                        newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
+                        if (currentOriKeyListText == SEPARATOR_LONGPRESS
+                            || currentOriKeyListText == SEPARATOR_DOUBLEPRESS) {
+                            newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
+                        }
+                        else {
+                            newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + QString(SEPARATOR_PLUS) + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
+                        }
                     }
                 }
                 QItemSetupDialog::getInstance()->setOriginalKeyText(newOriKeyText);
@@ -8096,7 +8108,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
                         }
                         else {
-                            newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                         }
                     }
                 }
