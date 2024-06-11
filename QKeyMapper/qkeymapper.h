@@ -271,10 +271,11 @@ public:
     static int findOriKeyInKeyMappingDataList_ForDoublePress(const QString &keyname);
     static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
-    static ValidationResult validateOriginalKeyString(const QString &originalkeystr);
-    static ValidationResult validateSingleOriginalKey(const QString &orikey);
+    static ValidationResult validateOriginalKeyString(const QString &originalkeystr, int update_rowindex);
+    static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
     static ValidationResult validateSingleKeyInOriginalCombinationKey(const QString &orikey);
-    static ValidationResult validateMappingKeyString(const QString &mappingkeystr);
+    static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist);
+    static ValidationResult validateSingleMappingKey(const QString &mapkey);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);

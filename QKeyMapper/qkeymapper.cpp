@@ -1288,7 +1288,7 @@ int QKeyMapper::findMapKeyInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
-ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalkeystr)
+ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalkeystr, int update_rowindex)
 {
     ValidationResult result;
     result.isValid = true;
@@ -1302,74 +1302,74 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         else {
             result.errorMessage = "原始按键为空";
         }
+        return result;
+    }
+
+    /* Check for duplicate Original keys */
+    int numRemoved = orikeylist.removeDuplicates();
+    if (numRemoved > 0) {
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = "OriginalKey contains duplicate keys.";
+        }
+        else {
+            result.errorMessage = "原始按键中存在重复按键";
+        }
     }
     else {
-        /* Check for duplicate Original keys */
-        int numRemoved = orikeylist.removeDuplicates();
-        if (numRemoved > 0) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = "OriginalKey contains duplicate keys.";
+        if (orikeylist.size() > 1) {
+            QString foundSpecialKey;
+            /* Check orikeylist contains keystring in QKeyMapper_Worker::SpecialOriginalKeysList */
+            for (const QString& orikey : orikeylist) {
+                if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)) {
+                    foundSpecialKey = orikey;
+                    break;
+                }
             }
-            else {
-                result.errorMessage = "原始按键中存在重复按键";
+            if (!foundSpecialKey.isEmpty()) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Oricombinationkey contains specialkey \"%1\"").arg(foundSpecialKey);
+                } else {
+                    result.errorMessage = QString("原始组合键包含特殊按键 \"%1\"").arg(foundSpecialKey);
+                }
+
+                return result;
+            }
+
+            for (const QString& orikey : orikeylist)
+            {
+                result = validateSingleKeyInOriginalCombinationKey(orikey);
+                if (result.isValid == false) {
+                    break;
+                }
+            }
+
+            if (result.isValid) {
+                QString original_key = QString(PREFIX_SHORTCUT) + originalkeystr;
+                int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(original_key);
+
+                if (findindex != -1 && findindex != update_rowindex) {
+                    result.isValid = false;
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        result.errorMessage = QString("Duplicate original key \"%1\"").arg(originalkeystr);
+                    } else {
+                        result.errorMessage = QString("已存在相同的原始按键 \"%1\"").arg(originalkeystr);
+                    }
+                }
             }
         }
         else {
-            if (orikeylist.size() > 1) {
-                QString foundSpecialKey;
-                /* Check orikeylist contains keystring in QKeyMapper_Worker::SpecialOriginalKeysList */
-                for (const QString& orikey : orikeylist) {
-                    if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)) {
-                        foundSpecialKey = orikey;
-                        break;
-                    }
-                }
-                if (!foundSpecialKey.isEmpty()) {
-                    result.isValid = false;
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Oricombinationkey contains specialkey \"%1\"").arg(foundSpecialKey);
-                    } else {
-                        result.errorMessage = QString("原始组合键包含特殊按键 \"%1\"").arg(foundSpecialKey);
-                    }
+            const QString orikey = orikeylist.constFirst();
 
-                    return result;
-                }
-
-                for (const QString& orikey : orikeylist)
-                {
-                    result = validateSingleKeyInOriginalCombinationKey(orikey);
-                    if (result.isValid == false) {
-                        break;
-                    }
-                }
-
-                if (result.isValid) {
-                    QString original_key = QString(PREFIX_SHORTCUT) + originalkeystr;
-                    int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(original_key);
-
-                    if (findindex != -1) {
-                        result.isValid = false;
-                        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                            result.errorMessage = QString("Duplicate original key \"%1\"").arg(originalkeystr);
-                        } else {
-                            result.errorMessage = QString("已存在相同的原始按键 \"%1\"").arg(originalkeystr);
-                        }
-                    }
-                }
-            }
-            else {
-                const QString orikey = orikeylist.constFirst();
-
-                result = validateSingleOriginalKey(orikey);
-            }
+            result = validateSingleOriginalKey(orikey, update_rowindex);
         }
     }
 
     return result;
 }
 
-ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey)
+ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, int update_rowindex)
 {
     ValidationResult result;
     result.isValid = true;
@@ -1409,7 +1409,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey)
                 result.errorMessage = QString("无效的长按时间 \"%1\"").arg(longPressTimeString);
             }
         }
-        else if (findindex != -1) {
+        else if (findindex != -1 && findindex != update_rowindex) {
             result.isValid = false;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                 result.errorMessage = QString("Duplicate orilongpresskey \"%1\"").arg(orikey);
@@ -1474,7 +1474,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey)
         else {
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
 
-            if (findindex != -1) {
+            if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                     result.errorMessage = QString("Duplicate original key \"%1\"").arg(orikey);
@@ -1514,7 +1514,7 @@ ValidationResult QKeyMapper::validateSingleKeyInOriginalCombinationKey(const QSt
     return result;
 }
 
-ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr)
+ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist)
 {
     ValidationResult result;
     result.isValid = true;
@@ -1522,20 +1522,143 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     static QRegularExpression regexp("[+»]");
     QStringList Mapping_Keys = mappingkeystr.split(regexp);
 
-    for (const QString &mappingkey : qAsConst(Mapping_Keys)){
-        // if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
-        //     && mapping_key != KEY_NONE_STR
-        //     && mapping_key != KEY_BLOCKED_STR
-        //     // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
-        //     && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
-        //     // && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
-        //     && false == mapping_key.startsWith(JOY_KEY_PREFIX)
-        //     && false == mapping_key.startsWith(VJOY_KEY_PREFIX)
-        //     && false == mapping_key.startsWith("Func-")
-        //     && false == mapping_key.contains(SEPARATOR_WAITTIME)){
-        //     checkResult = false;
-        //     break;
-        // }
+    if (Mapping_Keys.isEmpty()) {
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = "MappingKeys is empty.";
+        }
+        else {
+            result.errorMessage = "映射按键为空";
+        }
+        return result;
+    }
+    else if (mappingkeyseqlist.size() >= KEY_SEQUENCE_MAX) {
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = "Mapping key sequence is too long!";
+        }
+        else {
+            result.errorMessage = "映射按键序列过长!";
+        }
+        return result;
+    }
+
+    if (Mapping_Keys.size() > 1) {
+        QString foundSpecialKey;
+        /* Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList */
+        for (const QString& mapkey : Mapping_Keys) {
+            if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
+                foundSpecialKey = mapkey;
+                break;
+            }
+        }
+        if (!foundSpecialKey.isEmpty()) {
+            result.isValid = false;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                result.errorMessage = QString("MappingKeys contains specialkey \"%1\"").arg(foundSpecialKey);
+            } else {
+                result.errorMessage = QString("映射按键中包含特殊按键 \"%1\"").arg(foundSpecialKey);
+            }
+
+            return result;
+        }
+
+        for (const QString& mapkey : Mapping_Keys)
+        {
+            result = validateSingleMappingKey(mapkey);
+            if (result.isValid == false) {
+                break;
+            }
+        }
+    }
+    else {
+        const QString mapkey = Mapping_Keys.constFirst();
+
+        result = validateSingleMappingKey(mapkey);
+    }
+
+    return result;
+}
+
+ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
+{
+    ValidationResult result;
+    result.isValid = true;
+
+    static QRegularExpression mapkey_regex("^(.+)⏱(\\d{1,4})$");
+
+    QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
+    if (mapkey_match.hasMatch()) {
+        QString mapping_key = mapkey_match.captured(1);
+        QString waitTimeString = mapkey_match.captured(2);
+        int waittime = waitTimeString.toInt();
+
+        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
+            static QRegularExpression vjoy_regex("(vJoy-.+)@([0-3])$");
+            QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
+            if (vjoy_match.hasMatch()) {
+                static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
+                QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
+                QString vjoy_key = vjoy_match.captured(1);
+
+                if (!vJoyKeyList.contains(vjoy_key)) {
+                    result.isValid = false;
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        result.errorMessage = QString("Invalid vJoy-Key \"%1\"").arg(mapping_key);
+                    } else {
+                        result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
+                    }
+                }
+            }
+            else {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Invalid key \"%1\"").arg(mapping_key);
+                } else {
+                    result.errorMessage = QString("无效按键 \"%1\"").arg(mapping_key);
+                }
+            }
+        }
+
+        if (result.isValid) {
+            if (waittime <= MAPPING_WAITTIME_MIN || waittime > MAPPING_WAITTIME_MAX) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Invalid waittime \"%1\"").arg(waitTimeString);
+                } else {
+                    result.errorMessage = QString("无效延时时间 \"%1\"").arg(waitTimeString);
+                }
+            }
+        }
+    }
+    else {
+        QString mapping_key = mapkey;
+        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
+            static QRegularExpression vjoy_regex("(vJoy-.+)@([0-3])$");
+            QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
+            if (vjoy_match.hasMatch()) {
+                static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
+                QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
+                QString vjoy_key = vjoy_match.captured(1);
+
+                if (!vJoyKeyList.contains(vjoy_key)) {
+                    result.isValid = false;
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        result.errorMessage = QString("Invalid vJoy-Key \"%1\"").arg(mapping_key);
+                    } else {
+                        result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
+                    }
+                }
+            }
+            else {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Invalid key \"%1\"").arg(mapping_key);
+                } else {
+                    result.errorMessage = QString("无效按键 \"%1\"").arg(mapping_key);
+                }
+            }
+        }
     }
 
     return result;
@@ -8123,14 +8246,29 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     bool isCursorAtEnd = (cursorPos == currentMapKeyText.length());
 
                     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-                        newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                        if (currentMapKeyListText == SEPARATOR_WAITTIME) {
+                            newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                        }
                     }
                     else {
                         if (isCursorAtEnd) {
-                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
+                            if (currentMapKeyListText == SEPARATOR_WAITTIME) {
+                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
+                            }
                         }
                         else {
-                            newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            if (currentMapKeyListText == SEPARATOR_WAITTIME) {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                     }
                 }

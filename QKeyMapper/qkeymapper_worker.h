@@ -622,6 +622,7 @@ private:
     void initCombinationKeysList(void);
     void initJoystickKeyMap(void);
     void initSpecialOriginalKeysList(void);
+    void initSpecialMappingKeysList(void);
     // void initSkipReleaseModifiersKeysList(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void initViGEmKeyMap(void);
@@ -663,6 +664,7 @@ public:
     static QStringList MultiVirtualGamepadInputList;
     static QStringList CombinationKeysList;
     static QStringList SpecialOriginalKeysList;
+    static QStringList SpecialMappingKeysList;
     // static QStringList skipReleaseModifiersKeysList;
     static QHash<QString, int> JoyStickKeyMap;
     // static QHash<QString, QHotkey*> ShortcutsMap;

@@ -33,9 +33,9 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
 
     // ui->originalKeyLineEdit->setReadOnly(true);
-    ui->mappingKeyLineEdit->setReadOnly(true);
+    // ui->mappingKeyLineEdit->setReadOnly(true);
     // ui->originalKeyUpdateButton->setVisible(false);
-    ui->mappingKeyUpdateButton->setVisible(false);
+    // ui->mappingKeyUpdateButton->setVisible(false);
 
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_originalKeyUpdateButton_clicked);
     QObject::connect(ui->mappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
@@ -460,7 +460,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
     qDebug().nospace().noquote() << "[" << __func__ << "] OriginalKeyText remove whitespace -> " << originalKey;
 #endif
 
-    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey);
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey, m_ItemRow);
 
     QString popupMessage;
     QString popupMessageColor;
@@ -503,8 +503,8 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
 #endif
 
-    QStringList mappingKeyList = mappingKey.split(SEPARATOR_NEXTARROW);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey);
+    QStringList mappingKeySeqList = mappingKey.split(SEPARATOR_NEXTARROW);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList);
 
     QString popupMessage;
     QString popupMessageColor;
@@ -518,7 +518,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
             popupMessage = "映射按键更新成功";
         }
 
-        QKeyMapper::KeyMappingDataList[m_ItemRow].Mapping_Keys = mappingKeyList;
+        QKeyMapper::KeyMappingDataList[m_ItemRow].Mapping_Keys = mappingKeySeqList;
     }
     else {
         popupMessageColor = "#d63031";
