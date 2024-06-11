@@ -450,6 +450,7 @@ private:
     void updateProcessInfoDisplay(void);
     void updateSystemTrayDisplay(void);
     void switchShowHide(void);
+    void showWarningPopup(const QString &message);
 
     void initKeyMappingDataTable(void);
     void resizeKeyMappingDataTableColumnWidth(void);
