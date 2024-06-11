@@ -1447,12 +1447,15 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             }
         }
         else if (currentDoublePressOriginalKeysMap.contains(original_key_doublepress)) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Duplicate oridoublepresskey \"%1\"").arg(original_key_doublepress);
-            }
-            else {
-                result.errorMessage = QString("已存在相同的原始双击按键 \"%1\"").arg(original_key_doublepress);
+            int update_doublepress_orikey_rowindex = currentDoublePressOriginalKeysMap.value(original_key_doublepress);
+            if (update_doublepress_orikey_rowindex != update_rowindex) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Duplicate oridoublepresskey \"%1\"").arg(original_key_doublepress);
+                }
+                else {
+                    result.errorMessage = QString("已存在相同的原始双击按键 \"%1\"").arg(original_key_doublepress);
+                }
             }
         }
     }

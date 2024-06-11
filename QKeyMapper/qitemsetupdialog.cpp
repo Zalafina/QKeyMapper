@@ -475,11 +475,16 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
         }
 
         QStringList originalKeyList = originalKey.split(SEPARATOR_PLUS);
+        QString update_originalkey;
         if (originalKeyList.size() > 1) {
-            QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = QString(PREFIX_SHORTCUT) + originalKey;
+            update_originalkey = QString(PREFIX_SHORTCUT) + originalKey;
         }
         else {
-            QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = originalKey;
+            update_originalkey = originalKey;
+        }
+
+        if (QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key != update_originalkey) {
+            QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = update_originalkey;
         }
     }
     else {
