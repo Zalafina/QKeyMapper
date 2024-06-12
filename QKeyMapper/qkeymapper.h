@@ -265,6 +265,8 @@ public:
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
+    static BOOL CALLBACK EnumWindowsBgProc(HWND hWnd, LPARAM lParam);
+    static void collectWindowsHWND(const QString& titlestring, HWND hWnd);
     static int findOriKeyInKeyMappingDataList(const QString &keyname);
     static int findOriKeyInKeyMappingDataList(const QString &keyname, bool& removemultiinput);
     static int findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname);
@@ -525,6 +527,7 @@ public:
     static int s_GlobalSettingAutoStart;
     static uint s_CycleCheckLoopCount;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
+    static QList<HWND> s_hWndList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> MousePointsList;
@@ -541,7 +544,9 @@ private:
     QPoint m_LastWindowPosition;
     QTimer m_CycleCheckTimer;
     QTimer m_ProcessInfoTableRefreshTimer;
+public:
     MAP_PROCESSINFO m_MapProcessInfo;
+private:
     QSystemTrayIcon *m_SysTrayIcon;
     QMenu *m_SysTrayIconMenu;
     QAction *m_TrayIconMenu_ShowHideAction;

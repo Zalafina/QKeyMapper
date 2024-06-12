@@ -9,6 +9,7 @@ bool QKeyMapper::s_isDestructing = false;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
 uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
+QList<HWND> QKeyMapper::s_hWndList;
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
 QList<MousePoint_Info> QKeyMapper::MousePointsList = QList<MousePoint_Info>();
@@ -688,6 +689,15 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
         refreshProcessInfoTable();
         initInputDeviceSelectComboBoxes();
     }
+    else {
+        s_hWndList.clear();
+        EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsBgProc, 0);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    if (!s_hWndList.isEmpty()) {
+        qDebug().nospace().noquote() << "[cycleRefreshProcessInfoTableProc]" << "s_hWndList -> " << s_hWndList;
+    }
+#endif
 }
 
 void QKeyMapper::setKeyHook(HWND hWnd)
@@ -919,6 +929,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
     if (resultLength){
         WindowText = QString::fromWCharArray(titleBuffer);
+        collectWindowsHWND(WindowText, hWnd);
         getProcessInfoFromPID(dwProcessId, ProcessPath);
 
         if (ProcessPath.isEmpty()) {
@@ -1160,6 +1171,39 @@ BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
     lstrcpy(pszNtPath, pszDosPath);
 
     return FALSE;
+}
+
+BOOL QKeyMapper::EnumWindowsBgProc(HWND hWnd, LPARAM lParam)
+{
+    Q_UNUSED(lParam);
+
+    if(FALSE == IsWindowVisible(hWnd)){
+        return TRUE;
+    }
+
+    QString WindowText;
+    TCHAR titleBuffer[MAX_PATH] = TEXT("");
+    memset(titleBuffer, 0x00, sizeof(titleBuffer));
+
+    int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
+    if (resultLength){
+        WindowText = QString::fromWCharArray(titleBuffer);
+        collectWindowsHWND(WindowText, hWnd);
+    }
+
+    return TRUE;
+}
+
+void QKeyMapper::collectWindowsHWND(const QString &titlestring, HWND hWnd)
+{
+    QString processTitle = QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle;
+    if (!processTitle.isEmpty()) {
+        if (titlestring.contains(processTitle)) {
+            if (!s_hWndList.contains(hWnd)) {
+                s_hWndList.append(hWnd);
+            }
+        }
+    }
 }
 
 int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
@@ -2240,9 +2284,9 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
 #endif
-#ifdef QT_NO_DEBUG
-        m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
-#endif
+// #ifdef QT_NO_DEBUG
+//         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
+// #endif
         refreshProcessInfoTable();
         (void)Interception_Worker::getRefreshedKeyboardDeviceList();
         (void)Interception_Worker::getRefreshedMouseDeviceList();
@@ -5979,6 +6023,7 @@ void QKeyMapper::refreshProcessInfoTable(void)
 
     static_ProcessInfoList.clear();
 #if 1
+    s_hWndList.clear();
     EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
 #else
     EnumProcessFunction();
