@@ -312,6 +312,7 @@ public:
     static int getDataPortNumber(void);
     static double getBrakeThreshold(void);
     static double getAccelThreshold(void);
+    static bool getSendToSameTitleWindowsStatus(void);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
@@ -441,6 +442,8 @@ private slots:
     void on_keymapdataTable_itemSelectionChanged();
 
     void on_startupMinimizedCheckBox_stateChanged(int state);
+
+    void on_autoStartMappingCheckBox_stateChanged(int state);
 
 private:
     // void initHotKeySequence(void);

@@ -870,8 +870,18 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                 }
 
-                INPUT input = { 0 };
                 V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+
+                if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                        PostMessage(hwnd, WM_KEYUP, vkeycode.KeyCode, 0);
+                    }
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] PostMessage(" << key << ") KeyUp -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                }
+
+                INPUT input = { 0 };
                 DWORD extenedkeyflag = 0;
                 if (true == vkeycode.ExtenedFlag){
                     extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
@@ -899,13 +909,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
                 SendInput(1, &input, sizeof(INPUT));
-
-                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                    PostMessage(hwnd, WM_KEYUP, vkeycode.KeyCode, 0);
-                }
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "VirtualKeyboardKey PostMessage(): send[" << key << "] KeyUp -> " << QKeyMapper::s_last_HWNDList;
-#endif
 
                 s_forceSendVirtualKey = false;
             }
@@ -1040,8 +1043,18 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         continue;
                     }
 
-                    INPUT input = { 0 };
                     V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
+
+                    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                            PostMessage(hwnd, WM_KEYDOWN, vkeycode.KeyCode, 0);
+                        }
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] PostMessage(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                    }
+
+                    INPUT input = { 0 };
                     DWORD extenedkeyflag = 0;
                     if (true == vkeycode.ExtenedFlag){
                         extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
@@ -1069,13 +1082,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
                     SendInput(1, &input, sizeof(INPUT));
-
-                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                        PostMessage(hwnd, WM_KEYDOWN, vkeycode.KeyCode, 0);
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "VirtualKeyboardKey PostMessage(): send[" << key << "] KeyDown -> " << QKeyMapper::s_last_HWNDList;
-#endif
-                    }
 
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[sendInputKeys] VirtualKey send Key End ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;

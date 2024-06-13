@@ -420,6 +420,14 @@ void QKeyMapper::cycleCheckProcessProc(void)
             && (false == ui->titleCheckBox->isChecked())){
             checkresult = 2;
         }
+        else if (true == getSendToSameTitleWindowsStatus()
+            && true == ui->nameCheckBox->isChecked()
+            && true == ui->titleCheckBox->isChecked()){
+            if ((m_MapProcessInfo.FileName.isEmpty() == false)
+                && (m_MapProcessInfo.WindowTitle.isEmpty() == false)){
+                checkresult = 3;
+            }
+        }
 
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
         if (resultLength){
@@ -2226,6 +2234,17 @@ double QKeyMapper::getBrakeThreshold()
 double QKeyMapper::getAccelThreshold()
 {
     return getInstance()->ui->accelThresholdDoubleSpinBox->value();
+}
+
+bool QKeyMapper::getSendToSameTitleWindowsStatus()
+{
+    if (false == getInstance()->ui->autoStartMappingCheckBox->isChecked()
+        && true == getInstance()->ui->sendToSameTitleWindowsCheckBox->isChecked()) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 #if 0
@@ -4473,6 +4492,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->nameCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
         // ui->disableWinKeyCheckBox->setChecked(false);
+        ui->sendToSameTitleWindowsCheckBox->setChecked(false);
 
         ui->nameLineEdit->setEnabled(false);
         ui->titleLineEdit->setEnabled(false);
@@ -4480,6 +4500,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
+        ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
 
         ui->iconLabel->clear();
         m_MapProcessInfo = MAP_PROCESSINFO();
@@ -4491,6 +4512,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
+        ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
 
         if ((true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME))
                 && (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE))){
@@ -4519,6 +4541,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->titleLineEdit->setText(QString());
             ui->nameCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
+            ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
         }
 
@@ -5156,19 +5179,25 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
+        ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
     }
     else {
         ui->nameCheckBox->setEnabled(status);
         ui->titleCheckBox->setEnabled(status);
         ui->removeSettingButton->setEnabled(status);
         // ui->disableWinKeyCheckBox->setEnabled(status);
+        if (ui->autoStartMappingCheckBox->isChecked()) {
+            ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+        }
+        else {
+            ui->sendToSameTitleWindowsCheckBox->setEnabled(status);
+        }
     }
 
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
     ui->titleLineEdit->setReadOnly(!status);
     ui->autoStartMappingCheckBox->setEnabled(status);
-    ui->sendToSameTitleWindowsCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
@@ -9114,5 +9143,22 @@ void QKeyMapper::on_startupMinimizedCheckBox_stateChanged(int state)
     }
     else {
         settingFile.setValue(STARTUP_MINIMIZED , false);
+    }
+}
+
+void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
+{
+    if (Qt::Checked == state) {
+        ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+    }
+    else {
+        if (m_KeyMapStatus == KEYMAP_IDLE){
+            if (GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+                ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+            }
+            else {
+                ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
+            }
+        }
     }
 }
