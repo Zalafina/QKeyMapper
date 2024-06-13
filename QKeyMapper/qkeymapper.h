@@ -249,6 +249,7 @@ public slots:
     void WindowStateChangedProc(void);
     void cycleCheckProcessProc(void);
     void cycleRefreshProcessInfoTableProc(void);
+    void updateHWNDListProc(void);
 
 public:
     void setKeyHook(HWND hWnd);
@@ -528,6 +529,7 @@ public:
     static uint s_CycleCheckLoopCount;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<HWND> s_hWndList;
+    static QList<HWND> s_last_HWNDList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> MousePointsList;
