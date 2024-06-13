@@ -904,7 +904,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     PostMessage(hwnd, WM_KEYUP, vkeycode.KeyCode, 0);
                 }
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "VirtualKeyboardKey PostMessage(): send[" << key << "] KeyUp -> " << s_hWndList;
+                qDebug().nospace().noquote() << "VirtualKeyboardKey PostMessage(): send[" << key << "] KeyUp -> " << QKeyMapper::s_hWndList;
 #endif
 
                 s_forceSendVirtualKey = false;
@@ -1073,7 +1073,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     for (const HWND &hwnd : QKeyMapper::s_hWndList) {
                         PostMessage(hwnd, WM_KEYDOWN, vkeycode.KeyCode, 0);
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "VirtualKeyboardKey PostMessage(): send[" << key << "] KeyDown -> " << s_hWndList;
+                        qDebug().nospace().noquote() << "VirtualKeyboardKey PostMessage(): send[" << key << "] KeyDown -> " << QKeyMapper::s_hWndList;
 #endif
                     }
 

@@ -3557,6 +3557,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
+        settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
 #ifdef VIGEM_CLIENT_SUPPORT
         settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
 #endif
@@ -4726,6 +4727,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingCheckState =" << autoStartMappingCheckState;
 #endif
 
+    if (true == settingFile.contains(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED)){
+        bool sendToSameWindowsChecked = settingFile.value(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED).toBool();
+        if (true == sendToSameWindowsChecked) {
+            ui->sendToSameTitleWindowsCheckBox->setChecked(true);
+        }
+        else {
+            ui->sendToSameTitleWindowsCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "SendToSameWindowsChecked =" << sendToSameWindowsChecked;
+#endif
+    }
+    else {
+        ui->sendToSameTitleWindowsCheckBox->setChecked(false);
+    }
+
 //     QString loadedmappingswitchKeySeqStr;
 //     if (true == settingFile.contains(settingSelectStr+MAPPINGSWITCH_KEYSEQ)){
 //         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSWITCH_KEYSEQ).toString();
@@ -5002,6 +5019,7 @@ void QKeyMapper::setControlFontEnglish()
         customFont.setPointSize(9);
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
+    ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
@@ -5104,6 +5122,7 @@ void QKeyMapper::setControlFontChinese()
         customFont.setPointSize(9);
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
+    ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
@@ -5139,6 +5158,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //ui->titleLineEdit->setEnabled(status);
     ui->titleLineEdit->setReadOnly(!status);
     ui->autoStartMappingCheckBox->setEnabled(status);
+    ui->sendToSameTitleWindowsCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
@@ -7059,6 +7079,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_CHINESE);
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
+    ui->sendToSameTitleWindowsCheckBox->setText(SENDTOSAMETITLEWINDOWSCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
@@ -7156,6 +7177,7 @@ void QKeyMapper::setUILanguage_English()
     ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_ENGLISH);
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
+    ui->sendToSameTitleWindowsCheckBox->setText(SENDTOSAMETITLEWINDOWSCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
