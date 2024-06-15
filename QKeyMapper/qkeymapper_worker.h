@@ -417,8 +417,11 @@ public:
     Q_ENUM(Joy2MouseState)
 
 public slots:
-    void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
-    void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
+    // void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
+    // void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
+    void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
+    void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown);
+    void postMouseMove(HWND hwnd, int delta_x, int delta_y);
     void sendMouseMove(int delta_x, int delta_y);
     void sendMouseWheel(int wheel_updown);
     void setMouseToScreenCenter(void);

@@ -248,6 +248,59 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 #endif
 }
 
+void QKeyMapper_Worker::postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown)
+{
+    if (keyupdown == KEY_DOWN) {
+        PostMessage(hwnd, WM_KEYDOWN, keycode, 0);
+    }
+    else {
+        PostMessage(hwnd, WM_KEYUP, keycode, 0);
+    }
+}
+
+void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown)
+{
+    UINT messageMouseButton;
+    WPARAM wParam = 0;
+
+    if (mousebutton == "Mouse-L") {
+        messageMouseButton = (keyupdown == KEY_DOWN) ? WM_LBUTTONDOWN : WM_LBUTTONUP;
+        wParam = MK_LBUTTON;
+    }
+    else if (mousebutton == "Mouse-R") {
+        messageMouseButton = (keyupdown == KEY_DOWN) ? WM_RBUTTONDOWN : WM_RBUTTONUP;
+        wParam = MK_RBUTTON;
+    }
+    else if (mousebutton == "Mouse-M") {
+        messageMouseButton = (keyupdown == KEY_DOWN) ? WM_MBUTTONDOWN : WM_MBUTTONUP;
+        wParam = MK_MBUTTON;
+    }
+    else if (mousebutton == "Mouse-X1") {
+        messageMouseButton = (keyupdown == KEY_DOWN) ? WM_XBUTTONDOWN : WM_XBUTTONUP;
+        wParam = MAKEWPARAM(MK_XBUTTON1, XBUTTON1);
+    }
+    else if (mousebutton == "Mouse-X2") {
+        messageMouseButton = (keyupdown == KEY_DOWN) ? WM_XBUTTONDOWN : WM_XBUTTONUP;
+        wParam = MAKEWPARAM(MK_XBUTTON2, XBUTTON2);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[postMouseButton]" << "Invalid Mouse Button Name :" << mousebutton;
+#endif
+        return;
+    }
+
+    PostMessage(hwnd, messageMouseButton, wParam, 0);
+}
+
+void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
+{
+    LPARAM lParam = MAKELPARAM(delta_x, delta_y);
+
+    PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+}
+
+#if 0
 void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
 //    QMutexLocker locker(&sendinput_mutex);
@@ -303,6 +356,7 @@ void QKeyMapper_Worker::sendMouseClick(V_MOUSECODE vmousecode, int keyupdown)
 #endif
     }
 }
+#endif
 
 void QKeyMapper_Worker::sendMouseMove(int delta_x, int delta_y)
 {
@@ -835,6 +889,15 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     input.mi.dwFlags = vmousecode.MouseUpCode;
                 }
                 SendInput(1, &input, sizeof(INPUT));
+
+                if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                        postMouseButton(hwnd, key, keyupdown);
+                    }
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] postMouseButton(" << key << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                }
             }
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                 sendMousePointClick(key, KEY_UP);
@@ -870,18 +933,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                 }
 
-                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
-
-                if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                        PostMessage(hwnd, WM_KEYUP, vkeycode.KeyCode, 0);
-                    }
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendInputKeys] PostMessage(" << key << ") KeyUp -> " << QKeyMapper::s_last_HWNDList;
-#endif
-                }
-
                 INPUT input = { 0 };
+                V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
                 DWORD extenedkeyflag = 0;
                 if (true == vkeycode.ExtenedFlag){
                     extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
@@ -911,6 +964,15 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 SendInput(1, &input, sizeof(INPUT));
 
                 s_forceSendVirtualKey = false;
+
+                if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                        postVirtualKeyCode(hwnd, vkeycode.KeyCode, keyupdown);
+                    }
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyUp -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                }
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -1012,6 +1074,15 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         input.mi.dwFlags = vmousecode.MouseUpCode;
                     }
                     SendInput(1, &input, sizeof(INPUT));
+
+                    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                            postMouseButton(hwnd, key, keyupdown);
+                        }
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] postMouseButton(" << key << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                    }
                 }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                     sendMousePointClick(key, KEY_DOWN);
@@ -1043,18 +1114,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         continue;
                     }
 
-                    V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
-
-                    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                            PostMessage(hwnd, WM_KEYDOWN, vkeycode.KeyCode, 0);
-                        }
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "[sendInputKeys] PostMessage(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
-#endif
-                    }
-
                     INPUT input = { 0 };
+                    V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
                     DWORD extenedkeyflag = 0;
                     if (true == vkeycode.ExtenedFlag){
                         extenedkeyflag = KEYEVENTF_EXTENDEDKEY;
@@ -1086,6 +1147,14 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[sendInputKeys] VirtualKey send Key End ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
 #endif
+                    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                            postVirtualKeyCode(hwnd, vkeycode.KeyCode, keyupdown);
+                        }
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                    }
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -4739,6 +4808,15 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
                                      << ", delta_x = " << delta_x << ", delta_y = " << delta_y;
 #endif
         sendMouseMove(delta_x, delta_y);
+
+        if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                postMouseMove(hwnd, delta_x, delta_y);
+            }
+#ifdef MOUSE_VERBOSE_LOG
+            qDebug().nospace().noquote() << "[joystick2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
+#endif
+        }
     }
 }
 
@@ -4785,6 +4863,15 @@ void QKeyMapper_Worker::key2MouseMoveProc()
                                                                 << "-> delta_x = " << delta_x << ", delta_y = " << delta_y;
 #endif
         sendMouseMove(delta_x, delta_y);
+
+        if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                postMouseMove(hwnd, delta_x, delta_y);
+            }
+#ifdef MOUSE_VERBOSE_LOG
+            qDebug().nospace().noquote() << "[key2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
+#endif
+        }
     }
 }
 
