@@ -571,7 +571,7 @@ public:
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
-    static bool hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
+    static int hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);

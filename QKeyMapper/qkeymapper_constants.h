@@ -99,6 +99,10 @@ extern const int KEY_INTERCEPT_NONE;
 extern const int KEY_INTERCEPT_BLOCK;
 extern const int KEY_INTERCEPT_PASSTHROUGH;
 
+extern const int KEY_PROC_NONE;
+extern const int KEY_PROC_BURST;
+extern const int KEY_PROC_LOCK;
+
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_KEYSEQ_HOLDDOWN;

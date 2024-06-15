@@ -4939,7 +4939,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
 
         int findindex = -1;
         if (hookprocstart) {
-            returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+            returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
             findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
         }
 
@@ -5199,7 +5199,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
 
         int findindex = -1;
         if (hookprocstart) {
-            returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+            returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
             findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
         }
 
@@ -5705,7 +5705,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
             int findindex = -1;
             if (hookprocstart) {
-                returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+                returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
                 findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
             }
 
@@ -6155,7 +6155,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
                 int findindex = -1;
                 if (hookprocstart) {
-                    returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+                    returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
                     findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                 }
 
@@ -6629,9 +6629,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 }
 
-bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int keyupdown)
+int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int keyupdown)
 {
-    bool returnFlag = false;
+    int keyproc = KEY_PROC_NONE;
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
 
     if (KEY_DOWN == keyupdown){
@@ -6639,7 +6639,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
             if (findindex >=0 && true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
                 if (true == QKeyMapper::KeyMappingDataList.at(findindex).Lock) {
                     if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
-                        returnFlag = true;
+                        keyproc = KEY_PROC_LOCK;
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("hookBurstAndLockProc(): Lock ON & Burst ON(KEY_DOWN) -> Key \"%s\" LockStatus is ON, skip startBurstTimer()!", keycodeString.toStdString().c_str());
 #endif
@@ -6684,7 +6684,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
                     /* Lock ON &  Burst ON */
                     if (true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
                         if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
-                            returnFlag = true;
+                            keyproc = KEY_PROC_LOCK;
 #ifdef DEBUG_LOGOUT_ON
                             qDebug("hookBurstAndLockProc(): Lock ON & Burst ON(KEY_UP) -> Key \"%s\" LockStatus is ON, skip stopBurstTimer()!", keycodeString.toStdString().c_str());
 #endif
@@ -6692,13 +6692,13 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
                         else {
                             // emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
                             emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(keycodeString, findindex);
-                            returnFlag = true;
+                            keyproc = KEY_PROC_BURST;
                         }
                     }
                     /* Lock ON &  Burst OFF */
                     else {
                         if (true == QKeyMapper::KeyMappingDataList.at(findindex).LockStatus) {
-                            returnFlag = true;
+                            keyproc = KEY_PROC_LOCK;
 #ifdef DEBUG_LOGOUT_ON
                             qDebug("hookBurstAndLockProc(): Lock ON & Burst OFF -> Key \"%s\" LockStatus is ON, skip KeyUp!", keycodeString.toStdString().c_str());
 #endif
@@ -6710,7 +6710,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
                     if (true == QKeyMapper::KeyMappingDataList.at(findindex).Burst) {
                         // emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
                         emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(keycodeString, findindex);
-                        returnFlag = true;
+                        keyproc = KEY_PROC_BURST;
                     }
                     /* Lock OFF &  Burst OFF do nothing */
                 }
@@ -6718,7 +6718,7 @@ bool QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int k
         }
     }
 
-    return returnFlag;
+    return keyproc;
 }
 
 int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, int keyupdown)
@@ -6922,7 +6922,7 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
     bool returnFlag = false;
     QString keycodeStringForSearch = QString(PREFIX_SHORTCUT) + keycodeString;
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeStringForSearch);
-    returnFlag = hookBurstAndLockProc(keycodeStringForSearch, keyupdown);
+    returnFlag = (hookBurstAndLockProc(keycodeStringForSearch, keyupdown) != KEY_PROC_NONE);
     int intercept = updatePressedRealKeysList(keycodeStringForSearch, keyupdown);
 
     if (intercept == KEY_INTERCEPT_BLOCK) {
@@ -7078,7 +7078,8 @@ void QKeyMapper_Worker::startBurstKeyTimer(const QString &burstKey, int mappingI
         s_BurstKeyPressTimerMap.insert(burstKey, burstkeypressTimer);
     }
     burstkeypressTimer->start(burstpressTime);
-    sendBurstKeyDown(mappingIndex);
+    /* First mappingkey is already send with emit startBurstKeyTimer_Signal process */
+    // sendBurstKeyDown(mappingIndex);
 
     QTimer* burstkeyTimer;
     if (s_BurstKeyTimerMap.contains(burstKey)) {
@@ -7326,20 +7327,22 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
     }
 
     if (KEY_DOWN == keyupdown) {
-        int returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+        int keyproc = hookBurstAndLockProc(keycodeString, keyupdown);
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
 
-        if (false == returnFlag && findindex >=0){
+        if (findindex >= 0) {
             if (false == pressedLongPressKeysList.contains(keycodeString)) {
                 pressedLongPressKeysList.append(keycodeString);
 
-                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                if (original_key.startsWith(PREFIX_SHORTCUT)) {
-                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    releaseKeyboardModifiers(modifiers_arg);
+                if (KEY_PROC_NONE == keyproc) {
+                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                    if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                        releaseKeyboardModifiers(modifiers_arg);
+                    }
+                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                 }
-                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
                 if (PassThrough) {
@@ -7369,15 +7372,16 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
         for (const QString &key : pressedLongPressKeysList) {
             if (key.startsWith(keycodeString)
                 || key.startsWith(keycodeString_RemoveMultiInput)) {
-                int returnFlag = hookBurstAndLockProc(key, keyupdown);
+                int keyproc = hookBurstAndLockProc(key, keyupdown);
                 int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
-                if (false == returnFlag) {
-                    releaseKeys.append(key);
-                }
-                if (false == returnFlag && findindex >=0){
-                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                releaseKeys.append(key);
+
+                if (findindex >=0){
+                    if (keyproc != KEY_PROC_LOCK) {
+                        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
                     if (PassThrough) {
@@ -7616,19 +7620,21 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
     int intercept = KEY_INTERCEPT_NONE;
 
     if (KEY_DOWN == keyupdown) {
-        int returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+        int keyproc = hookBurstAndLockProc(keycodeString, keyupdown);
         int findindex = doublePressOriginalKeysMap.value(keycodeString, -1);
-        if (false == returnFlag && findindex >= 0){
+        if (findindex >= 0) {
             if (false == pressedDoublePressKeysList.contains(keycodeString)) {
                 pressedDoublePressKeysList.append(keycodeString);
 
-                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                if (original_key.startsWith(PREFIX_SHORTCUT)) {
-                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    releaseKeyboardModifiers(modifiers_arg);
+                if (KEY_PROC_NONE == keyproc) {
+                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                    if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                        releaseKeyboardModifiers(modifiers_arg);
+                    }
+                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                 }
-                emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
                 if (PassThrough) {
@@ -7660,15 +7666,16 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
             key.chop(1);
             if (key == keycodeString
                 || key == keycodeString_RemoveMultiInput) {
-                int returnFlag = hookBurstAndLockProc(doublepress_key, keyupdown);
+                int keyproc = hookBurstAndLockProc(doublepress_key, keyupdown);
                 int findindex = doublePressOriginalKeysMap.value(doublepress_key, -1);
-                if (false == returnFlag) {
-                    releaseKeys.append(doublepress_key);
-                }
-                if (false == returnFlag && findindex >= 0) {
-                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
-                    QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-                    emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                releaseKeys.append(doublepress_key);
+
+                if (findindex >= 0) {
+                    if (keyproc != KEY_PROC_LOCK) {
+                        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList.at(findindex).Mapping_Keys;
+                        QString original_key = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList.at(findindex).PassThrough;
                     if (PassThrough) {
@@ -7826,7 +7833,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
     int findindex = -1;
 
     if (m_JoystickCapture) {
-        returnFlag = hookBurstAndLockProc(keycodeString, keyupdown);
+        returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
         findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
     }
 

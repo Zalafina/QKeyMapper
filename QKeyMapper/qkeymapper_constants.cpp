@@ -120,6 +120,10 @@ const int KEY_INTERCEPT_NONE            = 0;
 const int KEY_INTERCEPT_BLOCK           = 1;
 const int KEY_INTERCEPT_PASSTHROUGH     = 2;
 
+const int KEY_PROC_NONE         = 0;
+const int KEY_PROC_BURST        = 1;
+const int KEY_PROC_LOCK         = 2;
+
 const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
 const int SENDMODE_KEYSEQ_HOLDDOWN  = 3;
