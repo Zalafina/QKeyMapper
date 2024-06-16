@@ -293,6 +293,34 @@ void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, i
     PostMessage(hwnd, messageMouseButton, wParam, 0);
 }
 
+void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
+{
+    WPARAM wParam = 0;
+    LPARAM lParam = 0;
+    UINT msg = 0;
+
+    if (mousewheel == MOUSE_WHEEL_UP_STR) {
+        msg = WM_MOUSEWHEEL;
+        wParam = MAKEWPARAM(0, WHEEL_DELTA);
+    }
+    else if (mousewheel == MOUSE_WHEEL_DOWN_STR) {
+        msg = WM_MOUSEWHEEL;
+        wParam = MAKEWPARAM(0, -WHEEL_DELTA);
+    }
+    else if (mousewheel == MOUSE_WHEEL_LEFT_STR) {
+        msg = WM_MOUSEHWHEEL;
+        wParam = MAKEWPARAM(0, -WHEEL_DELTA);
+    }
+    else if (mousewheel == MOUSE_WHEEL_RIGHT_STR) {
+        msg = WM_MOUSEHWHEEL;
+        wParam = MAKEWPARAM(0, WHEEL_DELTA);
+    }
+
+    if (msg != 0) {
+        PostMessage(hwnd, msg, wParam, lParam);
+    }
+}
+
 void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
 {
     LPARAM lParam = MAKELPARAM(delta_x, delta_y);
@@ -1053,6 +1081,15 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
 
                     SendInput(1, &input, sizeof(INPUT));
+
+                    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                            postMouseWheel(hwnd, key);
+                        }
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] postMouseWheel(" << key << ") -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                    }
                 }
                 else if (true == VirtualMouseButtonMap.contains(key)) {
                     if (true == pressedVirtualKeysList.contains(key)) {

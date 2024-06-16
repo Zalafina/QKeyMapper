@@ -421,6 +421,7 @@ public slots:
     // void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown);
+    void postMouseWheel(HWND hwnd, const QString &mousewheel);
     void postMouseMove(HWND hwnd, int delta_x, int delta_y);
     void sendMouseMove(int delta_x, int delta_y);
     void sendMouseWheel(int wheel_updown);
