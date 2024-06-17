@@ -26,6 +26,7 @@ QStringList QKeyMapper_Worker::MultiVirtualGamepadInputList;
 QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
 QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
+QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 // QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
@@ -222,6 +223,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initJoystickKeyMap();
     initSpecialOriginalKeysList();
     initSpecialMappingKeysList();
+    initSpecialVirtualKeyCodeList();
     // initSkipReleaseModifiersKeysList();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -323,9 +325,44 @@ void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
 
 void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
 {
-    LPARAM lParam = MAKELPARAM(delta_x, delta_y);
+#if 1
+    POINT currentPos;
+    if (!GetCursorPos(&currentPos)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[postMouseMove]" << "GetCursorPos error! ->" << GetLastError();;
+#endif
+        return;
+    }
 
+    if (!ScreenToClient(hwnd, &currentPos)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[postMouseMove]" << "ScreenToClient error! hwnd:" << hwnd << ", currentPos.x:" << currentPos.x << ", currentPos.y:" << currentPos.y << ", GetLastError:" << GetLastError();
+#endif
+        return;
+    }
+
+    POINT newPos;
+    newPos.x = currentPos.x + delta_x;
+    newPos.y = currentPos.y + delta_y;
+
+    LPARAM lParam = MAKELPARAM(newPos.x, newPos.y);
     PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+
+#else
+    POINT currentPos;
+    if (!GetCursorPos(&currentPos)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[postMouseMove]" << "GetCursorPos error! ->" << GetLastError();;
+#endif
+        return;
+    }
+
+    int new_x = currentPos.x + delta_x;
+    int new_y = currentPos.y + delta_y;
+
+    LPARAM lParam = MAKELPARAM(new_x, new_y);
+    PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+#endif
 }
 
 #if 0
@@ -993,7 +1030,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
                 s_forceSendVirtualKey = false;
 
-                if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                if (QKeyMapper::getSendToSameTitleWindowsStatus()
+                    && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
                     for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
                         postVirtualKeyCode(hwnd, vkeycode.KeyCode, keyupdown);
                     }
@@ -1184,7 +1222,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[sendInputKeys] VirtualKey send Key End ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
 #endif
-                    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                    if (QKeyMapper::getSendToSameTitleWindowsStatus()
+                        && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
                         for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
                             postVirtualKeyCode(hwnd, vkeycode.KeyCode, keyupdown);
                         }
@@ -8873,6 +8912,19 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
             << VJOY_RT_ACCEL_STR
+            ;
+}
+
+void QKeyMapper_Worker::initSpecialVirtualKeyCodeList()
+{
+    SpecialVirtualKeyCodeList = QList<quint8>() \
+            << VK_KEY2MOUSE_UP
+            << VK_KEY2MOUSE_DOWN
+            << VK_KEY2MOUSE_LEFT
+            << VK_KEY2MOUSE_RIGHT
+            << VK_MOUSE2VJOY_HOLD
+            << VK_MOUSE2VJOY_DIRECT
+            << VK_GAMEPAD_HOME
             ;
 }
 
