@@ -95,8 +95,10 @@ const int UI_SCALE_4K_PERCENT_150 = 9;
 
 const int MOUSE_POINT_RADIUS = 12;
 
-const int SHOW_MOUSEPOINTS_OFF  = 0;
-const int SHOW_MOUSEPOINTS_ON   = 1;
+const int SHOW_POINTSIN_SCREEN_OFF  = 0;
+const int SHOW_POINTSIN_SCREEN_ON   = 1;
+const int SHOW_POINTSIN_WINDOW_OFF  = 2;
+const int SHOW_POINTSIN_WINDOW_ON   = 3;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
@@ -398,8 +400,9 @@ const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
 const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
 const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
 
-const char *SHOW_MOUSE_POINTS_KEY    = "F9";
-const char *SHOW_CAR_ORDINAL_KEY     = "Home";
+const char *SHOW_POINTS_IN_WINDOW_KEY   = "F8";
+const char *SHOW_POINTS_IN_SCREEN_KEY   = "F9";
+const char *SHOW_CAR_ORDINAL_KEY        = "Home";
 
 const char *MOUSE_WHEEL_UP_STR      = "Mouse-WheelUp";
 const char *MOUSE_WHEEL_DOWN_STR    = "Mouse-WheelDown";

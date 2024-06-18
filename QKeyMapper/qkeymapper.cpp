@@ -7400,17 +7400,27 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
     }
 }
 
-void QKeyMapper::showMousePoints(int onoff)
+void QKeyMapper::showMousePoints(int showpoints_trigger)
 {
-    if (SHOW_MOUSEPOINTS_ON == onoff) {
+    if (SHOW_POINTSIN_SCREEN_ON == showpoints_trigger) {
         if (!MousePointsList.isEmpty()) {
             // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
             // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
             ShowWindow(m_TransParentHandle, SW_SHOW);
         }
     }
-    else {
+    else if (SHOW_POINTSIN_SCREEN_OFF == showpoints_trigger) {
         ShowWindow(m_TransParentHandle, SW_HIDE);
+    }
+    else if (SHOW_POINTSIN_WINDOW_OFF == showpoints_trigger) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_WINDOW_OFF";
+#endif
+    }
+    else if (SHOW_POINTSIN_WINDOW_ON == showpoints_trigger) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_WINDOW_ON";
+#endif
     }
 }
 

@@ -319,7 +319,7 @@ signals:
     void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
-    void showMousePoints_Signal(int onoff);
+    void showMousePoints_Signal(int showpoints_trigger);
     void showCarOrdinal_Signal(qint32 car_ordinal);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
@@ -346,7 +346,7 @@ public slots:
 
     void updateMousePointLabelDisplay(const QPoint &point);
 
-    void showMousePoints(int onoff);
+    void showMousePoints(int showpoints_trigger);
 
     void showPopupMessage(const QString &message, const QString &color, int displayTime);
 
