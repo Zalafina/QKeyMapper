@@ -399,7 +399,7 @@ const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
 const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
 
 const char *SHOW_MOUSE_POINTS_KEY    = "F9";
-const char *SHOW_CAR_ORDINAL_KEY     = "F10";
+const char *SHOW_CAR_ORDINAL_KEY     = "Home";
 
 const char *MOUSE_WHEEL_UP_STR      = "Mouse-WheelUp";
 const char *MOUSE_WHEEL_DOWN_STR    = "Mouse-WheelDown";
