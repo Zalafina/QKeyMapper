@@ -1649,17 +1649,21 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression mapkey_regex("^(.+)⏱(\\d{1,4})$");
+    static QRegularExpression mapkey_regex("^(.+)⏱(\\d+)$");
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
         QString mapping_key = mapkey_match.captured(1);
         QString waitTimeString = mapkey_match.captured(2);
-        int waittime = waitTimeString.toInt();
+        bool ok;
+        int waittime = waitTimeString.toInt(&ok);
 
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
-            static QRegularExpression vjoy_regex("(vJoy-.+)@([0-3])$");
+            static QRegularExpression vjoy_regex("^(vJoy-.+)@([0-3])$");
+            static QRegularExpression screenpoint_regex("^Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)$");
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
+            QRegularExpressionMatch screenpoint_match = screenpoint_regex.match(mapping_key);
+
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
@@ -1673,6 +1677,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                         result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
                     }
                 }
+            }
+            else if (screenpoint_match.hasMatch()) {
+                result.isValid = true;
             }
             else {
                 result.isValid = false;
@@ -1685,7 +1692,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
         }
 
         if (result.isValid) {
-            if (waittime <= MAPPING_WAITTIME_MIN || waittime > MAPPING_WAITTIME_MAX) {
+            if (!ok
+                || waitTimeString == "0"
+                || waitTimeString.startsWith('0')
+                || waittime <= MAPPING_WAITTIME_MIN
+                || waittime > MAPPING_WAITTIME_MAX) {
                 result.isValid = false;
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                     result.errorMessage = QString("Invalid waittime \"%1\"").arg(waitTimeString);
@@ -1698,8 +1709,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     else {
         QString mapping_key = mapkey;
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
-            static QRegularExpression vjoy_regex("(vJoy-.+)@([0-3])$");
+            static QRegularExpression vjoy_regex("^(vJoy-.+)@([0-3])$");
+            static QRegularExpression screenpoint_regex("^Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)$");
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
+            QRegularExpressionMatch screenpoint_match = screenpoint_regex.match(mapping_key);
+
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
@@ -1713,6 +1727,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                         result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
                     }
                 }
+            }
+            else if (screenpoint_match.hasMatch()) {
+                result.isValid = true;
             }
             else {
                 result.isValid = false;
