@@ -260,10 +260,40 @@ void QKeyMapper_Worker::postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdow
     }
 }
 
-void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown)
+void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
     UINT messageMouseButton;
     WPARAM wParam = 0;
+    int x = 0;
+    int y = 0;
+
+    if (mousepoint.x() >= 0 && mousepoint.y() >= 0) {
+        x = mousepoint.x();
+        y = mousepoint.y();
+    }
+    else {
+        bool valid_point = true;
+        POINT currentPos;
+        if (!GetCursorPos(&currentPos)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[postMouseButton]" << "GetCursorPos error! ->" << GetLastError();;
+#endif
+            valid_point = false;
+        }
+
+        if (valid_point && !ScreenToClient(hwnd, &currentPos)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[postMouseButton]" << "ScreenToClient error! hwnd:" << hwnd << ", currentPos.x:" << currentPos.x << ", currentPos.y:" << currentPos.y << ", GetLastError:" << GetLastError();
+#endif
+            valid_point = false;
+        }
+
+        if (valid_point) {
+            x = currentPos.x;
+            y = currentPos.y;
+        }
+    }
+    LPARAM lParam = MAKELPARAM(x, y);
 
     if (mousebutton == "Mouse-L") {
         messageMouseButton = (keyupdown == KEY_DOWN) ? WM_LBUTTONDOWN : WM_LBUTTONUP;
@@ -292,7 +322,7 @@ void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, i
         return;
     }
 
-    PostMessage(hwnd, messageMouseButton, wParam, 0);
+    PostMessage(hwnd, messageMouseButton, wParam, lParam);
 }
 
 void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
@@ -1267,17 +1297,24 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
 void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown)
 {
-    static QRegularExpression regex("Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)");
+    static QRegularExpression regex("(Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)\\((\\d+),(\\d+)\\)");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
-        QString mousebutton = MOUSE_BUTTON_PREFIX + match.captured(1);
+        QString mousebutton = match.captured(1);
         if (!VirtualMouseButtonMap.contains(mousebutton)) {
             return;
         }
 
-        int x = match.captured(2).toInt();
-        int y = match.captured(3).toInt();
+        bool x_ok;
+        bool y_ok;
+        int x = match.captured(2).toInt(&x_ok);
+        int y = match.captured(3).toInt(&y_ok);
+
+        if (!x_ok || !y_ok || x < 0 || y < 0) {
+            return;
+        }
+
         double fScreenWidth     = GetSystemMetrics( SM_CXSCREEN )-1;
         double fScreenHeight    = GetSystemMetrics( SM_CYSCREEN )-1;
         double fx = x * ( 65535.0f / fScreenWidth );
@@ -1285,8 +1322,8 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
         V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(mousebutton);
         INPUT mouse_input = { 0 };
         mouse_input.type = INPUT_MOUSE;
-        mouse_input.mi.dx = fx;
-        mouse_input.mi.dy = fy;
+        mouse_input.mi.dx = static_cast<LONG>(fx);
+        mouse_input.mi.dy = static_cast<LONG>(fy);
         mouse_input.mi.mouseData = vmousecode.MouseXButton;
         mouse_input.mi.time = 0;
         mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_POINTCLICK;
@@ -1301,6 +1338,16 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
         if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug("sendMouseMove(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+        }
+
+        if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+            QPoint mousepoint(x, y);
+            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                postMouseButton(hwnd, mousebutton, keyupdown, mousepoint);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[sendMousePointClick] postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
         }
     }
@@ -5823,23 +5870,24 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
 #endif
 
-            static bool show_mousepoints = false;
+            static bool show_screenpoints = false;
+            static bool show_windowpoints = false;
             if (KEY_DOWN == keyupdown){
                 if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
-                        if (!show_mousepoints) {
+                        if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Screen KEY_DOWN -> ON";
 #endif
-                            show_mousepoints = true;
+                            show_screenpoints = true;
                             emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_SCREEN_ON);
                         }
                 }
                 else if (keycodeString == SHOW_POINTS_IN_WINDOW_KEY) {
-                        if (!show_mousepoints) {
+                        if (!show_windowpoints) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Window KEY_DOWN -> ON";
 #endif
-                            show_mousepoints = true;
+                            show_windowpoints = true;
                             emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_WINDOW_ON);
                         }
                 }
@@ -5854,20 +5902,20 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
             else {
                 if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
-                    if (show_mousepoints) {
+                    if (show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Screen KEY_UP -> OFF";
 #endif
-                        show_mousepoints = false;
+                        show_screenpoints = false;
                         emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_SCREEN_OFF);
                     }
                 }
                 else if (keycodeString == SHOW_POINTS_IN_WINDOW_KEY) {
-                    if (show_mousepoints) {
+                    if (show_windowpoints) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Window KEY_UP -> OFF";
 #endif
-                        show_mousepoints = false;
+                        show_windowpoints = false;
                         emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_WINDOW_OFF);
                     }
                 }

@@ -287,6 +287,7 @@ public:
     static void DrawMousePoints(HWND hwnd, HDC hdc);
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static HWND createTransparentWindow(void);
+    static void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
     static void destoryTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
@@ -530,6 +531,7 @@ public:
     static bool s_isDestructing;
     static int s_GlobalSettingAutoStart;
     static uint s_CycleCheckLoopCount;
+    static HWND s_CurrentMappingHWND;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;

@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QHash>
 #include <QColor>
+#include <QPoint>
 // #include <QHotkey>
 #include <QThreadPool>
 #include <QWaitCondition>
@@ -420,7 +421,7 @@ public slots:
     // void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     // void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
-    void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown);
+    void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseWheel(HWND hwnd, const QString &mousewheel);
     void postMouseMove(HWND hwnd, int delta_x, int delta_y);
     void sendMouseMove(int delta_x, int delta_y);

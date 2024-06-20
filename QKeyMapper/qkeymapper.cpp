@@ -8,6 +8,7 @@ QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 bool QKeyMapper::s_isDestructing = false;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
 uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+HWND QKeyMapper::s_CurrentMappingHWND = NULL;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
@@ -592,7 +593,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace() << "[cycleCheckProcessProc]" << " GlobalMappingFlag = " << GlobalMappingFlag << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_GLOBAL) << "]";
 #endif
-                        setKeyHook(Q_NULLPTR);
+                        setKeyHook(NULL);
                         m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
                         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
                         updateSystemTrayDisplay();
@@ -722,6 +723,7 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 {
     // updateShortcutsMap();
 
+    s_CurrentMappingHWND = hWnd;
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
 }
 
@@ -729,6 +731,7 @@ void QKeyMapper::setKeyUnHook(void)
 {
     // freeShortcuts();
 
+    s_CurrentMappingHWND = NULL;
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
 }
 
@@ -2059,6 +2062,15 @@ HWND QKeyMapper::createTransparentWindow()
     ShowWindow(hwnd, SW_HIDE);
 
     return hwnd;
+}
+
+void QKeyMapper::resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[resizeTransparentWindow]"<< " Resize TransparentWindow to x:" << x << " y:" << y << " width:" << width << " height:" << height;
+#endif
+    // Adjust the window size and position
+    SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 void QKeyMapper::destoryTransparentWindow(HWND hwnd)
@@ -7430,6 +7442,15 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 void QKeyMapper::showMousePoints(int showpoints_trigger)
 {
     if (SHOW_POINTSIN_SCREEN_ON == showpoints_trigger) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_SCREEN_ON";
+#endif
+        if (IsWindowVisible(m_TransParentHandle)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[showMousePoints]" << "TransParentWindow is already visible.";
+#endif
+            return;
+        }
         if (!MousePointsList.isEmpty()) {
             // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
             // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
@@ -7437,17 +7458,42 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
         }
     }
     else if (SHOW_POINTSIN_SCREEN_OFF == showpoints_trigger) {
-        ShowWindow(m_TransParentHandle, SW_HIDE);
-    }
-    else if (SHOW_POINTSIN_WINDOW_OFF == showpoints_trigger) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_WINDOW_OFF";
+        qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_SCREEN_OFF";
 #endif
+        ShowWindow(m_TransParentHandle, SW_HIDE);
     }
     else if (SHOW_POINTSIN_WINDOW_ON == showpoints_trigger) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_WINDOW_ON";
 #endif
+        if (IsWindowVisible(m_TransParentHandle)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[showMousePoints]" << "TransParentWindow is already visible.";
+#endif
+            return;
+        }
+        RECT clientRect;
+        WINDOWINFO winInfo;
+        winInfo.cbSize = sizeof(WINDOWINFO);
+        if (s_CurrentMappingHWND != NULL && GetWindowInfo(s_CurrentMappingHWND, &winInfo)) {
+            clientRect = winInfo.rcClient;
+            int clientWidth = clientRect.right - clientRect.left;
+            int clientHeight = clientRect.bottom - clientRect.top;
+            resizeTransparentWindow(m_TransParentHandle, clientRect.left, clientRect.top, clientWidth, clientHeight);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[showMousePoints]"<< " CurrentMappingHWND clientRect -> x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << clientWidth << ", h:" << clientHeight;
+#endif
+            if (!MousePointsList.isEmpty()) {
+                ShowWindow(m_TransParentHandle, SW_SHOW);
+            }
+        }
+    }
+    else if (SHOW_POINTSIN_WINDOW_OFF == showpoints_trigger) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_WINDOW_OFF";
+#endif
+        ShowWindow(m_TransParentHandle, SW_HIDE);
     }
 }
 
