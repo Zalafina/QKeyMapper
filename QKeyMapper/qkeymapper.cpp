@@ -1756,9 +1756,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
 
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-.+)@([0-3])$");
-            static QRegularExpression screenpoint_regex("^Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)$");
+            static QRegularExpression mousepoint_regex("^Mouse-(L|R|M|X1|X2)(:W)?\\((\\d+),(\\d+)\\)$");
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
-            QRegularExpressionMatch screenpoint_match = screenpoint_regex.match(mapping_key);
+            QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
@@ -1774,7 +1774,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                     }
                 }
             }
-            else if (screenpoint_match.hasMatch()) {
+            else if (mousepoint_match.hasMatch()) {
                 result.isValid = true;
             }
             else {
@@ -1806,9 +1806,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
         QString mapping_key = mapkey;
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-.+)@([0-3])$");
-            static QRegularExpression screenpoint_regex("^Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)$");
+            static QRegularExpression mousepoint_regex("^Mouse-(L|R|M|X1|X2)(:W)?\\((\\d+),(\\d+)\\)$");
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
-            QRegularExpressionMatch screenpoint_match = screenpoint_regex.match(mapping_key);
+            QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
@@ -1824,7 +1824,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                     }
                 }
             }
-            else if (screenpoint_match.hasMatch()) {
+            else if (mousepoint_match.hasMatch()) {
                 result.isValid = true;
             }
             else {
