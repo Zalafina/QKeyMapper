@@ -388,17 +388,26 @@ const char *KEY_BLOCKED_STR = "BLOCKED";
 const char *GAMEPAD_HOME_STR = "GamepadHome";
 
 const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
-const char *MOUSE_POINT_POSTFIX  = "_Point";
+const char *MOUSE_WINDOWPOINT_POSTFIX  = "_WindowPoint";
+const char *MOUSE_SCREENPOINT_POSTFIX  = "_ScreenPoint";
 const char *MOUSE_L_STR  = "Mouse-L";
 const char *MOUSE_R_STR  = "Mouse-R";
 const char *MOUSE_M_STR  = "Mouse-M";
 const char *MOUSE_X1_STR = "Mouse-X1";
 const char *MOUSE_X2_STR = "Mouse-X2";
-const char *MOUSE_L_POINT_STR  = "Mouse-L_Point";
-const char *MOUSE_R_POINT_STR  = "Mouse-R_Point";
-const char *MOUSE_M_POINT_STR  = "Mouse-M_Point";
-const char *MOUSE_X1_POINT_STR = "Mouse-X1_Point";
-const char *MOUSE_X2_POINT_STR = "Mouse-X2_Point";
+const char *MOUSE_L_WINDOWPOINT_STR  = "Mouse-L_WindowPoint";
+const char *MOUSE_R_WINDOWPOINT_STR  = "Mouse-R_WindowPoint";
+const char *MOUSE_M_WINDOWPOINT_STR  = "Mouse-M_WindowPoint";
+const char *MOUSE_X1_WINDOWPOINT_STR = "Mouse-X1_WindowPoint";
+const char *MOUSE_X2_WINDOWPOINT_STR = "Mouse-X2_WindowPoint";
+const char *MOUSE_L_SCREENPOINT_STR  = "Mouse-L_ScreenPoint";
+const char *MOUSE_R_SCREENPOINT_STR  = "Mouse-R_ScreenPoint";
+const char *MOUSE_M_SCREENPOINT_STR  = "Mouse-M_ScreenPoint";
+const char *MOUSE_X1_SCREENPOINT_STR = "Mouse-X1_ScreenPoint";
+const char *MOUSE_X2_SCREENPOINT_STR = "Mouse-X2_ScreenPoint";
+
+const int SHOW_MODE_SCREEN  = 0;
+const int SHOW_MODE_WINDOW  = 1;
 
 const char *SHOW_POINTS_IN_WINDOW_KEY   = "F8";
 const char *SHOW_POINTS_IN_SCREEN_KEY   = "F9";

@@ -261,6 +261,7 @@ public:
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
+    static QString getProcessNameFromPID(DWORD dwProcessId);
     static HWND getHWND_byPID(DWORD dwProcessID);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
@@ -284,11 +285,11 @@ public:
     static void EnumProcessFunction(void);
     // unused enum all process function <<<
 
-    static void DrawMousePoints(HWND hwnd, HDC hdc);
+    static void DrawMousePoints(HWND hwnd, HDC hdc, int showMode);
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-    static HWND createTransparentWindow(void);
-    static void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
-    static void destoryTransparentWindow(HWND hwnd);
+    HWND createTransparentWindow(void);
+    void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
+    void destoryTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
 
@@ -537,7 +538,8 @@ public:
     static QList<HWND> s_last_HWNDList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
-    static QList<MousePoint_Info> MousePointsList;
+    static QList<MousePoint_Info> ScreenMousePointsList;
+    static QList<MousePoint_Info> WindowMousePointsList;
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
     static QString s_MappingSwitchKeyString;
@@ -579,6 +581,10 @@ private:
     // QHotkey *m_HotKey_StartStop;
     bool loadSetting_flag;
     HWND m_TransParentHandle;
+    int m_TransParentWindowInitialX;
+    int m_TransParentWindowInitialY;
+    int m_TransParentWindowInitialWidth;
+    int m_TransParentWindowInitialHeight;
     QInputDeviceListWindow *m_deviceListWindow;
     QItemSetupDialog *m_ItemSetupDialog;
 };

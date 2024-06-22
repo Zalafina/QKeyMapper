@@ -14,7 +14,8 @@ QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
-QList<MousePoint_Info> QKeyMapper::MousePointsList = QList<MousePoint_Info>();
+QList<MousePoint_Info> QKeyMapper::ScreenMousePointsList = QList<MousePoint_Info>();
+QList<MousePoint_Info> QKeyMapper::WindowMousePointsList = QList<MousePoint_Info>();
 // QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
 QString QKeyMapper::s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
@@ -51,6 +52,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_StartStop(new QHotkey(this)),
     loadSetting_flag(false),
     m_TransParentHandle(NULL),
+    m_TransParentWindowInitialX(0),
+    m_TransParentWindowInitialY(0),
+    m_TransParentWindowInitialWidth(0),
+    m_TransParentWindowInitialHeight(0),
     m_deviceListWindow(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR)
 {
@@ -559,25 +564,28 @@ void QKeyMapper::cycleCheckProcessProc(void)
             }
         }
 
-        bool isVisibleWindow = IsWindowVisible(hwnd);
+        bool isVisibleWindow = false;
         bool isExToolWindow = false;
-
-        WINDOWINFO winInfo;
-        winInfo.cbSize = sizeof(WINDOWINFO);
-        if (GetWindowInfo(hwnd, &winInfo)) {
-            if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
-                isExToolWindow = true;
-        }
-
-        /* Skip inVisibleWidow & ToolbarWindow >>> */
         bool isToolbarWindow = false;
-        if (false == filename.isEmpty()
-            && false == windowTitle.isEmpty()
-            && true == isVisibleWindow
-            && true == isExToolWindow) {
-            isToolbarWindow = true;
+
+        if (checkresult <= 1) {
+            isVisibleWindow = IsWindowVisible(hwnd);
+            WINDOWINFO winInfo;
+            winInfo.cbSize = sizeof(WINDOWINFO);
+            if (GetWindowInfo(hwnd, &winInfo)) {
+                if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
+                    isExToolWindow = true;
+            }
+
+            /* Skip inVisibleWidow & ToolbarWindow >>> */
+            if (false == filename.isEmpty()
+                && false == windowTitle.isEmpty()
+                && true == isVisibleWindow
+                && true == isExToolWindow) {
+                isToolbarWindow = true;
+            }
+            /* Skip inVisibleWidow & ToolbarWindow <<< */
         }
-        /* Skip inVisibleWidow & ToolbarWindow <<< */
 
         bool GlobalMappingFlag = false;
         if (1 == ui->settingselectComboBox->currentIndex()
@@ -628,7 +636,12 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         }
                     }
                     playStartSound();
-                    setKeyHook(hwnd);
+                    if (checkresult > 1) {
+                        setKeyHook(NULL);
+                    }
+                    else {
+                        setKeyHook(hwnd);
+                    }
                     m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
                     s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
                     updateSystemTrayDisplay();
@@ -715,6 +728,9 @@ void QKeyMapper::updateHWNDListProc()
 #ifdef DEBUG_LOGOUT_ON
     if (!s_hWndList.isEmpty()) {
         qDebug().nospace() << "[updateHWNDListProc] " << m_MapProcessInfo.WindowTitle << " lastHWNDList[" << s_last_HWNDList.size() << "] -> " << s_last_HWNDList;
+    }
+    if (s_CurrentMappingHWND != NULL) {
+        qDebug().nospace() << "[updateHWNDListProc] " << "Title=" << m_MapProcessInfo.WindowTitle << ", Process=" << m_MapProcessInfo.FileName << " -> " << s_CurrentMappingHWND;
     }
 #endif
 }
@@ -870,6 +886,45 @@ void QKeyMapper::getProcessInfoFromHWND(HWND hWnd, QString &processPathStr)
         processPathStr = QString::fromWCharArray(szProcessPath);
     }
     CloseHandle( hProcess );
+}
+
+QString QKeyMapper::getProcessNameFromPID(DWORD dwProcessId)
+{
+    QString ProcessPath;
+    QString processName;
+
+    getProcessInfoFromPID(dwProcessId, ProcessPath);
+
+    if (ProcessPath.isEmpty()) {
+        bool adjust_priv;
+        adjust_priv = EnablePrivilege(SE_DEBUG_NAME);
+        if (adjust_priv) {
+            getProcessInfoFromPID(dwProcessId, ProcessPath);
+        }
+        else {
+            qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+        }
+        adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+
+        if (!adjust_priv) {
+            qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+        }
+#ifdef DEBUG_LOGOUT_ON
+        if (ProcessPath.isEmpty()) {
+            qDebug().nospace().noquote() << "[EnumWindowsProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Failed! -> " << " [PID:" << dwProcessId <<"]";
+        }
+        else {
+            qDebug().nospace().noquote() << "[EnumWindowsProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Success -> " << ProcessPath << " [PID:" << dwProcessId <<"]";
+        }
+#endif
+    }
+
+    if (false == ProcessPath.isEmpty()){
+        QFileInfo fileinfo(ProcessPath);
+        processName = fileinfo.fileName();
+    }
+
+    return processName;
 }
 
 HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
@@ -1209,6 +1264,34 @@ BOOL QKeyMapper::EnumWindowsBgProc(HWND hWnd, LPARAM lParam)
     if (resultLength){
         WindowText = QString::fromWCharArray(titleBuffer);
         collectWindowsHWND(WindowText, hWnd);
+
+        bool fileNameCheckOK = true;
+        bool windowTitleCheckOK = true;
+        bool fileNameExist = !QKeyMapper::getInstance()->m_MapProcessInfo.FileName.isEmpty();
+        bool windowTitleExist = !QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle.isEmpty();
+
+        if (QKeyMapper::getInstance()->ui->nameCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+            fileNameCheckOK = false;
+        }
+
+        if (QKeyMapper::getInstance()->ui->titleCheckBox->checkState() == Qt::Checked && false == windowTitleExist) {
+            windowTitleCheckOK = false;
+        }
+
+        if (true == fileNameCheckOK
+            && true == windowTitleCheckOK
+            && false == WindowText.isEmpty()){
+            DWORD dwProcessId = 0;
+            GetWindowThreadProcessId(hWnd, &dwProcessId);
+            QString processName = getProcessNameFromPID(dwProcessId);
+
+            if (processName == QKeyMapper::getInstance()->m_MapProcessInfo.FileName
+                && WindowText.contains(QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle)) {
+                if (s_CurrentMappingHWND == NULL) {
+                    s_CurrentMappingHWND = hWnd;
+                }
+            }
+        }
     }
 
     return TRUE;
@@ -1894,9 +1977,15 @@ void QKeyMapper::EnumProcessFunction(void)
 }
 
 #if 1
-void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
+void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[DrawMousePoints] Show Mode = " << (showMode == SHOW_MODE_WINDOW ? "SHOW_MODE_WINDOW" : "SHOW_MODE_SCREEN");
+#endif
+
     Q_UNUSED(hwnd);
+    const QList<MousePoint_Info>& MousePointsList = (showMode == SHOW_MODE_WINDOW) ? WindowMousePointsList : ScreenMousePointsList;
+
     if (MousePointsList.isEmpty()) {
         return;
     }
@@ -2012,12 +2101,14 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 
 LRESULT QKeyMapper::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+    int showMode = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
     switch (msg) {
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        DrawMousePoints(hwnd, hdc);
+        DrawMousePoints(hwnd, hdc, showMode);
         EndPaint(hwnd, &ps);
         break;
     }
@@ -2060,6 +2151,13 @@ HWND QKeyMapper::createTransparentWindow()
     SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
+
+    // Save the initial width & height of TransparentWindow
+    m_TransParentWindowInitialWidth = screenWidth;
+    m_TransParentWindowInitialHeight = screenHeight;
+
+    // Initialize the show mode to SHOW_MODE_SCREEN
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_SCREEN);
 
     return hwnd;
 }
@@ -6394,11 +6492,16 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << MOUSE_M_STR
             << MOUSE_X1_STR
             << MOUSE_X2_STR
-            << MOUSE_L_POINT_STR
-            << MOUSE_R_POINT_STR
-            << MOUSE_M_POINT_STR
-            << MOUSE_X1_POINT_STR
-            << MOUSE_X2_POINT_STR
+            << MOUSE_L_WINDOWPOINT_STR
+            << MOUSE_R_WINDOWPOINT_STR
+            << MOUSE_M_WINDOWPOINT_STR
+            << MOUSE_X1_WINDOWPOINT_STR
+            << MOUSE_X2_WINDOWPOINT_STR
+            << MOUSE_L_SCREENPOINT_STR
+            << MOUSE_R_SCREENPOINT_STR
+            << MOUSE_M_SCREENPOINT_STR
+            << MOUSE_X1_SCREENPOINT_STR
+            << MOUSE_X2_SCREENPOINT_STR
             << MOUSE_WHEEL_UP_STR
             << MOUSE_WHEEL_DOWN_STR
             << MOUSE_WHEEL_LEFT_STR
@@ -6649,11 +6752,16 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QStringList orikeycodelist = keycodelist;
     orikeycodelist.removeOne(KEY_NONE_STR);
     orikeycodelist.removeOne(KEY_BLOCKED_STR);
-    orikeycodelist.removeOne(MOUSE_L_POINT_STR);
-    orikeycodelist.removeOne(MOUSE_R_POINT_STR);
-    orikeycodelist.removeOne(MOUSE_M_POINT_STR);
-    orikeycodelist.removeOne(MOUSE_X1_POINT_STR);
-    orikeycodelist.removeOne(MOUSE_X2_POINT_STR);
+    orikeycodelist.removeOne(MOUSE_L_WINDOWPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_R_WINDOWPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_M_WINDOWPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_X1_WINDOWPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_X2_WINDOWPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_L_SCREENPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_R_SCREENPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_M_SCREENPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_X1_SCREENPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_X2_SCREENPOINT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
@@ -7035,31 +7143,36 @@ void QKeyMapper::refreshKeyMappingDataTable()
 void QKeyMapper::updateMousePointsList()
 {
     if (KeyMappingDataList.isEmpty()) {
-        MousePointsList.clear();
+        ScreenMousePointsList.clear();
+        WindowMousePointsList.clear();
         return;
     }
 
-    static QRegularExpression regex("Mouse-(L|R|M|X1|X2)\\((\\d+),(\\d+)\\)");
-    QRegularExpressionMatch match;
-    MousePointsList.clear();
+    static QRegularExpression mousepoint_regex("Mouse-(L|R|M|X1|X2)(:W)?\\((\\d+),(\\d+)\\)");
+    QRegularExpressionMatch mousepoint_match;
+    ScreenMousePointsList.clear();
+    WindowMousePointsList.clear();
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 
-        match = regex.match(mappingkeys_str);
-        while (match.hasMatch())
+        mousepoint_match = mousepoint_regex.match(mappingkeys_str);
+        while (mousepoint_match.hasMatch())
         {
             QString ori_key = keymapdata.Original_Key;
-            QString map_key = match.captured(0);
-            QString x_str = match.captured(2);
-            QString y_str = match.captured(3);
+            QString map_key = mousepoint_match.captured(0);
+            bool isWindowPoint = !mousepoint_match.captured(2).isEmpty();
+            QString x_str = mousepoint_match.captured(3);
+            QString y_str = mousepoint_match.captured(4);
             int x = x_str.isEmpty() ? -1 : x_str.toInt();
             int y = y_str.isEmpty() ? -1 : y_str.toInt();
 
-            // Check if the same "Mouse-?(int,int)" string already exists in MousePointsList
+            QList<MousePoint_Info>& targetList = isWindowPoint ? WindowMousePointsList : ScreenMousePointsList;
+
+            // Check if the same "Mouse-?(int,int)" string already exists in the target list
             bool alreadyExists = false;
-            for (const MousePoint_Info &info : MousePointsList)
+            for (const MousePoint_Info &info : targetList)
             {
                 if (info.map_key == map_key)
                 {
@@ -7076,17 +7189,18 @@ void QKeyMapper::updateMousePointsList()
                 info.map_key = map_key;
                 info.x = x;
                 info.y = y;
-                MousePointsList.append(info);
+                targetList.append(info);
             }
 
-            int matchEnd = match.capturedEnd();
+            int matchEnd = mousepoint_match.capturedEnd();
             mappingkeys_str = mappingkeys_str.mid(matchEnd);
-            match = regex.match(mappingkeys_str);
+            mousepoint_match = mousepoint_regex.match(mappingkeys_str);
         }
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateMousePointsList]" << "Updated MousePointsList ->" << MousePointsList;
+    qDebug() << "[updateMousePointsList]" << "Updated ScreenMousePointsList ->" << ScreenMousePointsList;
+    qDebug() << "[updateMousePointsList]" << "Updated WindowMousePointsList ->" << WindowMousePointsList;
 #endif
 }
 
@@ -7445,17 +7559,24 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_SCREEN_ON";
 #endif
+        if (ScreenMousePointsList.isEmpty()) {
+            return;
+        }
+
         if (IsWindowVisible(m_TransParentHandle)) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[showMousePoints]" << "TransParentWindow is already visible.";
 #endif
             return;
         }
-        if (!MousePointsList.isEmpty()) {
-            // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
-            // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
-            ShowWindow(m_TransParentHandle, SW_SHOW);
-        }
+
+        // Set show mode to SCREEN
+        SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_SCREEN);
+        resizeTransparentWindow(m_TransParentHandle, m_TransParentWindowInitialX, m_TransParentWindowInitialY, m_TransParentWindowInitialWidth, m_TransParentWindowInitialHeight);
+
+        // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+        // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
+        ShowWindow(m_TransParentHandle, SW_SHOW);
     }
     else if (SHOW_POINTSIN_SCREEN_OFF == showpoints_trigger) {
 #ifdef DEBUG_LOGOUT_ON
@@ -7467,12 +7588,17 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[showMousePoints]" << "Show Points Trigger -> SHOW_POINTSIN_WINDOW_ON";
 #endif
+        if (WindowMousePointsList.isEmpty()) {
+            return;
+        }
+
         if (IsWindowVisible(m_TransParentHandle)) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[showMousePoints]" << "TransParentWindow is already visible.";
 #endif
             return;
         }
+
         RECT clientRect;
         WINDOWINFO winInfo;
         winInfo.cbSize = sizeof(WINDOWINFO);
@@ -7480,13 +7606,13 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
             clientRect = winInfo.rcClient;
             int clientWidth = clientRect.right - clientRect.left;
             int clientHeight = clientRect.bottom - clientRect.top;
+            // Set show mode to WINDOW
+            SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_WINDOW);
             resizeTransparentWindow(m_TransParentHandle, clientRect.left, clientRect.top, clientWidth, clientHeight);
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[showMousePoints]"<< " CurrentMappingHWND clientRect -> x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << clientWidth << ", h:" << clientHeight;
 #endif
-            if (!MousePointsList.isEmpty()) {
-                ShowWindow(m_TransParentHandle, SW_SHOW);
-            }
+            ShowWindow(m_TransParentHandle, SW_SHOW);
         }
     }
     else if (SHOW_POINTSIN_WINDOW_OFF == showpoints_trigger) {
@@ -8076,15 +8202,15 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
                 currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
             }
-            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
                 QString mousepointstr = ui->pointDisplayLabel->text();
                 if (mousepointstr.isEmpty()) {
                     QString message;
                     if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                        message = QString("Need to set a mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
+                        message = QString("Need to set a screen mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
                     }
                     else {
-                        message = QString("需要使用\"%1\"设置一个坐标点!").arg("L-Ctrl+鼠标左键点击");
+                        message = QString("需要使用\"%1\"设置一个屏幕坐标点!").arg("L-Ctrl+鼠标左键点击");
                     }
                     showWarningPopup(message);
                     return;
@@ -8095,17 +8221,54 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int y = mousepoint.y();
 
                     if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
 
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
                             && !ui->nextarrowCheckBox->isChecked()) {
                             QString message;
                             if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                                message = QString("Already set a same mouse point!");
+                                message = QString("Already set a same screen mouse point!");
                             }
                             else {
-                                message = QString("已经保存了一个相同的鼠标坐标点!");
+                                message = QString("已经保存了一个相同的屏幕坐标点!");
+                            }
+                            showWarningPopup(message);
+                            return;
+                        }
+                    }
+                }
+            }
+            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+                QString mousepointstr = ui->pointDisplayLabel->text();
+                if (mousepointstr.isEmpty()) {
+                    QString message;
+                    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                        message = QString("Need to set a window mouse point with \"%1\" click!").arg("L-Alt+Mouse-Left Click");
+                    }
+                    else {
+                        message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
+                    }
+                    showWarningPopup(message);
+                    return;
+                }
+                else {
+                    QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                    int x = mousepoint.x();
+                    int y = mousepoint.y();
+
+                    if (x >= 0 && y >= 0) {
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
+
+                        if (keymapdata.Mapping_Keys.size() == 1
+                            && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
+                            && !ui->nextarrowCheckBox->isChecked()) {
+                            QString message;
+                            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                                message = QString("Already set a same window mouse point!");
+                            }
+                            else {
+                                message = QString("已经保存了一个相同的窗口坐标点!");
                             }
                             showWarningPopup(message);
                             return;
@@ -8158,15 +8321,15 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
                     currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
                 }
-                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_POINT_POSTFIX)) {
+                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
                     QString mousepointstr = ui->pointDisplayLabel->text();
                     if (mousepointstr.isEmpty()) {
                         QString message;
                         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                            message = QString("Need to set a mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
+                            message = QString("Need to set a screen mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
                         }
                         else {
-                            message = QString("需要使用\"%1\"设置一个坐标点!").arg("L-Ctrl+鼠标左键点击");
+                            message = QString("需要使用\"%1\"设置一个屏幕坐标点!").arg("L-Ctrl+鼠标左键点击");
                         }
                         showWarningPopup(message);
                         return;
@@ -8177,7 +8340,30 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int y = mousepoint.y();
 
                         if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_POINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                        }
+                    }
+                }
+                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+                    QString mousepointstr = ui->pointDisplayLabel->text();
+                    if (mousepointstr.isEmpty()) {
+                        QString message;
+                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                            message = QString("Need to set a window mouse point with \"%1\" click!").arg("L-Alt+Mouse-Left Click");
+                        }
+                        else {
+                            message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
+                        }
+                        showWarningPopup(message);
+                        return;
+                    }
+                    else {
+                        QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                        int x = mousepoint.x();
+                        int y = mousepoint.y();
+
+                        if (x >= 0 && y >= 0) {
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
                         }
                     }
                 }
@@ -8265,7 +8451,8 @@ void QKeyMapper::on_clearallButton_clicked()
         m_KeyMappingDataTable->clearContents();
         m_KeyMappingDataTable->setRowCount(0);
         KeyMappingDataList.clear();
-        MousePointsList.clear();
+        ScreenMousePointsList.clear();
+        WindowMousePointsList.clear();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
 #endif
