@@ -441,7 +441,7 @@ private slots:
 
     void on_filterKeysCheckBox_stateChanged(int state);
 
-    void on_keymapdataTable_itemSelectionChanged();
+    void keyMappingTabl_ItemSelectionChanged();
 
     void on_startupMinimizedCheckBox_stateChanged(int state);
 

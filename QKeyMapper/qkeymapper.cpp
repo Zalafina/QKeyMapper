@@ -305,7 +305,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
-    QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::on_keymapdataTable_itemSelectionChanged);
+    QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged);
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
     QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
     // QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellDoubleClicked, this, &QKeyMapper::keyMappingTableCellDoubleClicked);
@@ -9370,7 +9370,7 @@ void QKeyMapper::on_filterKeysCheckBox_stateChanged(int state)
     }
 }
 
-void QKeyMapper::on_keymapdataTable_itemSelectionChanged()
+void QKeyMapper::keyMappingTabl_ItemSelectionChanged()
 {
     if (m_KeyMapStatus != KEYMAP_IDLE){
         return;
@@ -9384,12 +9384,12 @@ void QKeyMapper::on_keymapdataTable_itemSelectionChanged()
         m_KeyMappingDataTable->setFocus();
         m_KeyMappingDataTable->clearFocus();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_keymapdataTable_itemSelectionChanged] Selected Item Index =" << currentrowindex;
+        qDebug() << "[keyMappingTabl_ItemSelectionChanged] Selected Item Index =" << currentrowindex;
 #endif
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_keymapdataTable_itemSelectionChanged] No Item Selected.";
+        qDebug() << "[keyMappingTabl_ItemSelectionChanged] No Item Selected.";
 #endif
     }
 }

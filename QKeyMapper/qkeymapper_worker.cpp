@@ -5128,15 +5128,25 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
         }
 #endif
 
-        static bool show_mousepoints = false;
+        static bool show_screenpoints = false;
+        static bool show_windowpoints = false;
         if (KEY_DOWN == keyupdown){
             if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
-                    if (!show_mousepoints) {
+                    if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points KEY_DOWN -> ON";
+                        qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points In Screen KEY_DOWN -> ON";
 #endif
-                        show_mousepoints = true;
+                        show_screenpoints = true;
                         emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_SCREEN_ON);
+                    }
+            }
+            else if (keycodeString == SHOW_POINTS_IN_WINDOW_KEY) {
+                    if (!show_windowpoints) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points In Window KEY_DOWN -> ON";
+#endif
+                        show_windowpoints = true;
+                        emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_WINDOW_ON);
                     }
             }
             else if (keycodeString == SHOW_CAR_ORDINAL_KEY) {
@@ -5150,12 +5160,21 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
         }
         else {
             if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
-                if (show_mousepoints) {
+                if (show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points KEY_UP -> OFF";
+                    qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points In Screen KEY_UP -> OFF";
 #endif
-                    show_mousepoints = false;
+                    show_screenpoints = false;
                     emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_SCREEN_OFF);
+                }
+            }
+            else if (keycodeString == SHOW_POINTS_IN_WINDOW_KEY) {
+                if (show_windowpoints) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points In Window KEY_UP -> OFF";
+#endif
+                    show_windowpoints = false;
+                    emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_WINDOW_OFF);
                 }
             }
         }
@@ -5906,7 +5925,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
                         if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Screen KEY_DOWN -> ON";
+                            qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points In Screen KEY_DOWN -> ON";
 #endif
                             show_screenpoints = true;
                             emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_SCREEN_ON);
@@ -5915,7 +5934,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 else if (keycodeString == SHOW_POINTS_IN_WINDOW_KEY) {
                         if (!show_windowpoints) {
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Window KEY_DOWN -> ON";
+                            qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points In Window KEY_DOWN -> ON";
 #endif
                             show_windowpoints = true;
                             emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_WINDOW_ON);
@@ -5934,7 +5953,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
                     if (show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Screen KEY_UP -> OFF";
+                        qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points In Screen KEY_UP -> OFF";
 #endif
                         show_screenpoints = false;
                         emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_SCREEN_OFF);
@@ -5943,7 +5962,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 else if (keycodeString == SHOW_POINTS_IN_WINDOW_KEY) {
                     if (show_windowpoints) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[LowLevelKeyboardHookProc]" << "Show Points In Window KEY_UP -> OFF";
+                        qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points In Window KEY_UP -> OFF";
 #endif
                         show_windowpoints = false;
                         emit QKeyMapper::getInstance()->showMousePoints_Signal(SHOW_POINTSIN_WINDOW_OFF);
