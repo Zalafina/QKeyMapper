@@ -268,7 +268,7 @@ public:
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static BOOL CALLBACK EnumWindowsBgProc(HWND hWnd, LPARAM lParam);
-    static void collectWindowsHWND(const QString& titlestring, HWND hWnd);
+    static void collectWindowsHWND(const QString& WindowText, HWND hWnd);
     static int findOriKeyInKeyMappingDataList(const QString &keyname);
     static int findOriKeyInKeyMappingDataList(const QString &keyname, bool& removemultiinput);
     static int findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname);

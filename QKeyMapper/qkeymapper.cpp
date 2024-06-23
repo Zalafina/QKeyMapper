@@ -335,6 +335,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
+    updateHWNDListProc();
     refreshProcessInfoTable();
     resizeKeyMappingDataTableColumnWidth();
 #ifdef QT_NO_DEBUG
@@ -719,18 +720,31 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 void QKeyMapper::updateHWNDListProc()
 {
     s_hWndList.clear();
-    if (!m_MapProcessInfo.WindowTitle.isEmpty()) {
+    if (false == m_MapProcessInfo.WindowTitle.isEmpty()
+        && false == m_MapProcessInfo.FileName.isEmpty()) {
         EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsBgProc, 0);
     }
 
     s_last_HWNDList = s_hWndList;
 
-#ifdef DEBUG_LOGOUT_ON
-    if (!s_hWndList.isEmpty()) {
-        qDebug().nospace() << "[updateHWNDListProc] " << m_MapProcessInfo.WindowTitle << " lastHWNDList[" << s_last_HWNDList.size() << "] -> " << s_last_HWNDList;
+    if (s_last_HWNDList.isEmpty()) {
+        s_CurrentMappingHWND = NULL;
     }
+    else if (s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
+        s_CurrentMappingHWND = s_last_HWNDList.constFirst();
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (!s_last_HWNDList.isEmpty()) {
+        qDebug().nospace() << "[updateHWNDListProc] " << m_MapProcessInfo.WindowTitle << " lastHWNDList[" << s_last_HWNDList.size() << "] -> " << s_last_HWNDList;
+    } else {
+        qDebug().nospace() << "[updateHWNDListProc] " << m_MapProcessInfo.WindowTitle << " lastHWNDList is empty";
+    }
+
     if (s_CurrentMappingHWND != NULL) {
         qDebug().nospace() << "[updateHWNDListProc] " << "Title=" << m_MapProcessInfo.WindowTitle << ", Process=" << m_MapProcessInfo.FileName << " -> " << s_CurrentMappingHWND;
+    } else {
+        qDebug().nospace() << "[updateHWNDListProc] " << "Title=" << m_MapProcessInfo.WindowTitle << ", Process=" << m_MapProcessInfo.FileName << " -> s_CurrentMappingHWND is NULL";
     }
 #endif
 }
@@ -739,7 +753,15 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 {
     // updateShortcutsMap();
 
-    s_CurrentMappingHWND = hWnd;
+    if (hWnd == NULL) {
+        if (s_last_HWNDList.isEmpty()
+            || s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
+            s_CurrentMappingHWND = NULL;
+        }
+    }
+    else {
+        s_CurrentMappingHWND = hWnd;
+    }
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
 }
 
@@ -747,7 +769,10 @@ void QKeyMapper::setKeyUnHook(void)
 {
     // freeShortcuts();
 
-    s_CurrentMappingHWND = NULL;
+    if (s_last_HWNDList.isEmpty()
+        || s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
+        s_CurrentMappingHWND = NULL;
+    }
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
 }
 
@@ -1256,52 +1281,42 @@ BOOL QKeyMapper::EnumWindowsBgProc(HWND hWnd, LPARAM lParam)
         return TRUE;
     }
 
-    QString WindowText;
     TCHAR titleBuffer[MAX_PATH] = TEXT("");
     memset(titleBuffer, 0x00, sizeof(titleBuffer));
 
     int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
     if (resultLength){
-        WindowText = QString::fromWCharArray(titleBuffer);
+        QString WindowText = QString::fromWCharArray(titleBuffer);
         collectWindowsHWND(WindowText, hWnd);
-
-        bool fileNameCheckOK = true;
-        bool windowTitleCheckOK = true;
-        bool fileNameExist = !QKeyMapper::getInstance()->m_MapProcessInfo.FileName.isEmpty();
-        bool windowTitleExist = !QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle.isEmpty();
-
-        if (QKeyMapper::getInstance()->ui->nameCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
-            fileNameCheckOK = false;
-        }
-
-        if (QKeyMapper::getInstance()->ui->titleCheckBox->checkState() == Qt::Checked && false == windowTitleExist) {
-            windowTitleCheckOK = false;
-        }
-
-        if (true == fileNameCheckOK
-            && true == windowTitleCheckOK
-            && false == WindowText.isEmpty()){
-            DWORD dwProcessId = 0;
-            GetWindowThreadProcessId(hWnd, &dwProcessId);
-            QString processName = getProcessNameFromPID(dwProcessId);
-
-            if (processName == QKeyMapper::getInstance()->m_MapProcessInfo.FileName
-                && WindowText.contains(QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle)) {
-                if (s_CurrentMappingHWND == NULL) {
-                    s_CurrentMappingHWND = hWnd;
-                }
-            }
-        }
     }
 
     return TRUE;
 }
 
-void QKeyMapper::collectWindowsHWND(const QString &titlestring, HWND hWnd)
+void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
 {
-    QString processTitle = QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle;
-    if (!processTitle.isEmpty()) {
-        if (titlestring.contains(processTitle)) {
+    bool fileNameCheckOK = true;
+    bool windowTitleCheckOK = true;
+    bool fileNameExist = !QKeyMapper::getInstance()->m_MapProcessInfo.FileName.isEmpty();
+    bool windowTitleExist = !QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle.isEmpty();
+
+    if (QKeyMapper::getInstance()->ui->nameCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+        fileNameCheckOK = false;
+    }
+
+    if (QKeyMapper::getInstance()->ui->titleCheckBox->checkState() == Qt::Checked && false == windowTitleExist) {
+        windowTitleCheckOK = false;
+    }
+
+    if (true == fileNameCheckOK
+        && true == windowTitleCheckOK
+        && false == WindowText.isEmpty()){
+        DWORD dwProcessId = 0;
+        GetWindowThreadProcessId(hWnd, &dwProcessId);
+        QString processName = getProcessNameFromPID(dwProcessId);
+
+        if (processName == QKeyMapper::getInstance()->m_MapProcessInfo.FileName
+            && WindowText.contains(QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle)) {
             if (!s_hWndList.contains(hWnd)) {
                 s_hWndList.append(hWnd);
             }
