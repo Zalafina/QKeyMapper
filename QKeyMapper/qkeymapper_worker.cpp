@@ -4369,6 +4369,18 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
 
     if (func_keystring == FUNC_REFRESH) {
         SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+
+//         /* Test worked for notpad.exe */
+//         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+//             HWND hWnd = FindWindowEx(QKeyMapper::s_CurrentMappingHWND, NULL, L"EDIT", NULL);
+//             QString text("abc测试中文字符def……&*");
+//             for (const QChar &ch : text) {
+//                 PostMessage(hWnd, WM_CHAR, ch.unicode(), 0);
+//             }
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug() << "[doFunctionMappingProc]" << "PostMessage ->" << text;
+// #endif
+//         }
     }
     else if (func_keystring == FUNC_LOCKSCREEN) {
         if( !LockWorkStation() ) {
