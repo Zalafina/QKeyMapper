@@ -260,6 +260,51 @@ void QKeyMapper_Worker::postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdow
     }
 }
 
+void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
+{
+    INPUT u_input[2];
+
+    u_input[0].type = INPUT_KEYBOARD;
+    u_input[0].ki.wVk = 0;
+    u_input[0].ki.wScan = aChar;
+    u_input[0].ki.dwFlags = KEYEVENTF_UNICODE;
+    u_input[0].ki.time = 0;
+    u_input[0].ki.dwExtraInfo = VIRTUAL_UNICODE_CHAR;
+
+    u_input[1].type = INPUT_KEYBOARD;
+    u_input[1].ki.wVk = 0;
+    u_input[1].ki.wScan = aChar;
+    u_input[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+    u_input[1].ki.time = 0;
+    u_input[1].ki.dwExtraInfo = VIRTUAL_UNICODE_CHAR;
+
+    SendInput(2, u_input, sizeof(INPUT));
+}
+
+void QKeyMapper_Worker::sendTextToWindow(HWND window_hwnd, const QString &text)
+{
+    if (window_hwnd != NULL) {
+        HWND hWnd = NULL;
+        hWnd = FindWindowEx(QKeyMapper::s_CurrentMappingHWND, NULL, L"Edit", NULL);
+        if (hWnd == NULL) {
+            hWnd = FindWindowEx(QKeyMapper::s_CurrentMappingHWND, NULL, L"Scintilla", NULL);
+        }
+
+        for (const QChar &ch : text) {
+            wchar_t wchar = ch.unicode();
+            if (hWnd != NULL) {
+                PostMessage(hWnd, WM_CHAR, wchar, 0);
+            } else {
+                sendUnicodeChar(wchar);
+            }
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[sendTextToWindow]" << "SendText ->" << text << ", hWnd =" << hWnd;
+#endif
+    }
+}
+
 void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
     UINT messageMouseButton;
@@ -4370,17 +4415,8 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
     if (func_keystring == FUNC_REFRESH) {
         SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 
-//         /* Test worked for notpad.exe */
-//         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-//             HWND hWnd = FindWindowEx(QKeyMapper::s_CurrentMappingHWND, NULL, L"EDIT", NULL);
-//             QString text("abc测试中文字符def……&*");
-//             for (const QChar &ch : text) {
-//                 PostMessage(hWnd, WM_CHAR, ch.unicode(), 0);
-//             }
-// #ifdef DEBUG_LOGOUT_ON
-//             qDebug() << "[doFunctionMappingProc]" << "PostMessage ->" << text;
-// #endif
-//         }
+        // QString text("abc测试中文字符def……&*");
+        // sendTextToWindow(QKeyMapper::s_CurrentMappingHWND, text);
     }
     else if (func_keystring == FUNC_LOCKSCREEN) {
         if( !LockWorkStation() ) {
@@ -5873,6 +5909,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
     ULONG_PTR extraInfo = pKeyBoard->dwExtraInfo;
+
+    if (extraInfo == VIRTUAL_UNICODE_CHAR) {
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    }
 
     bool returnFlag = false;
     V_KEYCODE vkeycode;
