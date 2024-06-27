@@ -653,8 +653,10 @@ const int KEYBOARD_TABLE_COLUMN_COUNT    = 9;
 const int MOUSE_TABLE_COLUMN_COUNT       = 9;
 
 const char *DEVICELIST_WINDOWTITLE_ENGLISH = "Input Device List";
-
 const char *DEVICELIST_WINDOWTITLE_CHINESE = "输入设备列表";
+
+const char *ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH = "Mapping Item Setup";
+const char *ITEMSETUPDIALOG_WINDOWTITLE_CHINESE = "映射项设定";
 
 const char *KEYBOARDLABEL_ENGLISH    = "Keyboard";
 const char *MOUSELABEL_ENGLISH       = "Mouse";

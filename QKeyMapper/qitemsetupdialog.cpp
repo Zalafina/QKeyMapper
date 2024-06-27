@@ -49,6 +49,8 @@ QItemSetupDialog::~QItemSetupDialog()
 void QItemSetupDialog::setUILanguagee(int languageindex)
 {
     if (LANGUAGE_ENGLISH == languageindex) {
+        setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH);
+
         ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_ENGLISH);
@@ -64,6 +66,8 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
     }
     else {
+        setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_CHINESE);
+
         ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_CHINESE);
@@ -162,6 +166,16 @@ QString QItemSetupDialog::getCurrentOriKeyListText()
 QString QItemSetupDialog::getCurrentMapKeyListText()
 {
     return getInstance()->m_MappingKeyListComboBox->currentText();
+}
+
+bool QItemSetupDialog::event(QEvent *event)
+{
+    if (event->type() == QEvent::ActivationChange) {
+        if (!isActiveWindow()) {
+            close();
+        }
+    }
+    return QWidget::event(event);
 }
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)

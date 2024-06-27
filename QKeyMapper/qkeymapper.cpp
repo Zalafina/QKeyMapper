@@ -290,7 +290,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
     m_ItemSetupDialog = new QItemSetupDialog(this);
-    m_ItemSetupDialog->setWindowFlags(Qt::Popup);
+    // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
     updateSysTrayIconMenuText();
     reloadUILanguage();
@@ -407,7 +407,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!";
 #endif
-        // closeItemSetupDialog();
+        closeItemSetupDialog();
         hide();
     }
 }
@@ -2832,7 +2832,7 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 
     if (false == isHidden()){
         m_LastWindowPosition = pos(); // Save the current position before hiding
-        // closeItemSetupDialog();
+        closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[HotKeyDisplaySwitchActivated] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -6416,7 +6416,7 @@ void QKeyMapper::switchShowHide()
 
     if (false == isHidden()) {
         m_LastWindowPosition = pos(); // Save the current position before hiding
-        // closeItemSetupDialog();
+        closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
