@@ -281,7 +281,7 @@ void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
     SendInput(2, u_input, sizeof(INPUT));
 }
 
-void QKeyMapper_Worker::sendTextToWindow(HWND window_hwnd, const QString &text)
+void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
 {
     if (window_hwnd != NULL) {
         HWND hWnd = NULL;
@@ -300,8 +300,14 @@ void QKeyMapper_Worker::sendTextToWindow(HWND window_hwnd, const QString &text)
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[sendTextToWindow]" << "SendText ->" << text << ", hWnd =" << hWnd;
+        qDebug() << "[sendText]" << "SendText ->" << text << ", hWnd =" << hWnd;
 #endif
+    }
+    else {
+        for (const QChar &ch : text) {
+            wchar_t wchar = ch.unicode();
+            sendUnicodeChar(wchar);
+        }
     }
 }
 
@@ -4416,7 +4422,7 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
         SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 
         // QString text("abc测试中文字符def……&*");
-        // sendTextToWindow(QKeyMapper::s_CurrentMappingHWND, text);
+        // sendText(QKeyMapper::s_CurrentMappingHWND, text);
     }
     else if (func_keystring == FUNC_LOCKSCREEN) {
         if( !LockWorkStation() ) {
