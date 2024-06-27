@@ -191,6 +191,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->sendTextLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
     ui->brakeThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
@@ -2288,6 +2289,11 @@ QString QKeyMapper::getCurrentOriKeyText()
 QString QKeyMapper::getCurrentOriCombinationKeyText()
 {
     return getInstance()->ui->combinationKeyLineEdit->text();
+}
+
+QString QKeyMapper::getSendTextString()
+{
+    return getInstance()->ui->sendTextLineEdit->text();
 }
 
 void QKeyMapper::setCurrentOriCombinationKeyText(const QString &newcombinationkeytext)
@@ -5007,6 +5013,8 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     bool checkResult = true;
     // static QRegularExpression regexp("\\s[+»]\\s");
     static QRegularExpression regexp("[+»]");
+    static QRegularExpression sendTextRegexp("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
 #else
@@ -5022,7 +5030,9 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
             && false == mapping_key.startsWith(JOY_KEY_PREFIX)
             && false == mapping_key.startsWith(VJOY_KEY_PREFIX)
             && false == mapping_key.startsWith("Func-")
-            && false == mapping_key.contains(SEPARATOR_WAITTIME)){
+            && false == mapping_key.contains(SEPARATOR_WAITTIME)
+            && !sendTextRegexp.match(mapping_key).hasMatch())
+        {
             checkResult = false;
             break;
         }
@@ -5164,6 +5174,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
+    ui->sendTextLabel->setFont(customFont);
     ui->keyPressTypeComboBox->setFont(customFont);
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
@@ -5264,6 +5275,7 @@ void QKeyMapper::setControlFontChinese()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
+    ui->sendTextLabel->setFont(customFont);
     ui->keyPressTypeComboBox->setFont(customFont);
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
@@ -5365,6 +5377,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->burstreleaseLabel->setEnabled(status);
     // ui->burstrelease_msLabel->setEnabled(status);
     ui->waitTimeLabel->setEnabled(status);
+    ui->sendTextLabel->setEnabled(status);
     ui->pointLabel->setEnabled(status);
     // ui->waitTime_msLabel->setEnabled(status);
     ui->waitTimeSpinBox->setEnabled(status);
@@ -5385,6 +5398,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->orikeySeqLabel->setEnabled(status);
     // m_originalKeySeqEdit->setEnabled(status);
     ui->combinationKeyLineEdit->setEnabled(status);
+    ui->sendTextLineEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
 
@@ -6521,6 +6535,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << MOUSE_WHEEL_DOWN_STR
             << MOUSE_WHEEL_LEFT_STR
             << MOUSE_WHEEL_RIGHT_STR
+            << SENDTEXT_STR
             << "A"
             << "B"
             << "C"
@@ -6777,6 +6792,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(MOUSE_M_SCREENPOINT_STR);
     orikeycodelist.removeOne(MOUSE_X1_SCREENPOINT_STR);
     orikeycodelist.removeOne(MOUSE_X2_SCREENPOINT_STR);
+    orikeycodelist.removeOne(SENDTEXT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
@@ -7271,6 +7287,7 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
+    ui->sendTextLabel->setText(SENDTEXTLABEL_CHINESE);
     ui->keyPressTypeComboBox->clear();
     ui->keyPressTypeComboBox->addItem(LONGPRESS_CHINESE);
     ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_CHINESE);
@@ -7369,6 +7386,7 @@ void QKeyMapper::setUILanguage_English()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
+    ui->sendTextLabel->setText(SENDTEXTLABEL_ENGLISH);
     ui->keyPressTypeComboBox->clear();
     ui->keyPressTypeComboBox->addItem(LONGPRESS_ENGLISH);
     ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_ENGLISH);
@@ -7468,6 +7486,7 @@ void QKeyMapper::resetFontSize()
         ui->mappingswitchkeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(customFont);
+        ui->sendTextLineEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
         ui->pressTimeSpinBox->setFont(customFont);
         ui->pointDisplayLabel->setFont(customFont);
@@ -7503,6 +7522,7 @@ void QKeyMapper::resetFontSize()
         ui->mappingswitchkeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(customFont);
+        ui->sendTextLineEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
         ui->pressTimeSpinBox->setFont(customFont);
         ui->pointDisplayLabel->setFont(customFont);
@@ -8291,6 +8311,23 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
             }
+            else if (currentMapKeyText == SENDTEXT_STR) {
+                QString sendtext = ui->sendTextLineEdit->text();
+                if (sendtext.isEmpty()) {
+                    QString message;
+                    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                        message = QString("Please input the text to send!");
+                    }
+                    else {
+                        message = QString("请输入要发送的文本!");
+                    }
+                    showWarningPopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("SendText(%1)").arg(sendtext);
+                }
+            }
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
@@ -8380,6 +8417,23 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         if (x >= 0 && y >= 0) {
                             currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
                         }
+                    }
+                }
+                else if (currentMapKeyText == SENDTEXT_STR) {
+                    QString sendtext = ui->sendTextLineEdit->text();
+                    if (sendtext.isEmpty()) {
+                        QString message;
+                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                            message = QString("Please input the text to send!");
+                        }
+                        else {
+                            message = QString("请输入要发送的文本!");
+                        }
+                        showWarningPopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("SendText(%1)").arg(sendtext);
                     }
                 }
 

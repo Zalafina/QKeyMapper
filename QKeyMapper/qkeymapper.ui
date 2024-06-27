@@ -34,10 +34,10 @@
   <widget class="QPushButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>920</x>
-     <y>472</y>
-     <width>140</width>
-     <height>47</height>
+     <x>899</x>
+     <y>520</y>
+     <width>151</width>
+     <height>51</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1195,6 +1195,32 @@
     </widget>
    </widget>
   </widget>
+  <widget class="QLineEdit" name="sendTextLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>796</x>
+     <y>470</y>
+     <width>254</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="sendTextLabel">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>470</y>
+     <width>51</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Text</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1227,6 +1253,8 @@
   <zorder>pressTimeSpinBox</zorder>
   <zorder>keyPressTypeComboBox</zorder>
   <zorder>settingTabWidget</zorder>
+  <zorder>sendTextLineEdit</zorder>
+  <zorder>sendTextLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

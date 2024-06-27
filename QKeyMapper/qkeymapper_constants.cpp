@@ -419,6 +419,8 @@ const char *MOUSE_WHEEL_DOWN_STR    = "Mouse-WheelDown";
 const char *MOUSE_WHEEL_LEFT_STR    = "Mouse-WheelLeft";
 const char *MOUSE_WHEEL_RIGHT_STR   = "Mouse-WheelRight";
 
+const char *SENDTEXT_STR    = "SendText";
+
 const char *JOY_KEY_PREFIX  = "Joy-";
 const char *VJOY_KEY_PREFIX  = "vJoy-";
 
@@ -484,6 +486,7 @@ const char *BURSTRELEASE_CHINESE = "连发抬起";
 // const char *BURSTPRESS_MSLABEL_CHINESE = "毫秒";
 // const char *BURSTRELEASE_MSLABEL_CHINESE = "毫秒";
 const char *WAITTIME_CHINESE = "延时";
+const char *SENDTEXTLABEL_CHINESE = "文本";
 const char *LONGPRESS_CHINESE = "长按";
 const char* DOUBLEPRESS_CHINESE = "双击";
 const char *POINT_CHINESE = "坐标";
@@ -569,6 +572,7 @@ const char *BURSTRELEASE_ENGLISH = "BurstRelease";
 // const char *BURSTPRESS_MSLABEL_ENGLISH = "ms";
 // const char *BURSTRELEASE_MSLABEL_ENGLISH = "ms";
 const char *WAITTIME_ENGLISH = "Delay";
+const char* SENDTEXTLABEL_ENGLISH = "Text";
 const char* LONGPRESS_ENGLISH = "LongPress";
 const char* DOUBLEPRESS_ENGLISH = "DoublePress";
 const char *POINT_ENGLISH = "Point";

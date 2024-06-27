@@ -300,6 +300,7 @@ public:
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);
     static QString getCurrentOriKeyText(void);
     static QString getCurrentOriCombinationKeyText(void);
+    static QString getSendTextString(void);
     static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
     // static int getBurstPressTime(void);
     // static int getBurstReleaseTime(void);

@@ -585,6 +585,7 @@ public:
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
+    static void releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
     void stopBurstKeyTimerDirect(const QString &burstKey, int mappingIndex);

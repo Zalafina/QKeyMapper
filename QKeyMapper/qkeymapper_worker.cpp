@@ -885,6 +885,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         return;
     }
 
+    static QRegularExpression sendTextRegexp("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
     int keycount = 0;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
 
@@ -1015,7 +1016,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             }
 #endif
 
-            if (true == VirtualMouseButtonMap.contains(key)) {
+            QRegularExpressionMatch sendTextMatch = sendTextRegexp.match(key);
+            if (sendTextMatch.hasMatch()) {
+                /* SendText KeyUp do nothing. */
+            }
+            else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     qWarning("sendInputKeys(): Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
@@ -1173,10 +1178,19 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     key = waitTimeKeyList.first();
                 }
 
+                QRegularExpressionMatch sendTextMatch = sendTextRegexp.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
 #endif
+                }
+                else if (sendTextMatch.hasMatch()) {
+                    QString text = sendTextMatch.captured(1);
+
+                    const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
+                    releaseKeyboardModifiersDirect(modifiers_arg);
+
+                    sendText(QKeyMapper::s_CurrentMappingHWND, text);
                 }
                 else if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR || key == MOUSE_WHEEL_LEFT_STR || key == MOUSE_WHEEL_RIGHT_STR) {
                     INPUT input = { 0 };
@@ -4420,9 +4434,6 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
 
     if (func_keystring == FUNC_REFRESH) {
         SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
-
-        // QString text("abc测试中文字符def……&*");
-        // sendText(QKeyMapper::s_CurrentMappingHWND, text);
     }
     else if (func_keystring == FUNC_LOCKSCREEN) {
         if( !LockWorkStation() ) {
@@ -7397,6 +7408,41 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             }
             SetKeyboardState(keyState);
         }
+    }
+}
+
+void QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers)
+{
+    QStringList pressedKeyboardModifiersList;
+    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
+        pressedKeyboardModifiersList.append("L-Shift");
+    }
+    if ((GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
+        pressedKeyboardModifiersList.append("R-Shift");
+    }
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
+        pressedKeyboardModifiersList.append("L-Ctrl");
+    }
+    if ((GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
+        pressedKeyboardModifiersList.append("R-Ctrl");
+    }
+    if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
+        pressedKeyboardModifiersList.append("L-Alt");
+    }
+    if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
+        pressedKeyboardModifiersList.append("R-Alt");
+    }
+    if ((GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
+        pressedKeyboardModifiersList.append("L-Win");
+    }
+    if ((GetAsyncKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
+        pressedKeyboardModifiersList.append("R-Win");
+    }
+
+    for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
+        QStringList mappingKeyList = QStringList() << modifierstr;
+        QString original_key = QString(KEYBOARD_MODIFIERS);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 }
 
