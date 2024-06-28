@@ -4944,6 +4944,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
     }
 
+    if (ui->autoStartMappingCheckBox->isChecked()) {
+        ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+    }
+
 //     QString loadedmappingswitchKeySeqStr;
 //     if (true == settingFile.contains(settingSelectStr+MAPPINGSWITCH_KEYSEQ)){
 //         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSWITCH_KEYSEQ).toString();
