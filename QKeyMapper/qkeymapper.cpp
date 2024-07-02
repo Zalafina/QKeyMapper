@@ -2483,6 +2483,8 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 // #ifdef QT_NO_DEBUG
 //         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 // #endif
+        showNotificationPopup("Refresh Process Info Table", NOTIFICATION_POSITION_TOP_RIGHT);
+
         updateHWNDListProc();
         refreshProcessInfoTable();
         (void)Interception_Worker::getRefreshedKeyboardDeviceList();
@@ -6445,6 +6447,11 @@ void QKeyMapper::showWarningPopup(const QString &message)
     showPopupMessage(message, "#d63031", 3000);
 }
 
+void QKeyMapper::showNotificationPopup(const QString &message, int position)
+{
+    showPopupNotification(message, "#44bd32", 3000, position);
+}
+
 void QKeyMapper::initKeyMappingDataTable(void)
 {
     // 创建你的自定义控件
@@ -7715,6 +7722,14 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageTimer.setSingleShot(true);
     connect(&m_PopupMessageTimer, &QTimer::timeout, m_PopupMessageLabel, &QLabel::hide);
     m_PopupMessageTimer.start(displayTime);
+}
+
+void QKeyMapper::showPopupNotification(const QString &message, const QString &color, int displayTime, int position)
+{
+    Q_UNUSED(message);
+    Q_UNUSED(color);
+    Q_UNUSED(displayTime);
+    Q_UNUSED(position);
 }
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
