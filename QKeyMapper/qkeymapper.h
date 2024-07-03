@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QMetaEnum>
 #include <QMessageBox>
+#include <QVBoxLayout>
 #include <QTimer>
 #include <QTimerEvent>
 #include <QThread>
@@ -161,6 +162,25 @@ protected:
 
 private:
     QWidget *m_KeyMapper_ptr;
+};
+
+class QPopupNotification : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit QPopupNotification(QWidget *parent = Q_NULLPTR);
+
+public slots:
+    void showPopupNotification(const QString &message, const QString &color, int displayTime, int position);
+
+    void hideNotification();
+
+private:
+    QLabel *m_Label;
+    QTimer m_Timer;
+    QPropertyAnimation *m_Animation;
+    int m_DisplayTime;
 };
 
 #if 0
@@ -352,8 +372,6 @@ public slots:
     void showMousePoints(int showpoints_trigger);
 
     void showPopupMessage(const QString &message, const QString &color, int displayTime);
-
-    void showPopupNotification(const QString &message, const QString &color, int displayTime, int position);
 
     void showCarOrdinal(qint32 car_ordinal);
 
@@ -591,6 +609,6 @@ private:
     int m_TransParentWindowInitialHeight;
     QInputDeviceListWindow *m_deviceListWindow;
     QItemSetupDialog *m_ItemSetupDialog;
+    QPopupNotification *m_PopupNotification;
 };
-
 #endif // QKEYMAPPER_H

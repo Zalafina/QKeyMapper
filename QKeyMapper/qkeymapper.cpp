@@ -57,7 +57,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TransParentWindowInitialWidth(0),
     m_TransParentWindowInitialHeight(0),
     m_deviceListWindow(Q_NULLPTR),
-    m_ItemSetupDialog(Q_NULLPTR)
+    m_ItemSetupDialog(Q_NULLPTR),
+    m_PopupNotification(Q_NULLPTR)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -290,6 +291,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
     m_ItemSetupDialog = new QItemSetupDialog(this);
+    m_PopupNotification = new QPopupNotification(this);
     // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
     updateSysTrayIconMenuText();
@@ -6449,7 +6451,7 @@ void QKeyMapper::showWarningPopup(const QString &message)
 
 void QKeyMapper::showNotificationPopup(const QString &message, int position)
 {
-    showPopupNotification(message, "#44bd32", 3000, position);
+    m_PopupNotification->showPopupNotification(message, "#44bd32", 3000, position);
 }
 
 void QKeyMapper::initKeyMappingDataTable(void)
@@ -7724,14 +7726,6 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageTimer.start(displayTime);
 }
 
-void QKeyMapper::showPopupNotification(const QString &message, const QString &color, int displayTime, int position)
-{
-    Q_UNUSED(message);
-    Q_UNUSED(color);
-    Q_UNUSED(displayTime);
-    Q_UNUSED(position);
-}
-
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -8757,6 +8751,73 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
     }
 
     QComboBox::mousePressEvent(event);
+}
+
+QPopupNotification::QPopupNotification(QWidget *parent) :
+    QWidget(parent),
+    m_DisplayTime(3000)
+{
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_ShowWithoutActivating);
+
+    m_Label = new QLabel(this);
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    layout->addWidget(m_Label);
+    setLayout(layout);
+
+    // Setup the animation for showing the notification
+    m_Animation = new QPropertyAnimation(this, "windowOpacity");
+    m_Animation->setDuration(500); // 0.5 seconds
+    m_Animation->setStartValue(0.0);
+    m_Animation->setEndValue(1.0);
+
+    // Setup the timer for hiding the notification
+    QObject::connect(&m_Timer, &QTimer::timeout, this, &QPopupNotification::hideNotification);
+    m_Timer.setSingleShot(true);
+}
+
+void QPopupNotification::showPopupNotification(const QString &message, const QString &color, int displayTime, int position)
+{
+    m_DisplayTime = displayTime;
+
+    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
+    m_Label->setStyleSheet(styleSheet);
+
+    QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
+    if (UI_SCALE_4K_PERCENT_150 == QKeyMapper::getInstance()->m_UI_Scale) {
+        customFont.setPointSize(16);
+    }
+    m_Label->setFont(customFont);
+    m_Label->setText(message);
+    m_Label->adjustSize();
+
+    // Position the notification based on the position parameter
+    QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
+    int x, y;
+    if (position == NOTIFICATION_POSITION_TOP_LEFT) {
+        x = 10; // 10 pixels from the left edge
+        y = 10; // 10 pixels from the top edge
+    }
+    else { // NOTIFICATION_POSITION_TOP_RIGHT
+        x = screenGeometry.width() - m_Label->width() - 10; // 10 pixels from the right edge
+        y = 10; // 10 pixels from the top edge
+    }
+    move(x, y);
+
+    // Start the animation
+    m_Animation->start();
+
+    // Show the notification and start the timer
+    show();
+    m_Timer.start(m_DisplayTime);
+}
+
+void QPopupNotification::hideNotification()
+{
+    m_Animation->setDirection(QAbstractAnimation::Backward);
+    m_Animation->start();
+    connect(m_Animation, &QPropertyAnimation::finished, this, &QWidget::close);
 }
 
 #if 0
