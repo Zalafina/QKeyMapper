@@ -275,6 +275,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->virtualgamepadGroupBox->setVisible(false);
 #endif
 
+    m_PopupNotification = new QPopupNotification(this);
+    m_deviceListWindow = new QInputDeviceListWindow(this);
+    m_ItemSetupDialog = new QItemSetupDialog(this);
+    // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
+
     // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
     // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
@@ -288,11 +293,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     Interception_Worker::syncDisabledKeyboardList();
     Interception_Worker::syncDisabledMouseList();
-
-    m_deviceListWindow = new QInputDeviceListWindow(this);
-    m_ItemSetupDialog = new QItemSetupDialog(this);
-    m_PopupNotification = new QPopupNotification(this);
-    // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
     updateSysTrayIconMenuText();
     reloadUILanguage();
