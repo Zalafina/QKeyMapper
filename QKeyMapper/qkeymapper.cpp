@@ -605,8 +605,10 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace() << "[cycleCheckProcessProc]" << " GlobalMappingFlag = " << GlobalMappingFlag << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_GLOBAL) << "]";
 #endif
+
                         setKeyHook(NULL);
                         m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
+                        mappingStartNotification();
                         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
                         updateSystemTrayDisplay();
                         emit updateLockStatus_Signal();
@@ -639,6 +641,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                             return;
                         }
                     }
+
                     playStartSound();
                     if (checkresult > 1) {
                         setKeyHook(NULL);
@@ -647,6 +650,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         setKeyHook(hwnd);
                     }
                     m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
+                    mappingStartNotification();
                     s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
                     updateSystemTrayDisplay();
                     emit updateLockStatus_Signal();
@@ -685,6 +689,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 playStopSound();
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
+                mappingStopNotification();
                 s_CycleCheckLoopCount = 0;
                 updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
@@ -2485,8 +2490,6 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 // #ifdef QT_NO_DEBUG
 //         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 // #endif
-        showNotificationPopup("Refresh Process Info Table", NOTIFICATION_POSITION_TOP_RIGHT);
-
         updateHWNDListProc();
         refreshProcessInfoTable();
         (void)Interception_Worker::getRefreshedKeyboardDeviceList();
@@ -2698,6 +2701,7 @@ void QKeyMapper::MappingStart(MappingStartMode startmode)
         }
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+        mappingStopNotification();
         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
         emit updateLockStatus_Signal();
 
@@ -5593,6 +5597,55 @@ void QKeyMapper::playStopSound()
     }
 }
 
+void QKeyMapper::mappingStartNotification()
+{
+    QString popupNotification;
+    int position = NOTIFICATION_POSITION_TOP_RIGHT;
+    QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        popupNotification = "StartMapping [" + currentSelectedSetting + "]";
+    }
+    else {
+        popupNotification = "开始映射 [" + currentSelectedSetting + "]";
+    }
+    showNotificationPopup(popupNotification, position);
+}
+
+void QKeyMapper::mappingStopNotification()
+{
+    QString popupNotification;
+    int position = NOTIFICATION_POSITION_TOP_RIGHT;
+    QString mappingStatusString;
+    if (KEYMAP_IDLE == m_KeyMapStatus) {
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            mappingStatusString = "Idle";
+        }
+        else {
+            mappingStatusString = "空闲";
+        }
+    }
+    else if (KEYMAP_CHECKING == m_KeyMapStatus) {
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            mappingStatusString = "Checking";
+        }
+        else {
+            mappingStatusString = "监测中";
+        }
+    }
+
+    if (mappingStatusString.isEmpty()) {
+        return;
+    }
+
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        popupNotification = "StopMapping [" + mappingStatusString + "]";
+    }
+    else {
+        popupNotification = "停止映射 [" + mappingStatusString + "]";
+    }
+    showNotificationPopup(popupNotification, position);
+}
+
 void QKeyMapper::showInputDeviceListWindow()
 {
     if (!m_deviceListWindow->isVisible()) {
@@ -6451,7 +6504,7 @@ void QKeyMapper::showWarningPopup(const QString &message)
 
 void QKeyMapper::showNotificationPopup(const QString &message, int position)
 {
-    m_PopupNotification->showPopupNotification(message, "#44bd32", 3000, position);
+    m_PopupNotification->showPopupNotification(message, "#d6a2e8", 3000, position);
 }
 
 void QKeyMapper::initKeyMappingDataTable(void)
@@ -8767,10 +8820,16 @@ QPopupNotification::QPopupNotification(QWidget *parent) :
     setLayout(layout);
 
     // Setup the animation for showing the notification
-    m_Animation = new QPropertyAnimation(this, "windowOpacity");
-    m_Animation->setDuration(500); // 0.5 seconds
-    m_Animation->setStartValue(0.0);
-    m_Animation->setEndValue(1.0);
+    m_StartAnimation = new QPropertyAnimation(this, "windowOpacity", this);
+    m_StartAnimation->setDuration(500); // 0.5 seconds
+    m_StartAnimation->setStartValue(0.0);
+    m_StartAnimation->setEndValue(1.0);
+
+    m_StopAnimation = new QPropertyAnimation(this, "windowOpacity", this);
+    m_StopAnimation->setDuration(500); // 0.5 seconds
+    m_StopAnimation->setStartValue(1.0);
+    m_StopAnimation->setEndValue(0.0);
+    QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, &QWidget::close);
 
     // Setup the timer for hiding the notification
     QObject::connect(&m_Timer, &QTimer::timeout, this, &QPopupNotification::hideNotification);
@@ -8806,7 +8865,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
     move(x, y);
 
     // Start the animation
-    m_Animation->start();
+    m_StartAnimation->stop();
+    m_StartAnimation->start(QAbstractAnimation::KeepWhenStopped);
 
     // Show the notification and start the timer
     show();
@@ -8815,9 +8875,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
 
 void QPopupNotification::hideNotification()
 {
-    m_Animation->setDirection(QAbstractAnimation::Backward);
-    m_Animation->start();
-    connect(m_Animation, &QPropertyAnimation::finished, this, &QWidget::close);
+    m_StopAnimation->stop();
+    m_StopAnimation->start(QAbstractAnimation::KeepWhenStopped);
 }
 
 #if 0

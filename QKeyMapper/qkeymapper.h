@@ -179,7 +179,8 @@ public slots:
 private:
     QLabel *m_Label;
     QTimer m_Timer;
-    QPropertyAnimation *m_Animation;
+    QPropertyAnimation *m_StartAnimation;
+    QPropertyAnimation *m_StopAnimation;
     int m_DisplayTime;
 };
 
@@ -529,6 +530,8 @@ private:
     void extractSoundFiles();
     void playStartSound();
     void playStopSound();
+    void mappingStartNotification();
+    void mappingStopNotification();
 
     void showInputDeviceListWindow(void);
     void showItemSetupDialog(int row);
