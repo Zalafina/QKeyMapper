@@ -8838,6 +8838,10 @@ QPopupNotification::QPopupNotification(QWidget *parent) :
 
 void QPopupNotification::showPopupNotification(const QString &message, const QString &color, int displayTime, int position)
 {
+    m_StartAnimation->stop();
+    m_StopAnimation->stop();
+    hide(); // Hide the window before updating content
+
     m_DisplayTime = displayTime;
 
     QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
@@ -8864,12 +8868,14 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
     }
     move(x, y);
 
-    // Start the animation
-    m_StartAnimation->stop();
+    // Adjust the size of the window to fit the new content
+    adjustSize();
+
+    // Show the notification and start the animation
+    show();
     m_StartAnimation->start(QAbstractAnimation::KeepWhenStopped);
 
-    // Show the notification and start the timer
-    show();
+    // Start the timer for hiding the notification
     m_Timer.start(m_DisplayTime);
 }
 
