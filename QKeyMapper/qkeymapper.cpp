@@ -2932,14 +2932,18 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
     if (lineEdit)
     {
-        QString inputstring = lineEdit->text();
+        QString ori_inputstring = lineEdit->text();
+        QString inputstring = ori_inputstring;
+        if (inputstring.startsWith(PREFIX_PASSTHROUGH)) {
+            inputstring.removeFirst();
+        }
         if (validateCombinationKey(inputstring))
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
-                updateWindowSwitchKeyString(inputstring);
+                updateWindowSwitchKeyString(ori_inputstring);
             }
             else if (lineEdit->objectName() == MAPPINGSWITCHKEY_LINEEDIT_NAME) {
-                updateMappingSwitchKeyString(inputstring);
+                updateMappingSwitchKeyString(ori_inputstring);
             }
         }
         else

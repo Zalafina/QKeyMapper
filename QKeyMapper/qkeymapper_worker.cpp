@@ -7126,7 +7126,12 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
 bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int keyupdown)
 {
     bool detected = false;
+    bool passthrough = false;
     QString displayswitchKey = QKeyMapper::s_WindowSwitchKeyString;
+    if (displayswitchKey.startsWith(PREFIX_PASSTHROUGH)) {
+        passthrough = true;
+        displayswitchKey.removeFirst();
+    }
     QStringList keys = displayswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
 
@@ -7145,7 +7150,12 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
         qDebug() << "[detectDisplaySwitchKey]" << "DisplaySwitchKey Activated ->" << displayswitchKey;
 #endif
         emit QKeyMapper::getInstance()->HotKeyDisplaySwitchActivated_Signal(displayswitchKey);
-        detected = true;
+        if (passthrough) {
+            detected = false;
+        }
+        else {
+            detected = true;
+        }
     }
 
     return detected;
@@ -7154,7 +7164,12 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
 bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int keyupdown)
 {
     bool detected = false;
+    bool passthrough = false;
     QString mappingswitchKey = QKeyMapper::s_MappingSwitchKeyString;
+    if (mappingswitchKey.startsWith(PREFIX_PASSTHROUGH)) {
+        passthrough = true;
+        mappingswitchKey.removeFirst();
+    }
     QStringList keys = mappingswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
 
@@ -7173,7 +7188,12 @@ bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int
         qDebug() << "[detectMappingSwitchKey]" << "MappingSwitchKey Activated ->" << mappingswitchKey;
 #endif
         emit QKeyMapper::getInstance()->HotKeyMappingSwitchActivated_Signal(mappingswitchKey);
-        detected = true;
+        if (passthrough) {
+            detected = false;
+        }
+        else {
+            detected = true;
+        }
     }
 
     return detected;

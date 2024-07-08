@@ -288,6 +288,7 @@ const char *PROGRAM_NAME = "QKeyMapper";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *JOIN_DEVICE     = "##";
+const char *PREFIX_PASSTHROUGH = "$";
 
 const char *KEYBOARD_MODIFIERS  = "KeyboardModifiers";
 const char *KEYSEQUENCE_STR     = "KeySequence";

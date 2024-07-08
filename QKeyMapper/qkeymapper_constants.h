@@ -261,6 +261,7 @@ extern const UINT SCANCODE_APPS;
 extern const char* PROGRAM_NAME;
 extern const char *PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;
+extern const char *PREFIX_PASSTHROUGH;
 extern const char *KEYBOARD_MODIFIERS;
 extern const char *KEYSEQUENCE_STR;
 extern const char *HOLDDOWN_STR;
