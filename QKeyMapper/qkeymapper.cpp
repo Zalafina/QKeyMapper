@@ -2948,7 +2948,7 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
         QString ori_inputstring = lineEdit->text();
         QString inputstring = ori_inputstring;
         if (inputstring.startsWith(PREFIX_PASSTHROUGH)) {
-            inputstring.removeFirst();
+            inputstring.remove(0, 1);
         }
         if (validateCombinationKey(inputstring))
         {

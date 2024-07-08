@@ -6,6 +6,7 @@
 #include <QMetaEnum>
 #include <QMessageBox>
 #include <QVBoxLayout>
+#include <QScreen>
 #include <QTimer>
 #include <QTimerEvent>
 #include <QThread>

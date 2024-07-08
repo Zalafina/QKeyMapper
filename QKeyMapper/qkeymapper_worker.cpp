@@ -7130,7 +7130,7 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
     QString displayswitchKey = QKeyMapper::s_WindowSwitchKeyString;
     if (displayswitchKey.startsWith(PREFIX_PASSTHROUGH)) {
         passthrough = true;
-        displayswitchKey.removeFirst();
+        displayswitchKey.remove(0, 1);
     }
     QStringList keys = displayswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
@@ -7168,7 +7168,7 @@ bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int
     QString mappingswitchKey = QKeyMapper::s_MappingSwitchKeyString;
     if (mappingswitchKey.startsWith(PREFIX_PASSTHROUGH)) {
         passthrough = true;
-        mappingswitchKey.removeFirst();
+        mappingswitchKey.remove(0, 1);
     }
     QStringList keys = mappingswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
