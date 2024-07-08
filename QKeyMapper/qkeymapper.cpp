@@ -5639,6 +5639,9 @@ void QKeyMapper::mappingStartNotification()
 {
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        return;
+    }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupNotification = "StartMapping [" + currentSelectedSetting + "]";
@@ -5653,6 +5656,9 @@ void QKeyMapper::mappingStopNotification()
 {
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        return;
+    }
     QString mappingStatusString;
     if (KEYMAP_IDLE == m_KeyMapStatus) {
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
