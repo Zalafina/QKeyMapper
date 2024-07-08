@@ -275,6 +275,19 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->virtualgamepadGroupBox->setVisible(false);
 #endif
 
+    ui->notificationComboBox->clear();
+    QStringList positoin_list = QStringList() \
+            << POSITION_NONE_STR_CHINESE
+            << POSITION_TOP_LEFT_STR_CHINESE
+            << POSITION_TOP_CENTER_STR_CHINESE
+            << POSITION_TOP_RIGHT_STR_CHINESE
+            << POSITION_BOTTOM_LEFT_STR_CHINESE
+            << POSITION_BOTTOM_CENTER_STR_CHINESE
+            << POSITION_BOTTOM_RIGHT_STR_CHINESE
+            ;
+    ui->notificationComboBox->addItems(positoin_list);
+    ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+
     m_PopupNotification = new QPopupNotification(this);
     m_deviceListWindow = new QInputDeviceListWindow(this);
     m_ItemSetupDialog = new QItemSetupDialog(this);
@@ -3506,6 +3519,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
         }
 
+        settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
         settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
         settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
 
@@ -3977,6 +3991,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             qDebug() << "[loadKeyMapSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
 #endif
         }
+
+        if (true == settingFile.contains(NOTIFICATION_POSITION)){
+            int notification_position = settingFile.value(NOTIFICATION_POSITION).toInt();
+            if (notification_position >= 0 && notification_position <= NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+                ui->notificationComboBox->setCurrentIndex(notification_position);
+            }
+            else {
+                ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+            }
+        }
+        else {
+            ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
+#endif
 
         if (true == settingFile.contains(AUTO_STARTUP)){
             bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
@@ -5245,6 +5275,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
+    ui->notificationLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -5349,6 +5380,7 @@ void QKeyMapper::setControlFontChinese()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
+    ui->notificationLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -5391,6 +5423,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
+    ui->notificationLabel->setEnabled(status);
+    ui->notificationComboBox->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
     ui->virtualGamepadTypeComboBox->setEnabled(status);
     ui->keyPressTypeComboBox->setEnabled(status);
@@ -5604,7 +5638,7 @@ void QKeyMapper::playStopSound()
 void QKeyMapper::mappingStartNotification()
 {
     QString popupNotification;
-    int position = NOTIFICATION_POSITION_TOP_RIGHT;
+    int position = ui->notificationComboBox->currentIndex();
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupNotification = "StartMapping [" + currentSelectedSetting + "]";
@@ -5618,7 +5652,7 @@ void QKeyMapper::mappingStartNotification()
 void QKeyMapper::mappingStopNotification()
 {
     QString popupNotification;
-    int position = NOTIFICATION_POSITION_TOP_RIGHT;
+    int position = ui->notificationComboBox->currentIndex();
     QString mappingStatusString;
     if (KEYMAP_IDLE == m_KeyMapStatus) {
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
@@ -7386,8 +7420,25 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
+    ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
+
+    int last_notification_position = ui->notificationComboBox->currentIndex();
+    qDebug() << "[setUILanguage_Chinese]" << "last_notification_position" << last_notification_position;
+    ui->notificationComboBox->clear();
+    QStringList positoin_list = QStringList() \
+            << POSITION_NONE_STR_CHINESE
+            << POSITION_TOP_LEFT_STR_CHINESE
+            << POSITION_TOP_CENTER_STR_CHINESE
+            << POSITION_TOP_RIGHT_STR_CHINESE
+            << POSITION_BOTTOM_LEFT_STR_CHINESE
+            << POSITION_BOTTOM_CENTER_STR_CHINESE
+            << POSITION_BOTTOM_RIGHT_STR_CHINESE
+            ;
+    ui->notificationComboBox->addItems(positoin_list);
+    ui->notificationComboBox->setCurrentIndex(last_notification_position);
+    qDebug() << "[setUILanguage_Chinese]" << "notificationComboBox->currentIndex()" << ui->notificationComboBox->currentIndex();
 
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->general),          SETTINGTAB_GENERAL_CHINESE      );
@@ -7485,8 +7536,23 @@ void QKeyMapper::setUILanguage_English()
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
+    ui->notificationLabel->setText(NOTIFICATIONLABEL_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
+
+    int last_notification_position = ui->notificationComboBox->currentIndex();
+    ui->notificationComboBox->clear();
+    QStringList positoin_list = QStringList() \
+            << POSITION_NONE_STR_ENGLISH
+            << POSITION_TOP_LEFT_STR_ENGLISH
+            << POSITION_TOP_CENTER_STR_ENGLISH
+            << POSITION_TOP_RIGHT_STR_ENGLISH
+            << POSITION_BOTTOM_LEFT_STR_ENGLISH
+            << POSITION_BOTTOM_CENTER_STR_ENGLISH
+            << POSITION_BOTTOM_RIGHT_STR_ENGLISH
+            ;
+    ui->notificationComboBox->addItems(positoin_list);
+    ui->notificationComboBox->setCurrentIndex(last_notification_position);
 
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->general),          SETTINGTAB_GENERAL_ENGLISH      );
@@ -8861,14 +8927,32 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
 
     // Position the notification based on the position parameter
     QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
-    int x, y;
+    // Default to top-right
+    int x = screenGeometry.width() - m_Label->width() - 10;
+    int y = 10;
     if (position == NOTIFICATION_POSITION_TOP_LEFT) {
         x = 10; // 10 pixels from the left edge
         y = 10; // 10 pixels from the top edge
     }
-    else { // NOTIFICATION_POSITION_TOP_RIGHT
+    else if (position == NOTIFICATION_POSITION_TOP_CENTER) {
+        x = (screenGeometry.width() - m_Label->width()) / 2; // Centered horizontally
+        y = 10; // 10 pixels from the top edge
+    }
+    else if (position == NOTIFICATION_POSITION_TOP_RIGHT) {
         x = screenGeometry.width() - m_Label->width() - 10; // 10 pixels from the right edge
         y = 10; // 10 pixels from the top edge
+    }
+    else if (position == NOTIFICATION_POSITION_BOTTOM_LEFT) {
+        x = 10; // 10 pixels from the left edge
+        y = screenGeometry.height() - m_Label->height() - 30; // 10 pixels from the bottom edge
+    }
+    else if (position == NOTIFICATION_POSITION_BOTTOM_CENTER) {
+        x = (screenGeometry.width() - m_Label->width()) / 2; // Centered horizontally
+        y = screenGeometry.height() - m_Label->height() - 30; // 10 pixels from the bottom edge
+    }
+    else if (position == NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+        x = screenGeometry.width() - m_Label->width() - 10; // 10 pixels from the right edge
+        y = screenGeometry.height() - m_Label->height() - 30; // 10 pixels from the bottom edge
     }
     move(x, y);
 

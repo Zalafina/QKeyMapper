@@ -100,8 +100,13 @@ const int SHOW_POINTSIN_SCREEN_ON   = 1;
 const int SHOW_POINTSIN_WINDOW_OFF  = 2;
 const int SHOW_POINTSIN_WINDOW_ON   = 3;
 
-const int NOTIFICATION_POSITION_TOP_LEFT    = 0;
-const int NOTIFICATION_POSITION_TOP_RIGHT   = 1;
+const int NOTIFICATION_POSITION_NONE            = 0;
+const int NOTIFICATION_POSITION_TOP_LEFT        = 1;
+const int NOTIFICATION_POSITION_TOP_CENTER      = 2;
+const int NOTIFICATION_POSITION_TOP_RIGHT       = 3;
+const int NOTIFICATION_POSITION_BOTTOM_LEFT     = 4;
+const int NOTIFICATION_POSITION_BOTTOM_CENTER   = 5;
+const int NOTIFICATION_POSITION_BOTTOM_RIGHT    = 6;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 const int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
@@ -311,6 +316,7 @@ const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_SHORTCUT;
 /* General global settings >>> */
 const char *LAST_WINDOWPOSITION = "LastWindowPosition";
 const char *LANGUAGE_INDEX = "LanguageIndex";
+const char *NOTIFICATION_POSITION = "NotificationPosition";
 const char *SETTINGSELECT = "SettingSelect";
 const char *AUTO_STARTUP = "AutoStartup";
 const char *STARTUP_MINIMIZED = "StartupMinimized";
@@ -508,6 +514,7 @@ const char *SENDTOSAMETITLEWINDOWSCHECKBOX_CHINESE = "发送到同名窗口";
 const char *AUTOSTARTUPCHECKBOX_CHINESE = "开机自动启动";
 const char *STARTUPMINIMIZEDCHECKBOX_CHINESE = "启动后自动最小化";
 const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
+const char *NOTIFICATIONLABEL_CHINESE = "提示信息";
 const char *WINDOWSWITCHKEYLABEL_CHINESE = "显示切换键";
 const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
 const char *PROCESSINFOTABLE_COL1_CHINESE = "进程";
@@ -555,6 +562,13 @@ const char *SETTINGTAB_MAPPING_CHINESE = "映射设定";
 const char *SETTINGTAB_VGAMEPAD_CHINESE = "虚拟游戏手柄";
 const char *SETTINGTAB_MULTIINPUT_CHINESE = "多输入设备";
 const char *SETTINGTAB_FORZA_CHINESE = "极限竞速";
+const char *POSITION_NONE_STR_CHINESE           = "不显示";
+const char *POSITION_TOP_LEFT_STR_CHINESE       = "顶部左侧";
+const char *POSITION_TOP_CENTER_STR_CHINESE     = "顶部居中";
+const char *POSITION_TOP_RIGHT_STR_CHINESE      = "顶部右侧";
+const char *POSITION_BOTTOM_LEFT_STR_CHINESE    = "底部左侧";
+const char *POSITION_BOTTOM_CENTER_STR_CHINESE  = "底部居中";
+const char *POSITION_BOTTOM_RIGHT_STR_CHINESE   = "底部右侧";
 
 /* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -594,6 +608,7 @@ const char *SENDTOSAMETITLEWINDOWSCHECKBOX_ENGLISH = "Send To Same Windows";
 const char *AUTOSTARTUPCHECKBOX_ENGLISH = "Auto Startup";
 const char *STARTUPMINIMIZEDCHECKBOX_ENGLISH = "Startup Minimized";
 const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
+const char *NOTIFICATIONLABEL_ENGLISH = "Notification";
 const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowKey";
 const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingKey";
 const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
@@ -641,6 +656,13 @@ const char *SETTINGTAB_MAPPING_ENGLISH = "Mapping";
 const char *SETTINGTAB_VGAMEPAD_ENGLISH = "V-Gamepad";
 const char *SETTINGTAB_MULTIINPUT_ENGLISH = "Multi-Input";
 const char *SETTINGTAB_FORZA_ENGLISH = "Forza";
+const char *POSITION_NONE_STR_ENGLISH           = "None";
+const char *POSITION_TOP_LEFT_STR_ENGLISH       = "T-Left";
+const char *POSITION_TOP_CENTER_STR_ENGLISH     = "T-Center";
+const char *POSITION_TOP_RIGHT_STR_ENGLISH      = "T-Right";
+const char *POSITION_BOTTOM_LEFT_STR_ENGLISH    = "B-Left";
+const char *POSITION_BOTTOM_CENTER_STR_ENGLISH  = "B-Center";
+const char *POSITION_BOTTOM_RIGHT_STR_ENGLISH   = "B-Right";
 
 /* constant values for QInputDeviceListWindow */
 const int DEVICE_TABLE_NUMBER_COLUMN         = 0;
