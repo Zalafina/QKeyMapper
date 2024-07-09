@@ -4097,7 +4097,7 @@ void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
             }
 
             if (virtualgamepad) {
-                QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+                // QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
 
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_index << "][" << joystick_added->name << "] is Blacklisted.";
