@@ -13,7 +13,7 @@ TEMPLATE = app
 # include(qhotkey.pri)
 include(QJoysticks/QJoysticks.pri)
 
-DEFINES += SINGLE_APPLICATION
+# DEFINES += SINGLE_APPLICATION
 
 # DEFINES += LOGOUT_TOFILE
 # DEFINES += USE_SAOFONT
