@@ -214,6 +214,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
 
+    generateVirtualInputRandomValues();
     initVirtualKeyCodeMap();
     initVirtualMouseButtonMap();
     initCombinationKeysList();
@@ -5968,8 +5969,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        // if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
-        if (extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
             if (Interception_Worker::s_InterceptStart) {
                 return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
             }

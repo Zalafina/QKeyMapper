@@ -1,3 +1,5 @@
+#include <QRandomGenerator>
+
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
 
@@ -266,14 +268,19 @@ const quint8 VK_GAMEPAD_HOME    = 0x07;
 
 const unsigned int INTERCEPTION_EXTRA_INFO = 0xAAAA0000;
 
-const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
+// const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
+// const ULONG_PTR VIRTUAL_MOUSE_CLICK      = 0xCEDFCEDF;
+// const ULONG_PTR VIRTUAL_MOUSE_POINTCLICK = 0xBBDFBBDF;
+// const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
+ULONG_PTR VIRTUAL_KEYBOARD_PRESS;
+ULONG_PTR VIRTUAL_MOUSE_CLICK;
+ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
+ULONG_PTR VIRTUAL_MOUSE_WHEEL;
+
 const ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDCA;
 const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
-const ULONG_PTR VIRTUAL_MOUSE_CLICK      = 0xCEDFCEDF;
-const ULONG_PTR VIRTUAL_MOUSE_POINTCLICK = 0xBBDFBBDF;
 const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFBC;
 const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
-const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
 const ULONG_PTR VIRTUAL_WIN_PLUS_D       = 0xDBDBDBDB;
 
 const UINT SCANCODE_CTRL            = 0x1D;
@@ -719,3 +726,20 @@ const char *DEVICE_TABLE_COL5_CHINESE = "厂商";
 const char *DEVICE_TABLE_COL6_CHINESE = "产品名";
 const char *DEVICE_TABLE_COL7_CHINESE = "制造商";
 const char *DEVICE_TABLE_COL8_CHINESE = "禁用";
+
+ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues) {
+    ULONG_PTR newValue;
+    do {
+        newValue = QRandomGenerator::global()->generate();
+    } while (existingValues.contains(newValue));
+    existingValues.insert(newValue);
+    return newValue;
+}
+
+void generateVirtualInputRandomValues() {
+    QSet<ULONG_PTR> generatedValues;
+    VIRTUAL_KEYBOARD_PRESS = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_MOUSE_CLICK = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_MOUSE_POINTCLICK = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_MOUSE_WHEEL = generateUniqueRandomValue(generatedValues);
+}
