@@ -370,7 +370,8 @@ const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
 // const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 const char *SENDTOSAMEWINDOWS_CHECKED = "SendToSameWindowsChecked";
-const char *MAPPINGSWITCH_KEYSEQ = "MappingSwitch_KeySequence";
+const char *MAPPINGSTART_KEY = "MappingStartKey";
+const char *MAPPINGSTOP_KEY = "MappingStopKey";
 
 const char *SAO_FONTFILENAME = ":/sao_ui.otf";
 
@@ -392,7 +393,8 @@ const char *SETUPDIALOG_ORIKEY_COMBOBOX_NAME = "SetupDialog_OriginalKeyListCombo
 const char *SETUPDIALOG_MAPKEY_COMBOBOX_NAME = "SetupDialog_MappingKeyListComboBox";
 
 const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
-const char *MAPPINGSWITCHKEY_LINEEDIT_NAME = "mappingswitchkeyLineEdit";
+const char *MAPPINGSTARTKEY_LINEEDIT_NAME = "mappingStartKeyLineEdit";
+const char *MAPPINGSTOPKEY_LINEEDIT_NAME = "mappingStopKeyLineEdit";
 
 const char *KEY_NONE_STR = "NONE";
 const char *KEY_BLOCKED_STR = "BLOCKED";
@@ -516,7 +518,8 @@ const char *STARTUPMINIMIZEDCHECKBOX_CHINESE = "启动后自动最小化";
 const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
 const char *NOTIFICATIONLABEL_CHINESE = "提示信息";
 const char *WINDOWSWITCHKEYLABEL_CHINESE = "显示切换键";
-const char *MAPPINGSWITCHKEYLABEL_CHINESE = "映射开关键";
+const char *MAPPINGSTARTKEYLABEL_CHINESE = "映射开启键";
+const char *MAPPINGSTOPKEYLABEL_CHINESE = "映射关闭键";
 const char *PROCESSINFOTABLE_COL1_CHINESE = "进程";
 const char *PROCESSINFOTABLE_COL2_CHINESE = "进程号";
 const char *PROCESSINFOTABLE_COL3_CHINESE = "窗口标题";
@@ -610,7 +613,8 @@ const char *STARTUPMINIMIZEDCHECKBOX_ENGLISH = "Startup Minimized";
 const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
 const char *NOTIFICATIONLABEL_ENGLISH = "Notification";
 const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowKey";
-const char *MAPPINGSWITCHKEYLABEL_ENGLISH = "MappingKey";
+const char *MAPPINGSTARTKEYLABEL_ENGLISH = "MappingStart";
+const char *MAPPINGSTOPKEYLABEL_ENGLISH = "MappingStop";
 const char *PROCESSINFOTABLE_COL1_ENGLISH = "Process";
 const char *PROCESSINFOTABLE_COL2_ENGLISH = "PID";
 const char *PROCESSINFOTABLE_COL3_ENGLISH = "Window Title";

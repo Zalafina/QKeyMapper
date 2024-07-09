@@ -18,13 +18,14 @@ QList<MousePoint_Info> QKeyMapper::ScreenMousePointsList = QList<MousePoint_Info
 QList<MousePoint_Info> QKeyMapper::WindowMousePointsList = QList<MousePoint_Info>();
 // QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
 QString QKeyMapper::s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
-QString QKeyMapper::s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+QString QKeyMapper::s_MappingStartKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+QString QKeyMapper::s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
     m_UI_Scale(UI_SCALE_NORMAL),
-    ui(new Ui::QKeyMapper),
     m_KeyMapStatus(KEYMAP_IDLE),
+    ui(new Ui::QKeyMapper),
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
     m_CycleCheckTimer(this),
     m_ProcessInfoTableRefreshTimer(this),
@@ -297,7 +298,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
     // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
     ui->windowswitchkeyLineEdit->setText(DISPLAYSWITCH_KEY_DEFAULT);
-    ui->mappingswitchkeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
+    ui->mappingStartKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
+    ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     initKeyMappingDataTable();
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
@@ -336,7 +338,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // QObject::connect(m_originalKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onOriginalKeySequenceEditingFinished);
 
     QObject::connect(this, &QKeyMapper::HotKeyDisplaySwitchActivated_Signal, this, &QKeyMapper::HotKeyDisplaySwitchActivated, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated, Qt::QueuedConnection);
+    // QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::HotKeyMappingStart_Signal, this, &QKeyMapper::HotKeyMappingStart, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::HotKeyMappingStop_Signal, this, &QKeyMapper::HotKeyMappingStop, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
@@ -2647,10 +2651,10 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 
 void QKeyMapper::on_keymapButton_clicked()
 {
-    MappingStart(MAPPINGSTART_BUTTONCLICK);
+    MappingSwitch(MAPPINGSTART_BUTTONCLICK);
 }
 
-void QKeyMapper::MappingStart(MappingStartMode startmode)
+void QKeyMapper::MappingSwitch(MappingStartMode startmode)
 {
     Q_UNUSED(startmode);
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
@@ -2774,7 +2778,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
     qDebug().nospace() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyboardModifiers = " << modifiers <<", KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    MappingStart(MAPPINGSTART_HOTKEY);
+    MappingSwitch(MAPPINGSTART_HOTKEY);
 
     /* Add for "explorer.exe" AltModifier Bug Fix >>> */
     HWND hwnd = GetForegroundWindow();
@@ -2892,14 +2896,13 @@ void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
         return;
     }
 
-    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
-    Q_UNUSED(hotkey_string);
-    Q_UNUSED(keymapstatusEnum);
 #ifdef DEBUG_LOGOUT_ON
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    Q_UNUSED(keymapstatusEnum);
     qDebug().nospace() << "[HotKeyMappingSwitchActivated] MappingSwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    MappingStart(MAPPINGSTART_HOTKEY);
+    MappingSwitch(MAPPINGSTART_HOTKEY);
 
     /* Add for "explorer.exe" AltModifier Bug Fix >>> */
     HWND hwnd = GetForegroundWindow();
@@ -2940,6 +2943,30 @@ void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
     /* Add for "explorer.exe" AltModifier Bug Fix <<< */
 }
 
+void QKeyMapper::HotKeyMappingStart(const QString &hotkey_string)
+{
+#ifdef DEBUG_LOGOUT_ON
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    qDebug().nospace() << "[HotKeyMappingStart] MappingStartKey[" << hotkey_string << "], KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
+#endif
+
+    if (KEYMAP_IDLE == m_KeyMapStatus){
+        HotKeyMappingSwitchActivated(hotkey_string);
+    }
+}
+
+void QKeyMapper::HotKeyMappingStop(const QString &hotkey_string)
+{
+#ifdef DEBUG_LOGOUT_ON
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+    qDebug().nospace() << "[HotKeyMappingStop] MappingStopKey[" << hotkey_string << "], KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
+#endif
+
+    if (KEYMAP_IDLE != m_KeyMapStatus){
+        HotKeyMappingSwitchActivated(hotkey_string);
+    }
+}
+
 void QKeyMapper::onHotKeyLineEditEditingFinished()
 {
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
@@ -2955,8 +2982,11 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
                 updateWindowSwitchKeyString(ori_inputstring);
             }
-            else if (lineEdit->objectName() == MAPPINGSWITCHKEY_LINEEDIT_NAME) {
-                updateMappingSwitchKeyString(ori_inputstring);
+            else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
+                updateMappingStartKeyString(ori_inputstring);
+            }
+            else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
+                updateMappingStopKeyString(ori_inputstring);
             }
         }
         else
@@ -2970,13 +3000,22 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
                     showWarningPopup("显示切换键输入格式错误！");
                 }
             }
-            else if (lineEdit->objectName() == MAPPINGSWITCHKEY_LINEEDIT_NAME) {
-                lineEdit->setText(s_MappingSwitchKeyString);
+            else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
+                lineEdit->setText(s_MappingStartKeyString);
                 if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showWarningPopup("Invalid input format for MappingSwitchKey!");
+                    showWarningPopup("Invalid input format for MappingStartKey!");
                 }
                 else {
-                    showWarningPopup("映射开关键输入格式错误！");
+                    showWarningPopup("映射开启键输入格式错误！");
+                }
+            }
+            else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
+                lineEdit->setText(s_MappingStopKeyString);
+                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                    showWarningPopup("Invalid input format for MappingStopKey!");
+                }
+                else {
+                    showWarningPopup("映射关闭键输入格式错误！");
                 }
             }
         }
@@ -3805,20 +3844,31 @@ void QKeyMapper::saveKeyMapSetting(void)
 //         m_mappingswitchKeySeqEdit->clearFocus();
 //         if (false == m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
 //             updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
-//             settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, m_mappingswitchKeySeqEdit->keySequence().toString());
+//             settingFile.setValue(saveSettingSelectStr+MAPPINGSTART_KEY, m_mappingswitchKeySeqEdit->keySequence().toString());
 // #ifdef DEBUG_LOGOUT_ON
-//             qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Switch KeySequence [" << saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
+//             qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Switch KeySequence [" << saveSettingSelectStr+MAPPINGSTART_KEY << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
 // #endif
 //         }
 
-        if (s_MappingSwitchKeyString.isEmpty()) {
-            s_MappingSwitchKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+        if (s_MappingStartKeyString.isEmpty()) {
+            s_MappingStartKeyString = MAPPINGSWITCH_KEY_DEFAULT;
         }
-        ui->mappingswitchkeyLineEdit->clearFocus();
-        if (false == s_MappingSwitchKeyString.isEmpty()) {
-            settingFile.setValue(saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ, s_MappingSwitchKeyString);
+        ui->mappingStartKeyLineEdit->clearFocus();
+        if (false == s_MappingStartKeyString.isEmpty()) {
+            settingFile.setValue(saveSettingSelectStr+MAPPINGSTART_KEY, s_MappingStartKeyString);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Switch Key [" << saveSettingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << s_MappingSwitchKeyString << "\"";
+            qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Start Key [" << saveSettingSelectStr+MAPPINGSTART_KEY << "] -> \"" << s_MappingStartKeyString << "\"";
+#endif
+        }
+
+        if (s_MappingStopKeyString.isEmpty()) {
+            s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+        }
+        ui->mappingStopKeyLineEdit->clearFocus();
+        if (false == s_MappingStopKeyString.isEmpty()) {
+            settingFile.setValue(saveSettingSelectStr+MAPPINGSTOP_KEY, s_MappingStopKeyString);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[saveKeyMapSetting]" << " Save & Set Mapping Stop Key [" << saveSettingSelectStr+MAPPINGSTOP_KEY << "] -> \"" << s_MappingStopKeyString << "\"";
 #endif
         }
 
@@ -4991,8 +5041,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
 //     QString loadedmappingswitchKeySeqStr;
-//     if (true == settingFile.contains(settingSelectStr+MAPPINGSWITCH_KEYSEQ)){
-//         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSWITCH_KEYSEQ).toString();
+//     if (true == settingFile.contains(settingSelectStr+MAPPINGSTART_KEY)){
+//         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSTART_KEY).toString();
 //         if (loadedmappingswitchKeySeqStr.isEmpty()) {
 //             loadedmappingswitchKeySeqStr = m_mappingswitchKeySeqEdit->defaultKeySequence();
 //         }
@@ -5003,23 +5053,39 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 //     m_mappingswitchKeySeqEdit->setKeySequence(QKeySequence(loadedmappingswitchKeySeqStr));
 //     updateMappingSwitchKeySeq(m_mappingswitchKeySeqEdit->keySequence());
 // #ifdef DEBUG_LOGOUT_ON
-//     qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Switch KeySequence [" << settingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
+//     qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Switch KeySequence [" << settingSelectStr+MAPPINGSTART_KEY << "] -> \"" << m_mappingswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText) << "\"";
 // #endif
 
-    QString loadedmappingswitchKeySeqStr;
-    if (true == settingFile.contains(settingSelectStr+MAPPINGSWITCH_KEYSEQ)){
-        loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSWITCH_KEYSEQ).toString();
-        if (loadedmappingswitchKeySeqStr.isEmpty()) {
-            loadedmappingswitchKeySeqStr = MAPPINGSWITCH_KEY_DEFAULT;
+    QString loadedmappingStartKeyStr;
+    if (true == settingFile.contains(settingSelectStr+MAPPINGSTART_KEY)){
+        loadedmappingStartKeyStr = settingFile.value(settingSelectStr+MAPPINGSTART_KEY).toString();
+        if (loadedmappingStartKeyStr.isEmpty()) {
+            loadedmappingStartKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
         }
     }
     else {
-        loadedmappingswitchKeySeqStr = MAPPINGSWITCH_KEY_DEFAULT;
+        loadedmappingStartKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
     }
-    updateMappingSwitchKeyString(loadedmappingswitchKeySeqStr);
-    ui->mappingswitchkeyLineEdit->setText(s_MappingSwitchKeyString);
+    updateMappingStartKeyString(loadedmappingStartKeyStr);
+    ui->mappingStartKeyLineEdit->setText(s_MappingStartKeyString);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Switch Key [" << settingSelectStr+MAPPINGSWITCH_KEYSEQ << "] -> \"" << s_MappingSwitchKeyString << "\"";
+    qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Start Key [" << settingSelectStr+MAPPINGSTART_KEY << "] -> \"" << s_MappingStartKeyString << "\"";
+#endif
+
+    QString loadedmappingStopKeyStr;
+    if (true == settingFile.contains(settingSelectStr+MAPPINGSTOP_KEY)){
+        loadedmappingStopKeyStr = settingFile.value(settingSelectStr+MAPPINGSTOP_KEY).toString();
+        if (loadedmappingStopKeyStr.isEmpty()) {
+            loadedmappingStopKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
+        }
+    }
+    else {
+        loadedmappingStopKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
+    }
+    updateMappingStopKeyString(loadedmappingStopKeyStr);
+    ui->mappingStopKeyLineEdit->setText(s_MappingStopKeyString);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Stop Key [" << settingSelectStr+MAPPINGSTOP_KEY << "] -> \"" << s_MappingStopKeyString << "\"";
 #endif
 
     if (false == datavalidflag){
@@ -5047,7 +5113,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 
         if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
-            MappingStart(MAPPINGSTART_LOADSETTING);
+            MappingSwitch(MAPPINGSTART_LOADSETTING);
         }
         return true;
     }
@@ -5248,7 +5314,8 @@ void QKeyMapper::setControlFontEnglish()
     // }
     ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
-    ui->mappingswitchkeyLabel->setFont(customFont);
+    ui->mappingStartKeyLabel->setFont(customFont);
+    ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
@@ -5353,7 +5420,8 @@ void QKeyMapper::setControlFontChinese()
     // }
     ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
-    ui->mappingswitchkeyLabel->setFont(customFont);
+    ui->mappingStartKeyLabel->setFont(customFont);
+    ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
@@ -5535,9 +5603,11 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->windowswitchkeyLabel->setEnabled(status);
     // m_windowswitchKeySeqEdit->setEnabled(status);
     ui->windowswitchkeyLineEdit->setEnabled(status);
-    ui->mappingswitchkeyLabel->setEnabled(status);
+    ui->mappingStartKeyLabel->setEnabled(status);
+    ui->mappingStopKeyLabel->setEnabled(status);
     // m_mappingswitchKeySeqEdit->setEnabled(status);
-    ui->mappingswitchkeyLineEdit->setEnabled(status);
+    ui->mappingStartKeyLineEdit->setEnabled(status);
+    ui->mappingStopKeyLineEdit->setEnabled(status);
 
     // ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
@@ -7063,15 +7133,25 @@ void QKeyMapper::initWindowSwitchKeyLineEdit()
 
 void QKeyMapper::initMappingSwitchKeyLineEdit()
 {
-    // int top = ui->mappingswitchkeyLabel->y();
-    // int left = ui->mappingswitchkeyLabel->x() + ui->mappingswitchkeyLabel->width() + 5;
+    // int top = ui->mappingStartKeyLabel->y();
+    // int left = ui->mappingStartKeyLabel->x() + ui->mappingStartKeyLabel->width() + 5;
     // m_mappingswitchKeySeqEdit->setObjectName(QStringLiteral("mappingswitchKeySeqEdit"));
     // m_mappingswitchKeySeqEdit->setGeometry(QRect(left, top, 110, 21));
     // m_mappingswitchKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 
-    QLineEdit *lineEdit = ui->mappingswitchkeyLineEdit;
+    QLineEdit *lineEdit = ui->mappingStartKeyLineEdit;
     // left = 390;
-    // top = ui->mappingswitchkeyLabel->y();
+    // top = ui->mappingStartKeyLabel->y();
+    // lineEdit->setGeometry(QRect(left, top, 110, 21));
+    lineEdit->setFocusPolicy(Qt::ClickFocus);
+    QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
+        lineEdit->setToolTip(lineEdit->text());
+    });
+    QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
+
+    lineEdit = ui->mappingStopKeyLineEdit;
+    // left = 390;
+    // top = ui->mappingStartKeyLabel->y();
     // lineEdit->setGeometry(QRect(left, top, 110, 21));
     lineEdit->setFocusPolicy(Qt::ClickFocus);
     QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
@@ -7104,12 +7184,22 @@ void QKeyMapper::updateWindowSwitchKeyString(const QString &keystring)
     }
 }
 
-void QKeyMapper::updateMappingSwitchKeyString(const QString &keystring)
+void QKeyMapper::updateMappingStartKeyString(const QString &keystring)
 {
-    if (s_MappingSwitchKeyString != keystring) {
-        s_MappingSwitchKeyString = keystring;
+    if (s_MappingStartKeyString != keystring) {
+        s_MappingStartKeyString = keystring;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[updateMappingSwitchKeyString]" << "s_MappingSwitchKeyString update ->" << keystring;
+        qDebug() << "[updateMappingStartKeyString]" << "s_MappingStartKeyString update ->" << keystring;
+#endif
+    }
+}
+
+void QKeyMapper::updateMappingStopKeyString(const QString &keystring)
+{
+    if (s_MappingStopKeyString != keystring) {
+        s_MappingStopKeyString = keystring;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateMappingStopKeyString]" << "s_MappingStopKeyString update ->" << keystring;
 #endif
     }
 }
@@ -7428,7 +7518,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
-    ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_CHINESE);
+    ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_CHINESE);
+    ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_CHINESE);
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
     qDebug() << "[setUILanguage_Chinese]" << "last_notification_position" << last_notification_position;
@@ -7544,7 +7635,8 @@ void QKeyMapper::setUILanguage_English()
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
-    ui->mappingswitchkeyLabel->setText(MAPPINGSWITCHKEYLABEL_ENGLISH);
+    ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_ENGLISH);
+    ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_ENGLISH);
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
     ui->notificationComboBox->clear();
@@ -7626,6 +7718,7 @@ void QKeyMapper::resetFontSize()
         ui->nameLineEdit->setFont(customFont);
         ui->titleLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
+        ui->notificationComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
         m_orikeyComboBox->setFont(customFont);
         m_mapkeyComboBox->setFont(customFont);
@@ -7635,7 +7728,8 @@ void QKeyMapper::resetFontSize()
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->windowswitchkeyLineEdit->setFont(customFont);
-        ui->mappingswitchkeyLineEdit->setFont(customFont);
+        ui->mappingStartKeyLineEdit->setFont(customFont);
+        ui->mappingStopKeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(customFont);
         ui->sendTextLineEdit->setFont(customFont);
@@ -7662,6 +7756,7 @@ void QKeyMapper::resetFontSize()
         ui->nameLineEdit->setFont(customFont);
         ui->titleLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
+        ui->notificationComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
         m_orikeyComboBox->setFont(customFont);
         m_mapkeyComboBox->setFont(customFont);
@@ -7671,7 +7766,8 @@ void QKeyMapper::resetFontSize()
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->windowswitchkeyLineEdit->setFont(customFont);
-        ui->mappingswitchkeyLineEdit->setFont(customFont);
+        ui->mappingStartKeyLineEdit->setFont(customFont);
+        ui->mappingStopKeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->combinationKeyLineEdit->setFont(customFont);
         ui->sendTextLineEdit->setFont(customFont);

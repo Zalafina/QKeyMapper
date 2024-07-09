@@ -5968,7 +5968,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+        // if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+        if (extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
             if (Interception_Worker::s_InterceptStart) {
                 return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
             }
@@ -7164,8 +7165,22 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
 bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int keyupdown)
 {
     bool detected = false;
+
+    if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        detected = detectMappingStartKey(keycodeString, keyupdown);
+    }
+    else {
+        detected = detectMappingStopKey(keycodeString, keyupdown);
+    }
+
+    return detected;
+}
+
+bool QKeyMapper_Worker::detectMappingStartKey(const QString &keycodeString, int keyupdown)
+{
+    bool detected = false;
     bool passthrough = false;
-    QString mappingswitchKey = QKeyMapper::s_MappingSwitchKeyString;
+    QString mappingswitchKey = QKeyMapper::s_MappingStartKeyString;
     if (mappingswitchKey.startsWith(PREFIX_PASSTHROUGH)) {
         passthrough = true;
         mappingswitchKey.remove(0, 1);
@@ -7185,9 +7200,47 @@ bool QKeyMapper_Worker::detectMappingSwitchKey(const QString &keycodeString, int
     if (KEY_DOWN == keyupdown && allKeysPressed && mappingswitchKey.contains(keycodeString))
     {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[detectMappingSwitchKey]" << "MappingSwitchKey Activated ->" << mappingswitchKey;
+        qDebug() << "[detectMappingSwitchKey]" << "MappingStartKey Activated ->" << mappingswitchKey;
 #endif
-        emit QKeyMapper::getInstance()->HotKeyMappingSwitchActivated_Signal(mappingswitchKey);
+        emit QKeyMapper::getInstance()->HotKeyMappingStart_Signal(mappingswitchKey);
+        if (passthrough) {
+            detected = false;
+        }
+        else {
+            detected = true;
+        }
+    }
+
+    return detected;
+}
+
+bool QKeyMapper_Worker::detectMappingStopKey(const QString &keycodeString, int keyupdown)
+{
+    bool detected = false;
+    bool passthrough = false;
+    QString mappingswitchKey = QKeyMapper::s_MappingStopKeyString;
+    if (mappingswitchKey.startsWith(PREFIX_PASSTHROUGH)) {
+        passthrough = true;
+        mappingswitchKey.remove(0, 1);
+    }
+    QStringList keys = mappingswitchKey.split(SEPARATOR_PLUS);
+    bool allKeysPressed = true;
+
+    for (const QString &key : keys)
+    {
+        if (!pressedRealKeysListRemoveMultiInput.contains(key))
+        {
+            allKeysPressed = false;
+            break;
+        }
+    }
+
+    if (KEY_DOWN == keyupdown && allKeysPressed && mappingswitchKey.contains(keycodeString))
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[detectMappingSwitchKey]" << "MappingStopKey Activated ->" << mappingswitchKey;
+#endif
+        emit QKeyMapper::getInstance()->HotKeyMappingStop_Signal(mappingswitchKey);
         if (passthrough) {
             detected = false;
         }

@@ -582,6 +582,8 @@ public:
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
+    static bool detectMappingStartKey(const QString &keycodeString, int keyupdown);
+    static bool detectMappingStopKey(const QString &keycodeString, int keyupdown);
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
     static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);

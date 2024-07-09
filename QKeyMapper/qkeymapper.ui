@@ -591,7 +591,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -691,11 +691,11 @@
     <attribute name="title">
      <string>Mapping</string>
     </attribute>
-    <widget class="QLineEdit" name="mappingswitchkeyLineEdit">
+    <widget class="QLineEdit" name="mappingStartKeyLineEdit">
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>40</y>
+       <y>10</y>
        <width>110</width>
        <height>21</height>
       </rect>
@@ -704,7 +704,7 @@
     <widget class="QLabel" name="windowswitchkeyLabel">
      <property name="geometry">
       <rect>
-       <x>-6</x>
+       <x>200</x>
        <y>10</y>
        <width>81</width>
        <height>21</height>
@@ -717,17 +717,17 @@
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLabel" name="mappingswitchkeyLabel">
+    <widget class="QLabel" name="mappingStartKeyLabel">
      <property name="geometry">
       <rect>
        <x>-6</x>
-       <y>40</y>
+       <y>10</y>
        <width>81</width>
        <height>21</height>
       </rect>
      </property>
      <property name="text">
-      <string>MappingKey</string>
+      <string>MappingStart</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -736,7 +736,7 @@
     <widget class="QLineEdit" name="windowswitchkeyLineEdit">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>286</x>
        <y>10</y>
        <width>110</width>
        <height>21</height>
@@ -762,7 +762,7 @@
     <widget class="QSpinBox" name="mouseYSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>266</x>
+       <x>380</x>
        <y>40</y>
        <width>35</width>
        <height>22</height>
@@ -778,8 +778,8 @@
     <widget class="QLabel" name="mouseXSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>200</x>
-       <y>10</y>
+       <x>204</x>
+       <y>40</y>
        <width>61</width>
        <height>22</height>
       </rect>
@@ -794,8 +794,8 @@
     <widget class="QSpinBox" name="mouseXSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>266</x>
-       <y>10</y>
+       <x>270</x>
+       <y>40</y>
        <width>35</width>
        <height>22</height>
       </rect>
@@ -810,7 +810,7 @@
     <widget class="QLabel" name="mouseYSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>200</x>
+       <x>314</x>
        <y>40</y>
        <width>61</width>
        <height>22</height>
@@ -837,6 +837,32 @@
      </property>
      <property name="text">
       <string>Send To Same Windows</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="mappingStopKeyLabel">
+     <property name="geometry">
+      <rect>
+       <x>-6</x>
+       <y>40</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>MappingStop</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="mappingStopKeyLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>40</y>
+       <width>110</width>
+       <height>21</height>
+      </rect>
      </property>
     </widget>
    </widget>

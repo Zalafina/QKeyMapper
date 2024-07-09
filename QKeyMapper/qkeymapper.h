@@ -341,7 +341,9 @@ public:
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
-    void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
+    // void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
+    void HotKeyMappingStart_Signal(const QString &hotkey_string);
+    void HotKeyMappingStop_Signal(const QString &hotkey_string);
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
@@ -365,7 +367,7 @@ protected:
 public slots:
     void on_keymapButton_clicked();
 
-    void MappingStart(MappingStartMode startmode);
+    void MappingSwitch(MappingStartMode startmode);
 
     void updateLockStatusDisplay(void);
 
@@ -399,6 +401,8 @@ public slots:
 
     void HotKeyDisplaySwitchActivated(const QString &hotkey_string);
     void HotKeyMappingSwitchActivated(const QString &hotkey_string);
+    void HotKeyMappingStart(const QString &hotkey_string);
+    void HotKeyMappingStop(const QString &hotkey_string);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);
@@ -495,7 +499,8 @@ private:
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
     // void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
     void updateWindowSwitchKeyString(const QString &keystring);
-    void updateMappingSwitchKeyString(const QString &keystring);
+    void updateMappingStartKeyString(const QString &keystring);
+    void updateMappingStopKeyString(const QString &keystring);
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
     void refreshKeyMappingDataTable(void);
@@ -568,14 +573,15 @@ public:
     static QList<MousePoint_Info> WindowMousePointsList;
     // static QHash<QString, QHotkey*> ShortcutsMap;
     static QString s_WindowSwitchKeyString;
-    static QString s_MappingSwitchKeyString;
+    static QString s_MappingStartKeyString;
+    static QString s_MappingStopKeyString;
     int m_UI_Scale;
+    KeyMapStatus m_KeyMapStatus;
 
 private:
     static QKeyMapper *m_instance;
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
-    quint8 m_KeyMapStatus;
     QPoint m_LastWindowPosition;
     QTimer m_CycleCheckTimer;
     QTimer m_ProcessInfoTableRefreshTimer;
