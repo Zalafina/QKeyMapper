@@ -5713,13 +5713,17 @@ void QKeyMapper::mappingStartNotification()
         return;
     }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupNotification = "StartMapping [" + currentSelectedSetting + "]";
     }
     else {
         popupNotification = "开始映射 [" + currentSelectedSetting + "]";
+        if (GROUPNAME_GLOBALSETTING == currentSelectedSetting) {
+            color = "#26de81";
+        }
     }
-    showNotificationPopup(popupNotification, position);
+    showNotificationPopup(popupNotification, color, position);
 }
 
 void QKeyMapper::mappingStopNotification()
@@ -5751,13 +5755,14 @@ void QKeyMapper::mappingStopNotification()
         return;
     }
 
+    QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupNotification = "StopMapping [" + mappingStatusString + "]";
     }
     else {
         popupNotification = "停止映射 [" + mappingStatusString + "]";
     }
-    showNotificationPopup(popupNotification, position);
+    showNotificationPopup(popupNotification, color, position);
 }
 
 void QKeyMapper::showInputDeviceListWindow()
@@ -6616,12 +6621,12 @@ void QKeyMapper::showWarningPopup(const QString &message)
     showPopupMessage(message, "#d63031", 3000);
 }
 
-void QKeyMapper::showNotificationPopup(const QString &message, int position)
+void QKeyMapper::showNotificationPopup(const QString &message, const QString &color, int position)
 {
     if (Q_NULLPTR == m_PopupNotification) {
         return;
     }
-    m_PopupNotification->showPopupNotification(message, "#d6a2e8", 3000, position);
+    m_PopupNotification->showPopupNotification(message, color, 3000, position);
 }
 
 void QKeyMapper::initKeyMappingDataTable(void)
