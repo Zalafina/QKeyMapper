@@ -296,6 +296,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mappingStartKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     initKeyMappingDataTable();
+    m_ItemSetupDialog = new QItemSetupDialog(this);
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
@@ -303,7 +304,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_PopupNotification = new QPopupNotification(this);
     m_deviceListWindow = new QInputDeviceListWindow(this);
-    m_ItemSetupDialog = new QItemSetupDialog(this);
     // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
     Interception_Worker::syncDisabledKeyboardList();
@@ -5102,35 +5102,15 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     mappingkeystr.replace(OLD_SEPARATOR_NEXTARROW, SEPARATOR_NEXTARROW);
 #endif
 
-    bool checkResult = true;
-    // static QRegularExpression regexp("\\s[+»]\\s");
-    static QRegularExpression regexp("[+»]");
-    static QRegularExpression sendTextRegexp("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
+    QStringList mappingKeySeqList = mappingkeystr.split(SEPARATOR_NEXTARROW);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QStringList Mapping_Keys = mappingkeystr.split(regexp, Qt::SkipEmptyParts);
-#else
-    QStringList Mapping_Keys = mappingkeystr.split(regexp, QString::SkipEmptyParts);
-#endif
-    for (const QString &mapping_key : qAsConst(Mapping_Keys)){
-        if (false == QKeyMapper_Worker::VirtualKeyCodeMap.contains(mapping_key)
-            && mapping_key != KEY_NONE_STR
-            && mapping_key != KEY_BLOCKED_STR
-            // && false == QKeyMapper_Worker::VirtualMouseButtonMap.contains(mapping_key)
-            && false == mapping_key.startsWith(MOUSE_BUTTON_PREFIX)
-            // && false == QKeyMapper_Worker::JoyStickKeyMap.contains(mapping_key)
-            && false == mapping_key.startsWith(JOY_KEY_PREFIX)
-            && false == mapping_key.startsWith(VJOY_KEY_PREFIX)
-            && false == mapping_key.startsWith("Func-")
-            && false == mapping_key.contains(SEPARATOR_WAITTIME)
-            && !sendTextRegexp.match(mapping_key).hasMatch())
-        {
-            checkResult = false;
-            break;
-        }
+    if (result.isValid) {
+        return true;
     }
-
-    return checkResult;
+    else {
+        return false;
+    }
 }
 
 bool QKeyMapper::validateCombinationKey(QString &input)
