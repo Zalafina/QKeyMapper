@@ -289,11 +289,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->notificationComboBox->addItems(positoin_list);
     ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
 
-    m_PopupNotification = new QPopupNotification(this);
-    m_deviceListWindow = new QInputDeviceListWindow(this);
-    m_ItemSetupDialog = new QItemSetupDialog(this);
-    // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
-
     // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
     // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
@@ -305,6 +300,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+
+    m_PopupNotification = new QPopupNotification(this);
+    m_deviceListWindow = new QInputDeviceListWindow(this);
+    m_ItemSetupDialog = new QItemSetupDialog(this);
+    // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
     Interception_Worker::syncDisabledKeyboardList();
     Interception_Worker::syncDisabledMouseList();
@@ -367,13 +367,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 //    }
 
     // initHotKeySequence();
-
-#ifdef DEBUG_LOGOUT_ON
-    QFont spinbox_font = ui->mouseXSpeedSpinBox->font();
-    QFont table_font = ui->processinfoTable->font();
-    qDebug() << "QKeyMapper() spinbox_font ->" << spinbox_font;
-    qDebug() << "QKeyMapper() table_font ->" << table_font;
-#endif
 }
 
 QKeyMapper::~QKeyMapper()
@@ -2514,12 +2507,6 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 // #ifdef QT_NO_DEBUG
 //         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 // #endif
-#ifdef DEBUG_LOGOUT_ON
-        QFont spinbox_font = ui->mouseXSpeedSpinBox->font();
-        QFont table_font = ui->processinfoTable->font();
-        qDebug() << "keyPressEvent() spinbox_font ->" << spinbox_font;
-        qDebug() << "keyPressEvent() table_font ->" << table_font;
-#endif
         updateHWNDListProc();
         refreshProcessInfoTable();
         (void)Interception_Worker::getRefreshedKeyboardDeviceList();
@@ -6631,6 +6618,9 @@ void QKeyMapper::showWarningPopup(const QString &message)
 
 void QKeyMapper::showNotificationPopup(const QString &message, int position)
 {
+    if (Q_NULLPTR == m_PopupNotification) {
+        return;
+    }
     m_PopupNotification->showPopupNotification(message, "#d6a2e8", 3000, position);
 }
 
