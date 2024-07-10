@@ -1785,14 +1785,23 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression mapkey_regex("^(.+)⏱(\\d+)$");
+    static QRegularExpression mapkey_regex("^([↓↑⇵]?)(.*?)(?:⏱(\\d+))?$");
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
-        QString mapping_key = mapkey_match.captured(1);
-        QString waitTimeString = mapkey_match.captured(2);
-        bool ok;
-        int waittime = waitTimeString.toInt(&ok);
+        QString prefix = mapkey_match.captured(1);
+        QString mapping_key = mapkey_match.captured(2);
+        QString waitTimeString = mapkey_match.captured(3);
+        bool ok = true;
+        int waittime = 0;
+
+        if (!waitTimeString.isEmpty()) {
+            waittime = waitTimeString.toInt(&ok);
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[validateSingleMappingKey]" << "Prefix(" << prefix << "), Time(" << waittime << ") -> " << mapkey;
+#endif
 
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-.+)@([0-3])$");
@@ -1816,10 +1825,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                     }
                 }
             }
-            else if (mousepoint_match.hasMatch()) {
-                result.isValid = true;
-            }
-            else if (sendtext_match.hasMatch()) {
+            else if (mousepoint_match.hasMatch() || sendtext_match.hasMatch()) {
                 result.isValid = true;
             }
             else {
@@ -1832,12 +1838,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             }
         }
 
-        if (result.isValid) {
-            if (!ok
-                || waitTimeString == "0"
-                || waitTimeString.startsWith('0')
-                || waittime <= MAPPING_WAITTIME_MIN
-                || waittime > MAPPING_WAITTIME_MAX) {
+        if (result.isValid && !waitTimeString.isEmpty()) {
+            if (!ok || waitTimeString == "0" || waitTimeString.startsWith('0') || waittime <= MAPPING_WAITTIME_MIN || waittime > MAPPING_WAITTIME_MAX) {
                 result.isValid = false;
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                     result.errorMessage = QString("Invalid waittime \"%1\"").arg(waitTimeString);
@@ -1848,43 +1850,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
         }
     }
     else {
-        QString mapping_key = mapkey;
-        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
-            static QRegularExpression vjoy_regex("^(vJoy-.+)@([0-3])$");
-            static QRegularExpression mousepoint_regex("^Mouse-(L|R|M|X1|X2)(:W)?\\((\\d+),(\\d+)\\)$");
-            static QRegularExpression sendtext_regex("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
-            QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
-            QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
-            QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
-
-            if (vjoy_match.hasMatch()) {
-                static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
-                QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
-                QString vjoy_key = vjoy_match.captured(1);
-
-                if (!vJoyKeyList.contains(vjoy_key)) {
-                    result.isValid = false;
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Invalid vJoy-Key \"%1\"").arg(mapping_key);
-                    } else {
-                        result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
-                    }
-                }
-            }
-            else if (mousepoint_match.hasMatch()) {
-                result.isValid = true;
-            }
-            else if (sendtext_match.hasMatch()) {
-                result.isValid = true;
-            }
-            else {
-                result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid key \"%1\"").arg(mapping_key);
-                } else {
-                    result.errorMessage = QString("无效按键 \"%1\"").arg(mapping_key);
-                }
-            }
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = QString("Invalid format \"%1\"").arg(mapkey);
+        } else {
+            result.errorMessage = QString("无效格式 \"%1\"").arg(mapkey);
         }
     }
 
@@ -8953,7 +8923,10 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     bool isCursorAtEnd = (cursorPos == currentMapKeyText.length());
 
                     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-                        if (currentMapKeyListText == SEPARATOR_WAITTIME) {
+                        if (currentMapKeyListText == SEPARATOR_WAITTIME
+                            || currentMapKeyListText == PREFIX_SEND_DOWN
+                            || currentMapKeyListText == PREFIX_SEND_UP
+                            || currentMapKeyListText == PREFIX_SEND_BOTH) {
                             newMapKeyText = currentMapKeyText + currentMapKeyListText;
                         }
                         else {
@@ -8962,7 +8935,10 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     }
                     else {
                         if (isCursorAtEnd) {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME) {
+                            if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == PREFIX_SEND_DOWN
+                                || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_BOTH) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
                             }
                             else {
@@ -8970,7 +8946,10 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             }
                         }
                         else {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME) {
+                            if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == PREFIX_SEND_DOWN
+                                || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_BOTH) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {

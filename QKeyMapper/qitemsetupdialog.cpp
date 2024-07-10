@@ -317,6 +317,9 @@ void QItemSetupDialog::initKeyListComboBoxes()
 
     m_MappingKeyListComboBox->addItem(QString());
     m_MappingKeyListComboBox->addItem(SEPARATOR_WAITTIME);
+    m_MappingKeyListComboBox->addItem(PREFIX_SEND_DOWN);
+    m_MappingKeyListComboBox->addItem(PREFIX_SEND_UP);
+    m_MappingKeyListComboBox->addItem(PREFIX_SEND_BOTH);
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QString text = mapkeyComboBox->itemText(i);
         m_MappingKeyListComboBox->addItem(text);
