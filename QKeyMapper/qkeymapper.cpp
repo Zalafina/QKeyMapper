@@ -5271,14 +5271,14 @@ void QKeyMapper::setControlFontEnglish()
     ui->savemaplistButton->setFont(customFont);
     ui->addmapdataButton->setFont(customFont);
 
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(11);
-    }
-    else {
-        customFont.setPointSize(9);
-    }
-    ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     customFont.setPointSize(11);
+    // }
+    // else {
+    //     customFont.setPointSize(9);
+    // }
+    // ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
     customFont.setPointSize(9);
     ui->deleteoneButton->setFont(customFont);
@@ -5409,8 +5409,8 @@ void QKeyMapper::setControlFontChinese()
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
 
-    ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
+    // ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(11);
@@ -7754,6 +7754,8 @@ void QKeyMapper::resetFontSize()
         // ui->burstreleaseSpinBox->setFont(customFont);
         ui->processinfoTable->setFont(customFont);
         m_KeyMappingDataTable->setFont(customFont);
+        ui->processinfoTable->horizontalHeader()->setFont(customFont);
+        m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
         ui->vJoyXSensSpinBox->setFont(customFont);
         ui->vJoyYSensSpinBox->setFont(customFont);
@@ -7792,6 +7794,8 @@ void QKeyMapper::resetFontSize()
         // ui->burstreleaseSpinBox->setFont(customFont);
         ui->processinfoTable->setFont(customFont);
         m_KeyMappingDataTable->setFont(customFont);
+        ui->processinfoTable->horizontalHeader()->setFont(customFont);
+        m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
         ui->vJoyXSensSpinBox->setFont(customFont);
         ui->vJoyYSensSpinBox->setFont(customFont);

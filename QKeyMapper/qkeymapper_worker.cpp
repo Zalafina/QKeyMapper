@@ -4098,7 +4098,9 @@ void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
             }
 
             if (virtualgamepad) {
-                // QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+#ifdef SDL_VIRTUALGAMEPAD_IGNORE
+                QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_index << "][" << joystick_added->name << "] is Blacklisted.";
@@ -4126,7 +4128,7 @@ void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
     qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
 #endif
 
-#ifdef SDL_JOYSTICK_BLACKLIST
+#ifdef SDL_VIRTUALGAMEPAD_IGNORE
     if (e.joystick->blacklisted) {
         return;
     }
@@ -4141,7 +4143,7 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
     qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
 
-#ifdef SDL_JOYSTICK_BLACKLIST
+#ifdef SDL_VIRTUALGAMEPAD_IGNORE
     if (e.joystick->blacklisted) {
         return;
     }
@@ -4166,7 +4168,7 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
     qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
 #endif
 
-#ifdef SDL_JOYSTICK_BLACKLIST
+#ifdef SDL_VIRTUALGAMEPAD_IGNORE
     if (e.joystick->blacklisted) {
         return;
     }
