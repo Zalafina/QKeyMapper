@@ -886,6 +886,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         return;
     }
 
+    static QRegularExpression mapkey_regex("^([↓↑⇵]?)(.*?)(?:⏱(\\d+))?$");
     static QRegularExpression sendTextRegexp("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
     int keycount = 0;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
@@ -965,6 +966,18 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #if 0
             waitTime = 0;
 #endif
+            // QRegularExpressionMatch mapkey_match = mapkey_regex.match(key);
+            // if (mapkey_match.hasMatch()) {
+            //     QString prefix = mapkey_match.captured(1);
+            //     QString key = mapkey_match.captured(2);
+            //     QString waitTimeString = mapkey_match.captured(3);
+            //     bool ok = true;
+
+            //     if (!waitTimeString.isEmpty()) {
+            //         waitTime = waitTimeString.toInt(&ok);
+            //     }
+            // }
+
             if (key.contains(SEPARATOR_WAITTIME)) {
                 QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
                 key = waitTimeKeyList.first();
@@ -1173,6 +1186,19 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             for (const QString &keyStr : qAsConst(mappingKeys)){
                 QString key = keyStr;
                 waitTime = 0;
+
+    //             QRegularExpressionMatch mapkey_match = mapkey_regex.match(key);
+    //             if (mapkey_match.hasMatch()) {
+    //                 QString prefix = mapkey_match.captured(1);
+    //                 QString key = mapkey_match.captured(2);
+    //                 QString waitTimeString = mapkey_match.captured(3);
+    //                 bool ok = true;
+
+    //                 if (!waitTimeString.isEmpty()) {
+    //                     waitTime = waitTimeString.toInt(&ok);
+    //                 }
+    //             }
+
                 if (key.contains(SEPARATOR_WAITTIME)) {
                     QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
                     waitTime = waitTimeKeyList.last().toInt();
