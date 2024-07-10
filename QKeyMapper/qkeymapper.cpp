@@ -367,6 +367,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 //    }
 
     // initHotKeySequence();
+
+#ifdef DEBUG_LOGOUT_ON
+    QFont spinbox_font = ui->mouseXSpeedSpinBox->font();
+    QFont table_font = ui->processinfoTable->font();
+    qDebug() << "QKeyMapper() spinbox_font ->" << spinbox_font;
+    qDebug() << "QKeyMapper() table_font ->" << table_font;
+#endif
 }
 
 QKeyMapper::~QKeyMapper()
@@ -2507,6 +2514,12 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 // #ifdef QT_NO_DEBUG
 //         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 // #endif
+#ifdef DEBUG_LOGOUT_ON
+        QFont spinbox_font = ui->mouseXSpeedSpinBox->font();
+        QFont table_font = ui->processinfoTable->font();
+        qDebug() << "keyPressEvent() spinbox_font ->" << spinbox_font;
+        qDebug() << "keyPressEvent() table_font ->" << table_font;
+#endif
         updateHWNDListProc();
         refreshProcessInfoTable();
         (void)Interception_Worker::getRefreshedKeyboardDeviceList();
