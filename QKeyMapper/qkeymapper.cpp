@@ -1794,6 +1794,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
         QString waitTimeString = mapkey_match.captured(3);
         bool ok = true;
         int waittime = 0;
+        Q_UNUSED(prefix);
 
         if (!waitTimeString.isEmpty()) {
             waittime = waitTimeString.toInt(&ok);
