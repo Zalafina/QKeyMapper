@@ -116,6 +116,13 @@ extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_KEYSEQ_HOLDDOWN;
 
+extern const int SENDTYPE_NORMAL;
+extern const int SENDTYPE_DOWN;
+extern const int SENDTYPE_UP;
+extern const int SENDTYPE_BOTH;
+
+extern const int SENDTYPE_BOTH_WAITTIME;
+
 extern const int MOUSE_WHEEL_UP;
 extern const int MOUSE_WHEEL_DOWN;
 

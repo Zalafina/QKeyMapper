@@ -886,9 +886,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         return;
     }
 
-    static QRegularExpression mapkey_regex("^([↓↑⇵]?)(.*?)(?:⏱(\\d+))?$");
+    static QRegularExpression mapkey_regex("^([↓↑⇵]?)([^⏱]*)(?:⏱(\\d+))?$");
     static QRegularExpression sendTextRegexp("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
+    static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
+    int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
 
     if (KEY_UP == keyupdown) {
@@ -966,34 +968,32 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #if 0
             waitTime = 0;
 #endif
-            // QRegularExpressionMatch mapkey_match = mapkey_regex.match(key);
-            // if (mapkey_match.hasMatch()) {
-            //     QString prefix = mapkey_match.captured(1);
-            //     QString key = mapkey_match.captured(2);
-            //     QString waitTimeString = mapkey_match.captured(3);
-            //     bool ok = true;
+            QRegularExpressionMatch mapkey_match = mapkey_regex.match(key);
+            QRegularExpressionMatch vjoy_match;
+            sendtype = SENDTYPE_NORMAL;
+            if (mapkey_match.hasMatch()) {
+                QString prefix = mapkey_match.captured(1);
+                key = mapkey_match.captured(2);
 
-            //     if (!waitTimeString.isEmpty()) {
-            //         waitTime = waitTimeString.toInt(&ok);
-            //     }
-            // }
-
-            if (key.contains(SEPARATOR_WAITTIME)) {
-                QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
-                key = waitTimeKeyList.first();
-
-#if 0
-                waitTime = waitTimeKeyList.last().toInt();
-                if (it + 1 == mappingKeys.crend()) {
-                    waitTime = 0;
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendInputKeys] Last key of KEY_UP, do no need wait time";
-#endif
+                if (prefix == PREFIX_SEND_DOWN) {
+                    sendtype = SENDTYPE_DOWN;
                 }
+                else if (prefix == PREFIX_SEND_UP) {
+                    sendtype = SENDTYPE_UP;
+                }
+                else if (prefix == PREFIX_SEND_BOTH) {
+                    sendtype = SENDTYPE_BOTH;
+                }
+
+                vjoy_match = vjoy_regex.match(key);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[sendInputKeys] KeyUp mappingkey regularexpression not matched -> " << key;
 #endif
             }
 
-            if (key.isEmpty() || key == KEY_NONE_STR) {
+            if (key.isEmpty() || key == KEY_NONE_STR || sendtype != SENDTYPE_NORMAL) {
                 continue;
             }
 
@@ -1034,6 +1034,19 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             if (sendTextMatch.hasMatch()) {
                 /* SendText KeyUp do nothing. */
             }
+            else if (vjoy_match.hasMatch()) {
+                if (original_key != CLEAR_VIRTUALKEYS) {
+                    QString joystickButton = vjoy_match.captured(1);
+                    QString gamepadIndexString = vjoy_match.captured(2);
+                    if (gamepadIndexString.isEmpty()) {
+                        ViGEmClient_ReleaseButton(key, 0);
+                    }
+                    else {
+                        int gamepad_index = gamepadIndexString.toInt();
+                        ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
+                    }
+                }
+            }
             else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1067,24 +1080,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                 sendMousePointClick(key, KEY_UP);
             }
-#ifdef VIGEM_CLIENT_SUPPORT
-            // else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
-            else if (true == key.startsWith(VJOY_KEY_PREFIX)) {
-                if (original_key != CLEAR_VIRTUALKEYS) {
-                    static QRegularExpression regex("(vJoy-.+)@([0-3])$");
-                    QRegularExpressionMatch match = regex.match(key);
-                    if (match.hasMatch()) {
-                        QString joystickButton = match.captured(1);
-                        QString gamepadIndexString = match.captured(2);
-                        int gamepad_index = gamepadIndexString.toInt();
-                        ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
-                    }
-                    else {
-                        ViGEmClient_ReleaseButton(key, 0);
-                    }
-                }
-            }
-#endif
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (original_key == KEYBOARD_MODIFIERS) {
                     s_forceSendVirtualKey = true;
@@ -1187,22 +1182,39 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 QString key = keyStr;
                 waitTime = 0;
 
-    //             QRegularExpressionMatch mapkey_match = mapkey_regex.match(key);
-    //             if (mapkey_match.hasMatch()) {
-    //                 QString prefix = mapkey_match.captured(1);
-    //                 QString key = mapkey_match.captured(2);
-    //                 QString waitTimeString = mapkey_match.captured(3);
-    //                 bool ok = true;
+                QRegularExpressionMatch mapkey_match = mapkey_regex.match(key);
+                QRegularExpressionMatch vjoy_match;
+                sendtype = SENDTYPE_NORMAL;
+                if (mapkey_match.hasMatch()) {
+                    QString prefix = mapkey_match.captured(1);
+                    key = mapkey_match.captured(2);
+                    QString waitTimeString = mapkey_match.captured(3);
+                    bool ok = true;
+                    int waittime_temp = 0;
 
-    //                 if (!waitTimeString.isEmpty()) {
-    //                     waitTime = waitTimeString.toInt(&ok);
-    //                 }
-    //             }
+                    if (!waitTimeString.isEmpty()) {
+                        waittime_temp = waitTimeString.toInt(&ok);
+                        if (ok) {
+                            waitTime = waittime_temp;
+                        }
+                    }
 
-                if (key.contains(SEPARATOR_WAITTIME)) {
-                    QStringList waitTimeKeyList = key.split(SEPARATOR_WAITTIME);
-                    waitTime = waitTimeKeyList.last().toInt();
-                    key = waitTimeKeyList.first();
+                    if (prefix == PREFIX_SEND_DOWN) {
+                        sendtype = SENDTYPE_DOWN;
+                    }
+                    else if (prefix == PREFIX_SEND_UP) {
+                        sendtype = SENDTYPE_UP;
+                    }
+                    else if (prefix == PREFIX_SEND_BOTH) {
+                        sendtype = SENDTYPE_BOTH;
+                    }
+
+                    vjoy_match = vjoy_regex.match(key);
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[sendInputKeys] KeyDown mappingkey regularexpression not matched -> " << key;
+#endif
                 }
 
                 QRegularExpressionMatch sendTextMatch = sendTextRegexp.match(key);
@@ -1218,6 +1230,49 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     releaseKeyboardModifiersDirect(modifiers_arg);
 
                     sendText(QKeyMapper::s_CurrentMappingHWND, text);
+                }
+                else if (vjoy_match.hasMatch()) {
+                    QString joystickButton = vjoy_match.captured(1);
+                    QString gamepadIndexString = vjoy_match.captured(2);
+                    int send_keyupdown = KEY_DOWN;
+                    if (sendtype == SENDTYPE_UP) {
+                        send_keyupdown = KEY_UP;
+                    }
+
+                    if (gamepadIndexString.isEmpty()) {
+                        if (send_keyupdown == KEY_DOWN) {
+                            ViGEmClient_PressButton(key, false, 0);
+                        }
+                        else {
+                            ViGEmClient_ReleaseButton(key, 0);
+                        }
+                    }
+                    else {
+                        int gamepad_index = gamepadIndexString.toInt();
+                        if (send_keyupdown == KEY_DOWN) {
+                            ViGEmClient_PressButton(joystickButton, false, gamepad_index);
+                        }
+                        else {
+                            ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
+                        }
+                    }
+
+                    if (sendtype == SENDTYPE_BOTH) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH vJoy KeyUp wait start ->" << key;
+#endif
+                        QThread::msleep(VJOY_KEYUP_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH vJoy KeyUp wait end ->" << key;
+#endif
+                        if (gamepadIndexString.isEmpty()) {
+                            ViGEmClient_ReleaseButton(key, 0);
+                        }
+                        else {
+                            int gamepad_index = gamepadIndexString.toInt();
+                            ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
+                        }
+                    }
                 }
                 else if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR || key == MOUSE_WHEEL_LEFT_STR || key == MOUSE_WHEEL_RIGHT_STR) {
                     INPUT input = { 0 };
@@ -1252,19 +1307,23 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                 }
                 else if (true == VirtualMouseButtonMap.contains(key)) {
-                    if (true == pressedVirtualKeysList.contains(key)) {
+                    if (SENDTYPE_NORMAL == sendtype && true == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("sendInputKeys(): Mouse Button Down -> \"%s\" already exist!!!", key.toStdString().c_str());
 #endif
                         continue;
                     }
 
+                    int send_keyupdown = KEY_DOWN;
+                    if (sendtype == SENDTYPE_UP) {
+                        send_keyupdown = KEY_UP;
+                    }
                     INPUT input = { 0 };
                     V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                     input.type = INPUT_MOUSE;
                     input.mi.mouseData = vmousecode.MouseXButton;
                     input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
-                    if (KEY_DOWN == keyupdown) {
+                    if (KEY_DOWN == send_keyupdown) {
                         input.mi.dwFlags = vmousecode.MouseDownCode;
                     }
                     else {
@@ -1274,43 +1333,69 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                         for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                            postMouseButton(hwnd, key, keyupdown);
+                            postMouseButton(hwnd, key, send_keyupdown);
                         }
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "[sendInputKeys] postMouseButton(" << key << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+                        qDebug().nospace().noquote() << "[sendInputKeys] postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
+                    }
+
+                    if (sendtype == SENDTYPE_BOTH) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait start ->" << key;
+#endif
+                        QThread::msleep(SENDTYPE_BOTH_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
+#endif
+                        send_keyupdown = KEY_UP;
+                        input.mi.dwFlags = vmousecode.MouseUpCode;
+                        SendInput(1, &input, sizeof(INPUT));
+
+                        if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                                postMouseButton(hwnd, key, send_keyupdown);
+                            }
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace().noquote() << "[sendInputKeys] SENDTYPE_BOTH postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                        }
                     }
                 }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
-                    sendMousePointClick(key, KEY_DOWN);
-                }
-#ifdef VIGEM_CLIENT_SUPPORT
-                // else if (true == QKeyMapper_Worker::JoyStickKeyMap.contains(key)) {
-                else if (true == key.startsWith(VJOY_KEY_PREFIX)) {
-                    static QRegularExpression regex("(vJoy-.+)@([0-3])$");
-                    QRegularExpressionMatch match = regex.match(key);
-                    if (match.hasMatch()) {
-                        QString joystickButton = match.captured(1);
-                        QString gamepadIndexString = match.captured(2);
-                        int gamepad_index = gamepadIndexString.toInt();
-                        ViGEmClient_PressButton(joystickButton, false, gamepad_index);
+                    int send_keyupdown = KEY_DOWN;
+                    if (sendtype == SENDTYPE_UP) {
+                        send_keyupdown = KEY_UP;
                     }
-                    else {
-                        ViGEmClient_PressButton(key, false, 0);
-                    }
-                }
+                    sendMousePointClick(key, send_keyupdown);
+
+                    if (sendtype == SENDTYPE_BOTH) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait start ->" << key;
 #endif
+                        QThread::msleep(SENDTYPE_BOTH_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
+#endif
+                        send_keyupdown = KEY_UP;
+                        sendMousePointClick(key, send_keyupdown);
+                    }
+                }
                 else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[sendInputKeys] VirtualKey send Key Start ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
 #endif
-                    if (true == pressedVirtualKeysList.contains(key)) {
+                    if (SENDTYPE_NORMAL == sendtype && true == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
 #endif
                         continue;
                     }
 
+                    int send_keyupdown = KEY_DOWN;
+                    if (sendtype == SENDTYPE_UP) {
+                        send_keyupdown = KEY_UP;
+                    }
                     INPUT input = { 0 };
                     V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
                     DWORD extenedkeyflag = 0;
@@ -1333,7 +1418,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 //#ifdef DEBUG_LOGOUT_ON
 //                    qDebug("sendInputKeys(): Key Down -> \"%s\", wScan->0x%08X", key.toStdString().c_str(), input.ki.wScan);
 //#endif
-                    if (KEY_DOWN == keyupdown) {
+                    if (KEY_DOWN == send_keyupdown) {
                         input.ki.dwFlags = extenedkeyflag | 0;
                     }
                     else {
@@ -1341,18 +1426,42 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                     SendInput(1, &input, sizeof(INPUT));
 
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[sendInputKeys] VirtualKey send Key End ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
-#endif
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()
                         && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
                         for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                            postVirtualKeyCode(hwnd, vkeycode.KeyCode, keyupdown);
+                            postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
                         }
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
 #endif
                     }
+
+                    if (sendtype == SENDTYPE_BOTH) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait start ->" << key;
+#endif
+                        QThread::msleep(SENDTYPE_BOTH_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
+#endif
+                        send_keyupdown = KEY_UP;
+                        input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                        SendInput(1, &input, sizeof(INPUT));
+
+                        if (QKeyMapper::getSendToSameTitleWindowsStatus()
+                            && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
+                            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                                postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
+                            }
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
+#endif
+                        }
+                    }
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[sendInputKeys] VirtualKey send Key End ->" << key << ", m_sendInputStopFlag=" << m_sendInputStopFlag << ", line:" << __LINE__;
+#endif
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON

@@ -140,6 +140,13 @@ const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
 const int SENDMODE_KEYSEQ_HOLDDOWN  = 3;
 
+const int SENDTYPE_NORMAL   = 0;
+const int SENDTYPE_DOWN     = 1;
+const int SENDTYPE_UP       = 2;
+const int SENDTYPE_BOTH     = 3;
+
+const int SENDTYPE_BOTH_WAITTIME = 20;
+
 const int MOUSE_WHEEL_UP = 1;
 const int MOUSE_WHEEL_DOWN = 2;
 
