@@ -1785,7 +1785,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression mapkey_regex("^([↓↑⇵]?)([^⏱]*)(?:⏱(\\d+))?$");
+    static QRegularExpression mapkey_regex("^([↓↑⇵]?)([^⏱]+)(?:⏱(\\d+))?$");
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
