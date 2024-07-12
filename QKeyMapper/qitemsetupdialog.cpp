@@ -325,6 +325,8 @@ void QItemSetupDialog::initKeyListComboBoxes()
         m_MappingKeyListComboBox->addItem(text);
         s_valiedMappingKeyList.append(text);
     }
+    s_valiedMappingKeyList.append(VJOY_MOUSE2LS_STR);
+    s_valiedMappingKeyList.append(VJOY_MOUSE2RS_STR);
 
     int left = ui->orikeyListLabel->x() + ui->orikeyListLabel->width() + 5;
     int top = ui->orikeyListLabel->y();

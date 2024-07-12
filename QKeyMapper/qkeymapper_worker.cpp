@@ -4317,6 +4317,10 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
     if (e.joystick == Q_NULLPTR)
         return;
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[checkJoystickButtons]" << "Gamepad index =" << e.joystick->id;
+#endif
+
     JoystickButtonCode buttonCode = (JoystickButtonCode)e.button;
 
     if (m_JoystickButtonMap.contains(buttonCode)) {
