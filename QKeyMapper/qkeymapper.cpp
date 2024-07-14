@@ -9002,7 +9002,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
     // Position the notification based on the position parameter
     QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
     // Default to top-right
-    int x = screenGeometry.width() - m_Label->width() - 10;
+    int x = screenGeometry.width() - m_Label->width() - 20;
     int y = 10;
     if (position == NOTIFICATION_POSITION_TOP_LEFT) {
         x = 10; // 10 pixels from the left edge
@@ -9013,20 +9013,20 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
         y = 10; // 10 pixels from the top edge
     }
     else if (position == NOTIFICATION_POSITION_TOP_RIGHT) {
-        x = screenGeometry.width() - m_Label->width() - 10; // 10 pixels from the right edge
+        x = screenGeometry.width() - m_Label->width() - 20; // 30 pixels from the right edge
         y = 10; // 10 pixels from the top edge
     }
     else if (position == NOTIFICATION_POSITION_BOTTOM_LEFT) {
         x = 10; // 10 pixels from the left edge
-        y = screenGeometry.height() - m_Label->height() - 30; // 10 pixels from the bottom edge
+        y = screenGeometry.height() - m_Label->height() - 30; // 30 pixels from the bottom edge
     }
     else if (position == NOTIFICATION_POSITION_BOTTOM_CENTER) {
         x = (screenGeometry.width() - m_Label->width()) / 2; // Centered horizontally
-        y = screenGeometry.height() - m_Label->height() - 30; // 10 pixels from the bottom edge
+        y = screenGeometry.height() - m_Label->height() - 30; // 30 pixels from the bottom edge
     }
     else if (position == NOTIFICATION_POSITION_BOTTOM_RIGHT) {
-        x = screenGeometry.width() - m_Label->width() - 10; // 10 pixels from the right edge
-        y = screenGeometry.height() - m_Label->height() - 30; // 10 pixels from the bottom edge
+        x = screenGeometry.width() - m_Label->width() - 20; // 30 pixels from the right edge
+        y = screenGeometry.height() - m_Label->height() - 30; // 30 pixels from the bottom edge
     }
     move(x, y);
 
