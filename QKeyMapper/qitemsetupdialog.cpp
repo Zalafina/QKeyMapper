@@ -301,6 +301,19 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
     QDialog::showEvent(event);
 }
 
+void QItemSetupDialog::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Escape) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::keyPressEvent]" << "ESC Key Pressed, Item Row initialize to -1 and close SetupDialog.";
+#endif
+        m_ItemRow = -1;
+        emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
+    }
+
+    QDialog::keyPressEvent(event);
+}
+
 void QItemSetupDialog::initKeyListComboBoxes()
 {
     KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
