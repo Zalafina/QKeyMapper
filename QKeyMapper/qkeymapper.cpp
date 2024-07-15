@@ -20,6 +20,7 @@ QList<MousePoint_Info> QKeyMapper::WindowMousePointsList = QList<MousePoint_Info
 QString QKeyMapper::s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingStartKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+qreal QKeyMapper::s_UI_scale_value = 1.0;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -168,6 +169,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     else {
         m_UI_Scale = UI_SCALE_NORMAL;
     }
+
+    int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+    HDC hdc = GetDC(NULL);
+    int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
+    double dWidth = static_cast<double>(width);
+    double dScreenWidth = static_cast<double>(nScreenWidth);
+    s_UI_scale_value = dWidth / dScreenWidth;
+    ReleaseDC(NULL, hdc);
 
 #ifdef USE_SAOFONT
     if ((m_SAO_FontFamilyID != -1)
@@ -9001,8 +9010,13 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
 
     // Position the notification based on the position parameter
     QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
+    qreal scale = QKeyMapper::s_UI_scale_value;
     // Default to top-right
-    int x = screenGeometry.width() - m_Label->width() - 20;
+    int x_right_offset = 20;
+    if (scale < 1.10) {
+        x_right_offset = 30;
+    }
+    int x = screenGeometry.width() - m_Label->width() - x_right_offset;
     int y = 10;
     if (position == NOTIFICATION_POSITION_TOP_LEFT) {
         x = 10; // 10 pixels from the left edge
@@ -9013,7 +9027,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
         y = 10; // 10 pixels from the top edge
     }
     else if (position == NOTIFICATION_POSITION_TOP_RIGHT) {
-        x = screenGeometry.width() - m_Label->width() - 20; // 30 pixels from the right edge
+        x = screenGeometry.width() - m_Label->width() - x_right_offset; // 30 pixels from the right edge
         y = 10; // 10 pixels from the top edge
     }
     else if (position == NOTIFICATION_POSITION_BOTTOM_LEFT) {
@@ -9025,7 +9039,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
         y = screenGeometry.height() - m_Label->height() - 30; // 30 pixels from the bottom edge
     }
     else if (position == NOTIFICATION_POSITION_BOTTOM_RIGHT) {
-        x = screenGeometry.width() - m_Label->width() - 20; // 30 pixels from the right edge
+        x = screenGeometry.width() - m_Label->width() - x_right_offset; // 30 pixels from the right edge
         y = screenGeometry.height() - m_Label->height() - 30; // 30 pixels from the bottom edge
     }
     move(x, y);

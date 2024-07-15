@@ -575,6 +575,7 @@ public:
     static QString s_WindowSwitchKeyString;
     static QString s_MappingStartKeyString;
     static QString s_MappingStopKeyString;
+    static qreal s_UI_scale_value;
     int m_UI_Scale;
     KeyMapStatus m_KeyMapStatus;
 
