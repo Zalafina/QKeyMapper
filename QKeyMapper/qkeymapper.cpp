@@ -1570,125 +1570,75 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression longpress_regex("^(.+)⏲(\\d{1,4})$");
-    static QRegularExpression doublepress_regex("^(.+)✖(\\d{1,4})$");
-    static QRegularExpression multiinput_regex("^(.+)@[0-9]$");
+    // Regular expression to validate original key
+    static QRegularExpression key_regex("^(.+?)(?:@([0-9]))?(?:⏲(\\d{1,4})|✖(\\d{1,4}))?$");
 
-    QRegularExpressionMatch longpress_match = longpress_regex.match(orikey);
-    QRegularExpressionMatch doublepress_match = doublepress_regex.match(orikey);
-    QRegularExpressionMatch multiinput_match = multiinput_regex.match(orikey);
+    QRegularExpressionMatch key_match = key_regex.match(orikey);
 
-    if (longpress_match.hasMatch()) {
-        int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
-        QString original_key = longpress_match.captured(1);
-        QString longPressTimeString = longpress_match.captured(2);
-        bool ok;
-        int longpresstime = longPressTimeString.toInt(&ok);
+    if (!key_match.hasMatch()) {
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = QString("Invalid key format \"%1\"").arg(orikey);
+        } else {
+            result.errorMessage = QString("无效按键格式 \"%1\"").arg(orikey);
+        }
+        return result;
+    }
 
-        QRegularExpressionMatch longpress_multiinput_match = multiinput_regex.match(original_key);
-        if (longpress_multiinput_match.hasMatch()) {
-            original_key = longpress_multiinput_match.captured(1);
+    QString original_key = key_match.captured(1);
+    QString indexString = key_match.captured(2);
+    QString longPressTimeString = key_match.captured(3);
+    QString doublePressTimeString = key_match.captured(4);
+
+    bool isLongPress = !longPressTimeString.isEmpty();
+    bool isDoublePress = !doublePressTimeString.isEmpty();
+    bool validKey = QItemSetupDialog::s_valiedOriginalKeyList.contains(original_key);
+
+    if (!validKey) {
+        // Separate index and time suffixes
+        QString keyWithoutSuffix = original_key;
+
+        // Remove index suffix if it exists
+        if (!indexString.isEmpty()) {
+            keyWithoutSuffix = keyWithoutSuffix + "@" + indexString;
         }
 
-        if (!QItemSetupDialog::s_valiedOriginalKeyList.contains(original_key)) {
+        // Check again without suffixes
+        validKey = QItemSetupDialog::s_valiedOriginalKeyList.contains(keyWithoutSuffix);
+
+        if (!validKey) {
             result.isValid = false;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid orilongpresskey \"%1\"").arg(original_key);
+                result.errorMessage = QString("Invalid key \"%1\"").arg(original_key);
             } else {
-                result.errorMessage = QString("无效的原始长按按键 \"%1\"").arg(original_key);
-            }
-        }
-        else if (!ok
-                || longPressTimeString == "0"
-                || longPressTimeString.startsWith('0')
-                || longpresstime <= PRESSTIME_MIN
-                || longpresstime > PRESSTIME_MAX) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid longpresstime \"%1\"").arg(longPressTimeString);
-            } else {
-                result.errorMessage = QString("无效的长按时间 \"%1\"").arg(longPressTimeString);
-            }
-        }
-        else if (findindex != -1 && findindex != update_rowindex) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Duplicate orilongpresskey \"%1\"").arg(orikey);
-            } else {
-                result.errorMessage = QString("已存在相同的原始长按按键 \"%1\"").arg(orikey);
+                result.errorMessage = QString("无效按键 \"%1\"").arg(original_key);
             }
         }
     }
-    else if (doublepress_match.hasMatch()) {
-        QHash<QString, int> currentDoublePressOriginalKeysMap = QKeyMapper_Worker::currentDoublePressOriginalKeysMap();
-        QString original_key = doublepress_match.captured(1);
-        QString original_key_doublepress = original_key + "✖";
-        QString doublePressTimeString = doublepress_match.captured(2);
-        bool ok;
-        int doublepresstime = doublePressTimeString.toInt(&ok);
 
-        QRegularExpressionMatch doublepress_multiinput_match = multiinput_regex.match(original_key);
-        if (doublepress_multiinput_match.hasMatch()) {
-            original_key = doublepress_multiinput_match.captured(1);
-        }
+    if (validKey) {
+        if (isLongPress || isDoublePress) {
+            bool ok;
+            int pressTime = isLongPress ? longPressTimeString.toInt(&ok) : doublePressTimeString.toInt(&ok);
 
-        if (!QItemSetupDialog::s_valiedOriginalKeyList.contains(original_key)) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid oridoublepresskey \"%1\"").arg(original_key);
-            } else {
-                result.errorMessage = QString("无效的原始双击按键 \"%1\"").arg(original_key);
-            }
-        }
-        else if (!ok
-                || doublePressTimeString == "0"
-                || doublePressTimeString.startsWith('0')
-                || doublepresstime <= PRESSTIME_MIN
-                || doublepresstime > PRESSTIME_MAX) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid doublepresstime \"%1\"").arg(doublepresstime);
-            } else {
-                result.errorMessage = QString("无效的双击时间 \"%1\"").arg(doublepresstime);
-            }
-        }
-        else if (currentDoublePressOriginalKeysMap.contains(original_key_doublepress)) {
-            int update_doublepress_orikey_rowindex = currentDoublePressOriginalKeysMap.value(original_key_doublepress);
-            if (update_doublepress_orikey_rowindex != update_rowindex) {
+            if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
                 result.isValid = false;
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Duplicate oridoublepresskey \"%1\"").arg(original_key_doublepress);
-                }
-                else {
-                    result.errorMessage = QString("已存在相同的原始双击按键 \"%1\"").arg(original_key_doublepress);
+                    result.errorMessage = QString("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
+                } else {
+                    result.errorMessage = QString("无效的按压时间 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
                 }
             }
-        }
-    }
-    else {
-        QString original_key = orikey;
-        if (multiinput_match.hasMatch()) {
-            original_key = multiinput_match.captured(1);
         }
 
-        if (!QItemSetupDialog::s_valiedOriginalKeyList.contains(original_key)) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid key \"%1\"").arg(orikey);
-            }
-            else {
-                result.errorMessage = QString("无效按键 \"%1\"").arg(orikey);
-            }
-        }
-        else {
+        if (result.isValid) {
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
-
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Duplicate original key \"%1\"").arg(orikey);
+                    result.errorMessage = QString("Duplicate key \"%1\"").arg(orikey);
                 } else {
-                    result.errorMessage = QString("已存在相同的原始按键 \"%1\"").arg(orikey);
+                    result.errorMessage = QString("已存在相同的按键 \"%1\"").arg(orikey);
                 }
             }
         }
@@ -6821,24 +6771,24 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Num7(NumOFF)"
             << "Num8(NumOFF)"
             << "Num9(NumOFF)"
-            << "Vol Mute"
-            << "Vol Down"
-            << "Vol Up"
-            << "Media Next"
-            << "Media Prev"
-            << "Media Stop"
-            << "Media PlayPause"
-            << "Launch Mail"
-            << "Select Media"
-            << "Launch App1"
-            << "Launch App2"
-            << "Browser Back"
-            << "Browser Forward"
-            << "Browser Refresh"
-            << "Browser Stop"
-            << "Browser Search"
-            << "Browser Favorites"
-            << "Browser Home"
+            << "VolumeMute"
+            << "VolumeDown"
+            << "VolumeUp"
+            << "MediaNext"
+            << "MediaPrev"
+            << "MediaStop"
+            << "MediaPlayPause"
+            << "LaunchMail"
+            << "SelectMedia"
+            << "LaunchApp1"
+            << "LaunchApp2"
+            << "BrowserBack"
+            << "BrowserForward"
+            << "BrowserRefresh"
+            << "BrowserStop"
+            << "BrowserSearch"
+            << "BrowserFavorites"
+            << "BrowserHome"
             << FUNC_REFRESH
             << FUNC_LOCKSCREEN
             << FUNC_SHUTDOWN

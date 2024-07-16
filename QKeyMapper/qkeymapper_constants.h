@@ -132,6 +132,9 @@ extern const int SETMOUSEPOSITION_WAITTIME_MAX;
 
 extern const WORD XBUTTON_NONE;
 
+extern const int JOYSTICK_PLAYER_INDEX_MIN;
+extern const int JOYSTICK_PLAYER_INDEX_MAX;
+
 extern const int JOYSTICK_POV_ANGLE_RELEASE;
 extern const int JOYSTICK_POV_ANGLE_UP;
 extern const int JOYSTICK_POV_ANGLE_DOWN;

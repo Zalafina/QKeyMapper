@@ -617,7 +617,7 @@ public slots:
     static void onBurstKeyTimeOut(const QString burstKey, int mappingIndex);
 
 private:
-    bool JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName);
+    bool JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick);
 #ifdef DINPUT_TEST
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
     static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);

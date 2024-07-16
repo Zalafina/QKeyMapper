@@ -4316,10 +4316,6 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
     if (e.joystick == Q_NULLPTR)
         return;
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[checkJoystickButtons]" << "Joystick PlayerIndex =" << e.joystick->playerindex << ", Joystick ID =" << e.joystick->id;
-#endif
-
     JoystickButtonCode buttonCode = (JoystickButtonCode)e.button;
 
     if (m_JoystickButtonMap.contains(buttonCode)) {
@@ -4334,7 +4330,7 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
         }
 
         bool returnFlag;
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
 }
@@ -4367,19 +4363,19 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
             }
 
             for (const QString &dpadcodestr : qAsConst(joydpadNeedtoRelease)) {
-                returnFlag = JoyStickKeysProc(dpadcodestr, KEY_UP, e.joystick->name);
+                returnFlag = JoyStickKeysProc(dpadcodestr, KEY_UP, e.joystick);
                 Q_UNUSED(returnFlag);
             }
 
             for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
-                returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick->name);
+                returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick);
                 Q_UNUSED(returnFlag);
             }
         }
         else {
             joydpadpressedlist = pressedRealKeysList.filter("Joy-DPad");
             for (const QString &joydpadstr : qAsConst(joydpadpressedlist)){
-                returnFlag = JoyStickKeysProc(joydpadstr, keyupdown, e.joystick->name);
+                returnFlag = JoyStickKeysProc(joydpadstr, keyupdown, e.joystick);
                 Q_UNUSED(returnFlag);
             }
         }
@@ -4752,7 +4748,7 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 
     if (KEY_UP == keyupdown || KEY_DOWN == keyupdown) {
         bool returnFlag;
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
 }
@@ -4794,7 +4790,7 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
         /* Left-Stick Horizontal Left changed to Right */
         else if (ls_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
             /* Need to send Left-Stick Horizontal Left Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Horizontal Left Release first <<< */
             keycodeString = keycodeString_LS_Right;
@@ -4803,7 +4799,7 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
         /* Left-Stick Horizontal Right changed to Left */
         else if (ls_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
             /* Need to send Left-Stick Horizontal Right Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Horizontal Right Release first <<< */
             keycodeString = keycodeString_LS_Left;
@@ -4824,16 +4820,16 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
 
     if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
     else if (KEY_UP == keyupdown){
         if (ls_Left_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (ls_Right_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -4879,7 +4875,7 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
         /* Left-Stick Vertical Up changed to Down */
         else if (ls_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
             /* Need to send Left-Stick Vertical Up Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Vertical Up Release first <<< */
             keycodeString = keycodeString_LS_Down;
@@ -4888,7 +4884,7 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
         /* Left-Stick Vertical Down changed to Up */
         else if (ls_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
             /* Need to send Left-Stick Vertical Down Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Vertical Down Release first <<< */
             keycodeString = keycodeString_LS_Up;
@@ -4909,16 +4905,16 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
 
     if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
     else if (KEY_UP == keyupdown){
         if (ls_Up_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (ls_Down_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -4964,7 +4960,7 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
         /* Right-Stick Horizontal Left changed to Right */
         else if (rs_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
             /* Need to send Right-Stick Horizontal Left Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Horizontal Left Release first <<< */
             keycodeString = keycodeString_RS_Right;
@@ -4973,7 +4969,7 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
         /* Right-Stick Horizontal Right changed to Left */
         else if (rs_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
             /* Need to send Right-Stick Horizontal Right Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Horizontal Right Release first <<< */
             keycodeString = keycodeString_RS_Left;
@@ -4994,16 +4990,16 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
 
     if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
     else if (KEY_UP == keyupdown){
         if (rs_Left_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (rs_Right_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -5049,7 +5045,7 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
         /* Right-Stick Vertical Up changed to Down */
         else if (rs_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
             /* Need to send Right-Stick Vertical Up Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Vertical Up Release first <<< */
             keycodeString = keycodeString_RS_Down;
@@ -5058,7 +5054,7 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
         /* Right-Stick Vertical Down changed to Up */
         else if (rs_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
             /* Need to send Right-Stick Vertical Down Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Vertical Down Release first <<< */
             keycodeString = keycodeString_RS_Up;
@@ -5079,16 +5075,16 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
 
     if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick->name);
+        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
     else if (KEY_UP == keyupdown){
         if (rs_Up_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (rs_Down_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick->name);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -8421,21 +8417,27 @@ void QKeyMapper_Worker::onBurstKeyTimeOut(const QString burstKey, int mappingInd
     }
 }
 
-bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyupdown, const QString &joystickName)
+bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick)
 {
-    Q_UNUSED(joystickName);
+    Q_UNUSED(joystick);
 
 #ifdef DEBUG_LOGOUT_ON
     if (KEY_DOWN == keyupdown){
-        qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyDown -> [%s]", keycodeString.toStdString().c_str(), joystickName.toStdString().c_str());
+        qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyDown -> [P%d][%s]", keycodeString.toStdString().c_str(), joystick->playerindex, joystick->name.toStdString().c_str());
     }
     else if (KEY_UP == keyupdown){
-        qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyUp -> [%s]", keycodeString.toStdString().c_str(), joystickName.toStdString().c_str());
+        qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyUp -> [P%d][%s]", keycodeString.toStdString().c_str(), joystick->playerindex, joystick->name.toStdString().c_str());
     }
     else {
         /* Do Nothing */
     }
 #endif
+
+    QString keycodeString_nochanged = keycodeString;
+    int player_index = joystick->playerindex;
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString = QString("%1@%2").arg(keycodeString, QString::number(player_index));
+    }
 
     bool returnFlag = false;
     int findindex = -1;
@@ -8446,8 +8448,8 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
     }
 
     int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
-    bool mappingswitch_detected = detectMappingSwitchKey(keycodeString, keyupdown);
-    bool displayswitch_detected = detectDisplaySwitchKey(keycodeString, keyupdown);
+    bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
+    bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
     Q_UNUSED(mappingswitch_detected);
     Q_UNUSED(displayswitch_detected);
     if (!m_JoystickCapture) {
@@ -8502,8 +8504,8 @@ bool QKeyMapper_Worker::JoyStickKeysProc(const QString &keycodeString, int keyup
                 returnFlag = true;
             }
             else { /* KEY_UP == keyupdown */
-                if (pressedCombinationRealKeysList.contains(keycodeString)) {
-                    pressedCombinationRealKeysList.removeAll(keycodeString);
+                if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
+                    pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[JoyStickKeysProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
 #endif
@@ -8783,26 +8785,26 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        ("Num9(NumOFF)",       V_KEYCODE(VK_PRIOR,         EXTENED_FLAG_FALSE));   // 0x21
 
     // MultiMedia keys
-    VirtualKeyCodeMap.insert        ("Vol Mute",            V_KEYCODE(VK_VOLUME_MUTE,           EXTENED_FLAG_TRUE));   // 0xAD
-    VirtualKeyCodeMap.insert        ("Vol Down",            V_KEYCODE(VK_VOLUME_DOWN,           EXTENED_FLAG_TRUE));   // 0xAE
-    VirtualKeyCodeMap.insert        ("Vol Up",              V_KEYCODE(VK_VOLUME_UP,             EXTENED_FLAG_TRUE));   // 0xAF
-    VirtualKeyCodeMap.insert        ("Media Next",          V_KEYCODE(VK_MEDIA_NEXT_TRACK,      EXTENED_FLAG_TRUE));   // 0xB0
-    VirtualKeyCodeMap.insert        ("Media Prev",          V_KEYCODE(VK_MEDIA_PREV_TRACK,      EXTENED_FLAG_TRUE));   // 0xB1
-    VirtualKeyCodeMap.insert        ("Media Stop",          V_KEYCODE(VK_MEDIA_STOP,            EXTENED_FLAG_TRUE));   // 0xB2
-    VirtualKeyCodeMap.insert        ("Media PlayPause",     V_KEYCODE(VK_MEDIA_PLAY_PAUSE,      EXTENED_FLAG_TRUE));   // 0xB3
-    VirtualKeyCodeMap.insert        ("Launch Mail",         V_KEYCODE(VK_LAUNCH_MAIL,           EXTENED_FLAG_TRUE));   // 0xB4
-    VirtualKeyCodeMap.insert        ("Select Media",        V_KEYCODE(VK_LAUNCH_MEDIA_SELECT,   EXTENED_FLAG_TRUE));   // 0xB5
-    VirtualKeyCodeMap.insert        ("Launch App1",         V_KEYCODE(VK_LAUNCH_APP1,           EXTENED_FLAG_TRUE));   // 0xB6
-    VirtualKeyCodeMap.insert        ("Launch App2",         V_KEYCODE(VK_LAUNCH_APP2,           EXTENED_FLAG_TRUE));   // 0xB7
+    VirtualKeyCodeMap.insert        ("VolumeMute",            V_KEYCODE(VK_VOLUME_MUTE,           EXTENED_FLAG_TRUE));   // 0xAD
+    VirtualKeyCodeMap.insert        ("VolumeDown",            V_KEYCODE(VK_VOLUME_DOWN,           EXTENED_FLAG_TRUE));   // 0xAE
+    VirtualKeyCodeMap.insert        ("VolumeUp",              V_KEYCODE(VK_VOLUME_UP,             EXTENED_FLAG_TRUE));   // 0xAF
+    VirtualKeyCodeMap.insert        ("MediaNext",          V_KEYCODE(VK_MEDIA_NEXT_TRACK,      EXTENED_FLAG_TRUE));   // 0xB0
+    VirtualKeyCodeMap.insert        ("MediaPrev",          V_KEYCODE(VK_MEDIA_PREV_TRACK,      EXTENED_FLAG_TRUE));   // 0xB1
+    VirtualKeyCodeMap.insert        ("MediaStop",          V_KEYCODE(VK_MEDIA_STOP,            EXTENED_FLAG_TRUE));   // 0xB2
+    VirtualKeyCodeMap.insert        ("MediaPlayPause",     V_KEYCODE(VK_MEDIA_PLAY_PAUSE,      EXTENED_FLAG_TRUE));   // 0xB3
+    VirtualKeyCodeMap.insert        ("LaunchMail",         V_KEYCODE(VK_LAUNCH_MAIL,           EXTENED_FLAG_TRUE));   // 0xB4
+    VirtualKeyCodeMap.insert        ("SelectMedia",        V_KEYCODE(VK_LAUNCH_MEDIA_SELECT,   EXTENED_FLAG_TRUE));   // 0xB5
+    VirtualKeyCodeMap.insert        ("LaunchApp1",         V_KEYCODE(VK_LAUNCH_APP1,           EXTENED_FLAG_TRUE));   // 0xB6
+    VirtualKeyCodeMap.insert        ("LaunchApp2",         V_KEYCODE(VK_LAUNCH_APP2,           EXTENED_FLAG_TRUE));   // 0xB7
 
     // Browser keys
-    VirtualKeyCodeMap.insert        ("Browser Back",        V_KEYCODE(VK_BROWSER_BACK,          EXTENED_FLAG_TRUE));   // 0xA6
-    VirtualKeyCodeMap.insert        ("Browser Forward",     V_KEYCODE(VK_BROWSER_FORWARD,       EXTENED_FLAG_TRUE));   // 0xA7
-    VirtualKeyCodeMap.insert        ("Browser Refresh",     V_KEYCODE(VK_BROWSER_REFRESH,       EXTENED_FLAG_TRUE));   // 0xA8
-    VirtualKeyCodeMap.insert        ("Browser Stop",        V_KEYCODE(VK_BROWSER_STOP,          EXTENED_FLAG_TRUE));   // 0xA9
-    VirtualKeyCodeMap.insert        ("Browser Search",      V_KEYCODE(VK_BROWSER_SEARCH,        EXTENED_FLAG_TRUE));   // 0xAA
-    VirtualKeyCodeMap.insert        ("Browser Favorites",   V_KEYCODE(VK_BROWSER_FAVORITES,     EXTENED_FLAG_TRUE));   // 0xAB
-    VirtualKeyCodeMap.insert        ("Browser Home",        V_KEYCODE(VK_BROWSER_HOME,          EXTENED_FLAG_TRUE));   // 0xAC
+    VirtualKeyCodeMap.insert        ("BrowserBack",        V_KEYCODE(VK_BROWSER_BACK,          EXTENED_FLAG_TRUE));   // 0xA6
+    VirtualKeyCodeMap.insert        ("BrowserForward",     V_KEYCODE(VK_BROWSER_FORWARD,       EXTENED_FLAG_TRUE));   // 0xA7
+    VirtualKeyCodeMap.insert        ("BrowserRefresh",     V_KEYCODE(VK_BROWSER_REFRESH,       EXTENED_FLAG_TRUE));   // 0xA8
+    VirtualKeyCodeMap.insert        ("BrowserStop",        V_KEYCODE(VK_BROWSER_STOP,          EXTENED_FLAG_TRUE));   // 0xA9
+    VirtualKeyCodeMap.insert        ("BrowserSearch",      V_KEYCODE(VK_BROWSER_SEARCH,        EXTENED_FLAG_TRUE));   // 0xAA
+    VirtualKeyCodeMap.insert        ("BrowserFavorites",   V_KEYCODE(VK_BROWSER_FAVORITES,     EXTENED_FLAG_TRUE));   // 0xAB
+    VirtualKeyCodeMap.insert        ("BrowserHome",        V_KEYCODE(VK_BROWSER_HOME,          EXTENED_FLAG_TRUE));   // 0xAC
 }
 
 void QKeyMapper_Worker::initVirtualMouseButtonMap()
@@ -8968,24 +8970,24 @@ void QKeyMapper_Worker::initMultiKeyboardInputList()
             << "Num7(NumOFF)"
             << "Num8(NumOFF)"
             << "Num9(NumOFF)"
-            << "Vol Mute"
-            << "Vol Down"
-            << "Vol Up"
-            << "Media Next"
-            << "Media Prev"
-            << "Media Stop"
-            << "Media PlayPause"
-            << "Launch Mail"
-            << "Select Media"
-            << "Launch App1"
-            << "Launch App2"
-            << "Browser Back"
-            << "Browser Forward"
-            << "Browser Refresh"
-            << "Browser Stop"
-            << "Browser Search"
-            << "Browser Favorites"
-            << "Browser Home"
+            << "VolumeMute"
+            << "VolumeDown"
+            << "VolumeUp"
+            << "MediaNext"
+            << "MediaPrev"
+            << "MediaStop"
+            << "MediaPlayPause"
+            << "LaunchMail"
+            << "SelectMedia"
+            << "LaunchApp1"
+            << "LaunchApp2"
+            << "BrowserBack"
+            << "BrowserForward"
+            << "BrowserRefresh"
+            << "BrowserStop"
+            << "BrowserSearch"
+            << "BrowserFavorites"
+            << "BrowserHome"
             ;
 }
 
@@ -9377,9 +9379,9 @@ void QKeyMapper_Worker::initSpecialVirtualKeyCodeList()
 void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
 {
     skipReleaseModifiersKeysList = QStringList() \
-        << "Vol Mute"
-        << "Vol Down"
-        << "Vol Up"
+        << "VolumeMute"
+        << "VolumeDown"
+        << "VolumeUp"
         ;
 }
 #endif
