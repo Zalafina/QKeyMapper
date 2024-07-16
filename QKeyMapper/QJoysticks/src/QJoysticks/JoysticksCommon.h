@@ -44,6 +44,7 @@ struct QJoystickDevice
 {
    int id; /**< Holds the ID of the joystick */
    int instanceID; /**< Holds the sdl instance id of the joystick */
+   int playerindex; /**< Holds the PlayerIndex of the joystick */
    QString name; /**< Holds the name/title of the joystick */
    QString serial; /**< Holds the serial of the joystick */
    ushort vendorid; /**< Holds the vendorid of the joystick */
