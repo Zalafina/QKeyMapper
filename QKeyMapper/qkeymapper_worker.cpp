@@ -7769,7 +7769,7 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
         if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
         {
             QString combinationkey = keymapdata.Original_Key;
-            combinationkey.remove(PREFIX_SHORTCUT);
+            combinationkey.remove(0, 1);
             if (combinationkey.contains(SEPARATOR_LONGPRESS)
                 || combinationkey.contains(SEPARATOR_DOUBLEPRESS)) {
                 /* Add by collectLongPressOriginalKeysMap() & collectDoublePressOriginalKeysMap() */
@@ -7799,7 +7799,7 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
                 longPressOriginalKeysMap[original_key].append(longpresstime);
                 if (original_key.startsWith(PREFIX_SHORTCUT)) {
                     QString combinationkey = original_key;
-                    combinationkey.remove(PREFIX_SHORTCUT);
+                    combinationkey.remove(0, 1);
                     if (combinationOriginalKeysList.contains(combinationkey) == false) {
                         combinationOriginalKeysList.append(combinationkey);
                     }
@@ -8030,7 +8030,7 @@ void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
                 doublePressOriginalKeysMap.insert(original_key, keymapdataindex);
                 if (original_key.startsWith(PREFIX_SHORTCUT)) {
                     QString combinationkey = original_key;
-                    combinationkey.remove(PREFIX_SHORTCUT);
+                    combinationkey.remove(0, 1);
                     combinationkey.chop(1);
                     if (combinationOriginalKeysList.contains(combinationkey) == false) {
                         combinationOriginalKeysList.append(combinationkey);

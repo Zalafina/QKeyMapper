@@ -521,6 +521,7 @@ private:
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(const QString &settingtext);
+    bool checkOriginalkeyStr(const QString &originalkeystr);
     bool checkMappingkeyStr(QString &mappingkeystr);
     bool validateCombinationKey(QString &input);
 

@@ -1543,7 +1543,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
                 }
             }
 
-            if (result.isValid) {
+            if (result.isValid && update_rowindex >= 0) {
                 QString original_key = QString(PREFIX_SHORTCUT) + originalkeystr;
                 int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(original_key);
 
@@ -1633,7 +1633,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             }
         }
 
-        if (result.isValid) {
+        if (result.isValid && update_rowindex >= 0) {
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
@@ -4276,46 +4276,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 }
 
                 int loadindex = 0;
-                static QRegularExpression reg("@[0-9]$");
                 for (const QString &ori_key_nochange : qAsConst(original_keys)){
-                    QString ori_key;
-                    QRegularExpressionMatch match = reg.match(ori_key_nochange);
-                    if (match.hasMatch()) {
-                        int atIndex = ori_key_nochange.lastIndexOf('@');
-                        ori_key = ori_key_nochange.mid(0, atIndex);
-                    } else {
-                        ori_key = ori_key_nochange;
+                    QString ori_key = ori_key_nochange;
+                    if (ori_key.startsWith(PREFIX_SHORTCUT)) {
+                        ori_key.remove(0, 1);
                     }
 
-                    bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
-                    bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
-                    bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                    QString appendOriKey = ori_key_nochange;
-                    if (ori_key.startsWith(PREFIX_SHORTCUT)) {
-                        keyboardmapcontains = true;
-                    }
-                    else if (ori_key.contains(SEPARATOR_LONGPRESS)) {
-                        keyboardmapcontains = true;
-                    }
-                    else if (ori_key.contains(SEPARATOR_DOUBLEPRESS)) {
-                        keyboardmapcontains = true;
-                    }
-#ifdef MOUSEBUTTON_CONVERT
-                    if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
-                        appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
-                        mousemapcontains = true;
-                    }
-#endif
+                    bool checkoriginalstr = checkOriginalkeyStr(ori_key);
                     bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
-                    if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
-                        && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
+                    if (true == checkoriginalstr && true == checkmappingstr) {
+                        loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
                     }
                     else{
                         global_datavalid = false;
 #ifdef DEBUG_LOGOUT_ON
-                        qWarning("[loadKeyMapSetting] GlobalSetting invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), joystickmapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", joystickmapcontains?"true":"false", checkmappingstr?"true":"false");
+                        qWarning("[loadKeyMapSetting] GlobalSetting invalid data loaded -> checkoriginalstr(%s), checkmappingstr(%s)", checkoriginalstr?"true":"false", checkmappingstr?"true":"false");
 #endif
                         break;
                     }
@@ -4601,45 +4577,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 }
 
                 int loadindex = 0;
-                static QRegularExpression reg("@[0-9]$");
                 for (const QString &ori_key_nochange : qAsConst(original_keys)){
-                    QString ori_key;
-                    QRegularExpressionMatch match = reg.match(ori_key_nochange);
-                    if (match.hasMatch()) {
-                        int atIndex = ori_key_nochange.lastIndexOf('@');
-                        ori_key = ori_key_nochange.mid(0, atIndex);
-                    } else {
-                        ori_key = ori_key_nochange;
-                    }
-                    bool keyboardmapcontains = QKeyMapper_Worker::VirtualKeyCodeMap.contains(ori_key);
-                    bool mousemapcontains = QKeyMapper_Worker::VirtualMouseButtonMap.contains(ori_key);
-                    bool joystickmapcontains = QKeyMapper_Worker::JoyStickKeyMap.contains(ori_key);
-                    QString appendOriKey = ori_key_nochange;
+                    QString ori_key = ori_key_nochange;
                     if (ori_key.startsWith(PREFIX_SHORTCUT)) {
-                        keyboardmapcontains = true;
+                        ori_key.remove(0, 1);
                     }
-                    else if (ori_key.contains(SEPARATOR_LONGPRESS)) {
-                        keyboardmapcontains = true;
-                    }
-                    else if (ori_key.contains(SEPARATOR_DOUBLEPRESS)) {
-                        keyboardmapcontains = true;
-                    }
-#ifdef MOUSEBUTTON_CONVERT
-                    if (QKeyMapper_Worker::MouseButtonNameConvertMap.contains(ori_key)) {
-                        appendOriKey = QKeyMapper_Worker::MouseButtonNameConvertMap.value(ori_key);
-                        mousemapcontains = true;
-                    }
-#endif
+
+                    bool checkoriginalstr = checkOriginalkeyStr(ori_key);
                     bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
-                    if ((true == keyboardmapcontains || true == mousemapcontains || true == joystickmapcontains)
-                            && (true == checkmappingstr)){
-                        loadkeymapdata.append(MAP_KEYDATA(appendOriKey, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
+                    if (true == checkoriginalstr && true == checkmappingstr) {
+                        loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
                     }
                     else{
                         datavalidflag = false;
 #ifdef DEBUG_LOGOUT_ON
-                        qWarning("[loadKeyMapSetting] Invalid data loaded -> keyboardmapcontains(%s), mousemapcontains(%s), joystickmapcontains(%s), checkmappingstr(%s)", keyboardmapcontains?"true":"false", mousemapcontains?"true":"false", joystickmapcontains?"true":"false", checkmappingstr?"true":"false");
+                        qWarning("[loadKeyMapSetting] Invalid data loaded -> checkoriginalstr(%s), checkmappingstr(%s)", checkoriginalstr?"true":"false", checkmappingstr?"true":"false");
 #endif
                         break;
                     }
@@ -5051,6 +5004,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 }
 
+bool QKeyMapper::checkOriginalkeyStr(const QString &originalkeystr)
+{
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalkeystr, -1);
+
+    if (result.isValid) {
+        return true;
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[checkOriginalkeyStr]" << "Invalid OriginalKey:" << originalkeystr << ", " << "errorMessage: " << result.errorMessage;
+#endif
+        return false;
+    }
+}
+
 bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 {
 #ifdef MOUSEBUTTON_CONVERT
@@ -5071,6 +5039,9 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
         return true;
     }
     else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[checkMappingkeyStr]" << "Invalid MappingKey:" << mappingkeystr << ", " << "errorMessage: " << result.errorMessage;
+#endif
         return false;
     }
 }

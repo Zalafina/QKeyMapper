@@ -202,7 +202,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         /* Load Original Key String */
         QString originalkey_str = keymapdata.Original_Key;
         if (originalkey_str.startsWith(PREFIX_SHORTCUT)) {
-            originalkey_str.remove(PREFIX_SHORTCUT);
+            originalkey_str.remove(0, 1);
         }
         ui->originalKeyLineEdit->setText(originalkey_str);
 
@@ -338,8 +338,7 @@ void QItemSetupDialog::initKeyListComboBoxes()
         m_MappingKeyListComboBox->addItem(text);
         s_valiedMappingKeyList.append(text);
     }
-    s_valiedMappingKeyList.append(VJOY_MOUSE2LS_STR);
-    s_valiedMappingKeyList.append(VJOY_MOUSE2RS_STR);
+    s_valiedMappingKeyList.append(QKeyMapper_Worker::SpecialOriginalKeysList);
 
     int left = ui->orikeyListLabel->x() + ui->orikeyListLabel->width() + 5;
     int top = ui->orikeyListLabel->y();
