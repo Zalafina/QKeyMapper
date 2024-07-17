@@ -796,6 +796,7 @@ void QKeyMapper::setKeyHook(HWND hWnd)
     else {
         s_CurrentMappingHWND = hWnd;
     }
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
     emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
 }
 
@@ -807,6 +808,7 @@ void QKeyMapper::setKeyUnHook(void)
         || s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
         s_CurrentMappingHWND = NULL;
     }
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
 }
 

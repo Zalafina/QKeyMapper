@@ -170,10 +170,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
-#ifndef HOOKSTART_ONSTARTUP
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
-#endif
     // QObject::connect(this, &QKeyMapper_Worker::startBurstTimer_Signal, this, &QKeyMapper_Worker::startBurstTimer, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::stopBurstTimer_Signal, this, &QKeyMapper_Worker::stopBurstTimer, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::startBurstKeyTimer_Signal, this, &QKeyMapper_Worker::startBurstKeyTimer, Qt::QueuedConnection);
@@ -3302,8 +3300,8 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedDoublePressKeysList.clear();
     // pressedShortcutKeysList.clear();
 
-    clearAllLongPressTimers();
-    clearAllDoublePressTimers();
+    // clearAllLongPressTimers();
+    // clearAllDoublePressTimers();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     collectLongPressOriginalKeysMap();
@@ -3431,8 +3429,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     // pressedShortcutKeysList.clear();
-    clearAllLongPressTimers();
-    clearAllDoublePressTimers();
+    // clearAllLongPressTimers();
+    // clearAllDoublePressTimers();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
@@ -3463,10 +3461,12 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     setWorkerJoystickCaptureStop();
 
+    if (m_Key2MouseCycleTimer.isActive()) {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[setWorkerKeyUnHook] Key2MouseCycleTimer Stopped.");
+        qDebug("[setWorkerKeyUnHook] Key2MouseCycleTimer Stopped.");
 #endif
-    m_Key2MouseCycleTimer.stop();
+        m_Key2MouseCycleTimer.stop();
+    }
     s_JoyAxisState = Joystick_AxisState();
 
     stopDataPortListener();
@@ -7913,6 +7913,11 @@ void QKeyMapper_Worker::clearAllLongPressTimers(void)
         return;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
+    qDebug().nospace().noquote() << "[clearAllLongPressTimers] LongPressTimer ClearAll -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
+
     QList<QTimer*> longpressTimers = s_longPressTimerMap.values();
     for (QTimer *timer : qAsConst(longpressTimers)) {
         timer->stop();
@@ -8210,6 +8215,11 @@ void QKeyMapper_Worker::clearAllDoublePressTimers()
     if (s_doublePressTimerMap.isEmpty()) {
         return;
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
+    qDebug().nospace().noquote() << "[clearAllDoublePressTimers] DoublePressTimer ClearAll -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
 
     QList<QTimer*> doublepressTimers = s_doublePressTimerMap.values();
     for (QTimer *timer : qAsConst(doublepressTimers)) {
@@ -9884,80 +9894,27 @@ void QKeyMapper_Hook_Proc::HookProcThreadFinished()
 #endif
 }
 
-#ifndef HOOKSTART_ONSTARTUP
 void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
 {
     Q_UNUSED(hWnd);
 
-    if (s_LowLevelKeyboardHook_Enable) {
-        if (s_KeyHook == Q_NULLPTR) {
-            s_KeyHook = SetWindowsHookEx(WH_KEYBOARD_LL, QKeyMapper_Worker::LowLevelKeyboardHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef DEBUG_LOGOUT_ON
-            if (s_KeyHook != Q_NULLPTR) {
-                qDebug("[SetHookProc] Keyboard SetWindowsHookEx Success. -> 0x%08X", s_KeyHook);
-            }
-#endif
-        }
-    }
-    if (s_LowLevelMouseHook_Enable) {
-        if (s_MouseHook == Q_NULLPTR) {
-            s_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
-#ifdef DEBUG_LOGOUT_ON
-            if (s_MouseHook != Q_NULLPTR) {
-                qDebug("[SetHookProc] Mouse SetWindowsHookEx Success. -> 0x%08X", s_MouseHook);
-            }
-#endif
-        }
-    }
+    QKeyMapper_Worker::clearAllLongPressTimers();
+    QKeyMapper_Worker::clearAllDoublePressTimers();
 
 #ifdef DEBUG_LOGOUT_ON
-    qInfo("[SetHookProc] Keyboard Hook & Mouse Hook Started.");
+    qInfo("[onSetHookProcKeyHook] HookProcThread Hook Started.");
 #endif
 }
 
 void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
 {
-    bool unhook_ret = 0;
-
-    if (s_KeyHook != Q_NULLPTR){
-        void* keyboardhook_p = (void*)s_KeyHook;
-        unhook_ret = UnhookWindowsHookEx(s_KeyHook);
-        s_KeyHook = Q_NULLPTR;
-        Q_UNUSED(keyboardhook_p);
+    QKeyMapper_Worker::clearAllLongPressTimers();
+    QKeyMapper_Worker::clearAllDoublePressTimers();
 
 #ifdef DEBUG_LOGOUT_ON
-        if (0 == unhook_ret) {
-            qDebug() << "[SetHookProc]" << "Keyboard UnhookWindowsHookEx Failure! LastError:" << GetLastError();
-        }
-        else {
-            qDebug("[SetHookProc] Keyboard UnhookWindowsHookEx Success. -> 0x%08X", keyboardhook_p);
-        }
-#endif
-    }
-
-    if (s_MouseHook != Q_NULLPTR) {
-        void* mousehook_p = (void*)s_MouseHook;
-        unhook_ret = UnhookWindowsHookEx(s_MouseHook);
-        s_MouseHook = Q_NULLPTR;
-        Q_UNUSED(mousehook_p);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (0 == unhook_ret) {
-            qDebug() << "[SetHookProc]" << "Mouse UnhookWindowsHookEx Failure! LastError:" << GetLastError();
-        }
-        else {
-            qDebug("[SetHookProc] Mouse UnhookWindowsHookEx Success. -> 0x%08X", mousehook_p);
-        }
-#endif
-    }
-
-    Q_UNUSED(unhook_ret);
-
-#ifdef DEBUG_LOGOUT_ON
-    qInfo("[SetHookProc] Keyboard Hook & Mouse Hook Stopped.");
+    qInfo("[onSetHookProcKeyUnHook] HookProcThread Hook Stopped.");
 #endif
 }
-#endif
 
 bool EnablePrivilege(LPCWSTR privilege)
 {
