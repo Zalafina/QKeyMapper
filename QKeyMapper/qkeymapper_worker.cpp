@@ -7787,7 +7787,7 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
 
 void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
 {
-    static QRegularExpression regex("^(.+)⏲(\\d{1,4})$");
+    static QRegularExpression regex("^(.+)⏲(\\d+)$");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
@@ -8020,7 +8020,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
 void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
 {
     int keymapdataindex = 0;
-    static QRegularExpression regex("^(.+✖)(\\d{1,4})$");
+    static QRegularExpression regex("^(.+✖)(\\d+)$");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
@@ -8053,7 +8053,7 @@ QHash<QString, int> QKeyMapper_Worker::currentDoublePressOriginalKeysMap()
     QHash<QString, int> currentDoublePressOriginalKeysMap;
 
     int keymapdataindex = 0;
-    static QRegularExpression regex("^(.+✖)(\\d{1,4})$");
+    static QRegularExpression regex("^(.+✖)(\\d+)$");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
@@ -8090,7 +8090,7 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
         int findindex = doublePressOriginalKeysMap.value(keycodeString_doublepress, -1);
         if (findindex >= 0){
             QString original_key_withDoublePressTime = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-            static QRegularExpression regex("^(.+)✖(\\d{1,4})$");
+            static QRegularExpression regex("^(.+)✖(\\d+)$");
             QRegularExpressionMatch match = regex.match(original_key_withDoublePressTime);
             if (match.hasMatch()) {
                 // QString original_key = match.captured(1);
@@ -8132,7 +8132,7 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
         int findindex = doublePressOriginalKeysMap.value(keycodeString_RemoveMultiInput_doublepress, -1);
         if (findindex >= 0){
             QString original_key_withDoublePressTime = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-            static QRegularExpression regex("^(.+)✖(\\d{1,4})$");
+            static QRegularExpression regex("^(.+)✖(\\d+)$");
             QRegularExpressionMatch match = regex.match(original_key_withDoublePressTime);
             if (match.hasMatch()) {
                 // QString original_key = match.captured(1);

@@ -1492,7 +1492,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     result.isValid = true;
 
     // Regular expression to match the entire key with optional time suffix
-    static QRegularExpression full_key_regex("^(.+?)(⏲\\d{1,4}|✖\\d{1,4})?$");
+    static QRegularExpression full_key_regex("^(.+?)(?:⏲(\\d+)|✖(\\d+))?$");
 
     QRegularExpressionMatch full_key_match = full_key_regex.match(originalkeystr);
     if (!full_key_match.hasMatch()) {
@@ -1506,7 +1506,8 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     }
 
     QString key_without_suffix = full_key_match.captured(1);
-    QString time_suffix = full_key_match.captured(2);
+    QString longPressTimeString = full_key_match.captured(2);
+    QString doublePressTimeString = full_key_match.captured(3);
 
     QStringList orikeylist = key_without_suffix.split(SEPARATOR_PLUS);
     if (orikeylist.isEmpty()) {
@@ -1554,24 +1555,9 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         }
 
         // Validate time suffix if it exists
-        if (!time_suffix.isEmpty()) {
-            static QRegularExpression longPressRegex("⏲(\\d{1,4})");
-            static QRegularExpression doublePressRegex("✖(\\d{1,4})");
-
-            QRegularExpressionMatch longPressMatch = longPressRegex.match(time_suffix);
-            QRegularExpressionMatch doublePressMatch = doublePressRegex.match(time_suffix);
-
-            QString longPressTimeString;
-            QString doublePressTimeString;
-
-            bool isLongPress = longPressMatch.hasMatch();
-            bool isDoublePress = doublePressMatch.hasMatch();
-
-            if (isLongPress) {
-                longPressTimeString = longPressMatch.captured(1);
-            } else if (isDoublePress) {
-                doublePressTimeString = doublePressMatch.captured(1);
-            }
+        if (!longPressTimeString.isEmpty() || !doublePressTimeString.isEmpty()) {
+            bool isLongPress = !longPressTimeString.isEmpty();
+            bool isDoublePress = !doublePressTimeString.isEmpty();
 
             if (isLongPress || isDoublePress) {
                 bool ok;
@@ -1589,9 +1575,9 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
             } else {
                 result.isValid = false;
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid time suffix \"%1\"").arg(time_suffix);
+                    result.errorMessage = QString("Invalid time suffix \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
                 } else {
-                    result.errorMessage = QString("无效的时间后缀 \"%1\"").arg(time_suffix);
+                    result.errorMessage = QString("无效的时间后缀 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
                 }
                 return result;
             }
@@ -1627,7 +1613,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
     result.isValid = true;
 
     // Regular expression to validate original key
-    static QRegularExpression key_regex("^(.+?)(?:@([0-9]))?(?:⏲(\\d{1,4})|✖(\\d{1,4}))?$");
+    static QRegularExpression key_regex("^(.+?)(?:@([0-9]))?(?:⏲(\\d+)|✖(\\d+))?$");
 
     QRegularExpressionMatch key_match = key_regex.match(orikey);
 
@@ -5041,7 +5027,7 @@ bool QKeyMapper::checkOriginalkeyStr(const QString &originalkeystr)
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[checkOriginalkeyStr]" << "Invalid OriginalKey:" << originalkeystr << ", " << "errorMessage: " << result.errorMessage;
+        qDebug().nospace().quote() << "\033[1;31m[checkOriginalkeyStr]" << "Invalid OriginalKey: " << originalkeystr << ", " << "errorMessage: " << result.errorMessage << "\033[0m";
 #endif
         return false;
     }
@@ -5068,7 +5054,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[checkMappingkeyStr]" << "Invalid MappingKey:" << mappingkeystr << ", " << "errorMessage: " << result.errorMessage;
+        qDebug().nospace().noquote() << "\033[1;31m[checkMappingkeyStr]" << "Invalid MappingKey: " << mappingkeystr << ", " << "errorMessage: " << result.errorMessage << "\033[0m";
 #endif
         return false;
     }
