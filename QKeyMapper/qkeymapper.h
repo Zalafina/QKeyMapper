@@ -299,7 +299,6 @@ public:
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
     static ValidationResult validateOriginalKeyString(const QString &originalkeystr, int update_rowindex);
     static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
-    static ValidationResult validateSingleKeyInOriginalCombinationKey(const QString &orikey);
     static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist);
     static ValidationResult validateSingleMappingKey(const QString &mapkey);
 
