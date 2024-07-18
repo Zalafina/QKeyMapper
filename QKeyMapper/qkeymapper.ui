@@ -591,7 +591,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -616,8 +616,8 @@
     <widget class="QCheckBox" name="soundEffectCheckBox">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>10</y>
+       <x>210</x>
+       <y>40</y>
        <width>131</width>
        <height>21</height>
       </rect>
@@ -654,7 +654,7 @@
     <widget class="QLabel" name="notificationLabel">
      <property name="geometry">
       <rect>
-       <x>150</x>
+       <x>185</x>
        <y>10</y>
        <width>71</width>
        <height>21</height>
@@ -670,7 +670,7 @@
     <widget class="QComboBox" name="notificationComboBox">
      <property name="geometry">
       <rect>
-       <x>225</x>
+       <x>260</x>
        <y>10</y>
        <width>81</width>
        <height>21</height>
@@ -684,6 +684,32 @@
      </property>
      <property name="currentIndex">
       <number>-1</number>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="windowswitchkeyLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>10</y>
+       <width>110</width>
+       <height>21</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="windowswitchkeyLabel">
+     <property name="geometry">
+      <rect>
+       <x>-5</x>
+       <y>10</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>WindowKey</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
    </widget>
@@ -701,22 +727,6 @@
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="windowswitchkeyLabel">
-     <property name="geometry">
-      <rect>
-       <x>200</x>
-       <y>10</y>
-       <width>81</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>WindowKey</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-     </property>
-    </widget>
     <widget class="QLabel" name="mappingStartKeyLabel">
      <property name="geometry">
       <rect>
@@ -731,16 +741,6 @@
      </property>
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="windowswitchkeyLineEdit">
-     <property name="geometry">
-      <rect>
-       <x>286</x>
-       <y>10</y>
-       <width>110</width>
-       <height>21</height>
-      </rect>
      </property>
     </widget>
     <widget class="QCheckBox" name="autoStartMappingCheckBox">
@@ -762,7 +762,7 @@
     <widget class="QSpinBox" name="mouseYSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>380</x>
+       <x>270</x>
        <y>40</y>
        <width>35</width>
        <height>22</height>
@@ -779,7 +779,7 @@
      <property name="geometry">
       <rect>
        <x>204</x>
-       <y>40</y>
+       <y>10</y>
        <width>61</width>
        <height>22</height>
       </rect>
@@ -795,7 +795,7 @@
      <property name="geometry">
       <rect>
        <x>270</x>
-       <y>40</y>
+       <y>10</y>
        <width>35</width>
        <height>22</height>
       </rect>
@@ -810,7 +810,7 @@
     <widget class="QLabel" name="mouseYSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>314</x>
+       <x>204</x>
        <y>40</y>
        <width>61</width>
        <height>22</height>
