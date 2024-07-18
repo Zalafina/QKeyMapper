@@ -179,9 +179,12 @@ int main(int argc, char *argv[])
 
     updateQtDisplayEnvironment();
 
-#ifdef SINGLE_APPLICATION
-    QApplication::setApplicationName("QKeyMapper");
+    QApplication::setApplicationName(QString(argv[0]));
     QApplication::setOrganizationName("AsukaVoV");
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "ApplicationName ->" << QApplication::applicationName();
+#endif
+#ifdef SINGLE_APPLICATION
     SingleApplication app(argc, argv);
 #else
     QApplication app(argc, argv);
