@@ -4340,6 +4340,8 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
     if (e.joystick == Q_NULLPTR)
         return;
 
+    int playerIndex = e.joystick->playerindex;
+
     if (m_JoystickPOVMap.contains(e.angle)) {
         JoystickDPadCode dpadCode = m_JoystickPOVMap.value(e.angle);
 
@@ -4351,7 +4353,11 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
             keyupdown = KEY_DOWN;
         }
 
-        QStringList joydpadpressedlist = pressedRealKeysList.filter("Joy-DPad");
+        QString pattern = QString("^Joy-DPad-(Up|Down|Left|Right)@%1$").arg(playerIndex);
+        QRegularExpression filterPattern(pattern);
+        static QRegularExpression joydpad_regex("^(Joy-DPad-(Up|Down|Left|Right))@(\\d)$");
+        QRegularExpressionMatch joydpad_match;
+        QStringList joydpadpressedlist = pressedRealKeysList.filter(filterPattern);
         QStringList joydpadNeedtoRelease = joydpadpressedlist;
         bool returnFlag;
         if (KEY_DOWN == keyupdown) {
@@ -4359,10 +4365,13 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
             QStringList tempDpadCodeStringList = keycodeString.split(',');
 
             for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
-                joydpadNeedtoRelease.removeAll(dpadcodestr);
+                QString dpadcodestrWithIndex = QString("%1@%2").arg(dpadcodestr).arg(playerIndex);
+                joydpadNeedtoRelease.removeAll(dpadcodestrWithIndex);
             }
 
-            for (const QString &dpadcodestr : qAsConst(joydpadNeedtoRelease)) {
+            for (const QString &dpadcodestr_withindex : qAsConst(joydpadNeedtoRelease)) {
+                joydpad_match = joydpad_regex.match(dpadcodestr_withindex);
+                QString dpadcodestr = joydpad_match.captured(1);
                 returnFlag = JoyStickKeysProc(dpadcodestr, KEY_UP, e.joystick);
                 Q_UNUSED(returnFlag);
             }
@@ -4373,9 +4382,10 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
             }
         }
         else {
-            joydpadpressedlist = pressedRealKeysList.filter("Joy-DPad");
-            for (const QString &joydpadstr : qAsConst(joydpadpressedlist)){
-                returnFlag = JoyStickKeysProc(joydpadstr, keyupdown, e.joystick);
+            for (const QString &dpadcodestr_withindex : qAsConst(joydpadpressedlist)){
+                joydpad_match = joydpad_regex.match(dpadcodestr_withindex);
+                QString dpadcodestr = joydpad_match.captured(1);
+                returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick);
                 Q_UNUSED(returnFlag);
             }
         }
@@ -8348,7 +8358,7 @@ QString QKeyMapper_Worker::getWindowsKeyName(uint virtualKeyCode)
 
 QString QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(const QString &keycodeString)
 {
-    static QRegularExpression regex("@\\d");
+    static QRegularExpression regex("@\\d$");
     QString result = keycodeString;
     result.remove(regex);
     return result;
