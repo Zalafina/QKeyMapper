@@ -365,9 +365,9 @@ public:
 
     enum Joy2vJoyTriggerState
     {
-        JOY2VJOY_TRIGGER_NONE,
-        JOY2VJOY_TRIGGER_LT,
-        JOY2VJOY_TRIGGER_RT,
+        JOY2VJOY_TRIGGER_NONE   = 0,
+        JOY2VJOY_TRIGGER_LT     = 1,
+        JOY2VJOY_TRIGGER_RT     = 2,
         JOY2VJOY_TRIGGER_LTRT_BOTH = JOY2VJOY_TRIGGER_LT | JOY2VJOY_TRIGGER_RT
     };
     Q_ENUM(Joy2vJoyTriggerState)
@@ -375,9 +375,9 @@ public:
 
     enum Joy2vJoyLeftStickState
     {
-        JOY2VJOY_LS_NONE,
-        JOY2VJOY_LS_2LS,
-        JOY2VJOY_LS_2RS,
+        JOY2VJOY_LS_NONE    = 0,
+        JOY2VJOY_LS_2LS     = 1,
+        JOY2VJOY_LS_2RS     = 2,
         JOY2VJOY_LS_2LSRS_BOTH = JOY2VJOY_LS_2LS | JOY2VJOY_LS_2RS
     };
     Q_ENUM(Joy2vJoyLeftStickState)
@@ -385,9 +385,9 @@ public:
 
     enum Joy2vJoyRightStickState
     {
-        JOY2VJOY_RS_NONE,
-        JOY2VJOY_RS_2LS,
-        JOY2VJOY_RS_2RS,
+        JOY2VJOY_RS_NONE    = 0,
+        JOY2VJOY_RS_2LS     = 1,
+        JOY2VJOY_RS_2RS     = 2,
         JOY2VJOY_RS_2LSRS_BOTH = JOY2VJOY_RS_2LS | JOY2VJOY_RS_2RS
     };
     Q_ENUM(Joy2vJoyRightStickState)
@@ -426,10 +426,10 @@ public:
 
     enum Joy2MouseState
     {
-        JOY2MOUSE_NONE,
-        JOY2MOUSE_LEFT,
-        JOY2MOUSE_RIGHT,
-        JOY2MOUSE_BOTH
+        JOY2MOUSE_NONE      = 0,
+        JOY2MOUSE_LEFT      = 1,
+        JOY2MOUSE_RIGHT     = 2,
+        JOY2MOUSE_BOTH      = JOY2MOUSE_LEFT | JOY2MOUSE_RIGHT
     };
     Q_ENUM(Joy2MouseState)
     Q_DECLARE_FLAGS(Joy2MouseStates, Joy2MouseState)
