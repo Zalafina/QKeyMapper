@@ -171,36 +171,6 @@ struct Joystick_AxisState {
     qreal right_trigger;
 };
 
-enum Joy2vJoyTriggerState
-{
-    JOY2VJOY_TRIGGER_NONE,
-    JOY2VJOY_TRIGGER_LT,
-    JOY2VJOY_TRIGGER_RT,
-    JOY2VJOY_TRIGGER_LTRT_BOTH
-};
-
-enum Joy2vJoyLeftStickState
-{
-    JOY2VJOY_LS_NONE,
-    JOY2VJOY_LS_2LS,
-    JOY2VJOY_LS_2RS,
-    JOY2VJOY_LS_2LSRS_BOTH
-};
-
-enum Joy2vJoyRightStickState
-{
-    JOY2VJOY_RS_NONE,
-    JOY2VJOY_RS_2LS,
-    JOY2VJOY_RS_2RS,
-    JOY2VJOY_RS_2LSRS_BOTH
-};
-
-struct Joy2vJoyState {
-    Joy2vJoyTriggerState trigger_state;
-    Joy2vJoyLeftStickState ls_state;
-    Joy2vJoyRightStickState rs_state;
-};
-
 #ifdef DINPUT_TEST
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
@@ -393,6 +363,56 @@ public:
 #endif
     };
 
+    enum Joy2vJoyTriggerState
+    {
+        JOY2VJOY_TRIGGER_NONE,
+        JOY2VJOY_TRIGGER_LT,
+        JOY2VJOY_TRIGGER_RT,
+        JOY2VJOY_TRIGGER_LTRT_BOTH = JOY2VJOY_TRIGGER_LT | JOY2VJOY_TRIGGER_RT
+    };
+    Q_ENUM(Joy2vJoyTriggerState)
+    Q_DECLARE_FLAGS(Joy2vJoyTriggerStates, Joy2vJoyTriggerState)
+
+    enum Joy2vJoyLeftStickState
+    {
+        JOY2VJOY_LS_NONE,
+        JOY2VJOY_LS_2LS,
+        JOY2VJOY_LS_2RS,
+        JOY2VJOY_LS_2LSRS_BOTH = JOY2VJOY_LS_2LS | JOY2VJOY_LS_2RS
+    };
+    Q_ENUM(Joy2vJoyLeftStickState)
+    Q_DECLARE_FLAGS(Joy2vJoyLeftStickStates, Joy2vJoyLeftStickState)
+
+    enum Joy2vJoyRightStickState
+    {
+        JOY2VJOY_RS_NONE,
+        JOY2VJOY_RS_2LS,
+        JOY2VJOY_RS_2RS,
+        JOY2VJOY_RS_2LSRS_BOTH = JOY2VJOY_RS_2LS | JOY2VJOY_RS_2RS
+    };
+    Q_ENUM(Joy2vJoyRightStickState)
+    Q_DECLARE_FLAGS(Joy2vJoyRightStickStates, Joy2vJoyRightStickState)
+
+    struct Joy2vJoyState {
+        int gamepad_index;
+        Joy2vJoyTriggerStates trigger_state;
+        Joy2vJoyLeftStickStates ls_state;
+        Joy2vJoyRightStickStates rs_state;
+
+#ifdef DEBUG_LOGOUT_ON
+        friend QDebug operator<<(QDebug debug, const Joy2vJoyState& state) {
+            QDebugStateSaver saver(debug);
+            debug.nospace() << "Joy2vJoyState("
+                            << "gamepad_index:" << state.gamepad_index
+                            << ", trigger_state:" << state.trigger_state
+                            << ", ls_state:" << state.ls_state
+                            << ", rs_state:" << state.rs_state
+                            << ")";
+            return debug;
+        }
+#endif
+    };
+
     enum GripDetectState
     {
         GRIPDETECT_NONE     = 0,
@@ -402,10 +422,6 @@ public:
     };
     Q_ENUM(GripDetectState)
     Q_DECLARE_FLAGS(GripDetectStates, GripDetectState)
-
-    Q_ENUM(Joy2vJoyTriggerState)
-    Q_ENUM(Joy2vJoyLeftStickState)
-    Q_ENUM(Joy2vJoyRightStickState)
 #endif
 
     enum Joy2MouseState
@@ -416,6 +432,7 @@ public:
         JOY2MOUSE_BOTH
     };
     Q_ENUM(Joy2MouseState)
+    Q_DECLARE_FLAGS(Joy2MouseStates, Joy2MouseState)
 
 public slots:
     // void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
@@ -558,7 +575,7 @@ public slots:
 
     void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
-    Joy2MouseState checkJoystick2MouseEnableState(void);
+    Joy2MouseStates checkJoystick2MouseEnableState(void);
     bool checkKey2MouseEnableState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
@@ -750,7 +767,7 @@ public:
 #endif
 
     static bool s_Key2Mouse_EnableState;
-    static Joy2MouseState s_Joy2Mouse_EnableState;
+    static Joy2MouseStates s_Joy2Mouse_EnableState;
     static Joystick_AxisState s_JoyAxisState;
 
 private:

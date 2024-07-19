@@ -83,7 +83,7 @@ BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
 QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
-Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
+QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
@@ -99,7 +99,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::s_Mouse2vJoy_En
 // QMutex QKeyMapper_Worker::s_MouseMove_delta_List_Mutex;
 #endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
-QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
+QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 
 bool QKeyMapper_Hook_Proc::s_LowLevelKeyboardHook_Enable = true;
@@ -3611,7 +3611,7 @@ QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::checkGripDetectEnableStat
     return gripdetect_enablestate;
 }
 
-Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
+QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
 {
     Joy2vJoyState joy2vjoystate = Joy2vJoyState();
     bool joy2vjoy_LT = false;
@@ -4508,9 +4508,9 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
     }
 }
 
-QKeyMapper_Worker::Joy2MouseState QKeyMapper_Worker::checkJoystick2MouseEnableState()
+QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::checkJoystick2MouseEnableState()
 {
-    Joy2MouseState joy2mouse_enablestate = JOY2MOUSE_NONE;
+    Joy2MouseStates joy2mouse_enablestate = JOY2MOUSE_NONE;
     bool leftJoy2Mouse = false;
     bool rightJoy2Mouse = false;
 
