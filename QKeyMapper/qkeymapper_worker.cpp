@@ -5439,7 +5439,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                 }
             }
             else {
-                if (findindex >= 0) {
+                if (findindex < 0) {
                     if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("[InterceptionKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
@@ -5712,7 +5712,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 }
             }
             else {
-                if (findindex >= 0) {
+                if (findindex < 0) {
                     if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("[InterceptionMouseHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
@@ -6241,7 +6241,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     }
                 }
                 else {
-                    if (findindex >= 0) {
+                    if (findindex < 0) {
                         if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug("[LowLevelKeyboardHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
@@ -6704,7 +6704,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         }
                     }
                     else {
-                        if (findindex >= 0) {
+                        if (findindex < 0) {
                             if (KEY_INTERCEPT_PASSTHROUGH == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
                                 qDebug("[LowLevelMouseHookProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_PASSTHROUGH");
@@ -8494,11 +8494,13 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
             }
         }
         else {
-            if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
+            if (findindex < 0) {
+                if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("[JoyStickKeysProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
+                    qDebug("[JoyStickKeysProc] detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK");
 #endif
-                return true;
+                    return true;
+                }
             }
         }
     }
