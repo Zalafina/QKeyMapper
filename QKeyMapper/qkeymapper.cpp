@@ -311,7 +311,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
-    m_PopupNotification = new QPopupNotification(this);
+    m_PopupNotification = new QPopupNotification(Q_NULLPTR);
     m_deviceListWindow = new QInputDeviceListWindow(this);
     // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
@@ -389,43 +389,19 @@ QKeyMapper::~QKeyMapper()
     m_TransParentHandle = NULL;
     // freeShortcuts();
 
-    delete m_orikeyComboBox;
-    m_orikeyComboBox = Q_NULLPTR;
-    delete m_mapkeyComboBox;
-    m_mapkeyComboBox = Q_NULLPTR;
-
-    // delete m_windowswitchKeySeqEdit;
-    // m_windowswitchKeySeqEdit = Q_NULLPTR;
-
-    // delete m_mappingswitchKeySeqEdit;
-    // m_mappingswitchKeySeqEdit = Q_NULLPTR;
-
-    // delete m_originalKeySeqEdit;
-    // m_originalKeySeqEdit = Q_NULLPTR;
-
-    // delete m_HotKey_ShowHide;
-    // m_HotKey_ShowHide = Q_NULLPTR;
-    // delete m_HotKey_StartStop;
-    // m_HotKey_StartStop = Q_NULLPTR;
-
     delete ui;
-    delete m_SysTrayIcon;
-    m_SysTrayIcon = Q_NULLPTR;
 
-    delete m_ProcessInfoTableDelegate;
-    m_ProcessInfoTableDelegate = Q_NULLPTR;
+    if (m_ProcessInfoTableDelegate != Q_NULLPTR) {
+        delete m_ProcessInfoTableDelegate;
+        m_ProcessInfoTableDelegate = Q_NULLPTR;
+    }
 
     // delete m_KeyMappingDataTableDelegate;
     // m_KeyMappingDataTableDelegate = Q_NULLPTR;
 
-    if (m_deviceListWindow != Q_NULLPTR) {
-        delete m_deviceListWindow;
-        m_deviceListWindow = Q_NULLPTR;
-    }
-
-    if (m_ItemSetupDialog != Q_NULLPTR) {
-        delete m_ItemSetupDialog;
-        m_ItemSetupDialog = Q_NULLPTR;
+    if (m_PopupNotification != Q_NULLPTR) {
+        delete m_PopupNotification;
+        m_PopupNotification = Q_NULLPTR;
     }
 }
 
