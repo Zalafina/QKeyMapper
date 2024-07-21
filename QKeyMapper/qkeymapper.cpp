@@ -6428,6 +6428,16 @@ void QKeyMapper::updateSystemTrayDisplay()
     }
 }
 
+void QKeyMapper::showQKeyMapperWindowToTop()
+{
+    if (m_MainWindowHandle != NULL) {
+        SetWindowPos(m_MainWindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    }
+    showNormal();
+    activateWindow();
+    raise();
+}
+
 void QKeyMapper::switchShowHide()
 {
     if (m_deviceListWindow->isVisible()) {
@@ -6453,9 +6463,7 @@ void QKeyMapper::switchShowHide()
             move(m_LastWindowPosition); // Restore the position before showing
         }
 
-        show();
-        activateWindow();
-        raise();
+        showQKeyMapperWindowToTop();
     }
 }
 
@@ -7890,14 +7898,13 @@ void QKeyMapper::keyMappingTableCellDoubleClicked(int row, int column)
 #endif
 
 #ifdef SINGLE_APPLICATION
-void QKeyMapper::raiseQKeyMapperWindow()
+void QKeyMapper::otherInstancesStarted()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[raiseQKeyMapperWindow]" << "Secondary QKeyMapper Instances started.";
+    qDebug() << "[raiseQKeyMapperWindow]" << "Other QKeyMapper Instances started.";
 #endif
-    show();
-    activateWindow();
-    raise();
+
+    showQKeyMapperWindowToTop();
 }
 #endif
 

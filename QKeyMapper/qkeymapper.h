@@ -387,7 +387,7 @@ public slots:
     void setupDialogClosed(void);
 
 #ifdef SINGLE_APPLICATION
-    void raiseQKeyMapperWindow(void);
+    void otherInstancesStarted(void);
 #endif
 
     // void updateShortcutsMap(void);
@@ -483,6 +483,7 @@ private:
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void updateSystemTrayDisplay(void);
+    void showQKeyMapperWindowToTop(void);
     void switchShowHide(void);
     void showWarningPopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
