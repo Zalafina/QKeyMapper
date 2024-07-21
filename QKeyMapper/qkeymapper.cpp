@@ -53,6 +53,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
     loadSetting_flag(false),
+    m_MainWindowHandle(NULL),
     m_TransParentHandle(NULL),
     m_TransParentWindowInitialX(0),
     m_TransParentWindowInitialY(0),
@@ -66,6 +67,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
+    m_MainWindowHandle = reinterpret_cast<HWND>(winId());
     m_TransParentHandle = createTransparentWindow();
 
     m_instance = this;
@@ -385,6 +387,7 @@ QKeyMapper::~QKeyMapper()
 #endif
     s_isDestructing = true;
 
+    m_MainWindowHandle = NULL;
     destoryTransparentWindow(m_TransParentHandle);
     m_TransParentHandle = NULL;
     // freeShortcuts();
@@ -2413,9 +2416,13 @@ void QKeyMapper::showEvent(QShowEvent *event)
 
 void QKeyMapper::changeEvent(QEvent *event)
 {
-    if(event->type()==QEvent::WindowStateChange)
+    if (event->type() == QEvent::WindowStateChange)
     {
         QTimer::singleShot(0, this, SLOT(WindowStateChangedProc()));
+    }
+    else if (event->type() == QEvent::WinIdChange)
+    {
+        m_MainWindowHandle = reinterpret_cast<HWND>(winId());
     }
     QDialog::changeEvent(event);
 }
@@ -2766,50 +2773,13 @@ static BOOL CALLBACK focusChildProcWindow(HWND hwnd, LPARAM lParam)
 
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 {
-    if (m_deviceListWindow->isVisible()) {
-        return;
-    }
-
-    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     Q_UNUSED(hotkey_string);
-    Q_UNUSED(keymapstatusEnum);
 #ifdef DEBUG_LOGOUT_ON
+    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     qDebug().nospace() << "[HotKeyDisplaySwitchActivated] DisplaySwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    if (false == isHidden()){
-        m_LastWindowPosition = pos(); // Save the current position before hiding
-        closeItemSetupDialog();
-        hide();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[HotKeyDisplaySwitchActivated] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-    }
-    else{
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[HotKeyDisplaySwitchActivated] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-        if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
-            move(m_LastWindowPosition); // Restore the position before showing
-        }
-
-        /* Remove BringWindowToTopEx() because of it will cause other program registered shortcut be invalid. >>> */
-#if 0
-#ifdef QT_NO_DEBUG
-        DWORD pid = getpid();
-        EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
-#else
-        if (!IsDebuggerPresent()) {
-            DWORD pid = getpid();
-            EnumWindows(focusChildProcWindow, static_cast<LPARAM>(pid));
-        }
-#endif
-#endif
-        /* Remove BringWindowToTopEx() because of it will cause other program registered shortcut be invalid. <<< */
-        showNormal();
-        activateWindow();
-        raise();
-    }
+    switchShowHide();
 }
 
 void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
@@ -6483,7 +6453,7 @@ void QKeyMapper::switchShowHide()
             move(m_LastWindowPosition); // Restore the position before showing
         }
 
-        showNormal();
+        show();
         activateWindow();
         raise();
     }
@@ -7925,7 +7895,7 @@ void QKeyMapper::raiseQKeyMapperWindow()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[raiseQKeyMapperWindow]" << "Secondary QKeyMapper Instances started.";
 #endif
-    showNormal();
+    show();
     activateWindow();
     raise();
 }

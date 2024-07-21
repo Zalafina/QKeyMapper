@@ -613,6 +613,7 @@ private:
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
     bool loadSetting_flag;
+    HWND m_MainWindowHandle;
     HWND m_TransParentHandle;
     int m_TransParentWindowInitialX;
     int m_TransParentWindowInitialY;
