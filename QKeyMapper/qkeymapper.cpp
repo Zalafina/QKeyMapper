@@ -2506,6 +2506,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
             }
         }
     }
+#if 0
     else if (event->key() == KEY_REMOVE_LAST) {
         if (m_KeyMapStatus == KEYMAP_IDLE) {
 #ifdef DEBUG_LOGOUT_ON
@@ -2571,6 +2572,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
             }
         }
     }
+#endif
     else if (event->key() == Qt::Key_Escape) {
        return;
     }
@@ -8703,7 +8705,11 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
         if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
             this->setCurrentText(QString());
         }
-        else{
+        else if ((objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME || objectName() == SETUPDIALOG_MAPKEY_COMBOBOX_NAME)
+            && keycodeString == QString("Esc")) {
+            QComboBox::keyPressEvent(keyevent);
+        }
+        else {
             this->setCurrentText(keycodeString);
 
 #ifdef DEBUG_LOGOUT_ON
