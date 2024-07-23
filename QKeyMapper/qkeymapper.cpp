@@ -67,7 +67,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
-    m_MainWindowHandle = reinterpret_cast<HWND>(winId());
     m_TransParentHandle = createTransparentWindow();
 
     m_instance = this;
@@ -2753,24 +2752,10 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
 
 static void BringWindowToTopEx(HWND hwnd)
 {
-    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), true) ;
-    SetForegroundWindow(hwnd) ;
-    SetFocus(hwnd) ;
-    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), false) ;
-}
-
-static BOOL CALLBACK focusChildProcWindow(HWND hwnd, LPARAM lParam)
-{
-    DWORD processId = static_cast<DWORD>(lParam);
-    DWORD windowProcessId = NULL;
-    GetWindowThreadProcessId(hwnd, &windowProcessId);
-    if(windowProcessId == processId)
-    {
-        BringWindowToTopEx(hwnd);
-        return FALSE;
-    }
-
-    return TRUE;
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), true);
+    BringWindowToTop(hwnd);
+    // SetForegroundWindow(hwnd);
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), false);
 }
 
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
@@ -6432,12 +6417,18 @@ void QKeyMapper::updateSystemTrayDisplay()
 
 void QKeyMapper::showQKeyMapperWindowToTop()
 {
-    if (m_MainWindowHandle != NULL) {
-        SetWindowPos(m_MainWindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[showQKeyMapperWindowToTop]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
+#endif
     showNormal();
-    activateWindow();
     raise();
+    /* BringWindowToTopEx() may cause other program registered shortcut be invalid. >>> */
+    if (m_MainWindowHandle != NULL) {
+        BringWindowToTopEx(m_MainWindowHandle);
+        // SetWindowPos(m_MainWindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+    }
+    /* BringWindowToTopEx() may cause other program registered shortcut be invalid. <<< */
+    activateWindow();
 }
 
 void QKeyMapper::switchShowHide()
@@ -6461,6 +6452,10 @@ void QKeyMapper::switchShowHide()
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
 #endif
+        if (NULL == m_MainWindowHandle) {
+            m_MainWindowHandle = reinterpret_cast<HWND>(winId());
+        }
+
         if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
             move(m_LastWindowPosition); // Restore the position before showing
         }
