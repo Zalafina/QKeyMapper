@@ -84,6 +84,7 @@ BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
 QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
 QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
+QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::s_Joy2vJoy_EnableStateMap;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
@@ -3325,6 +3326,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Joy2vJoyState = checkJoy2vJoyState();
+    s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
     // s_Mouse2vJoy_delta_interception = QPoint();
@@ -3491,6 +3493,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
     s_Joy2vJoyState = Joy2vJoyState();
+    s_Joy2vJoy_EnableStateMap.clear();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
     // s_Mouse2vJoy_delta_interception = QPoint();
@@ -3682,6 +3685,60 @@ QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
     }
 
     return joy2vjoystate;
+}
+
+QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::checkJoy2vJoyEnableStateMap()
+{
+    QHash<int, Joy2vJoyState> Joy2vJoy_EnableStateMap;
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList)) {
+        static QRegularExpression joy2vjoy_regex("Joy-(LS|RS|Key11\\(LT\\)|Key12\\(RT\\))_2vJoy(LS|RS|LT|RT)(@(\\d))?$");
+        QRegularExpressionMatch joy2vjoy_match = joy2vjoy_regex.match(keymapdata.Original_Key);
+
+        if (joy2vjoy_match.hasMatch()) {
+            QString controlType = joy2vjoy_match.captured(1);
+            QString target = joy2vjoy_match.captured(2);
+            QString playerIndexStr = joy2vjoy_match.captured(4);
+            int playerIndex = playerIndexStr.isEmpty() ? INITIAL_PLAYER_INDEX : playerIndexStr.toInt();
+
+            Joy2vJoyState &joy2vjoystate = Joy2vJoy_EnableStateMap[playerIndex];
+
+            if (controlType == "Key11(LT)" && target == "LT") {
+                joy2vjoystate.trigger_state |= JOY2VJOY_TRIGGER_LT;
+            }
+            else if (controlType == "Key12(RT)" && target == "RT") {
+                joy2vjoystate.trigger_state |= JOY2VJOY_TRIGGER_RT;
+            }
+            else if (controlType == "LS" && target == "LS") {
+                joy2vjoystate.ls_state |= JOY2VJOY_LS_2LS;
+            }
+            else if (controlType == "LS" && target == "RS") {
+                joy2vjoystate.ls_state |= JOY2VJOY_LS_2RS;
+            }
+            else if (controlType == "RS" && target == "LS") {
+                joy2vjoystate.rs_state |= JOY2VJOY_RS_2LS;
+            }
+            else if (controlType == "RS" && target == "RS") {
+                joy2vjoystate.rs_state |= JOY2VJOY_RS_2RS;
+            }
+
+            if (joy2vjoystate.trigger_state == (JOY2VJOY_TRIGGER_LT | JOY2VJOY_TRIGGER_RT)) {
+                joy2vjoystate.trigger_state = JOY2VJOY_TRIGGER_LTRT_BOTH;
+            }
+            if (joy2vjoystate.ls_state == (JOY2VJOY_LS_2LS | JOY2VJOY_LS_2RS)) {
+                joy2vjoystate.ls_state = JOY2VJOY_LS_2LSRS_BOTH;
+            }
+            if (joy2vjoystate.rs_state == (JOY2VJOY_RS_2LS | JOY2VJOY_RS_2RS)) {
+                joy2vjoystate.rs_state = JOY2VJOY_RS_2LSRS_BOTH;
+            }
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[checkJoy2vJoyEnableStateMap]" << "Joy2vJoy_EnableStateMap ->" << Joy2vJoy_EnableStateMap;
+#endif
+
+    return Joy2vJoy_EnableStateMap;
 }
 
 void QKeyMapper_Worker::processUdpPendingDatagrams()

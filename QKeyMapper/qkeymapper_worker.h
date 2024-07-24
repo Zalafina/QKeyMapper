@@ -553,6 +553,7 @@ public slots:
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
     GripDetectStates checkGripDetectEnableState(void);
     Joy2vJoyState checkJoy2vJoyState(void);
+    QHash<int, Joy2vJoyState> checkJoy2vJoyEnableStateMap(void);
     void processUdpPendingDatagrams(void);
     void processForzaFormatData(const QByteArray &forzadata);
 
@@ -752,6 +753,7 @@ public:
     static BYTE s_last_Auto_Accel;
     static GripDetectStates s_GripDetect_EnableState;
     static Joy2vJoyState s_Joy2vJoyState;
+    static QHash<int, Joy2vJoyState> s_Joy2vJoy_EnableStateMap;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;
 #else
