@@ -6420,15 +6420,15 @@ void QKeyMapper::showQKeyMapperWindowToTop()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[showQKeyMapperWindowToTop]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
 #endif
-    showNormal();
-    raise();
-    /* BringWindowToTopEx() may cause other program registered shortcut be invalid. >>> */
+    /* BringWindowToTopEx() may cause OBS program registered shortcut be invalid. >>> */
     if (m_MainWindowHandle != NULL) {
-        BringWindowToTopEx(m_MainWindowHandle);
-        // SetWindowPos(m_MainWindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        // BringWindowToTopEx(m_MainWindowHandle);
+        SetWindowPos(m_MainWindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     }
-    /* BringWindowToTopEx() may cause other program registered shortcut be invalid. <<< */
+    /* BringWindowToTopEx() may cause OBS program registered shortcut be invalid. <<< */
+    showNormal();
     activateWindow();
+    raise();
 }
 
 void QKeyMapper::switchShowHide()
