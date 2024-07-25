@@ -3691,14 +3691,16 @@ QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::checkJoy2vJoyEna
 {
     QHash<int, Joy2vJoyState> Joy2vJoy_EnableStateMap;
 
+    static QRegularExpression joy2vjoy_orikey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-9]))?$)");
+    static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList)) {
-        static QRegularExpression joy2vjoy_regex("Joy-(LS|RS|Key11\\(LT\\)|Key12\\(RT\\))_2vJoy(LS|RS|LT|RT)(@(\\d))?$");
-        QRegularExpressionMatch joy2vjoy_match = joy2vjoy_regex.match(keymapdata.Original_Key);
+        QRegularExpressionMatch joy2vjoy_orikey_match = joy2vjoy_orikey_regex.match(keymapdata.Original_Key);
 
-        if (joy2vjoy_match.hasMatch()) {
-            QString controlType = joy2vjoy_match.captured(1);
-            QString target = joy2vjoy_match.captured(2);
-            QString playerIndexStr = joy2vjoy_match.captured(4);
+        if (joy2vjoy_orikey_match.hasMatch()) {
+            QString originalkey_withoutindex = joy2vjoy_orikey_match.captured(1);
+            QString controlType = joy2vjoy_orikey_match.captured(2);
+            QString target = joy2vjoy_orikey_match.captured(3);
+            QString playerIndexStr = joy2vjoy_orikey_match.captured(4);
             int playerIndex = playerIndexStr.isEmpty() ? INITIAL_PLAYER_INDEX : playerIndexStr.toInt();
 
             Joy2vJoyState &joy2vjoystate = Joy2vJoy_EnableStateMap[playerIndex];
@@ -3722,15 +3724,27 @@ QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::checkJoy2vJoyEna
                 joy2vjoystate.rs_state |= JOY2VJOY_RS_2RS;
             }
 
-            if (joy2vjoystate.trigger_state == (JOY2VJOY_TRIGGER_LT | JOY2VJOY_TRIGGER_RT)) {
-                joy2vjoystate.trigger_state = JOY2VJOY_TRIGGER_LTRT_BOTH;
+            int gamepad_index = 0;
+            QString mappingkey_withoutindex;
+            QString mappingkey = keymapdata.Mapping_Keys.constFirst();
+            QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mappingkey);
+            if (joy2vjoy_mapkey_match.hasMatch()) {
+                mappingkey_withoutindex = joy2vjoy_mapkey_match.captured(1);
+                QString gamepadIndexStr = joy2vjoy_mapkey_match.captured(4);
+                gamepad_index = gamepadIndexStr.isEmpty() ? 0 : gamepadIndexStr.toInt();
             }
-            if (joy2vjoystate.ls_state == (JOY2VJOY_LS_2LS | JOY2VJOY_LS_2RS)) {
-                joy2vjoystate.ls_state = JOY2VJOY_LS_2LSRS_BOTH;
+
+            if (gamepad_index > 0 && joy2vjoystate.gamepad_index == 0) {
+                joy2vjoystate.gamepad_index = gamepad_index;
             }
-            if (joy2vjoystate.rs_state == (JOY2VJOY_RS_2LS | JOY2VJOY_RS_2RS)) {
-                joy2vjoystate.rs_state = JOY2VJOY_RS_2LSRS_BOTH;
+
+            Q_UNUSED(originalkey_withoutindex);
+            Q_UNUSED(mappingkey_withoutindex);
+#ifdef DEBUG_LOGOUT_ON
+            if (originalkey_withoutindex != mappingkey_withoutindex) {
+                qDebug() << "[checkJoy2vJoyEnableStateMap]" << "OriginalKey and MappingKey unmatched! ->" << "OriKey: " << originalkey_withoutindex << "MapKey: " << mappingkey_withoutindex;
             }
+#endif
         }
     }
 
