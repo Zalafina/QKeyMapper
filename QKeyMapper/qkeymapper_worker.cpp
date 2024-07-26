@@ -885,8 +885,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         return;
     }
 
-    static QRegularExpression mapkey_regex("^([↓↑⇵]?)([^⏱]+)(?:⏱(\\d+))?$");
-    static QRegularExpression sendTextRegexp("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵]?)([^⏱]+)(?:⏱(\d+))?$)");
+    static QRegularExpression sendTextRegexp(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
@@ -1497,7 +1497,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
 void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown)
 {
-    static QRegularExpression regex("(Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?\\((\\d+),(\\d+)\\)");
+    static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?\((\d+),(\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
@@ -2694,7 +2694,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::ViGEmClient_che
             }
         }
         else {
-            static QRegularExpression regex("vJoy-Mouse2(L|R)S@(\\d)");
+            static QRegularExpression regex(R"(vJoy-Mouse2(L|R)S@(\d))");
             QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
             if (match.hasMatch()) {
                 int number = match.captured(2).toInt();
@@ -4426,7 +4426,7 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
         QString pattern = QString("^Joy-DPad-(Up|Down|Left|Right)@%1$").arg(playerIndex);
         QRegularExpression filterPattern(pattern);
-        static QRegularExpression joydpad_regex("^(Joy-DPad-(Up|Down|Left|Right))@(\\d)$");
+        static QRegularExpression joydpad_regex(R"(^(Joy-DPad-(Up|Down|Left|Right))@(\d)$)");
         QRegularExpressionMatch joydpad_match;
         QStringList joydpadpressedlist = pressedRealKeysList.filter(filterPattern);
         QStringList joydpadNeedtoRelease = joydpadpressedlist;
@@ -7868,7 +7868,7 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
 
 void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
 {
-    static QRegularExpression regex("^(.+)⏲(\\d+)$");
+    static QRegularExpression regex(R"(^(.+)⏲(\d+)$)");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
@@ -8101,7 +8101,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
 void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
 {
     int keymapdataindex = 0;
-    static QRegularExpression regex("^(.+✖)(\\d+)$");
+    static QRegularExpression regex(R"(^(.+✖)(\d+)$)");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
@@ -8134,7 +8134,7 @@ QHash<QString, int> QKeyMapper_Worker::currentDoublePressOriginalKeysMap()
     QHash<QString, int> currentDoublePressOriginalKeysMap;
 
     int keymapdataindex = 0;
-    static QRegularExpression regex("^(.+✖)(\\d+)$");
+    static QRegularExpression regex(R"(^(.+✖)(\d+)$)");
     for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
@@ -8171,7 +8171,7 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
         int findindex = doublePressOriginalKeysMap.value(keycodeString_doublepress, -1);
         if (findindex >= 0){
             QString original_key_withDoublePressTime = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-            static QRegularExpression regex("^(.+)✖(\\d+)$");
+            static QRegularExpression regex(R"(^(.+)✖(\d+)$)");
             QRegularExpressionMatch match = regex.match(original_key_withDoublePressTime);
             if (match.hasMatch()) {
                 // QString original_key = match.captured(1);
@@ -8213,7 +8213,7 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
         int findindex = doublePressOriginalKeysMap.value(keycodeString_RemoveMultiInput_doublepress, -1);
         if (findindex >= 0){
             QString original_key_withDoublePressTime = QKeyMapper::KeyMappingDataList.at(findindex).Original_Key;
-            static QRegularExpression regex("^(.+)✖(\\d+)$");
+            static QRegularExpression regex(R"(^(.+)✖(\d+)$)");
             QRegularExpressionMatch match = regex.match(original_key_withDoublePressTime);
             if (match.hasMatch()) {
                 // QString original_key = match.captured(1);

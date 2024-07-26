@@ -483,7 +483,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
         return;
     }
 
-    static QRegularExpression whitespace_reg("\\s+");
+    static QRegularExpression whitespace_reg(R"(\s+)");
     QString originalKey = ui->originalKeyLineEdit->text();
     originalKey.remove(whitespace_reg);
 
@@ -531,7 +531,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
         return;
     }
 
-    static QRegularExpression whitespace_reg("\\s+");
+    static QRegularExpression whitespace_reg(R"(\s+)");
     QString mappingKey = ui->mappingKeyLineEdit->text();
     mappingKey.remove(whitespace_reg);
 

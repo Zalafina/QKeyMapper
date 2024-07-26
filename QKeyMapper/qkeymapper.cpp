@@ -1470,7 +1470,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     result.isValid = true;
 
     // Regular expression to match the entire key with optional time suffix
-    static QRegularExpression full_key_regex("^(.+?)(?:⏲(\\d+)|✖(\\d+))?$");
+    static QRegularExpression full_key_regex(R"(^(.+?)(?:⏲(\d+)|✖(\d+))?$)");
 
     QRegularExpressionMatch full_key_match = full_key_regex.match(originalkeystr);
     if (!full_key_match.hasMatch()) {
@@ -1591,7 +1591,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
     result.isValid = true;
 
     // Regular expression to validate original key
-    static QRegularExpression key_regex("^(.+?)(?:@([0-9]))?(?:⏲(\\d+)|✖(\\d+))?$");
+    static QRegularExpression key_regex(R"(^(.+?)(?:@([0-9]))?(?:⏲(\d+)|✖(\d+))?$)");
 
     QRegularExpressionMatch key_match = key_regex.match(orikey);
 
@@ -1738,7 +1738,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression mapkey_regex("^([↓↑⇵]?)([^⏱]+)(?:⏱(\\d+))?$");
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵]?)([^⏱]+)(?:⏱(\d+))?$)");
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
@@ -1759,9 +1759,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
 
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
-            static QRegularExpression mousepoint_regex("^Mouse-(L|R|M|X1|X2)(:W)?\\((\\d+),(\\d+)\\)$");
-            static QRegularExpression sendtext_regex("^SendText\\((.+)\\)$"); // RegularExpression to match "SendText(string)"
+            static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
+            static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2)(:W)?\((\d+),(\d+)\)$)");
+            static QRegularExpression sendtext_regex(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
+            QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
 
@@ -1778,6 +1780,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                         result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
                     }
                 }
+            }
+            else if (joy2vjoy_mapkey_match.hasMatch()) {
+                result.isValid = true;
             }
             else if (mousepoint_match.hasMatch() || sendtext_match.hasMatch()) {
                 result.isValid = true;
@@ -7245,7 +7250,7 @@ void QKeyMapper::updateMousePointsList()
         return;
     }
 
-    static QRegularExpression mousepoint_regex("Mouse-(L|R|M|X1|X2)(:W)?\\((\\d+),(\\d+)\\)");
+    static QRegularExpression mousepoint_regex(R"(Mouse-(L|R|M|X1|X2)(:W)?\((\d+),(\d+)\))");
     QRegularExpressionMatch mousepoint_match;
     ScreenMousePointsList.clear();
     WindowMousePointsList.clear();

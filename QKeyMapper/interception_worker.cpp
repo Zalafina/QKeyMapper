@@ -607,7 +607,7 @@ QList<InputDevice> Interception_Worker::getRefreshedKeyboardDeviceList()
             QString productIDStr;
             QString iManufacturerStr;
             QString iProductStr;
-            static QRegularExpression regex("VID_(\\w+)&PID_(\\w+)");
+            static QRegularExpression regex(R"(VID_(\w+)&PID_(\w+))");
             QRegularExpressionMatch match = regex.match(hardware_id_str);
             if (match.hasMatch()) {
                 vendorIDStr = match.captured(1);
@@ -701,7 +701,7 @@ QList<InputDevice> Interception_Worker::getRefreshedMouseDeviceList()
             QString productIDStr;
             QString iManufacturerStr;
             QString iProductStr;
-            static QRegularExpression regex("VID_(\\w+)&PID_(\\w+)");
+            static QRegularExpression regex(R"(VID_(\w+)&PID_(\w+))");
             QRegularExpressionMatch match = regex.match(hardware_id_str);
             if (match.hasMatch()) {
                 vendorIDStr = match.captured(1);
