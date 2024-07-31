@@ -507,7 +507,7 @@ public:
     // static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
     static QHash<int, Mouse2vJoyData> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index, int gamepad_index);
-    void ViGEmClient_Joy2vJoystickUpdate(int sticktype, int gamepad_index);
+    void ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy2vjoystate, int sticktype, int gamepad_index);
     // void ViGEmClient_GamepadReset(void);
     void ViGEmClient_AllGamepadReset(void);
     static void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
@@ -752,7 +752,7 @@ public:
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
     static GripDetectStates s_GripDetect_EnableState;
-    static Joy2vJoyState s_Joy2vJoyState;
+    // static Joy2vJoyState s_Joy2vJoyState;
     static QHash<int, Joy2vJoyState> s_Joy2vJoy_EnableStateMap;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_ViGEmClient_Mutex;

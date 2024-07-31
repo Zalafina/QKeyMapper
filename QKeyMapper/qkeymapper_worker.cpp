@@ -83,7 +83,7 @@ BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
 QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
-QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
+// QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::s_Joy2vJoy_EnableStateMap;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -2873,7 +2873,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     }
 }
 
-void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(int sticktype, int gamepad_index)
+void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy2vjoystate, int sticktype, int gamepad_index)
 {
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
@@ -2953,50 +2953,50 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(int sticktype, int gamep
 
     // Update the virtual joystick's state based on the physical joystick's state
     if (sticktype == JOY2VJOY_LEFTSTICK_X) {
-        if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LSRS_BOTH) {
+        if (joy2vjoystate.ls_state == JOY2VJOY_LS_2LSRS_BOTH) {
             ViGEmTarget_Report.sThumbLX = leftX;
             ViGEmTarget_Report.sThumbRX = leftX;
         }
-        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LS) {
+        else if (joy2vjoystate.ls_state == JOY2VJOY_LS_2LS) {
             ViGEmTarget_Report.sThumbLX = leftX;
         }
-        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2RS) {
+        else if (joy2vjoystate.ls_state == JOY2VJOY_LS_2RS) {
             ViGEmTarget_Report.sThumbRX = leftX;
         }
     }
     else if (sticktype == JOY2VJOY_LEFTSTICK_Y) {
-        if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LSRS_BOTH) {
+        if (joy2vjoystate.ls_state == JOY2VJOY_LS_2LSRS_BOTH) {
             ViGEmTarget_Report.sThumbLY = leftY;
             ViGEmTarget_Report.sThumbRY = leftY;
         }
-        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2LS) {
+        else if (joy2vjoystate.ls_state == JOY2VJOY_LS_2LS) {
             ViGEmTarget_Report.sThumbLY = leftY;
         }
-        else if (s_Joy2vJoyState.ls_state == JOY2VJOY_LS_2RS) {
+        else if (joy2vjoystate.ls_state == JOY2VJOY_LS_2RS) {
             ViGEmTarget_Report.sThumbRY = leftY;
         }
     }
     else if (sticktype == JOY2VJOY_RIGHTSTICK_X) {
-        if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LSRS_BOTH) {
+        if (joy2vjoystate.rs_state == JOY2VJOY_RS_2LSRS_BOTH) {
             ViGEmTarget_Report.sThumbLX = rightX;
             ViGEmTarget_Report.sThumbRX = rightX;
         }
-        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LS) {
+        else if (joy2vjoystate.rs_state == JOY2VJOY_RS_2LS) {
             ViGEmTarget_Report.sThumbLX = rightX;
         }
-        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2RS) {
+        else if (joy2vjoystate.rs_state == JOY2VJOY_RS_2RS) {
             ViGEmTarget_Report.sThumbRX = rightX;
         }
     }
     else if (sticktype == JOY2VJOY_RIGHTSTICK_Y) {
-        if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LSRS_BOTH) {
+        if (joy2vjoystate.rs_state == JOY2VJOY_RS_2LSRS_BOTH) {
             ViGEmTarget_Report.sThumbLY = rightY;
             ViGEmTarget_Report.sThumbRY = rightY;
         }
-        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2LS) {
+        else if (joy2vjoystate.rs_state == JOY2VJOY_RS_2LS) {
             ViGEmTarget_Report.sThumbLY = rightY;
         }
-        else if (s_Joy2vJoyState.rs_state == JOY2VJOY_RS_2RS) {
+        else if (joy2vjoystate.rs_state == JOY2VJOY_RS_2RS) {
             ViGEmTarget_Report.sThumbRY = rightY;
         }
     }
@@ -3325,7 +3325,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = checkGripDetectEnableState();
-    s_Joy2vJoyState = checkJoy2vJoyState();
+    // s_Joy2vJoyState = checkJoy2vJoyState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
@@ -3492,7 +3492,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
-    s_Joy2vJoyState = Joy2vJoyState();
+    // s_Joy2vJoyState = Joy2vJoyState();
     s_Joy2vJoy_EnableStateMap.clear();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
@@ -4465,11 +4465,27 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
 
 void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
+    bool joy2vjoy_update = false;
+    int player_index = e.joystick->playerindex;
+    int gamepad_index = 0;
+    Joy2vJoyState Joy2vJoy_EnableState = Joy2vJoyState();
+    if (s_Joy2vJoy_EnableStateMap.contains(INITIAL_PLAYER_INDEX)) {
+        player_index = -1;
+        joy2vjoy_update = true;
+    }
+    else if (s_Joy2vJoy_EnableStateMap.contains(player_index)) {
+        joy2vjoy_update = true;
+    }
+
+    if (joy2vjoy_update) {
+        Joy2vJoy_EnableState = s_Joy2vJoy_EnableStateMap.value(player_index);
+        gamepad_index = Joy2vJoy_EnableState.gamepad_index;
+    }
+
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
         s_JoyAxisState.left_trigger = e.value;
-        if (JOY2VJOY_TRIGGER_LT == s_Joy2vJoyState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == s_Joy2vJoyState.trigger_state) {
+        if (JOY2VJOY_TRIGGER_LT == Joy2vJoy_EnableState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == Joy2vJoy_EnableState.trigger_state) {
             QString autoadjustEmptyStr;
-            int gamepad_index = 0;
             ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT, gamepad_index);
         }
         else {
@@ -4478,9 +4494,8 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
     else if (JOYSTICK_AXIS_RT_BUTTON == e.axis) {
         s_JoyAxisState.right_trigger = e.value;
-        if (JOY2VJOY_TRIGGER_RT == s_Joy2vJoyState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == s_Joy2vJoyState.trigger_state) {
+        if (JOY2VJOY_TRIGGER_RT == Joy2vJoy_EnableState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == Joy2vJoy_EnableState.trigger_state) {
             QString autoadjustEmptyStr;
-            int gamepad_index = 0;
             ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT, gamepad_index);
         }
         else {
@@ -4489,9 +4504,8 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
     else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
         s_JoyAxisState.left_x = e.value;
-        if (s_Joy2vJoyState.ls_state != JOY2VJOY_LS_NONE) {
-            int gamepad_index = 0;
-            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_LEFTSTICK_X, gamepad_index);
+        if (Joy2vJoy_EnableState.ls_state != JOY2VJOY_LS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_LEFTSTICK_X, gamepad_index);
         }
         else {
             joystickLSHorizontalProc(e);
@@ -4499,9 +4513,8 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
     else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis) {
         s_JoyAxisState.left_y = e.value;
-        if (s_Joy2vJoyState.ls_state != JOY2VJOY_LS_NONE) {
-            int gamepad_index = 0;
-            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_LEFTSTICK_Y, gamepad_index);
+        if (Joy2vJoy_EnableState.ls_state != JOY2VJOY_LS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_LEFTSTICK_Y, gamepad_index);
         }
         else {
             joystickLSVerticalProc(e);
@@ -4509,9 +4522,8 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
     else if (JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
         s_JoyAxisState.right_x = e.value;
-        if (s_Joy2vJoyState.rs_state != JOY2VJOY_RS_NONE) {
-            int gamepad_index = 0;
-            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_RIGHTSTICK_X, gamepad_index);
+        if (Joy2vJoy_EnableState.rs_state != JOY2VJOY_RS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_RIGHTSTICK_X, gamepad_index);
         }
         else {
             joystickRSHorizontalProc(e);
@@ -4519,9 +4531,8 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
     else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
         s_JoyAxisState.right_y = e.value;
-        if (s_Joy2vJoyState.rs_state != JOY2VJOY_RS_NONE) {
-            int gamepad_index = 0;
-            ViGEmClient_Joy2vJoystickUpdate(JOY2VJOY_RIGHTSTICK_Y, gamepad_index);
+        if (Joy2vJoy_EnableState.rs_state != JOY2VJOY_RS_NONE) {
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_RIGHTSTICK_Y, gamepad_index);
         }
         else {
             joystickRSVerticalProc(e);
