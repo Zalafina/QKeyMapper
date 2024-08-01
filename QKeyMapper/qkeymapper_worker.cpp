@@ -4805,10 +4805,18 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
 void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 {
     int keyupdown = KEY_INIT;
+    QString keycodeString_withoutIndex;
     QString keycodeString;
     /* LT Button & RT Button */
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
-        keycodeString = "Joy-Key11(LT)";
+        keycodeString_withoutIndex = "Joy-Key11(LT)";
+        int player_index = e.joystick->playerindex;
+        if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+            keycodeString = QString("%1@%2").arg(keycodeString_withoutIndex).arg(player_index);
+        }
+        else {
+            keycodeString = keycodeString_withoutIndex;
+        }
         if (pressedRealKeysList.contains(keycodeString)) {
             /* LT Button is already Pressed */
             if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
@@ -4823,7 +4831,14 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         }
     }
     else { /* JOYSTICK_AXIS_RT_BUTTON == e.axis */
-        keycodeString = "Joy-Key12(RT)";
+        keycodeString_withoutIndex = "Joy-Key12(RT)";
+        int player_index = e.joystick->playerindex;
+        if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+            keycodeString = QString("Joy-Key12(RT)@%1").arg(player_index);
+        }
+        else {
+            keycodeString = keycodeString_withoutIndex;
+        }
         if (pressedRealKeysList.contains(keycodeString)) {
             /* RT Button is already Pressed */
             if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
@@ -4840,7 +4855,7 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 
     if (KEY_UP == keyupdown || KEY_DOWN == keyupdown) {
         bool returnFlag;
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
+        returnFlag = JoyStickKeysProc(keycodeString_withoutIndex, keyupdown, e.joystick);
         Q_UNUSED(returnFlag);
     }
 }
@@ -4860,9 +4875,22 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     /* Left-Stick Horizontal Process */
     int keyupdown = KEY_INIT;
     QString keycodeString;
+    QString keycodeString_LS_Left;
+    QString keycodeString_LS_Right;
+    int player_index = e.joystick->playerindex;
+    QString keycodeString_LS_Left_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_LEFT);
+    QString keycodeString_LS_Right_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_RIGHT);
 
-    QString keycodeString_LS_Left = m_JoystickLStickMap.value(JOYSTICK_LS_LEFT);
-    QString keycodeString_LS_Right = m_JoystickLStickMap.value(JOYSTICK_LS_RIGHT);
+    // Use player_index to merge with keycodeString_LS_Left & keycodeString_LS_Right
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_LS_Left = QString("%1@%2").arg(keycodeString_LS_Left_withoutIndex).arg(player_index);
+        keycodeString_LS_Right = QString("%1@%2").arg(keycodeString_LS_Right_withoutIndex).arg(player_index);
+    }
+    else {
+        keycodeString_LS_Left = keycodeString_LS_Left_withoutIndex;
+        keycodeString_LS_Right = keycodeString_LS_Right_withoutIndex;
+    }
+
     bool ls_Left_Pressed = false;
     bool ls_Right_Pressed = false;
     bool returnFlag;
@@ -4882,31 +4910,31 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
         /* Left-Stick Horizontal Left changed to Right */
         else if (ls_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
             /* Need to send Left-Stick Horizontal Left Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Horizontal Left Release first <<< */
-            keycodeString = keycodeString_LS_Right;
+            keycodeString = keycodeString_LS_Right_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Horizontal Right changed to Left */
         else if (ls_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
             /* Need to send Left-Stick Horizontal Right Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Horizontal Right Release first <<< */
-            keycodeString = keycodeString_LS_Left;
+            keycodeString = keycodeString_LS_Left_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
     else {
         /* Left-Stick Horizontal Release change to Right  */
         if (e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
-            keycodeString = keycodeString_LS_Right;
+            keycodeString = keycodeString_LS_Right_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Horizontal Release change to Left  */
         else if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
-            keycodeString = keycodeString_LS_Left;
+            keycodeString = keycodeString_LS_Left_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
@@ -4917,11 +4945,11 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else if (KEY_UP == keyupdown){
         if (ls_Left_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Left, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (ls_Right_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Right, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -4945,9 +4973,22 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     /* Left-Stick Vertical Process */
     int keyupdown = KEY_INIT;
     QString keycodeString;
+    QString keycodeString_LS_Up;
+    QString keycodeString_LS_Down;
+    int player_index = e.joystick->playerindex;
+    QString keycodeString_LS_Up_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_UP);
+    QString keycodeString_LS_Down_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_DOWN);
 
-    QString keycodeString_LS_Up = m_JoystickLStickMap.value(JOYSTICK_LS_UP);
-    QString keycodeString_LS_Down = m_JoystickLStickMap.value(JOYSTICK_LS_DOWN);
+    // Use player_index to merge with keycodeString_LS_Up & keycodeString_LS_Down
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_LS_Up = QString("%1@%2").arg(keycodeString_LS_Up_withoutIndex).arg(player_index);
+        keycodeString_LS_Down = QString("%1@%2").arg(keycodeString_LS_Down_withoutIndex).arg(player_index);
+    }
+    else {
+        keycodeString_LS_Up = keycodeString_LS_Up_withoutIndex;
+        keycodeString_LS_Down = keycodeString_LS_Down_withoutIndex;
+    }
+
     bool ls_Up_Pressed = false;
     bool ls_Down_Pressed = false;
     bool returnFlag;
@@ -4967,31 +5008,31 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
         /* Left-Stick Vertical Up changed to Down */
         else if (ls_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
             /* Need to send Left-Stick Vertical Up Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Vertical Up Release first <<< */
-            keycodeString = keycodeString_LS_Down;
+            keycodeString = keycodeString_LS_Down_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Vertical Down changed to Up */
         else if (ls_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
             /* Need to send Left-Stick Vertical Down Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Left-Stick Vertical Down Release first <<< */
-            keycodeString = keycodeString_LS_Up;
+            keycodeString = keycodeString_LS_Up_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
     else {
         /* Left-Stick Vertical Release change to Down  */
         if (e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
-            keycodeString = keycodeString_LS_Down;
+            keycodeString = keycodeString_LS_Down_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Vertical Release change to Up  */
         else if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
-            keycodeString = keycodeString_LS_Up;
+            keycodeString = keycodeString_LS_Up_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
@@ -5002,11 +5043,11 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
     else if (KEY_UP == keyupdown){
         if (ls_Up_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Up, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (ls_Down_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Down, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -5030,9 +5071,22 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     /* Right-Stick Horizontal Process */
     int keyupdown = KEY_INIT;
     QString keycodeString;
+    QString keycodeString_RS_Left;
+    QString keycodeString_RS_Right;
+    int player_index = e.joystick->playerindex;
+    QString keycodeString_RS_Left_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_LEFT);
+    QString keycodeString_RS_Right_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_RIGHT);
 
-    QString keycodeString_RS_Left = m_JoystickRStickMap.value(JOYSTICK_RS_LEFT);
-    QString keycodeString_RS_Right = m_JoystickRStickMap.value(JOYSTICK_RS_RIGHT);
+    // Use player_index to merge with keycodeString_RS_Left & keycodeString_RS_Right
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_RS_Left = QString("%1@%2").arg(keycodeString_RS_Left_withoutIndex).arg(player_index);
+        keycodeString_RS_Right = QString("%1@%2").arg(keycodeString_RS_Right_withoutIndex).arg(player_index);
+    }
+    else {
+        keycodeString_RS_Left = keycodeString_RS_Left_withoutIndex;
+        keycodeString_RS_Right = keycodeString_RS_Right_withoutIndex;
+    }
+
     bool rs_Left_Pressed = false;
     bool rs_Right_Pressed = false;
     bool returnFlag;
@@ -5052,31 +5106,31 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
         /* Right-Stick Horizontal Left changed to Right */
         else if (rs_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
             /* Need to send Right-Stick Horizontal Left Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Horizontal Left Release first <<< */
-            keycodeString = keycodeString_RS_Right;
+            keycodeString = keycodeString_RS_Right_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Horizontal Right changed to Left */
         else if (rs_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
             /* Need to send Right-Stick Horizontal Right Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Horizontal Right Release first <<< */
-            keycodeString = keycodeString_RS_Left;
+            keycodeString = keycodeString_RS_Left_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
     else {
         /* Right-Stick Horizontal Release change to Right  */
         if (e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
-            keycodeString = keycodeString_RS_Right;
+            keycodeString = keycodeString_RS_Right_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Horizontal Release change to Left  */
         else if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
-            keycodeString = keycodeString_RS_Left;
+            keycodeString = keycodeString_RS_Left_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
@@ -5087,11 +5141,11 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else if (KEY_UP == keyupdown){
         if (rs_Left_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Left, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (rs_Right_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Right, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
@@ -5115,9 +5169,22 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     /* Right-Stick Vertical Process */
     int keyupdown = KEY_INIT;
     QString keycodeString;
+    QString keycodeString_RS_Up;
+    QString keycodeString_RS_Down;
+    int player_index = e.joystick->playerindex;
+    QString keycodeString_RS_Up_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_UP);
+    QString keycodeString_RS_Down_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_DOWN);
 
-    QString keycodeString_RS_Up = m_JoystickRStickMap.value(JOYSTICK_RS_UP);
-    QString keycodeString_RS_Down = m_JoystickRStickMap.value(JOYSTICK_RS_DOWN);
+    // Use player_index to merge with keycodeString_RS_Up & keycodeString_RS_Down
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_RS_Up = QString("%1@%2").arg(keycodeString_RS_Up_withoutIndex).arg(player_index);
+        keycodeString_RS_Down = QString("%1@%2").arg(keycodeString_RS_Down_withoutIndex).arg(player_index);
+    }
+    else {
+        keycodeString_RS_Up = keycodeString_RS_Up_withoutIndex;
+        keycodeString_RS_Down = keycodeString_RS_Down_withoutIndex;
+    }
+
     bool rs_Up_Pressed = false;
     bool rs_Down_Pressed = false;
     bool returnFlag;
@@ -5137,31 +5204,31 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
         /* Right-Stick Vertical Up changed to Down */
         else if (rs_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
             /* Need to send Right-Stick Vertical Up Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Vertical Up Release first <<< */
-            keycodeString = keycodeString_RS_Down;
+            keycodeString = keycodeString_RS_Down_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Vertical Down changed to Up */
         else if (rs_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
             /* Need to send Right-Stick Vertical Down Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
             /* Need to send Right-Stick Vertical Down Release first <<< */
-            keycodeString = keycodeString_RS_Up;
+            keycodeString = keycodeString_RS_Up_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
     else {
         /* Right-Stick Vertical Release change to Down  */
         if (e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
-            keycodeString = keycodeString_RS_Down;
+            keycodeString = keycodeString_RS_Down_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Vertical Release change to Up  */
         else if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
-            keycodeString = keycodeString_RS_Up;
+            keycodeString = keycodeString_RS_Up_withoutIndex;
             keyupdown = KEY_DOWN;
         }
     }
@@ -5172,11 +5239,11 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
     else if (KEY_UP == keyupdown){
         if (rs_Up_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Up, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
         if (rs_Down_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Down, KEY_UP, e.joystick);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
