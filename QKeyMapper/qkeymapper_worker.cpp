@@ -101,6 +101,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::s_Mouse2vJoy_En
 #endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
+QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap;
 Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 
 bool QKeyMapper_Hook_Proc::s_LowLevelKeyboardHook_Enable = true;
@@ -3355,6 +3356,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
     s_Key2Mouse_EnableState = checkKey2MouseEnableState();
     s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
+    s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getLockCursorStatus()) {
@@ -3461,6 +3463,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
+    s_Joy2Mouse_EnableStateMap.clear();
     setWorkerJoystickCaptureStop();
 
     if (m_Key2MouseCycleTimer.isActive()) {
@@ -3614,6 +3617,7 @@ QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::checkGripDetectEnableStat
     return gripdetect_enablestate;
 }
 
+#if 0
 QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
 {
     Joy2vJoyState joy2vjoystate = Joy2vJoyState();
@@ -3686,6 +3690,7 @@ QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::checkJoy2vJoyState()
 
     return joy2vjoystate;
 }
+#endif
 
 QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::checkJoy2vJoyEnableStateMap()
 {
@@ -4617,6 +4622,13 @@ QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::checkJoystick2MouseEnableS
     }
 
     return joy2mouse_enablestate;
+}
+
+QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2MouseEnableStateMap()
+{
+    QHash<int, Joy2MouseStates> Joy2Mouse_EnableStateMap;
+
+    return Joy2Mouse_EnableStateMap;
 }
 
 bool QKeyMapper_Worker::checkKey2MouseEnableState()
