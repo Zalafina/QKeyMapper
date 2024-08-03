@@ -100,9 +100,11 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::s_Mouse2vJoy_En
 // QMutex QKeyMapper_Worker::s_MouseMove_delta_List_Mutex;
 #endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
-QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
+// QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap;
-Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
+// Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
+QHash<int, Joystick_AxisState> QKeyMapper_Worker::s_JoyAxisStateMap;
+int QKeyMapper_Worker::s_LastJoyAxisPlayerIndex = INITIAL_PLAYER_INDEX;
 
 bool QKeyMapper_Hook_Proc::s_LowLevelKeyboardHook_Enable = true;
 bool QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable = true;
@@ -770,8 +772,20 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeoutForMap(int mouse_index)
 
 void QKeyMapper_Worker::onKey2MouseCycleTimeout()
 {
-    if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE) {
-        joystick2MouseMoveProc(s_JoyAxisState);
+    if (false == s_Joy2Mouse_EnableStateMap.isEmpty()) {
+        bool joy2mouse_update = false;
+        int player_index = s_LastJoyAxisPlayerIndex;
+        if (s_Joy2Mouse_EnableStateMap.contains(INITIAL_PLAYER_INDEX)) {
+            player_index = -1;
+            joy2mouse_update = true;
+        }
+        else if (s_Joy2Mouse_EnableStateMap.contains(player_index)) {
+            joy2mouse_update = true;
+        }
+
+        if (joy2mouse_update) {
+            joystick2MouseMoveProc(player_index);
+        }
     }
     else if (s_Key2Mouse_EnableState) {
         key2MouseMoveProc();
@@ -1241,7 +1255,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
                     if (gamepadIndexString.isEmpty()) {
                         if (send_keyupdown == KEY_DOWN) {
-                            ViGEmClient_PressButton(key, false, 0);
+                            ViGEmClient_PressButton(key, false, 0, INITIAL_PLAYER_INDEX);
                         }
                         else {
                             ViGEmClient_ReleaseButton(key, 0);
@@ -1250,7 +1264,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     else {
                         int gamepad_index = gamepadIndexString.toInt();
                         if (send_keyupdown == KEY_DOWN) {
-                            ViGEmClient_PressButton(joystickButton, false, gamepad_index);
+                            ViGEmClient_PressButton(joystickButton, false, gamepad_index, INITIAL_PLAYER_INDEX);
                         }
                         else {
                             ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
@@ -2154,7 +2168,7 @@ void QKeyMapper_Worker::ViGEmClient_setConnectState(ViGEmClient_ConnectState con
     s_ViGEmClient_ConnectState = connectstate;
 }
 
-void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index)
+void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index)
 {
     int gamepad_count = s_ViGEmTargetList.size();
     int gamepad_report_count = s_ViGEmTarget_ReportList.size();
@@ -2202,11 +2216,13 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         int updateFlag = VJOY_UPDATE_NONE;
         if (joystickButton.isEmpty() && autoAdjust) {
             if (autoAdjust & AUTO_ADJUST_LT) {
-                ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>(s_JoyAxisState.left_trigger * 255 + 0.5);
+                Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
+                ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>(JoyAxisState.left_trigger * 255 + 0.5);
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
             else if (autoAdjust & AUTO_ADJUST_RT) {
-                ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>(s_JoyAxisState.right_trigger * 255 + 0.5);
+                Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
+                ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>(JoyAxisState.right_trigger * 255 + 0.5);
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
             else {
@@ -2874,7 +2890,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     }
 }
 
-void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy2vjoystate, int sticktype, int gamepad_index)
+void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy2vjoystate, int sticktype, int gamepad_index, int player_index)
 {
     if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
         return;
@@ -2914,8 +2930,9 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
     short rightY = 0;
 
     if (sticktype == JOY2VJOY_LEFTSTICK_X || sticktype == JOY2VJOY_LEFTSTICK_Y) {
-        leftX_int = (int)(32767.0 * s_JoyAxisState.left_x);
-        leftY_int = -(int)(32767.0 * s_JoyAxisState.left_y);
+        Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
+        leftX_int = (int)(32767.0 * JoyAxisState.left_x);
+        leftY_int = -(int)(32767.0 * JoyAxisState.left_y);
         if (leftX_int < -32767) {
             leftX_int = -32767;
         }
@@ -2933,8 +2950,9 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
         // ViGEmClient_CalculateThumbValue(&leftX, &leftY);
     }
     else if (sticktype == JOY2VJOY_RIGHTSTICK_X || sticktype == JOY2VJOY_RIGHTSTICK_Y) {
-        rightX_int = (int)(32767.0 * s_JoyAxisState.right_x);
-        rightY_int = -(int)(32767.0 * s_JoyAxisState.right_y);
+        Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
+        rightX_int = (int)(32767.0 * JoyAxisState.right_x);
+        rightY_int = -(int)(32767.0 * JoyAxisState.right_y);
         if (rightX_int < -32767) {
             rightX_int = -32767;
         }
@@ -3019,7 +3037,7 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
     }
     else {
 #ifdef JOYSTICK_VERBOSE_LOG
-        qDebug("[ViGEmClient_Joy2vJoystickUpdate](%d) Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", gamepad_index, ViGEmTarget_Report.sThumbLX, ViGEmTarget_Report.sThumbLY, ViGEmTarget_Report.sThumbRX, ViGEmTarget_Report.sThumbRY);
+        qDebug("[ViGEmClient_Joy2vJoystickUpdate]Joy(%d), vJoy(%d), Current ThumbLX[%d], ThumbLY[%d], ThumbRX[%d], ThumbRY[%d]", player_index, gamepad_index, ViGEmTarget_Report.sThumbLX, ViGEmTarget_Report.sThumbLY, ViGEmTarget_Report.sThumbRX, ViGEmTarget_Report.sThumbRY);
 #endif
     }
 #endif
@@ -3355,7 +3373,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 #endif
 
     s_Key2Mouse_EnableState = checkKey2MouseEnableState();
-    s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
+    // s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3409,8 +3427,9 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     // m_MouseHook = SetWindowsHookEx(WH_MOUSE_LL, QKeyMapper_Worker::LowLevelMouseHookProc, GetModuleHandle(Q_NULLPTR), 0);
     setWorkerJoystickCaptureStart();
 
-    s_JoyAxisState = Joystick_AxisState();
-    if (s_Joy2Mouse_EnableState != JOY2MOUSE_NONE || s_Key2Mouse_EnableState) {
+    // s_JoyAxisState = Joystick_AxisState();
+    s_JoyAxisStateMap.clear();
+    if (false == s_Joy2Mouse_EnableStateMap.isEmpty() || s_Key2Mouse_EnableState) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[setWorkerKeyHook] Key2MouseCycleTimer Started.");
 #endif
@@ -3462,7 +3481,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 //    }
 
     s_Key2Mouse_EnableState = false;
-    s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
+    // s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     s_Joy2Mouse_EnableStateMap.clear();
     setWorkerJoystickCaptureStop();
 
@@ -3472,7 +3491,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #endif
         m_Key2MouseCycleTimer.stop();
     }
-    s_JoyAxisState = Joystick_AxisState();
+    // s_JoyAxisState = Joystick_AxisState();
+    s_JoyAxisStateMap.clear();
 
     stopDataPortListener();
     //    setWorkerDInputKeyUnHook();
@@ -4098,7 +4118,7 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
         qDebug() << "[processForzaFormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << "s_last_Auto_Brake =" << s_last_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel << ", s_last_Auto_Accel =" << s_last_Auto_Accel;
 #endif
         QString autoadjustEmptyStr;
-        ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust, gamepad_index);
+        ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust, gamepad_index, INITIAL_PLAYER_INDEX);
     }
 }
 
@@ -4472,6 +4492,10 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 {
     bool joy2vjoy_update = false;
     int player_index = e.joystick->playerindex;
+    if (player_index < JOYSTICK_PLAYER_INDEX_MIN || player_index > JOYSTICK_PLAYER_INDEX_MAX) {
+        player_index = INITIAL_PLAYER_INDEX;
+    }
+    s_LastJoyAxisPlayerIndex = player_index;
     int gamepad_index = 0;
     Joy2vJoyState Joy2vJoy_EnableState = Joy2vJoyState();
     if (s_Joy2vJoy_EnableStateMap.contains(INITIAL_PLAYER_INDEX)) {
@@ -4488,56 +4512,68 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
     }
 
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
-        s_JoyAxisState.left_trigger = e.value;
+        // s_JoyAxisState.left_trigger = e.value;
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].left_trigger = e.value;
+        s_JoyAxisStateMap[player_index].left_trigger = e.value;
         if (JOY2VJOY_TRIGGER_LT == Joy2vJoy_EnableState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == Joy2vJoy_EnableState.trigger_state) {
             QString autoadjustEmptyStr;
-            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT, gamepad_index);
+            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT, gamepad_index, player_index);
         }
         else {
             joystickLTRTButtonProc(e);
         }
     }
     else if (JOYSTICK_AXIS_RT_BUTTON == e.axis) {
-        s_JoyAxisState.right_trigger = e.value;
+        // s_JoyAxisState.right_trigger = e.value;
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].right_trigger = e.value;
+        s_JoyAxisStateMap[player_index].right_trigger = e.value;
         if (JOY2VJOY_TRIGGER_RT == Joy2vJoy_EnableState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == Joy2vJoy_EnableState.trigger_state) {
             QString autoadjustEmptyStr;
-            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT, gamepad_index);
+            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT, gamepad_index, player_index);
         }
         else {
             joystickLTRTButtonProc(e);
         }
     }
     else if (JOYSTICK_AXIS_LS_HORIZONTAL == e.axis) {
-        s_JoyAxisState.left_x = e.value;
+        // s_JoyAxisState.left_x = e.value;
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].left_x = e.value;
+        s_JoyAxisStateMap[player_index].left_x = e.value;
         if (Joy2vJoy_EnableState.ls_state != JOY2VJOY_LS_NONE) {
-            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_LEFTSTICK_X, gamepad_index);
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_LEFTSTICK_X, gamepad_index, player_index);
         }
         else {
             joystickLSHorizontalProc(e);
         }
     }
     else if (JOYSTICK_AXIS_LS_VERTICAL == e.axis) {
-        s_JoyAxisState.left_y = e.value;
+        // s_JoyAxisState.left_y = e.value;
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].left_y = e.value;
+        s_JoyAxisStateMap[player_index].left_y = e.value;
         if (Joy2vJoy_EnableState.ls_state != JOY2VJOY_LS_NONE) {
-            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_LEFTSTICK_Y, gamepad_index);
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_LEFTSTICK_Y, gamepad_index, player_index);
         }
         else {
             joystickLSVerticalProc(e);
         }
     }
     else if (JOYSTICK_AXIS_RS_HORIZONTAL == e.axis) {
-        s_JoyAxisState.right_x = e.value;
+        // s_JoyAxisState.right_x = e.value;
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].right_x = e.value;
+        s_JoyAxisStateMap[player_index].right_x = e.value;
         if (Joy2vJoy_EnableState.rs_state != JOY2VJOY_RS_NONE) {
-            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_RIGHTSTICK_X, gamepad_index);
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_RIGHTSTICK_X, gamepad_index, player_index);
         }
         else {
             joystickRSHorizontalProc(e);
         }
     }
     else if (JOYSTICK_AXIS_RS_VERTICAL == e.axis) {
-        s_JoyAxisState.right_y = e.value;
+        // s_JoyAxisState.right_y = e.value;
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].right_y = e.value;
+        s_JoyAxisStateMap[player_index].right_y = e.value;
         if (Joy2vJoy_EnableState.rs_state != JOY2VJOY_RS_NONE) {
-            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_RIGHTSTICK_Y, gamepad_index);
+            ViGEmClient_Joy2vJoystickUpdate(Joy2vJoy_EnableState, JOY2VJOY_RIGHTSTICK_Y, gamepad_index, player_index);
         }
         else {
             joystickRSVerticalProc(e);
@@ -4627,6 +4663,39 @@ QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::checkJoystick2MouseEnableS
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2MouseEnableStateMap()
 {
     QHash<int, Joy2MouseStates> Joy2Mouse_EnableStateMap;
+
+    static QRegularExpression joy2mouse_regex(R"(^(Joy-(LS|RS)2Mouse)(?:@([0-9]))?$)");
+    for (const MAP_KEYDATA &keymapdata : qAsConst(QKeyMapper::KeyMappingDataList)) {
+        QRegularExpressionMatch joy2mouse_match = joy2mouse_regex.match(keymapdata.Original_Key);
+
+        if (joy2mouse_match.hasMatch()) {
+            QString originalkey_withoutindex = joy2mouse_match.captured(1);
+            QString controlType = joy2mouse_match.captured(2);
+            QString playerIndexStr = joy2mouse_match.captured(3);
+            int playerIndex = playerIndexStr.isEmpty() ? INITIAL_PLAYER_INDEX : playerIndexStr.toInt();
+
+            Joy2MouseStates &joy2mouse_enablestate = Joy2Mouse_EnableStateMap[playerIndex];
+
+            if (controlType == "LS") {
+                joy2mouse_enablestate |= JOY2MOUSE_LEFT;
+            }
+            else if (controlType == "RS") {
+                joy2mouse_enablestate |= JOY2MOUSE_RIGHT;
+            }
+
+            QString mappingkey = keymapdata.Mapping_Keys.constFirst();
+            Q_UNUSED(originalkey_withoutindex);
+#ifdef DEBUG_LOGOUT_ON
+            if (originalkey_withoutindex != mappingkey) {
+                qDebug() << "[checkJoy2MouseEnableStateMap]" << "OriginalKey and MappingKey unmatched! ->" << "OriKey: " << originalkey_withoutindex << "MapKey: " << mappingkey;
+            }
+#endif
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[checkJoy2MouseEnableStateMap]" << "Joy2Mouse_EnableStateMap ->" << Joy2Mouse_EnableStateMap;
+#endif
 
     return Joy2Mouse_EnableStateMap;
 }
@@ -5292,7 +5361,7 @@ int QKeyMapper_Worker::joystickCalculateDelta(qreal axis_value, int Speed_Factor
     return delta;
 }
 
-void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_state)
+void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index)
 {
     int delta_x = 0;
     int delta_y = 0;
@@ -5301,13 +5370,16 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(const Joystick_AxisState &axis_st
     int Speed_Factor_X = QKeyMapper::getJoystick2MouseSpeedX();
     int Speed_Factor_Y = QKeyMapper::getJoystick2MouseSpeedY();
 
-    if (JOY2MOUSE_LEFT == s_Joy2Mouse_EnableState) {
+    Joystick_AxisState axis_state = s_JoyAxisStateMap.value(player_index);
+    Joy2MouseStates Joy2Mouse_EnableState = s_Joy2Mouse_EnableStateMap.value(player_index);
+
+    if (JOY2MOUSE_LEFT == Joy2Mouse_EnableState) {
         checkLeftJoystick = true;
     }
-    else if (JOY2MOUSE_RIGHT == s_Joy2Mouse_EnableState) {
+    else if (JOY2MOUSE_RIGHT == Joy2Mouse_EnableState) {
         checkRightJoystick = true;
     }
-    else if (JOY2MOUSE_BOTH == s_Joy2Mouse_EnableState) {
+    else if (JOY2MOUSE_BOTH == Joy2Mouse_EnableState) {
         checkLeftJoystick = true;
         checkRightJoystick = true;
     }
@@ -9970,7 +10042,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        // s_LowLevelKeyboardHook_Enable = false;
+        s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

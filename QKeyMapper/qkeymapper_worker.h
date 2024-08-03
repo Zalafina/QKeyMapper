@@ -499,7 +499,7 @@ public:
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
     static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
-    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index);
+    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
@@ -507,7 +507,7 @@ public:
     // static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
     static QHash<int, Mouse2vJoyData> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
     void ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_y, int mouse_index, int gamepad_index);
-    void ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy2vjoystate, int sticktype, int gamepad_index);
+    void ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy2vjoystate, int sticktype, int gamepad_index, int player_index);
     // void ViGEmClient_GamepadReset(void);
     void ViGEmClient_AllGamepadReset(void);
     static void ViGEmClient_GamepadReset_byIndex(int gamepad_index);
@@ -588,7 +588,7 @@ private:
     void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
     void joystickRSVerticalProc(const QJoystickAxisEvent &e);
     int  joystickCalculateDelta(qreal axis_value, int Speed_Factor, bool checkJoystick);
-    void joystick2MouseMoveProc(const Joystick_AxisState &axis_state);
+    void joystick2MouseMoveProc(int player_index);
     void key2MouseMoveProc(void);
 
 public:
@@ -770,9 +770,11 @@ public:
 #endif
 
     static bool s_Key2Mouse_EnableState;
-    static Joy2MouseStates s_Joy2Mouse_EnableState;
+    // static Joy2MouseStates s_Joy2Mouse_EnableState;
     static QHash<int, Joy2MouseStates> s_Joy2Mouse_EnableStateMap;
-    static Joystick_AxisState s_JoyAxisState;
+    // static Joystick_AxisState s_JoyAxisState;
+    static QHash<int, Joystick_AxisState> s_JoyAxisStateMap;
+    static int s_LastJoyAxisPlayerIndex;
 
 private:
     HHOOK m_KeyHook;
