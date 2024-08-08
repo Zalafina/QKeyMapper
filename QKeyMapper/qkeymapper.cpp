@@ -1697,20 +1697,38 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     }
 
     if (Mapping_Keys.size() > 1) {
-        QString foundSpecialKey;
+        QString foundSpecialOriginalKey;
+        QString foundSpecialMappingKey;
+        static QRegularExpression removeindex_regex("@\\d$");
         /* Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList */
         for (const QString& mapkey : Mapping_Keys) {
+            QString mapkey_noindex = mapkey;
+            mapkey_noindex.remove(removeindex_regex);
             if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
-                foundSpecialKey = mapkey;
+                foundSpecialMappingKey = mapkey;
+                break;
+            }
+            if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(mapkey_noindex)) {
+                foundSpecialOriginalKey = mapkey;
                 break;
             }
         }
-        if (!foundSpecialKey.isEmpty()) {
+        if (!foundSpecialMappingKey.isEmpty()) {
             result.isValid = false;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("MappingKeys contains specialkey \"%1\"").arg(foundSpecialKey);
+                result.errorMessage = QString("MappingKeys contains specialkey \"%1\"").arg(foundSpecialMappingKey);
             } else {
-                result.errorMessage = QString("映射按键中包含特殊按键 \"%1\"").arg(foundSpecialKey);
+                result.errorMessage = QString("映射按键中包含特殊按键 \"%1\"").arg(foundSpecialMappingKey);
+            }
+
+            return result;
+        }
+        if (!foundSpecialOriginalKey.isEmpty()) {
+            result.isValid = false;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                result.errorMessage = QString("MappingCombinationKeys contains specialkey \"%1\"").arg(foundSpecialOriginalKey);
+            } else {
+                result.errorMessage = QString("映射组合按键中包含特殊按键 \"%1\"").arg(foundSpecialOriginalKey);
             }
 
             return result;
@@ -8262,16 +8280,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
     }
     if (findindex != -1){
-        if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
-            || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
-            || JOY_LS2MOUSE_STR == currentOriKeyComboBoxText
-            || JOY_RS2MOUSE_STR == currentOriKeyComboBoxText
-            || JOY_LS2VJOYLS_STR == currentOriKeyComboBoxText
-            || JOY_RS2VJOYRS_STR == currentOriKeyComboBoxText
-            || JOY_LS2VJOYRS_STR == currentOriKeyComboBoxText
-            || JOY_RS2VJOYLS_STR == currentOriKeyComboBoxText
-            || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
-            || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
+        if (isSpecialOriginalKey) {
             already_exist = true;
         }
         else if (KeyMappingDataList.at(findindex).Mapping_Keys.size() == 1
@@ -8462,16 +8471,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             KeyMappingDataList.replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.BurstPressTime, keymapdata.BurstReleaseTime, keymapdata.Lock, keymapdata.PassThrough, keymapdata.KeyUp_Action, keymapdata.KeySeqHoldDown));
         }
         else {
-            if (VJOY_MOUSE2LS_STR == currentOriKeyComboBoxText
-                || VJOY_MOUSE2RS_STR == currentOriKeyComboBoxText
-                || JOY_LS2MOUSE_STR == currentOriKeyComboBoxText
-                || JOY_RS2MOUSE_STR == currentOriKeyComboBoxText
-                || JOY_LS2VJOYLS_STR == currentOriKeyComboBoxText
-                || JOY_RS2VJOYRS_STR == currentOriKeyComboBoxText
-                || JOY_LS2VJOYRS_STR == currentOriKeyComboBoxText
-                || JOY_RS2VJOYLS_STR == currentOriKeyComboBoxText
-                || JOY_LT2VJOYLT_STR == currentOriKeyComboBoxText
-                || JOY_RT2VJOYRT_STR == currentOriKeyComboBoxText) {
+            if (isSpecialOriginalKey) {
                 currentMapKeyText = currentOriKeyComboBoxText;
 
                 int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
