@@ -1471,6 +1471,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
     // Regular expression to match the entire key with optional time suffix
     static QRegularExpression full_key_regex(R"(^(.+?)(?:⏲(\d+)|✖(\d+))?$)");
+    static QRegularExpression removeindex_regex("@\\d$");
 
     QRegularExpressionMatch full_key_match = full_key_regex.match(originalkeystr);
     if (!full_key_match.hasMatch()) {
@@ -1578,6 +1579,29 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     }
     else {
         const QString orikey = orikeylist.constFirst();
+
+        if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList.size()) {
+            QString orikey_noindex = orikey;
+            QStringList mappingkeys = QKeyMapper::KeyMappingDataList.at(update_rowindex).Mapping_Keys;
+
+            if (mappingkeys.size() == 1
+                && false == mappingkeys.constFirst().contains(SEPARATOR_PLUS)) {
+                QString mapkey_noindex = mappingkeys.constFirst();
+                orikey_noindex.remove(removeindex_regex);
+                mapkey_noindex.remove(removeindex_regex);
+
+                if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(mapkey_noindex)
+                    && mapkey_noindex != orikey_noindex) {
+                    result.isValid = false;
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        result.errorMessage = QString("Originalkey \"%1\" does not match special mappingkey \"%2\"").arg(orikey_noindex, mapkey_noindex);
+                    } else {
+                        result.errorMessage = QString("原始按键 \"%1\" 与映射特殊按键 \"%2\" 不匹配").arg(orikey_noindex, mapkey_noindex);
+                    }
+                    return result;
+                }
+            }
+        }
 
         result = validateSingleOriginalKey(orikey, update_rowindex);
     }
@@ -1746,9 +1770,8 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         const QString mapkey = Mapping_Keys.constFirst();
 
         if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList.size()) {
-            QString orikey_noindex;
+            QString orikey_noindex = QKeyMapper::KeyMappingDataList.at(update_rowindex).Original_Key;
             QString mapkey_noindex = mapkey;
-            orikey_noindex = QKeyMapper::KeyMappingDataList.at(update_rowindex).Original_Key;
 
             if (false == orikey_noindex.contains(SEPARATOR_PLUS)) {
                 orikey_noindex.remove(removeindex_regex);
@@ -1760,7 +1783,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                         result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex, orikey_noindex);
                     } else {
-                        result.errorMessage = QString("映射按键 \"%1\" 与原始按键特殊按键 \"%2\" 不匹配").arg(mapkey_noindex, orikey_noindex);
+                        result.errorMessage = QString("映射按键 \"%1\" 与原始特殊按键 \"%2\" 不匹配").arg(mapkey_noindex, orikey_noindex);
                     }
                     return result;
                 }
