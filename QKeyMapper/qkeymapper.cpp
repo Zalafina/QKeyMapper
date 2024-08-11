@@ -1758,9 +1758,9 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     && mapkey_noindex != orikey_noindex) {
                     result.isValid = false;
                     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex).arg(orikey_noindex);
+                        result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex, orikey_noindex);
                     } else {
-                        result.errorMessage = QString("映射按键 \"%1\" 与原始按键特殊按键 \"%2\" 不匹配").arg(mapkey_noindex).arg(orikey_noindex);
+                        result.errorMessage = QString("映射按键 \"%1\" 与原始按键特殊按键 \"%2\" 不匹配").arg(mapkey_noindex, orikey_noindex);
                     }
                     return result;
                 }
@@ -7733,7 +7733,7 @@ void QKeyMapper::updateLockStatusDisplay()
 void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 {
     if (point.x() >= 0 && point.y() >= 0) {
-        QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
+        QString labelText = QString("X:%1, Y:%2").arg(point.x(), point.y());
         ui->pointDisplayLabel->setText(labelText);
     }
     else {
@@ -8399,7 +8399,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int y = mousepoint.y();
 
                     if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x, y);
 
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
@@ -8436,7 +8436,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int y = mousepoint.y();
 
                     if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x, y);
 
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
@@ -8526,7 +8526,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int y = mousepoint.y();
 
                         if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x, y);
                         }
                     }
                 }
@@ -8549,7 +8549,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int y = mousepoint.y();
 
                         if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x, y);
                         }
                     }
                 }

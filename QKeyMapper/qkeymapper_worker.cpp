@@ -4461,7 +4461,7 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
             QStringList tempDpadCodeStringList = keycodeString.split(',');
 
             for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
-                QString dpadcodestrWithIndex = QString("%1@%2").arg(dpadcodestr).arg(playerIndex);
+                QString dpadcodestrWithIndex = QString("%1@%2").arg(dpadcodestr, playerIndex);
                 joydpadNeedtoRelease.removeAll(dpadcodestrWithIndex);
             }
 
@@ -4893,7 +4893,7 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         keycodeString_withoutIndex = "Joy-Key11(LT)";
         int player_index = e.joystick->playerindex;
         if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-            keycodeString = QString("%1@%2").arg(keycodeString_withoutIndex).arg(player_index);
+            keycodeString = QString("%1@%2").arg(keycodeString_withoutIndex, player_index);
         }
         else {
             keycodeString = keycodeString_withoutIndex;
@@ -4964,8 +4964,8 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
 
     // Use player_index to merge with keycodeString_LS_Left & keycodeString_LS_Right
     if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_LS_Left = QString("%1@%2").arg(keycodeString_LS_Left_withoutIndex).arg(player_index);
-        keycodeString_LS_Right = QString("%1@%2").arg(keycodeString_LS_Right_withoutIndex).arg(player_index);
+        keycodeString_LS_Left = QString("%1@%2").arg(keycodeString_LS_Left_withoutIndex, player_index);
+        keycodeString_LS_Right = QString("%1@%2").arg(keycodeString_LS_Right_withoutIndex, player_index);
     }
     else {
         keycodeString_LS_Left = keycodeString_LS_Left_withoutIndex;
@@ -5062,8 +5062,8 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
 
     // Use player_index to merge with keycodeString_LS_Up & keycodeString_LS_Down
     if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_LS_Up = QString("%1@%2").arg(keycodeString_LS_Up_withoutIndex).arg(player_index);
-        keycodeString_LS_Down = QString("%1@%2").arg(keycodeString_LS_Down_withoutIndex).arg(player_index);
+        keycodeString_LS_Up = QString("%1@%2").arg(keycodeString_LS_Up_withoutIndex, player_index);
+        keycodeString_LS_Down = QString("%1@%2").arg(keycodeString_LS_Down_withoutIndex, player_index);
     }
     else {
         keycodeString_LS_Up = keycodeString_LS_Up_withoutIndex;
@@ -5160,8 +5160,8 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
 
     // Use player_index to merge with keycodeString_RS_Left & keycodeString_RS_Right
     if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_RS_Left = QString("%1@%2").arg(keycodeString_RS_Left_withoutIndex).arg(player_index);
-        keycodeString_RS_Right = QString("%1@%2").arg(keycodeString_RS_Right_withoutIndex).arg(player_index);
+        keycodeString_RS_Left = QString("%1@%2").arg(keycodeString_RS_Left_withoutIndex, player_index);
+        keycodeString_RS_Right = QString("%1@%2").arg(keycodeString_RS_Right_withoutIndex, player_index);
     }
     else {
         keycodeString_RS_Left = keycodeString_RS_Left_withoutIndex;
@@ -5258,8 +5258,8 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
 
     // Use player_index to merge with keycodeString_RS_Up & keycodeString_RS_Down
     if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_RS_Up = QString("%1@%2").arg(keycodeString_RS_Up_withoutIndex).arg(player_index);
-        keycodeString_RS_Down = QString("%1@%2").arg(keycodeString_RS_Down_withoutIndex).arg(player_index);
+        keycodeString_RS_Up = QString("%1@%2").arg(keycodeString_RS_Up_withoutIndex, player_index);
+        keycodeString_RS_Down = QString("%1@%2").arg(keycodeString_RS_Down_withoutIndex, player_index);
     }
     else {
         keycodeString_RS_Up = keycodeString_RS_Up_withoutIndex;
