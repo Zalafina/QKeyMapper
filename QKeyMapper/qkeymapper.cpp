@@ -1667,13 +1667,14 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
     return result;
 }
 
-ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist)
+ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex)
 {
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression regexp("[+»]");
-    QStringList Mapping_Keys = mappingkeystr.split(regexp);
+    static QRegularExpression split_regex("[+»]");
+    static QRegularExpression removeindex_regex("@\\d$");
+    QStringList Mapping_Keys = mappingkeystr.split(split_regex);
 
     if (Mapping_Keys.isEmpty()) {
         result.isValid = false;
@@ -1699,7 +1700,6 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     if (Mapping_Keys.size() > 1) {
         QString foundSpecialOriginalKey;
         QString foundSpecialMappingKey;
-        static QRegularExpression removeindex_regex("@\\d$");
         /* Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList */
         for (const QString& mapkey : Mapping_Keys) {
             QString mapkey_noindex = mapkey;
@@ -1744,6 +1744,28 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     }
     else {
         const QString mapkey = Mapping_Keys.constFirst();
+
+        if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList.size()) {
+            QString orikey_noindex;
+            QString mapkey_noindex = mapkey;
+            orikey_noindex = QKeyMapper::KeyMappingDataList.at(update_rowindex).Original_Key;
+
+            if (false == orikey_noindex.contains(SEPARATOR_PLUS)) {
+                orikey_noindex.remove(removeindex_regex);
+                mapkey_noindex.remove(removeindex_regex);
+
+                if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey_noindex)
+                    && mapkey_noindex != orikey_noindex) {
+                    result.isValid = false;
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex).arg(orikey_noindex);
+                    } else {
+                        result.errorMessage = QString("映射按键 \"%1\" 与原始按键特殊按键 \"%2\" 不匹配").arg(mapkey_noindex).arg(orikey_noindex);
+                    }
+                    return result;
+                }
+            }
+        }
 
         result = validateSingleMappingKey(mapkey);
     }
@@ -5003,7 +5025,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 #endif
 
     QStringList mappingKeySeqList = mappingkeystr.split(SEPARATOR_NEXTARROW);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList, INITIAL_ROW_INDEX);
 
     if (result.isValid) {
         return true;

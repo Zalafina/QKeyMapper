@@ -125,6 +125,8 @@ const int KEY_DOWN = 1;
 const bool EXTENED_FLAG_TRUE = true;
 const bool EXTENED_FLAG_FALSE = false;
 
+const int INITIAL_ROW_INDEX = -1;
+
 const int INITIAL_PLAYER_INDEX = -1;
 
 const int INITIAL_KEYBOARD_INDEX = -1;

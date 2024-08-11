@@ -101,6 +101,8 @@ extern const int KEY_DOWN;
 extern const bool EXTENED_FLAG_TRUE;
 extern const bool EXTENED_FLAG_FALSE;
 
+extern const int INITIAL_ROW_INDEX;
+
 extern const int INITIAL_PLAYER_INDEX;
 
 extern const int INITIAL_KEYBOARD_INDEX;

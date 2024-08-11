@@ -299,7 +299,7 @@ public:
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
     static ValidationResult validateOriginalKeyString(const QString &originalkeystr, int update_rowindex);
     static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
-    static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist);
+    static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex);
     static ValidationResult validateSingleMappingKey(const QString &mapkey);
 
     // unused enum all process function >>>

@@ -540,7 +540,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 #endif
 
     QStringList mappingKeySeqList = mappingKey.split(SEPARATOR_NEXTARROW);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
 
     QString popupMessage;
     QString popupMessageColor;
