@@ -120,6 +120,15 @@ struct ValidationResult
     QString errorMessage;
 };
 
+struct Gamepad_Info
+{
+    QString name;
+    ushort vendorid;
+    ushort productid;
+    QString serial;
+    bool isvirtual;
+};
+
 class KeyMappingDataTableWidget : public QTableWidget
 {
     Q_OBJECT
@@ -494,6 +503,7 @@ private:
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
+    void updateGamepadSelectComboBox(void);
     void initWindowSwitchKeyLineEdit(void);
     void initMappingSwitchKeyLineEdit(void);
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
@@ -607,6 +617,7 @@ private:
 public:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
+    QMap<int, Gamepad_Info> m_GamepadInfoMap;
 private:
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;

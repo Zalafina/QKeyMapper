@@ -47,6 +47,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
+    m_GamepadInfoMap(),
     // m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
@@ -5203,6 +5204,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->mouseYSpeedLabel->setFont(customFont);
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
+    ui->gamepadSelectLabel->setFont(customFont);
 
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
     //     customFont.setPointSize(10);
@@ -5306,6 +5308,7 @@ void QKeyMapper::setControlFontChinese()
     ui->mouseYSpeedLabel->setFont(customFont);
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
+    ui->gamepadSelectLabel->setFont(customFont);
 
     // ui->processinfoTable->horizontalHeader()->setFont(customFont);
     // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
@@ -5493,6 +5496,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
             ui->filterKeysCheckBox->setEnabled(false);
         }
     }
+
+    ui->gamepadSelectLabel->setEnabled(status);
+    ui->gamepadSelectComboBox->setEnabled(status);
 
     ui->moveupButton->setEnabled(status);
     ui->movedownButton->setEnabled(status);
@@ -7036,6 +7042,40 @@ void QKeyMapper::initMouseSelectComboBox()
 #endif
 }
 
+void QKeyMapper::updateGamepadSelectComboBox()
+{
+    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+
+    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
+
+
+//         if (joystick_added == joystick) {
+//             bool virtualgamepad = false;
+//             USHORT vendorid = joystick->vendorid;
+//             USHORT productid = joystick->productid;
+
+//             if (vendorid == VIRTUALGAMPAD_VENDORID_X360
+//                 && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
+//                 virtualgamepad = true;
+//             }
+//             else if (joystick->serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
+//                 && vendorid == VIRTUALGAMPAD_VENDORID_DS4
+//                 && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
+//                 virtualgamepad = true;
+//             }
+
+//             if (virtualgamepad) {
+// #ifdef SDL_VIRTUALGAMEPAD_IGNORE
+//                 QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+// #ifdef DEBUG_LOGOUT_ON
+//                 qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_index << "][" << joystick_added->name << "] is Blacklisted.";
+// #endif
+// #endif
+//             }
+//         }
+    }
+}
+
 void QKeyMapper::initWindowSwitchKeyLineEdit()
 {
     // int top = ui->windowswitchkeyLabel->y();
@@ -7484,6 +7524,7 @@ void QKeyMapper::setUILanguage_Chinese()
 #endif
     ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
+    ui->gamepadSelectLabel->setText(GAMEPADSELECTLABEL_CHINESE);
     // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
     ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
     ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_CHINESE);
@@ -7599,6 +7640,7 @@ void QKeyMapper::setUILanguage_English()
 #endif
     ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_ENGLISH);
     ui->mouseSelectLabel->setText(MOUSESELECTLABEL_ENGLISH);
+    ui->gamepadSelectLabel->setText(GAMEPADSELECTLABEL_ENGLISH);
     // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_ENGLISH);
     ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_ENGLISH);
     ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_ENGLISH);
@@ -7648,6 +7690,7 @@ void QKeyMapper::resetFontSize()
         m_mapkeyComboBox->setFont(customFont);
         ui->keyboardSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
         ui->mouseSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->gamepadSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
         ui->settingselectComboBox->setFont(customFont);
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -7688,6 +7731,7 @@ void QKeyMapper::resetFontSize()
         m_mapkeyComboBox->setFont(customFont);
         ui->keyboardSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
         ui->mouseSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->gamepadSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
         ui->settingselectComboBox->setFont(customFont);
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
