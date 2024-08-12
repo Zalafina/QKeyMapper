@@ -127,6 +127,24 @@ struct Gamepad_Info
     ushort productid;
     QString serial;
     bool isvirtual;
+    QString info_string;
+
+    Gamepad_Info() : name(), vendorid(0), productid(0), serial(), isvirtual(false) {}
+
+#ifdef DEBUG_LOGOUT_ON
+    friend QDebug operator<<(QDebug debug, const Gamepad_Info& info)
+    {
+        QDebugStateSaver saver(debug);
+        debug.nospace() << "\nGamepad_Info["
+                        << "Name:" << info.name
+                        << ", VendorID:" << info.vendorid
+                        << ", ProductID:" << info.productid
+                        << ", Serial:" << info.serial
+                        << ", IsVirtual:" << (info.isvirtual ? "true" : "false")
+                        << "]";
+        return debug;
+    }
+#endif
 };
 
 class KeyMappingDataTableWidget : public QTableWidget
@@ -362,6 +380,7 @@ signals:
 #endif
     void updateMultiInputStatus_Signal(void);
     void updateInputDeviceSelectComboBoxes_Signal(void);
+    void updateGamepadSelectComboBox_Signal(void);
     void keyMappingTableDragDropMove_Signal(int from, int to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayTime);
@@ -503,7 +522,6 @@ private:
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
-    void updateGamepadSelectComboBox(void);
     void initWindowSwitchKeyLineEdit(void);
     void initMappingSwitchKeyLineEdit(void);
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
@@ -569,6 +587,7 @@ public slots:
 public slots:
     void updateMultiInputStatus(void);
     void updateInputDeviceSelectComboBoxes(void);
+    void updateGamepadSelectComboBox(void);
 
 public:
     static bool s_isDestructing;

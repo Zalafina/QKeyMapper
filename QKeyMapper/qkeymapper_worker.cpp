@@ -4340,6 +4340,8 @@ void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
 
         joystick_index += 1;
     }
+
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
 }
 
 void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed)
@@ -4350,6 +4352,8 @@ void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed
     QString productIdStr = QString("0x%1").arg(QString::number(joystick_removed.productid, 16).toUpper(), 4, '0');
     qDebug().nospace() << "[onJoystickRemoved] Removed a Gamepad -> " << "Name = " << joystick_removed.name << ", PlayerIndex = " << joystick_removed.playerindex << ", ID = " << joystick_removed.id << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick_removed.numbuttons << ", Serial = " << joystick_removed.serial;
 #endif
+
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
 }
 
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)

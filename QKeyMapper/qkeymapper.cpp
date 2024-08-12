@@ -364,6 +364,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
+    QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox);
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     updateHWNDListProc();
@@ -6192,6 +6193,52 @@ void QKeyMapper::updateInputDeviceSelectComboBoxes()
     initInputDeviceSelectComboBoxes();
 }
 
+void QKeyMapper::updateGamepadSelectComboBox()
+{
+    QMap<int, Gamepad_Info> GamepadInfoMap;
+
+    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+
+    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
+        int player_index = joystick->playerindex;
+        if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+            Gamepad_Info gamepadinfo;
+            gamepadinfo.name = joystick->name;
+            gamepadinfo.vendorid = joystick->vendorid;
+            gamepadinfo.productid = joystick->productid;
+            gamepadinfo.serial = joystick->serial;
+            gamepadinfo.isvirtual = joystick->blacklisted;
+            gamepadinfo.info_string = QString("[%1] %2 [VID=0x%3][PID=0x%4]")
+                .arg(player_index)
+                .arg(joystick->name,
+                     QString::number(joystick->vendorid, 16).toUpper().rightJustified(4, '0'),
+                     QString::number(joystick->productid, 16).toUpper().rightJustified(4, '0'));
+            if (gamepadinfo.isvirtual) {
+                gamepadinfo.info_string.append("[ViGEM]");
+            }
+
+            GamepadInfoMap.insert(player_index, gamepadinfo);
+        }
+    }
+
+    m_GamepadInfoMap = GamepadInfoMap;
+
+    ui->gamepadSelectComboBox->clear();
+    QStringList gamepadInfoList;
+    gamepadInfoList.append(QString());
+
+    QList<int> playerindexlist = GamepadInfoMap.keys();
+    for (const int& playerindex : playerindexlist) {
+        const Gamepad_Info& gamepadinfo = m_GamepadInfoMap.value(playerindex);
+        gamepadInfoList.append(gamepadinfo.info_string);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "PlayerIndex:" << playerindex << ", InfoString:" << gamepadinfo.info_string;
+#endif
+    }
+
+    ui->gamepadSelectComboBox->addItems(gamepadInfoList);
+}
+
 void QKeyMapper::on_savemaplistButton_clicked()
 {
     saveKeyMapSetting();
@@ -7040,40 +7087,6 @@ void QKeyMapper::initMouseSelectComboBox()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[initMouseSelectComboBox]" << "mouseDeviceList ->" << mouseDeviceList;
 #endif
-}
-
-void QKeyMapper::updateGamepadSelectComboBox()
-{
-    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
-
-    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
-
-
-//         if (joystick_added == joystick) {
-//             bool virtualgamepad = false;
-//             USHORT vendorid = joystick->vendorid;
-//             USHORT productid = joystick->productid;
-
-//             if (vendorid == VIRTUALGAMPAD_VENDORID_X360
-//                 && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
-//                 virtualgamepad = true;
-//             }
-//             else if (joystick->serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
-//                 && vendorid == VIRTUALGAMPAD_VENDORID_DS4
-//                 && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
-//                 virtualgamepad = true;
-//             }
-
-//             if (virtualgamepad) {
-// #ifdef SDL_VIRTUALGAMEPAD_IGNORE
-//                 QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
-// #ifdef DEBUG_LOGOUT_ON
-//                 qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_index << "][" << joystick_added->name << "] is Blacklisted.";
-// #endif
-// #endif
-//             }
-//         }
-    }
 }
 
 void QKeyMapper::initWindowSwitchKeyLineEdit()
