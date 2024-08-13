@@ -7812,8 +7812,11 @@ void QKeyMapper::updateLockStatusDisplay()
 
 void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[updateMousePointLabelDisplay]" << " Point X: " << point.x() << ", Point Y: " << point.y();
+#endif
     if (point.x() >= 0 && point.y() >= 0) {
-        QString labelText = QString("X:%1, Y:%2").arg(point.x(), point.y());
+        QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
         ui->pointDisplayLabel->setText(labelText);
     }
     else {
@@ -8479,7 +8482,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int y = mousepoint.y();
 
                     if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x, y);
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
 
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
@@ -8606,7 +8609,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int y = mousepoint.y();
 
                         if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x, y);
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
                         }
                     }
                 }
@@ -8629,7 +8632,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int y = mousepoint.y();
 
                         if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x, y);
+                            currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
                         }
                     }
                 }
