@@ -8295,9 +8295,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
 
         QString gamepadselect_string = ui->gamepadSelectComboBox->currentText();
-        if (currentOriKeyText.startsWith("^Joy-")
+        if (currentOriKeyText.startsWith("Joy-")
             && false == gamepadselect_string.isEmpty()) {
-            static QRegularExpression gamepadinfo_regex(R"(^\[(\d)\] (.*?) \[VID=0x([0-9A-F]+)\]\[PID=0x([0-9A-F]+)\](?:\[ViGEM\])$)");
+            static QRegularExpression gamepadinfo_regex(R"(^\[(\d+)\] (.*?) \[VID=0x([0-9A-F]+)\]\[PID=0x([0-9A-F]+)\](?:\[ViGEM\])?$)");
             QRegularExpressionMatch gamepadinfo_match = gamepadinfo_regex.match(gamepadselect_string);
             if (gamepadinfo_match.hasMatch()) {
                 QString player_index_string = gamepadinfo_match.captured(1);
