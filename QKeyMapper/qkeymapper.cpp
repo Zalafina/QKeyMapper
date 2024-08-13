@@ -6237,6 +6237,24 @@ void QKeyMapper::updateGamepadSelectComboBox()
     }
 
     ui->gamepadSelectComboBox->addItems(gamepadInfoList);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    QStandardItemModel *model = qobject_cast<QStandardItemModel*>(ui->gamepadSelectComboBox->model());
+    if (model) {
+        for (int row = 0; row < model->rowCount(); ++row) {
+            QStandardItem *item = model->item(row);
+            if (item && item->text().contains("[ViGEM]")) {
+                item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+            }
+        }
+    }
+#else
+    for (int row = 0; row < ui->gamepadSelectComboBox->count(); ++row) {
+        if (ui->gamepadSelectComboBox->itemText(row).contains("[ViGEM]")) {
+            ui->gamepadSelectComboBox->setItemData(row, QBrush(Qt::darkMagenta), Qt::TextColorRole);
+        }
+    }
+#endif
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()
