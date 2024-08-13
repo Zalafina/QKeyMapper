@@ -6243,14 +6243,14 @@ void QKeyMapper::updateGamepadSelectComboBox()
     if (model) {
         for (int row = 0; row < model->rowCount(); ++row) {
             QStandardItem *item = model->item(row);
-            if (item && item->text().contains("[ViGEM]")) {
+            if (item && item->text().endsWith("[ViGEM]")) {
                 item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
             }
         }
     }
 #else
     for (int row = 0; row < ui->gamepadSelectComboBox->count(); ++row) {
-        if (ui->gamepadSelectComboBox->itemText(row).contains("[ViGEM]")) {
+        if (ui->gamepadSelectComboBox->itemText(row).endsWith("[ViGEM]")) {
             ui->gamepadSelectComboBox->setItemData(row, QBrush(Qt::darkMagenta), Qt::TextColorRole);
         }
     }
@@ -8291,6 +8291,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (ui->mouseSelectComboBox->isEnabled() && mouseselect_index > 0) {
             if (QKeyMapper_Worker::MultiMouseInputList.contains(currentOriKeyText)) {
                 currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(mouseselect_index - 1));
+            }
+        }
+
+        QString gamepadselect_string = ui->gamepadSelectComboBox->currentText();
+        if (currentOriKeyText.startsWith("^Joy-")
+            && false == gamepadselect_string.isEmpty()) {
+            static QRegularExpression gamepadinfo_regex(R"(^\[(\d)\] (.*?) \[VID=0x([0-9A-F]+)\]\[PID=0x([0-9A-F]+)\](?:\[ViGEM\])$)");
+            QRegularExpressionMatch gamepadinfo_match = gamepadinfo_regex.match(gamepadselect_string);
+            if (gamepadinfo_match.hasMatch()) {
+                QString player_index = gamepadinfo_match.captured(1);
+                if (m_GamepadInfoMap.contains(player_index)) {
+                    currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(player_index));
+                }
             }
         }
     }
