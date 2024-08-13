@@ -8300,9 +8300,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
             static QRegularExpression gamepadinfo_regex(R"(^\[(\d)\] (.*?) \[VID=0x([0-9A-F]+)\]\[PID=0x([0-9A-F]+)\](?:\[ViGEM\])$)");
             QRegularExpressionMatch gamepadinfo_match = gamepadinfo_regex.match(gamepadselect_string);
             if (gamepadinfo_match.hasMatch()) {
-                QString player_index = gamepadinfo_match.captured(1);
-                if (m_GamepadInfoMap.contains(player_index)) {
-                    currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, QString::number(player_index));
+                QString player_index_string = gamepadinfo_match.captured(1);
+                if (m_GamepadInfoMap.contains(player_index_string.toInt())) {
+                    currentOriKeyText = QString("%1@%2").arg(currentOriKeyText, player_index_string);
                 }
             }
         }
