@@ -187,6 +187,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 #endif
 
+    // Enable WTS session notifications
+    WTSRegisterSessionNotification((HWND)winId(), NOTIFY_FOR_THIS_SESSION);
+
     // set QTableWidget selected background-color
     setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
 
@@ -387,6 +390,9 @@ QKeyMapper::~QKeyMapper()
     qDebug() << "~QKeyMapper() called.";
 #endif
     s_isDestructing = true;
+
+    // Unregister WTS session notifications
+    WTSUnRegisterSessionNotification((HWND)winId());
 
     m_MainWindowHandle = NULL;
     destoryTransparentWindow(m_TransParentHandle);
@@ -2433,34 +2439,25 @@ bool QKeyMapper::getSendToSameTitleWindowsStatus()
     }
 }
 
-#if 0
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 {
     if (eventType == "windows_generic_MSG") {
         MSG* msg = static_cast<MSG*>(message);
-        if (msg->message == WM_DISPLAYCHANGE) {
+        if (msg->message == WM_WTSSESSION_CHANGE) {
+            if (msg->wParam == WTS_SESSION_LOCK) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::nativeEvent]" << "WM_DISPLAYCHANGE";
+                qDebug() << "[QKeyMapper::nativeEvent]" << "Session Locked.";
 #endif
-            // updateQtDisplayEnvironment();
-            // const QObjectList& child_list = children();
-            // for (QObject* child : child_list)
-            // {
-            //     QWidget* w = dynamic_cast<QWidget*>(child);
-            //     if (w)
-            //         w->repaint();
-            // }
-        }
-        else if (msg->message == WM_DPICHANGED) {
+            } else if (msg->wParam == WTS_SESSION_UNLOCK) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::nativeEvent]" << "WM_DPICHANGED";
+                qDebug() << "[QKeyMapper::nativeEvent]" << "Session Unlocked.";
 #endif
+            }
         }
     }
 
     return QWidget::nativeEvent(eventType, message, result);
 }
-#endif
 
 void QKeyMapper::showEvent(QShowEvent *event)
 {

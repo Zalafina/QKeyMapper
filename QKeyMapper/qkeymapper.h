@@ -38,6 +38,7 @@
 #include <windows.h>
 #include <process.h>
 #include <tlhelp32.h>
+#include <wtsapi32.h>
 #include <Psapi.h>
 #include <tchar.h>
 #include <string.h>
@@ -386,7 +387,7 @@ signals:
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayTime);
 
 protected:
-    // bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
     void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
