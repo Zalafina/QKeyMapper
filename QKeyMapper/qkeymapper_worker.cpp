@@ -176,6 +176,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::sessionLockStateChanged_Signal, this, &QKeyMapper_Worker::sessionLockStateChanged, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::startBurstTimer_Signal, this, &QKeyMapper_Worker::startBurstTimer, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::stopBurstTimer_Signal, this, &QKeyMapper_Worker::stopBurstTimer, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::startBurstKeyTimer_Signal, this, &QKeyMapper_Worker::startBurstKeyTimer, Qt::QueuedConnection);
@@ -3545,6 +3546,25 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_EnableStateMap.clear();
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
+#endif
+}
+
+void QKeyMapper_Worker::sessionLockStateChanged(bool locked)
+{
+    if (QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
+        || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        if (locked) {
+            setWorkerKeyUnHook();
+        }
+        else {
+            setWorkerKeyHook(NULL);
+        }
+    }
+
+    pressedRealKeysList.clear();
+    pressedRealKeysListRemoveMultiInput.clear();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper_Worker::sessionLockStateChanged]" << "State:" << locked << ", pressedRealKeysList Cleared.";
 #endif
 }
 

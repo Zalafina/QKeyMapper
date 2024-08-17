@@ -517,6 +517,7 @@ public:
 signals:
     void setKeyHook_Signal(HWND hWnd);
     void setKeyUnHook_Signal(void);
+    void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex);
@@ -548,6 +549,7 @@ public slots:
     void threadStarted(void);
     void setWorkerKeyHook(HWND hWnd);
     void setWorkerKeyUnHook(void);
+    void sessionLockStateChanged(bool locked);
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);

@@ -538,6 +538,7 @@ private:
     void setUILanguage_Chinese(void);
     void setUILanguage_English(void);
     void resetFontSize(void);
+    void sessionLockStateChanged(bool locked);
 
     bool backupFile(const QString &originalFile, const QString &backupFile);
 #ifdef SETTINGSFILE_CONVERT

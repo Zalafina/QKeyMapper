@@ -2448,10 +2448,12 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[QKeyMapper::nativeEvent]" << "Session Locked.";
 #endif
+                sessionLockStateChanged(true);
             } else if (msg->wParam == WTS_SESSION_UNLOCK) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[QKeyMapper::nativeEvent]" << "Session Unlocked.";
 #endif
+                sessionLockStateChanged(false);
             }
         }
     }
@@ -7798,6 +7800,11 @@ void QKeyMapper::resetFontSize()
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->resetFontSize();
     }
+}
+
+void QKeyMapper::sessionLockStateChanged(bool locked)
+{
+    emit QKeyMapper_Worker::getInstance()->sessionLockStateChanged_Signal(locked);
 }
 
 void QKeyMapper::updateLockStatusDisplay()
