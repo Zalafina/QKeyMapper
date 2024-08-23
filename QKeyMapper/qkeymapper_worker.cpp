@@ -1136,7 +1136,12 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 else {
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
-                SendInput(1, &input, sizeof(INPUT));
+                UINT uSent = SendInput(1, &input, sizeof(INPUT));
+                if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("sendInputKeys(): Keyboard SendInput KEY_UP failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
+#endif
+                }
 
                 s_forceSendVirtualKey = false;
 
@@ -1439,7 +1444,12 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     else {
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
-                    SendInput(1, &input, sizeof(INPUT));
+                    UINT uSent = SendInput(1, &input, sizeof(INPUT));
+                    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("sendInputKeys(): Keyboard SendInput KEY_DOWN failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
+#endif
+                    }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()
                         && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
@@ -10066,7 +10076,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
