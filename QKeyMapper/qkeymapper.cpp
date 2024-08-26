@@ -8940,6 +8940,15 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
             qDebug().nospace() << "[KeyListComboBox_MousePress]" << " currentMapKeyText -> " << currentMapKeyText << ", currentMapKeyListText -> " << currentMapKeyListText;
 #endif
             if (currentMapKeyListText.isEmpty() == false) {
+                if (currentMapKeyListText.startsWith(MOUSE_BUTTON_PREFIX)) {
+                    if (currentMapKeyListText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
+                    }
+                    else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
+                    }
+                }
+
                 QString newMapKeyText;
                 if (currentMapKeyText.isEmpty()) {
                     newMapKeyText = currentMapKeyListText;
