@@ -440,6 +440,7 @@ public slots:
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void sendUnicodeChar(wchar_t aChar);
     void sendText(HWND window_hwnd, const QString& text);
+    void sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseWheel(HWND hwnd, const QString &mousewheel);
     void postMouseMove(HWND hwnd, int delta_x, int delta_y);

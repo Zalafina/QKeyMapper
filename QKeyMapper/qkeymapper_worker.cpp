@@ -315,6 +315,64 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
     }
 }
 
+void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
+{
+    // Get the client area rectangle (relative to the window)
+    RECT clientRect;
+    if (!GetClientRect(hwnd, &clientRect)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[sendWindowMouseButton] GetClientRect() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+        return;
+    }
+
+    // Convert the top-left corner of the client area to screen coordinates
+    POINT clientTopLeft = { clientRect.left, clientRect.top };
+    if (!ClientToScreen(hwnd, &clientTopLeft)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[sendWindowMouseButton] ClientToScreen() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+        return;
+    }
+
+    // Convert the relative coordinates within the client area to screen coordinates
+    int x = clientTopLeft.x + mousepoint.x();
+    int y = clientTopLeft.y + mousepoint.y();
+
+    // Convert the screen coordinates to absolute coordinates required by SendInput
+    double fScreenWidth  = GetSystemMetrics(SM_CXSCREEN) - 1;
+    double fScreenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
+    double fx = x * (65535.0 / fScreenWidth);
+    double fy = y * (65535.0 / fScreenHeight);
+
+    // Find the virtual mouse button code
+    V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(mousebutton);
+
+    // Configure the input structure
+    INPUT mouse_input = { 0 };
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = static_cast<LONG>(fx);
+    mouse_input.mi.dy = static_cast<LONG>(fy);
+    mouse_input.mi.mouseData = vmousecode.MouseXButton;
+    mouse_input.mi.time = 0;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_POINTCLICK;
+    mouse_input.mi.dwFlags = vmousecode.MouseDownCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+
+    if (keyupdown == KEY_DOWN) {
+        mouse_input.mi.dwFlags |= vmousecode.MouseDownCode;
+    } else {
+        mouse_input.mi.dwFlags |= vmousecode.MouseUpCode;
+    }
+
+    // Send the input
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[sendWindowMouseButton] SendInput() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
 void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
     UINT messageMouseButton;
@@ -1544,19 +1602,28 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 
         if (isWindowPoint) {
             QPoint mousepoint(x, y);
+
+            if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMousePointClick] sendWindowMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                sendWindowMousePointClick(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
+            }
+
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                 for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
                     postMouseButton(hwnd, mousebutton, keyupdown, mousepoint);
                 }
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendMousePointClick] postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+                qDebug().nospace().noquote() << "[sendMousePointClick] Window : postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
-            }
-            else if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-                postMouseButton(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
             }
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[sendMousePointClick] Screen : sendMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
+#endif
+
             double fScreenWidth     = GetSystemMetrics( SM_CXSCREEN )-1;
             double fScreenHeight    = GetSystemMetrics( SM_CYSCREEN )-1;
             double fx = x * ( 65535.0f / fScreenWidth );
@@ -1579,7 +1646,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
             if (uSent != 1) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("sendMouseMove(): SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+                qDebug("[sendMousePointClick] Screen : sendMouseButton -> SendInput() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
 #endif
             }
 
@@ -1589,7 +1656,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
                     postMouseButton(hwnd, mousebutton, keyupdown, mousepoint);
                 }
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendMousePointClick] postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+                qDebug().nospace().noquote() << "[sendMousePointClick] Screen : postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
             }
         }
@@ -5910,7 +5977,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
             }
         }
-        else if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
+        else if ((GetAsyncKeyState(VK_CAPITAL) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
             POINT pt;
             HWND hwnd = QKeyMapper::s_CurrentMappingHWND;
             if (hwnd != NULL && GetCursorPos(&pt)) {
@@ -5923,13 +5990,13 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 }
             }
         }
-        else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && mouse_event == EVENT_RBUTTONDOWN) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[InterceptionMouseHookProc]" << "L-Ctrl + Mouse-Right Click Clear MousePoint";
-#endif
-            QPoint point = QPoint(-500, -500);
-            emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
-        }
+//         else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && mouse_event == EVENT_RBUTTONDOWN) {
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug() << "[InterceptionMouseHookProc]" << "L-Ctrl + Mouse-Right Click Clear MousePoint";
+// #endif
+//             QPoint point = QPoint(-500, -500);
+//             emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
+//         }
 
         if (0 <= mouse_index && mouse_index < INTERCEPTION_MAX_MOUSE) {
             keycodeString = QString("%1@%2").arg(keycodeString, QString::number(mouse_index));
@@ -6895,7 +6962,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
                     }
                 }
-                else if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
+                else if ((GetAsyncKeyState(VK_CAPITAL) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
                     HWND hwnd = QKeyMapper::s_CurrentMappingHWND;
                     if (hwnd != NULL && GetCursorPos(&pt)) {
@@ -6908,13 +6975,13 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         }
                     }
                 }
-                else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && wParam == WM_RBUTTONDOWN) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[LowLevelMouseHookProc]" << "L-Ctrl + Mouse-Right Click Clear MousePoint";
-#endif
-                    QPoint point = QPoint(-500, -500);
-                    emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
-                }
+//                 else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && wParam == WM_RBUTTONDOWN) {
+// #ifdef DEBUG_LOGOUT_ON
+//                     qDebug() << "[LowLevelMouseHookProc]" << "L-Ctrl + Mouse-Right Click Clear MousePoint";
+// #endif
+//                     QPoint point = QPoint(-500, -500);
+//                     emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
+//                 }
 
                 /* Add extraInfo check for Multi InputDevice */
                 bool multi_input = false;

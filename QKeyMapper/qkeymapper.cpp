@@ -7841,9 +7841,9 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
         QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
         ui->pointDisplayLabel->setText(labelText);
     }
-    else {
-        ui->pointDisplayLabel->clear();
-    }
+    // else {
+    //     ui->pointDisplayLabel->clear();
+    // }
 }
 
 void QKeyMapper::showMousePoints(int showpoints_trigger)
