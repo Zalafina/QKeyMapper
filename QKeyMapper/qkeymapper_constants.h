@@ -390,6 +390,8 @@ extern const char *MOUSE_X1_SCREENPOINT_STR;
 extern const char *MOUSE_X2_SCREENPOINT_STR;
 extern const int SHOW_MODE_SCREEN;
 extern const int SHOW_MODE_WINDOW;
+extern const int PICK_WINDOW_POINT_KEY;
+extern const int PICK_SCREEN_POINT_KEY;
 extern const char *SHOW_POINTS_IN_WINDOW_KEY;
 extern const char *SHOW_POINTS_IN_SCREEN_KEY;
 extern const char *SHOW_CAR_ORDINAL_KEY;

@@ -446,6 +446,9 @@ const char *MOUSE_X2_SCREENPOINT_STR = "Mouse-X2_ScreenPoint";
 const int SHOW_MODE_SCREEN  = 0;
 const int SHOW_MODE_WINDOW  = 1;
 
+const int PICK_WINDOW_POINT_KEY  = VK_LMENU;
+const int PICK_SCREEN_POINT_KEY  = VK_LCONTROL;
+
 const char *SHOW_POINTS_IN_WINDOW_KEY   = "F8";
 const char *SHOW_POINTS_IN_SCREEN_KEY   = "F9";
 const char *SHOW_CAR_ORDINAL_KEY        = "Home";

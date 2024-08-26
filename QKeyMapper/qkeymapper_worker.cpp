@@ -5967,7 +5967,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[InterceptionMouseHookProc] Real \"%s\" %s, extraInfo(0x%08X)", keycodeString.toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
-        if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
+        if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
             POINT pt;
             if (GetCursorPos(&pt)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -5977,7 +5977,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
             }
         }
-        else if ((GetAsyncKeyState(VK_CAPITAL) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
+        else if ((GetAsyncKeyState(PICK_WINDOW_POINT_KEY) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
             POINT pt;
             HWND hwnd = QKeyMapper::s_CurrentMappingHWND;
             if (hwnd != NULL && GetCursorPos(&pt)) {
@@ -6952,7 +6952,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("Real \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
-                if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
+                if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
                     if (GetCursorPos(&pt)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -6962,7 +6962,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         emit QKeyMapper::getInstance()->updateMousePointLabelDisplay_Signal(point);
                     }
                 }
-                else if ((GetAsyncKeyState(VK_CAPITAL) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
+                else if ((GetAsyncKeyState(PICK_WINDOW_POINT_KEY) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
                     HWND hwnd = QKeyMapper::s_CurrentMappingHWND;
                     if (hwnd != NULL && GetCursorPos(&pt)) {
