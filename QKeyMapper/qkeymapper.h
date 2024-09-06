@@ -323,7 +323,7 @@ public:
     static int findOriKeyInKeyMappingDataList(const QString &keyname, bool& removemultiinput);
     static int findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname);
     static int findOriKeyInKeyMappingDataList_ForDoublePress(const QString &keyname);
-    static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
+    // static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
     static ValidationResult validateOriginalKeyString(const QString &originalkeystr, int update_rowindex);
     static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
@@ -600,7 +600,7 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static QList<MAP_KEYDATA> KeyMappingDataList;
-    static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
+    // static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> ScreenMousePointsList;
     static QList<MousePoint_Info> WindowMousePointsList;
     // static QHash<QString, QHotkey*> ShortcutsMap;

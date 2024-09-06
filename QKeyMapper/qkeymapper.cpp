@@ -13,7 +13,7 @@ QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINF
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
-QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
+// QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
 QList<MousePoint_Info> QKeyMapper::ScreenMousePointsList = QList<MousePoint_Info>();
 QList<MousePoint_Info> QKeyMapper::WindowMousePointsList = QList<MousePoint_Info>();
 // QHash<QString, QHotkey*> QKeyMapper::ShortcutsMap = QHash<QString, QHotkey*>();
@@ -1431,6 +1431,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList_ForDoublePress(const QString &key
     return returnindex;
 }
 
+#if 0
 int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
 {
     int returnindex = -1;
@@ -1450,6 +1451,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
 
     return returnindex;
 }
+#endif
 
 int QKeyMapper::findMapKeyInKeyMappingDataList(const QString &keyname)
 {
@@ -2402,7 +2404,8 @@ int QKeyMapper::getGlobalSettingAutoStart()
 
 bool QKeyMapper::checkGlobalSettingAutoStart()
 {
-    if (s_GlobalSettingAutoStart == Qt::Checked && false == KeyMappingDataListGlobal.isEmpty()) {
+    // if (s_GlobalSettingAutoStart == Qt::Checked && false == KeyMappingDataListGlobal.isEmpty()) {
+    if (s_GlobalSettingAutoStart == Qt::Checked) {
         return true;
     }
     else {
@@ -4341,12 +4344,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
 
         if (global_datavalid && false == loadkeymapdata.isEmpty()) {
-            KeyMappingDataListGlobal = loadkeymapdata;
+            // KeyMappingDataListGlobal = loadkeymapdata;
             validgroups.append(GROUPNAME_GLOBALSETTING);
         }
-        else {
-            KeyMappingDataListGlobal.clear();
-        }
+        // else {
+        //     KeyMappingDataListGlobal.clear();
+        // }
 
         settingSelectStr = settingSelectStr_bak;
     }
