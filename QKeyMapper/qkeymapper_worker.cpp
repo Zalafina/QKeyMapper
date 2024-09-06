@@ -4426,11 +4426,9 @@ void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
             }
 
             if (virtualgamepad) {
-#ifdef SDL_VIRTUALGAMEPAD_IGNORE
                 QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_index << "][" << joystick_added->name << "] is Blacklisted.";
-#endif
 #endif
             }
         }
@@ -4612,6 +4610,15 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
         gamepad_index = Joy2vJoy_EnableState.gamepad_index;
     }
 
+    if (e.joystick->blacklisted) {
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].isvirtual = true;
+        s_JoyAxisStateMap[player_index].isvirtual = true;
+    }
+    else {
+        s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].isvirtual = false;
+        s_JoyAxisStateMap[player_index].isvirtual = false;
+    }
+
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
         // s_JoyAxisState.left_trigger = e.value;
         s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].left_trigger = e.value;
@@ -4732,6 +4739,7 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
     }
 }
 
+#if 0
 QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::checkJoystick2MouseEnableState()
 {
     Joy2MouseStates joy2mouse_enablestate = JOY2MOUSE_NONE;
@@ -4760,6 +4768,7 @@ QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::checkJoystick2MouseEnableS
 
     return joy2mouse_enablestate;
 }
+#endif
 
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2MouseEnableStateMap()
 {
@@ -5464,14 +5473,17 @@ int QKeyMapper_Worker::joystickCalculateDelta(qreal axis_value, int Speed_Factor
 
 void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index)
 {
+    Joystick_AxisState axis_state = s_JoyAxisStateMap.value(player_index);
+    if (axis_state.isvirtual) {
+        return;
+    }
+
     int delta_x = 0;
     int delta_y = 0;
     bool checkLeftJoystick = false;
     bool checkRightJoystick = false;
     int Speed_Factor_X = QKeyMapper::getJoystick2MouseSpeedX();
     int Speed_Factor_Y = QKeyMapper::getJoystick2MouseSpeedY();
-
-    Joystick_AxisState axis_state = s_JoyAxisStateMap.value(player_index);
     Joy2MouseStates Joy2Mouse_EnableState = s_Joy2Mouse_EnableStateMap.value(player_index);
 
     if (JOY2MOUSE_LEFT == Joy2Mouse_EnableState) {
