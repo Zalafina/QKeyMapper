@@ -632,6 +632,7 @@ private:
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
 #endif
+    QTabWidget *m_KeyMappingTabWidget;
     KeyMappingDataTableWidget *m_KeyMappingDataTable;
     StyledDelegate *m_ProcessInfoTableDelegate;
     // StyledDelegate *m_KeyMappingDataTableDelegate;

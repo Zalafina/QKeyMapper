@@ -42,6 +42,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
 #endif
+    m_KeyMappingTabWidget(Q_NULLPTR),
     m_KeyMappingDataTable(Q_NULLPTR),
     m_ProcessInfoTableDelegate(Q_NULLPTR),
     // m_KeyMappingDataTableDelegate(Q_NULLPTR),
@@ -6634,9 +6635,18 @@ void QKeyMapper::showNotificationPopup(const QString &message, const QString &co
 
 void QKeyMapper::initKeyMappingDataTable(void)
 {
+    // 创建 QTabWidget 容器
+    m_KeyMappingTabWidget = new QTabWidget(this);
+    m_KeyMappingTabWidget->setGeometry(QRect(530, 10, 450, 350));  // 设置大小
+    m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
+
+    QStyle* windowsStyle = QStyleFactory::create("windows");
+    QStyle* fusionStyle = QStyleFactory::create("Fusion");
+    m_KeyMappingTabWidget->setStyle(windowsStyle);
+
     // 创建你的自定义控件
     m_KeyMappingDataTable = new KeyMappingDataTableWidget(this);
-    m_KeyMappingDataTable->setGeometry(QRect(530, 30, 450, 330));
+    // m_KeyMappingDataTable->setGeometry(QRect(530, 0, 450, 330));
 
     // ui->keymapdataTable->setVisible(false);
     //m_KeyMappingDataTable->setStyle(QStyleFactory::create("windows"));
@@ -6676,6 +6686,17 @@ void QKeyMapper::initKeyMappingDataTable(void)
 //    qDebug() << "editTriggers" << m_KeyMappingDataTable->editTriggers();
 //    qDebug() << "verticalHeader-DefaultSectionSize" << m_KeyMappingDataTable->verticalHeader()->defaultSectionSize();
 #endif
+
+    QString tabName = QString("Tab %1").arg(1);
+    m_KeyMappingTabWidget->addTab(m_KeyMappingDataTable, tabName);
+
+
+    // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
+    for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count(); ++tabindex) {
+        QWidget *tabPage = m_KeyMappingTabWidget->widget(tabindex);
+        tabPage->setStyle(fusionStyle);
+    }
+    // m_KeyMappingTabWidget->setCurrentIndex(0);
 }
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
