@@ -187,9 +187,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 #endif
 
-    // Enable WTS session notifications
-    WTSRegisterSessionNotification((HWND)winId(), NOTIFY_FOR_THIS_SESSION);
-
     // set QTableWidget selected background-color
     setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
 
@@ -392,7 +389,7 @@ QKeyMapper::~QKeyMapper()
     s_isDestructing = true;
 
     // Unregister WTS session notifications
-    WTSUnRegisterSessionNotification((HWND)winId());
+    WTSUnRegisterSessionNotification(reinterpret_cast<HWND>(winId()));
 
     m_MainWindowHandle = NULL;
     destoryTransparentWindow(m_TransParentHandle);
@@ -2468,6 +2465,17 @@ void QKeyMapper::showEvent(QShowEvent *event)
 #endif
 
     if (false == event->spontaneous()) {
+        if (m_MainWindowHandle == NULL) {
+            m_MainWindowHandle = reinterpret_cast<HWND>(winId());
+            // Enable WTS session notifications
+            WTSRegisterSessionNotification(m_MainWindowHandle, NOTIFY_FOR_THIS_SESSION);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::showEvent] m_MainWindowHandle ->" << m_MainWindowHandle;
+#endif
+        }
+
+
         QTimer::singleShot(100, this, [=]() {
             if (m_KeyMapStatus == KEYMAP_IDLE){
 #ifdef DEBUG_LOGOUT_ON
@@ -2491,6 +2499,9 @@ void QKeyMapper::changeEvent(QEvent *event)
     else if (event->type() == QEvent::WinIdChange)
     {
         m_MainWindowHandle = reinterpret_cast<HWND>(winId());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::changeEvent]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
+#endif
     }
     QDialog::changeEvent(event);
 }
@@ -6592,6 +6603,9 @@ void QKeyMapper::switchShowHide()
 #endif
         if (NULL == m_MainWindowHandle) {
             m_MainWindowHandle = reinterpret_cast<HWND>(winId());
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::switchShowHide]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
+#endif
         }
 
         if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {

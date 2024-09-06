@@ -244,6 +244,8 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "Auto Start Mapping = TRUE, hide QKeyMapper window at startup.";
 #endif
+        w.show();
+        w.hide();
     }
     else {
         w.show();
