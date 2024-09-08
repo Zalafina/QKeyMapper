@@ -44,6 +44,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
     m_KeyMappingTabWidget(Q_NULLPTR),
     m_KeyMappingDataTable(Q_NULLPTR),
+    m_KeyMappingTabWidgetLastIndex(0),
     m_ProcessInfoTableDelegate(Q_NULLPTR),
     // m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
@@ -307,7 +308,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->windowswitchkeyLineEdit->setText(DISPLAYSWITCH_KEY_DEFAULT);
     ui->mappingStartKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
-    initKeyMappingDataTable();
+    initKeyMappingTabWidget();
     m_ItemSetupDialog = new QItemSetupDialog(this);
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
@@ -334,11 +335,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
-    QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
-    QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged);
+
+    QObject::connect(m_KeyMappingTabWidget, &QTabWidget::currentChanged, this, &QKeyMapper::keyMappingTabWidgetCurrentChanged);
+    QObject::connect(m_KeyMappingTabWidget, &QTabWidget::tabBarDoubleClicked, this, &QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked);
+    updateKeyMappingDataTableConnection();
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
-    QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
-    // QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellDoubleClicked, this, &QKeyMapper::keyMappingTableCellDoubleClicked);
     QObject::connect(this, &QKeyMapper::setupDialogClosed_Signal, this, &QKeyMapper::setupDialogClosed);
     QObject::connect(this, &QKeyMapper::showPopupMessage_Signal, this, &QKeyMapper::showPopupMessage);
 
@@ -5531,8 +5532,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->refreshButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
 
+    m_KeyMappingTabWidget->setEnabled(status);
     ui->processinfoTable->setEnabled(status);
-    m_KeyMappingDataTable->setEnabled(status);
+    // m_KeyMappingDataTable->setEnabled(status);
 }
 
 void QKeyMapper::extractSoundFiles()
@@ -6633,70 +6635,53 @@ void QKeyMapper::showNotificationPopup(const QString &message, const QString &co
     m_PopupNotification->showPopupNotification(message, color, 3000, position);
 }
 
-void QKeyMapper::initKeyMappingDataTable(void)
+void QKeyMapper::initKeyMappingTabWidget(void)
 {
-    // 创建 QTabWidget 容器
-    m_KeyMappingTabWidget = new QTabWidget(this);
-    m_KeyMappingTabWidget->setGeometry(QRect(530, 10, 450, 350));  // 设置大小
-    m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
-
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    QStyle* fusionStyle = QStyleFactory::create("Fusion");
-    m_KeyMappingTabWidget->setStyle(windowsStyle);
-
-    // 创建你的自定义控件
-    m_KeyMappingDataTable = new KeyMappingDataTableWidget(this);
-    // m_KeyMappingDataTable->setGeometry(QRect(530, 0, 450, 330));
-
-    // ui->keymapdataTable->setVisible(false);
-    //m_KeyMappingDataTable->setStyle(QStyleFactory::create("windows"));
-    m_KeyMappingDataTable->setFocusPolicy(Qt::NoFocus);
-    m_KeyMappingDataTable->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
-//    m_KeyMappingDataTable->setHorizontalHeaderLabels(QStringList()   << "Original Key"
-//                                                                    << "Mapping Key"
-//                                                                    << "Burst"
-//                                                                    << "Lock");
-
-    m_KeyMappingDataTable->horizontalHeader()->setStretchLastSection(true);
-    m_KeyMappingDataTable->horizontalHeader()->setHighlightSections(false);
-    // m_KeyMappingDataTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-
-    int original_key_width = m_KeyMappingDataTable->width()/4 - 15;
-    int burst_mode_width = m_KeyMappingDataTable->width()/5 - 40;
-    int lock_width = m_KeyMappingDataTable->width()/5 - 40;
-    int mapping_key_width = m_KeyMappingDataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
-    m_KeyMappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
-    m_KeyMappingDataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
-    m_KeyMappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
-    m_KeyMappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
-    m_KeyMappingDataTable->verticalHeader()->setVisible(false);
-    m_KeyMappingDataTable->verticalHeader()->setDefaultSectionSize(25);
-    m_KeyMappingDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_KeyMappingDataTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_KeyMappingDataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-    /* Suuport Drag&Drop for KeyMappingData Table */
-    m_KeyMappingDataTable->setDragEnabled(true);
-    m_KeyMappingDataTable->setDragDropMode(QAbstractItemView::InternalMove);
-
-#ifdef DEBUG_LOGOUT_ON
-//    qDebug() << "verticalHeader->isVisible" << m_KeyMappingDataTable->verticalHeader()->isVisible();
-//    qDebug() << "selectionBehavior" << m_KeyMappingDataTable->selectionBehavior();
-//    qDebug() << "selectionMode" << m_KeyMappingDataTable->selectionMode();
-//    qDebug() << "editTriggers" << m_KeyMappingDataTable->editTriggers();
-//    qDebug() << "verticalHeader-DefaultSectionSize" << m_KeyMappingDataTable->verticalHeader()->defaultSectionSize();
-#endif
-
-    QString tabName = QString("Tab %1").arg(1);
-    m_KeyMappingTabWidget->addTab(m_KeyMappingDataTable, tabName);
-
-
-    // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
-    for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count(); ++tabindex) {
-        QWidget *tabPage = m_KeyMappingTabWidget->widget(tabindex);
-        tabPage->setStyle(fusionStyle);
+    m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        m_KeyMappingTabWidget->setGeometry(QRect(526, 11, 458, 352));
     }
-    // m_KeyMappingTabWidget->setCurrentIndex(0);
+    else {
+        m_KeyMappingTabWidget->setGeometry(QRect(526, 7, 458, 352));
+    }
+    m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
+    m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
+
+    KeyMappingDataTableWidget *dummyKeyMappingTableWidget = new KeyMappingDataTableWidget(this);
+    m_KeyMappingTabWidget->addTab(dummyKeyMappingTableWidget, "+");
+    addTabForKeyMappingTabWidget();
+
+    setKeyMappingTabWidgetCurrentIndex(0);
+    m_KeyMappingDataTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(0));
+    m_KeyMappingTabWidgetLastIndex = 0;
+}
+
+void QKeyMapper::disconnectKeyMappingDataTableConnection()
+{
+    if (m_KeyMappingDataTable != Q_NULLPTR) {
+        QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
+        QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged);
+        QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[disconnectKeyMappingDataTableConnection]" << "Invalid m_KeyMappingDataTable pointer!";
+#endif
+    }
+}
+
+void QKeyMapper::updateKeyMappingDataTableConnection()
+{
+    if (m_KeyMappingDataTable != Q_NULLPTR) {
+        QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot, Qt::UniqueConnection);
+        QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged, Qt::UniqueConnection);
+        QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked, Qt::UniqueConnection);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[updateKeyMappingDataTableConnection]" << "Invalid m_KeyMappingDataTable pointer!";
+#endif
+    }
 }
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
@@ -6717,7 +6702,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth()
     }
 
     int mapping_key_width_min = m_KeyMappingDataTable->width()/4 - 15;
-    int mapping_key_width = m_KeyMappingDataTable->width() - original_key_width - burst_mode_width - lock_width - 12;
+    int mapping_key_width = m_KeyMappingDataTable->width() - original_key_width - burst_mode_width - lock_width - 16;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
@@ -7263,6 +7248,18 @@ void QKeyMapper::initCombinationKeyLineEdit()
     });
 }
 
+void QKeyMapper::setKeyMappingTabWidgetCurrentIndex(int index)
+{
+    if (0 <= index && index < m_KeyMappingTabWidget->count()) {
+        if (m_KeyMappingTabWidget->currentIndex() != index) {
+            m_KeyMappingTabWidget->setCurrentIndex(index);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[setKeyMappingTabWidgetCurrentIndex]" << "set m_KeyMappingTabWidget index :" << index;
+#endif
+    }
+}
+
 void QKeyMapper::refreshKeyMappingDataTable()
 {
     m_KeyMappingDataTable->clearContents();
@@ -7604,13 +7601,18 @@ void QKeyMapper::setUILanguage_Chinese()
         ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
     }
 
+    /* KeyMappingTabWidget HorizontalHeader Update for current language */
+    for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count(); ++tabindex) {
+        KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
+        mappingTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_CHINESE
+                                                                << KEYMAPDATATABLE_COL2_CHINESE
+                                                                << KEYMAPDATATABLE_COL3_CHINESE
+                                                                << KEYMAPDATATABLE_COL4_CHINESE);
+    }
+
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
                                                                   << PROCESSINFOTABLE_COL2_CHINESE
                                                                   << PROCESSINFOTABLE_COL3_CHINESE );
-    m_KeyMappingDataTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_CHINESE
-                                                                 << KEYMAPDATATABLE_COL2_CHINESE
-                                                                 << KEYMAPDATATABLE_COL3_CHINESE
-                                                                 << KEYMAPDATATABLE_COL4_CHINESE);
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguagee(LANGUAGE_CHINESE);
@@ -7720,13 +7722,18 @@ void QKeyMapper::setUILanguage_English()
         ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
     }
 
+    /* KeyMappingTabWidget TabText Update for current language */
+    for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count(); ++tabindex) {
+        KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
+        mappingTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_ENGLISH
+                                                                << KEYMAPDATATABLE_COL2_ENGLISH
+                                                                << KEYMAPDATATABLE_COL3_ENGLISH
+                                                                << KEYMAPDATATABLE_COL4_ENGLISH);
+    }
+
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
                                                                   << PROCESSINFOTABLE_COL2_ENGLISH
                                                                   << PROCESSINFOTABLE_COL3_ENGLISH );
-    m_KeyMappingDataTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_ENGLISH
-                                                                 << KEYMAPDATATABLE_COL2_ENGLISH
-                                                                 << KEYMAPDATATABLE_COL3_ENGLISH
-                                                                 << KEYMAPDATATABLE_COL4_ENGLISH);
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguagee(LANGUAGE_ENGLISH);
@@ -7779,6 +7786,7 @@ void QKeyMapper::resetFontSize()
 
         // ui->burstpressSpinBox->setFont(customFont);
         // ui->burstreleaseSpinBox->setFont(customFont);
+        m_KeyMappingTabWidget->tabBar()->setFont(customFont);
         ui->processinfoTable->setFont(customFont);
         m_KeyMappingDataTable->setFont(customFont);
         ui->processinfoTable->horizontalHeader()->setFont(customFont);
@@ -7820,6 +7828,7 @@ void QKeyMapper::resetFontSize()
 
         // ui->burstpressSpinBox->setFont(customFont);
         // ui->burstreleaseSpinBox->setFont(customFont);
+        m_KeyMappingTabWidget->tabBar()->setFont(customFont);
         ui->processinfoTable->setFont(customFont);
         m_KeyMappingDataTable->setFont(customFont);
         ui->processinfoTable->horizontalHeader()->setFont(customFont);
@@ -8007,6 +8016,35 @@ void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
 
     QString car_ordinal_str = QString::number(car_ordinal);
     ui->pointDisplayLabel->setText(car_ordinal_str);
+}
+
+void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
+{
+    if (0 <= index && index < m_KeyMappingTabWidget->count() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "m_KeyMappingTabWidget TabBar doubleclicked :" << index;
+#endif
+    }
+}
+
+void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
+{
+    if (index == m_KeyMappingTabWidget->count() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget \"+\" tab clicked!";
+#endif
+        addTabForKeyMappingTabWidget();
+        setKeyMappingTabWidgetCurrentIndex(m_KeyMappingTabWidgetLastIndex);
+    }
+    else if (0 <= index && index < m_KeyMappingTabWidget->count() - 1) {
+        disconnectKeyMappingDataTableConnection();
+        m_KeyMappingDataTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(index));
+        m_KeyMappingTabWidgetLastIndex = index;
+        updateKeyMappingDataTableConnection();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget tab changed :" << index;
+#endif
+    }
 }
 
 void QKeyMapper::keyMappingTableDragDropMove(int from, int to)
@@ -9914,4 +9952,62 @@ void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
             }
         }
     }
+}
+
+void QKeyMapper::addTabForKeyMappingTabWidget()
+{
+    int tab_count = m_KeyMappingTabWidget->count();
+    int insert_index = tab_count - 1;
+
+    KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
+    KeyMappingTableWidget->setGeometry(QRect(530, 0, 450, 330));
+
+    KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
+    KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
+
+    KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
+    KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
+
+    int original_key_width = KeyMappingTableWidget->width()/4 - 15;
+    int burst_mode_width = KeyMappingTableWidget->width()/5 - 40;
+    int lock_width = KeyMappingTableWidget->width()/5 - 40;
+    int mapping_key_width = KeyMappingTableWidget->width() - original_key_width - burst_mode_width - lock_width - 16;
+    KeyMappingTableWidget->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
+    KeyMappingTableWidget->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    KeyMappingTableWidget->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
+    KeyMappingTableWidget->setColumnWidth(LOCK_COLUMN, lock_width);
+    KeyMappingTableWidget->verticalHeader()->setVisible(false);
+    KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
+    KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    KeyMappingTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    /* Suuport Drag&Drop for KeyMappingData Table */
+    KeyMappingTableWidget->setDragEnabled(true);
+    KeyMappingTableWidget->setDragDropMode(QAbstractItemView::InternalMove);
+
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << KEYMAPDATATABLE_COL1_ENGLISH
+                                                                        << KEYMAPDATATABLE_COL2_ENGLISH
+                                                                        << KEYMAPDATATABLE_COL3_ENGLISH
+                                                                        << KEYMAPDATATABLE_COL4_ENGLISH);
+    }
+    else {
+        KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << KEYMAPDATATABLE_COL1_CHINESE
+                                                                        << KEYMAPDATATABLE_COL2_CHINESE
+                                                                        << KEYMAPDATATABLE_COL3_CHINESE
+                                                                        << KEYMAPDATATABLE_COL4_CHINESE);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    // qDebug() << "verticalHeader->isVisible" << KeyMappingTableWidget->verticalHeader()->isVisible();
+    // qDebug() << "selectionBehavior" << KeyMappingTableWidget->selectionBehavior();
+    // qDebug() << "selectionMode" << KeyMappingTableWidget->selectionMode();
+    // qDebug() << "editTriggers" << KeyMappingTableWidget->editTriggers();
+    // qDebug() << "verticalHeader-DefaultSectionSize" << KeyMappingTableWidget->verticalHeader()->defaultSectionSize();
+#endif
+
+    KeyMappingTableWidget->setStyle(QStyleFactory::create("Fusion"));
+    QString tabName = QString("%1%2").arg(MAPPINGTABLE_TAB_TEXT).arg(insert_index + 1);
+    m_KeyMappingTabWidget->insertTab(insert_index, KeyMappingTableWidget, tabName);
 }

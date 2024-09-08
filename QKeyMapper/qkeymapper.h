@@ -148,6 +148,14 @@ struct Gamepad_Info
 #endif
 };
 
+class KeyMappingTabWidget : public QTabWidget
+{
+    Q_OBJECT
+
+public:
+    explicit KeyMappingTabWidget(QWidget *parent = Q_NULLPTR) : QTabWidget(parent) {}
+};
+
 class KeyMappingDataTableWidget : public QTableWidget
 {
     Q_OBJECT
@@ -161,6 +169,12 @@ public:
 
 private:
     int m_DraggedRow;
+};
+
+struct KeyMappingTab_Info
+{
+    KeyMappingDataTableWidget *KeyMappingDataTable;
+    QList<MAP_KEYDATA> *KeyMappingDataList;
 };
 
 class StyledDelegate : public QStyledItemDelegate
@@ -407,6 +421,10 @@ public slots:
 
     void showCarOrdinal(qint32 car_ordinal);
 
+    void onKeyMappingTabWidgetTabBarDoubleClicked(int index);
+
+    void keyMappingTabWidgetCurrentChanged(int index);
+
     void keyMappingTableDragDropMove(int from, int to);
 
     void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
@@ -502,6 +520,8 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
+    void addTabForKeyMappingTabWidget(void);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -517,7 +537,9 @@ private:
     void showWarningPopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
 
-    void initKeyMappingDataTable(void);
+    void initKeyMappingTabWidget(void);
+    void disconnectKeyMappingDataTableConnection(void);
+    void updateKeyMappingDataTableConnection(void);
     void resizeKeyMappingDataTableColumnWidth(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
@@ -532,6 +554,7 @@ private:
     void updateMappingStopKeyString(const QString &keystring);
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
+    void setKeyMappingTabWidgetCurrentIndex(int index);
     void refreshKeyMappingDataTable(void);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
@@ -632,8 +655,9 @@ private:
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;
 #endif
-    QTabWidget *m_KeyMappingTabWidget;
+    KeyMappingTabWidget *m_KeyMappingTabWidget;
     KeyMappingDataTableWidget *m_KeyMappingDataTable;
+    int m_KeyMappingTabWidgetLastIndex;
     StyledDelegate *m_ProcessInfoTableDelegate;
     // StyledDelegate *m_KeyMappingDataTableDelegate;
 public:

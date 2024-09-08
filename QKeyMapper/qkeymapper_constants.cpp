@@ -420,6 +420,8 @@ const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
 const char *MAPPINGSTARTKEY_LINEEDIT_NAME = "mappingStartKeyLineEdit";
 const char *MAPPINGSTOPKEY_LINEEDIT_NAME = "mappingStopKeyLineEdit";
 
+const char *MAPPINGTABLE_TAB_TEXT = "Tab";
+
 const char *KEY_NONE_STR = "NONE";
 const char *KEY_BLOCKED_STR = "BLOCKED";
 const char *GAMEPAD_HOME_STR = "GamepadHome";
@@ -716,6 +718,9 @@ const char *DEVICELIST_WINDOWTITLE_CHINESE = "输入设备列表";
 
 const char *ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH = "Mapping Item Setup";
 const char *ITEMSETUPDIALOG_WINDOWTITLE_CHINESE = "映射项设定";
+
+const char *TABLESETUPDIALOG_WINDOWTITLE_ENGLISH = "Mapping Table Setup";
+const char *TABLESETUPDIALOG_WINDOWTITLE_CHINESE = "映射表设定";
 
 const char *KEYBOARDLABEL_ENGLISH    = "Keyboard";
 const char *MOUSELABEL_ENGLISH       = "Mouse";
