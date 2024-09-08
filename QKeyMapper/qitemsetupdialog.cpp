@@ -192,9 +192,8 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 
 void QItemSetupDialog::showEvent(QShowEvent *event)
 {
-
-    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList.size()) {
-        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList.at(m_ItemRow);
+    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[QItemSetupDialog::showEvent]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
 #endif
@@ -353,16 +352,16 @@ void QItemSetupDialog::initKeyListComboBoxes()
 
 void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
 {
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     int current_value = ui->burstpressSpinBox->value();
 
-    if (current_value != QKeyMapper::KeyMappingDataList.at(m_ItemRow).BurstPressTime) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].BurstPressTime = current_value;
+    if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstPressTime) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstPressTime = current_value;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_burstpressSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
+        qDebug().nospace().noquote() << "[on_burstpressSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
 #endif
     }
 }
@@ -370,16 +369,16 @@ void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
 
 void QItemSetupDialog::on_burstreleaseSpinBox_editingFinished()
 {
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     int current_value = ui->burstreleaseSpinBox->value();
 
-    if (current_value != QKeyMapper::KeyMappingDataList.at(m_ItemRow).BurstReleaseTime) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].BurstReleaseTime = current_value;
+    if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstReleaseTime) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstReleaseTime = current_value;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
+        qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
 #endif
     }
 }
@@ -388,15 +387,15 @@ void QItemSetupDialog::on_burstreleaseSpinBox_editingFinished()
 void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     bool burst = ui->burstCheckBox->isChecked();
-    if (burst != QKeyMapper::KeyMappingDataList.at(m_ItemRow).Burst) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].Burst = burst;
+    if (burst != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = burst;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Burst -> " << burst;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst -> " << burst;
 #endif
     }
 }
@@ -405,15 +404,15 @@ void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     bool lock = ui->lockCheckBox->isChecked();
-    if (lock != QKeyMapper::KeyMappingDataList.at(m_ItemRow).Lock) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].Lock = lock;
+    if (lock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = lock;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] Lock -> " << lock;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Lock -> " << lock;
 #endif
     }
 }
@@ -422,15 +421,15 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_keyupActionCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     bool keyup_action = ui->keyupActionCheckBox->isChecked();
-    if (keyup_action != QKeyMapper::KeyMappingDataList.at(m_ItemRow).KeyUp_Action) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].KeyUp_Action = keyup_action;
+    if (keyup_action != QKeyMapper::KeyMappingDataList->at(m_ItemRow).KeyUp_Action) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeyUp_Action = keyup_action;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
 #endif
 
         /* Update KeySeqHoldDown Status */
@@ -447,15 +446,15 @@ void QItemSetupDialog::on_keyupActionCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     bool passthrough = ui->passThroughCheckBox->isChecked();
-    if (passthrough != QKeyMapper::KeyMappingDataList.at(m_ItemRow).PassThrough) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].PassThrough = passthrough;
+    if (passthrough != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PassThrough) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PassThrough = passthrough;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
 #endif
     }
 }
@@ -464,22 +463,22 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
     bool keyseqholddown = ui->keySeqHoldDownCheckBox->isChecked();
-    if (keyseqholddown != QKeyMapper::KeyMappingDataList.at(m_ItemRow).KeySeqHoldDown) {
-        QKeyMapper::KeyMappingDataList[m_ItemRow].KeySeqHoldDown = keyseqholddown;
+    if (keyseqholddown != QKeyMapper::KeyMappingDataList->at(m_ItemRow).KeySeqHoldDown) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = keyseqholddown;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
 #endif
     }
 }
 
 void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 {
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
@@ -514,8 +513,8 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
             update_originalkey = originalKey;
         }
 
-        if (QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key != update_originalkey) {
-            QKeyMapper::KeyMappingDataList[m_ItemRow].Original_Key = update_originalkey;
+        if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != update_originalkey) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = update_originalkey;
         }
     }
     else {
@@ -527,7 +526,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 
 void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 {
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList.size()) {
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
@@ -554,7 +553,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
             popupMessage = "映射按键更新成功";
         }
 
-        QKeyMapper::KeyMappingDataList[m_ItemRow].Mapping_Keys = mappingKeySeqList;
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys = mappingKeySeqList;
     }
     else {
         popupMessageColor = "#d63031";

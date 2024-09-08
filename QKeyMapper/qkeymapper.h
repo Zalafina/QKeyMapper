@@ -173,8 +173,9 @@ private:
 
 struct KeyMappingTab_Info
 {
+    QString TabName;
     KeyMappingDataTableWidget *KeyMappingDataTable;
-    QList<MAP_KEYDATA> *KeyMappingDataList;
+    QList<MAP_KEYDATA> *KeyMappingData;
 };
 
 class StyledDelegate : public QStyledItemDelegate
@@ -449,6 +450,7 @@ public slots:
     void HotKeyMappingSwitchActivated(const QString &hotkey_string);
     void HotKeyMappingStart(const QString &hotkey_string);
     void HotKeyMappingStop(const QString &hotkey_string);
+    void switchKeyMappingTabIndex(int index);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);
@@ -520,7 +522,7 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
-    void addTabForKeyMappingTabWidget(void);
+    bool addTabForKeyMappingTabWidget(const QString& customTabName = QString());
 
 private:
     // void initHotKeySequence(void);
@@ -538,6 +540,7 @@ private:
     void showNotificationPopup(const QString &message, const QString &color, int position);
 
     void initKeyMappingTabWidget(void);
+    bool isTabTextDuplicate(const QString &tabName);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
     void resizeKeyMappingDataTableColumnWidth(void);
@@ -622,7 +625,9 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
-    static QList<MAP_KEYDATA> KeyMappingDataList;
+    static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
+    // static QList<MAP_KEYDATA> KeyMappingDataList;
+    static QList<MAP_KEYDATA> *KeyMappingDataList;
     // static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> ScreenMousePointsList;
     static QList<MousePoint_Info> WindowMousePointsList;
