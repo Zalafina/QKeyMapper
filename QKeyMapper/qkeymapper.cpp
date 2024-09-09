@@ -6657,6 +6657,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     }
     m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
     m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
+    m_KeyMappingTabWidget->tabBar()->setFont(QFont(FONTNAME_ENGLISH, 9));
 
     KeyMappingDataTableWidget *dummyKeyMappingTableWidget = new KeyMappingDataTableWidget(this);
     m_KeyMappingTabWidget->addTab(dummyKeyMappingTableWidget, "+");
@@ -6674,13 +6675,6 @@ void QKeyMapper::initKeyMappingTabWidget(void)
 
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
 {
-    // // Iterate through all tabs to check if there is a duplicate tab name
-    // for (int index = 0; index < m_KeyMappingTabWidget->count(); ++index) {
-    //     if (m_KeyMappingTabWidget->tabText(index) == tabName) {
-    //         return true;
-    //     }
-    // }
-
     // Iterate through tabinfolist to check if there is a duplicate tabname
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         if (s_KeyMappingTabInfoList.at(index).TabName == tabName) {
@@ -7284,7 +7278,7 @@ void QKeyMapper::initCombinationKeyLineEdit()
 
 void QKeyMapper::setKeyMappingTabWidgetCurrentIndex(int index)
 {
-    if (0 <= index && index < m_KeyMappingTabWidget->count()) {
+    if (0 <= index && index < m_KeyMappingTabWidget->count() - 1) {
         if (m_KeyMappingTabWidget->currentIndex() != index) {
             m_KeyMappingTabWidget->setCurrentIndex(index);
         }
@@ -7820,11 +7814,14 @@ void QKeyMapper::resetFontSize()
 
         // ui->burstpressSpinBox->setFont(customFont);
         // ui->burstreleaseSpinBox->setFont(customFont);
-        m_KeyMappingTabWidget->tabBar()->setFont(customFont);
         ui->processinfoTable->setFont(customFont);
-        m_KeyMappingDataTable->setFont(customFont);
         ui->processinfoTable->horizontalHeader()->setFont(customFont);
-        m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
+        // m_KeyMappingTabWidget->tabBar()->setFont(QFont(FONTNAME_ENGLISH, 8));
+        // for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count(); ++tabindex) {
+        //     KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
+        //     mappingTable->setFont(customFont);
+        //     mappingTable->horizontalHeader()->setFont(customFont);
+        // }
 
         ui->vJoyXSensSpinBox->setFont(customFont);
         ui->vJoyYSensSpinBox->setFont(customFont);
@@ -7862,11 +7859,14 @@ void QKeyMapper::resetFontSize()
 
         // ui->burstpressSpinBox->setFont(customFont);
         // ui->burstreleaseSpinBox->setFont(customFont);
-        m_KeyMappingTabWidget->tabBar()->setFont(customFont);
         ui->processinfoTable->setFont(customFont);
-        m_KeyMappingDataTable->setFont(customFont);
         ui->processinfoTable->horizontalHeader()->setFont(customFont);
-        m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
+        // m_KeyMappingTabWidget->tabBar()->setFont(customFont);
+        // for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count(); ++tabindex) {
+        //     KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
+        //     mappingTable->setFont(customFont);
+        //     mappingTable->horizontalHeader()->setFont(customFont);
+        // }
 
         ui->vJoyXSensSpinBox->setFont(customFont);
         ui->vJoyYSensSpinBox->setFont(customFont);
@@ -10063,6 +10063,8 @@ bool QKeyMapper::addTabForKeyMappingTabWidget(const QString& customTabName)
                                                                         << KEYMAPDATATABLE_COL3_CHINESE
                                                                         << KEYMAPDATATABLE_COL4_CHINESE);
     }
+    QFont customFont(FONTNAME_ENGLISH, 9);
+    KeyMappingTableWidget->horizontalHeader()->setFont(customFont);
 
 #ifdef DEBUG_LOGOUT_ON
     // qDebug() << "verticalHeader->isVisible" << KeyMappingTableWidget->verticalHeader()->isVisible();

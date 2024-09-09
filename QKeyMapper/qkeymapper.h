@@ -174,6 +174,7 @@ private:
 struct KeyMappingTab_Info
 {
     QString TabName;
+    QString TabActivateHotkey;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };
