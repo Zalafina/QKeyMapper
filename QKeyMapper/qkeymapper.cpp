@@ -6657,7 +6657,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     }
     m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
     m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
-    m_KeyMappingTabWidget->tabBar()->setFont(QFont(FONTNAME_ENGLISH, 9));
+    m_KeyMappingTabWidget->setFont(QFont(FONTNAME_ENGLISH, 9));
 
     KeyMappingDataTableWidget *dummyKeyMappingTableWidget = new KeyMappingDataTableWidget(this);
     m_KeyMappingTabWidget->addTab(dummyKeyMappingTableWidget, "+");
@@ -10064,6 +10064,7 @@ bool QKeyMapper::addTabForKeyMappingTabWidget(const QString& customTabName)
                                                                         << KEYMAPDATATABLE_COL4_CHINESE);
     }
     QFont customFont(FONTNAME_ENGLISH, 9);
+    KeyMappingTableWidget->setFont(customFont);
     KeyMappingTableWidget->horizontalHeader()->setFont(customFont);
 
 #ifdef DEBUG_LOGOUT_ON
