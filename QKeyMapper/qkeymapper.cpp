@@ -3728,12 +3728,11 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList );
+
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
-#ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
-#endif
 
             settingFile.remove(saveSettingSelectStr+CLEARALL);
         }
@@ -3747,12 +3746,11 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList );
+
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
             settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
-#ifdef VIGEM_CLIENT_SUPPORT
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
             settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
-#endif
 
             settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
         }
@@ -4652,12 +4650,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
             }
             else {
+                clearKeyMappingTabWidget();
                 KeyMappingDataList->clear();
-                // KeyMappingDataList.append(MAP_KEYDATA("I",          "L-Shift + ]}",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                // KeyMappingDataList.append(MAP_KEYDATA("K",          "L-Shift + [{",     false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                // KeyMappingDataList.append(MAP_KEYDATA("H",          "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                // KeyMappingDataList.append(MAP_KEYDATA("Space",      "S",                false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
-                // KeyMappingDataList.append(MAP_KEYDATA("F",          "Enter",            false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false));
                 loadDefault = true;
             }
         }
@@ -4666,6 +4660,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
     }
     else{
+        clearKeyMappingTabWidget();
         KeyMappingDataList->clear();
     }
 
@@ -6671,6 +6666,32 @@ void QKeyMapper::initKeyMappingTabWidget(void)
 
     setKeyMappingTabWidgetCurrentIndex(0);
     switchKeyMappingTabIndex(0);
+}
+
+void QKeyMapper::clearKeyMappingTabWidget()
+{
+    m_KeyMappingTabWidget->blockSignals(true);
+    disconnectKeyMappingDataTableConnection();
+    m_KeyMappingTabWidget->setTabText(0, "Tab1");
+    setKeyMappingTabWidgetCurrentIndex(0);
+    switchKeyMappingTabIndex(0);
+    updateKeyMappingDataTableConnection();
+
+    for (int tabindex = m_KeyMappingTabWidget->count() - 2; tabindex > 0; --tabindex) {
+        m_KeyMappingTabWidget->removeTab(tabindex);
+    }
+
+    for (int index = s_KeyMappingTabInfoList.size() - 1; index > 0; --index) {
+        if (s_KeyMappingTabInfoList.at(index).KeyMappingDataTable != Q_NULLPTR) {
+            delete s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
+        }
+        if (s_KeyMappingTabInfoList.at(index).KeyMappingData != Q_NULLPTR) {
+            delete s_KeyMappingTabInfoList.at(index).KeyMappingData;
+        }
+        s_KeyMappingTabInfoList.removeLast();
+    }
+
+    m_KeyMappingTabWidget->blockSignals(false);
 }
 
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)

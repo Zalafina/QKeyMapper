@@ -541,6 +541,7 @@ private:
     void showNotificationPopup(const QString &message, const QString &color, int position);
 
     void initKeyMappingTabWidget(void);
+    void clearKeyMappingTabWidget(void);
     bool isTabTextDuplicate(const QString &tabName);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
