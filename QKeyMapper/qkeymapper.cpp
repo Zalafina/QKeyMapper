@@ -3672,6 +3672,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             }
         }
 
+        settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, m_KeyMappingTabWidgetLastIndex);
+
         if (KeyMappingDataList->size() > 0){
             for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
             {
@@ -3731,12 +3733,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList );
 
-            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
-            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
-            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
-            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
-
-            settingFile.remove(saveSettingSelectStr+CLEARALL);
+            // settingFile.remove(saveSettingSelectStr+CLEARALL);
         }
         else{
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys );
@@ -3749,13 +3746,13 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList );
             settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList );
 
-            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
-            settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
-            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
-            settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
-
-            settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
+            // settingFile.setValue(saveSettingSelectStr+CLEARALL, QString("ClearList"));
         }
+
+        settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
+        settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
+        settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
+        settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
 
         if (saveGlobalSetting) {
 #ifdef DEBUG_LOGOUT_ON

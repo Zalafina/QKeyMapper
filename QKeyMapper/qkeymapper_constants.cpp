@@ -380,6 +380,7 @@ const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
 const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
 const char *MOUSE2VJOY_LOCKCURSOR = "Mouse2vJoy_LockCursor";
 #endif
+const char *MAPPINGTABLE_LASTTABINDEX = "MappingTable_LastTabIndex";
 const char *CLEARALL = "KeyMapData_ClearAll";
 
 const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
