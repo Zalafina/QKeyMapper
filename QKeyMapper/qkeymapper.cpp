@@ -414,6 +414,8 @@ QKeyMapper::~QKeyMapper()
         delete m_PopupNotification;
         m_PopupNotification = Q_NULLPTR;
     }
+
+    exitDeleteKeyMappingTabWidget();
 }
 
 void QKeyMapper::WindowStateChangedProc(void)
@@ -6656,11 +6658,11 @@ void QKeyMapper::initKeyMappingTabWidget(void)
 
     KeyMappingDataTableWidget *dummyKeyMappingTableWidget = new KeyMappingDataTableWidget(this);
     m_KeyMappingTabWidget->addTab(dummyKeyMappingTableWidget, "+");
-    bool addtab_result = addTabForKeyMappingTabWidget();
+    bool addtab_result = addTabToKeyMappingTabWidget();
     Q_UNUSED(addtab_result);
 #ifdef DEBUG_LOGOUT_ON
     if (false == addtab_result) {
-        qWarning() << "[initKeyMappingTabWidget]" << "addTabForKeyMappingTabWidget failed!";
+        qWarning() << "[initKeyMappingTabWidget]" << "addTabToKeyMappingTabWidget failed!";
     }
 #endif
 
@@ -6672,10 +6674,6 @@ void QKeyMapper::clearKeyMappingTabWidget()
 {
     m_KeyMappingTabWidget->blockSignals(true);
     disconnectKeyMappingDataTableConnection();
-    m_KeyMappingTabWidget->setTabText(0, "Tab1");
-    setKeyMappingTabWidgetCurrentIndex(0);
-    switchKeyMappingTabIndex(0);
-    updateKeyMappingDataTableConnection();
 
     for (int tabindex = m_KeyMappingTabWidget->count() - 2; tabindex > 0; --tabindex) {
         m_KeyMappingTabWidget->removeTab(tabindex);
@@ -6691,7 +6689,21 @@ void QKeyMapper::clearKeyMappingTabWidget()
         s_KeyMappingTabInfoList.removeLast();
     }
 
+    m_KeyMappingTabWidget->setTabText(0, "Tab1");
+    setKeyMappingTabWidgetCurrentIndex(0);
+    switchKeyMappingTabIndex(0);
+    updateKeyMappingDataTableConnection();
+
     m_KeyMappingTabWidget->blockSignals(false);
+}
+
+void QKeyMapper::exitDeleteKeyMappingTabWidget()
+{
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (s_KeyMappingTabInfoList.at(index).KeyMappingData != Q_NULLPTR) {
+            delete s_KeyMappingTabInfoList.at(index).KeyMappingData;
+        }
+    }
 }
 
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
@@ -8079,6 +8091,7 @@ void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "m_KeyMappingTabWidget TabBar doubleclicked :" << index;
 #endif
+        removeTabFromKeyMappingTabWidget(index);
     }
 }
 
@@ -8088,11 +8101,11 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget \"+\" tab clicked!";
 #endif
-        bool addtab_result = addTabForKeyMappingTabWidget();
+        bool addtab_result = addTabToKeyMappingTabWidget();
         Q_UNUSED(addtab_result);
 #ifdef DEBUG_LOGOUT_ON
         if (false == addtab_result) {
-            qWarning() << "[keyMappingTabWidgetCurrentChanged]" << "addTabForKeyMappingTabWidget failed!";
+            qWarning() << "[keyMappingTabWidgetCurrentChanged]" << "addTabToKeyMappingTabWidget failed!";
         }
 #endif
         setKeyMappingTabWidgetCurrentIndex(m_KeyMappingTabWidgetLastIndex);
@@ -10014,7 +10027,7 @@ void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
     }
 }
 
-bool QKeyMapper::addTabForKeyMappingTabWidget(const QString& customTabName)
+bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 {
     int tab_count = m_KeyMappingTabWidget->count();
     int insert_index = tab_count - 1;
@@ -10029,7 +10042,7 @@ bool QKeyMapper::addTabForKeyMappingTabWidget(const QString& customTabName)
             QString tempName = QString("%1(%2)").arg(tabName).arg(i, 3, 10, QChar('0'));
             if (!isTabTextDuplicate(tempName)) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[addTabForKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
+                qDebug().nospace() << "[addTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
 #endif
                 tabName = tempName;
                 uniqueNameFound = true;
@@ -10039,7 +10052,7 @@ bool QKeyMapper::addTabForKeyMappingTabWidget(const QString& customTabName)
         // If no unique name is found after checking all possible values (001~999), return false
         if (!uniqueNameFound) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[addTabForKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
+            qDebug().nospace() << "[addTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
 #endif
             return false;
         }
@@ -10110,7 +10123,48 @@ bool QKeyMapper::addTabForKeyMappingTabWidget(const QString& customTabName)
     s_KeyMappingTabInfoList.append(tab_info);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[addTabForKeyMappingTabWidget] Add a new tab with TabName:" << tabName;
+    qDebug().nospace() << "[addTabToKeyMappingTabWidget] Add a new tab with TabName:" << tabName;
 #endif
+    return true;
+}
+
+bool QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
+{
+    if (m_KeyMappingTabWidget->count() <= 2 || s_KeyMappingTabInfoList.size() <= 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Can not remove the last tab!" << " ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+#endif
+        return false;
+    }
+
+    if ((tabindex < 0) || (tabindex > m_KeyMappingTabWidget->count() - 2) || (tabindex > s_KeyMappingTabInfoList.size() - 1)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+#endif
+        return false;
+    }
+
+    m_KeyMappingTabWidget->blockSignals(true);
+    disconnectKeyMappingDataTableConnection();
+
+    m_KeyMappingTabWidget->removeTab(tabindex);
+    if (s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable != Q_NULLPTR) {
+        delete s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable;
+    }
+    if (s_KeyMappingTabInfoList.at(tabindex).KeyMappingData != Q_NULLPTR) {
+        delete s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    }
+    s_KeyMappingTabInfoList.removeAt(tabindex);
+
+    if (m_KeyMappingTabWidgetLastIndex > s_KeyMappingTabInfoList.size() - 1) {
+        m_KeyMappingTabWidgetLastIndex = s_KeyMappingTabInfoList.size() - 1;
+    }
+
+    setKeyMappingTabWidgetCurrentIndex(m_KeyMappingTabWidgetLastIndex);
+    switchKeyMappingTabIndex(m_KeyMappingTabWidgetLastIndex);
+    updateKeyMappingDataTableConnection();
+
+    m_KeyMappingTabWidget->blockSignals(false);
+
     return true;
 }

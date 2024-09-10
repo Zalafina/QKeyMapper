@@ -523,7 +523,9 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
-    bool addTabForKeyMappingTabWidget(const QString& customTabName = QString());
+    bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
+
+    bool removeTabFromKeyMappingTabWidget(int tabindex);
 
 private:
     // void initHotKeySequence(void);
@@ -542,6 +544,7 @@ private:
 
     void initKeyMappingTabWidget(void);
     void clearKeyMappingTabWidget(void);
+    void exitDeleteKeyMappingTabWidget(void);
     bool isTabTextDuplicate(const QString &tabName);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
