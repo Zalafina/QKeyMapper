@@ -3905,7 +3905,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 {
     bool loadDefault = false;
     bool loadGlobalSetting = false;
-    bool clearallcontainsflag = true;
+    bool initKeyMappingTable = false;
+    bool clearallcontainsflag = false;
     bool selectSettingContainsFlag = false;
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
@@ -4385,6 +4386,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
                     settingSelectStr.clear();
                 }
+                initKeyMappingTable = true;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -4398,6 +4400,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             settingSelectStr.clear();
             clearallcontainsflag = false;
+            initKeyMappingTable = true;
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Startup loading do not contain setting select!";
 #endif
@@ -4431,6 +4434,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
                     settingSelectStr.clear();
                 }
+                initKeyMappingTable = true;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -4459,18 +4463,17 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain SettingSelect";
 #endif
+            initKeyMappingTable = true;
         }
     }
 
-    if (settingSelectStr.isEmpty() != true) {
+    if (!settingSelectStr.isEmpty()) {
         if (false == settingSelectStr.contains("/")) {
             settingSelectStr = settingSelectStr + "/";
         }
 
-        if (true == settingtext.isEmpty() || true == selectSettingContainsFlag) {
-            if (false == settingFile.contains(settingSelectStr+CLEARALL)){
-                clearallcontainsflag = false;
-            }
+        if (!settingtext.isEmpty() && !selectSettingContainsFlag) {
+            initKeyMappingTable = true;
         }
 
         if (settingSelectStr == QString(GROUPNAME_GLOBALSETTING) + "/") {
@@ -4484,6 +4487,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             settingSelectStr.clear();
         }
+        initKeyMappingTable = true;
+    }
+
+    if (initKeyMappingTable) {
+        clearKeyMappingTabWidget();
+        KeyMappingDataList->clear();
+    }
+    else {
     }
 
     if (false == clearallcontainsflag){
