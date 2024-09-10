@@ -4651,6 +4651,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     loadindex += 1;
                 }
             }
+            else if (original_keys.isEmpty() && mapping_keys.isEmpty()) {
+                datavalidflag = true;
+            }
         }
 
         if (datavalidflag != (quint8)true){
