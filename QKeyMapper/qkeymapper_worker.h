@@ -45,6 +45,9 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEPARATOR_DOUBLEPRESS   ("✖")
 #define SEPARATOR_TITLESETTING  ("|")
 
+#define SEPARATOR_KEYMAPDATA_LEVEL1  ("#")
+#define SEPARATOR_KEYMAPDATA_LEVEL2  ("|")
+
 // #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
 // #define KEYSEQUENCE_STR         ("KeySequence")
 // #define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")

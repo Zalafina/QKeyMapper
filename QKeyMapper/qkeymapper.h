@@ -563,6 +563,7 @@ private:
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
     void setKeyMappingTabWidgetCurrentIndex(int index);
+    void forceSwitchKeyMappingTabWidgetIndex(int index);
     void refreshKeyMappingDataTable(void);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
@@ -574,7 +575,6 @@ private:
     bool backupFile(const QString &originalFile, const QString &backupFile);
 #ifdef SETTINGSFILE_CONVERT
     bool checkSettingsFileNeedtoConvert(void);
-    void renameSettingsGroup(QSettings &settings, const QString &oldName, const QString &newName);
     void convertSettingsFile(void);
 #endif
     int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
