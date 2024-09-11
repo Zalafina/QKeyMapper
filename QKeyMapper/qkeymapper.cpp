@@ -3248,14 +3248,26 @@ bool QKeyMapper::backupFile(const QString &originalFile, const QString &backupFi
 #ifdef SETTINGSFILE_CONVERT
 bool QKeyMapper::checkSettingsFileNeedtoConvert()
 {
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QStringList keys = settingFile.allKeys();
+    QFile file(CONFIG_FILENAME);
 
-    QRegularExpression keymapdata_regex("^KeyMapData_.+, .+$");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning("Could not open the file for reading");
+        return false;
+    }
 
-    for (const QString &key : keys) {
-        QString value = settingFile.value(key).toString();
-        if (keymapdata_regex.match(value).hasMatch()) {
+    QStringList fileContent;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        fileContent << in.readLine();
+    }
+    file.close();
+
+    static QRegularExpression keymapdata_regex("^KeyMapData_.+=.+, .+$");
+
+    for (int i = 0; i < fileContent.size(); ++i) {
+        QString &line = fileContent[i];
+        QRegularExpressionMatch match = keymapdata_regex.match(line);
+        if (match.hasMatch()) {
             return true;
         }
     }
@@ -3265,7 +3277,46 @@ bool QKeyMapper::checkSettingsFileNeedtoConvert()
 
 void QKeyMapper::convertSettingsFile()
 {
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QFile file(CONFIG_FILENAME);
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning("Could not open the file for reading");
+        return;
+    }
+
+    QStringList fileContent;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        fileContent << in.readLine();
+    }
+    file.close();
+
+    static QRegularExpression keymapdata_regex("^KeyMapData_.+=.+, .+$");
+    bool modified = false;
+
+    for (int i = 0; i < fileContent.size(); ++i) {
+        QString &line = fileContent[i];
+        QRegularExpressionMatch match = keymapdata_regex.match(line);
+        if (match.hasMatch()) {
+            line.replace(", ", SEPARATOR_KEYMAPDATA_LEVEL1);
+            modified = true;
+        }
+    }
+
+    if (modified) {
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+            qWarning("Could not open the file for writing");
+            return;
+        }
+
+        QTextStream out(&file);
+        for (const QString &line : fileContent) {
+            out << line << "\n";
+        }
+        file.close();
+    }
+
+    return;
 }
 #endif
 
