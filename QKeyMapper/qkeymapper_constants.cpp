@@ -423,6 +423,7 @@ const char *MAPPINGSTARTKEY_LINEEDIT_NAME = "mappingStartKeyLineEdit";
 const char *MAPPINGSTOPKEY_LINEEDIT_NAME = "mappingStopKeyLineEdit";
 
 const char *MAPPINGTABLE_TAB_TEXT = "Tab";
+const char *ADDTAB_TAB_TEXT = "+";
 
 const char *KEY_NONE_STR = "NONE";
 const char *KEY_BLOCKED_STR = "BLOCKED";

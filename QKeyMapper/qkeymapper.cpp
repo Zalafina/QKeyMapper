@@ -6626,8 +6626,8 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
     m_KeyMappingTabWidget->setFont(QFont(FONTNAME_ENGLISH, 9));
 
-    KeyMappingDataTableWidget *dummyKeyMappingTableWidget = new KeyMappingDataTableWidget(this);
-    m_KeyMappingTabWidget->addTab(dummyKeyMappingTableWidget, "+");
+    KeyMappingDataTableWidget *AddTAB_TableWidget = new KeyMappingDataTableWidget(this);
+    m_KeyMappingTabWidget->addTab(AddTAB_TableWidget, ADDTAB_TAB_TEXT);
     bool addtab_result = addTabToKeyMappingTabWidget();
     Q_UNUSED(addtab_result);
 #ifdef DEBUG_LOGOUT_ON
@@ -8102,20 +8102,27 @@ void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
 #endif
         removeTabFromKeyMappingTabWidget(index);
     }
-}
-
-void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
-{
-    if (index == m_KeyMappingTabWidget->count() - 1) {
+    else if ((index == m_KeyMappingTabWidget->count() - 1)
+        && (m_KeyMappingTabWidget->tabText(index) == ADDTAB_TAB_TEXT)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget \"+\" tab clicked!";
+        qDebug() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "m_KeyMappingTabWidget \"+\" tab doubleclicked!";
 #endif
         bool addtab_result = addTabToKeyMappingTabWidget();
         Q_UNUSED(addtab_result);
 #ifdef DEBUG_LOGOUT_ON
         if (false == addtab_result) {
-            qWarning() << "[keyMappingTabWidgetCurrentChanged]" << "addTabToKeyMappingTabWidget failed!";
+            qWarning() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "addTabToKeyMappingTabWidget failed!";
         }
+#endif
+    }
+}
+
+void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
+{
+    if ((index == m_KeyMappingTabWidget->count() - 1)
+        && (m_KeyMappingTabWidget->tabText(index) == ADDTAB_TAB_TEXT)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget \"+\" tab clicked, do nothing.";
 #endif
         setKeyMappingTabWidgetCurrentIndex(m_KeyMappingTabWidgetLastIndex);
     }

@@ -145,7 +145,8 @@ INCLUDEPATH += $$PWD/libusb/include
 HEADERS     += \
     Interception/include/interception.h \
     libusb/include/libusb.h \
-    qitemsetupdialog.h
+    qitemsetupdialog.h \
+    qtablesetupdialog.h
 # Interception Driver Support <<<
 
 
@@ -159,7 +160,8 @@ SOURCES     += \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
     qkeymapper_constants.cpp \
-    qkeymapper_worker.cpp
+    qkeymapper_worker.cpp \
+    qtablesetupdialog.cpp
 
 HEADERS     += \
     interception_worker.h \
@@ -181,7 +183,8 @@ contains( DEFINES, SINGLE_APPLICATION ) {
 FORMS       += \
     qinputdevicelistwindow.ui \
     qitemsetupdialog.ui \
-    qkeymapper.ui
+    qkeymapper.ui \
+    qtablesetupdialog.ui
 
 RESOURCES   += \
     image.qrc \

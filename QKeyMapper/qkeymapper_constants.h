@@ -370,6 +370,7 @@ extern const char* WINDOWSWITCHKEY_LINEEDIT_NAME;
 extern const char* MAPPINGSTARTKEY_LINEEDIT_NAME;
 extern const char* MAPPINGSTOPKEY_LINEEDIT_NAME;
 extern const char *MAPPINGTABLE_TAB_TEXT;
+extern const char *ADDTAB_TAB_TEXT;
 extern const char *KEY_NONE_STR;
 extern const char* KEY_BLOCKED_STR;
 extern const char *GAMEPAD_HOME_STR;
