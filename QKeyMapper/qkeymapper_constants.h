@@ -339,6 +339,7 @@ extern const char* MOUSE2VJOY_Y_SENSITIVITY;
 extern const char* MOUSE2VJOY_LOCKCURSOR;
 #endif
 extern const char *MAPPINGTABLE_LASTTABINDEX;
+extern const char *MAPPINGTABLE_TABNAMELIST;
 extern const char* CLEARALL;
 extern const char* PROCESSINFO_FILENAME;
 extern const char* PROCESSINFO_WINDOWTITLE;

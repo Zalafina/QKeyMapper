@@ -3609,6 +3609,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, m_KeyMappingTabWidgetLastIndex);
 
+    QStringList tabnamelist;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString burstList_forsave;
@@ -3620,6 +3621,15 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString keyseqholddownList_forsave;
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
+        if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
+            tabName = QString();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[saveKeyMapSetting] TabName:" << tabName << " is already exists, set a empty tabname!";
+#endif
+        }
+        tabnamelist.append(tabName);
+
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
         // append SEPARATOR_KEYMAPDATA_LEVEL2 to QString variable forsave if it is not the first index
@@ -3717,6 +3727,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         keyseqholddownList_forsave.append(keyseqholddownList_str);
     }
 
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
+
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList_forsave);
@@ -3727,10 +3739,10 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
 
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed  );
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed  );
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity  );
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity  );
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed);
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed);
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity);
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity);
 
     if (saveGlobalSetting) {
 #ifdef DEBUG_LOGOUT_ON
@@ -4318,7 +4330,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
-        && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))){
+        && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
+        QStringList tabnamelist_loaded;
         QString original_keys_loaded;
         QString mapping_keys_loaded;
         QString burstData_loaded;
@@ -4339,8 +4352,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList keyup_actionData_split;
         QStringList keyseqholddownData_split;
 
-        original_keys_loaded   = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
-        mapping_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toString();
+        original_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
+        mapping_keys_loaded     = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toString();
+        tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
 
         if (original_keys_loaded.isEmpty() && mapping_keys_loaded.isEmpty()) {
             initKeyMappingTable = true;
@@ -4565,6 +4579,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[loadKeyMapSetting]" << "addTabToKeyMappingTabWidget() failed! index =" << index;
 #endif
+                }
+            }
+
+            for (int index = 0; index < tabnamelist_loaded.size(); ++index) {
+                if ((index < s_KeyMappingTabInfoList.size()) && (index < m_KeyMappingTabWidget->count() - 1)) {
+                    s_KeyMappingTabInfoList[index].TabName = tabnamelist_loaded.at(index);
+                    m_KeyMappingTabWidget->setTabText(index, tabnamelist_loaded.at(index));
                 }
             }
 
@@ -6660,6 +6681,16 @@ bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
     // Iterate through tabinfolist to check if there is a duplicate tabname
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         if (s_KeyMappingTabInfoList.at(index).TabName == tabName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool QKeyMapper::isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList)
+{
+    for (const QString &tab_name : tabNameList) {
+        if (tab_name == tabName) {
             return true;
         }
     }

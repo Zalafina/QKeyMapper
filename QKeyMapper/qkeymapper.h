@@ -546,6 +546,7 @@ private:
     void clearKeyMappingTabWidget(void);
     void exitDeleteKeyMappingTabWidget(void);
     bool isTabTextDuplicate(const QString &tabName);
+    bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
     void resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable);

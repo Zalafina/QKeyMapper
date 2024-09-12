@@ -381,6 +381,7 @@ const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
 const char *MOUSE2VJOY_LOCKCURSOR = "Mouse2vJoy_LockCursor";
 #endif
 const char *MAPPINGTABLE_LASTTABINDEX = "MappingTable_LastTabIndex";
+const char *MAPPINGTABLE_TABNAMELIST = "MappingTable_TabNameList";
 const char *CLEARALL = "KeyMapData_ClearAll";
 
 const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
