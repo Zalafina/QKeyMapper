@@ -548,7 +548,8 @@ private:
     bool isTabTextDuplicate(const QString &tabName);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
-    void resizeKeyMappingDataTableColumnWidth(void);
+    void resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable);
+    void resizeAllKeyMappingTabWidgetColumnWidth(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);
@@ -564,7 +565,8 @@ private:
     void initCombinationKeyLineEdit(void);
     void setKeyMappingTabWidgetCurrentIndex(int index);
     void forceSwitchKeyMappingTabWidgetIndex(int index);
-    void refreshKeyMappingDataTable(void);
+    void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);
+    void refreshAllKeyMappingTagWidget(void);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage_Chinese(void);
