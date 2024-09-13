@@ -2470,6 +2470,30 @@ bool QKeyMapper::isTabTextDuplicateInStringList(const QString &tabName, const QS
     return false;
 }
 
+bool QKeyMapper::validateCombinationKey(QString &input)
+{
+    bool isvalid = true;
+
+    QStringList keylist = input.split(SEPARATOR_PLUS);
+    if (keylist.isEmpty())
+    {
+        isvalid = false;
+    }
+    else
+    {
+        for (const QString& key : keylist)
+        {
+            if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
+            {
+                isvalid = false;
+                break;
+            }
+        }
+    }
+
+    return isvalid;
+}
+
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 {
     if (eventType == "windows_generic_MSG") {
@@ -5081,30 +5105,6 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     }
 }
 
-bool QKeyMapper::validateCombinationKey(QString &input)
-{
-    bool isvalid = true;
-
-    QStringList keylist = input.split(SEPARATOR_PLUS);
-    if (keylist.isEmpty())
-    {
-        isvalid = false;
-    }
-    else
-    {
-        for (const QString& key : keylist)
-        {
-            if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
-            {
-                isvalid = false;
-                break;
-            }
-        }
-    }
-
-    return isvalid;
-}
-
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
 {
     returnback_fontid = -1;
@@ -6316,7 +6316,23 @@ void QKeyMapper::updateKeyMappingTabWidgetTabName(int tabindex, const QString &t
     }
 
     m_KeyMappingTabWidget->setTabText(tabindex, tabname);
-    s_KeyMappingTabInfoList[tabindex].TabName = tabname;
+    if (s_KeyMappingTabInfoList.at(tabindex).TabName != tabname) {
+        s_KeyMappingTabInfoList[tabindex].TabName = tabname;
+    }
+}
+
+void QKeyMapper::updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabhotkey)
+{
+    if (tabindex < 0 || tabindex > s_KeyMappingTabInfoList.size() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[updateKeyMappingTabInfoHotkey] Invalid index : " << tabindex << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+#endif
+        return;
+    }
+
+    if (s_KeyMappingTabInfoList.at(tabindex).TabHotkey != tabhotkey) {
+        s_KeyMappingTabInfoList[tabindex].TabHotkey = tabhotkey;
+    }
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()

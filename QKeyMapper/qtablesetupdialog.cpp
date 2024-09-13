@@ -153,8 +153,13 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
             popupMessage = "TabName is empty!";
         }
         else {
-            popupMessage = "未填写映射表名!";
+            popupMessage = "未填写映射表名！";
         }
+    }
+    else if (tabNameString == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_tabNameUpdateButton_clicked]" << "TabName was not modified, no action required.";
+#endif
     }
     else if (isduplicate) {
         popupMessageColor = "#d63031";
@@ -184,5 +189,48 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
 
 void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
 {
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
 
+    QString ori_tabhotkeystring = ui->tabHotkeyLineEdit->text();
+    QString tabhotkeystring = ori_tabhotkeystring;
+    if (tabhotkeystring.startsWith(PREFIX_PASSTHROUGH)) {
+        tabhotkeystring.remove(0, 1);
+    }
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+
+    if (ori_tabhotkeystring.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_tabHotkeyUpdateButton_clicked]" << "TabHotkey is empty; no action required.";
+#endif
+    }
+    else if (QKeyMapper::validateCombinationKey(tabhotkeystring))
+    {
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = "TabHotkey update success: " + ori_tabhotkeystring;
+        }
+        else {
+            popupMessage = "映射表快捷键更新成功: " + ori_tabhotkeystring;
+        }
+
+        QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+    }
+    else
+    {
+        ui->tabHotkeyLineEdit->setText(QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey);
+
+        popupMessageColor = "#d63031";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = "Invalid input format for TabHotkey!";
+        }
+        else {
+            popupMessage = "映射表快捷键输入格式错误！";
+        }
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }

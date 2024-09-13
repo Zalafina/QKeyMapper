@@ -384,6 +384,7 @@ public:
     static bool getSendToSameTitleWindowsStatus(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
+    static bool validateCombinationKey(QString &input);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
@@ -588,7 +589,6 @@ private:
     bool loadKeyMapSetting(const QString &settingtext);
     bool checkOriginalkeyStr(const QString &originalkeystr);
     bool checkMappingkeyStr(QString &mappingkeystr);
-    bool validateCombinationKey(QString &input);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT
@@ -629,6 +629,7 @@ public slots:
     void updateInputDeviceSelectComboBoxes(void);
     void updateGamepadSelectComboBox(void);
     void updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname);
+    void updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabhotkey);
 
 public:
     static bool s_isDestructing;
