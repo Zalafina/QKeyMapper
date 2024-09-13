@@ -100,8 +100,6 @@ void QTableSetupDialog::closeEvent(QCloseEvent *event)
 #endif
     m_TabIndex = -1;
 
-    // emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
-
     QDialog::closeEvent(event);
 }
 
@@ -131,8 +129,6 @@ void QTableSetupDialog::keyPressEvent(QKeyEvent *event)
         qDebug() << "[QTableSetupDialog::keyPressEvent]" << "ESC Key Pressed, Tab Index initialize to -1 and close TableSetupDialog.";
 #endif
         m_TabIndex = -1;
-
-        // emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
     }
 
     QDialog::keyPressEvent(event);
