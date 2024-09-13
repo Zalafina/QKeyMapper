@@ -359,6 +359,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // QObject::connect(this, &QKeyMapper::HotKeyMappingSwitchActivated_Signal, this, &QKeyMapper::HotKeyMappingSwitchActivated, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::HotKeyMappingStart_Signal, this, &QKeyMapper::HotKeyMappingStart, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::HotKeyMappingStop_Signal, this, &QKeyMapper::HotKeyMappingStop, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::HotKeyMappingTableSwitchTab_Signal, this, &QKeyMapper::HotKeyMappingTableSwitchTab, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
@@ -1911,6 +1912,11 @@ void QKeyMapper::collectMappingTableTabHotkeys()
         // Get the current TabHotkey
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
 
+        // Skip if TabHotkey is empty
+        if (tabHotkey.isEmpty()) {
+            continue;
+        }
+
         // Check if it starts with PREFIX_PASSTHROUGH, if so, remove the prefix
         if (tabHotkey.startsWith(PREFIX_PASSTHROUGH)) {
             tabHotkey.remove(0, 1);
@@ -3015,6 +3021,13 @@ void QKeyMapper::HotKeyMappingStop(const QString &hotkey_string)
     }
 }
 
+void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey ->" << hotkey_string;
+#endif
+}
+
 void QKeyMapper::switchKeyMappingTabIndex(int index)
 {
     if (0 <= index && index < s_KeyMappingTabInfoList.size()) {
@@ -3689,6 +3702,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, m_KeyMappingTabWidgetLastIndex);
 
     QStringList tabnamelist;
+    QStringList tabhotkeylist;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString burstList_forsave;
@@ -3701,6 +3715,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
+        QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName = QString();
 #ifdef DEBUG_LOGOUT_ON
@@ -3708,6 +3723,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
         }
         tabnamelist.append(tabName);
+        tabhotkeylist.append(tabHotkey);
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -3807,6 +3823,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -4695,7 +4712,18 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         if (index < tabhotkeylist_loaded.size()) {
-            s_KeyMappingTabInfoList[index].TabHotkey = tabhotkeylist_loaded.at(index);
+            QString tabhotkeystring = tabhotkeylist_loaded.at(index);
+            if (tabhotkeystring.startsWith(PREFIX_PASSTHROUGH)) {
+                tabhotkeystring.remove(0, 1);
+            }
+
+            if (tabhotkeystring.isEmpty() == false
+                && QKeyMapper::validateCombinationKey(tabhotkeystring)) {
+                s_KeyMappingTabInfoList[index].TabHotkey = tabhotkeystring;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabHotkey.clear();
+            }
         }
         else {
             s_KeyMappingTabInfoList[index].TabHotkey.clear();

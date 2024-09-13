@@ -392,6 +392,7 @@ signals:
     // void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
     void HotKeyMappingStart_Signal(const QString &hotkey_string);
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
+    void HotKeyMappingTableSwitchTab_Signal(const QString &hotkey_string);
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
@@ -456,6 +457,7 @@ public slots:
     void HotKeyMappingSwitchActivated(const QString &hotkey_string);
     void HotKeyMappingStart(const QString &hotkey_string);
     void HotKeyMappingStop(const QString &hotkey_string);
+    void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void switchKeyMappingTabIndex(int index);
 
 private slots:
