@@ -15,8 +15,30 @@ public:
     explicit QTableSetupDialog(QWidget *parent = nullptr);
     ~QTableSetupDialog();
 
+    static QTableSetupDialog *getInstance()
+    {
+        return m_instance;
+    }
+
+    void setUILanguagee(int languageindex);
+    void resetFontSize(void);
+    void setTabIndex(int tabindex);
+
+protected:
+    bool event(QEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+
+private slots:
+    void on_tabNameUpdateButton_clicked();
+
+    void on_tabHotkeyUpdateButton_clicked();
+
 private:
+    static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
+    int m_TabIndex;
 };
 
 #endif // QTABLESETUPDIALOG_H

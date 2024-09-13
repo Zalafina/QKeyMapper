@@ -55,6 +55,7 @@
 #include "qkeymapper_worker.h"
 #include "qinputdevicelistwindow.h"
 #include "qitemsetupdialog.h"
+#include "qtablesetupdialog.h"
 
 extern void updateQtDisplayEnvironment(void);
 
@@ -174,7 +175,7 @@ private:
 struct KeyMappingTab_Info
 {
     QString TabName;
-    QString TabActivateHotkey;
+    QString TabHotkey;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };
@@ -381,6 +382,8 @@ public:
     static double getBrakeThreshold(void);
     static double getAccelThreshold(void);
     static bool getSendToSameTitleWindowsStatus(void);
+    static bool isTabTextDuplicate(const QString &tabName);
+    static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
@@ -545,8 +548,6 @@ private:
     void initKeyMappingTabWidget(void);
     void clearKeyMappingTabWidget(void);
     void exitDeleteKeyMappingTabWidget(void);
-    bool isTabTextDuplicate(const QString &tabName);
-    bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
     void resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable);
@@ -608,6 +609,9 @@ private:
     void showItemSetupDialog(int row);
     void closeItemSetupDialog(void);
 
+    void showTableSetupDialog(int tabindex);
+    void closeTableSetupDialog(void);
+
     int installInterceptionDriver(void);
     int uninstallInterceptionDriver(void);
 
@@ -624,6 +628,7 @@ public slots:
     void updateMultiInputStatus(void);
     void updateInputDeviceSelectComboBoxes(void);
     void updateGamepadSelectComboBox(void);
+    void updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname);
 
 public:
     static bool s_isDestructing;
@@ -692,6 +697,7 @@ private:
     int m_TransParentWindowInitialHeight;
     QInputDeviceListWindow *m_deviceListWindow;
     QItemSetupDialog *m_ItemSetupDialog;
+    QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;
 };
 #endif // QKEYMAPPER_H

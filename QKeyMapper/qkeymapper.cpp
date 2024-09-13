@@ -66,6 +66,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TransParentWindowInitialHeight(0),
     m_deviceListWindow(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR),
+    m_TableSetupDialog(Q_NULLPTR),
     m_PopupNotification(Q_NULLPTR)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -312,6 +313,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     initKeyMappingTabWidget();
     m_ItemSetupDialog = new QItemSetupDialog(this);
+    m_TableSetupDialog = new QTableSetupDialog(this);
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
@@ -425,6 +427,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!";
 #endif
+        closeTableSetupDialog();
         closeItemSetupDialog();
         hide();
     }
@@ -2446,6 +2449,27 @@ bool QKeyMapper::getSendToSameTitleWindowsStatus()
     }
 }
 
+bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
+{
+    // Iterate through tabinfolist to check if there is a duplicate tabname
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (s_KeyMappingTabInfoList.at(index).TabName == tabName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool QKeyMapper::isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList)
+{
+    for (const QString &tab_name : tabNameList) {
+        if (tab_name == tabName) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 {
     if (eventType == "windows_generic_MSG") {
@@ -2748,6 +2772,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
     }
 
     if (m_KeyMapStatus != KEYMAP_IDLE){
+        closeTableSetupDialog();
         closeItemSetupDialog();
         changeControlEnableStatus(false);
     }
@@ -5715,6 +5740,36 @@ void QKeyMapper::closeItemSetupDialog()
     }
 }
 
+void QKeyMapper::showTableSetupDialog(int tabindex)
+{
+    if (Q_NULLPTR == m_TableSetupDialog) {
+        return;
+    }
+
+    if (!m_TableSetupDialog->isVisible()) {
+        QRect windowGeometry = this->geometry();
+        int x = windowGeometry.x() + (windowGeometry.width() - m_TableSetupDialog->width()) / 2;
+        int y = windowGeometry.y() + (windowGeometry.height() - m_TableSetupDialog->height()) / 2;
+        int y_offset = -150;
+        y += y_offset;
+        m_TableSetupDialog->move(x, y);
+
+        m_TableSetupDialog->setTabIndex(tabindex);
+        m_TableSetupDialog->show();
+    }
+}
+
+void QKeyMapper::closeTableSetupDialog()
+{
+    if (Q_NULLPTR == m_TableSetupDialog) {
+        return;
+    }
+
+    if (m_TableSetupDialog->isVisible()) {
+        m_TableSetupDialog->close();
+    }
+}
+
 int QKeyMapper::installInterceptionDriver()
 {
     QString operate_str = QString("runas");
@@ -6251,6 +6306,19 @@ void QKeyMapper::updateGamepadSelectComboBox()
 #endif
 }
 
+void QKeyMapper::updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname)
+{
+    if ((tabindex < 0) || (tabindex > m_KeyMappingTabWidget->count() - 2) || (tabindex > s_KeyMappingTabInfoList.size() - 1)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[updateKeyMappingTabWidgetTabName] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+#endif
+        return;
+    }
+
+    m_KeyMappingTabWidget->setTabText(tabindex, tabname);
+    s_KeyMappingTabInfoList[tabindex].TabName = tabname;
+}
+
 void QKeyMapper::on_savemaplistButton_clicked()
 {
     saveKeyMapSetting();
@@ -6575,6 +6643,7 @@ void QKeyMapper::switchShowHide()
 
     if (false == isHidden()) {
         m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeTableSetupDialog();
         closeItemSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
@@ -6674,27 +6743,6 @@ void QKeyMapper::exitDeleteKeyMappingTabWidget()
             delete s_KeyMappingTabInfoList.at(index).KeyMappingData;
         }
     }
-}
-
-bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
-{
-    // Iterate through tabinfolist to check if there is a duplicate tabname
-    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-        if (s_KeyMappingTabInfoList.at(index).TabName == tabName) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool QKeyMapper::isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList)
-{
-    for (const QString &tab_name : tabNameList) {
-        if (tab_name == tabName) {
-            return true;
-        }
-    }
-    return false;
 }
 
 void QKeyMapper::disconnectKeyMappingDataTableConnection()
@@ -7688,6 +7736,10 @@ void QKeyMapper::setUILanguage_Chinese()
         m_deviceListWindow->setUILanguagee(LANGUAGE_CHINESE);
     }
 
+    if (m_TableSetupDialog != Q_NULLPTR) {
+        m_TableSetupDialog->setUILanguagee(LANGUAGE_CHINESE);
+    }
+
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->setUILanguagee(LANGUAGE_CHINESE);
     }
@@ -7809,6 +7861,10 @@ void QKeyMapper::setUILanguage_English()
         m_deviceListWindow->setUILanguagee(LANGUAGE_ENGLISH);
     }
 
+    if (m_TableSetupDialog != Q_NULLPTR) {
+        m_TableSetupDialog->setUILanguagee(LANGUAGE_ENGLISH);
+    }
+
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->setUILanguagee(LANGUAGE_ENGLISH);
     }
@@ -7918,6 +7974,10 @@ void QKeyMapper::resetFontSize()
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->resetFontSize();
+    }
+
+    if (m_TableSetupDialog != Q_NULLPTR) {
+        m_TableSetupDialog->resetFontSize();
     }
 
     if (m_ItemSetupDialog != Q_NULLPTR) {
@@ -8096,11 +8156,14 @@ void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
 
 void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
 {
-    if (0 <= index && index < m_KeyMappingTabWidget->count() - 1) {
+    if ((0 <= index)
+        && (index < m_KeyMappingTabWidget->count() - 1)
+        && (index < s_KeyMappingTabInfoList.size())) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "m_KeyMappingTabWidget TabBar doubleclicked :" << index;
 #endif
-        removeTabFromKeyMappingTabWidget(index);
+
+        showTableSetupDialog(index);
     }
     else if ((index == m_KeyMappingTabWidget->count() - 1)
         && (m_KeyMappingTabWidget->tabText(index) == ADDTAB_TAB_TEXT)) {
