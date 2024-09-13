@@ -229,7 +229,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             popupMessage = "Invalid input format for TabHotkey!";
         }
         else {
-            popupMessage = "映射表快捷键输入格式错误！";
+            popupMessage = "映射表快捷键输入格式错误: " + ori_tabhotkeystring;
         }
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
