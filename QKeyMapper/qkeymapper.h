@@ -346,6 +346,7 @@ public:
     static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
     static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex);
     static ValidationResult validateSingleMappingKey(const QString &mapkey);
+    static void collectMappingTableTabHotkeys(void);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -649,6 +650,7 @@ public:
     static QString s_WindowSwitchKeyString;
     static QString s_MappingStartKeyString;
     static QString s_MappingStopKeyString;
+    static QHash<QString, QList<int>> s_MappingTableTabHotkeyMap;
     static qreal s_UI_scale_value;
     int m_UI_Scale;
     KeyMapStatus m_KeyMapStatus;

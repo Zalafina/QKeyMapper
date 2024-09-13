@@ -7744,6 +7744,53 @@ bool QKeyMapper_Worker::detectMappingStopKey(const QString &keycodeString, int k
     return detected;
 }
 
+bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeString, int keyupdown)
+{
+    bool detected = false;
+    // const QStringList switchTabHotkeys = QKeyMapper::s_MappingStartKeyStrings;
+    const QStringList switchTabHotkeys; // need to modify
+
+    for (const QString& tabHotkey : switchTabHotkeys)
+    {
+        bool passthrough = false;
+        QString keyToCheck = tabHotkey;
+
+        if (keyToCheck.startsWith(PREFIX_PASSTHROUGH)) {
+            passthrough = true;
+            keyToCheck.remove(0, 1);
+        }
+
+        QStringList keys = keyToCheck.split(SEPARATOR_PLUS);
+        bool allKeysPressed = true;
+
+        for (const QString &key : keys)
+        {
+            if (!pressedRealKeysListRemoveMultiInput.contains(key))
+            {
+                allKeysPressed = false;
+                break;
+            }
+        }
+
+        if (KEY_DOWN == keyupdown && allKeysPressed && keyToCheck.contains(keycodeString))
+        {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[detectMappingTableTabHotkeys]" << "TabHotkey detected ->" << keyToCheck;
+#endif
+            emit QKeyMapper::getInstance()->HotKeyMappingStart_Signal(keyToCheck);  // need to modify
+            if (passthrough) {
+                detected = false;
+            }
+            else {
+                detected = true;
+            }
+            break;
+        }
+    }
+
+    return detected;
+}
+
 int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int keyupdown)
 {
     int intercept = KEY_INTERCEPT_NONE;

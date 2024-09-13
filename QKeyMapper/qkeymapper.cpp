@@ -22,6 +22,7 @@ QList<MousePoint_Info> QKeyMapper::WindowMousePointsList = QList<MousePoint_Info
 QString QKeyMapper::s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingStartKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+QHash<QString, QList<int>> QKeyMapper::s_MappingTableTabHotkeyMap;
 qreal QKeyMapper::s_UI_scale_value = 1.0;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
@@ -1898,6 +1899,35 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     }
 
     return result;
+}
+
+void QKeyMapper::collectMappingTableTabHotkeys()
+{
+    s_MappingTableTabHotkeyMap.clear();
+
+    // Iterate over s_KeyMappingTabInfoList
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index)
+    {
+        // Get the current TabHotkey
+        QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
+
+        // Check if it starts with PREFIX_PASSTHROUGH, if so, remove the prefix
+        if (tabHotkey.startsWith(PREFIX_PASSTHROUGH)) {
+            tabHotkey.remove(0, 1);
+        }
+
+        // Check if s_MappingTableTabHotkeyMap contains the TabHotkey as a key
+        if (!s_MappingTableTabHotkeyMap.contains(tabHotkey)) {
+            // If not, add a new key and initialize its value (QList<int>)
+            s_MappingTableTabHotkeyMap[tabHotkey] = QList<int>();
+        }
+
+        // Append the current index to the QList<int> corresponding to the key
+        s_MappingTableTabHotkeyMap[tabHotkey].append(index);
+
+        // Sort the QList<int> to ensure indices are in ascending order
+        std::sort(s_MappingTableTabHotkeyMap[tabHotkey].begin(), s_MappingTableTabHotkeyMap[tabHotkey].end());
+    }
 }
 
 void QKeyMapper::EnumProcessFunction(void)
@@ -4378,6 +4408,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         initKeyMappingTable = true;
     }
 
+    QStringList tabhotkeylist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -4404,6 +4435,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         original_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
         mapping_keys_loaded     = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toString();
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
+        tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
 
         if (original_keys_loaded.isEmpty() && mapping_keys_loaded.isEmpty()) {
             initKeyMappingTable = true;
@@ -4660,6 +4692,17 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         clearKeyMappingTabWidget();
         KeyMappingDataList->clear();
     }
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (index < tabhotkeylist_loaded.size()) {
+            s_KeyMappingTabInfoList[index].TabHotkey = tabhotkeylist_loaded.at(index);
+        }
+        else {
+            s_KeyMappingTabInfoList[index].TabHotkey.clear();
+        }
+    }
+
+    collectMappingTableTabHotkeys();
 
     int last_mappingtable_index = 0;
     if (true == settingFile.contains(settingSelectStr+MAPPINGTABLE_LASTTABINDEX)){
@@ -6333,6 +6376,8 @@ void QKeyMapper::updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabh
     if (s_KeyMappingTabInfoList.at(tabindex).TabHotkey != tabhotkey) {
         s_KeyMappingTabInfoList[tabindex].TabHotkey = tabhotkey;
     }
+
+    collectMappingTableTabHotkeys();
 }
 
 void QKeyMapper::on_savemaplistButton_clicked()
