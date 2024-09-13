@@ -174,8 +174,10 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::setKeyMappingRestart_Signal, this, &QKeyMapper_Worker::setKeyMappingRestart, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyMappingRestart_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::sessionLockStateChanged_Signal, this, &QKeyMapper_Worker::sessionLockStateChanged, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::startBurstTimer_Signal, this, &QKeyMapper_Worker::startBurstTimer, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::stopBurstTimer_Signal, this, &QKeyMapper_Worker::stopBurstTimer, Qt::QueuedConnection);
@@ -3623,6 +3625,136 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_EnableStateMap.clear();
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
+#endif
+}
+
+void QKeyMapper_Worker::setKeyMappingRestart()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[setKeyMappingRestart] KeyMapping Restart >>>");
+#endif
+
+    /* Stop Key Mapping Process */
+    clearAllBurstKeyTimersAndLockKeys();
+    clearAllPressedVirtualKeys();
+    clearAllPressedRealCombinationKeys();
+    pressedCombinationRealKeysList.clear();
+    pressedLongPressKeysList.clear();
+    pressedDoublePressKeysList.clear();
+    combinationOriginalKeysList.clear();
+    longPressOriginalKeysMap.clear();
+    doublePressOriginalKeysMap.clear();
+    pressedMappingKeysMap.clear();
+    pressedLockKeysList.clear();
+    exchangeKeysList.clear();
+
+    s_Key2Mouse_EnableState = false;
+    s_Joy2Mouse_EnableStateMap.clear();
+
+    if (m_Key2MouseCycleTimer.isActive()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setKeyMappingRestart] Key2MouseCycleTimer Stopped.");
+#endif
+        m_Key2MouseCycleTimer.stop();
+    }
+    s_JoyAxisStateMap.clear();
+
+    stopDataPortListener();
+
+    if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
+        setMouseToPoint(m_LastMouseCursorPoint);
+    }
+
+    s_Auto_Brake = AUTO_BRAKE_DEFAULT;
+    s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+    s_last_Auto_Brake = 0;
+    s_last_Auto_Accel = 0;
+    s_GripDetect_EnableState = GRIPDETECT_NONE;
+    s_Joy2vJoy_EnableStateMap.clear();
+    s_Mouse2vJoy_delta = QPoint();
+    s_Mouse2vJoy_prev = QPoint();
+    pressedvJoyLStickKeysList.clear();
+    pressedvJoyRStickKeysList.clear();
+    pressedvJoyButtonsList.clear();
+    for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
+        pressedvJoyLStickKeysList.append(QStringList());
+        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyButtonsList.append(QStringList());
+    }
+    stopMouse2vJoyResetTimerMap();
+    ViGEmClient_AllGamepadReset();
+    s_Mouse2vJoy_EnableStateMap.clear();
+    m_LastMouseCursorPoint.x = -1;
+    m_LastMouseCursorPoint.y = -1;
+
+    /* Start Key Mapping Process */
+    pressedVirtualKeysList.clear();
+    collectLongPressOriginalKeysMap();
+    collectDoublePressOriginalKeysMap();
+    collectCombinationOriginalKeysList();
+#ifdef DEBUG_LOGOUT_ON
+    if (combinationOriginalKeysList.isEmpty() == false) {
+        qDebug() << "[setKeyMappingRestart]" << "combinationOriginalKeysList ->" << combinationOriginalKeysList;
+    }
+#endif
+    collectExchangeKeysList();
+
+    s_GripDetect_EnableState = checkGripDetectEnableState();
+    s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
+    s_Mouse2vJoy_EnableStateMap = ViGEmClient_checkMouse2JoystickEnableStateMap();
+    s_Key2Mouse_EnableState = checkKey2MouseEnableState();
+    s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
+
+    if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getLockCursorStatus()) {
+        POINT pt;
+        if (GetCursorPos(&pt)) {
+            m_LastMouseCursorPoint = pt;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[setKeyMappingRestart] Last Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+#endif
+        }
+
+        POINT bottomrightPoint = mousePositionAfterSetMouseToScreenBottomRight();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setKeyMappingRestart] mousePositionAfterSetMouseToScreenBottomRight -> X = %lu, Y = %lu", bottomrightPoint.x, bottomrightPoint.y);
+#endif
+
+        setMouseToScreenBottomRight();
+
+        for (int loop = 0; loop < SETMOUSEPOSITION_WAITTIME_MAX; ++loop) {
+            POINT pt;
+            if (GetCursorPos(&pt)) {
+                if (pt.x == bottomrightPoint.x && pt.y == bottomrightPoint.y) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug("[setKeyMappingRestart] Wait setMouseToScreenBottomRight OK -> loop = %d", loop);
+#endif
+                    break;
+                }
+            }
+            QThread::msleep(1);
+        }
+
+
+        if (GetCursorPos(&pt)) {
+            s_Mouse2vJoy_prev.rx() = pt.x;
+            s_Mouse2vJoy_prev.ry() = pt.y;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[setKeyMappingRestart] Current BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
+#endif
+        }
+    }
+
+    if (false == s_Joy2Mouse_EnableStateMap.isEmpty() || s_Key2Mouse_EnableState) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setKeyMappingRestart] Key2MouseCycleTimer Started.");
+#endif
+        m_Key2MouseCycleTimer.start(KEY2MOUSE_CYCLECHECK_TIMEOUT);
+    }
+
+    startDataPortListener();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[setKeyMappingRestart] KeyMapping Restart <<<");
 #endif
 }
 
@@ -10323,6 +10455,16 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
 
 #ifdef DEBUG_LOGOUT_ON
     qInfo("[onSetHookProcKeyUnHook] HookProcThread Hook Stopped.");
+#endif
+}
+
+void QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart()
+{
+    QKeyMapper_Worker::clearAllLongPressTimers();
+    QKeyMapper_Worker::clearAllDoublePressTimers();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[onSetHookProcKeyUnHook] HookProcThread KeyMappingRestart.");
 #endif
 }
 

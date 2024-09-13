@@ -321,6 +321,7 @@ public slots:
 public:
     void setKeyHook(HWND hWnd);
     void setKeyUnHook(void);
+    void setKeyMappingRestart(void);
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 

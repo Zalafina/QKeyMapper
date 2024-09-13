@@ -204,9 +204,22 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
     int popupMessageDisplayTime = 3000;
 
     if (ori_tabhotkeystring.isEmpty()) {
+        if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_tabHotkeyUpdateButton_clicked]" << "TabHotkey is empty; no action required.";
+            qDebug() << "[on_tabHotkeyUpdateButton_clicked]" << "TabHotkey is empty; no action required.";
 #endif
+        }
+        else {
+            popupMessageColor = "#44bd32";
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                popupMessage = "TabHotkey clear success";
+            }
+            else {
+                popupMessage = "映射表快捷键清除成功";
+            }
+
+            QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+        }
     }
     else if (QKeyMapper::validateCombinationKey(tabhotkeystring))
     {

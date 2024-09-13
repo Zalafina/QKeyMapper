@@ -807,6 +807,12 @@ void QKeyMapper::setKeyUnHook(void)
     emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
 }
 
+void QKeyMapper::setKeyMappingRestart()
+{
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal();
+    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal();
+}
+
 void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon)
 {
     m_MapProcessInfo.PID = pid;
@@ -1934,6 +1940,10 @@ void QKeyMapper::collectMappingTableTabHotkeys()
         // Sort the QList<int> to ensure indices are in ascending order
         std::sort(s_MappingTableTabHotkeyMap[tabHotkey].begin(), s_MappingTableTabHotkeyMap[tabHotkey].end());
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[collectMappingTableTabHotkeys]" << "s_MappingTableTabHotkeyMap ->" << s_MappingTableTabHotkeyMap;
+#endif
 }
 
 void QKeyMapper::EnumProcessFunction(void)
@@ -3024,8 +3034,45 @@ void QKeyMapper::HotKeyMappingStop(const QString &hotkey_string)
 void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey ->" << hotkey_string;
+    qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey:" << hotkey_string << "->" << s_MappingTableTabHotkeyMap.value(hotkey_string) << ", LastTabIndex:" << m_KeyMappingTabWidgetLastIndex;
 #endif
+
+    QList<int> tabindex_list = s_MappingTableTabHotkeyMap.value(hotkey_string);
+    int switch_tabindex = -1;
+    if (!tabindex_list.isEmpty()) {
+        if (tabindex_list.size() == 1){
+            if (tabindex_list.at(0) != m_KeyMappingTabWidgetLastIndex) {
+                switch_tabindex = tabindex_list.at(0);
+            }
+        }
+        else {
+            if (tabindex_list.contains(m_KeyMappingTabWidgetLastIndex)) {
+                int index = tabindex_list.indexOf(m_KeyMappingTabWidgetLastIndex);
+                if (index == tabindex_list.size() - 1) {
+                    switch_tabindex = tabindex_list.at(0);
+                }
+                else {
+                    switch_tabindex = tabindex_list.at(index + 1);
+                }
+            }
+            else {
+                switch_tabindex = tabindex_list.at(0);
+            }
+        }
+    }
+
+    if (switch_tabindex >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[HotKeyMappingTableSwitchTab] Switch tab index(" << m_KeyMappingTabWidgetLastIndex << "->" << switch_tabindex << ")";
+#endif
+        forceSwitchKeyMappingTabWidgetIndex(switch_tabindex);
+
+        if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
+            || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
+            /* Key Mapping Restart */
+            setKeyMappingRestart();
+        }
+    }
 }
 
 void QKeyMapper::switchKeyMappingTabIndex(int index)
@@ -4713,13 +4760,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         if (index < tabhotkeylist_loaded.size()) {
             QString tabhotkeystring = tabhotkeylist_loaded.at(index);
+            QString ori_tabhotkeystring = tabhotkeystring;
             if (tabhotkeystring.startsWith(PREFIX_PASSTHROUGH)) {
                 tabhotkeystring.remove(0, 1);
             }
 
             if (tabhotkeystring.isEmpty() == false
                 && QKeyMapper::validateCombinationKey(tabhotkeystring)) {
-                s_KeyMappingTabInfoList[index].TabHotkey = tabhotkeystring;
+                s_KeyMappingTabInfoList[index].TabHotkey = ori_tabhotkeystring;
             }
             else {
                 s_KeyMappingTabInfoList[index].TabHotkey.clear();

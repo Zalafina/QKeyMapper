@@ -522,6 +522,7 @@ public:
 signals:
     void setKeyHook_Signal(HWND hWnd);
     void setKeyUnHook_Signal(void);
+    void setKeyMappingRestart_Signal(void);
     void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
@@ -554,6 +555,7 @@ public slots:
     void threadStarted(void);
     void setWorkerKeyHook(HWND hWnd);
     void setWorkerKeyUnHook(void);
+    void setKeyMappingRestart(void);
     void sessionLockStateChanged(bool locked);
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
@@ -854,12 +856,14 @@ public:
 signals:
     void setKeyHook_Signal(HWND hWnd);
     void setKeyUnHook_Signal(void);
+    void setKeyMappingRestart_Signal(void);
 
 public slots:
     void HookProcThreadStarted(void);
     void HookProcThreadFinished(void);
     void onSetHookProcKeyHook(HWND hWnd);
     void onSetHookProcKeyUnHook(void);
+    void onSetHookProcKeyMappingRestart(void);
 
 public:
     static bool s_LowLevelKeyboardHook_Enable;
