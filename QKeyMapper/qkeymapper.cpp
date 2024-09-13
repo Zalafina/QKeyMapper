@@ -3071,6 +3071,7 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
             /* Key Mapping Restart */
             setKeyMappingRestart();
+            mappingTabSwitchNotification();
         }
     }
 }
@@ -5756,12 +5757,13 @@ void QKeyMapper::mappingStartNotification()
         return;
     }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    QString tabName = s_KeyMappingTabInfoList.at(m_KeyMappingTabWidgetLastIndex).TabName;
     QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        popupNotification = "StartMapping [" + currentSelectedSetting + "]";
+        popupNotification = "StartMapping [" + currentSelectedSetting + "]" + "->" + tabName;
     }
     else {
-        popupNotification = "开始映射 [" + currentSelectedSetting + "]";
+        popupNotification = "开始映射 [" + currentSelectedSetting + "]" + "->" + tabName;
         if (GROUPNAME_GLOBALSETTING == currentSelectedSetting) {
             color = "#26de81";
         }
@@ -5804,6 +5806,28 @@ void QKeyMapper::mappingStopNotification()
     }
     else {
         popupNotification = "停止映射 [" + mappingStatusString + "]";
+    }
+    showNotificationPopup(popupNotification, color, position);
+}
+
+void QKeyMapper::mappingTabSwitchNotification()
+{
+    QString popupNotification;
+    int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        return;
+    }
+    QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    QString tabName = s_KeyMappingTabInfoList.at(m_KeyMappingTabWidgetLastIndex).TabName;
+    QString color = "#d6a2e8";
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        popupNotification = "MappingTabSwitch [" + currentSelectedSetting + "]" + "->" + tabName;
+    }
+    else {
+        popupNotification = "切换映射表 [" + currentSelectedSetting + "]" + "->" + tabName;
+        if (GROUPNAME_GLOBALSETTING == currentSelectedSetting) {
+            color = "#26de81";
+        }
     }
     showNotificationPopup(popupNotification, color, position);
 }

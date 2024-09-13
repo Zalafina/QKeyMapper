@@ -608,6 +608,7 @@ private:
     void playStopSound();
     void mappingStartNotification();
     void mappingStopNotification();
+    void mappingTabSwitchNotification();
 
     void showInputDeviceListWindow(void);
     void showItemSetupDialog(int row);
