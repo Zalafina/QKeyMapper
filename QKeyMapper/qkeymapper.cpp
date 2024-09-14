@@ -13,6 +13,7 @@ QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINF
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
+int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> *QKeyMapper::KeyMappingDataList = Q_NULLPTR;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
@@ -47,7 +48,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
     m_KeyMappingTabWidget(Q_NULLPTR),
     m_KeyMappingDataTable(Q_NULLPTR),
-    m_KeyMappingTabWidgetLastIndex(0),
     m_ProcessInfoTableDelegate(Q_NULLPTR),
     // m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
@@ -2540,6 +2540,35 @@ bool QKeyMapper::validateCombinationKey(QString &input)
     return isvalid;
 }
 
+int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string)
+{
+    int tabindex_toswitch = -1;
+    QList<int> tabindex_list = s_MappingTableTabHotkeyMap.value(hotkey_string);
+    if (!tabindex_list.isEmpty()) {
+        if (tabindex_list.size() == 1){
+            if (tabindex_list.at(0) != s_KeyMappingTabWidgetLastIndex) {
+                tabindex_toswitch = tabindex_list.at(0);
+            }
+        }
+        else {
+            if (tabindex_list.contains(s_KeyMappingTabWidgetLastIndex)) {
+                int index = tabindex_list.indexOf(s_KeyMappingTabWidgetLastIndex);
+                if (index == tabindex_list.size() - 1) {
+                    tabindex_toswitch = tabindex_list.at(0);
+                }
+                else {
+                    tabindex_toswitch = tabindex_list.at(index + 1);
+                }
+            }
+            else {
+                tabindex_toswitch = tabindex_list.at(0);
+            }
+        }
+    }
+
+    return tabindex_toswitch;
+}
+
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 {
     if (eventType == "windows_generic_MSG") {
@@ -3034,38 +3063,16 @@ void QKeyMapper::HotKeyMappingStop(const QString &hotkey_string)
 void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey:" << hotkey_string << "->" << s_MappingTableTabHotkeyMap.value(hotkey_string) << ", LastTabIndex:" << m_KeyMappingTabWidgetLastIndex;
+    qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey:" << hotkey_string << "->" << s_MappingTableTabHotkeyMap.value(hotkey_string) << ", LastTabIndex:" << s_KeyMappingTabWidgetLastIndex;
 #endif
 
-    QList<int> tabindex_list = s_MappingTableTabHotkeyMap.value(hotkey_string);
-    int switch_tabindex = -1;
-    if (!tabindex_list.isEmpty()) {
-        if (tabindex_list.size() == 1){
-            if (tabindex_list.at(0) != m_KeyMappingTabWidgetLastIndex) {
-                switch_tabindex = tabindex_list.at(0);
-            }
-        }
-        else {
-            if (tabindex_list.contains(m_KeyMappingTabWidgetLastIndex)) {
-                int index = tabindex_list.indexOf(m_KeyMappingTabWidgetLastIndex);
-                if (index == tabindex_list.size() - 1) {
-                    switch_tabindex = tabindex_list.at(0);
-                }
-                else {
-                    switch_tabindex = tabindex_list.at(index + 1);
-                }
-            }
-            else {
-                switch_tabindex = tabindex_list.at(0);
-            }
-        }
-    }
+    int tabindex_toswitch = tabIndexToSwitchByTabHotkey(hotkey_string);
 
-    if (switch_tabindex >= 0) {
+    if (tabindex_toswitch >= 0) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[HotKeyMappingTableSwitchTab] Switch tab index(" << m_KeyMappingTabWidgetLastIndex << "->" << switch_tabindex << ")";
+        qDebug() << "[HotKeyMappingTableSwitchTab] Switch tab index(" << s_KeyMappingTabWidgetLastIndex << "->" << tabindex_toswitch << ")";
 #endif
-        forceSwitchKeyMappingTabWidgetIndex(switch_tabindex);
+        forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
 
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
@@ -3081,7 +3088,7 @@ void QKeyMapper::switchKeyMappingTabIndex(int index)
     if (0 <= index && index < s_KeyMappingTabInfoList.size()) {
         m_KeyMappingDataTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(index));
         KeyMappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
-        m_KeyMappingTabWidgetLastIndex = index;
+        s_KeyMappingTabWidgetLastIndex = index;
     }
 }
 
@@ -3747,7 +3754,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
     }
 
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, m_KeyMappingTabWidgetLastIndex);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, s_KeyMappingTabWidgetLastIndex);
 
     QStringList tabnamelist;
     QStringList tabhotkeylist;
@@ -5757,7 +5764,7 @@ void QKeyMapper::mappingStartNotification()
         return;
     }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
-    QString tabName = s_KeyMappingTabInfoList.at(m_KeyMappingTabWidgetLastIndex).TabName;
+    QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetLastIndex).TabName;
     QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupNotification = "StartMapping [" + currentSelectedSetting + "]" + "->" + tabName;
@@ -5818,7 +5825,7 @@ void QKeyMapper::mappingTabSwitchNotification()
         return;
     }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
-    QString tabName = s_KeyMappingTabInfoList.at(m_KeyMappingTabWidgetLastIndex).TabName;
+    QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetLastIndex).TabName;
     QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupNotification = "MappingTabSwitch [" + currentSelectedSetting + "]" + "->" + tabName;
@@ -6847,10 +6854,10 @@ void QKeyMapper::initKeyMappingTabWidget(void)
 {
     m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        m_KeyMappingTabWidget->setGeometry(QRect(526, 11, 458, 352));
+        m_KeyMappingTabWidget->setGeometry(QRect(526, 11, 458, 346));
     }
     else {
-        m_KeyMappingTabWidget->setGeometry(QRect(526, 7, 458, 352));
+        m_KeyMappingTabWidget->setGeometry(QRect(526, 7, 458, 346));
     }
     m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
     m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
@@ -8348,7 +8355,7 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget \"+\" tab clicked, do nothing.";
 #endif
-        setKeyMappingTabWidgetCurrentIndex(m_KeyMappingTabWidgetLastIndex);
+        setKeyMappingTabWidgetCurrentIndex(s_KeyMappingTabWidgetLastIndex);
     }
     else if (0 <= index && index < m_KeyMappingTabWidget->count() - 1) {
         disconnectKeyMappingDataTableConnection();
@@ -10300,7 +10307,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     }
 
     KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
-    KeyMappingTableWidget->setGeometry(QRect(530, 0, 450, 330));
+    KeyMappingTableWidget->setGeometry(QRect(530, 0, 450, 324));
 
     KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
@@ -10397,12 +10404,12 @@ bool QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
     }
     s_KeyMappingTabInfoList.removeAt(tabindex);
 
-    if (m_KeyMappingTabWidgetLastIndex > s_KeyMappingTabInfoList.size() - 1) {
-        m_KeyMappingTabWidgetLastIndex = s_KeyMappingTabInfoList.size() - 1;
+    if (s_KeyMappingTabWidgetLastIndex > s_KeyMappingTabInfoList.size() - 1) {
+        s_KeyMappingTabWidgetLastIndex = s_KeyMappingTabInfoList.size() - 1;
     }
 
-    setKeyMappingTabWidgetCurrentIndex(m_KeyMappingTabWidgetLastIndex);
-    switchKeyMappingTabIndex(m_KeyMappingTabWidgetLastIndex);
+    setKeyMappingTabWidgetCurrentIndex(s_KeyMappingTabWidgetLastIndex);
+    switchKeyMappingTabIndex(s_KeyMappingTabWidgetLastIndex);
     updateKeyMappingDataTableConnection();
 
     m_KeyMappingTabWidget->blockSignals(false);

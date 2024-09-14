@@ -5882,9 +5882,8 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
         int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
         bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
         bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-        bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
         if (!hookprocstart) {
-            if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
+            if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
             }
             else {
@@ -5892,6 +5891,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
             }
         }
         else {
+            bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
             if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
             }
@@ -6156,9 +6156,8 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
         int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
         bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
         bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-        bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
         if (!hookprocstart) {
-            if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
+            if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
             }
             else {
@@ -6166,6 +6165,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
             }
         }
         else {
+            bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
             if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
             }
@@ -6686,9 +6686,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
             bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
             bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-            bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
             if (!hookprocstart) {
-                if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
+                if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                     return (LRESULT)TRUE;
                 }
                 else {
@@ -6696,6 +6695,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
             }
             else {
+                bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
                 if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
                     return (LRESULT)TRUE;
                 }
@@ -7150,9 +7150,8 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
                 bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
                 bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-                bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
                 if (!hookprocstart) {
-                    if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
+                    if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                         return (LRESULT)TRUE;
                     }
                     else {
@@ -7160,6 +7159,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                 }
                 else {
+                    bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
                     if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
                         return (LRESULT)TRUE;
                     }
@@ -7890,11 +7890,7 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
         bool passthrough = false;
         QString keyToCheck = tabHotkey;
 
-        if (keyToCheck.startsWith(PREFIX_PASSTHROUGH)) {
-            passthrough = true;
-            keyToCheck.remove(0, 1);
-        }
-
+        // QList<bool> tabHotkey_PassThroughList = QKeyMapper::s_MappingTableTabHotkeyMap.value(tabHotkey).second;
         QStringList keys = keyToCheck.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
 
@@ -7913,11 +7909,13 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
             qDebug().nospace() << "[detectMappingTableTabHotkeys]" << "TabHotkey detected -> " << keyToCheck << ", PassThrough:" << passthrough;
 #endif
             emit QKeyMapper::getInstance()->HotKeyMappingTableSwitchTab_Signal(keyToCheck);
-            if (passthrough) {
-                detected = false;
-            }
-            else {
-                detected = true;
+            detected = true;
+            int tabindex_toswitch = QKeyMapper::tabIndexToSwitchByTabHotkey(keyToCheck);
+            if (0 <= tabindex_toswitch &&  tabindex_toswitch < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+                QString ori_tabhotkeystring = QKeyMapper::s_KeyMappingTabInfoList.at(tabindex_toswitch).TabHotkey;
+                if (ori_tabhotkeystring.startsWith(PREFIX_PASSTHROUGH)) {
+                    detected = false;
+                }
             }
             break;
         }
@@ -8998,14 +8996,14 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
     int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
     bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
     bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-    bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
     Q_UNUSED(mappingswitch_detected);
     Q_UNUSED(displayswitch_detected);
-    Q_UNUSED(tabswitch_detected);
     if (!m_JoystickCapture) {
         return false;
     }
     else {
+        bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
+        Q_UNUSED(tabswitch_detected);
         if (intercept == KEY_INTERCEPT_BLOCK) {
             return true;
         }

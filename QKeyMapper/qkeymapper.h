@@ -387,6 +387,7 @@ public:
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static bool validateCombinationKey(QString &input);
+    static int tabIndexToSwitchByTabHotkey(const QString &hotkey_string);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
@@ -645,6 +646,7 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
+    static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> *KeyMappingDataList;
     // static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
@@ -682,7 +684,6 @@ private:
 #endif
     KeyMappingTabWidget *m_KeyMappingTabWidget;
     KeyMappingDataTableWidget *m_KeyMappingDataTable;
-    int m_KeyMappingTabWidgetLastIndex;
     StyledDelegate *m_ProcessInfoTableDelegate;
     // StyledDelegate *m_KeyMappingDataTableDelegate;
 public:
