@@ -3634,6 +3634,11 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     qDebug("[setKeyMappingRestart] KeyMapping Restart >>>");
 #endif
 
+    QList<MAP_KEYDATA> *backup_KeyMappingDataList = QKeyMapper::KeyMappingDataList;
+    if (QKeyMapper::lastKeyMappingDataList != Q_NULLPTR) {
+        QKeyMapper::KeyMappingDataList = QKeyMapper::lastKeyMappingDataList;
+    }
+
     /* Stop Key Mapping Process */
     clearAllBurstKeyTimersAndLockKeys();
     clearAllPressedVirtualKeys();
@@ -3687,8 +3692,9 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
 
+
+    QKeyMapper::KeyMappingDataList = backup_KeyMappingDataList;
     /* Start Key Mapping Process */
-    pressedVirtualKeysList.clear();
     collectLongPressOriginalKeysMap();
     collectDoublePressOriginalKeysMap();
     collectCombinationOriginalKeysList();
@@ -7902,9 +7908,6 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
 
         if (KEY_DOWN == keyupdown && allKeysPressed && keyToCheck.contains(keycodeString))
         {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[detectMappingTableTabHotkeys]" << "TabHotkey detected -> " << keyToCheck << ", PassThrough:" << passthrough;
-#endif
             emit QKeyMapper::getInstance()->HotKeyMappingTableSwitchTab_Signal(keyToCheck);
             detected = true;
             int tabindex_toswitch = QKeyMapper::tabIndexToSwitchByTabHotkey(keyToCheck);
@@ -7914,6 +7917,9 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
                     detected = false;
                 }
             }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[detectMappingTableTabHotkeys]" << "TabHotkey detected -> " << keyToCheck << ", PassThrough:" << (!detected);
+#endif
             break;
         }
     }
@@ -10334,7 +10340,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

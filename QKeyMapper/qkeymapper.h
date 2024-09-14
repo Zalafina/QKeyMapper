@@ -558,6 +558,7 @@ private:
     void updateKeyMappingDataTableConnection(void);
     void resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable);
     void resizeAllKeyMappingTabWidgetColumnWidth(void);
+    void clearLockStatusDisplay(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);
@@ -646,9 +647,11 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
+    static int s_KeyMappingTabWidgetCurrentIndex;
     static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> *KeyMappingDataList;
+    static QList<MAP_KEYDATA> *lastKeyMappingDataList;
     // static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> ScreenMousePointsList;
     static QList<MousePoint_Info> WindowMousePointsList;
