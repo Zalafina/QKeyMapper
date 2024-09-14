@@ -6996,11 +6996,7 @@ void QKeyMapper::clearLockStatusDisplay()
     int rowCount = m_KeyMappingDataTable->rowCount();
 
     for (int row = 0; row < rowCount; ++row) {
-        QTableWidgetItem *item = m_KeyMappingDataTable->item(row, LOCK_COLUMN);
-
-        if (item) {
-            item->setForeground(Qt::black);
-        }
+        m_KeyMappingDataTable->item(row, LOCK_COLUMN)->setForeground(Qt::black);
     }
 }
 void QKeyMapper::initAddKeyComboBoxes(void)
