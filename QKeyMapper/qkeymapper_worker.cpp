@@ -7887,10 +7887,7 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
 
     for (const QString& tabHotkey : switchTabHotkeys)
     {
-        bool passthrough = false;
         QString keyToCheck = tabHotkey;
-
-        // QList<bool> tabHotkey_PassThroughList = QKeyMapper::s_MappingTableTabHotkeyMap.value(tabHotkey).second;
         QStringList keys = keyToCheck.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
 
