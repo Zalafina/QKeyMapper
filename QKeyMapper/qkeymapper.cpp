@@ -1723,9 +1723,8 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression split_regex("[+»]");
     static QRegularExpression removeindex_regex("@\\d$");
-    QStringList Mapping_Keys = mappingkeystr.split(split_regex);
+    QStringList Mapping_Keys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT);
 
     if (Mapping_Keys.isEmpty()) {
         result.isValid = false;
@@ -1751,7 +1750,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     if (Mapping_Keys.size() > 1) {
         QString foundSpecialOriginalKey;
         QString foundSpecialMappingKey;
-        /* Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList */
+        // Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList
         for (const QString& mapkey : Mapping_Keys) {
             QString mapkey_noindex = mapkey;
             mapkey_noindex.remove(removeindex_regex);
@@ -5223,7 +5222,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
     mappingkeystr.replace(OLD_SEPARATOR_NEXTARROW, SEPARATOR_NEXTARROW);
 #endif
 
-    QStringList mappingKeySeqList = mappingkeystr.split(SEPARATOR_NEXTARROW);
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
     ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList, INITIAL_ROW_INDEX);
 
     if (result.isValid) {

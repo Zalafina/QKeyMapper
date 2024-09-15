@@ -116,6 +116,10 @@ extern const int KEY_PROC_NONE;
 extern const int KEY_PROC_BURST;
 extern const int KEY_PROC_LOCK;
 
+extern const int SPLIT_WITH_PLUS;
+extern const int SPLIT_WITH_NEXT;
+extern const int SPLIT_WITH_PLUSANDNEXT;
+
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_KEYSEQ_HOLDDOWN;

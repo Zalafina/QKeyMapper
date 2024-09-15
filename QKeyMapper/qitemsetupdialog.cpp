@@ -538,7 +538,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
 #endif
 
-    QStringList mappingKeySeqList = mappingKey.split(SEPARATOR_NEXTARROW);
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
     ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
 
     QString popupMessage;

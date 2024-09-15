@@ -985,7 +985,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             return;
         }
 
-        QStringList mappingKeys = inputKeys.constFirst().split(SEPARATOR_PLUS);
+        QStringList mappingKeys = splitMappingKeyString(inputKeys.constFirst(), SPLIT_WITH_PLUS);
         keycount = mappingKeys.size();
 
         if (keycount > MAPPING_KEYS_MAX) {
@@ -1236,7 +1236,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     }
     else {
         if (1 == key_sequence_count) {
-            QStringList mappingKeys = inputKeys.constFirst().split(SEPARATOR_PLUS);
+            QStringList mappingKeys = splitMappingKeyString(inputKeys.constFirst(), SPLIT_WITH_PLUS);
             keycount = mappingKeys.size();
 
             if (keycount > MAPPING_KEYS_MAX) {
@@ -10517,4 +10517,36 @@ bool DisablePrivilege(LPCWSTR privilege)
     }
 
     return FALSE;
+}
+
+QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type)
+{
+    // Modify the regex to capture SendText(…) followed by any non-separator characters
+    static QRegularExpression plusandnext_split_regex(R"((SendText\([^)]+\)[^+»]*)|([^+»]+))");
+    static QRegularExpression next_split_regex(R"((SendText\([^)]+\)[^»]*)|([^»]+))");
+    static QRegularExpression plus_split_regex(R"((SendText\([^)]+\)[^+]*)|([^+]+))");
+
+    QStringList splitted_mappingkeys;
+    QString remainingString = mappingkeystr;
+
+    // Use a global match to capture both SendText(…) and normal keys
+    QRegularExpressionMatchIterator iter;
+    if (SPLIT_WITH_PLUSANDNEXT == split_type) {
+        iter = plusandnext_split_regex.globalMatch(remainingString);
+    }
+    else if (SPLIT_WITH_NEXT == split_type) {
+        iter = next_split_regex.globalMatch(remainingString);
+    }
+    else {
+        iter = plus_split_regex.globalMatch(remainingString);
+    }
+
+    while (iter.hasNext()) {
+        QRegularExpressionMatch match = iter.next();
+        if (match.hasMatch()) {
+            splitted_mappingkeys.append(match.captured(0));
+        }
+    }
+
+    return splitted_mappingkeys;
 }

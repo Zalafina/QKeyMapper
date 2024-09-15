@@ -59,6 +59,11 @@ using QAtomicBool = QAtomicInteger<bool>;
 extern const int BURST_PRESS_TIME_DEFAULT;
 extern const int BURST_RELEASE_TIME_DEFAULT;
 
+extern const int SPLIT_WITH_PLUS;
+extern const int SPLIT_WITH_NEXT;
+extern const int SPLIT_WITH_PLUSANDNEXT;
+QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type);
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;
@@ -77,7 +82,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, int burstpresstime, int burstreleasetime, bool lock, bool passthrough, bool keyup_action, bool keyseqholddown)
     {
         Original_Key = originalkey;
-        Mapping_Keys = mappingkeys.split(SEPARATOR_NEXTARROW);
+        Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
