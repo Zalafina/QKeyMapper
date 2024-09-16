@@ -144,6 +144,10 @@ const int SPLIT_WITH_PLUS           = 0;
 const int SPLIT_WITH_NEXT           = 1;
 const int SPLIT_WITH_PLUSANDNEXT    = 2;
 
+const int REMOVE_MAPPINGTAB_FAILED  = 0;
+const int REMOVE_MAPPINGTAB_LASTONE = 1;
+const int REMOVE_MAPPINGTAB_SUCCESS = 2;
+
 const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
 const int SENDMODE_KEYSEQ_HOLDDOWN  = 3;

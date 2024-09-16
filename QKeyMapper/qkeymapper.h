@@ -471,7 +471,7 @@ public slots:
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
-    bool removeTabFromKeyMappingTabWidget(int tabindex);
+    int removeTabFromKeyMappingTabWidget(int tabindex);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);

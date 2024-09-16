@@ -3514,20 +3514,20 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     return true;
 }
 
-bool QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
+int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
 {
     if (m_KeyMappingTabWidget->count() <= 2 || s_KeyMappingTabInfoList.size() <= 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Can not remove the last tab!" << " ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
 #endif
-        return false;
+        return REMOVE_MAPPINGTAB_LASTONE;
     }
 
     if ((tabindex < 0) || (tabindex > m_KeyMappingTabWidget->count() - 2) || (tabindex > s_KeyMappingTabInfoList.size() - 1)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
 #endif
-        return false;
+        return REMOVE_MAPPINGTAB_FAILED;
     }
 
     m_KeyMappingTabWidget->blockSignals(true);
@@ -3552,7 +3552,7 @@ bool QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
 
     m_KeyMappingTabWidget->blockSignals(false);
 
-    return true;
+    return REMOVE_MAPPINGTAB_SUCCESS;
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()

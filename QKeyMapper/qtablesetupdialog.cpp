@@ -369,18 +369,28 @@ void QTableSetupDialog::on_removeTableButton_clicked()
     reply = QMessageBox::warning(parentWidget(), PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
-        bool remove_result = QKeyMapper::getInstance()->removeTabFromKeyMappingTabWidget(tabindex);
+        int remove_result = QKeyMapper::getInstance()->removeTabFromKeyMappingTabWidget(tabindex);
 
-        if (remove_result) {
-            QString popupMessage;
-            QString popupMessageColor;
-            int popupMessageDisplayTime = 3000;
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
+        if (REMOVE_MAPPINGTAB_SUCCESS == remove_result) {
             popupMessageColor = "#44bd32";
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                 popupMessage = QString("Mapping table \"%1\" removed successfully").arg(TabName);;
             }
             else {
                 popupMessage = QString("映射表\"%1\"删除成功").arg(TabName);
+            }
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        }
+        else if (REMOVE_MAPPINGTAB_LASTONE == remove_result) {
+            popupMessageColor = "#d63031";
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                popupMessage = QString("Cannot remove the last mapping table!");
+            }
+            else {
+                popupMessage = QString("无法删除最后一个映射表！");
             }
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
