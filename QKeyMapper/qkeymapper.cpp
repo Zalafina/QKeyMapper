@@ -2883,7 +2883,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     return import_result;
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+#else
+bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *result)
+#endif
 {
     if (eventType == "windows_generic_MSG") {
         MSG* msg = static_cast<MSG*>(message);
