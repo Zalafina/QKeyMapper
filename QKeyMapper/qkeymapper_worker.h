@@ -35,6 +35,8 @@
 using QAtomicBool = QAtomicInteger<bool>;
 #endif
 
+#include "qkeymapper_constants.h"
+
 #define OLD_SEPARATOR_PLUS      (" + ")
 #define OLD_SEPARATOR_NEXTARROW (" » ")
 
@@ -56,12 +58,6 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
 
-extern const int BURST_PRESS_TIME_DEFAULT;
-extern const int BURST_RELEASE_TIME_DEFAULT;
-
-extern const int SPLIT_WITH_PLUS;
-extern const int SPLIT_WITH_NEXT;
-extern const int SPLIT_WITH_PLUSANDNEXT;
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type);
 
 typedef struct MAP_KEYDATA

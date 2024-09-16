@@ -466,6 +466,8 @@ public slots:
     void HotKeyMappingStop(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void switchKeyMappingTabIndex(int index);
+    bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
+    bool removeTabFromKeyMappingTabWidget(int tabindex);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);
@@ -537,10 +539,6 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
-    bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
-
-    bool removeTabFromKeyMappingTabWidget(int tabindex);
-
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -553,9 +551,12 @@ private:
     void updateSystemTrayDisplay(void);
     void showQKeyMapperWindowToTop(void);
     void switchShowHide(void);
+
+public:
     void showWarningPopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
 
+private:
     void initKeyMappingTabWidget(void);
     void clearKeyMappingTabWidget(void);
     void exitDeleteKeyMappingTabWidget(void);

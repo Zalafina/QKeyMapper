@@ -39,6 +39,7 @@ void QTableSetupDialog::setUILanguagee(int languageindex)
         ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->exportTableButton->setText(EXPORTTABLEBUTTON_ENGLISH);
         ui->importTableButton->setText(IMPORTTABLEBUTTON_ENGLISH);
+        ui->removeTableButton->setText(REMOVETABLEBUTTON_ENGLISH);
     }
     else {
         setWindowTitle(TABLESETUPDIALOG_WINDOWTITLE_CHINESE);
@@ -49,6 +50,7 @@ void QTableSetupDialog::setUILanguagee(int languageindex)
         ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->exportTableButton->setText(EXPORTTABLEBUTTON_CHINESE);
         ui->importTableButton->setText(IMPORTTABLEBUTTON_CHINESE);
+        ui->removeTableButton->setText(REMOVETABLEBUTTON_CHINESE);
     }
 }
 
@@ -78,6 +80,7 @@ void QTableSetupDialog::resetFontSize()
     ui->tabHotkeyUpdateButton->setFont(customFont);
     ui->exportTableButton->setFont(customFont);
     ui->importTableButton->setFont(customFont);
+    ui->removeTableButton->setFont(customFont);
 }
 
 void QTableSetupDialog::setTabIndex(int tabindex)
@@ -272,7 +275,7 @@ void QTableSetupDialog::on_exportTableButton_clicked()
         caption_string = "导出映射表 : " +TabName;
     }
 
-    QString export_filename = QFileDialog::getSaveFileName(qobject_cast<QKeyMapper*>(parentWidget()),
+    QString export_filename = QFileDialog::getSaveFileName(parentWidget(),
                                                            caption_string,
                                                            default_filename,
                                                            filter);
@@ -285,6 +288,17 @@ void QTableSetupDialog::on_exportTableButton_clicked()
 
     if (export_result) {
         //Show success popup message
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = QString("Mapping data of table \"%1\" export successfully").arg(TabName);;
+        }
+        else {
+            popupMessage = QString("映射表\"%1\"数据导出成功").arg(TabName);
+        }
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
 
@@ -306,7 +320,7 @@ void QTableSetupDialog::on_importTableButton_clicked()
         caption_string = "导入映射表 : " +TabName;
     }
 
-    QString import_filename = QFileDialog::getOpenFileName(qobject_cast<QKeyMapper*>(parentWidget()),
+    QString import_filename = QFileDialog::getOpenFileName(parentWidget(),
                                                            caption_string,
                                                            NULL,
                                                            filter);
@@ -321,5 +335,52 @@ void QTableSetupDialog::on_importTableButton_clicked()
         QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
 
         //Show success popup message
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = QString("Import mapping data to table \"%1\" successfully").arg(TabName);;
+        }
+        else {
+            popupMessage = QString("映射表\"%1\"导入映射数据成功").arg(TabName);
+        }
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    }
+}
+
+void QTableSetupDialog::on_removeTableButton_clicked()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
+    QString message;
+    QMessageBox::StandardButton reply;
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        message = QString("Are you sure you want to remove the mapping table \"%1\"?").arg(TabName);
+    }
+    else {
+        message = QString("请确认是否要删除映射表\"%1\"？").arg(TabName);
+    }
+
+    reply = QMessageBox::warning(parentWidget(), PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        QKeyMapper::getInstance()->removeTabFromKeyMappingTabWidget(tabindex);
+
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = QString("Mapping table \"%1\" removed successfully").arg(TabName);;
+        }
+        else {
+            popupMessage = QString("映射表\"%1\"删除成功").arg(TabName);
+        }
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }

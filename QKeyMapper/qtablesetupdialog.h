@@ -39,6 +39,8 @@ private slots:
 
     void on_importTableButton_clicked();
 
+    void on_removeTableButton_clicked();
+
 private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
