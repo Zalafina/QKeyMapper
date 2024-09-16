@@ -37,6 +37,8 @@ void QTableSetupDialog::setUILanguagee(int languageindex)
         ui->tabHotkeyLabel->setText(TABHOTKEYLABEL_ENGLISH);
         ui->tabNameUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        ui->exportTableButton->setText(EXPORTTABLEBUTTON_ENGLISH);
+        ui->importTableButton->setText(IMPORTTABLEBUTTON_ENGLISH);
     }
     else {
         setWindowTitle(TABLESETUPDIALOG_WINDOWTITLE_CHINESE);
@@ -45,6 +47,8 @@ void QTableSetupDialog::setUILanguagee(int languageindex)
         ui->tabHotkeyLabel->setText(TABHOTKEYLABEL_CHINESE);
         ui->tabNameUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        ui->exportTableButton->setText(EXPORTTABLEBUTTON_CHINESE);
+        ui->importTableButton->setText(IMPORTTABLEBUTTON_CHINESE);
     }
 }
 
@@ -72,6 +76,8 @@ void QTableSetupDialog::resetFontSize()
     ui->tabHotkeyLabel->setFont(customFont);
     ui->tabNameUpdateButton->setFont(customFont);
     ui->tabHotkeyUpdateButton->setFont(customFont);
+    ui->exportTableButton->setFont(customFont);
+    ui->importTableButton->setFont(customFont);
 }
 
 void QTableSetupDialog::setTabIndex(int tabindex)
@@ -246,4 +252,74 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
         }
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QTableSetupDialog::on_exportTableButton_clicked()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
+    QString default_filename = "mapdatatable.ini";
+    QString filter = "INI files (*.ini)";
+    QString caption_string;
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        caption_string = "Export mapping data table : " +TabName;
+    }
+    else {
+        caption_string = "导出映射表 : " +TabName;
+    }
+
+    QString export_filename = QFileDialog::getSaveFileName(qobject_cast<QKeyMapper*>(parentWidget()),
+                                                           caption_string,
+                                                           default_filename,
+                                                           filter);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[on_exportTableButton_clicked]" << "export_filename from QFileDialog -> TabIndex[" << tabindex << "] : " << export_filename;
+#endif
+
+    bool export_result = QKeyMapper::exportKeyMappingDataToFile(tabindex, export_filename);
+
+    if (export_result) {
+        //Show success popup message
+    }
+}
+
+
+void QTableSetupDialog::on_importTableButton_clicked()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
+    QString filter = "INI files (*.ini)";
+    QString caption_string;
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        caption_string = "Import mapping data table : " +TabName;
+    }
+    else {
+        caption_string = "导入映射表 : " +TabName;
+    }
+
+    QString import_filename = QFileDialog::getOpenFileName(qobject_cast<QKeyMapper*>(parentWidget()),
+                                                           caption_string,
+                                                           NULL,
+                                                           filter);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[on_importTableButton_clicked]" << "import_filename from QFileDialog -> TabIndex[" << tabindex << "] : " << import_filename;
+#endif
+
+    bool import_result = QKeyMapper::importKeyMappingDataFromFile(tabindex, import_filename);
+
+    if (import_result) {
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
+        //Show success popup message
+    }
 }

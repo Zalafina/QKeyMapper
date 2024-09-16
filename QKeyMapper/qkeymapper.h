@@ -34,6 +34,7 @@
 #include <QValidator>
 #include <QDir>
 #include <QProcess>
+#include <QFileDialog>
 #include <cmath>
 #include <windows.h>
 #include <process.h>
@@ -347,6 +348,8 @@ public:
     static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
     static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex);
     static ValidationResult validateSingleMappingKey(const QString &mapkey);
+    static bool checkOriginalkeyStr(const QString &originalkeystr);
+    static bool checkMappingkeyStr(QString &mappingkeystr);
     static void collectMappingTableTabHotkeys(void);
 
     // unused enum all process function >>>
@@ -388,6 +391,8 @@ public:
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static bool validateCombinationKey(QString &input);
     static int tabIndexToSwitchByTabHotkey(const QString &hotkey_string);
+    static bool exportKeyMappingDataToFile(int tabindex, const QString &filename);
+    static bool importKeyMappingDataFromFile(int tabindex, const QString &filename);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
@@ -556,8 +561,10 @@ private:
     void exitDeleteKeyMappingTabWidget(void);
     void disconnectKeyMappingDataTableConnection(void);
     void updateKeyMappingDataTableConnection(void);
+public:
     void resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable);
     void resizeAllKeyMappingTabWidgetColumnWidth(void);
+private:
     void clearLockStatusDisplay(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
@@ -574,7 +581,10 @@ private:
     void initCombinationKeyLineEdit(void);
     void setKeyMappingTabWidgetCurrentIndex(int index);
     void forceSwitchKeyMappingTabWidgetIndex(int index);
+public:
+    void refreshKeyMappingDataTableByTabIndex(int tabindex);
     void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);
+private:
     void refreshAllKeyMappingTagWidget(void);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
@@ -593,8 +603,6 @@ private:
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void saveKeyMapSetting(void);
     bool loadKeyMapSetting(const QString &settingtext);
-    bool checkOriginalkeyStr(const QString &originalkeystr);
-    bool checkMappingkeyStr(QString &mappingkeystr);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT

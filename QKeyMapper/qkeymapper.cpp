@@ -1909,6 +1909,48 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     return result;
 }
 
+bool QKeyMapper::checkOriginalkeyStr(const QString &originalkeystr)
+{
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalkeystr, -1);
+
+    if (result.isValid) {
+        return true;
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().quote() << "\033[1;31m[checkOriginalkeyStr]" << "Invalid OriginalKey: " << originalkeystr << ", " << "errorMessage: " << result.errorMessage << "\033[0m";
+#endif
+        return false;
+    }
+}
+
+bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
+{
+#ifdef MOUSEBUTTON_CONVERT
+    QStringList mouseNameConvertList = QKeyMapper_Worker::MouseButtonNameConvertMap.keys();
+    for (const QString &mousekey : qAsConst(mouseNameConvertList)){
+        mappingkeystr.replace(mousekey, QKeyMapper_Worker::MouseButtonNameConvertMap.value(mousekey));
+    }
+#endif
+#ifdef SEPARATOR_CONVERT
+    mappingkeystr.replace(OLD_SEPARATOR_PLUS, SEPARATOR_PLUS);
+    mappingkeystr.replace(OLD_SEPARATOR_NEXTARROW, SEPARATOR_NEXTARROW);
+#endif
+
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList, INITIAL_ROW_INDEX);
+
+    if (result.isValid) {
+        return true;
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "\033[1;31m[checkMappingkeyStr]" << "Invalid MappingKey: " << mappingkeystr << ", " << "errorMessage: " << result.errorMessage << "\033[0m";
+#endif
+        return false;
+    }
+}
+
 void QKeyMapper::collectMappingTableTabHotkeys()
 {
     s_MappingTableTabHotkeyMap.clear();
@@ -2568,6 +2610,268 @@ int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string)
     }
 
     return tabindex_toswitch;
+}
+
+bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filename)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    if (filename.isEmpty()) {
+        return false;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+
+    if (mappingDataList->isEmpty()) {
+        return false;
+    }
+
+    QSettings keyMappingDataFile(filename, QSettings::IniFormat);
+    QStringList original_keys;
+    QStringList mapping_keysList;
+    QStringList burstList;
+    QStringList burstpresstimeList;
+    QStringList burstreleasetimeList;
+    QStringList lockList;
+    QStringList passthroughList;
+    QStringList keyup_actionList;
+    QStringList keyseqholddownList;
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(*mappingDataList))
+    {
+        original_keys << keymapdata.Original_Key;
+        QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        mapping_keysList  << mappingkeys_str;
+        if (true == keymapdata.Burst) {
+            burstList.append("ON");
+        }
+        else {
+            burstList.append("OFF");
+        }
+        if (BURST_TIME_MIN <= keymapdata.BurstPressTime && keymapdata.BurstPressTime <= BURST_TIME_MAX) {
+            burstpresstimeList.append(QString::number(keymapdata.BurstPressTime));
+        }
+        else {
+            burstpresstimeList.append(QString::number(BURST_PRESS_TIME_DEFAULT));
+        }
+        if (BURST_TIME_MIN <= keymapdata.BurstReleaseTime && keymapdata.BurstReleaseTime <= BURST_TIME_MAX) {
+            burstreleasetimeList.append(QString::number(keymapdata.BurstReleaseTime));
+        }
+        else {
+            burstreleasetimeList.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
+        }
+        if (true == keymapdata.Lock) {
+            lockList.append("ON");
+        }
+        else {
+            lockList.append("OFF");
+        }
+        if (true == keymapdata.PassThrough) {
+            passthroughList.append("ON");
+        }
+        else {
+            passthroughList.append("OFF");
+        }
+        if (true == keymapdata.KeyUp_Action) {
+            keyup_actionList.append("ON");
+        }
+        else {
+            keyup_actionList.append("OFF");
+        }
+        if (true == keymapdata.KeySeqHoldDown) {
+            keyseqholddownList.append("ON");
+        }
+        else {
+            keyseqholddownList.append("OFF");
+        }
+    }
+
+    keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
+    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS, mapping_keysList);
+    keyMappingDataFile.setValue(KEYMAPDATA_BURST, burstList);
+    keyMappingDataFile.setValue(KEYMAPDATA_BURSTPRESS_TIME, burstpresstimeList);
+    keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
+    keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
+    keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
+    keyMappingDataFile.setValue(KEYMAPDATA_KEYUP_ACTION, keyup_actionList);
+    keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
+
+    return true;
+}
+
+bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    if (!QFileInfo::exists(filename)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[importKeyMappingDataFromFile]" << " QFileInfo::exists(" << filename << ") = false";
+#endif
+        return false;
+    }
+
+    QSettings keyMappingDataFile(filename, QSettings::IniFormat);
+    QStringList original_keys;
+    QStringList mapping_keys;
+    QStringList burstStringList;
+    QStringList burstpressStringList;
+    QStringList burstreleaseStringList;
+    QStringList lockStringList;
+    QStringList passthroughStringList;
+    QStringList keyup_actionStringList;
+    QStringList keyseqholddownStringList;
+    QList<bool> burstList;
+    QList<int> burstpresstimeList;
+    QList<int> burstreleasetimeList;
+    QList<bool> lockList;
+    QList<bool> passthroughList;
+    QList<bool> keyup_actionList;
+    QList<bool> keyseqholddownList;
+    QList<MAP_KEYDATA> loadkeymapdata;
+
+    if ((true == keyMappingDataFile.contains(KEYMAPDATA_ORIGINALKEYS))
+        && (true == keyMappingDataFile.contains(KEYMAPDATA_MAPPINGKEYS))){
+        original_keys   = keyMappingDataFile.value(KEYMAPDATA_ORIGINALKEYS).toStringList();
+        mapping_keys    = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
+
+        int mappingdata_size = original_keys.size();
+        QStringList stringListAllOFF;
+        QStringList burstpressStringListDefault;
+        QStringList burstreleaseStringListDefault;
+        for (int i = 0; i < mappingdata_size; ++i) {
+            stringListAllOFF << "OFF";
+            burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
+            burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
+        }
+        burstStringList         = stringListAllOFF;
+        burstpressStringList    = burstpressStringListDefault;
+        burstreleaseStringList  = burstreleaseStringListDefault;
+        lockStringList          = stringListAllOFF;
+        passthroughStringList   = stringListAllOFF;
+        keyup_actionStringList   = stringListAllOFF;
+        keyseqholddownStringList = stringListAllOFF;
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_BURST)) {
+            burstStringList = keyMappingDataFile.value(KEYMAPDATA_BURST).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_BURSTPRESS_TIME)) {
+            burstpressStringList = keyMappingDataFile.value(KEYMAPDATA_BURSTPRESS_TIME).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_BURSTRELEASE_TIME)) {
+            burstreleaseStringList = keyMappingDataFile.value(KEYMAPDATA_BURSTRELEASE_TIME).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_LOCK)) {
+            lockStringList = keyMappingDataFile.value(KEYMAPDATA_LOCK).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_PASSTHROUGH)) {
+            passthroughStringList = keyMappingDataFile.value(KEYMAPDATA_PASSTHROUGH).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_KEYUP_ACTION)) {
+            keyup_actionStringList = keyMappingDataFile.value(KEYMAPDATA_KEYUP_ACTION).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_KEYSEQHOLDDOWN)) {
+            keyseqholddownStringList = keyMappingDataFile.value(KEYMAPDATA_KEYSEQHOLDDOWN).toStringList();
+        }
+
+        if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &burst = (i < burstStringList.size()) ? burstStringList.at(i) : "OFF";
+                if (burst == "ON") {
+                    burstList.append(true);
+                } else {
+                    burstList.append(false);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &burstpresstimeStr = (i < burstpressStringList.size()) ? burstpressStringList.at(i) : QString::number(BURST_PRESS_TIME_DEFAULT);
+                bool ok;
+                int burstpresstime = burstpresstimeStr.toInt(&ok);
+                if (!ok || burstpresstime < BURST_TIME_MIN || burstpresstime > BURST_TIME_MAX) {
+                    burstpresstime = BURST_PRESS_TIME_DEFAULT;
+                }
+                burstpresstimeList.append(burstpresstime);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &burstreleasetimeStr = (i < burstreleaseStringList.size()) ? burstreleaseStringList.at(i) : QString::number(BURST_RELEASE_TIME_DEFAULT);
+                bool ok;
+                int burstreleasetime = burstreleasetimeStr.toInt(&ok);
+                if (!ok || burstreleasetime < BURST_TIME_MIN || burstreleasetime > BURST_TIME_MAX) {
+                    burstreleasetime = BURST_RELEASE_TIME_DEFAULT;
+                }
+                burstreleasetimeList.append(burstreleasetime);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &lock = (i < lockStringList.size()) ? lockStringList.at(i) : "OFF";
+                if (lock == "ON") {
+                    lockList.append(true);
+                } else {
+                    lockList.append(false);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &passthrough = (i < passthroughStringList.size()) ? passthroughStringList.at(i) : "OFF";
+                if (passthrough == "ON") {
+                    passthroughList.append(true);
+                } else {
+                    passthroughList.append(false);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &keyup_action = (i < keyup_actionStringList.size()) ? keyup_actionStringList.at(i) : "OFF";
+                if (keyup_action == "ON") {
+                    keyup_actionList.append(true);
+                } else {
+                    keyup_actionList.append(false);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &keyseqholddown = (i < keyseqholddownStringList.size()) ? keyseqholddownStringList.at(i) : "OFF";
+                if (keyseqholddown == "ON") {
+                    keyseqholddownList.append(true);
+                } else {
+                    keyseqholddownList.append(false);
+                }
+            }
+
+            int loadindex = 0;
+            for (const QString &ori_key_nochange : qAsConst(original_keys)){
+                QString ori_key = ori_key_nochange;
+                if (ori_key.startsWith(PREFIX_SHORTCUT)) {
+                    ori_key.remove(0, 1);
+                }
+
+                bool checkoriginalstr = checkOriginalkeyStr(ori_key);
+                bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
+
+                if (true == checkoriginalstr && true == checkmappingstr) {
+                    loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
+                }
+
+                loadindex += 1;
+            }
+        }
+    }
+
+    if (loadkeymapdata.isEmpty()) {
+        return false;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    for (const MAP_KEYDATA &keymapdata : qAsConst(loadkeymapdata)) {
+        mappingDataList->append(keymapdata);
+    }
+
+    return true;
 }
 
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
@@ -5194,48 +5498,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 }
 
-bool QKeyMapper::checkOriginalkeyStr(const QString &originalkeystr)
-{
-    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalkeystr, -1);
-
-    if (result.isValid) {
-        return true;
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().quote() << "\033[1;31m[checkOriginalkeyStr]" << "Invalid OriginalKey: " << originalkeystr << ", " << "errorMessage: " << result.errorMessage << "\033[0m";
-#endif
-        return false;
-    }
-}
-
-bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
-{
-#ifdef MOUSEBUTTON_CONVERT
-    QStringList mouseNameConvertList = QKeyMapper_Worker::MouseButtonNameConvertMap.keys();
-    for (const QString &mousekey : qAsConst(mouseNameConvertList)){
-        mappingkeystr.replace(mousekey, QKeyMapper_Worker::MouseButtonNameConvertMap.value(mousekey));
-    }
-#endif
-#ifdef SEPARATOR_CONVERT
-    mappingkeystr.replace(OLD_SEPARATOR_PLUS, SEPARATOR_PLUS);
-    mappingkeystr.replace(OLD_SEPARATOR_NEXTARROW, SEPARATOR_NEXTARROW);
-#endif
-
-    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList, INITIAL_ROW_INDEX);
-
-    if (result.isValid) {
-        return true;
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "\033[1;31m[checkMappingkeyStr]" << "Invalid MappingKey: " << mappingkeystr << ", " << "errorMessage: " << result.errorMessage << "\033[0m";
-#endif
-        return false;
-    }
-}
-
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
 {
     returnback_fontid = -1;
@@ -7549,6 +7811,16 @@ void QKeyMapper::forceSwitchKeyMappingTabWidgetIndex(int index)
     switchKeyMappingTabIndex(index);
     updateKeyMappingDataTableConnection();
     m_KeyMappingTabWidget->blockSignals(false);
+}
+
+void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
+{
+    if (0 <= tabindex && tabindex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable;
+        QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+
+        refreshKeyMappingDataTable(mappingDataTable, mappingDataList);
+    }
 }
 
 void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList)

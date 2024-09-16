@@ -35,6 +35,10 @@ private slots:
 
     void on_tabHotkeyUpdateButton_clicked();
 
+    void on_exportTableButton_clicked();
+
+    void on_importTableButton_clicked();
+
 private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
