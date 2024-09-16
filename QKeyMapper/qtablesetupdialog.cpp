@@ -369,18 +369,20 @@ void QTableSetupDialog::on_removeTableButton_clicked()
     reply = QMessageBox::warning(parentWidget(), PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
-        QKeyMapper::getInstance()->removeTabFromKeyMappingTabWidget(tabindex);
+        bool remove_result = QKeyMapper::getInstance()->removeTabFromKeyMappingTabWidget(tabindex);
 
-        QString popupMessage;
-        QString popupMessageColor;
-        int popupMessageDisplayTime = 3000;
-        popupMessageColor = "#44bd32";
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = QString("Mapping table \"%1\" removed successfully").arg(TabName);;
+        if (remove_result) {
+            QString popupMessage;
+            QString popupMessageColor;
+            int popupMessageDisplayTime = 3000;
+            popupMessageColor = "#44bd32";
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                popupMessage = QString("Mapping table \"%1\" removed successfully").arg(TabName);;
+            }
+            else {
+                popupMessage = QString("映射表\"%1\"删除成功").arg(TabName);
+            }
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
-        else {
-            popupMessage = QString("映射表\"%1\"删除成功").arg(TabName);
-        }
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
