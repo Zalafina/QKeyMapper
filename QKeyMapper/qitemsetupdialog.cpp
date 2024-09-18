@@ -10,6 +10,7 @@ QStringList QItemSetupDialog::s_valiedMappingKeyList;
 QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QItemSetupDialog)
+    , m_TabIndex(-1)
     , m_ItemRow(-1)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
@@ -119,6 +120,15 @@ void QItemSetupDialog::resetFontSize()
     ui->mappingKeyUpdateButton->setFont(customFont);
 }
 
+void QItemSetupDialog::setTabIndex(int tabindex)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QItemSetupDialog::setTabIndex]" << "Tab Index =" << tabindex;
+#endif
+
+    m_TabIndex = tabindex;
+}
+
 void QItemSetupDialog::setItemRow(int row)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -181,9 +191,10 @@ bool QItemSetupDialog::event(QEvent *event)
 void QItemSetupDialog::closeEvent(QCloseEvent *event)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QItemSetupDialog::closeEvent]" << "Item Row initialize to -1";
+    qDebug() << "[QItemSetupDialog::closeEvent]" << "Item Row initialize to -1, Tab Index initialize to -1";
 #endif
     m_ItemRow = -1;
+    m_TabIndex = -1;
 
     emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
 
@@ -304,9 +315,10 @@ void QItemSetupDialog::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Escape) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QItemSetupDialog::keyPressEvent]" << "ESC Key Pressed, Item Row initialize to -1 and close SetupDialog.";
+        qDebug() << "[QItemSetupDialog::keyPressEvent]" << "ESC Key Pressed, Item Row & Tab Index initialize to -1 and close SetupDialog.";
 #endif
         m_ItemRow = -1;
+        m_TabIndex = -1;
         emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
     }
 
@@ -348,6 +360,210 @@ void QItemSetupDialog::initKeyListComboBoxes()
     top = ui->mapkeyListLabel->y();
     m_MappingKeyListComboBox->setObjectName(SETUPDIALOG_MAPKEY_COMBOBOX_NAME);
     m_MappingKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
+}
+
+void QItemSetupDialog::refreshOriginalKeyRelatedUI()
+{
+    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
+#endif
+        /* Load Original Key String */
+        QString originalkey_str = keymapdata.Original_Key;
+        if (originalkey_str.startsWith(PREFIX_SHORTCUT)) {
+            originalkey_str.remove(0, 1);
+        }
+        ui->originalKeyLineEdit->setText(originalkey_str);
+
+        /* Load Burst */
+        if (true == keymapdata.Burst) {
+            ui->burstCheckBox->setChecked(true);
+        }
+        else {
+            ui->burstCheckBox->setChecked(false);
+        }
+
+        /* Load Burst press time */
+        if (BURST_TIME_MIN <= keymapdata.BurstPressTime && keymapdata.BurstPressTime <= BURST_TIME_MAX) {
+            ui->burstpressSpinBox->setValue(keymapdata.BurstPressTime);
+        }
+        else {
+            ui->burstpressSpinBox->setValue(BURST_PRESS_TIME_DEFAULT);
+        }
+
+        /* Load Burst release time */
+        if (BURST_TIME_MIN <= keymapdata.BurstReleaseTime && keymapdata.BurstReleaseTime <= BURST_TIME_MAX) {
+            ui->burstreleaseSpinBox->setValue(keymapdata.BurstReleaseTime);
+        }
+        else {
+            ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
+        }
+
+        /* Load Lock */
+        if (true == keymapdata.Lock) {
+            ui->lockCheckBox->setChecked(true);
+        }
+        else {
+            ui->lockCheckBox->setChecked(false);
+        }
+
+        /* Load KeyUp Action Status */
+        if (true == keymapdata.KeyUp_Action) {
+            ui->keyupActionCheckBox->setChecked(true);
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+        }
+        else {
+            ui->keyupActionCheckBox->setChecked(false);
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
+        }
+
+        /* Load PassThrough Status */
+        if (true == keymapdata.PassThrough) {
+            ui->passThroughCheckBox->setChecked(true);
+        }
+        else {
+            ui->passThroughCheckBox->setChecked(false);
+        }
+
+        /* Load KeySequenceHoldDown Status */
+        if (true == keymapdata.KeySeqHoldDown) {
+            ui->keySeqHoldDownCheckBox->setChecked(true);
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setChecked(false);
+        }
+
+        ui->originalKeyLineEdit->setFocus();
+        ui->originalKeyLineEdit->clearFocus();
+
+        bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
+        bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI] Burst item in row" << m_ItemRow << " enabled =" << burstEnabled;
+        qDebug() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI] Lock item in row" << m_ItemRow << " enabled =" << lockEnabled;
+#endif
+
+        if (burstEnabled) {
+            ui->burstCheckBox->setEnabled(true);
+            ui->burstpressSpinBox->setEnabled(true);
+            ui->burstreleaseSpinBox->setEnabled(true);
+        }
+        else {
+            ui->burstCheckBox->setEnabled(false);
+            ui->burstpressSpinBox->setEnabled(false);
+            ui->burstreleaseSpinBox->setEnabled(false);
+        }
+
+        if (lockEnabled) {
+            ui->lockCheckBox->setEnabled(true);
+        }
+        else {
+            ui->lockCheckBox->setEnabled(false);
+        }
+    }
+}
+
+void QItemSetupDialog::refreshMappingKeyRelatedUI()
+{
+    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[QItemSetupDialog::refreshMappingKeyRelatedUI]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
+#endif
+
+        /* Load Mapping Keys String */
+        QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        ui->mappingKeyLineEdit->setText(mappingkeys_str);
+
+        /* Load Burst */
+        if (true == keymapdata.Burst) {
+            ui->burstCheckBox->setChecked(true);
+        }
+        else {
+            ui->burstCheckBox->setChecked(false);
+        }
+
+        /* Load Burst press time */
+        if (BURST_TIME_MIN <= keymapdata.BurstPressTime && keymapdata.BurstPressTime <= BURST_TIME_MAX) {
+            ui->burstpressSpinBox->setValue(keymapdata.BurstPressTime);
+        }
+        else {
+            ui->burstpressSpinBox->setValue(BURST_PRESS_TIME_DEFAULT);
+        }
+
+        /* Load Burst release time */
+        if (BURST_TIME_MIN <= keymapdata.BurstReleaseTime && keymapdata.BurstReleaseTime <= BURST_TIME_MAX) {
+            ui->burstreleaseSpinBox->setValue(keymapdata.BurstReleaseTime);
+        }
+        else {
+            ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
+        }
+
+        /* Load Lock */
+        if (true == keymapdata.Lock) {
+            ui->lockCheckBox->setChecked(true);
+        }
+        else {
+            ui->lockCheckBox->setChecked(false);
+        }
+
+        /* Load KeyUp Action Status */
+        if (true == keymapdata.KeyUp_Action) {
+            ui->keyupActionCheckBox->setChecked(true);
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+        }
+        else {
+            ui->keyupActionCheckBox->setChecked(false);
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
+        }
+
+        /* Load PassThrough Status */
+        if (true == keymapdata.PassThrough) {
+            ui->passThroughCheckBox->setChecked(true);
+        }
+        else {
+            ui->passThroughCheckBox->setChecked(false);
+        }
+
+        /* Load KeySequenceHoldDown Status */
+        if (true == keymapdata.KeySeqHoldDown) {
+            ui->keySeqHoldDownCheckBox->setChecked(true);
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setChecked(false);
+        }
+
+        ui->originalKeyLineEdit->setFocus();
+        ui->originalKeyLineEdit->clearFocus();
+
+        bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
+        bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::refreshMappingKeyRelatedUI] Burst item in row" << m_ItemRow << " enabled =" << burstEnabled;
+        qDebug() << "[QItemSetupDialog::refreshMappingKeyRelatedUI] Lock item in row" << m_ItemRow << " enabled =" << lockEnabled;
+#endif
+
+        if (burstEnabled) {
+            ui->burstCheckBox->setEnabled(true);
+            ui->burstpressSpinBox->setEnabled(true);
+            ui->burstreleaseSpinBox->setEnabled(true);
+        }
+        else {
+            ui->burstCheckBox->setEnabled(false);
+            ui->burstpressSpinBox->setEnabled(false);
+            ui->burstreleaseSpinBox->setEnabled(false);
+        }
+
+        if (lockEnabled) {
+            ui->lockCheckBox->setEnabled(true);
+        }
+        else {
+            ui->lockCheckBox->setEnabled(false);
+        }
+    }
 }
 
 void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
@@ -478,10 +694,15 @@ void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
 
 void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 {
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
+    int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     QString originalKey = ui->originalKeyLineEdit->text();
     originalKey.remove(whitespace_reg);
@@ -516,6 +737,10 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
         if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != update_originalkey) {
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = update_originalkey;
         }
+
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
+        refreshOriginalKeyRelatedUI();
     }
     else {
         popupMessageColor = "#d63031";
@@ -526,10 +751,15 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 
 void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 {
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
+    int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     QString mappingKey = ui->mappingKeyLineEdit->text();
     mappingKey.remove(whitespace_reg);
@@ -554,6 +784,10 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
         }
 
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys = mappingKeySeqList;
+
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
+        refreshMappingKeyRelatedUI();
     }
     else {
         popupMessageColor = "#d63031";

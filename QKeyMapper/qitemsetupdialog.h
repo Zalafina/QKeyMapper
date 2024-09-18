@@ -24,6 +24,7 @@ public:
 
     void setUILanguagee(int languageindex);
     void resetFontSize(void);
+    void setTabIndex(int tabindex);
     void setItemRow(int row);
 
 public:
@@ -44,10 +45,13 @@ protected:
 
 private:
     void initKeyListComboBoxes(void);
+    void refreshOriginalKeyRelatedUI(void);
+    void refreshMappingKeyRelatedUI(void);
 
 private:
     static QItemSetupDialog *m_instance;
     Ui::QItemSetupDialog *ui;
+    int m_TabIndex;
     int m_ItemRow;
 
 public:

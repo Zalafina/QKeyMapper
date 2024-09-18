@@ -6267,7 +6267,7 @@ void QKeyMapper::showInputDeviceListWindow()
     }
 }
 
-void QKeyMapper::showItemSetupDialog(int row)
+void QKeyMapper::showItemSetupDialog(int tabindex, int row)
 {
     if (Q_NULLPTR == m_ItemSetupDialog) {
         return;
@@ -6295,6 +6295,7 @@ void QKeyMapper::showItemSetupDialog(int row)
         y += y_offset;
         m_ItemSetupDialog->move(x, y);
 
+        m_ItemSetupDialog->setTabIndex(tabindex);
         m_ItemSetupDialog->setItemRow(row);
         m_ItemSetupDialog->show();
     }
@@ -8852,7 +8853,7 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
     qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "DoubleClicked";
 #endif
 
-    showItemSetupDialog(rowindex);
+    showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
 }
 
 void QKeyMapper::setupDialogClosed()

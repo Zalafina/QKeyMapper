@@ -626,7 +626,7 @@ private:
     void mappingTabSwitchNotification();
 
     void showInputDeviceListWindow(void);
-    void showItemSetupDialog(int row);
+    void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
 
     void showTableSetupDialog(int tabindex);
