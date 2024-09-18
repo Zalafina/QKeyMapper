@@ -72,10 +72,29 @@ typedef struct MAP_KEYDATA
     bool PassThrough;
     bool KeyUp_Action;
     bool KeySeqHoldDown;
+    int RepeatMode;
+    int RepeatTimes;
 
-    MAP_KEYDATA() : Original_Key(), Mapping_Keys(), Burst(false), BurstPressTime(BURST_PRESS_TIME_DEFAULT), BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT), Lock(false), LockStatus(false), PassThrough(false), KeyUp_Action(false), KeySeqHoldDown(false) {}
+    MAP_KEYDATA() :
+      Original_Key()
+    , Mapping_Keys()
+    , Burst(false)
+    , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
+    , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
+    , Lock(false)
+    , LockStatus(false)
+    , PassThrough(false)
+    , KeyUp_Action(false)
+    , KeySeqHoldDown(false)
+    , RepeatMode(REPEAT_MODE_NONE)
+    , RepeatTimes(0)
+    {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, bool burst, int burstpresstime, int burstreleasetime, bool lock, bool passthrough, bool keyup_action, bool keyseqholddown)
+    MAP_KEYDATA(QString originalkey, QString mappingkeys,
+                bool burst, int burstpresstime, int burstreleasetime,
+                bool lock, bool passthrough,
+                bool keyup_action, bool keyseqholddown,
+                int repeat_mode = REPEAT_MODE_BYTIMES, int repeat_times = 10)
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
@@ -87,6 +106,8 @@ typedef struct MAP_KEYDATA
         PassThrough = passthrough;
         KeyUp_Action = keyup_action;
         KeySeqHoldDown = keyseqholddown;
+        RepeatMode = repeat_mode;
+        RepeatTimes = repeat_times;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -99,7 +120,9 @@ typedef struct MAP_KEYDATA
                 && (Lock == other.Lock)
                 && (PassThrough == other.PassThrough)
                 && (KeyUp_Action == other.KeyUp_Action)
-                && (KeySeqHoldDown == other.KeySeqHoldDown));
+                && (KeySeqHoldDown == other.KeySeqHoldDown)
+                && (RepeatMode == other.RepeatMode)
+                && (RepeatTimes == other.RepeatTimes));
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -117,6 +140,8 @@ typedef struct MAP_KEYDATA
                         << ", PassThrough:" << data.PassThrough
                         << ", KeyUp_Action:" << data.KeyUp_Action
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
+                        << ", RepeatMode:" << data.RepeatMode
+                        << ", RepeatTimes:" << data.RepeatTimes
                         << "]";
         return debug;
     }

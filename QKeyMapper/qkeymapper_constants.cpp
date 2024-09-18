@@ -67,6 +67,10 @@ const int MAPPING_WAITTIME_MAX = 9999;
 const int PRESSTIME_MIN = 0;
 const int PRESSTIME_MAX = 9999;
 
+const int REPEAT_MODE_NONE      = 0;
+const int REPEAT_MODE_BYKEY     = 1;
+const int REPEAT_MODE_BYTIMES   = 2;
+
 const int DATA_PORT_MIN = 1;
 const int DATA_PORT_MAX = 65535;
 const int DATA_PORT_DEFAULT = 5300;
@@ -328,7 +332,8 @@ const char *PREFIX_SEND_UP      = "↑";
 const char *PREFIX_SEND_BOTH    = "⇵";
 
 const char *KEYBOARD_MODIFIERS  = "KeyboardModifiers";
-const char *KEYSEQUENCE_STR     = "KeySequence";
+const char *KEYSEQUENCE_STR         = "KeySequence";
+const char *KEYSEQUENCE_FINAL_STR   = "Final";
 const char *HOLDDOWN_STR        = "HoldDown";
 const char *CLEAR_VIRTUALKEYS   = "ClearVirtualKeys";
 
