@@ -94,7 +94,7 @@ typedef struct MAP_KEYDATA
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
-                int repeat_mode = REPEAT_MODE_BYTIMES, int repeat_times = 10)
+                int repeat_mode = REPEAT_MODE_BYTIMES, int repeat_times = 5)
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
@@ -753,6 +753,7 @@ public:
     static QHash<QString, QTimer*> s_doublePressTimerMap;
     static QHash<QString, QTimer*> s_BurstKeyTimerMap;
     static QHash<QString, QTimer*> s_BurstKeyPressTimerMap;
+    static QHash<QString, int> s_KeySequenceRepeatCount;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<QStringList> pressedvJoyLStickKeysList;
     static QList<QStringList> pressedvJoyRStickKeysList;

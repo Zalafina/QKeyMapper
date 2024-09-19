@@ -130,6 +130,7 @@ extern const int REMOVE_MAPPINGTAB_SUCCESS;
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_KEYSEQ_HOLDDOWN;
+extern const int SENDMODE_KEYSEQ_REPEAT;
 
 extern const int SENDTYPE_NORMAL;
 extern const int SENDTYPE_DOWN;

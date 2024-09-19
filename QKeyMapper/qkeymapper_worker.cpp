@@ -48,6 +48,7 @@ QHash<QString, int> QKeyMapper_Worker::doublePressOriginalKeysMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_doublePressTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyPressTimerMap;
+QHash<QString, int> QKeyMapper_Worker::s_KeySequenceRepeatCount;
 #ifdef VIGEM_CLIENT_SUPPORT
 QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
@@ -1248,16 +1249,37 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
 
             if (findindex >=0) {
+                int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
                 QStringList repeat_mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                 QString repeat_original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                 int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
-                if (repeat_mappingkeylist_size > 1) {
+
+                if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYKEY == repeat_mode) {
                     if (pressedRealKeysList.contains(orikey_str)) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by key -> OriginalKey:" << orikey_str << ", Index:" << findindex;
 #endif
-                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_NORMAL);
-                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_NORMAL);
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT);
+                        emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT);
+                    }
+                }
+                else if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
+                    int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
+                    if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
+                        ++s_KeySequenceRepeatCount[repeat_original_key];
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count++ -> OriginalKey:" << repeat_original_key << ", RepeatCount:" << s_KeySequenceRepeatCount.value(repeat_original_key) << "\033[0m";
+#endif
+                        if (s_KeySequenceRepeatCount.value(repeat_original_key) >= repeat_times) {
+                            s_KeySequenceRepeatCount.remove(repeat_original_key);
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count reached -> OriginalKey:" << repeat_original_key << ", RepeatTimes:" << repeat_times << "\033[0m";
+#endif
+                        }
+                        else {
+                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT);
+                            emit QKeyMapper_Worker::getInstance()->sendInputKeys_Signal(repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT);
+                        }
                     }
                 }
             }
@@ -3422,6 +3444,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     clearAllBurstKeyTimersAndLockKeys();
     clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
+    s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     pressedCombinationRealKeysList.clear();
@@ -3555,6 +3578,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllBurstKeyTimersAndLockKeys();
     clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
+    s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
     pressedCombinationRealKeysList.clear();
@@ -3672,6 +3696,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     clearAllBurstKeyTimersAndLockKeys();
     clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
+    s_KeySequenceRepeatCount.clear();
     pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
@@ -10351,9 +10376,26 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         }
         else {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + QString::number(index);
-            if (index == size) {
-                QString finalPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
-                original_key_forKeySeq.append(finalPostStr);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
+            if (findindex >= 0) {
+                int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+                int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
+                if (repeat_mode != REPEAT_MODE_NONE) {
+                    if (sendmode == SENDMODE_NORMAL
+                        && index == 1
+                        && repeat_mode == REPEAT_MODE_BYTIMES
+                        && repeat_times > 0) {
+                        s_KeySequenceRepeatCount[original_key] = 0;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "\033[1;34m[sendKeySequenceList]" << " original_key(" << original_key << ") repeat by times(" << repeat_times << ") start, sendmode(" << sendmode << ")\033[0m";
+#endif
+                    }
+
+                    if (index == size) {
+                        QString finalPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
+                        original_key_forKeySeq.append(finalPostStr);
+                    }
+                }
             }
             emit sendInputKeys_Signal(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_NORMAL);
             emit sendInputKeys_Signal(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_NORMAL);
