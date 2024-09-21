@@ -1158,7 +1158,12 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input.type = INPUT_MOUSE;
                 input.mi.mouseData = vmousecode.MouseXButton;
-                input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                if (sendtype == SENDTYPE_EXCLUSION) {
+                    input.mi.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
+                }
+                else {
+                    input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                }
                 if (KEY_DOWN == send_keyupdown) {
                     input.mi.dwFlags = vmousecode.MouseDownCode;
                 }
@@ -1212,7 +1217,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     extenedkeyflag = 0;
                 }
                 input.type = INPUT_KEYBOARD;
-                if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                if (sendtype == SENDTYPE_EXCLUSION) {
+                    input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
+                }
+                else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
                     || VK_MOUSE2VJOY_DIRECT == vkeycode.KeyCode) {
                     input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                 }
@@ -1491,7 +1499,12 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                     input.type = INPUT_MOUSE;
                     input.mi.mouseData = vmousecode.MouseXButton;
-                    input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                    if (sendtype == SENDTYPE_EXCLUSION) {
+                        input.mi.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
+                    }
+                    else {
+                        input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+                    }
                     if (KEY_DOWN == send_keyupdown) {
                         input.mi.dwFlags = vmousecode.MouseDownCode;
                     }
@@ -1583,7 +1596,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         extenedkeyflag = 0;
                     }
                     input.type = INPUT_KEYBOARD;
-                    if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                    if (sendtype == SENDTYPE_EXCLUSION) {
+                        input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
+                    }
+                    else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
                         || VK_MOUSE2VJOY_DIRECT == vkeycode.KeyCode) {
                         input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
                     }
@@ -6701,7 +6717,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-        if (extraInfo != VIRTUAL_KEYBOARD_PRESS && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+        if (extraInfo != VIRTUAL_KEYBOARD_PRESS
+            && extraInfo != VIRTUAL_KEY_OVERLAY
+            && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
             if (Interception_Worker::s_InterceptStart) {
                 return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
             }
@@ -6967,6 +6985,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
             }
 
+            if (VIRTUAL_KEY_OVERLAY == extraInfo) {
+                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+            }
+
 #ifdef DEBUG_LOGOUT_ON
             if (WM_KEYDOWN == wParam){
                 qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) KeyDown, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
@@ -7139,8 +7161,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         if (true == MouseButtonNameMap.contains(wParam_X)) {
             QString keycodeString = MouseButtonNameMap.value(wParam_X);
             QString keycodeString_nochanged = keycodeString;
-            if (VIRTUAL_MOUSE_CLICK == extraInfo || VIRTUAL_MOUSE_POINTCLICK == extraInfo) {
+            if (VIRTUAL_MOUSE_CLICK == extraInfo
+                || VIRTUAL_KEY_OVERLAY == extraInfo
+                || VIRTUAL_MOUSE_POINTCLICK == extraInfo) {
                 if (!hookprocstart) {
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
+
+                if (VIRTUAL_KEY_OVERLAY == extraInfo) {
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
 

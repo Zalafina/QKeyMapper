@@ -304,12 +304,12 @@ ULONG_PTR VIRTUAL_KEYBOARD_PRESS;
 ULONG_PTR VIRTUAL_MOUSE_CLICK;
 ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
 ULONG_PTR VIRTUAL_MOUSE_WHEEL;
+ULONG_PTR VIRTUAL_KEY_OVERLAY;
 
 const ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDCA;
 const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
 const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFBC;
 const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
-const ULONG_PTR VIRTUAL_WIN_PLUS_D       = 0xDBDBDBDB;
 
 const UINT SCANCODE_CTRL            = 0x1D;
 const UINT SCANCODE_ALT             = 0x38;
@@ -795,8 +795,13 @@ ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues) {
 
 void generateVirtualInputRandomValues() {
     QSet<ULONG_PTR> generatedValues;
+    generatedValues.insert(VIRTUAL_UNICODE_CHAR);
+    generatedValues.insert(VIRTUAL_MOUSE2JOY_KEYS);
+    generatedValues.insert(VIRTUAL_MOUSE_MOVE);
+    generatedValues.insert(VIRTUAL_MOUSE_MOVE_BYKEYS);
     VIRTUAL_KEYBOARD_PRESS = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_CLICK = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_POINTCLICK = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_WHEEL = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_KEY_OVERLAY = generateUniqueRandomValue(generatedValues);
 }
