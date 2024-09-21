@@ -968,7 +968,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
         return;
     }
 
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵]?)([^⏱]+)(?:⏱(\d+))?$)");
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
     static QRegularExpression sendTextRegexp(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
@@ -1066,6 +1066,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 else if (prefix == PREFIX_SEND_BOTH) {
                     sendtype = SENDTYPE_BOTH;
                 }
+                else if (prefix == PREFIX_SEND_EXCLUSION) {
+                    sendtype = SENDTYPE_EXCLUSION;
+                }
 
                 vjoy_match = vjoy_regex.match(key);
             }
@@ -1075,7 +1078,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
             }
 
-            if (key.isEmpty() || key == KEY_NONE_STR || sendtype != SENDTYPE_NORMAL) {
+            if (key.isEmpty()
+                || key == KEY_NONE_STR
+                || sendtype == SENDTYPE_DOWN
+                || sendtype == SENDTYPE_UP
+                || sendtype == SENDTYPE_BOTH) {
                 continue;
             }
 
@@ -1130,19 +1137,29 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
             }
             else if (true == VirtualMouseButtonMap.contains(key)) {
-                if (false == pressedVirtualKeysList.contains(key)) {
+                if (sendtype != SENDTYPE_EXCLUSION
+                    && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     qWarning("sendInputKeys(): Mouse Button Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
 #endif
                     continue;
                 }
 
+                int send_keyupdown = KEY_UP;
+                if (sendtype == SENDTYPE_EXCLUSION) {
+                    if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                        send_keyupdown = KEY_DOWN;
+                    }
+                    else {
+                        continue;
+                    }
+                }
                 INPUT input = { 0 };
                 V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                 input.type = INPUT_MOUSE;
                 input.mi.mouseData = vmousecode.MouseXButton;
                 input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
-                if (KEY_DOWN == keyupdown) {
+                if (KEY_DOWN == send_keyupdown) {
                     input.mi.dwFlags = vmousecode.MouseDownCode;
                 }
                 else {
@@ -1152,10 +1169,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                     for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                        postMouseButton(hwnd, key, keyupdown);
+                        postMouseButton(hwnd, key, send_keyupdown);
                     }
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendInputKeys] postMouseButton(" << key << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+                    qDebug().nospace().noquote() << "[sendInputKeys] postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
                 }
             }
@@ -1167,7 +1184,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     s_forceSendVirtualKey = true;
                 }
                 else {
-                    if (false == pressedVirtualKeysList.contains(key)) {
+                    if (sendtype != SENDTYPE_EXCLUSION
+                        && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                         qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
 #endif
@@ -1175,6 +1193,15 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                 }
 
+                int send_keyupdown = KEY_UP;
+                if (sendtype == SENDTYPE_EXCLUSION) {
+                    if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                        send_keyupdown = KEY_DOWN;
+                    }
+                    else {
+                        continue;
+                    }
+                }
                 INPUT input = { 0 };
                 V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
                 DWORD extenedkeyflag = 0;
@@ -1197,7 +1224,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 //#ifdef DEBUG_LOGOUT_ON
 //                qDebug("sendInputKeys(): Key Up -> \"%s\", wScan->0x%08X", key.toStdString().c_str(), input.ki.wScan);
 //#endif
-                if (KEY_DOWN == keyupdown) {
+                if (KEY_DOWN == send_keyupdown) {
                     input.ki.dwFlags = extenedkeyflag | 0;
                 }
                 else {
@@ -1215,7 +1242,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()
                     && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
                     for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
-                        postVirtualKeyCode(hwnd, vkeycode.KeyCode, keyupdown);
+                        postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
                     }
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyUp -> " << QKeyMapper::s_last_HWNDList;
@@ -1339,6 +1366,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     else if (prefix == PREFIX_SEND_BOTH) {
                         sendtype = SENDTYPE_BOTH;
                     }
+                    else if (prefix == PREFIX_SEND_EXCLUSION) {
+                        sendtype = SENDTYPE_EXCLUSION;
+                    }
 
                     vjoy_match = vjoy_regex.match(key);
                 }
@@ -1449,6 +1479,14 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
                     }
+                    else if (sendtype == SENDTYPE_EXCLUSION) {
+                        if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                            send_keyupdown = KEY_UP;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
                     INPUT input = { 0 };
                     V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(key);
                     input.type = INPUT_MOUSE;
@@ -1526,6 +1564,14 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     int send_keyupdown = KEY_DOWN;
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
+                    }
+                    else if (sendtype == SENDTYPE_EXCLUSION) {
+                        if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                            send_keyupdown = KEY_UP;
+                        }
+                        else {
+                            continue;
+                        }
                     }
                     INPUT input = { 0 };
                     V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(key);
@@ -10415,7 +10461,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

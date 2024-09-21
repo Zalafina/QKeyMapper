@@ -161,6 +161,7 @@ const int SENDTYPE_NORMAL   = 0;
 const int SENDTYPE_DOWN     = 1;
 const int SENDTYPE_UP       = 2;
 const int SENDTYPE_BOTH     = 3;
+const int SENDTYPE_EXCLUSION = 4;
 
 const int SENDTYPE_BOTH_WAITTIME = 20;
 
@@ -331,6 +332,7 @@ const char *PREFIX_PASSTHROUGH = "$";
 const char *PREFIX_SEND_DOWN    = "↓";
 const char *PREFIX_SEND_UP      = "↑";
 const char *PREFIX_SEND_BOTH    = "⇵";
+const char *PREFIX_SEND_EXCLUSION = "！";
 
 const char *KEYBOARD_MODIFIERS  = "KeyboardModifiers";
 const char *KEYSEQUENCE_STR         = "KeySequence";

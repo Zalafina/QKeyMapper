@@ -136,6 +136,7 @@ extern const int SENDTYPE_NORMAL;
 extern const int SENDTYPE_DOWN;
 extern const int SENDTYPE_UP;
 extern const int SENDTYPE_BOTH;
+extern const int SENDTYPE_EXCLUSION;
 
 extern const int SENDTYPE_BOTH_WAITTIME;
 
@@ -297,6 +298,7 @@ extern const char *PREFIX_PASSTHROUGH;
 extern const char *PREFIX_SEND_DOWN;
 extern const char *PREFIX_SEND_UP;
 extern const char *PREFIX_SEND_BOTH;
+extern const char *PREFIX_SEND_EXCLUSION;
 extern const char *KEYBOARD_MODIFIERS;
 extern const char *KEYSEQUENCE_STR;
 extern const char *KEYSEQUENCE_FINAL_STR;

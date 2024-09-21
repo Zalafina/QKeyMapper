@@ -1827,7 +1827,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵]?)([^⏱]+)(?:⏱(\d+))?$)");
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
@@ -9806,7 +9806,8 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         if (currentMapKeyListText == SEPARATOR_WAITTIME
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP
-                            || currentMapKeyListText == PREFIX_SEND_BOTH) {
+                            || currentMapKeyListText == PREFIX_SEND_BOTH
+                            || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                             newMapKeyText = currentMapKeyText + currentMapKeyListText;
                         }
                         else {
@@ -9818,7 +9819,8 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             if (currentMapKeyListText == SEPARATOR_WAITTIME
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_BOTH) {
+                                || currentMapKeyListText == PREFIX_SEND_BOTH
+                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
                             }
                             else {
@@ -9829,7 +9831,8 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             if (currentMapKeyListText == SEPARATOR_WAITTIME
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_BOTH) {
+                                || currentMapKeyListText == PREFIX_SEND_BOTH
+                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {

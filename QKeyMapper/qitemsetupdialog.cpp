@@ -344,6 +344,7 @@ void QItemSetupDialog::initKeyListComboBoxes()
     m_MappingKeyListComboBox->addItem(PREFIX_SEND_DOWN);
     m_MappingKeyListComboBox->addItem(PREFIX_SEND_UP);
     m_MappingKeyListComboBox->addItem(PREFIX_SEND_BOTH);
+    m_MappingKeyListComboBox->addItem(PREFIX_SEND_EXCLUSION);
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QString text = mapkeyComboBox->itemText(i);
         m_MappingKeyListComboBox->addItem(text);

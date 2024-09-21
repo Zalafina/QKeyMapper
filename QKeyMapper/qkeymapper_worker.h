@@ -94,7 +94,7 @@ typedef struct MAP_KEYDATA
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
-                int repeat_mode = REPEAT_MODE_BYTIMES, int repeat_times = 5)
+                int repeat_mode = REPEAT_MODE_NONE, int repeat_times = 5)
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
