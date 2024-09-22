@@ -154,8 +154,9 @@ const int REMOVE_MAPPINGTAB_SUCCESS = 2;
 
 const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
-const int SENDMODE_KEYSEQ_HOLDDOWN  = 3;
-const int SENDMODE_KEYSEQ_REPEAT    = 4;
+const int SENDMODE_KEYSEQ_NORMAL    = 3;
+const int SENDMODE_KEYSEQ_HOLDDOWN  = 4;
+const int SENDMODE_KEYSEQ_REPEAT    = 5;
 
 const int SENDTYPE_NORMAL   = 0;
 const int SENDTYPE_DOWN     = 1;

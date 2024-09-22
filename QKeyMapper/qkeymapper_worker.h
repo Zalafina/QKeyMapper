@@ -94,7 +94,7 @@ typedef struct MAP_KEYDATA
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
-                int repeat_mode = REPEAT_MODE_NONE, int repeat_times = 5)
+                int repeat_mode = REPEAT_MODE_BYKEY, int repeat_times = 5)
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
@@ -493,6 +493,7 @@ public slots:
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
+    void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode);
 
 public:
     static void sendBurstKeyDown(const QString &burstKey);
@@ -745,6 +746,7 @@ public:
     static QStringList pressedLongPressKeysList;
     static QStringList pressedDoublePressKeysList;
     static QList<QList<quint8>> pressedMultiKeyboardVKeyCodeList;
+    static QStringList s_runningKeySequenceOrikeyList;
     // static QStringList pressedShortcutKeysList;
     static QStringList combinationOriginalKeysList;
     static QHash<QString, QList<int>> longPressOriginalKeysMap;
@@ -822,7 +824,7 @@ private:
     QRunnable *m_sendInputTask;
     QWaitCondition m_sendInputStopCondition;
     QMutex m_sendInputStopMutex;
-    bool m_sendInputStopFlag;
+    QAtomicBool m_sendInputStopFlag;
     bool m_JoystickCapture;
 #ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;
