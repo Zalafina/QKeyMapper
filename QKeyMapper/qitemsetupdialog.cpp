@@ -27,11 +27,13 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->mappingKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstpressSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstreleaseSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->repeatTimesSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     m_OriginalKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     m_MappingKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
 
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
+    ui->repeatTimesSpinBox->setRange(REPEAT_TIMES_MIN, REPEAT_TIMES_MAX);
 
     // ui->originalKeyLineEdit->setReadOnly(true);
     // ui->mappingKeyLineEdit->setReadOnly(true);
@@ -57,6 +59,8 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
+        ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_ENGLISH);
+        ui->repeatByTimesCheckBox->setText(REPEATBYTIMESCHECKBOX_ENGLISH);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
         ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
@@ -74,6 +78,8 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
+        ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_CHINESE);
+        ui->repeatByTimesCheckBox->setText(REPEATBYTIMESCHECKBOX_CHINESE);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
         ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
@@ -110,6 +116,8 @@ void QItemSetupDialog::resetFontSize()
     ui->keyupActionCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
     ui->keySeqHoldDownCheckBox->setFont(customFont);
+    ui->repeatByKeyCheckBox->setFont(customFont);
+    ui->repeatByTimesCheckBox->setFont(customFont);
     ui->burstpressLabel->setFont(customFont);
     ui->burstreleaseLabel->setFont(customFont);
     ui->originalKeyLabel->setFont(customFont);
@@ -278,6 +286,28 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->keySeqHoldDownCheckBox->setChecked(false);
         }
 
+        /* Load RepeatMode Status */
+        if (REPEAT_MODE_BYKEY == keymapdata.RepeatMode) {
+            ui->repeatByKeyCheckBox->setChecked(true);
+            ui->repeatByTimesCheckBox->setChecked(false);
+        }
+        else if (REPEAT_MODE_BYTIMES == keymapdata.RepeatMode) {
+            ui->repeatByKeyCheckBox->setChecked(false);
+            ui->repeatByTimesCheckBox->setChecked(true);
+        }
+        else {
+            ui->repeatByKeyCheckBox->setChecked(false);
+            ui->repeatByTimesCheckBox->setChecked(false);
+        }
+
+        /* Load RepeatTimes */
+        if (REPEAT_TIMES_MIN <= keymapdata.RepeatTimes && keymapdata.RepeatTimes <= REPEAT_TIMES_MAX) {
+            ui->repeatTimesSpinBox->setValue(keymapdata.RepeatTimes);
+        }
+        else {
+            ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
+        }
+
         ui->originalKeyLineEdit->setFocus();
         ui->originalKeyLineEdit->clearFocus();
 
@@ -305,6 +335,17 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->lockCheckBox->setEnabled(false);
+        }
+
+        if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->repeatByKeyCheckBox->setEnabled(true);
+            ui->repeatByTimesCheckBox->setEnabled(true);
+            ui->repeatTimesSpinBox->setEnabled(true);
+        }
+        else {
+            ui->repeatByKeyCheckBox->setEnabled(false);
+            ui->repeatByTimesCheckBox->setEnabled(false);
+            ui->repeatTimesSpinBox->setEnabled(false);
         }
     }
 
@@ -435,6 +476,28 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->keySeqHoldDownCheckBox->setChecked(false);
         }
 
+        /* Load RepeatMode Status */
+        if (REPEAT_MODE_BYKEY == keymapdata.RepeatMode) {
+            ui->repeatByKeyCheckBox->setChecked(true);
+            ui->repeatByTimesCheckBox->setChecked(false);
+        }
+        else if (REPEAT_MODE_BYTIMES == keymapdata.RepeatMode) {
+            ui->repeatByKeyCheckBox->setChecked(false);
+            ui->repeatByTimesCheckBox->setChecked(true);
+        }
+        else {
+            ui->repeatByKeyCheckBox->setChecked(false);
+            ui->repeatByTimesCheckBox->setChecked(false);
+        }
+
+        /* Load RepeatTimes */
+        if (REPEAT_TIMES_MIN <= keymapdata.RepeatTimes && keymapdata.RepeatTimes <= REPEAT_TIMES_MAX) {
+            ui->repeatTimesSpinBox->setValue(keymapdata.RepeatTimes);
+        }
+        else {
+            ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
+        }
+
         ui->originalKeyLineEdit->setFocus();
         ui->originalKeyLineEdit->clearFocus();
 
@@ -462,6 +525,17 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->lockCheckBox->setEnabled(false);
+        }
+
+        if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->repeatByKeyCheckBox->setEnabled(true);
+            ui->repeatByTimesCheckBox->setEnabled(true);
+            ui->repeatTimesSpinBox->setEnabled(true);
+        }
+        else {
+            ui->repeatByKeyCheckBox->setEnabled(false);
+            ui->repeatByTimesCheckBox->setEnabled(false);
+            ui->repeatTimesSpinBox->setEnabled(false);
         }
     }
 }
@@ -536,6 +610,28 @@ void QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->keySeqHoldDownCheckBox->setChecked(false);
         }
 
+        /* Load RepeatMode Status */
+        if (REPEAT_MODE_BYKEY == keymapdata.RepeatMode) {
+            ui->repeatByKeyCheckBox->setChecked(true);
+            ui->repeatByTimesCheckBox->setChecked(false);
+        }
+        else if (REPEAT_MODE_BYTIMES == keymapdata.RepeatMode) {
+            ui->repeatByKeyCheckBox->setChecked(false);
+            ui->repeatByTimesCheckBox->setChecked(true);
+        }
+        else {
+            ui->repeatByKeyCheckBox->setChecked(false);
+            ui->repeatByTimesCheckBox->setChecked(false);
+        }
+
+        /* Load RepeatTimes */
+        if (REPEAT_TIMES_MIN <= keymapdata.RepeatTimes && keymapdata.RepeatTimes <= REPEAT_TIMES_MAX) {
+            ui->repeatTimesSpinBox->setValue(keymapdata.RepeatTimes);
+        }
+        else {
+            ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
+        }
+
         ui->originalKeyLineEdit->setFocus();
         ui->originalKeyLineEdit->clearFocus();
 
@@ -563,6 +659,17 @@ void QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->lockCheckBox->setEnabled(false);
+        }
+
+        if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->repeatByKeyCheckBox->setEnabled(true);
+            ui->repeatByTimesCheckBox->setEnabled(true);
+            ui->repeatTimesSpinBox->setEnabled(true);
+        }
+        else {
+            ui->repeatByKeyCheckBox->setEnabled(false);
+            ui->repeatByTimesCheckBox->setEnabled(false);
+            ui->repeatTimesSpinBox->setEnabled(false);
         }
     }
 }
@@ -795,4 +902,75 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
         popupMessage = result.errorMessage;
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QItemSetupDialog::on_repeatByKeyCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int repeatmode = REPEAT_MODE_NONE;
+    bool repeatbykey = ui->repeatByKeyCheckBox->isChecked();
+    ui->repeatByTimesCheckBox->blockSignals(true);
+    if (repeatbykey) {
+        repeatmode = REPEAT_MODE_BYKEY;
+        ui->repeatByTimesCheckBox->setChecked(false);
+    }
+    else {
+        repeatmode = REPEAT_MODE_NONE;
+        ui->repeatByTimesCheckBox->setChecked(false);
+    }
+    ui->repeatByTimesCheckBox->blockSignals(false);
+    if (repeatmode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatMode) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = repeatmode;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") RepeatMode -> " << repeatmode;
+#endif
+    }
+}
+
+
+void QItemSetupDialog::on_repeatByTimesCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int repeatmode = REPEAT_MODE_NONE;
+    bool repeatbykey = ui->repeatByTimesCheckBox->isChecked();
+    ui->repeatByKeyCheckBox->blockSignals(true);
+    if (repeatbykey) {
+        repeatmode = REPEAT_MODE_BYTIMES;
+        ui->repeatByKeyCheckBox->setChecked(false);
+    }
+    else {
+        repeatmode = REPEAT_MODE_NONE;
+        ui->repeatByKeyCheckBox->setChecked(false);
+    }
+    ui->repeatByKeyCheckBox->blockSignals(false);
+    if (repeatmode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatMode) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = repeatmode;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") RepeatMode -> " << repeatmode;
+#endif
+    }
+}
+
+void QItemSetupDialog::on_repeatTimesSpinBox_editingFinished()
+{
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int current_value = ui->repeatTimesSpinBox->value();
+
+    if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatTimes) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatTimes = current_value;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[on_repeatTimesSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") Repeat Times -> " << current_value;
+#endif
+    }
 }

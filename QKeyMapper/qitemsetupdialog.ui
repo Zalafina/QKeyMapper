@@ -336,7 +336,7 @@
     <rect>
      <x>230</x>
      <y>180</y>
-     <width>81</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -344,7 +344,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
-    <string>RepeatByTimes</string>
+    <string>RepeatTimes</string>
    </property>
    <property name="checked">
     <bool>false</bool>
@@ -353,7 +353,7 @@
   <widget class="QSpinBox" name="repeatTimesSpinBox">
    <property name="geometry">
     <rect>
-     <x>315</x>
+     <x>326</x>
      <y>180</y>
      <width>61</width>
      <height>22</height>

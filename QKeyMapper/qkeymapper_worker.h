@@ -87,14 +87,14 @@ typedef struct MAP_KEYDATA
     , KeyUp_Action(false)
     , KeySeqHoldDown(false)
     , RepeatMode(REPEAT_MODE_NONE)
-    , RepeatTimes(0)
+    , RepeatTimes(REPEAT_TIMES_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
-                int repeat_mode = REPEAT_MODE_NONE, int repeat_times = 0)
+                int repeat_mode, int repeat_times)
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);

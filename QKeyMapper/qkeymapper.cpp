@@ -2638,6 +2638,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList passthroughList;
     QStringList keyup_actionList;
     QStringList keyseqholddownList;
+    QStringList repeatmodeList;
+    QStringList repeattimesList;
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(*mappingDataList))
     {
@@ -2686,6 +2688,18 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             keyseqholddownList.append("OFF");
         }
+        if (REPEAT_MODE_NONE <= keymapdata.RepeatMode && keymapdata.RepeatMode <= REPEAT_MODE_BYTIMES) {
+            repeatmodeList.append(QString::number(keymapdata.RepeatMode));
+        }
+        else {
+            repeatmodeList.append(QString::number(REPEAT_MODE_NONE));
+        }
+        if (REPEAT_TIMES_MIN <= keymapdata.RepeatTimes && keymapdata.RepeatTimes <= REPEAT_TIMES_MAX) {
+            repeattimesList.append(QString::number(keymapdata.RepeatTimes));
+        }
+        else {
+            repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
+        }
     }
 
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
@@ -2697,6 +2711,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
     keyMappingDataFile.setValue(KEYMAPDATA_KEYUP_ACTION, keyup_actionList);
     keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
+    keyMappingDataFile.setValue(KEYMAPDATA_REPEATMODE, repeatmodeList);
+    keyMappingDataFile.setValue(KEYMAPDATA_REPEATIMES, repeattimesList);
 
     return true;
 }
@@ -2724,6 +2740,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList passthroughStringList;
     QStringList keyup_actionStringList;
     QStringList keyseqholddownStringList;
+    QStringList repeatmodeStringList;
+    QStringList repeattimesStringList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
@@ -2731,6 +2749,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> passthroughList;
     QList<bool> keyup_actionList;
     QList<bool> keyseqholddownList;
+    QList<int> repeatmodeList;
+    QList<int> repeattimesList;
     QList<MAP_KEYDATA> loadkeymapdata;
 
     if ((true == keyMappingDataFile.contains(KEYMAPDATA_ORIGINALKEYS))
@@ -2740,12 +2760,16 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
         int mappingdata_size = original_keys.size();
         QStringList stringListAllOFF;
+        QStringList stringListAllZERO;
         QStringList burstpressStringListDefault;
         QStringList burstreleaseStringListDefault;
+        QStringList repeattimesStringListDefault;
         for (int i = 0; i < mappingdata_size; ++i) {
             stringListAllOFF << "OFF";
+            stringListAllZERO << "0";
             burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
             burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
+            repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
         }
         burstStringList         = stringListAllOFF;
         burstpressStringList    = burstpressStringListDefault;
@@ -2754,6 +2778,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         passthroughStringList   = stringListAllOFF;
         keyup_actionStringList   = stringListAllOFF;
         keyseqholddownStringList = stringListAllOFF;
+        repeatmodeStringList = stringListAllZERO;
+        repeattimesStringList = repeattimesStringListDefault;
         if (true == keyMappingDataFile.contains(KEYMAPDATA_BURST)) {
             burstStringList = keyMappingDataFile.value(KEYMAPDATA_BURST).toStringList();
         }
@@ -2774,6 +2800,12 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_KEYSEQHOLDDOWN)) {
             keyseqholddownStringList = keyMappingDataFile.value(KEYMAPDATA_KEYSEQHOLDDOWN).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_REPEATMODE)) {
+            repeatmodeStringList = keyMappingDataFile.value(KEYMAPDATA_REPEATMODE).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_REPEATIMES)) {
+            repeattimesStringList = keyMappingDataFile.value(KEYMAPDATA_REPEATIMES).toStringList();
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -2843,6 +2875,26 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 }
             }
 
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &repeatmodeStr = (i < repeatmodeStringList.size()) ? repeatmodeStringList.at(i) : QString::number(REPEAT_MODE_NONE);
+                bool ok;
+                int repeatmode = repeatmodeStr.toInt(&ok);
+                if (!ok || repeatmode < REPEAT_MODE_NONE || repeatmode > REPEAT_MODE_BYTIMES) {
+                    repeatmode = REPEAT_MODE_NONE;
+                }
+                repeatmodeList.append(repeatmode);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &repeattimesStr = (i < repeattimesStringList.size()) ? repeattimesStringList.at(i) : QString::number(REPEAT_TIMES_DEFAULT);
+                bool ok;
+                int repeattimes = repeattimesStr.toInt(&ok);
+                if (!ok || repeattimes < REPEAT_TIMES_MIN || repeattimes > REPEAT_TIMES_MAX) {
+                    repeattimes = REPEAT_TIMES_DEFAULT;
+                }
+                repeattimesList.append(repeattimes);
+            }
+
             int loadindex = 0;
             for (const QString &ori_key_nochange : qAsConst(original_keys)){
                 QString ori_key = ori_key_nochange;
@@ -2854,7 +2906,18 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
                 if (true == checkoriginalstr && true == checkmappingstr) {
-                    loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
+                    loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
+                                                      mapping_keys.at(loadindex),
+                                                      burstList.at(loadindex),
+                                                      burstpresstimeList.at(loadindex),
+                                                      burstreleasetimeList.at(loadindex),
+                                                      lockList.at(loadindex),
+                                                      passthroughList.at(loadindex),
+                                                      keyup_actionList.at(loadindex),
+                                                      keyseqholddownList.at(loadindex),
+                                                      repeatmodeList.at(loadindex),
+                                                      repeattimesList.at(loadindex)
+                                                      ));
                 }
 
                 loadindex += 1;
@@ -4230,6 +4293,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString passthroughList_forsave;
     QString keyup_actionList_forsave;
     QString keyseqholddownList_forsave;
+    QString repeatmodeList_forsave;
+    QString repeattimesList_forsave;
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
@@ -4256,6 +4321,8 @@ void QKeyMapper::saveKeyMapSetting(void)
             passthroughList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             keyup_actionList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             keyseqholddownList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            repeatmodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            repeattimesList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
         }
 
         QStringList original_keys;
@@ -4267,6 +4334,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList passthroughList;
         QStringList keyup_actionList;
         QStringList keyseqholddownList;
+        QStringList repeatmodeList;
+        QStringList repeattimesList;
         if (mappingDataList->size() > 0) {
             for (const MAP_KEYDATA &keymapdata : qAsConst(*mappingDataList))
             {
@@ -4315,6 +4384,18 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     keyseqholddownList.append("OFF");
                 }
+                if (REPEAT_MODE_NONE <= keymapdata.RepeatMode && keymapdata.RepeatMode <= REPEAT_MODE_BYTIMES) {
+                    repeatmodeList.append(QString::number(keymapdata.RepeatMode));
+                }
+                else {
+                    repeatmodeList.append(QString::number(REPEAT_MODE_NONE));
+                }
+                if (REPEAT_TIMES_MIN <= keymapdata.RepeatTimes && keymapdata.RepeatTimes <= REPEAT_TIMES_MAX) {
+                    repeattimesList.append(QString::number(keymapdata.RepeatTimes));
+                }
+                else {
+                    repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
+                }
             }
         }
         // join QStringList variables first (use SEPARATOR_KEYMAPDATA_LEVEL1)
@@ -4327,6 +4408,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString passthroughList_str = passthroughList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString keyup_actionList_str = keyup_actionList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString keyseqholddownList_str = keyseqholddownList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString repeatmodeList_str = repeatmodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString repeattimesList_str = repeattimesList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
 
         // append joined QString variables to forsave variables
         original_keys_forsave.append(original_keys_str);
@@ -4338,6 +4421,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         passthroughList_forsave.append(passthroughList_str);
         keyup_actionList_forsave.append(keyup_actionList_str);
         keyseqholddownList_forsave.append(keyseqholddownList_str);
+        repeatmodeList_forsave.append(repeatmodeList_str);
+        repeattimesList_forsave.append(repeattimesList_str);
     }
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
@@ -4352,6 +4437,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATMODE, repeatmodeList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATIMES, repeattimesList_forsave);
 
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed);
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed);
@@ -4956,6 +5043,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString passthroughData_loaded;
         QString keyup_actionData_loaded;
         QString keyseqholddownData_loaded;
+        QString repeatmodeData_loaded;
+        QString repeattimesData_loaded;
         int table_count = 0;
         QStringList original_keys_split;
         QStringList mapping_keys_split;
@@ -4966,6 +5055,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList passthroughData_split;
         QStringList keyup_actionData_split;
         QStringList keyseqholddownData_split;
+        QStringList repeatmodeData_split;
+        QStringList repeattimesData_split;
 
         original_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
         mapping_keys_loaded     = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toString();
@@ -5017,6 +5108,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 keyseqholddownData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN).toString();
                 keyseqholddownData_split = keyseqholddownData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_REPEATMODE)) {
+                repeatmodeData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_REPEATMODE).toString();
+                repeatmodeData_split = repeatmodeData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_REPEATIMES)) {
+                repeattimesData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_REPEATIMES).toString();
+                repeattimesData_split = repeattimesData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
 
             for (int index = 0; index < table_count && datavalidflag != false; ++index) {
                 QList<MAP_KEYDATA> loadkeymapdata;
@@ -5036,6 +5135,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList passthroughStringList;
                     QStringList keyup_actionStringList;
                     QStringList keyseqholddownStringList;
+                    QStringList repeatmodeStringList;
+                    QStringList repeattimesStringList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
                     QList<int> burstreleasetimeList;
@@ -5043,18 +5144,24 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QList<bool> passthroughList;
                     QList<bool> keyup_actionList;
                     QList<bool> keyseqholddownList;
+                    QList<int> repeatmodeList;
+                    QList<int> repeattimesList;
 
                     original_keys = original_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     mapping_keys = mapping_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
 
                     int mappingdata_size = original_keys.size();
                     QStringList stringListAllOFF;
+                    QStringList stringListAllZERO;
                     QStringList burstpressStringListDefault;
                     QStringList burstreleaseStringListDefault;
+                    QStringList repeattimesStringListDefault;
                     for (int i = 0; i < mappingdata_size; ++i) {
                         stringListAllOFF << "OFF";
+                        stringListAllZERO << "0";
                         burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
                         burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
+                        repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
                     }
                     burstStringList         = stringListAllOFF;
                     burstpressStringList    = burstpressStringListDefault;
@@ -5063,6 +5170,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     passthroughStringList   = stringListAllOFF;
                     keyup_actionStringList   = stringListAllOFF;
                     keyseqholddownStringList = stringListAllOFF;
+                    repeatmodeStringList = stringListAllZERO;
+                    repeattimesStringList = repeattimesStringListDefault;
 
                     if (burstData_split.size() == table_count) {
                         burstStringList = burstData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -5084,6 +5193,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                     if (keyseqholddownData_split.size() == table_count) {
                         keyseqholddownStringList = keyseqholddownData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (repeatmodeData_split.size() == table_count) {
+                        repeatmodeStringList = repeatmodeData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (repeattimesData_split.size() == table_count) {
+                        repeattimesStringList = repeattimesData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
 
                     if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -5154,6 +5269,26 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             }
                         }
 
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &repeatmodeStr = (i < repeatmodeStringList.size()) ? repeatmodeStringList.at(i) : QString::number(REPEAT_MODE_NONE);
+                            bool ok;
+                            int repeatmode = repeatmodeStr.toInt(&ok);
+                            if (!ok || repeatmode < REPEAT_MODE_NONE || repeatmode > REPEAT_MODE_BYTIMES) {
+                                repeatmode = REPEAT_MODE_NONE;
+                            }
+                            repeatmodeList.append(repeatmode);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &repeattimesStr = (i < repeattimesStringList.size()) ? repeattimesStringList.at(i) : QString::number(REPEAT_TIMES_DEFAULT);
+                            bool ok;
+                            int repeattimes = repeattimesStr.toInt(&ok);
+                            if (!ok || repeattimes < REPEAT_TIMES_MIN || repeattimes > REPEAT_TIMES_MAX) {
+                                repeattimes = REPEAT_TIMES_DEFAULT;
+                            }
+                            repeattimesList.append(repeattimes);
+                        }
+
                         int loadindex = 0;
                         for (const QString &ori_key_nochange : qAsConst(original_keys)){
                             QString ori_key = ori_key_nochange;
@@ -5165,7 +5300,18 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
                             if (true == checkoriginalstr && true == checkmappingstr) {
-                                loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange, mapping_keys.at(loadindex), burstList.at(loadindex), burstpresstimeList.at(loadindex), burstreleasetimeList.at(loadindex), lockList.at(loadindex), passthroughList.at(loadindex), keyup_actionList.at(loadindex), keyseqholddownList.at(loadindex)));
+                                loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
+                                                                  mapping_keys.at(loadindex),
+                                                                  burstList.at(loadindex),
+                                                                  burstpresstimeList.at(loadindex),
+                                                                  burstreleasetimeList.at(loadindex),
+                                                                  lockList.at(loadindex),
+                                                                  passthroughList.at(loadindex),
+                                                                  keyup_actionList.at(loadindex),
+                                                                  keyseqholddownList.at(loadindex),
+                                                                  repeatmodeList.at(loadindex),
+                                                                  repeattimesList.at(loadindex)
+                                                                  ));
                             }
                             else{
                                 datavalidflag = false;
@@ -9453,7 +9599,18 @@ void QKeyMapper::on_addmapdataButton_clicked()
             qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
 
-            KeyMappingDataList->replace(findindex, MAP_KEYDATA(currentOriKeyText, mappingkeys_str, keymapdata.Burst, keymapdata.BurstPressTime, keymapdata.BurstReleaseTime, keymapdata.Lock, keymapdata.PassThrough, keymapdata.KeyUp_Action, keymapdata.KeySeqHoldDown));
+            KeyMappingDataList->replace(findindex, MAP_KEYDATA(currentOriKeyText,
+                                                               mappingkeys_str,
+                                                               keymapdata.Burst,
+                                                               keymapdata.BurstPressTime,
+                                                               keymapdata.BurstReleaseTime,
+                                                               keymapdata.Lock,
+                                                               keymapdata.PassThrough,
+                                                               keymapdata.KeyUp_Action,
+                                                               keymapdata.KeySeqHoldDown,
+                                                               keymapdata.RepeatMode,
+                                                               keymapdata.RepeatTimes
+                                                               ));
         }
         else {
             if (isSpecialOriginalKey) {
@@ -9549,7 +9706,18 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
 
-            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText, currentMapKeyText, false, BURST_PRESS_TIME_DEFAULT, BURST_RELEASE_TIME_DEFAULT, false, false, false, false));
+            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,
+                                                   currentMapKeyText,
+                                                   false,
+                                                   BURST_PRESS_TIME_DEFAULT,
+                                                   BURST_RELEASE_TIME_DEFAULT,
+                                                   false,
+                                                   false,
+                                                   false,
+                                                   false,
+                                                   REPEAT_MODE_NONE,
+                                                   REPEAT_TIMES_DEFAULT
+                                                   ));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
 #endif

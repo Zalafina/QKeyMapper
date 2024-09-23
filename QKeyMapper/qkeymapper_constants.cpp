@@ -71,6 +71,10 @@ const int REPEAT_MODE_NONE      = 0;
 const int REPEAT_MODE_BYKEY     = 1;
 const int REPEAT_MODE_BYTIMES   = 2;
 
+const int REPEAT_TIMES_MIN = 1;
+const int REPEAT_TIMES_MAX = 99999;
+const int REPEAT_TIMES_DEFAULT = 1;
+
 const int DATA_PORT_MIN = 1;
 const int DATA_PORT_MAX = 65535;
 const int DATA_PORT_DEFAULT = 5300;
@@ -390,6 +394,8 @@ const char *KEYMAPDATA_KEYUP_ACTION = "KeyMapData_KeyUp_Action";
 const char *KEYMAPDATA_KEYSEQHOLDDOWN = "KeyMapData_KeySeqHoldDown";
 const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
+const char *KEYMAPDATA_REPEATMODE = "KeyMapData_RepeatMode";
+const char *KEYMAPDATA_REPEATIMES = "KeyMapData_RepeatTimes";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
 const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -610,6 +616,8 @@ const char *LOCKCHECKBOX_CHINESE = "锁定";
 const char *KEYUPACTIONCHECKBOX_CHINESE = "按键抬起时动作";
 const char *PASSTHROUGHCHECKBOX_CHINESE = "原始按键穿透";
 const char *KEYSEQHOLDDOWNCHECKBOX_CHINESE = "按键序列按下保持";
+const char *REPEATBYKEYCHECKBOX_CHINESE = "按键按下时循环";
+const char *REPEATBYTIMESCHECKBOX_CHINESE = "循环特定次数";
 const char *UPDATEBUTTON_CHINESE = "更新";
 const char *TABNAMELABEL_CHINESE = "映射表名";
 const char *TABHOTKEYLABEL_CHINESE = "快捷键";
@@ -711,6 +719,8 @@ const char *LOCKCHECKBOX_ENGLISH = "Lock";
 const char *KEYUPACTIONCHECKBOX_ENGLISH = "KeyUpAction";
 const char *PASSTHROUGHCHECKBOX_ENGLISH = "PassThrough";
 const char *KEYSEQHOLDDOWNCHECKBOX_ENGLISH = "KeySeqHoldDown";
+const char *REPEATBYKEYCHECKBOX_ENGLISH = "RepeatByKey";
+const char *REPEATBYTIMESCHECKBOX_ENGLISH = "RepeatTimes";
 const char *UPDATEBUTTON_ENGLISH = "Update";
 const char *TABNAMELABEL_ENGLISH = "TabName";
 const char *TABHOTKEYLABEL_ENGLISH = "TabHotkey";

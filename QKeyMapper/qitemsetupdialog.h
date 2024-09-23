@@ -72,6 +72,9 @@ private slots:
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
     void on_originalKeyUpdateButton_clicked();
     void on_mappingKeyUpdateButton_clicked();
+    void on_repeatByKeyCheckBox_stateChanged(int state);
+    void on_repeatByTimesCheckBox_stateChanged(int state);
+    void on_repeatTimesSpinBox_editingFinished();
 };
 
 #endif // QITEMSETUPDIALOG_H
