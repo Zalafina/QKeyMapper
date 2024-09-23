@@ -336,7 +336,7 @@
     <rect>
      <x>230</x>
      <y>180</y>
-     <width>131</width>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
@@ -353,7 +353,7 @@
   <widget class="QSpinBox" name="repeatTimesSpinBox">
    <property name="geometry">
     <rect>
-     <x>326</x>
+     <x>310</x>
      <y>180</y>
      <width>61</width>
      <height>22</height>

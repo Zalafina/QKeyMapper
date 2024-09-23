@@ -1322,6 +1322,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     }
     else {
         if (1 == key_sequence_count) {
+            if (m_sendInputStopFlag) {
+                return;
+            }
+
             QStringList mappingKeys = splitMappingKeyString(inputKeys.constFirst(), SPLIT_WITH_PLUS);
             keycount = mappingKeys.size();
 
