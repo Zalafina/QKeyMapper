@@ -123,7 +123,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_sendInputTask(Q_NULLPTR),
     m_sendInputStopCondition(),
     m_sendInputStopMutex(),
-    m_sendInputStopFlag(false),
+    m_sendInputStopFlag(INPUTSTOP_NONE),
     m_JoystickCapture(false),
 #ifdef DINPUT_TEST
     m_DirectInput(Q_NULLPTR),
@@ -877,7 +877,7 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
 // #endif
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
-    qDebug() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Key[" << original_key << "], UpDown:" << keyupdown;
+    qDebug() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Key[" << original_key << "]" << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
 #endif
 
     bool waitfordone = QThreadPool::globalInstance()->waitForDone();
@@ -1348,7 +1348,11 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
 
-            for (const QString &keyStr : qAsConst(mappingKeys)){
+            for (const QString &keyStr : qAsConst(mappingKeys)) {
+                if (m_sendInputStopFlag) {
+                    continue;
+                }
+
                 QString key = keyStr;
                 waitTime = 0;
 
@@ -1690,6 +1694,13 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
                 m_sendInputStopMutex.unlock();
             }
+
+            if (m_sendInputStopFlag == INPUTSTOP_SINGLE) {
+                m_sendInputStopFlag = INPUTSTOP_NONE;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[sendInputKeys] m_sendInputStopFlag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE";
+#endif
+            }
         }
         /* key_sequence_count > 1 */
         else {
@@ -1787,7 +1798,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
     bool skip_emitsignal = false;
 
     if (keyupdown == KEY_DOWN) {
-        m_sendInputStopFlag = false;
+        m_sendInputStopFlag = INPUTSTOP_NONE;
 
         bool isKeySequence = false;
         bool isKeySequenceRunning = false;
@@ -1798,47 +1809,63 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
             }
         }
 
-        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
-        if (findindex >= 0) {
-            int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
-            int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
+        if (isKeySequence) {
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
+            if (findindex >= 0) {
+                int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+                int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
 
-            if (sendmode == SENDMODE_NORMAL
-                && repeat_mode == REPEAT_MODE_BYTIMES
-                && repeat_times > 0) {
+                if (sendmode == SENDMODE_NORMAL
+                    && repeat_mode == REPEAT_MODE_BYTIMES
+                    && repeat_times > 0) {
+                    if (isKeySequenceRunning) {
+                        skip_emitsignal = true;
+                        s_KeySequenceRepeatCount[original_key] = -1;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper]" << " original_key(" << original_key << ") keysequence is running, skip to emit sendInputKeys_Signal()\033[0m";
+#endif
+                    }
+                    else {
+                        s_KeySequenceRepeatCount[original_key] = 0;
+                    }
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper]" << " original_key(" << original_key << ") repeat by times(" << repeat_times << ") start, sendmode(" << sendmode << ")\033[0m";
+#endif
+                }
+            }
+
+            if (sendmode == SENDMODE_NORMAL) {
                 if (isKeySequenceRunning) {
-                    skip_emitsignal = true;
-                    s_KeySequenceRepeatCount[original_key] = -1;
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper]" << " original_key(" << original_key << ") keysequence is running, skip to emit sendInputKeys_Signal()\033[0m";
+                    qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] m_sendInputStopFlag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
+                    m_sendInputStopMutex.lock();
+                    m_sendInputStopFlag = INPUTSTOP_KEYSEQ;
+                    m_sendInputStopCondition.wakeAll();
+                    m_sendInputStopMutex.unlock();
                 }
-                else {
-                    s_KeySequenceRepeatCount[original_key] = 0;
-                }
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper]" << " original_key(" << original_key << ") repeat by times(" << repeat_times << ") start, sendmode(" << sendmode << ")\033[0m";
-#endif
             }
         }
-
-        if (isKeySequence
-            && sendmode == SENDMODE_NORMAL
-            && keyupdown == KEY_DOWN) {
-            if (isKeySequenceRunning) {
+        else {
+            if (sendmode == SENDMODE_NORMAL) {
+                if (pressedMappingKeysMap.contains(original_key)) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] m_sendInputStopFlag = true, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+                    qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] m_sendInputStopFlag = INPUTSTOP_SINGLE, pressedMappingKeysMap contains OriginalKey:" << original_key << ", pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
-                m_sendInputStopMutex.lock();
-                m_sendInputStopFlag = true;
-                m_sendInputStopCondition.wakeAll();
-                m_sendInputStopMutex.unlock();
+                    m_sendInputStopMutex.lock();
+                    m_sendInputStopFlag = INPUTSTOP_SINGLE;
+                    m_sendInputStopCondition.wakeAll();
+                    m_sendInputStopMutex.unlock();
+                }
             }
         }
     }
 
     if (false == skip_emitsignal) {
         emit sendInputKeys_Signal(inputKeys, keyupdown, original_key, sendmode);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] sendInputKeys_Signal() -> OriginalKey[" << original_key << "]" << ((keyupdown == KEY_DOWN) ? " KeyDown" : " KeyUp") << ", Sendmode:" << sendmode << ", m_sendInputStopFlag:" << m_sendInputStopFlag;
+#endif
     }
 }
 

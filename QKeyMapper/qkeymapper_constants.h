@@ -144,6 +144,10 @@ extern const int SENDTYPE_EXCLUSION;
 
 extern const int SENDTYPE_BOTH_WAITTIME;
 
+extern const int INPUTSTOP_NONE;
+extern const int INPUTSTOP_SINGLE;
+extern const int INPUTSTOP_KEYSEQ;
+
 extern const int MOUSE_WHEEL_UP;
 extern const int MOUSE_WHEEL_DOWN;
 

@@ -824,7 +824,7 @@ private:
     QRunnable *m_sendInputTask;
     QWaitCondition m_sendInputStopCondition;
     QMutex m_sendInputStopMutex;
-    QAtomicBool m_sendInputStopFlag;
+    QAtomicInteger<int> m_sendInputStopFlag;
     bool m_JoystickCapture;
 #ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;

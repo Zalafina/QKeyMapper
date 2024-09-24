@@ -170,6 +170,10 @@ const int SENDTYPE_EXCLUSION = 4;
 
 const int SENDTYPE_BOTH_WAITTIME = 20;
 
+const int INPUTSTOP_NONE    = 0;
+const int INPUTSTOP_SINGLE  = 1;
+const int INPUTSTOP_KEYSEQ  = 2;
+
 const int MOUSE_WHEEL_UP = 1;
 const int MOUSE_WHEEL_DOWN = 2;
 
