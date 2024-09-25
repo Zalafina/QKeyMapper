@@ -628,7 +628,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
         bool GlobalMappingFlag = false;
         if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-            && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()
             && 2 == checkresult) {
             GlobalMappingFlag = true;
         }
@@ -6158,7 +6157,7 @@ void QKeyMapper::setControlFontChinese()
 
 void QKeyMapper::changeControlEnableStatus(bool status)
 {
-    if (true == status && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+    if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
         ui->nameCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
@@ -8477,8 +8476,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
     ui->descriptionLabel->setText(SETTINGDESCLABEL_CHINESE);
-    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-        && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
         ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
     }
     QString globalSettingNameWithDescStr = QString("%1 [%2]").arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
@@ -8615,8 +8613,7 @@ void QKeyMapper::setUILanguage_English()
     ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
     ui->descriptionLabel->setText(SETTINGDESCLABEL_ENGLISH);
-    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-        && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
         ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_ENGLISH);
     }
     QString globalSettingNameWithDescStr = QString("%1 [%2]").arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_ENGLISH);
@@ -10453,17 +10450,27 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 
 void QKeyMapper::on_removeSettingButton_clicked()
 {
-    QString settingSelectStr = ui->settingselectComboBox->currentText();
-    if (true == settingSelectStr.isEmpty() || settingSelectStr == GROUPNAME_GLOBALSETTING) {
+    int currentSettingIndex = ui->settingselectComboBox->currentIndex();
+    if (currentSettingIndex == 0 || currentSettingIndex == GLOBALSETTING_INDEX) {
         return;
     }
 
-    int currentSettingIndex = ui->settingselectComboBox->currentIndex();
+    QString settingSelectStr;
+    if (0 < currentSettingIndex && currentSettingIndex < m_SettingSelectListWithoutDescription.size()) {
+        settingSelectStr = m_SettingSelectListWithoutDescription.at(currentSettingIndex);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[on_removeSettingButton_clicked]" << "Current setting select index is invalid("<< currentSettingIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+    }
+
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
     if (groups.contains(settingSelectStr)) {
         settingFile.remove(settingSelectStr);
         ui->settingselectComboBox->removeItem(currentSettingIndex);
+        m_SettingSelectListWithoutDescription.removeAt(currentSettingIndex);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[removeSetting] Remove setting select ->" << settingSelectStr;
 #endif
@@ -11011,7 +11018,7 @@ void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
     }
     else {
         if (m_KeyMapStatus == KEYMAP_IDLE){
-            if (GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+            if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
                 ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
             }
             else {
