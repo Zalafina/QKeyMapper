@@ -4864,7 +4864,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             QString groupnameWithDescription = group;
             if (!descriptionString.isEmpty()) {
-                groupnameWithDescription = QString("%1[%2]").arg(group, descriptionString);
+                groupnameWithDescription = QString("%1 [%2]").arg(group, descriptionString);
             }
 
             ui->settingselectComboBox->addItem(groupnameWithDescription);
@@ -4891,7 +4891,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             QString groupnameWithDescription = group;
             if (!descriptionString.isEmpty()) {
-                groupnameWithDescription = QString("%1[%2]").arg(group, descriptionString);
+                groupnameWithDescription = QString("%1 [%2]").arg(group, descriptionString);
             }
 
             ui->settingselectComboBox->addItem(groupnameWithDescription);
@@ -5852,7 +5852,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
         if (settingSelectStr.isEmpty() != true) {
             settingSelectStr = settingSelectStr.remove("/");
-            ui->settingselectComboBox->setCurrentText(settingSelectStr);
+            int settingSelectIndex = 0;
+            if (m_SettingSelectListWithoutDescription.contains(settingSelectStr)) {
+                settingSelectIndex = m_SettingSelectListWithoutDescription.indexOf(settingSelectStr);
+                if (settingSelectIndex < 0) {
+                    settingSelectIndex = 0;
+                }
+            }
+            ui->settingselectComboBox->setCurrentIndex(settingSelectIndex);
+            // ui->settingselectComboBox->setCurrentText(settingSelectStr);
         }
 
         if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
