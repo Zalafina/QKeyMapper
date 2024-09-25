@@ -6412,6 +6412,7 @@ void QKeyMapper::mappingStartNotification()
         return;
     }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
@@ -6419,7 +6420,7 @@ void QKeyMapper::mappingStartNotification()
     }
     else {
         popupNotification = "开始映射 [" + currentSelectedSetting + "]" + "->" + tabName;
-        if (GROUPNAME_GLOBALSETTING == currentSelectedSetting) {
+        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
             color = "#26de81";
         }
     }
@@ -6473,6 +6474,7 @@ void QKeyMapper::mappingTabSwitchNotification()
         return;
     }
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QString color = "#d6a2e8";
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
@@ -6480,7 +6482,7 @@ void QKeyMapper::mappingTabSwitchNotification()
     }
     else {
         popupNotification = "切换映射表 [" + currentSelectedSetting + "]" + "->" + tabName;
-        if (GROUPNAME_GLOBALSETTING == currentSelectedSetting) {
+        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
             color = "#26de81";
         }
     }
@@ -10445,6 +10447,8 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
+        ui->descriptionLineEdit->clear();
+        ui->descriptionLineEdit->setReadOnly(false);
     }
 }
 
