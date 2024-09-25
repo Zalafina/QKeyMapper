@@ -706,6 +706,7 @@ public:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
     QMap<int, Gamepad_Info> m_GamepadInfoMap;
+    QStringList m_SettingSelectListWithoutDescription;
 private:
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;

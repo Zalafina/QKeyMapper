@@ -55,6 +55,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
     m_GamepadInfoMap(),
+    m_SettingSelectListWithoutDescription(),
     // m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
     // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
@@ -549,7 +550,17 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     }
 
                     if (needtoload) {
-                        QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+                        // QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+                        QString curSettingSelectStr;
+                        int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+                        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+                            curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+                        }
+                        else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().noquote().nospace() << "[cycleCheckProcessProc]" << "Need to load setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+                        }
                         if (curSettingSelectStr != loadSettingSelectStr) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
@@ -4130,7 +4141,17 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
 
     QString saveSettingSelectStr;
-    QString cursettingSelectStr = ui->settingselectComboBox->currentText();
+    // QString cursettingSelectStr = ui->settingselectComboBox->currentText();
+    QString cursettingSelectStr;
+    int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+    if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+        cursettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[saveKeyMapSetting]" << "Current setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+    }
     int languageIndex = ui->languageComboBox->currentIndex();
     bool saveGlobalSetting = false;
 
@@ -4800,9 +4821,12 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     QString settingSelectStr;
 
+    m_SettingSelectListWithoutDescription.clear();
     ui->settingselectComboBox->clear();
     ui->settingselectComboBox->addItem(QString());
+    m_SettingSelectListWithoutDescription.append(QString());
     ui->settingselectComboBox->addItem(GROUPNAME_GLOBALSETTING);
+    m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
     QStandardItem* item = model->item(1);
@@ -4844,6 +4868,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             ui->settingselectComboBox->addItem(groupnameWithDescription);
+            m_SettingSelectListWithoutDescription.append(group);
             validgroups_fullmatch.append(group);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting] Setting select add FullMatch ->" << group;
@@ -4870,6 +4895,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             ui->settingselectComboBox->addItem(groupnameWithDescription);
+            m_SettingSelectListWithoutDescription.append(group);
             validgroups_customsetting.append(group);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting] Setting select add CustomGlobalSetting ->" << group;
@@ -9207,7 +9233,17 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         int checksaveindex = checkSaveSettings(filename, windowTitle);
         if (TITLESETTING_INDEX_ANYTITLE < checksaveindex && checksaveindex <= TITLESETTING_INDEX_MAX) {
             QString loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(checksaveindex);
-            QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+            // QString curSettingSelectStr = ui->settingselectComboBox->currentText();
+            QString curSettingSelectStr;
+            int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+            if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+                curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace() << "[on_processinfoTable_doubleClicked]" << "Doubleclick to load setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+            }
             if (curSettingSelectStr != loadSettingSelectStr) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
@@ -10369,7 +10405,17 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Change to Setting ->" << text;
 #endif
         loadSetting_flag = true;
-        bool loadresult = loadKeyMapSetting(text);
+        QString curSettingSelectStr;
+        int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+            curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().noquote().nospace() << "[on_settingselectComboBox_textActivated/textChanged]" << "Change to setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+        }
+        bool loadresult = loadKeyMapSetting(curSettingSelectStr);
         Q_UNUSED(loadresult);
         loadSetting_flag = false;
     }
@@ -10394,7 +10440,6 @@ void QKeyMapper::on_removeSettingButton_clicked()
     }
 
     int currentSettingIndex = ui->settingselectComboBox->currentIndex();
-    QString currentSettingText;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
     if (groups.contains(settingSelectStr)) {
@@ -10403,13 +10448,23 @@ void QKeyMapper::on_removeSettingButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[removeSetting] Remove setting select ->" << settingSelectStr;
 #endif
-        currentSettingText = ui->settingselectComboBox->currentText();
-        if (false == currentSettingText.isEmpty()) {
+        // currentSettingText = ui->settingselectComboBox->currentText();
+        QString curSettingSelectStr;
+        int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+            curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+        }
+        else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[removeSetting] Change to Setting ->" << currentSettingText;
+            qDebug().noquote().nospace() << "[on_removeSettingButton_clicked]" << "Next setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+        }
+        if (false == curSettingSelectStr.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[removeSetting] Change to Setting ->" << curSettingSelectStr;
 #endif
             loadSetting_flag = true;
-            bool loadresult = loadKeyMapSetting(currentSettingText);
+            bool loadresult = loadKeyMapSetting(curSettingSelectStr);
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
         }
