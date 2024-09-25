@@ -627,7 +627,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         }
 
         bool GlobalMappingFlag = false;
-        if (1 == ui->settingselectComboBox->currentIndex()
+        if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
             && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()
             && 2 == checkresult) {
             GlobalMappingFlag = true;
@@ -4197,7 +4197,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
     }
 
-    if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == 1) {
+    if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
         saveGlobalSetting = true;
         saveSettingSelectStr = cursettingSelectStr;
         settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
@@ -4825,7 +4825,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     ui->settingselectComboBox->clear();
     ui->settingselectComboBox->addItem(QString());
     m_SettingSelectListWithoutDescription.append(QString());
-    ui->settingselectComboBox->addItem(GROUPNAME_GLOBALSETTING);
+    QString globalSettingNameWithDescStr;
+    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+        globalSettingNameWithDescStr = QString("%1 [%2]").arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_ENGLISH);
+    }
+    else {
+        globalSettingNameWithDescStr = QString("%1 [%2]").arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
+    }
+    ui->settingselectComboBox->addItem(globalSettingNameWithDescStr);
     m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
@@ -8470,10 +8477,12 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
     ui->descriptionLabel->setText(SETTINGDESCLABEL_CHINESE);
-    if (1 == ui->settingselectComboBox->currentIndex()
+    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
         && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
         ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
     }
+    QString globalSettingNameWithDescStr = QString("%1 [%2]").arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
+    ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
     ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
     ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_CHINESE);
     ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
@@ -8606,10 +8615,12 @@ void QKeyMapper::setUILanguage_English()
     ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
     ui->descriptionLabel->setText(SETTINGDESCLABEL_ENGLISH);
-    if (1 == ui->settingselectComboBox->currentIndex()
+    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
         && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
         ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_ENGLISH);
     }
+    QString globalSettingNameWithDescStr = QString("%1 [%2]").arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_ENGLISH);
+    ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
     ui->orikeyLabel->setText(ORIKEYLABEL_ENGLISH);
     ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_ENGLISH);
     ui->mapkeyLabel->setText(MAPKEYLABEL_ENGLISH);

@@ -34,6 +34,7 @@ extern const int LANGUAGE_CHINESE;
 extern const int LANGUAGE_ENGLISH;
 extern const int KEYPRESS_TYPE_LONGPRESS;
 extern const int KEYPRESS_TYPE_DOUBLEPRESS;
+extern const int GLOBALSETTING_INDEX;
 extern const int CUSTOMSETTING_INDEX_MAX;
 extern const int TITLESETTING_INDEX_INVALID;
 extern const int TITLESETTING_INDEX_ANYTITLE;
