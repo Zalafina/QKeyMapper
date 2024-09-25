@@ -212,6 +212,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->descriptionLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->sendTextLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
@@ -4478,6 +4479,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
         }
 
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DESCRIPTION, ui->descriptionLineEdit->text());
         // settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
     }
 
@@ -4818,10 +4820,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
+        QString tempSettingSelectStr = group + "/";
         if (group.endsWith(QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
             || group.contains(QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
             || group.startsWith(PROCESS_UNKNOWN+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
-            QString tempSettingSelectStr = group + "/";
             if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
                     && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
                     && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH))
@@ -4832,7 +4834,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 
         if (true == valid_setting) {
-            ui->settingselectComboBox->addItem(group);
+            QString descriptionString;
+            if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
+                descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
+            }
+            QString groupnameWithDescription = group;
+            if (!descriptionString.isEmpty()) {
+                groupnameWithDescription = QString("%1[%2]").arg(group, descriptionString);
+            }
+
+            ui->settingselectComboBox->addItem(groupnameWithDescription);
             validgroups_fullmatch.append(group);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting] Setting select add FullMatch ->" << group;
@@ -4842,13 +4853,23 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     for (const QString &group : qAsConst(groups)){
         bool valid_setting = false;
+        QString tempSettingSelectStr = group + "/";
         if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
                 && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
             valid_setting = true;
         }
 
         if (true == valid_setting) {
-            ui->settingselectComboBox->addItem(group);
+            QString descriptionString;
+            if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
+                descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
+            }
+            QString groupnameWithDescription = group;
+            if (!descriptionString.isEmpty()) {
+                groupnameWithDescription = QString("%1[%2]").arg(group, descriptionString);
+            }
+
+            ui->settingselectComboBox->addItem(groupnameWithDescription);
             validgroups_customsetting.append(group);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting] Setting select add CustomGlobalSetting ->" << group;
@@ -5429,6 +5450,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     if (loadGlobalSetting && loadDefault != true) {
         ui->nameLineEdit->setText(QString());
         ui->titleLineEdit->setText(QString());
+        ui->descriptionLineEdit->setReadOnly(true);
+        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+            ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_ENGLISH);
+        }
+        else {
+            ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
+        }
         ui->nameCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
         // ui->disableWinKeyCheckBox->setChecked(false);
@@ -5475,10 +5503,19 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         ui->iconLabel->clear();
 
+        ui->descriptionLineEdit->setReadOnly(false);
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_DESCRIPTION)){
+            ui->descriptionLineEdit->setText(settingFile.value(settingSelectStr+PROCESSINFO_DESCRIPTION).toString());
+        }
+        else {
+            ui->descriptionLineEdit->clear();
+        }
+
         if (true == loadDefault) {
             // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
             ui->nameLineEdit->setText(QString());
             ui->titleLineEdit->setText(QString());
+            ui->descriptionLineEdit->setText(QString());
             ui->nameCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
@@ -5897,6 +5934,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->clearallButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
@@ -6001,6 +6039,7 @@ void QKeyMapper::setControlFontChinese()
     ui->clearallButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
@@ -6101,6 +6140,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //ui->nameLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
     ui->titleLineEdit->setReadOnly(!status);
+    ui->descriptionLabel->setEnabled(status);
+    ui->descriptionLineEdit->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
@@ -8394,6 +8435,11 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
     ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
+    ui->descriptionLabel->setText(SETTINGDESCLABEL_CHINESE);
+    if (1 == ui->settingselectComboBox->currentIndex()
+        && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+        ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
+    }
     ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
     ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_CHINESE);
     ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
@@ -8525,6 +8571,11 @@ void QKeyMapper::setUILanguage_English()
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
     ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
+    ui->descriptionLabel->setText(SETTINGDESCLABEL_ENGLISH);
+    if (1 == ui->settingselectComboBox->currentIndex()
+        && GROUPNAME_GLOBALSETTING == ui->settingselectComboBox->currentText()) {
+        ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_ENGLISH);
+    }
     ui->orikeyLabel->setText(ORIKEYLABEL_ENGLISH);
     ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_ENGLISH);
     ui->mapkeyLabel->setText(MAPKEYLABEL_ENGLISH);
@@ -8646,6 +8697,7 @@ void QKeyMapper::resetFontSize()
 
         ui->nameLineEdit->setFont(customFont);
         ui->titleLineEdit->setFont(customFont);
+        ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
@@ -8691,6 +8743,7 @@ void QKeyMapper::resetFontSize()
     else {
         ui->nameLineEdit->setFont(customFont);
         ui->titleLineEdit->setFont(customFont);
+        ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);

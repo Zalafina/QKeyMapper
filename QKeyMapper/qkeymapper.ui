@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1070</width>
-    <height>650</height>
+    <height>670</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>1070</width>
-    <height>650</height>
+    <height>670</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>1070</width>
-    <height>650</height>
+    <height>670</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -582,7 +582,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>500</y>
+     <y>525</y>
      <width>491</width>
      <height>131</height>
     </rect>
@@ -1314,6 +1314,32 @@
     <number>-1</number>
    </property>
   </widget>
+  <widget class="QLineEdit" name="descriptionLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>490</y>
+     <width>331</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="descriptionLabel">
+   <property name="geometry">
+    <rect>
+     <x>-15</x>
+     <y>490</y>
+     <width>111</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Description</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1350,6 +1376,8 @@
   <zorder>sendTextLabel</zorder>
   <zorder>gamepadSelectLabel</zorder>
   <zorder>gamepadSelectComboBox</zorder>
+  <zorder>descriptionLineEdit</zorder>
+  <zorder>descriptionLabel</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
