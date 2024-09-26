@@ -431,6 +431,7 @@ extern const char* MOUSE_WHEEL_UP_STR;
 extern const char* MOUSE_WHEEL_DOWN_STR;
 extern const char *MOUSE_WHEEL_LEFT_STR;
 extern const char *MOUSE_WHEEL_RIGHT_STR;
+extern const char *SETTING_DESCRIPTION_FORMAT;
 extern const char *SENDTEXT_STR;
 extern const char* JOY_KEY_PREFIX;
 extern const char* VJOY_KEY_PREFIX;

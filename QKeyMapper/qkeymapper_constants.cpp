@@ -494,6 +494,8 @@ const char *MOUSE_WHEEL_DOWN_STR    = "Mouse-WheelDown";
 const char *MOUSE_WHEEL_LEFT_STR    = "Mouse-WheelLeft";
 const char *MOUSE_WHEEL_RIGHT_STR   = "Mouse-WheelRight";
 
+const char *SETTING_DESCRIPTION_FORMAT = "%1【%2】";
+
 const char *SENDTEXT_STR    = "SendText";
 
 const char *JOY_KEY_PREFIX  = "Joy-";
