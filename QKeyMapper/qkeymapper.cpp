@@ -6034,6 +6034,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
+    ui->languageLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -6142,6 +6143,7 @@ void QKeyMapper::setControlFontChinese()
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
+    ui->languageLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -6188,6 +6190,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->soundEffectCheckBox->setEnabled(status);
     ui->notificationLabel->setEnabled(status);
     ui->notificationComboBox->setEnabled(status);
+    ui->languageLabel->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
     ui->virtualGamepadTypeComboBox->setEnabled(status);
     ui->keyPressTypeComboBox->setEnabled(status);
@@ -8511,6 +8514,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
+    ui->languageLabel->setText(LANGUAGELABEL_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_CHINESE);
     ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_CHINESE);
@@ -8648,6 +8652,7 @@ void QKeyMapper::setUILanguage_English()
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_ENGLISH);
+    ui->languageLabel->setText(LANGUAGELABEL_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_ENGLISH);
     ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_ENGLISH);

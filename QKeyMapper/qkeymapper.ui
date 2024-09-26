@@ -354,35 +354,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QComboBox" name="languageComboBox">
-   <property name="geometry">
-    <rect>
-     <x>990</x>
-     <y>30</y>
-     <width>71</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="currentText">
-    <string>中文</string>
-   </property>
-   <property name="currentIndex">
-    <number>0</number>
-   </property>
-   <item>
-    <property name="text">
-     <string>中文</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>English</string>
-    </property>
-   </item>
-  </widget>
   <widget class="QSpinBox" name="waitTimeSpinBox">
    <property name="geometry">
     <rect>
@@ -591,7 +562,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -617,7 +588,7 @@
      <property name="geometry">
       <rect>
        <x>210</x>
-       <y>40</y>
+       <y>70</y>
        <width>131</width>
        <height>21</height>
       </rect>
@@ -655,7 +626,7 @@
      <property name="geometry">
       <rect>
        <x>185</x>
-       <y>10</y>
+       <y>40</y>
        <width>71</width>
        <height>21</height>
       </rect>
@@ -671,7 +642,7 @@
      <property name="geometry">
       <rect>
        <x>260</x>
-       <y>10</y>
+       <y>40</y>
        <width>81</width>
        <height>21</height>
       </rect>
@@ -707,6 +678,51 @@
      </property>
      <property name="text">
       <string>WindowKey</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="languageComboBox">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>10</y>
+       <width>81</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="currentText">
+      <string>中文</string>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <item>
+      <property name="text">
+       <string>中文</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>English</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QLabel" name="languageLabel">
+     <property name="geometry">
+      <rect>
+       <x>185</x>
+       <y>10</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Language</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -1357,7 +1373,6 @@
   <zorder>settingselectComboBox</zorder>
   <zorder>removeSettingButton</zorder>
   <zorder>nextarrowCheckBox</zorder>
-  <zorder>languageComboBox</zorder>
   <zorder>nameCheckBox</zorder>
   <zorder>waitTimeSpinBox</zorder>
   <zorder>waitTimeLabel</zorder>
