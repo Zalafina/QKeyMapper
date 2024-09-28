@@ -381,6 +381,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     updateHWNDListProc();
     refreshProcessInfoTable();
+    if (!ui->processListButton->isChecked()) {
+        hideProcessList();
+        setKeyMappingTabWidgetWideMode();
+    }
     refreshAllKeyMappingTagWidget();
     // resizeAllKeyMappingTabWidgetColumnWidth();
 #ifdef QT_NO_DEBUG
@@ -3519,7 +3523,16 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     }
 
     KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
-    KeyMappingTableWidget->setGeometry(QRect(530, 0, 450, 324));
+
+    int left = KEYMAPPINGDATATABLE_NARROW_LEFT;
+    int width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
+    int top = KEYMAPPINGDATATABLE_TOP;
+    int height = KEYMAPPINGDATATABLE_HEIGHT;
+    if (!ui->processListButton->isChecked()) {
+        left    = KEYMAPPINGDATATABLE_WIDE_LEFT;
+        width   = KEYMAPPINGDATATABLE_WIDE_WIDTH;
+    }
+    KeyMappingTableWidget->setGeometry(QRect(left, top, width, height));
 
     KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
@@ -3527,14 +3540,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
-    int original_key_width = KeyMappingTableWidget->width()/4 - 15;
-    int burst_mode_width = KeyMappingTableWidget->width()/5 - 40;
-    int lock_width = KeyMappingTableWidget->width()/5 - 40;
-    int mapping_key_width = KeyMappingTableWidget->width() - original_key_width - burst_mode_width - lock_width - 16;
-    KeyMappingTableWidget->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
-    KeyMappingTableWidget->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
-    KeyMappingTableWidget->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
-    KeyMappingTableWidget->setColumnWidth(LOCK_COLUMN, lock_width);
+    resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
+
     KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -4164,6 +4171,13 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
     }
 
+    if (!ui->processListButton->isChecked()) {
+        settingFile.setValue(SHOW_PROCESSLIST, false);
+    }
+    else {
+        settingFile.setValue(SHOW_PROCESSLIST, true);
+    }
+
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
     settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
@@ -4626,6 +4640,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         else {
             ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
+        }
+
+        if (true == settingFile.contains(SHOW_PROCESSLIST)){
+            bool showProcessList = settingFile.value(SHOW_PROCESSLIST).toBool();
+            if (!showProcessList) {
+                ui->processListButton->setChecked(false);
+            }
+            else {
+                ui->processListButton->setChecked(true);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Show ProcessList Button ->" << showProcessList;
+#endif
+        }
+        else {
+            ui->processListButton->setChecked(true);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
+#endif
         }
 
         if (true == settingFile.contains(VIRTUALGAMEPAD_TYPE)){
@@ -5972,6 +6005,7 @@ void QKeyMapper::setControlFontEnglish()
     customFont.setPointSize(9);
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
+    ui->processListButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -6078,6 +6112,7 @@ void QKeyMapper::setControlFontChinese()
     }
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
+    ui->processListButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -6253,6 +6288,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->addmapdataButton->setEnabled(status);
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
+    ui->processListButton->setEnabled(status);
 
     ui->settingTabWidget->setEnabled(status);
 
@@ -7491,6 +7527,72 @@ void QKeyMapper::switchShowHide()
     }
 }
 
+void QKeyMapper::hideProcessList()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[hideProcessList] Hide the process info list, show wide keymapping table.";
+#endif
+
+    ui->processinfoTable->setVisible(false);
+}
+
+void QKeyMapper::showProcessList()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[showProcessList] Show the process info list, show narrow keymapping table.";
+#endif
+
+    ui->processinfoTable->setVisible(true);
+}
+
+void QKeyMapper::setKeyMappingTabWidgetWideMode()
+{
+    if (ui->processListButton->isChecked()) {
+        return;
+    }
+
+    QRect widgetGeometry = m_KeyMappingTabWidget->geometry();
+    int widget_left = KEYMAPPINGTABWIDGET_WIDE_LEFT;
+    int widget_width = KEYMAPPINGTABWIDGET_WIDE_WIDTH;
+    int widget_top = widgetGeometry.top();
+    int widget_height = widgetGeometry.height();
+    m_KeyMappingTabWidget->setGeometry(QRect(widget_left, widget_top, widget_width, widget_height));
+
+    int table_left = KEYMAPPINGDATATABLE_WIDE_LEFT;
+    int table_width = KEYMAPPINGDATATABLE_WIDE_WIDTH;
+    int table_top = KEYMAPPINGDATATABLE_TOP;
+    int table_height = KEYMAPPINGDATATABLE_HEIGHT;
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
+        mappingDataTable->setGeometry(QRect(table_left, table_top, table_width, table_height));
+    }
+}
+
+void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
+{
+    if (!ui->processListButton->isChecked()) {
+        return;
+    }
+
+    QRect widgetGeometry = m_KeyMappingTabWidget->geometry();
+    int widget_left = KEYMAPPINGTABWIDGET_NARROW_LEFT;
+    int widget_width = KEYMAPPINGTABWIDGET_NARROW_WIDTH;
+    int widget_top = widgetGeometry.top();
+    int widget_height = widgetGeometry.height();
+    m_KeyMappingTabWidget->setGeometry(QRect(widget_left, widget_top, widget_width, widget_height));
+
+    int table_left = KEYMAPPINGDATATABLE_NARROW_LEFT;
+    int table_width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
+    int table_top = KEYMAPPINGDATATABLE_TOP;
+    int table_height = KEYMAPPINGDATATABLE_HEIGHT;
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
+        mappingDataTable->setGeometry(QRect(table_left, table_top, table_width, table_height));
+    }
+}
+
 void QKeyMapper::showWarningPopup(const QString &message)
 {
     showPopupMessage(message, "#d63031", 3000);
@@ -7507,11 +7609,18 @@ void QKeyMapper::showNotificationPopup(const QString &message, const QString &co
 void QKeyMapper::initKeyMappingTabWidget(void)
 {
     m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
+
+    int left = KEYMAPPINGTABWIDGET_NARROW_LEFT;
+    int width = KEYMAPPINGTABWIDGET_NARROW_WIDTH;
+    if (!ui->processListButton->isChecked()) {
+        left    = KEYMAPPINGTABWIDGET_WIDE_LEFT;
+        width   = KEYMAPPINGTABWIDGET_WIDE_WIDTH;
+    }
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        m_KeyMappingTabWidget->setGeometry(QRect(526, 11, 458, 346));
+        m_KeyMappingTabWidget->setGeometry(QRect(left, 11, width, 346));
     }
     else {
-        m_KeyMappingTabWidget->setGeometry(QRect(526, 7, 458, 346));
+        m_KeyMappingTabWidget->setGeometry(QRect(left, 7, width, 346));
     }
     m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
     m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
@@ -7605,6 +7714,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
     int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
     int lock_width = burst_mode_width;
+    burst_mode_width += 8;
     // int burst_mode_width = mappingDataTable->width()/5 - 40;
     // int lock_width = mappingDataTable->width()/5 - 40;
 
@@ -8477,6 +8587,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
     ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
+    ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
     ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
@@ -8615,6 +8726,7 @@ void QKeyMapper::setUILanguage_English()
     ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_ENGLISH);
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
+    ui->processListButton->setText(PROCESSLISTBUTTON_ENGLISH);
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
     ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
@@ -9241,7 +9353,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
     if ((KEYMAP_IDLE == m_KeyMapStatus)
             && (true == ui->processinfoTable->isEnabled())){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[SelectProcessInfo]" << "Table DoubleClicked" << index.row() << ui->processinfoTable->item(index.row(), 0)->text() << ui->processinfoTable->item(index.row(), 2)->text();
+        qDebug().nospace() << "[SelectProcessInfo]" << "Table DoubleClicked [" << index.row() << "] " << ui->processinfoTable->item(index.row(), 0)->text() << ", " << ui->processinfoTable->item(index.row(), 2)->text();
 #endif
         ui->nameLineEdit->setEnabled(true);
         ui->titleLineEdit->setEnabled(true);
@@ -9284,6 +9396,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         }
         else {
             ui->settingselectComboBox->setCurrentText(QString());
+            ui->descriptionLineEdit->clear();
         }
 
         ui->nameLineEdit->setText(filename);
@@ -11034,5 +11147,19 @@ void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
                 ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
             }
         }
+    }
+}
+
+void QKeyMapper::on_processListButton_toggled(bool checked)
+{
+    if (!checked) {
+        hideProcessList();
+        setKeyMappingTabWidgetWideMode();
+        refreshAllKeyMappingTagWidget();
+    }
+    else {
+        setKeyMappingTabWidgetNarrowMode();
+        refreshAllKeyMappingTagWidget();
+        showProcessList();
     }
 }

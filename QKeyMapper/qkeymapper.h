@@ -543,6 +543,8 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
+    void on_processListButton_toggled(bool checked);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -555,6 +557,10 @@ private:
     void updateSystemTrayDisplay(void);
     void showQKeyMapperWindowToTop(void);
     void switchShowHide(void);
+    void hideProcessList(void);
+    void showProcessList(void);
+    void setKeyMappingTabWidgetWideMode(void);
+    void setKeyMappingTabWidgetNarrowMode(void);
 
 public:
     void showWarningPopup(const QString &message);

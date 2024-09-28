@@ -31,6 +31,19 @@ const int MAPPING_KEY_COLUMN = 1;
 const int BURST_MODE_COLUMN = 2;
 const int LOCK_COLUMN = 3;
 
+const int KEYMAPPINGTABWIDGET_NARROW_LEFT   = 526;
+const int KEYMAPPINGTABWIDGET_NARROW_WIDTH  = 458;
+const int KEYMAPPINGTABWIDGET_WIDE_LEFT     = 26;
+const int KEYMAPPINGTABWIDGET_WIDE_WIDTH    = 958;
+
+const int KEYMAPPINGDATATABLE_NARROW_LEFT   = 0;
+const int KEYMAPPINGDATATABLE_NARROW_WIDTH  = 454;
+const int KEYMAPPINGDATATABLE_WIDE_LEFT     = 0;
+const int KEYMAPPINGDATATABLE_WIDE_WIDTH    = 954;
+
+const int KEYMAPPINGDATATABLE_TOP       = 0;
+const int KEYMAPPINGDATATABLE_HEIGHT    = 324;
+
 const int DEFAULT_ICON_WIDTH = 48;
 const int DEFAULT_ICON_HEIGHT = 48;
 
@@ -367,6 +380,7 @@ const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_SHORTCUT;
 /* General global settings >>> */
 const char *LAST_WINDOWPOSITION = "LastWindowPosition";
 const char *LANGUAGE_INDEX = "LanguageIndex";
+const char *SHOW_PROCESSLIST = "ShowProcessList";
 const char *NOTIFICATION_POSITION = "NotificationPosition";
 const char *SETTINGSELECT = "SettingSelect";
 const char *AUTO_STARTUP = "AutoStartup";
@@ -550,6 +564,7 @@ const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
 const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
 const char *DELETEONEBUTTON_CHINESE = "删除";
 const char *CLEARALLBUTTON_CHINESE = "清空";
+const char *PROCESSLISTBUTTON_CHINESE = "进程列表";
 const char *ADDMAPDATABUTTON_CHINESE = "添加";
 const char *NAMECHECKBOX_CHINESE = "进程";
 const char *TITLECHECKBOX_CHINESE = "标题";
@@ -656,6 +671,7 @@ const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
 const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
 const char *DELETEONEBUTTON_ENGLISH = "Delete";
 const char *CLEARALLBUTTON_ENGLISH = "Clear";
+const char *PROCESSLISTBUTTON_ENGLISH = "ProcessList";
 const char *ADDMAPDATABUTTON_ENGLISH = "ADD";
 const char *NAMECHECKBOX_ENGLISH = "Process";
 const char *TITLECHECKBOX_ENGLISH = "Title";
