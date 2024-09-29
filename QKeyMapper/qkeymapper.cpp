@@ -2646,6 +2646,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QSettings keyMappingDataFile(filename, QSettings::IniFormat);
     QStringList original_keys;
     QStringList mapping_keysList;
+    QStringList descriptionList;
     QStringList burstList;
     QStringList burstpresstimeList;
     QStringList burstreleasetimeList;
@@ -2661,6 +2662,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         original_keys << keymapdata.Original_Key;
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
         mapping_keysList  << mappingkeys_str;
+        descriptionList << keymapdata.Description;
         if (true == keymapdata.Burst) {
             burstList.append("ON");
         }
@@ -2719,6 +2721,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
 
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS, mapping_keysList);
+    keyMappingDataFile.setValue(KEYMAPDATA_DESCRIPTION, descriptionList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURST, burstList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTPRESS_TIME, burstpresstimeList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
@@ -2757,6 +2760,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList keyseqholddownStringList;
     QStringList repeatmodeStringList;
     QStringList repeattimesStringList;
+    QStringList descriptionList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
@@ -2795,6 +2799,10 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         keyseqholddownStringList = stringListAllOFF;
         repeatmodeStringList = stringListAllZERO;
         repeattimesStringList = repeattimesStringListDefault;
+
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_DESCRIPTION)) {
+            descriptionList = keyMappingDataFile.value(KEYMAPDATA_DESCRIPTION).toStringList();
+        }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_BURST)) {
             burstStringList = keyMappingDataFile.value(KEYMAPDATA_BURST).toStringList();
         }
@@ -2824,6 +2832,13 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
+
+            if (descriptionList.size() < original_keys.size()) {
+                int diff = original_keys.size() - descriptionList.size();
+                for (int i = 0; i < diff; ++i) {
+                    descriptionList.append(QString());
+                }
+            }
 
             for (int i = 0; i < original_keys.size(); i++) {
                 const QString &burst = (i < burstStringList.size()) ? burstStringList.at(i) : "OFF";
@@ -2923,6 +2938,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 if (true == checkoriginalstr && true == checkmappingstr) {
                     loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
                                                       mapping_keys.at(loadindex),
+                                                      descriptionList.at(loadindex),
                                                       burstList.at(loadindex),
                                                       burstpresstimeList.at(loadindex),
                                                       burstreleasetimeList.at(loadindex),
@@ -4321,6 +4337,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabhotkeylist;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
+    QString descriptionList_forsave;
     QString burstList_forsave;
     QString burstpresstimeList_forsave;
     QString burstreleasetimeList_forsave;
@@ -4349,6 +4366,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         if (index > 0) {
             original_keys_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mapping_keysList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            descriptionList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstpresstimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstreleasetimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -4362,6 +4380,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
         QStringList original_keys;
         QStringList mapping_keysList;
+        QStringList descriptionList;
         QStringList burstList;
         QStringList burstpresstimeList;
         QStringList burstreleasetimeList;
@@ -4377,6 +4396,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                 original_keys << keymapdata.Original_Key;
                 QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
                 mapping_keysList  << mappingkeys_str;
+                descriptionList << keymapdata.Description;
                 if (true == keymapdata.Burst) {
                     burstList.append("ON");
                 }
@@ -4436,6 +4456,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         // join QStringList variables first (use SEPARATOR_KEYMAPDATA_LEVEL1)
         QString original_keys_str = original_keys.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mapping_keysList_str = mapping_keysList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString descriptionList_str = descriptionList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstList_str = burstList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstpresstimeList_str = burstpresstimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstreleasetimeList_str = burstreleasetimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -4449,6 +4470,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         // append joined QString variables to forsave variables
         original_keys_forsave.append(original_keys_str);
         mapping_keysList_forsave.append(mapping_keysList_str);
+        descriptionList_forsave.append(descriptionList_str);
         burstList_forsave.append(burstList_str);
         burstpresstimeList_forsave.append(burstpresstimeList_str);
         burstreleasetimeList_forsave.append(burstreleasetimeList_str);
@@ -4465,6 +4487,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DESCRIPTION , descriptionList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpresstimeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList_forsave);
@@ -5122,6 +5145,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList tabnamelist_loaded;
         QString original_keys_loaded;
         QString mapping_keys_loaded;
+        QString description_loaded;
         QString burstData_loaded;
         QString burstpressData_loaded;
         QString burstreleaseData_loaded;
@@ -5134,6 +5158,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         int table_count = 0;
         QStringList original_keys_split;
         QStringList mapping_keys_split;
+        QStringList description_split;
         QStringList burstData_split;
         QStringList burstpressData_split;
         QStringList burstreleaseData_split;
@@ -5149,7 +5174,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
 
-        if (original_keys_loaded.isEmpty() && mapping_keys_loaded.isEmpty()) {
+        if (original_keys_loaded.isEmpty() || mapping_keys_loaded.isEmpty()) {
             initKeyMappingTable = true;
         }
         else {
@@ -5166,6 +5191,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             clearKeyMappingTabWidget();
             KeyMappingDataList->clear();
 
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_DESCRIPTION)) {
+                description_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_DESCRIPTION).toString();
+                description_split = description_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toString();
                 burstData_split = burstData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -5223,6 +5252,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList keyseqholddownStringList;
                     QStringList repeatmodeStringList;
                     QStringList repeattimesStringList;
+                    QStringList descriptionList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
                     QList<int> burstreleasetimeList;
@@ -5259,6 +5289,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     repeatmodeStringList = stringListAllZERO;
                     repeattimesStringList = repeattimesStringListDefault;
 
+                    if (description_split.size() == table_count) {
+                        descriptionList = description_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
                     if (burstData_split.size() == table_count) {
                         burstStringList = burstData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
@@ -5289,6 +5322,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                     if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
                         datavalidflag = true;
+
+                        if (descriptionList.size() < original_keys.size()) {
+                            int diff = original_keys.size() - descriptionList.size();
+                            for (int i = 0; i < diff; ++i) {
+                                descriptionList.append(QString());
+                            }
+                        }
 
                         for (int i = 0; i < original_keys.size(); i++) {
                             const QString &burst = (i < burstStringList.size()) ? burstStringList.at(i) : "OFF";
@@ -5388,6 +5428,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             if (true == checkoriginalstr && true == checkmappingstr) {
                                 loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
                                                                   mapping_keys.at(loadindex),
+                                                                  descriptionList.at(loadindex),
                                                                   burstList.at(loadindex),
                                                                   burstpresstimeList.at(loadindex),
                                                                   burstreleasetimeList.at(loadindex),
@@ -9826,6 +9867,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
             KeyMappingDataList->replace(findindex, MAP_KEYDATA(currentOriKeyText,
                                                                mappingkeys_str,
+                                                               keymapdata.Description,
                                                                keymapdata.Burst,
                                                                keymapdata.BurstPressTime,
                                                                keymapdata.BurstReleaseTime,
@@ -9933,6 +9975,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
             KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,
                                                    currentMapKeyText,
+                                                   QString(),
                                                    false,
                                                    BURST_PRESS_TIME_DEFAULT,
                                                    BURST_RELEASE_TIME_DEFAULT,

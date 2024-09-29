@@ -22,9 +22,11 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 
     ui->originalKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->mappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->itemDescriptionLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->originalKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->mappingKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->itemDescriptionLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstpressSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstreleaseSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->repeatTimesSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
@@ -42,6 +44,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_originalKeyUpdateButton_clicked);
     QObject::connect(ui->mappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
+    QObject::connect(ui->itemDescriptionLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemDescriptionUpdateButton_clicked);
 }
 
 QItemSetupDialog::~QItemSetupDialog()
@@ -65,10 +68,12 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
         ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_ENGLISH);
+        ui->itemDescriptionLabel->setText(ITEMDESCRIPTIONLABEL_ENGLISH);
         ui->orikeyListLabel->setText(ORIKEYLISTLABEL_ENGLISH);
         ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_ENGLISH);
         ui->originalKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        ui->itemDescriptionUpdateButton->setText(UPDATEBUTTON_ENGLISH);
     }
     else {
         setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_CHINESE);
@@ -84,10 +89,12 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
         ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_CHINESE);
+        ui->itemDescriptionLabel->setText(ITEMDESCRIPTIONLABEL_CHINESE);
         ui->orikeyListLabel->setText(ORIKEYLISTLABEL_CHINESE);
         ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_CHINESE);
         ui->originalKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        ui->itemDescriptionUpdateButton->setText(UPDATEBUTTON_CHINESE);
     }
 }
 
@@ -122,10 +129,12 @@ void QItemSetupDialog::resetFontSize()
     ui->burstreleaseLabel->setFont(customFont);
     ui->originalKeyLabel->setFont(customFont);
     ui->mappingKeyLabel->setFont(customFont);
+    ui->itemDescriptionLabel->setFont(customFont);
     ui->orikeyListLabel->setFont(customFont);
     ui->mapkeyListLabel->setFont(customFont);
     ui->originalKeyUpdateButton->setFont(customFont);
     ui->mappingKeyUpdateButton->setFont(customFont);
+    ui->itemDescriptionUpdateButton->setFont(customFont);
 }
 
 void QItemSetupDialog::setTabIndex(int tabindex)
@@ -227,6 +236,9 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         /* Load Mapping Keys String */
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
         ui->mappingKeyLineEdit->setText(mappingkeys_str);
+
+        /* Load Description String */
+        ui->itemDescriptionLineEdit->setText(keymapdata.Description);
 
         /* Load Burst */
         if (true == keymapdata.Burst) {
@@ -973,4 +985,42 @@ void QItemSetupDialog::on_repeatTimesSpinBox_editingFinished()
         qDebug().nospace().noquote() << "[on_repeatTimesSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") Repeat Times -> " << current_value;
 #endif
     }
+}
+
+void QItemSetupDialog::on_itemDescriptionUpdateButton_clicked()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    QString description_str = ui->itemDescriptionLineEdit->text();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] Item description -> " << description_str;
+#endif
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+
+    popupMessageColor = "#44bd32";
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        popupMessage = "Mapping item description update success.";
+    }
+    else {
+        popupMessage = "映射项描述更新成功";
+    }
+
+    if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Description != description_str) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Description = description_str;
+    }
+
+    QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }

@@ -64,6 +64,7 @@ typedef struct MAP_KEYDATA
 {
     QString Original_Key;
     QStringList Mapping_Keys;
+    QString Description;
     bool Burst;
     int BurstPressTime;
     int BurstReleaseTime;
@@ -78,6 +79,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA() :
       Original_Key()
     , Mapping_Keys()
+    , Description()
     , Burst(false)
     , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
@@ -90,7 +92,7 @@ typedef struct MAP_KEYDATA
     , RepeatTimes(REPEAT_TIMES_DEFAULT)
     {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys,
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString description,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
@@ -98,6 +100,7 @@ typedef struct MAP_KEYDATA
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
+        Description = description;
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
@@ -114,6 +117,7 @@ typedef struct MAP_KEYDATA
     {
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
+                && (Description == other.Description)
                 && (Burst == other.Burst)
                 && (BurstPressTime == other.BurstPressTime)
                 && (BurstReleaseTime == other.BurstReleaseTime)
@@ -132,6 +136,7 @@ typedef struct MAP_KEYDATA
         debug.nospace() << "\nMAP_KEYDATA["
                         << "Original_Key:" << data.Original_Key
                         << ", Mapping_Keys:" << data.Mapping_Keys
+                        << ", Description:" << data.Description
                         << ", Burst:" << data.Burst
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
