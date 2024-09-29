@@ -8442,7 +8442,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 
             /* ORIGINAL_KEY_COLUMN */
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
-            ori_TableItem->setToolTip(keymapdata.Original_Key);
+            if (!keymapdata.Description.isEmpty()) {
+                ori_TableItem->setToolTip(keymapdata.Description);
+            }
             if (keymapdata.PassThrough) {
                 ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
             }
