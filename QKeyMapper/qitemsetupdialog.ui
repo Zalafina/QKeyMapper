@@ -366,7 +366,7 @@
     <number>1</number>
    </property>
   </widget>
-  <widget class="QLabel" name="itemDescriptionLabel">
+  <widget class="QLabel" name="itemNoteLabel">
    <property name="geometry">
     <rect>
      <x>5</x>
@@ -376,13 +376,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>MappingKey</string>
+    <string>Note</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QLineEdit" name="itemDescriptionLineEdit">
+  <widget class="QLineEdit" name="itemNoteLineEdit">
    <property name="geometry">
     <rect>
      <x>80</x>
@@ -392,7 +392,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="itemDescriptionUpdateButton">
+  <widget class="QPushButton" name="itemNoteUpdateButton">
    <property name="geometry">
     <rect>
      <x>750</x>

@@ -2646,7 +2646,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QSettings keyMappingDataFile(filename, QSettings::IniFormat);
     QStringList original_keys;
     QStringList mapping_keysList;
-    QStringList descriptionList;
+    QStringList notesList;
     QStringList burstList;
     QStringList burstpresstimeList;
     QStringList burstreleasetimeList;
@@ -2662,7 +2662,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         original_keys << keymapdata.Original_Key;
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
         mapping_keysList  << mappingkeys_str;
-        descriptionList << keymapdata.Description;
+        notesList << keymapdata.Note;
         if (true == keymapdata.Burst) {
             burstList.append("ON");
         }
@@ -2721,7 +2721,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
 
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS, mapping_keysList);
-    keyMappingDataFile.setValue(KEYMAPDATA_DESCRIPTION, descriptionList);
+    keyMappingDataFile.setValue(KEYMAPDATA_NOTE, notesList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURST, burstList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTPRESS_TIME, burstpresstimeList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
@@ -2760,7 +2760,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList keyseqholddownStringList;
     QStringList repeatmodeStringList;
     QStringList repeattimesStringList;
-    QStringList descriptionList;
+    QStringList notesList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
@@ -2800,8 +2800,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         repeatmodeStringList = stringListAllZERO;
         repeattimesStringList = repeattimesStringListDefault;
 
-        if (true == keyMappingDataFile.contains(KEYMAPDATA_DESCRIPTION)) {
-            descriptionList = keyMappingDataFile.value(KEYMAPDATA_DESCRIPTION).toStringList();
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_NOTE)) {
+            notesList = keyMappingDataFile.value(KEYMAPDATA_NOTE).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_BURST)) {
             burstStringList = keyMappingDataFile.value(KEYMAPDATA_BURST).toStringList();
@@ -2833,10 +2833,10 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
 
-            if (descriptionList.size() < original_keys.size()) {
-                int diff = original_keys.size() - descriptionList.size();
+            if (notesList.size() < original_keys.size()) {
+                int diff = original_keys.size() - notesList.size();
                 for (int i = 0; i < diff; ++i) {
-                    descriptionList.append(QString());
+                    notesList.append(QString());
                 }
             }
 
@@ -2938,7 +2938,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 if (true == checkoriginalstr && true == checkmappingstr) {
                     loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
                                                       mapping_keys.at(loadindex),
-                                                      descriptionList.at(loadindex),
+                                                      notesList.at(loadindex),
                                                       burstList.at(loadindex),
                                                       burstpresstimeList.at(loadindex),
                                                       burstreleasetimeList.at(loadindex),
@@ -4194,6 +4194,13 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(SHOW_PROCESSLIST, true);
     }
 
+    if (ui->showNotesButton->isChecked()) {
+        settingFile.setValue(SHOW_NOTES, true);
+    }
+    else {
+        settingFile.setValue(SHOW_NOTES, false);
+    }
+
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
     settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
@@ -4337,7 +4344,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabhotkeylist;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
-    QString descriptionList_forsave;
+    QString notesList_forsave;
     QString burstList_forsave;
     QString burstpresstimeList_forsave;
     QString burstreleasetimeList_forsave;
@@ -4366,7 +4373,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         if (index > 0) {
             original_keys_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mapping_keysList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
-            descriptionList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            notesList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstpresstimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstreleasetimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -4380,7 +4387,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
         QStringList original_keys;
         QStringList mapping_keysList;
-        QStringList descriptionList;
+        QStringList notesList;
         QStringList burstList;
         QStringList burstpresstimeList;
         QStringList burstreleasetimeList;
@@ -4396,7 +4403,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                 original_keys << keymapdata.Original_Key;
                 QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
                 mapping_keysList  << mappingkeys_str;
-                descriptionList << keymapdata.Description;
+                notesList << keymapdata.Note;
                 if (true == keymapdata.Burst) {
                     burstList.append("ON");
                 }
@@ -4456,7 +4463,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         // join QStringList variables first (use SEPARATOR_KEYMAPDATA_LEVEL1)
         QString original_keys_str = original_keys.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mapping_keysList_str = mapping_keysList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
-        QString descriptionList_str = descriptionList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString notesList_str = notesList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstList_str = burstList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstpresstimeList_str = burstpresstimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstreleasetimeList_str = burstreleasetimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -4470,7 +4477,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         // append joined QString variables to forsave variables
         original_keys_forsave.append(original_keys_str);
         mapping_keysList_forsave.append(mapping_keysList_str);
-        descriptionList_forsave.append(descriptionList_str);
+        notesList_forsave.append(notesList_str);
         burstList_forsave.append(burstList_str);
         burstpresstimeList_forsave.append(burstpresstimeList_str);
         burstreleasetimeList_forsave.append(burstreleasetimeList_str);
@@ -4487,7 +4494,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DESCRIPTION , descriptionList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_NOTE , notesList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpresstimeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList_forsave);
@@ -4681,6 +4688,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->processListButton->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
+#endif
+        }
+
+        if (true == settingFile.contains(SHOW_NOTES)){
+            bool showNotes = settingFile.value(SHOW_NOTES).toBool();
+            if (showNotes) {
+                ui->showNotesButton->setChecked(true);
+            }
+            else {
+                ui->showNotesButton->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Show Notes Button ->" << showNotes;
+#endif
+        }
+        else {
+            ui->showNotesButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
 #endif
         }
 
@@ -5145,7 +5171,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList tabnamelist_loaded;
         QString original_keys_loaded;
         QString mapping_keys_loaded;
-        QString description_loaded;
+        QString notes_loaded;
         QString burstData_loaded;
         QString burstpressData_loaded;
         QString burstreleaseData_loaded;
@@ -5158,7 +5184,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         int table_count = 0;
         QStringList original_keys_split;
         QStringList mapping_keys_split;
-        QStringList description_split;
+        QStringList notes_split;
         QStringList burstData_split;
         QStringList burstpressData_split;
         QStringList burstreleaseData_split;
@@ -5191,9 +5217,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             clearKeyMappingTabWidget();
             KeyMappingDataList->clear();
 
-            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_DESCRIPTION)) {
-                description_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_DESCRIPTION).toString();
-                description_split = description_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_NOTE)) {
+                notes_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
+                notes_split = notes_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toString();
@@ -5252,7 +5278,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList keyseqholddownStringList;
                     QStringList repeatmodeStringList;
                     QStringList repeattimesStringList;
-                    QStringList descriptionList;
+                    QStringList notesList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
                     QList<int> burstreleasetimeList;
@@ -5289,8 +5315,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     repeatmodeStringList = stringListAllZERO;
                     repeattimesStringList = repeattimesStringListDefault;
 
-                    if (description_split.size() == table_count) {
-                        descriptionList = description_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    if (notes_split.size() == table_count) {
+                        notesList = notes_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (burstData_split.size() == table_count) {
                         burstStringList = burstData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -5323,10 +5349,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
                         datavalidflag = true;
 
-                        if (descriptionList.size() < original_keys.size()) {
-                            int diff = original_keys.size() - descriptionList.size();
+                        if (notesList.size() < original_keys.size()) {
+                            int diff = original_keys.size() - notesList.size();
                             for (int i = 0; i < diff; ++i) {
-                                descriptionList.append(QString());
+                                notesList.append(QString());
                             }
                         }
 
@@ -5428,7 +5454,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             if (true == checkoriginalstr && true == checkmappingstr) {
                                 loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
                                                                   mapping_keys.at(loadindex),
-                                                                  descriptionList.at(loadindex),
+                                                                  notesList.at(loadindex),
                                                                   burstList.at(loadindex),
                                                                   burstpresstimeList.at(loadindex),
                                                                   burstreleasetimeList.at(loadindex),
@@ -6047,6 +6073,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
+    ui->showNotesButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -6154,6 +6181,7 @@ void QKeyMapper::setControlFontChinese()
     ui->deleteoneButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
+    ui->showNotesButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -6330,6 +6358,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->deleteoneButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
     ui->processListButton->setEnabled(status);
+    ui->showNotesButton->setEnabled(status);
 
     ui->settingTabWidget->setEnabled(status);
 
@@ -8441,10 +8470,16 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             }
 
             /* ORIGINAL_KEY_COLUMN */
-            QTableWidgetItem *ori_TableItem = new QTableWidgetItem(keymapdata.Original_Key);
-            if (!keymapdata.Description.isEmpty()) {
-                ori_TableItem->setToolTip(keymapdata.Description);
+            QString mapdata_note = keymapdata.Note;
+            QString orikey_withnote;
+            if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
+                orikey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(keymapdata.Original_Key, mapdata_note);
             }
+            else {
+                orikey_withnote = keymapdata.Original_Key;
+            }
+            QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
+            ori_TableItem->setToolTip(orikey_withnote);
             if (keymapdata.PassThrough) {
                 ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
             }
@@ -8631,6 +8666,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->deleteoneButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
     ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
+    ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
     ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
@@ -8770,6 +8806,7 @@ void QKeyMapper::setUILanguage_English()
     ui->deleteoneButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
     ui->processListButton->setText(PROCESSLISTBUTTON_ENGLISH);
+    ui->showNotesButton->setText(SHOWNOTESBUTTON_ENGLISH);
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
     ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
@@ -9869,7 +9906,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
             KeyMappingDataList->replace(findindex, MAP_KEYDATA(currentOriKeyText,
                                                                mappingkeys_str,
-                                                               keymapdata.Description,
+                                                               keymapdata.Note,
                                                                keymapdata.Burst,
                                                                keymapdata.BurstPressTime,
                                                                keymapdata.BurstReleaseTime,
@@ -11207,4 +11244,10 @@ void QKeyMapper::on_processListButton_toggled(bool checked)
         refreshAllKeyMappingTagWidget();
         showProcessList();
     }
+}
+
+void QKeyMapper::on_showNotesButton_toggled(bool checked)
+{
+    Q_UNUSED(checked);
+    refreshAllKeyMappingTagWidget();
 }

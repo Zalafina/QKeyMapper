@@ -200,7 +200,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>230</y>
+     <y>250</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -219,7 +219,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>300</y>
+     <y>310</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -266,7 +266,7 @@
    <property name="geometry">
     <rect>
      <x>999</x>
-     <y>100</y>
+     <y>120</y>
      <width>51</width>
      <height>31</height>
     </rect>
@@ -285,7 +285,7 @@
    <property name="geometry">
     <rect>
      <x>999</x>
-     <y>160</y>
+     <y>180</y>
      <width>51</width>
      <height>31</height>
     </rect>
@@ -1381,6 +1381,28 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QPushButton" name="showNotesButton">
+   <property name="geometry">
+    <rect>
+     <x>990</x>
+     <y>70</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>ShowNotes</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1419,6 +1441,7 @@
   <zorder>descriptionLineEdit</zorder>
   <zorder>descriptionLabel</zorder>
   <zorder>processListButton</zorder>
+  <zorder>showNotesButton</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

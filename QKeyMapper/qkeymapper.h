@@ -545,6 +545,8 @@ private slots:
 
     void on_processListButton_toggled(bool checked);
 
+    void on_showNotesButton_toggled(bool checked);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);

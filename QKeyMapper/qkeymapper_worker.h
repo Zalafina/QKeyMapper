@@ -64,7 +64,7 @@ typedef struct MAP_KEYDATA
 {
     QString Original_Key;
     QStringList Mapping_Keys;
-    QString Description;
+    QString Note;
     bool Burst;
     int BurstPressTime;
     int BurstReleaseTime;
@@ -79,7 +79,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA() :
       Original_Key()
     , Mapping_Keys()
-    , Description()
+    , Note()
     , Burst(false)
     , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
@@ -92,7 +92,7 @@ typedef struct MAP_KEYDATA
     , RepeatTimes(REPEAT_TIMES_DEFAULT)
     {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString description,
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
@@ -100,7 +100,7 @@ typedef struct MAP_KEYDATA
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
-        Description = description;
+        Note = note;
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
@@ -117,7 +117,7 @@ typedef struct MAP_KEYDATA
     {
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
-                && (Description == other.Description)
+                && (Note == other.Note)
                 && (Burst == other.Burst)
                 && (BurstPressTime == other.BurstPressTime)
                 && (BurstReleaseTime == other.BurstReleaseTime)
@@ -136,7 +136,7 @@ typedef struct MAP_KEYDATA
         debug.nospace() << "\nMAP_KEYDATA["
                         << "Original_Key:" << data.Original_Key
                         << ", Mapping_Keys:" << data.Mapping_Keys
-                        << ", Description:" << data.Description
+                        << ", Note:" << data.Note
                         << ", Burst:" << data.Burst
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
