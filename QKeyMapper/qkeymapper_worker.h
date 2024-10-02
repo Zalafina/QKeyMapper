@@ -217,6 +217,36 @@ int sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+class SendInputTask : public QRunnable
+{
+public:
+    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, const QString& real_originalkey, int sendmode) :
+        m_inputKeys(inputKeys),
+        m_keyupdown(keyupdown),
+        m_original_key(original_key),
+        m_real_originalkey(real_originalkey),
+        m_sendmode(sendmode)
+    {
+    }
+
+    void run() override;
+
+public:
+    static void initSendInputMutexMap(void);
+    static void clearSendInputMutexMap(void);
+
+public:
+    static QMutex s_SendInputMutexMapMutex;
+    static QHash<QString, QMutex*> s_SendInputMutexMap;
+
+private:
+    QStringList m_inputKeys;
+    int m_keyupdown;
+    QString m_original_key;
+    QString m_real_originalkey;
+    int m_sendmode;
+};
+
 class QKeyMapper_Worker : public QObject
 {
     Q_OBJECT
@@ -826,7 +856,8 @@ private:
 #ifdef VIGEM_CLIENT_SUPPORT
     POINT m_LastMouseCursorPoint;
 #endif
-    QRunnable *m_sendInputTask;
+    QThreadPool m_SendInputThreadPool;
+    SendInputTask *m_sendInputTask;
     QWaitCondition m_sendInputStopCondition;
     QMutex m_sendInputStopMutex;
     QAtomicInteger<int> m_sendInputStopFlag;
@@ -852,26 +883,6 @@ private:
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
     QHash<JoystickRStickCode, QString> m_JoystickRStickMap;
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
-};
-
-class SendInputTask : public QRunnable
-{
-public:
-    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode)
-        : m_inputKeys(inputKeys), m_keyupdown(keyupdown), m_original_key(original_key), m_sendmode(sendmode)
-    {
-    }
-
-    void run() override
-    {
-        QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode);
-    }
-
-private:
-    QStringList m_inputKeys;
-    int m_keyupdown;
-    QString m_original_key;
-    int m_sendmode;
 };
 
 class QKeyMapper_Hook_Proc : public QObject

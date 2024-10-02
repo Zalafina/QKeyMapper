@@ -2,6 +2,9 @@
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
 
+QMutex SendInputTask::s_SendInputMutexMapMutex;
+QHash<QString, QMutex*> SendInputTask::s_SendInputMutexMap;
+
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 #ifdef HOOKSTART_ONSTARTUP
 QAtomicBool QKeyMapper_Worker::s_AtomicHookProcStart = QAtomicBool();
@@ -120,6 +123,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 #ifdef VIGEM_CLIENT_SUPPORT
     m_LastMouseCursorPoint(),
 #endif
+    m_SendInputThreadPool(),
     m_sendInputTask(Q_NULLPTR),
     m_sendInputStopCondition(),
     m_sendInputStopMutex(),
@@ -220,6 +224,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
+
+    m_SendInputThreadPool.setMaxThreadCount(SENDINPUT_THREADPOOL_THREADMAX);
 
     generateVirtualInputRandomValues();
     initVirtualKeyCodeMap();
@@ -872,26 +878,28 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
 
 void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
 {
-// #ifdef DEBUG_LOGOUT_ON
-//     qDebug("[onSendInputKeys] currentThread -> Name:%s, ID:0x%08X, Key[%s], UpDown:%d", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId(), original_key.toLatin1().constData(), keyupdown);
-// #endif
+    QString real_originalkey = original_key;
+    int colonIndex = original_key.indexOf(':');
+    if (colonIndex > 0)
+    {
+        real_originalkey = original_key.left(colonIndex);
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
-    qDebug() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Key[" << original_key << "]" << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
+    qDebug().nospace().noquote() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Originalkey[" << original_key << "], Real_originalkey[" << real_originalkey << "] " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << inputKeys << "], SendMode:" << sendmode;
 #endif
 
-    bool waitfordone = QThreadPool::globalInstance()->waitForDone();
-    Q_UNUSED(waitfordone);
+    // Wait for previous tasks in the pool to finish
+    // bool waitfordone = QThreadPool::globalInstance()->waitForDone();
+    // Q_UNUSED(waitfordone);
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[onSendInputKeys] QThreadPool wait for task Done ->" << waitfordone;
-#endif
+// #ifdef DEBUG_LOGOUT_ON
+//     qDebug() << "[onSendInputKeys] QThreadPool wait for task Done ->" << waitfordone;
+// #endif
 
-//    m_sendInputTask = QRunnable::create([this, inputKeys, keyupdown, original_key, sendmode]() {
-//        sendInputKeys(inputKeys, keyupdown, original_key, sendmode);
-//    });
-    m_sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, sendmode);
-    QThreadPool::globalInstance()->start(m_sendInputTask);
+    m_sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, real_originalkey, sendmode);
+    m_SendInputThreadPool.start(m_sendInputTask);
 }
 
 void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
@@ -3623,6 +3631,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedMappingKeysMap.clear();
     pressedLockKeysList.clear();
     collectExchangeKeysList();
+    SendInputTask::initSendInputMutexMap();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
@@ -3748,6 +3757,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedMappingKeysMap.clear();
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
+    SendInputTask::clearSendInputMutexMap();
 
 #ifdef HOOKSTART_ONSTARTUP
     s_AtomicHookProcStart = false;
@@ -3862,6 +3872,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     pressedMappingKeysMap.clear();
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
+    SendInputTask::clearSendInputMutexMap();
 
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableStateMap.clear();
@@ -3914,6 +3925,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 #endif
     collectExchangeKeysList();
+    SendInputTask::initSendInputMutexMap();
 
     s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
@@ -10540,6 +10552,7 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && index == size) {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
+            QThread::msleep(1);
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
         }
         else {
@@ -10570,6 +10583,7 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
 //             }
 
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
+            QThread::msleep(1);
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
 
             if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
@@ -10803,4 +10817,77 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type)
     }
 
     return splitted_mappingkeys;
+}
+
+void SendInputTask::run()
+{
+    // Lock the map access mutex
+    {
+        QMutexLocker mapLocker(&s_SendInputMutexMapMutex);
+
+        // Check if mutex for m_real_originalkey exists
+        if (!s_SendInputMutexMap.contains(m_real_originalkey)) {
+            // Create new mutex for the key
+            s_SendInputMutexMap.insert(m_real_originalkey, new QMutex());
+        }
+    }
+
+    // Retrieve the mutex for m_real_originalkey
+    QMutex *sendInputMutex = s_SendInputMutexMap.value(m_real_originalkey);
+
+    // Lock the mutex for m_real_originalkey
+    QMutexLocker locker(sendInputMutex);
+
+#ifdef DEBUG_LOGOUT_ON
+    QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
+    qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Start Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "\033[0m";
+#endif
+
+    // Execute the input sending task
+    QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Finished Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "\033[0m";
+#endif
+}
+
+void SendInputTask::initSendInputMutexMap()
+{
+    // Lock the global mutex to ensure thread-safe access to the map
+    QMutexLocker mapLocker(&s_SendInputMutexMapMutex);
+
+    // Iterate through KeyMappingDataList
+    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+        // Get the original key from keymapdata
+        QString originalKey = keymapdata.Original_Key;
+
+        // Check if the mutex for this original key already exists
+        if (!s_SendInputMutexMap.contains(originalKey)) {
+            // Create a new QMutex and insert it into the map
+            s_SendInputMutexMap.insert(originalKey, new QMutex());
+        }
+    }
+}
+
+void SendInputTask::clearSendInputMutexMap()
+{
+    // Lock the global mutex to ensure thread-safe access to the map
+    QMutexLocker mapLocker(&s_SendInputMutexMapMutex);
+
+    // Iterate through the map to delete each QMutex pointer
+    for (auto it = s_SendInputMutexMap.begin(); it != s_SendInputMutexMap.end(); ++it)
+    {
+        QMutex *mutex = it.value();
+
+        // Ensure mutex is unlocked before deleting it
+        if (mutex->tryLock()) {
+            mutex->unlock();
+        }
+
+        // Delete the QMutex object
+        delete mutex;
+    }
+
+    // Clear the entire map
+    s_SendInputMutexMap.clear();
 }
