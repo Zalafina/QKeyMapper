@@ -143,6 +143,8 @@ extern const int REMOVE_MAPPINGTAB_SUCCESS;
 
 extern const int SENDINPUT_THREADPOOL_THREADMAX;
 
+extern const int SENDINPUT_KEYSEQ_KEYUP_WAITTIME;
+
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_KEYSEQ_NORMAL;

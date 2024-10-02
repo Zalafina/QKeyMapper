@@ -898,6 +898,15 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
 //     qDebug() << "[onSendInputKeys] QThreadPool wait for task Done ->" << waitfordone;
 // #endif
 
+    if (keyupdown == KEY_UP) {
+        if (sendmode == SENDMODE_KEYSEQ_NORMAL) {
+            QThread::msleep(SENDINPUT_KEYSEQ_KEYUP_WAITTIME);
+        }
+        else if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && original_key.endsWith(HOLDDOWN_STR)) {
+            QThread::msleep(SENDINPUT_KEYSEQ_KEYUP_WAITTIME);
+        }
+    }
+
     m_sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, real_originalkey, sendmode);
     m_SendInputThreadPool.start(m_sendInputTask);
 }
@@ -10552,7 +10561,6 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && index == size) {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
-            QThread::msleep(1);
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
         }
         else {
@@ -10583,7 +10591,6 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
 //             }
 
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
-            QThread::msleep(1);
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
 
             if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
