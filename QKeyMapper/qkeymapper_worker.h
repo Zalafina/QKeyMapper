@@ -206,6 +206,13 @@ struct Joystick_AxisState {
     bool isvirtual;
 };
 
+struct SendInputTaskController {
+    QMutex *task_start_mutex;
+    QAtomicInt *task_stop_flag;
+    QMutex *task_stop_mutex;
+    QWaitCondition *task_stop_condition;
+};
+
 #ifdef DINPUT_TEST
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
@@ -232,12 +239,13 @@ public:
     void run() override;
 
 public:
-    static void initSendInputMutexMap(void);
-    static void clearSendInputMutexMap(void);
+    static void initSendInputTaskControllerMap(void);
+    static void clearSendInputTaskControllerMap(void);
 
 public:
-    static QMutex s_SendInputMutexMapMutex;
-    static QHash<QString, QMutex*> s_SendInputMutexMap;
+    static QMutex s_SendInputTaskControllerMapMutex;
+    static QHash<QString, SendInputTaskController> s_SendInputTaskControllerMap;
+    static SendInputTaskController s_GlobalSendInputTaskController;
 
 private:
     QStringList m_inputKeys;
@@ -525,7 +533,7 @@ public slots:
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
     void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
-    void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
     void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode);
@@ -736,6 +744,9 @@ private:
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
+    void initGlobalSendInputTaskController(void);
+    void clearGlobalSendInputTaskController(void);
+
 public:
 #if 0
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
@@ -800,11 +811,6 @@ public:
     static QStringList pressedLockKeysList;
     static QStringList exchangeKeysList;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    static QRecursiveMutex sendinput_mutex;
-#else
-    static QMutex sendinput_mutex;
-#endif
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     static QRecursiveMutex s_BurstKeyTimerMutex;
 #else
     static QMutex s_BurstKeyTimerMutex;
@@ -857,10 +863,6 @@ private:
     POINT m_LastMouseCursorPoint;
 #endif
     QThreadPool m_SendInputThreadPool;
-    SendInputTask *m_sendInputTask;
-    QWaitCondition m_sendInputStopCondition;
-    QMutex m_sendInputStopMutex;
-    QAtomicInteger<int> m_sendInputStopFlag;
     bool m_JoystickCapture;
 #ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;
