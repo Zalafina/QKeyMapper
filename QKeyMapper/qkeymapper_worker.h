@@ -207,7 +207,7 @@ struct Joystick_AxisState {
 };
 
 struct SendInputTaskController {
-    QMutex *task_start_mutex;
+    QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag;
     QMutex *task_stop_mutex;
     QWaitCondition *task_stop_condition;
@@ -227,13 +227,36 @@ int sign(T val) {
 class SendInputTask : public QRunnable
 {
 public:
-    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, const QString& real_originalkey, int sendmode) :
+    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode) :
         m_inputKeys(inputKeys),
         m_keyupdown(keyupdown),
         m_original_key(original_key),
-        m_real_originalkey(real_originalkey),
+        m_real_originalkey(original_key),
         m_sendmode(sendmode)
     {
+        // Set the real original key
+        int colonIndex = original_key.indexOf(':');
+        if (colonIndex > 0)
+        {
+            m_real_originalkey = original_key.left(colonIndex);
+        }
+
+        {
+            // Lock the map access mutex
+            QMutexLocker mapLocker(&s_SendInputTaskControllerMapMutex);
+
+            // Check if the Controller for this original key already exists
+            if (!s_SendInputTaskControllerMap.contains(m_real_originalkey)) {
+                // Create a new Controller struct and insert it into the map
+                SendInputTaskController controller;
+                controller.task_threadpool = new QThreadPool();
+                controller.task_threadpool->setMaxThreadCount(1);
+                controller.task_stop_mutex = new QMutex();
+                controller.task_stop_condition = new QWaitCondition();
+                controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
+                s_SendInputTaskControllerMap.insert(m_real_originalkey, controller);
+            }
+        }
     }
 
     void run() override;
@@ -247,7 +270,7 @@ public:
     static QHash<QString, SendInputTaskController> s_SendInputTaskControllerMap;
     static SendInputTaskController s_GlobalSendInputTaskController;
 
-private:
+public:
     QStringList m_inputKeys;
     int m_keyupdown;
     QString m_original_key;
@@ -862,7 +885,6 @@ private:
 #ifdef VIGEM_CLIENT_SUPPORT
     POINT m_LastMouseCursorPoint;
 #endif
-    QThreadPool m_SendInputThreadPool;
     bool m_JoystickCapture;
 #ifdef DINPUT_TEST
     IDirectInput8* m_DirectInput;
