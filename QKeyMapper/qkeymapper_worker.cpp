@@ -1302,6 +1302,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
     else {
         if (1 == key_sequence_count) {
             if (*controller.task_stop_flag) {
+                bool skip = true;
                 if (keyseq_finished) {
                     if (*controller.task_stop_flag != INPUTSTOP_NONE) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1316,8 +1317,10 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     qDebug() << "\033[1;34m[sendInputKeys] Single Mappingkeys KEY_DOWN start, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m";
 #endif
                     *controller.task_stop_flag = INPUTSTOP_NONE;
+                    skip = false;
                 }
-                else if (*controller.task_stop_flag == INPUTSTOP_KEYSEQ) {
+
+                if (skip) {
                     return;
                 }
             }
@@ -10595,6 +10598,13 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
         }
         else {
+            if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
+                s_runningKeySequenceOrikeyList.append(original_key);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendKeySequenceList] Running KeySequence add OriginalKey:" << original_key << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+#endif
+            }
+
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + QString::number(index);
             if (index == size) {
                 QString finalPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
@@ -10623,13 +10633,6 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
 
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
-
-            if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
-                s_runningKeySequenceOrikeyList.append(original_key);
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendKeySequenceList] Running KeySequence add OriginalKey:" << original_key << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
-#endif
-            }
         }
         /* Add for KeySequenceHoldDown <<< */
 
