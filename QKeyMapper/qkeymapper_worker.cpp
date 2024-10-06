@@ -1754,6 +1754,13 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
         if (isWindowPoint) {
             QPoint mousepoint(x, y);
 
+            if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMousePointClick] sendWindowMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                sendWindowMousePointClick(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
+            }
+
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                 for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
                     postMouseButton(hwnd, mousebutton, keyupdown, mousepoint);
@@ -1761,14 +1768,6 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendMousePointClick] Window : postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
-            }
-            else {
-                if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendMousePointClick] sendWindowMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
-#endif
-                    sendWindowMousePointClick(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
-                }
             }
         }
         else {
@@ -1795,6 +1794,13 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
                 mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
             }
 
+            UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+            if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug("[sendMousePointClick] Screen : sendMouseButton -> SendInput() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+            }
+
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                 QPoint mousepoint(x, y);
                 for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
@@ -1803,14 +1809,6 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendMousePointClick] Screen : postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
 #endif
-            }
-            else {
-                UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
-                if (uSent != 1) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug("[sendMousePointClick] Screen : sendMouseButton -> SendInput() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
-#endif
-                }
             }
         }
     }
