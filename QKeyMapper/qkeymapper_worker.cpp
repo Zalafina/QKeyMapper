@@ -3639,6 +3639,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     pressedLockKeysList.clear();
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
+    resetGlobalSendInputTaskController();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
@@ -3765,6 +3766,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
     SendInputTask::clearSendInputTaskControllerMap();
+    resetGlobalSendInputTaskController();
 
 #ifdef HOOKSTART_ONSTARTUP
     s_AtomicHookProcStart = false;
@@ -3880,6 +3882,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
     SendInputTask::clearSendInputTaskControllerMap();
+    resetGlobalSendInputTaskController();
 
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableStateMap.clear();
@@ -10442,6 +10445,18 @@ void QKeyMapper_Worker::initGlobalSendInputTaskController()
     controller.task_stop_mutex = new QMutex();
     controller.task_stop_condition = new QWaitCondition();
     controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
+}
+
+void QKeyMapper_Worker::resetGlobalSendInputTaskController()
+{
+    SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    controller.task_stop_condition->wakeAll();
+    if (controller.task_stop_mutex->tryLock()) {
+        controller.task_stop_mutex->unlock();
+    }
+    *controller.task_stop_flag = INPUTSTOP_NONE;
+    controller.task_threadpool->clear();
+    controller.task_threadpool->waitForDone(100);
 }
 
 void QKeyMapper_Worker::clearGlobalSendInputTaskController()

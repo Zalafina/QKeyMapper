@@ -768,6 +768,7 @@ private:
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
     void initGlobalSendInputTaskController(void);
+    void resetGlobalSendInputTaskController(void);
     void clearGlobalSendInputTaskController(void);
 
 public:
