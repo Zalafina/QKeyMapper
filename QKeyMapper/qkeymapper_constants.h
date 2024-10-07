@@ -440,6 +440,7 @@ extern const int PICK_SCREEN_POINT_KEY;
 extern const char *SHOW_POINTS_IN_WINDOW_KEY;
 extern const char *SHOW_POINTS_IN_SCREEN_KEY;
 extern const char *SHOW_CAR_ORDINAL_KEY;
+extern const char *MOUSE_WHEEL_STR;
 extern const char* MOUSE_WHEEL_UP_STR;
 extern const char* MOUSE_WHEEL_DOWN_STR;
 extern const char *MOUSE_WHEEL_LEFT_STR;

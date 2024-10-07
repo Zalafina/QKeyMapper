@@ -505,6 +505,7 @@ const char *SHOW_POINTS_IN_WINDOW_KEY   = "F8";
 const char *SHOW_POINTS_IN_SCREEN_KEY   = "F9";
 const char *SHOW_CAR_ORDINAL_KEY        = "Home";
 
+const char *MOUSE_WHEEL_STR         = "Mouse-Wheel";
 const char *MOUSE_WHEEL_UP_STR      = "Mouse-WheelUp";
 const char *MOUSE_WHEEL_DOWN_STR    = "Mouse-WheelDown";
 const char *MOUSE_WHEEL_LEFT_STR    = "Mouse-WheelLeft";

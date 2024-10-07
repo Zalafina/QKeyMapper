@@ -8428,10 +8428,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_lock = true;
             }
 
-            if (keymapdata.Original_Key.contains(MOUSE_WHEEL_UP_STR)
-                || keymapdata.Original_Key.contains(MOUSE_WHEEL_DOWN_STR)
-                || keymapdata.Original_Key.contains(MOUSE_WHEEL_LEFT_STR)
-                || keymapdata.Original_Key.contains(MOUSE_WHEEL_RIGHT_STR)) {
+            if (keymapdata.Original_Key.contains(MOUSE_WHEEL_STR)) {
                 disable_burst = true;
                 disable_lock = true;
             }

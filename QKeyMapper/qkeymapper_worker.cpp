@@ -878,10 +878,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 
     QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
 
-    if (original_key.contains(MOUSE_WHEEL_UP_STR)
-        || original_key.contains(MOUSE_WHEEL_DOWN_STR)
-        || original_key.contains(MOUSE_WHEEL_LEFT_STR)
-        || original_key.contains(MOUSE_WHEEL_RIGHT_STR)) {
+    if (original_key.contains(MOUSE_WHEEL_STR)) {
         if (KEY_UP == keyupdown) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait start ->" << original_key;
@@ -1068,7 +1065,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 continue;
             }
 
-            if (isPressedMappingKeysContains(key)) {
+            if (isPressedMappingKeysContains(key) && sendmode != SENDMODE_FORCE_STOP) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys still remain Key[ " << key << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
                 qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys skip KeyUp[ " << key << " ]" << " -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]";
@@ -3753,7 +3750,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
-    // pressedVirtualKeysList.clear();
+    pressedVirtualKeysList.clear();
     pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
@@ -8431,10 +8428,10 @@ void QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifie
         pressedKeyboardModifiersList.append("R-Win");
     }
 
+    SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
-        SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
     }
 }
@@ -10350,10 +10347,12 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
 
 void QKeyMapper_Worker::clearAllPressedVirtualKeys()
 {
+    SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
         QStringList mappingKeyList = QStringList() << virtualkeystr;
         QString original_key = QString(CLEAR_VIRTUALKEYS);
-        emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+        // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
     }
 
     // QStringList pressedMappingOriginalKeys = pressedMappingKeysMap.keys();
