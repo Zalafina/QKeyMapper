@@ -855,9 +855,15 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
 {
     SendInputTask *sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, sendmode);
 
-    SendInputTaskController &controller = SendInputTask::s_SendInputTaskControllerMap[sendInputTask->m_real_originalkey];
+    SendInputTaskController *controller = Q_NULLPTR;
+    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
+        controller = &SendInputTask::s_GlobalSendInputTaskController;
+    }
+    else {
+        controller = &SendInputTask::s_SendInputTaskControllerMap[sendInputTask->m_real_originalkey];
+    }
 
-    controller.task_threadpool->start(sendInputTask);
+    controller->task_threadpool->start(sendInputTask);
 
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
@@ -1800,11 +1806,16 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode)
 {
     bool skip_emitsignal = false;
-    SendInputTaskController *controller_p = Q_NULLPTR;
+    SendInputTaskController *controller = Q_NULLPTR;
 
     if (keyupdown == KEY_DOWN) {
-        if (SendInputTask::s_SendInputTaskControllerMap.contains(original_key)) {
-            controller_p = &SendInputTask::s_SendInputTaskControllerMap[original_key];
+        if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
+            controller = &SendInputTask::s_GlobalSendInputTaskController;
+        }
+        else {
+            if (SendInputTask::s_SendInputTaskControllerMap.contains(original_key)) {
+                controller = &SendInputTask::s_SendInputTaskControllerMap[original_key];
+            }
         }
 
         bool isKeySequence = false;
@@ -1842,27 +1853,27 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
             }
 
             if (sendmode == SENDMODE_NORMAL) {
-                if (isKeySequenceRunning && controller_p != Q_NULLPTR) {
+                if (isKeySequenceRunning && controller != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
 #endif
-                    // controller_p->task_stop_mutex->lock();
-                    *controller_p->task_stop_flag = INPUTSTOP_KEYSEQ;
-                    controller_p->task_stop_condition->wakeAll();
-                    // controller_p->task_stop_mutex->unlock();
+                    // controller->task_stop_mutex->lock();
+                    *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+                    controller->task_stop_condition->wakeAll();
+                    // controller->task_stop_mutex->unlock();
                 }
             }
         }
         else {
             if (sendmode == SENDMODE_NORMAL) {
-                if (pressedMappingKeysMap.contains(original_key) && controller_p != Q_NULLPTR) {
+                if (pressedMappingKeysMap.contains(original_key) && controller != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_SINGLE, pressedMappingKeysMap contains OriginalKey:" << original_key << ", pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
 #endif
-                    // controller_p->task_stop_mutex->lock();
-                    *controller_p->task_stop_flag = INPUTSTOP_SINGLE;
-                    controller_p->task_stop_condition->wakeAll();
-                    // controller_p->task_stop_mutex->unlock();
+                    // controller->task_stop_mutex->lock();
+                    *controller->task_stop_flag = INPUTSTOP_SINGLE;
+                    controller->task_stop_condition->wakeAll();
+                    // controller->task_stop_mutex->unlock();
                 }
             }
         }
@@ -1872,8 +1883,8 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
         emit sendInputKeys_Signal(inputKeys, keyupdown, original_key, sendmode);
 #ifdef DEBUG_LOGOUT_ON
         QAtomicInt task_stop_flag(INPUTSTOP_NONE);
-        if (controller_p != Q_NULLPTR) {
-            task_stop_flag = *controller_p->task_stop_flag;
+        if (controller != Q_NULLPTR) {
+            task_stop_flag = *controller->task_stop_flag;
         }
         qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] sendInputKeys_Signal() -> OriginalKey[" << original_key << "]" << ((keyupdown == KEY_DOWN) ? " KeyDown" : " KeyUp") << ", Sendmode:" << sendmode << ", task_stop_flag:" << task_stop_flag;
 #endif
@@ -10879,7 +10890,13 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type)
 void SendInputTask::run()
 {
     // Retrieve the controller for m_real_originalkey
-    SendInputTaskController &controller = s_SendInputTaskControllerMap[m_real_originalkey];
+    SendInputTaskController *controller = Q_NULLPTR;
+    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
+        controller = &s_GlobalSendInputTaskController;
+    }
+    else {
+        controller = &s_SendInputTaskControllerMap[m_real_originalkey];
+    }
 
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
@@ -10887,7 +10904,7 @@ void SendInputTask::run()
 #endif
 
     // Execute the input sending task
-    QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode, controller);
+    QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Finished Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "\033[0m";

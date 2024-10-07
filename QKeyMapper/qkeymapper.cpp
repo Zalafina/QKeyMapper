@@ -2553,6 +2553,11 @@ bool QKeyMapper::getSendToSameTitleWindowsStatus()
     }
 }
 
+bool QKeyMapper::getKeySequenceSerialProcessStatus()
+{
+    return false;
+}
+
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
 {
     // Iterate through tabinfolist to check if there is a duplicate tabname
