@@ -10340,8 +10340,10 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
     s_BurstKeyPressTimerMap.clear();
     s_BurstKeyTimerMap.clear();
 
-    for (int index = 0; index < QKeyMapper::KeyMappingDataList->size(); index++) {
-        (*QKeyMapper::KeyMappingDataList)[index].LockStatus = false;
+    if (!s_isWorkerDestructing) {
+        for (int index = 0; index < QKeyMapper::KeyMappingDataList->size(); index++) {
+            (*QKeyMapper::KeyMappingDataList)[index].LockStatus = false;
+        }
     }
 }
 
