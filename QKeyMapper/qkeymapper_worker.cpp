@@ -7155,7 +7155,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             else {
                 if (s_forceSendVirtualKey != true) {
                     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
-                    if (pressedRealKeysList.contains(keycodeString) && findindex < 0){
+                    if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
 #endif
