@@ -198,8 +198,8 @@
 
 ---------------
 ## XBox手柄按键名称布局参照图
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_en.png" width="600" height="auto"/></div>
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_cn.png" width="600" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_en.png" width="700" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_cn.png" width="700" height="auto"/></div>
 
 ---------------
 ## VirScan result
