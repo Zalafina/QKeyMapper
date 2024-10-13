@@ -189,11 +189,18 @@
 11. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始按键映射，并且最小化到系统托盘, 。
 12. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
 13. 增加了支持将鼠标左键&右键&中键映射到各种按键。
+
 ---------------
-## Screenshot
+## 软件截图
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png)
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png)
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_04.png)
+
+---------------
+## XBox手柄按键名称布局参照图
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_en.png" width="826" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_cn.png" width="826" height="auto"/></div>
+
 ---------------
 ## VirScan result
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_VirScan.png)
