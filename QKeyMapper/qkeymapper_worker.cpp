@@ -1971,25 +1971,21 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
         int sendmode = SENDMODE_NORMAL;
         if (true == stop) {
-            sendmode = SENDMODE_FORCE_STOP;
+            sendmode = SENDMODE_BURSTKEY_STOP;
         }
         SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
-        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, sendmode);
     }
 }
 
-void QKeyMapper_Worker::sendBurstKeyUpDirect(int findindex, bool stop)
+void QKeyMapper_Worker::sendBurstKeyUpForce(int findindex)
 {
     if (findindex >= 0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-        int sendmode = SENDMODE_NORMAL;
-        if (true == stop) {
-            sendmode = SENDMODE_FORCE_STOP;
-        }
+        int sendmode = SENDMODE_FORCE_STOP;
         SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
-        sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
     }
 }
 
@@ -8258,13 +8254,13 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
 #endif
                     findindex = CombinationKeyProc(combinationkey, KEY_UP);
                     if (findindex >= 0) {
-                        PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
-                        if (PassThrough) {
-                            intercept = KEY_INTERCEPT_PASSTHROUGH;
-                        }
-                        else {
-                            intercept = KEY_INTERCEPT_BLOCK;
-                        }
+                        // PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
+                        // if (PassThrough) {
+                        //     intercept = KEY_INTERCEPT_PASSTHROUGH;
+                        // }
+                        // else {
+                        //     intercept = KEY_INTERCEPT_BLOCK;
+                        // }
 
                         pressedCombinationRealKeysList.removeAll(getKeycodeStringRemoveMultiInput(keycodeString));
 #ifdef DEBUG_LOGOUT_ON
@@ -8526,13 +8522,13 @@ void QKeyMapper_Worker::stopBurstKeyTimer(const QString &burstKey, int mappingIn
     }
 }
 
-void QKeyMapper_Worker::stopBurstKeyTimerDirect(const QString &burstKey, int mappingIndex)
+void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex)
 {
     QMutexLocker locker(&s_BurstKeyTimerMutex);
     Q_UNUSED(mappingIndex);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[stopBurstKeyTimerDirect] Key [" << burstKey << "], MappingIndex =" << mappingIndex;
+    qDebug().nospace().noquote() << "[stopBurstKeyTimerForce] Key [" << burstKey << "], MappingIndex =" << mappingIndex;
 #endif
 
     if (s_BurstKeyPressTimerMap.contains(burstKey)) {
@@ -8540,9 +8536,9 @@ void QKeyMapper_Worker::stopBurstKeyTimerDirect(const QString &burstKey, int map
         timer->stop();
         delete timer;
         s_BurstKeyPressTimerMap.remove(burstKey);
-        sendBurstKeyUpDirect(mappingIndex, true);
+        sendBurstKeyUpForce(mappingIndex);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[stopBurstKeyTimerDirect] sendBurstKeyUp(" << burstKey << "), BurstKeyPressTimer stopped & removed.";
+        qDebug().nospace().noquote() << "[stopBurstKeyTimerForce] sendBurstKeyUp(" << burstKey << "), BurstKeyPressTimer stopped & removed.";
 #endif
     }
 
@@ -8552,7 +8548,7 @@ void QKeyMapper_Worker::stopBurstKeyTimerDirect(const QString &burstKey, int map
         delete timer;
         s_BurstKeyTimerMap.remove(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[stopBurstKeyTimerDirect] Key [" << burstKey << "], BurstKeyTimer stopped & removed.";
+        qDebug().nospace().noquote() << "[stopBurstKeyTimerForce] Key [" << burstKey << "], BurstKeyTimer stopped & removed.";
 #endif
     }
 }
@@ -10338,8 +10334,7 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
                 }
             }
 
-            stopBurstKeyTimer(burstKey, findindex);
-            // stopBurstKeyTimerDirect(burstKey, findindex);
+            stopBurstKeyTimerForce(burstKey, findindex);
         }
     }
 

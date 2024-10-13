@@ -566,7 +566,7 @@ public:
     static void sendBurstKeyUp(const QString &burstKey, bool stop);
     static void sendBurstKeyDown(int findindex);
     static void sendBurstKeyUp(int findindex, bool stop);
-    void sendBurstKeyUpDirect(int findindex, bool stop);
+    void sendBurstKeyUpForce(int findindex);
 #if 0
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
@@ -712,7 +712,7 @@ public:
     static void releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
-    void stopBurstKeyTimerDirect(const QString &burstKey, int mappingIndex);
+    void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
 
     static void collectCombinationOriginalKeysList(void);
     static void collectLongPressOriginalKeysMap(void);
