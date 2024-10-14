@@ -7323,6 +7323,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                 }
                 else {
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+                    if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("[LowLevelMouseHookProc] RealKey \"%s\" is pressed down on mouse, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+#endif
+                        returnFlag = true;
+                    }
+
                     pressedVirtualKeysList.removeAll(keycodeString);
 
                     if (keycodeString == KEY2MOUSE_UP_STR) {
