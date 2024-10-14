@@ -141,6 +141,11 @@ extern const int REMOVE_MAPPINGTAB_FAILED;
 extern const int REMOVE_MAPPINGTAB_LASTONE;
 extern const int REMOVE_MAPPINGTAB_SUCCESS;
 
+extern const int SENDVIRTUALKEY_STATE_NORMAL;
+extern const int SENDVIRTUALKEY_STATE_FORCE;
+extern const int SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
+extern const int SENDVIRTUALKEY_STATE_BURST_STOP;
+
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_BURSTKEY_STOP;

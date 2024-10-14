@@ -171,6 +171,11 @@ const int REMOVE_MAPPINGTAB_FAILED  = 0;
 const int REMOVE_MAPPINGTAB_LASTONE = 1;
 const int REMOVE_MAPPINGTAB_SUCCESS = 2;
 
+const int SENDVIRTUALKEY_STATE_NORMAL           = 0;
+const int SENDVIRTUALKEY_STATE_FORCE            = 1;
+const int SENDVIRTUALKEY_STATE_BURST_TIMEOUT    = 2;
+const int SENDVIRTUALKEY_STATE_BURST_STOP       = 3;
+
 const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
 const int SENDMODE_BURSTKEY_STOP    = 3;

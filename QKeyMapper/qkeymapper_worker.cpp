@@ -16,7 +16,7 @@ QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Right = QAtomicBool();
-bool QKeyMapper_Worker::s_forceSendVirtualKey = false;
+QAtomicInt QKeyMapper_Worker::s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 qint32 QKeyMapper_Worker::s_LastCarOrdinal = 0;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
@@ -1161,7 +1161,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (original_key == KEYBOARD_MODIFIERS) {
-                    s_forceSendVirtualKey = true;
+                    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_FORCE;
                 }
                 else {
                     if (sendtype != SENDTYPE_EXCLUSION
@@ -1220,7 +1220,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
                 }
 
-                s_forceSendVirtualKey = false;
+                s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()
                     && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
@@ -1969,12 +1969,19 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
     if (findindex >= 0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+
+        SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         int sendmode = SENDMODE_NORMAL;
+        int send_keyupdown = KEY_UP;
         if (true == stop) {
             sendmode = SENDMODE_BURSTKEY_STOP;
+            s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_BURST_STOP;
         }
-        SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
+        else {
+            s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
+        }
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, send_keyupdown, original_key, sendmode, controller);
+        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
     }
 }
 
@@ -3748,6 +3755,7 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
 
     startDataPortListener();
 //    setWorkerDInputKeyHook(hWnd);
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 }
 
 void QKeyMapper_Worker::setWorkerKeyUnHook()
@@ -3860,6 +3868,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
 #endif
+
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 }
 
 void QKeyMapper_Worker::setKeyMappingRestart()
@@ -3997,6 +4007,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
     startDataPortListener();
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[setKeyMappingRestart] KeyMapping Restart <<<");
@@ -7153,7 +7164,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
             /* KEY_UP == keyupdown */
             else {
-                if (s_forceSendVirtualKey != true) {
+                if (SENDVIRTUALKEY_STATE_NORMAL == s_SendVirtualKeyState
+                    || SENDVIRTUALKEY_STATE_BURST_STOP == s_SendVirtualKeyState) {
                     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                     if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
 #ifdef DEBUG_LOGOUT_ON
@@ -7323,12 +7335,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                 }
                 else {
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
-                    if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
+                    if (SENDVIRTUALKEY_STATE_NORMAL == s_SendVirtualKeyState) {
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+                        if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("[LowLevelMouseHookProc] RealKey \"%s\" is pressed down on mouse, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                            qDebug("[LowLevelMouseHookProc] RealKey \"%s\" is pressed down on mouse, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
 #endif
-                        returnFlag = true;
+                            returnFlag = true;
+                        }
                     }
 
                     pressedVirtualKeysList.removeAll(keycodeString);
