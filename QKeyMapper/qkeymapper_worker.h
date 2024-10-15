@@ -211,6 +211,7 @@ struct SendInputTaskController {
     QAtomicInt *task_stop_flag;
     QMutex *task_stop_mutex;
     QWaitCondition *task_stop_condition;
+    int sendvirtualkey_state;
 };
 
 #ifdef DINPUT_TEST
@@ -227,12 +228,13 @@ int sign(T val) {
 class SendInputTask : public QRunnable
 {
 public:
-    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode) :
+    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state) :
         m_inputKeys(inputKeys),
         m_keyupdown(keyupdown),
         m_original_key(original_key),
         m_real_originalkey(original_key),
-        m_sendmode(sendmode)
+        m_sendmode(sendmode),
+        m_sendvirtualkey_state(sendvirtualkey_state)
     {
         // Set the real original key
         int colonIndex = original_key.indexOf(':');
@@ -254,6 +256,7 @@ public:
                 controller.task_stop_mutex = new QMutex();
                 controller.task_stop_condition = new QWaitCondition();
                 controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
+                controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
                 s_SendInputTaskControllerMap.insert(m_real_originalkey, controller);
             }
         }
@@ -276,6 +279,7 @@ public:
     QString m_original_key;
     QString m_real_originalkey;
     int m_sendmode;
+    int m_sendvirtualkey_state;
 };
 
 class QKeyMapper_Worker : public QObject
@@ -555,11 +559,11 @@ public slots:
 #endif
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
-    void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
-    void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode);
+    void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
 
 public:
     static void sendBurstKeyDown(const QString &burstKey);
@@ -623,7 +627,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
-    void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode);
+    void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif
@@ -706,7 +710,7 @@ public:
     static bool detectMappingTableTabHotkeys(const QString &keycodeString, int keyupdown);
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
-    static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers);
+    static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key);
     static void releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);

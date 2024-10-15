@@ -3446,7 +3446,8 @@ void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
                 qDebug().nospace() << "[HotKeyMappingSwitchActivated] AltModifier & ForegroundWindow Process -> " << filename << ", isVisibleWindow = " << isVisibleWindow << ", isExToolWindow = " << isExToolWindow;
 #endif
                 const Qt::KeyboardModifiers modifiers_arg = Qt::AltModifier;
-                QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers(modifiers_arg);
+                QString original_key = QString(KEYBOARD_MODIFIERS);
+                QKeyMapper_Worker::getInstance()->releaseKeyboardModifiers(modifiers_arg, original_key);
             }
         }
     }

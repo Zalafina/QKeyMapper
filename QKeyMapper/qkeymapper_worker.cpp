@@ -849,9 +849,9 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
     }
 }
 
-void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode)
+void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state)
 {
-    SendInputTask *sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, sendmode);
+    SendInputTask *sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
 
     SendInputTaskController *controller = Q_NULLPTR;
     if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
@@ -865,7 +865,7 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
 
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
-    qDebug().nospace().noquote() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Originalkey[" << original_key << "], Real_originalkey[" << sendInputTask->m_real_originalkey << "] " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << inputKeys << "], SendMode:" << sendmode;
+    qDebug().nospace().noquote() << "[onSendInputKeys] currentThread -> Name:" << QThread::currentThread()->objectName() << ", ID:" << threadIdStr << ", Originalkey[" << original_key << "], Real_originalkey[" << sendInputTask->m_real_originalkey << "] " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << inputKeys << "], SendMode:" << sendmode << ", SendVirtualkeyState:" << sendvirtualkey_state;
 #endif
 }
 
@@ -1796,7 +1796,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode)
+void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode, int sendvirtualkey_state)
 {
     bool skip_emitsignal = false;
     SendInputTaskController *controller = Q_NULLPTR;
@@ -1873,13 +1873,13 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
     }
 
     if (false == skip_emitsignal) {
-        emit sendInputKeys_Signal(inputKeys, keyupdown, original_key, sendmode);
+        emit sendInputKeys_Signal(inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
 #ifdef DEBUG_LOGOUT_ON
         QAtomicInt task_stop_flag(INPUTSTOP_NONE);
         if (controller != Q_NULLPTR) {
             task_stop_flag = *controller->task_stop_flag;
         }
-        qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] sendInputKeys_Signal() -> OriginalKey[" << original_key << "]" << ((keyupdown == KEY_DOWN) ? " KeyDown" : " KeyUp") << ", Sendmode:" << sendmode << ", task_stop_flag:" << task_stop_flag;
+        qDebug().noquote().nospace() << "[emit_sendInputKeysSignal_Wrapper] sendInputKeys_Signal() -> OriginalKey[" << original_key << "]" << ((keyupdown == KEY_DOWN) ? " KeyDown" : " KeyUp") << ", Sendmode:" << sendmode << ", sendvirtualkey_state:" << sendvirtualkey_state << ", task_stop_flag:" << task_stop_flag;
 #endif
     }
 }
@@ -8314,7 +8314,7 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
             if (KEY_DOWN == keyupdown){
                 if (!KeyUp_Action) {
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    releaseKeyboardModifiers(modifiers_arg);
+                    releaseKeyboardModifiers(modifiers_arg, original_key);
                     /* Add for KeySequenceHoldDown >>> */
                     if (mappingkeylist_size > 1 && KeySeqHoldDown) {
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
@@ -8335,7 +8335,7 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                 else {
                     if (KeyUp_Action) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releaseKeyboardModifiers(modifiers_arg);
+                        releaseKeyboardModifiers(modifiers_arg, original_key);
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                     }
                 }
@@ -8354,7 +8354,7 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
     return findindex;
 }
 
-void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers)
+void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key)
 {
     QStringList pressedKeyboardModifiersList;
     if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
@@ -8384,7 +8384,7 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
 
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
-        QString original_key = QString(KEYBOARD_MODIFIERS);
+        // QString original_key = QString(KEYBOARD_MODIFIERS);
         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 
@@ -8409,7 +8409,7 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             qDebug() << "[releaseKeyboardModifiers]" << "AltModifier Special Release!";
 #endif
 
-            QString original_key = QString(KEYBOARD_MODIFIERS);
+            // QString original_key = QString(KEYBOARD_MODIFIERS);
             QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
 
@@ -8768,7 +8768,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                     if (original_key.startsWith(PREFIX_SHORTCUT)) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releaseKeyboardModifiers(modifiers_arg);
+                        releaseKeyboardModifiers(modifiers_arg, original_key);
                     }
                     QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                 }
@@ -9065,7 +9065,7 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                     if (original_key.startsWith(PREFIX_SHORTCUT)) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releaseKeyboardModifiers(modifiers_arg);
+                        releaseKeyboardModifiers(modifiers_arg, original_key);
                     }
                     QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                 }
@@ -10958,6 +10958,7 @@ void SendInputTask::initSendInputTaskControllerMap()
             controller.task_stop_mutex = new QMutex();
             controller.task_stop_condition = new QWaitCondition();
             controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
+            controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
             s_SendInputTaskControllerMap.insert(originalKey, controller);
         }
     }
