@@ -1158,17 +1158,12 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 sendMousePointClick(key, KEY_UP);
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-                if (original_key == KEYBOARD_MODIFIERS) {
-                    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_FORCE;
-                }
-                else {
-                    if (sendtype != SENDTYPE_EXCLUSION
-                        && false == pressedVirtualKeysList.contains(key)) {
+                if (sendtype != SENDTYPE_EXCLUSION
+                    && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
-                        qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
+                    qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
 #endif
-                        continue;
-                    }
+                    continue;
                 }
 
                 int send_keyupdown = KEY_UP;
@@ -1217,8 +1212,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     qDebug("sendInputKeys(): Keyboard SendInput KEY_UP failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
 #endif
                 }
-
-                s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()
                     && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
@@ -10933,7 +10926,11 @@ void SendInputTask::run()
 #endif
 
     // Execute the input sending task
+    if (m_original_key == KEYBOARD_MODIFIERS) {
+        QKeyMapper_Worker::s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_FORCE;
+    }
     QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
+    QKeyMapper_Worker::s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Finished Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "\033[0m";
