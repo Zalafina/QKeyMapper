@@ -531,8 +531,8 @@ public:
     Q_DECLARE_FLAGS(Joy2MouseStates, Joy2MouseState)
 
 public slots:
-    // void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
-    // void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
+    void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
+    void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void sendUnicodeChar(wchar_t aChar);
     void sendText(HWND window_hwnd, const QString& text);
@@ -567,11 +567,9 @@ public:
     static void sendBurstKeyDown(int findindex);
     static void sendBurstKeyUp(int findindex, bool stop);
     void sendBurstKeyUpForce(int findindex);
-#if 0
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
     void sendSpecialVirtualKeyUp(const QString &virtualKey);
-#endif
 
     void startDataPortListener(void);
     void stopDataPortListener(void);

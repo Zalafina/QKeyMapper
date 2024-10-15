@@ -335,6 +335,7 @@ ULONG_PTR VIRTUAL_MOUSE_CLICK;
 ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
 ULONG_PTR VIRTUAL_MOUSE_WHEEL;
 ULONG_PTR VIRTUAL_KEY_OVERLAY;
+ULONG_PTR VIRTUAL_RESEND_REALKEY;
 
 const ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDCA;
 const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
@@ -860,4 +861,5 @@ void generateVirtualInputRandomValues() {
     VIRTUAL_MOUSE_POINTCLICK = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_WHEEL = generateUniqueRandomValue(generatedValues);
     VIRTUAL_KEY_OVERLAY = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_RESEND_REALKEY = generateUniqueRandomValue(generatedValues);
 }

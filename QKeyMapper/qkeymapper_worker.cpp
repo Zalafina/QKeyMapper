@@ -505,7 +505,6 @@ void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
 #endif
 }
 
-#if 0
 void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
     INPUT keyboard_input = { 0 };
@@ -518,7 +517,7 @@ void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
     }
     keyboard_input.type = INPUT_KEYBOARD;
     keyboard_input.ki.time = 0;
-    keyboard_input.ki.dwExtraInfo = VIRTUAL_KEYBOARD_PRESS;
+    keyboard_input.ki.dwExtraInfo = VIRTUAL_RESEND_REALKEY;
     keyboard_input.ki.wVk = vkeycode.KeyCode;
     keyboard_input.ki.wScan = MapVirtualKey(keyboard_input.ki.wVk, MAPVK_VK_TO_VSC);
     if (KEY_DOWN == keyupdown) {
@@ -543,7 +542,7 @@ void QKeyMapper_Worker::sendMouseClick(V_MOUSECODE vmousecode, int keyupdown)
     mouse_input.mi.dy = 0;
     mouse_input.mi.mouseData = 0;
     mouse_input.mi.time = 0;
-    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_CLICK;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_RESEND_REALKEY;
     if (KEY_DOWN == keyupdown) {
         mouse_input.mi.dwFlags = vmousecode.MouseDownCode;
     }
@@ -557,7 +556,6 @@ void QKeyMapper_Worker::sendMouseClick(V_MOUSECODE vmousecode, int keyupdown)
 #endif
     }
 }
-#endif
 
 void QKeyMapper_Worker::sendMouseMove(int delta_x, int delta_y)
 {
@@ -2021,7 +2019,6 @@ void QKeyMapper_Worker::stopDataPortListener()
     m_UdpSocket->close();
 }
 
-#if 0
 void QKeyMapper_Worker::sendSpecialVirtualKey(const QString &keycodeString, int keyupdown)
 {
     if (KEY_DOWN == keyupdown){
@@ -2055,7 +2052,6 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
         sendKeyboardInput(map_vkeycode, KEY_UP);
     }
 }
-#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper_Worker::ViGEmClient_Alloc()
@@ -7169,7 +7165,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                     if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("[LowLevelKeyboardHookProc] RealKey \"%s\" is pressed down on keyboard, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                        QString debugmessage = QString("[LowLevelKeyboardHookProc] RealKey \"%1\" is pressed down on keyboard, skip send mapping VirtualKey \"%2\" KEYUP!").arg(keycodeString, keycodeString);
+                        qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
                         returnFlag = true;
                     }
@@ -7335,11 +7332,13 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                 }
                 else {
-                    if (SENDVIRTUALKEY_STATE_NORMAL == s_SendVirtualKeyState) {
+                    if (SENDVIRTUALKEY_STATE_NORMAL == s_SendVirtualKeyState
+                        || SENDVIRTUALKEY_STATE_BURST_STOP == s_SendVirtualKeyState) {
                         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                         if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && findindex < 0){
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug("[LowLevelMouseHookProc] RealKey \"%s\" is pressed down on mouse, skip send mapping VirtualKey \"%s\" KEYUP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                            QString debugmessage = QString("[LowLevelMouseHookProc] RealKey \"%1\" is pressed down on mouse, skip send mapping VirtualKey \"%2\" KEYUP!").arg(keycodeString, keycodeString);
+                            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
                             returnFlag = true;
                         }
@@ -8531,6 +8530,19 @@ void QKeyMapper_Worker::stopBurstKeyTimer(const QString &burstKey, int mappingIn
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[stopBurstKeyTimer] sendBurstKeyUp(" << burstKey << "), BurstKeyPressTimer stopped & removed.";
 #endif
+    }
+    else {
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(mappingIndex).Mapping_Keys;
+        QStringList mappingKeys = splitMappingKeyString(mappingKeyList.constFirst(), SPLIT_WITH_PLUS);
+        for (const QString &keycodeString : qAsConst(mappingKeys)) {
+            if (pressedRealKeysListRemoveMultiInput.contains(keycodeString)) {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[stopBurstKeyTimer] RealKey \"%1\" is still pressed down on BurstKey stop, resend \"%2\" KEY_DOWN.").arg(keycodeString, keycodeString);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+                QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_DOWN);
+            }
+        }
     }
 
     if (s_BurstKeyTimerMap.contains(burstKey)) {
