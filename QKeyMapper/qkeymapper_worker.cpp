@@ -8464,7 +8464,9 @@ void QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifie
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
+        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_FORCE;
         QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
     }
 }
 
