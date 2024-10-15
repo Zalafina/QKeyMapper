@@ -1158,7 +1158,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 sendMousePointClick(key, KEY_UP);
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-                if (sendtype != SENDTYPE_EXCLUSION
+                if (s_SendVirtualKeyState == SENDVIRTUALKEY_STATE_FORCE) {
+                }
+                else if (sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     qWarning("sendInputKeys(): Key Up -> \"%s\" do not exist!!!", key.toStdString().c_str());
@@ -8383,7 +8385,10 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
-        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+        SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_FORCE;
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
     }
 
     if (modifiers.testFlag(Qt::AltModifier)) {
@@ -8408,8 +8413,11 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
 #endif
 
             QString original_key = QString(KEYBOARD_MODIFIERS);
-            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+            SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+            s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_FORCE;
+            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+            s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
             BYTE keyState[256];
             GetKeyboardState(keyState);
