@@ -7300,7 +7300,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("Virtual \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
+                qDebug("[LowLevelMouseHookProc] Virtual \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
                 if (KEY_DOWN == keyupdown) {
                     if (false == pressedVirtualKeysList.contains(keycodeString)){
@@ -7370,7 +7370,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("Real \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
+                qDebug("[LowLevelMouseHookProc] Real \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
                 if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
@@ -10684,6 +10684,18 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
     qDebug().nospace().noquote() << "[sendKeySequenceList]" << " original_key(" << original_key << "), sendmode(" << sendmode << ")";
 #endif
 
+    int keyseq_sendmode = SENDMODE_KEYSEQ_NORMAL;
+    if (sendmode == SENDMODE_KEYSEQ_REPEAT) {
+        keyseq_sendmode = SENDMODE_KEYSEQ_REPEAT;
+    }
+    else if (sendmode == SENDMODE_NORMAL) {
+        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
+        if (findindex >= 0) {
+            int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+            Q_UNUSED(repeat_mode);
+        }
+    }
+
     int index = 1;
     int size = keyseq_list.size();
     for (const QString &keyseq : qAsConst(keyseq_list)){
@@ -10729,8 +10741,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
 //                 }
 //             }
 
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL);
+            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, keyseq_sendmode);
+            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, keyseq_sendmode);
         }
         /* Add for KeySequenceHoldDown <<< */
 
