@@ -8270,13 +8270,13 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
 #endif
                     findindex = CombinationKeyProc(combinationkey, KEY_UP);
                     if (findindex >= 0) {
-                        // PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
-                        // if (PassThrough) {
-                        //     intercept = KEY_INTERCEPT_PASSTHROUGH;
-                        // }
-                        // else {
-                        //     intercept = KEY_INTERCEPT_BLOCK;
-                        // }
+                        PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
+                        if (PassThrough) {
+                            intercept = KEY_INTERCEPT_PASSTHROUGH;
+                        }
+                        else {
+                            intercept = KEY_INTERCEPT_BLOCK;
+                        }
 
                         pressedCombinationRealKeysList.removeAll(getKeycodeStringRemoveMultiInput(keycodeString));
 #ifdef DEBUG_LOGOUT_ON
