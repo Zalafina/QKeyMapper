@@ -1158,7 +1158,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 sendMousePointClick(key, KEY_UP);
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-                if (controller.sendvirtualkey_state == SENDVIRTUALKEY_STATE_MODIFIERS) {
+                if (s_SendVirtualKeyState == SENDVIRTUALKEY_STATE_MODIFIERS) {
                 }
                 else if (sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
@@ -8316,13 +8316,17 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
             if (KEY_DOWN == keyupdown){
                 if (!KeyUp_Action) {
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    releaseKeyboardModifiers(modifiers_arg, original_key);
+                    bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
+                    int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                    if (releasemodifier) {
+                        sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                    }
                     /* Add for KeySequenceHoldDown >>> */
                     if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
                     }
                     else {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
                     }
                     /* Add for KeySequenceHoldDown <<< */
                 }
@@ -8337,8 +8341,12 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                 else {
                     if (KeyUp_Action) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releaseKeyboardModifiers(modifiers_arg, original_key);
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (releasemodifier) {
+                            sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
                     }
                 }
                 /* Add for KeySequenceHoldDown >>> */
@@ -8356,38 +8364,51 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
     return findindex;
 }
 
-void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key)
+bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key)
 {
+    bool releasemodifier = false;
     QStringList pressedKeyboardModifiersList;
     if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("L-Shift");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("R-Shift");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("L-Ctrl");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("R-Ctrl");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("L-Alt");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("R-Alt");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("L-Win");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("R-Win");
+        releasemodifier = true;
     }
 
+    SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_MODIFIERS;
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
-        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
     }
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
     if (modifiers.testFlag(Qt::AltModifier)) {
         bool shift_ctrl_modifier_status = false;
@@ -8410,60 +8431,77 @@ void QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             qDebug() << "[releaseKeyboardModifiers]" << "AltModifier Special Release!";
 #endif
 
-            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
-            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+            releasemodifier = true;
+            SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+            s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_MODIFIERS;
+            // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+            // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+            s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
 
-            BYTE keyState[256];
-            GetKeyboardState(keyState);
-            if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
-                keyState[VK_LMENU] &= ~0x80;
-            }
-            if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
-                keyState[VK_RMENU] &= ~0x80;
-            }
-            SetKeyboardState(keyState);
+            // BYTE keyState[256];
+            // GetKeyboardState(keyState);
+            // if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
+            //     keyState[VK_LMENU] &= ~0x80;
+            // }
+            // if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+            //     keyState[VK_RMENU] &= ~0x80;
+            // }
+            // SetKeyboardState(keyState);
         }
     }
+
+    return releasemodifier;
 }
 
-void QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers)
+bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers)
 {
+    bool releasemodifier = false;
     QStringList pressedKeyboardModifiersList;
     if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("L-Shift");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
         pressedKeyboardModifiersList.append("R-Shift");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("L-Ctrl");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0 && modifiers.testFlag(Qt::ControlModifier)) {
         pressedKeyboardModifiersList.append("R-Ctrl");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("L-Alt");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0 && modifiers.testFlag(Qt::AltModifier)) {
         pressedKeyboardModifiersList.append("R-Alt");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("L-Win");
+        releasemodifier = true;
     }
     if ((GetAsyncKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("R-Win");
+        releasemodifier = true;
     }
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_MODIFIERS;
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
-        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_MODIFIERS;
-        controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
         QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
-        s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
-        controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
     }
+    s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
+
+    return releasemodifier;
 }
 
 void QKeyMapper_Worker::startBurstKeyTimer(const QString &burstKey, int mappingIndex)
@@ -9067,11 +9105,16 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                 if (KEY_PROC_NONE == keyproc) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                    bool releasemodifier = false;
+                    int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
                     if (original_key.startsWith(PREFIX_SHORTCUT)) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releaseKeyboardModifiers(modifiers_arg, original_key);
+                        releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
+                        if (releasemodifier) {
+                            sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                        }
                     }
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -10933,11 +10976,9 @@ void SendInputTask::run()
 
     // Execute the input sending task
     if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_MODIFIERS) {
-        QKeyMapper_Worker::s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_MODIFIERS;
         controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
     }
     QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
-    QKeyMapper_Worker::s_SendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
     controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 
 #ifdef DEBUG_LOGOUT_ON

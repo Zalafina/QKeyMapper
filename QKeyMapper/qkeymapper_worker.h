@@ -710,8 +710,8 @@ public:
     static bool detectMappingTableTabHotkeys(const QString &keycodeString, int keyupdown);
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
     static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
-    static void releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key);
-    static void releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
+    static bool releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key);
+    static bool releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
