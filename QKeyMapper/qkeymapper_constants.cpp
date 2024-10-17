@@ -327,12 +327,11 @@ const quint8 VK_GAMEPAD_HOME    = 0x07;
 
 const unsigned int INTERCEPTION_EXTRA_INFO = 0xAAAA0000;
 
-// const ULONG_PTR VIRTUAL_KEYBOARD_PRESS   = 0xACBDACBD;
-// const ULONG_PTR VIRTUAL_MOUSE_CLICK      = 0xCEDFCEDF;
+// const ULONG_PTR VIRTUAL_KEY_SEND   = 0xACBDACBD;
 // const ULONG_PTR VIRTUAL_MOUSE_POINTCLICK = 0xBBDFBBDF;
 // const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
-ULONG_PTR VIRTUAL_KEYBOARD_PRESS;
-ULONG_PTR VIRTUAL_MOUSE_CLICK;
+ULONG_PTR VIRTUAL_KEY_SEND;
+ULONG_PTR VIRTUAL_KEY_BURST_SEND;
 ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
 ULONG_PTR VIRTUAL_MOUSE_WHEEL;
 ULONG_PTR VIRTUAL_KEY_OVERLAY;
@@ -857,8 +856,8 @@ void generateVirtualInputRandomValues() {
     generatedValues.insert(VIRTUAL_MOUSE2JOY_KEYS);
     generatedValues.insert(VIRTUAL_MOUSE_MOVE);
     generatedValues.insert(VIRTUAL_MOUSE_MOVE_BYKEYS);
-    VIRTUAL_KEYBOARD_PRESS = generateUniqueRandomValue(generatedValues);
-    VIRTUAL_MOUSE_CLICK = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_KEY_SEND = generateUniqueRandomValue(generatedValues);
+    VIRTUAL_KEY_BURST_SEND = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_POINTCLICK = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_WHEEL = generateUniqueRandomValue(generatedValues);
     VIRTUAL_KEY_OVERLAY = generateUniqueRandomValue(generatedValues);

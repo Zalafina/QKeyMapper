@@ -715,7 +715,9 @@ public:
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
+    static void resendRealKeyCodeForBurstKeyStop(int mappingIndex);
 
+    static void collectBlockedKeysList(void);
     static void collectCombinationOriginalKeysList(void);
     static void collectLongPressOriginalKeysMap(void);
     static QHash<QString, int> currentLongPressOriginalKeysMap(void);
@@ -821,6 +823,7 @@ public:
     static QStringList s_runningKeySequenceOrikeyList;
     // static QStringList pressedShortcutKeysList;
     static QStringList combinationOriginalKeysList;
+    static QStringList blockedKeysList;
     static QHash<QString, QList<int>> longPressOriginalKeysMap;
     static QHash<QString, QTimer*> s_longPressTimerMap;
     static QHash<QString, int> doublePressOriginalKeysMap;
