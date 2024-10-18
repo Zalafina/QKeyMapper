@@ -341,10 +341,10 @@ ULONG_PTR VIRTUAL_MOUSE_WHEEL;
 ULONG_PTR VIRTUAL_KEY_OVERLAY;
 ULONG_PTR VIRTUAL_RESEND_REALKEY;
 
-const ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDCA;
-const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A3A;
-const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFBC;
-const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F3F;
+const ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDC0;
+const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A30;
+const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFB0;
+const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F30;
 
 const UINT SCANCODE_CTRL            = 0x1D;
 const UINT SCANCODE_ALT             = 0x38;
@@ -867,4 +867,20 @@ void generateVirtualInputRandomValues() {
     VIRTUAL_RESEND_REALKEY = generateUniqueRandomValue(generatedValues);
 
     VIRTUAL_KEY_SEND_NORMAL = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_NORMAL;
+    VIRTUAL_KEY_SEND_FORCE = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_FORCE;
+    VIRTUAL_KEY_SEND_MODIFIERS = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_MODIFIERS;
+    VIRTUAL_KEY_SEND_BURST_TIMEOUT = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
+    VIRTUAL_KEY_SEND_BURST_STOP = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_BURST_STOP;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_NORMAL: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_NORMAL, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_FORCE: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_FORCE, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_MODIFIERS: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_MODIFIERS, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_BURST_TIMEOUT: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_BURST_TIMEOUT, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_BURST_STOP: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_BURST_STOP, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_MOUSE_POINTCLICK: 0x%08").arg((qulonglong)VIRTUAL_MOUSE_POINTCLICK, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_MOUSE_WHEEL: 0x%08").arg((qulonglong)VIRTUAL_MOUSE_WHEEL, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_OVERLAY: 0x%08").arg((qulonglong)VIRTUAL_KEY_OVERLAY, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_RESEND_REALKEY: 0x%08").arg((qulonglong)VIRTUAL_RESEND_REALKEY, 0, 16).toUpper();
+#endif
 }

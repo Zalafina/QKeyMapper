@@ -792,7 +792,6 @@ public:
     static QAtomicBool s_Key2Mouse_Down;
     static QAtomicBool s_Key2Mouse_Left;
     static QAtomicBool s_Key2Mouse_Right;
-    static QAtomicInt s_SendVirtualKeyState;
     static qint32 s_LastCarOrdinal;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
