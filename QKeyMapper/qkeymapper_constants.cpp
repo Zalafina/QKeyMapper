@@ -331,7 +331,11 @@ const unsigned int INTERCEPTION_EXTRA_INFO = 0xAAAA0000;
 // const ULONG_PTR VIRTUAL_MOUSE_POINTCLICK = 0xBBDFBBDF;
 // const ULONG_PTR VIRTUAL_MOUSE_WHEEL      = 0xEBFAEBFA;
 ULONG_PTR VIRTUAL_KEY_SEND;
-ULONG_PTR VIRTUAL_KEY_BURST_SEND;
+ULONG_PTR VIRTUAL_KEY_SEND_NORMAL;
+ULONG_PTR VIRTUAL_KEY_SEND_FORCE;
+ULONG_PTR VIRTUAL_KEY_SEND_MODIFIERS;
+ULONG_PTR VIRTUAL_KEY_SEND_BURST_TIMEOUT;
+ULONG_PTR VIRTUAL_KEY_SEND_BURST_STOP;
 ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
 ULONG_PTR VIRTUAL_MOUSE_WHEEL;
 ULONG_PTR VIRTUAL_KEY_OVERLAY;
@@ -844,7 +848,7 @@ const char *DEVICE_TABLE_COL8_CHINESE = "禁用";
 ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues) {
     ULONG_PTR newValue;
     do {
-        newValue = QRandomGenerator::global()->generate();
+        newValue = QRandomGenerator::global()->generate() & ~0xF;  // 强制最低4位为0
     } while (existingValues.contains(newValue));
     existingValues.insert(newValue);
     return newValue;
@@ -857,9 +861,10 @@ void generateVirtualInputRandomValues() {
     generatedValues.insert(VIRTUAL_MOUSE_MOVE);
     generatedValues.insert(VIRTUAL_MOUSE_MOVE_BYKEYS);
     VIRTUAL_KEY_SEND = generateUniqueRandomValue(generatedValues);
-    VIRTUAL_KEY_BURST_SEND = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_POINTCLICK = generateUniqueRandomValue(generatedValues);
     VIRTUAL_MOUSE_WHEEL = generateUniqueRandomValue(generatedValues);
     VIRTUAL_KEY_OVERLAY = generateUniqueRandomValue(generatedValues);
     VIRTUAL_RESEND_REALKEY = generateUniqueRandomValue(generatedValues);
+
+    VIRTUAL_KEY_SEND_NORMAL = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_NORMAL;
 }
