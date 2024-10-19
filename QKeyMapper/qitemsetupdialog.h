@@ -46,7 +46,7 @@ protected:
 private:
     void initKeyListComboBoxes(void);
     void refreshOriginalKeyRelatedUI(void);
-    void refreshMappingKeyRelatedUI(void);
+    bool refreshMappingKeyRelatedUI(void);
 
 private:
     static QItemSetupDialog *m_instance;
