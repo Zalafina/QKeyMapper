@@ -11043,10 +11043,20 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type)
         iter = plus_split_regex.globalMatch(remainingString);
     }
 
+    QString sendtext_start = "SendText(";
+    QString sendtext_end = ")";
     while (iter.hasNext()) {
         QRegularExpressionMatch match = iter.next();
         if (match.hasMatch()) {
-            splitted_mappingkeys.append(match.captured(0));
+            if (SPLIT_WITH_NEXT == split_type
+                && !splitted_mappingkeys.isEmpty()
+                && splitted_mappingkeys.constLast().contains(sendtext_start)
+                && !splitted_mappingkeys.constLast().contains(sendtext_end)) {
+                splitted_mappingkeys.last().append(SEPARATOR_NEXTARROW + match.captured(0));
+            }
+            else {
+                splitted_mappingkeys.append(match.captured(0));
+            }
         }
     }
 
