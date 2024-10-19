@@ -779,7 +779,7 @@ public:
 #if 0
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 #endif
-    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode);
+    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state);
 
 public:
     static bool s_isWorkerDestructing;
