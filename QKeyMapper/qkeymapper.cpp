@@ -1735,13 +1735,11 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
 
 ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex)
 {
+    Q_UNUSED(mappingkeystr);
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression removeindex_regex("@\\d$");
-    QStringList Mapping_Keys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT);
-
-    if (Mapping_Keys.isEmpty()) {
+    if (mappingkeyseqlist.isEmpty()) {
         result.isValid = false;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             result.errorMessage = "MappingKeys is empty.";
@@ -1762,76 +1760,95 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         return result;
     }
 
-    if (Mapping_Keys.size() > 1) {
-        QString foundSpecialOriginalKey;
-        QString foundSpecialMappingKey;
-        // Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList
-        for (const QString& mapkey : Mapping_Keys) {
-            QString mapkey_noindex = mapkey;
-            mapkey_noindex.remove(removeindex_regex);
-            if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
-                foundSpecialMappingKey = mapkey;
-                break;
-            }
-            if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(mapkey_noindex)) {
-                foundSpecialOriginalKey = mapkey;
-                break;
-            }
-        }
-        if (!foundSpecialMappingKey.isEmpty()) {
+    static QRegularExpression removeindex_regex("@\\d$");
+
+    for (const QString& mappingkeys : mappingkeyseqlist) {
+        result.isValid = true;
+        QStringList Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS);
+
+        int duplicatesRemoved = Mapping_Keys.removeDuplicates();
+        if (duplicatesRemoved > 0) {
             result.isValid = false;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("MappingKeys contains specialkey \"%1\"").arg(foundSpecialMappingKey);
+                result.errorMessage = QString("MappingKeys contains duplicate key \"%1\"").arg(mappingkeys);
             } else {
-                result.errorMessage = QString("映射按键中包含特殊按键 \"%1\"").arg(foundSpecialMappingKey);
+                result.errorMessage = QString("映射按键中包含重复按键 \"%1\"").arg(mappingkeys);
             }
-
-            return result;
-        }
-        if (!foundSpecialOriginalKey.isEmpty()) {
-            result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("MappingCombinationKeys contains specialkey \"%1\"").arg(foundSpecialOriginalKey);
-            } else {
-                result.errorMessage = QString("映射组合按键中包含特殊按键 \"%1\"").arg(foundSpecialOriginalKey);
-            }
-
             return result;
         }
 
-        for (const QString& mapkey : Mapping_Keys)
-        {
-            result = validateSingleMappingKey(mapkey);
-            if (result.isValid == false) {
-                break;
-            }
-        }
-    }
-    else {
-        const QString mapkey = Mapping_Keys.constFirst();
-
-        if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
-            QString orikey_noindex = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
-            QString mapkey_noindex = mapkey;
-
-            if (false == orikey_noindex.contains(SEPARATOR_PLUS)) {
-                orikey_noindex.remove(removeindex_regex);
+        if (Mapping_Keys.size() > 1) {
+            QString foundSpecialOriginalKey;
+            QString foundSpecialMappingKey;
+            // Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList
+            for (const QString& mapkey : Mapping_Keys) {
+                QString mapkey_noindex = mapkey;
                 mapkey_noindex.remove(removeindex_regex);
+                if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
+                    foundSpecialMappingKey = mapkey;
+                    break;
+                }
+                if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(mapkey_noindex)) {
+                    foundSpecialOriginalKey = mapkey;
+                    break;
+                }
+            }
+            if (!foundSpecialMappingKey.isEmpty()) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("MappingKeys contains specialkey \"%1\"").arg(foundSpecialMappingKey);
+                } else {
+                    result.errorMessage = QString("映射按键中包含特殊按键 \"%1\"").arg(foundSpecialMappingKey);
+                }
+                return result;
+            }
+            if (!foundSpecialOriginalKey.isEmpty()) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("MappingCombinationKeys contains specialkey \"%1\"").arg(foundSpecialOriginalKey);
+                } else {
+                    result.errorMessage = QString("映射组合按键中包含特殊按键 \"%1\"").arg(foundSpecialOriginalKey);
+                }
+                return result;
+            }
 
-                if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey_noindex)
-                    && mapkey_noindex != orikey_noindex) {
-                    result.isValid = false;
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex, orikey_noindex);
-                    } else {
-                        result.errorMessage = QString("映射按键 \"%1\" 与原始特殊按键 \"%2\" 不匹配").arg(mapkey_noindex, orikey_noindex);
-                    }
+            for (const QString& mapkey : Mapping_Keys)
+            {
+                result = validateSingleMappingKey(mapkey);
+                if (result.isValid == false) {
                     return result;
                 }
             }
         }
+        else {
+            const QString mapkey = Mapping_Keys.constFirst();
 
-        result = validateSingleMappingKey(mapkey);
+            if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
+                QString orikey_noindex = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
+                QString mapkey_noindex = mapkey;
+
+                if (false == orikey_noindex.contains(SEPARATOR_PLUS)) {
+                    orikey_noindex.remove(removeindex_regex);
+                    mapkey_noindex.remove(removeindex_regex);
+
+                    if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey_noindex)
+                        && mapkey_noindex != orikey_noindex) {
+                        result.isValid = false;
+                        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                            result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex, orikey_noindex);
+                        } else {
+                            result.errorMessage = QString("映射按键 \"%1\" 与原始特殊按键 \"%2\" 不匹配").arg(mapkey_noindex, orikey_noindex);
+                        }
+                        return result;
+                    }
+                }
+            }
+
+            result = validateSingleMappingKey(mapkey);
+            if (result.isValid == false) {
+                return result;
+            }
+        }
     }
 
     return result;
