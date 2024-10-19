@@ -1569,37 +1569,8 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
         // Validate each individual key in the combination
         for (const QString &orikey : orikeylist) {
-            result = validateSingleOriginalKey(orikey, -1);
+            result = validateSingleOriginalKeyWithoutTimeSuffix(orikey, -1);
             if (!result.isValid) {
-                return result;
-            }
-        }
-
-        // Validate time suffix if it exists
-        if (!longPressTimeString.isEmpty() || !doublePressTimeString.isEmpty()) {
-            bool isLongPress = !longPressTimeString.isEmpty();
-            bool isDoublePress = !doublePressTimeString.isEmpty();
-
-            if (isLongPress || isDoublePress) {
-                bool ok;
-                int pressTime = isLongPress ? longPressTimeString.toInt(&ok) : doublePressTimeString.toInt(&ok);
-
-                if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
-                    result.isValid = false;
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                    } else {
-                        result.errorMessage = QString("无效的按压时间 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                    }
-                    return result;
-                }
-            } else {
-                result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid time suffix \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                } else {
-                    result.errorMessage = QString("无效的时间后缀 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                }
                 return result;
             }
         }
@@ -1645,7 +1616,39 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
             }
         }
 
-        result = validateSingleOriginalKey(orikey, update_rowindex);
+        result = validateSingleOriginalKeyWithoutTimeSuffix(orikey, update_rowindex);
+        if (!result.isValid) {
+            return result;
+        }
+    }
+
+    // Validate time suffix if it exists
+    if (!longPressTimeString.isEmpty() || !doublePressTimeString.isEmpty()) {
+        bool isLongPress = !longPressTimeString.isEmpty();
+        bool isDoublePress = !doublePressTimeString.isEmpty();
+
+        if (isLongPress || isDoublePress) {
+            bool ok;
+            int pressTime = isLongPress ? longPressTimeString.toInt(&ok) : doublePressTimeString.toInt(&ok);
+
+            if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
+                } else {
+                    result.errorMessage = QString("无效的按压时间 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
+                }
+                return result;
+            }
+        } else {
+            result.isValid = false;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                result.errorMessage = QString("Invalid time suffix \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
+            } else {
+                result.errorMessage = QString("无效的时间后缀 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
+            }
+            return result;
+        }
     }
 
     return result;
@@ -1717,6 +1720,70 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             }
         }
 
+        if (result.isValid && update_rowindex >= 0) {
+            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
+            if (findindex != -1 && findindex != update_rowindex) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Duplicate key \"%1\"").arg(orikey);
+                } else {
+                    result.errorMessage = QString("已存在相同的按键 \"%1\"").arg(orikey);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QString &orikey, int update_rowindex)
+{
+    ValidationResult result;
+    result.isValid = true;
+
+    // Regular expression to validate original key
+    static QRegularExpression key_regex(R"(^(.+?)(?:@([0-9]))?$)");
+
+    QRegularExpressionMatch key_match = key_regex.match(orikey);
+
+    if (!key_match.hasMatch()) {
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = QString("Invalid key format \"%1\"").arg(orikey);
+        } else {
+            result.errorMessage = QString("无效按键格式 \"%1\"").arg(orikey);
+        }
+        return result;
+    }
+
+    QString original_key = key_match.captured(1);
+    QString indexString = key_match.captured(2);
+
+    bool validKey = QItemSetupDialog::s_valiedOriginalKeyList.contains(original_key);
+
+    if (!validKey) {
+        // Separate index and time suffixes
+        QString keyWithoutSuffix = original_key;
+
+        // Remove index suffix if it exists
+        if (!indexString.isEmpty()) {
+            keyWithoutSuffix = keyWithoutSuffix + "@" + indexString;
+        }
+
+        // Check again without suffixes
+        validKey = QItemSetupDialog::s_valiedOriginalKeyList.contains(keyWithoutSuffix);
+
+        if (!validKey) {
+            result.isValid = false;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                result.errorMessage = QString("Invalid key \"%1\"").arg(original_key);
+            } else {
+                result.errorMessage = QString("无效按键 \"%1\"").arg(original_key);
+            }
+        }
+    }
+
+    if (validKey) {
         if (result.isValid && update_rowindex >= 0) {
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
