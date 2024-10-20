@@ -1239,6 +1239,20 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
             *controller.task_stop_flag = INPUTSTOP_NONE;
         }
+        else if (*controller.task_stop_flag == INPUTSTOP_KEYSEQ) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "\033[1;34m[sendInputKeys] Mapping Key Sequence KEY_UP breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m";
+#endif
+            *controller.task_stop_flag = INPUTSTOP_NONE;
+
+            QString orikey_str = original_key.left(original_key.indexOf(":"));
+            if (s_runningKeySequenceOrikeyList.contains(orikey_str)) {
+                s_runningKeySequenceOrikeyList.removeAll(orikey_str);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_UP, remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+#endif
+            }
+        }
 
         if (keyseq_finished) {
             bool real_finished = true;
@@ -1289,7 +1303,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     if (s_runningKeySequenceOrikeyList.contains(orikey_str)) {
                         s_runningKeySequenceOrikeyList.removeAll(orikey_str);
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+                        qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence finished remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
                     }
                 }
@@ -1322,7 +1336,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 }
             }
 
-            QStringList mappingKeys = splitMappingKeyString(inputKeys.constFirst(), SPLIT_WITH_PLUS);
+            const QString mappingkeys_str = inputKeys.constFirst();
+            QStringList mappingKeys = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS);
             keycount = mappingKeys.size();
 
             if (keycount > MAPPING_KEYS_MAX) {
@@ -1697,12 +1712,21 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 qDebug() << "\033[1;34m[sendInputKeys] Single Mappingkeys KEY_DOWN finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m";
 #endif
             }
-            else if (keyseq_finished) {
-                if (*controller.task_stop_flag != INPUTSTOP_NONE) {
+            else if (*controller.task_stop_flag == INPUTSTOP_KEYSEQ) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "\033[1;34m[sendInputKeys] Mapping Key Sequence finished, task_stop_flag set back (" << *controller.task_stop_flag << ") -> INPUTSTOP_NONE\033[0m";
+                qDebug().nospace() << "\033[1;34m[sendInputKeys] Mapping Key Sequence KEY_DOWN breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m";
 #endif
-                    *controller.task_stop_flag = INPUTSTOP_NONE;
+                *controller.task_stop_flag = INPUTSTOP_NONE;
+
+                pressedMappingKeysMap.remove(original_key);
+                clearPressedVirtualKeysOfMappingKeys(mappingkeys_str);
+
+                QString orikey_str = original_key.left(original_key.indexOf(":"));
+                if (s_runningKeySequenceOrikeyList.contains(orikey_str)) {
+                    s_runningKeySequenceOrikeyList.removeAll(orikey_str);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_DOWN, remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+#endif
                 }
             }
         }
@@ -1797,10 +1821,11 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode, int sendvirtualkey_state)
+void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state)
 {
     bool skip_emitsignal = false;
     SendInputTaskController *controller = Q_NULLPTR;
+    QString original_key = original_key_unchanged;
 
     if (keyupdown == KEY_DOWN) {
         if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
@@ -1852,6 +1877,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
                     qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
 #endif
                     // controller->task_stop_mutex->lock();
+                    controller->task_threadpool->clear();
                     *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
                     controller->task_stop_condition->wakeAll();
                     // controller->task_stop_mutex->unlock();
@@ -1868,6 +1894,16 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
                     *controller->task_stop_flag = INPUTSTOP_SINGLE;
                     controller->task_stop_condition->wakeAll();
                     // controller->task_stop_mutex->unlock();
+                }
+            }
+            else if (sendmode == SENDMODE_KEYSEQ_BREAK) {
+                if (controller != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Break KeySequence(" << original_key << ")!\033[0m";
+#endif
+                    controller->task_threadpool->clear();
+                    *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+                    controller->task_stop_condition->wakeAll();
                 }
             }
         }
@@ -10531,6 +10567,21 @@ void QKeyMapper_Worker::clearAllPressedVirtualKeys()
     // }
 }
 
+void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys)
+{
+    QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS, true);
+
+    SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
+        if (mappingKeyListToClear.contains(virtualkeystr)) {
+            QStringList mappingKeyList = QStringList() << virtualkeystr;
+            QString original_key = QString(CLEAR_VIRTUALKEYS);
+            // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
+        }
+    }
+}
+
 void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
 {
     QStringList newPressedRealKeysList;
@@ -11021,12 +11072,13 @@ bool DisablePrivilege(LPCWSTR privilege)
     return FALSE;
 }
 
-QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type)
+QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_originalkey)
 {
     // Modify the regex to capture SendText(…) followed by any non-separator characters
     static QRegularExpression plusandnext_split_regex(R"((SendText\([^)]+\)[^+»]*)|([^+»]+))");
     static QRegularExpression next_split_regex(R"((SendText\([^)]+\)[^»]*)|([^»]+))");
     static QRegularExpression plus_split_regex(R"((SendText\([^)]+\)[^+]*)|([^+]+))");
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
 
     QStringList splitted_mappingkeys;
     QString remainingString = mappingkeystr;
@@ -11048,14 +11100,22 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type)
     while (iter.hasNext()) {
         QRegularExpressionMatch match = iter.next();
         if (match.hasMatch()) {
+            QString keystr = match.captured(0);
+            if (pure_originalkey) {
+                QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
+                if (mapkey_match.hasMatch()) {
+                    keystr = mapkey_match.captured(2);
+                }
+            }
+
             if (SPLIT_WITH_NEXT == split_type
                 && !splitted_mappingkeys.isEmpty()
                 && splitted_mappingkeys.constLast().contains(sendtext_start)
                 && !splitted_mappingkeys.constLast().contains(sendtext_end)) {
-                splitted_mappingkeys.last().append(SEPARATOR_NEXTARROW + match.captured(0));
+                splitted_mappingkeys.last().append(SEPARATOR_NEXTARROW + keystr);
             }
             else {
-                splitted_mappingkeys.append(match.captured(0));
+                splitted_mappingkeys.append(keystr);
             }
         }
     }

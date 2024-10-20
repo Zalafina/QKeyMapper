@@ -184,6 +184,7 @@ const int SENDMODE_BURSTKEY_STOP    = 3;
 const int SENDMODE_KEYSEQ_NORMAL    = 4;
 const int SENDMODE_KEYSEQ_HOLDDOWN  = 5;
 const int SENDMODE_KEYSEQ_REPEAT    = 6;
+const int SENDMODE_KEYSEQ_BREAK      = 7;
 
 const int SENDTYPE_NORMAL   = 0;
 const int SENDTYPE_DOWN     = 1;

@@ -58,7 +58,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
 
-QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type);
+QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_originalkey = false);
 
 typedef struct MAP_KEYDATA
 {
@@ -563,7 +563,7 @@ public slots:
     void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
-    void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
+    void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
 
 public:
     static void sendBurstKeyDown(const QString &burstKey);
@@ -768,6 +768,7 @@ private:
     // void clearAllBurstTimersAndLockKeys(void);
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
+    void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
