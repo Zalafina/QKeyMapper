@@ -1852,6 +1852,37 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
     SendInputTaskController *controller = Q_NULLPTR;
     QString original_key = original_key_unchanged;
 
+    int key_sequence_count = inputKeys.size();
+    if (key_sequence_count == 1) {
+        const QString mappingkeys_str = inputKeys.constFirst();
+        if (mappingkeys_str.startsWith(KEYSEQUENCEBREAK_STR)) {
+            if (keyupdown == KEY_DOWN) {
+                for (const QString &keyseq_orikey : s_runningKeySequenceOrikeyList) {
+                    SendInputTaskController *keyseq_break_controller = Q_NULLPTR;
+
+                    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
+                        keyseq_break_controller = &SendInputTask::s_GlobalSendInputTaskController;
+                    }
+                    else {
+                        if (SendInputTask::s_SendInputTaskControllerMap.contains(keyseq_orikey)) {
+                            keyseq_break_controller = &SendInputTask::s_SendInputTaskControllerMap[keyseq_orikey];
+                        }
+                    }
+
+                    if (keyseq_break_controller != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Break KeySequence(" << keyseq_orikey << ")\033[0m";
+#endif
+                        keyseq_break_controller->task_threadpool->clear();
+                        *keyseq_break_controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+                        keyseq_break_controller->task_stop_condition->wakeAll();
+                    }
+                }
+            }
+            return;
+        }
+    }
+
     if (keyupdown == KEY_DOWN) {
         if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
             controller = &SendInputTask::s_GlobalSendInputTaskController;
@@ -1864,7 +1895,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
 
         bool isKeySequence = false;
         bool isKeySequenceRunning = false;
-        if (inputKeys.size() > 1) {
+        if (key_sequence_count > 1) {
             isKeySequence = true;
             if (s_runningKeySequenceOrikeyList.contains(original_key)) {
                 isKeySequenceRunning = true;
@@ -1919,16 +1950,6 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
                     *controller->task_stop_flag = INPUTSTOP_SINGLE;
                     controller->task_stop_condition->wakeAll();
                     // controller->task_stop_mutex->unlock();
-                }
-            }
-            else if (sendmode == SENDMODE_KEYSEQ_BREAK) {
-                if (controller != Q_NULLPTR) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Break KeySequence(" << original_key << ")!\033[0m";
-#endif
-                    controller->task_threadpool->clear();
-                    *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
-                    controller->task_stop_condition->wakeAll();
                 }
             }
         }
@@ -10364,6 +10385,7 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
 {
     SpecialMappingKeysList = QStringList() \
             << KEY_BLOCKED_STR
+            << KEYSEQUENCEBREAK_STR
             << KEY2MOUSE_UP_STR
             << KEY2MOUSE_DOWN_STR
             << KEY2MOUSE_LEFT_STR

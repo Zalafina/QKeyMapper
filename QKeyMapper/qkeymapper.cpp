@@ -10114,18 +10114,21 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
                 else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
-                    QString break_keysStr = ui->combinationKeyLineEdit->text();
-                    if (break_keysStr.isEmpty()) {
-                        currentMapKeyText = KEYSEQUENCEBREAK_STR;
-                    }
-                    else {
-                        // check break_keysStr as on_originalKeyUpdateButton_clicked use validateOriginalKeyString
-                    }
+                    // QString break_keysStr = ui->combinationKeyLineEdit->text();
+                    // if (break_keysStr.isEmpty()) {
+                    //     currentMapKeyText = KEYSEQUENCEBREAK_STR;
+                    // }
+                    // else {
+                    //     // check break_keysStr as on_originalKeyUpdateButton_clicked use validateOriginalKeyString
+                    // }
+
+                    // currentMapKeyText = KEYSEQUENCEBREAK_STR;
                 }
 
                 int waitTime = ui->waitTimeSpinBox->value();
                 if (waitTime > 0
                     && currentMapKeyComboBoxText != KEY_BLOCKED_STR
+                    && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
                     && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
                     && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
