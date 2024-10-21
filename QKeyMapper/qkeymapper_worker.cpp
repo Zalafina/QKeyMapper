@@ -8650,7 +8650,7 @@ void QKeyMapper_Worker::stopBurstKeyTimer(const QString &burstKey, int mappingIn
 #endif
     }
     else {
-        resendRealKeyCodeForBurstKeyStop(mappingIndex);
+        resendRealKeyCodeOnStop(mappingIndex);
     }
 
     if (s_BurstKeyTimerMap.contains(burstKey)) {
@@ -8695,30 +8695,29 @@ void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mapp
     }
 }
 
-void QKeyMapper_Worker::resendRealKeyCodeForBurstKeyStop(int mappingIndex)
+void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex)
 {
     if (pressedRealKeysListRemoveMultiInput.isEmpty()) {
         return;
     }
 
-    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(mappingIndex).Mapping_Keys;
-    QStringList mappingKeys = splitMappingKeyString(mappingKeyList.constFirst(), SPLIT_WITH_PLUS);
+    QStringList pure_mappingKeys = QKeyMapper::KeyMappingDataList->at(rowindex).Pure_MappingKeys;
     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
     for (const QString &blockedKey : blockedKeysList) {
         pressedRealKeysListToCheck.removeAll(blockedKey);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "\033[1;34m[resendRealKeyCodeForBurstKeyStop] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck << "\033[0m";
+    qDebug().nospace() << "\033[1;34m[resendRealKeyCodeOnStop] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck << "\033[0m";
 #endif
 
     if (pressedRealKeysListToCheck.isEmpty()) {
         return;
     }
 
-    for (const QString &keycodeString : qAsConst(mappingKeys)) {
+    for (const QString &keycodeString : qAsConst(pure_mappingKeys)) {
         if (pressedRealKeysListToCheck.contains(keycodeString)) {
 #ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[resendRealKeyCodeForBurstKeyStop] RealKey \"%1\" is still pressed down on BurstKey stop, resend \"%2\" KEY_DOWN.").arg(keycodeString, keycodeString);
+            QString debugmessage = QString("[resendRealKeyCodeOnStop] RealKey \"%1\" is still pressed down on BurstKey stop, resend \"%2\" KEY_DOWN.").arg(keycodeString, keycodeString);
             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_DOWN);
@@ -11072,7 +11071,7 @@ bool DisablePrivilege(LPCWSTR privilege)
     return FALSE;
 }
 
-QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_originalkey)
+QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys)
 {
     // Modify the regex to capture SendText(…) followed by any non-separator characters
     static QRegularExpression plusandnext_split_regex(R"((SendText\([^)]+\)[^+»]*)|([^+»]+))");
@@ -11101,7 +11100,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
         QRegularExpressionMatch match = iter.next();
         if (match.hasMatch()) {
             QString keystr = match.captured(0);
-            if (pure_originalkey) {
+            if (pure_keys) {
                 QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
                 if (mapkey_match.hasMatch()) {
                     keystr = mapkey_match.captured(2);

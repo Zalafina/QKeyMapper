@@ -3066,6 +3066,20 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     return import_result;
 }
 
+void QKeyMapper::updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr)
+{
+    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
+    (*QKeyMapper::KeyMappingDataList)[rowindex].Mapping_Keys = mappingKeySeqList;
+
+    QStringList pure_mappingKeys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT, true);
+    pure_mappingKeys.removeDuplicates();
+    (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys = pure_mappingKeys;
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 #else
@@ -3159,6 +3173,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         initInputDeviceSelectComboBoxes();
         return;
     }
+#if 0
     else if (event->key() == KEY_PASSTHROUGH) {
         if (m_KeyMapStatus == KEYMAP_IDLE){
             int currentrowindex = -1;
@@ -3219,7 +3234,6 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
             }
         }
     }
-#if 0
     else if (event->key() == KEY_REMOVE_LAST) {
         if (m_KeyMapStatus == KEYMAP_IDLE) {
 #ifdef DEBUG_LOGOUT_ON
@@ -8618,7 +8632,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[refreshKeyMappingDataTable]" << keymapdata.Original_Key << "->" << keymapdata.Mapping_Keys;
+            qDebug().nospace() << "[refreshKeyMappingDataTable] " << keymapdata.Original_Key << " -> " << keymapdata.Mapping_Keys << ", PureMappingKeys -> " << keymapdata.Pure_MappingKeys;
 #endif
         }
 

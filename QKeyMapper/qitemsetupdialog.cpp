@@ -921,7 +921,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
             popupMessage = "映射按键更新成功";
         }
 
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys = mappingKeySeqList;
+        QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
 
         QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
 

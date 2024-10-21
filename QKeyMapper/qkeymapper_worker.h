@@ -58,12 +58,13 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define SEND_INPUTS_MAX         (100)
 #define KEY_SEQUENCE_MAX        (60)
 
-QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_originalkey = false);
+QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;
     QStringList Mapping_Keys;
+    QStringList Pure_MappingKeys;
     QString Note;
     bool Burst;
     int BurstPressTime;
@@ -100,6 +101,8 @@ typedef struct MAP_KEYDATA
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
+        Pure_MappingKeys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUSANDNEXT, true);
+        Pure_MappingKeys.removeDuplicates();
         Note = note;
         Burst = burst;
         BurstPressTime = burstpresstime;
@@ -715,7 +718,7 @@ public:
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
-    static void resendRealKeyCodeForBurstKeyStop(int mappingIndex);
+    static void resendRealKeyCodeOnStop(int rowindex);
 
     static void collectBlockedKeysList(void);
     static void collectCombinationOriginalKeysList(void);
