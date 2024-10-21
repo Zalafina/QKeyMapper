@@ -1245,12 +1245,28 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
             *controller.task_stop_flag = INPUTSTOP_NONE;
 
+            keyseq_finished = false;
             QString orikey_str = original_key.left(original_key.indexOf(":"));
             if (s_runningKeySequenceOrikeyList.contains(orikey_str)) {
                 s_runningKeySequenceOrikeyList.removeAll(orikey_str);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_UP, remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+                qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_UP, remove OriginalKey:" << orikey_str << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
+
+                int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str);
+                if (findindex >= 0) {
+                    resendRealKeyCodeOnStop(findindex);
+
+                    int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+                    QStringList repeat_mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+                    QString repeat_original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                    int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
+                    if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
+                        if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
+                            s_KeySequenceRepeatCount.remove(repeat_original_key);
+                        }
+                    }
+                }
             }
         }
 
@@ -1303,8 +1319,9 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     if (s_runningKeySequenceOrikeyList.contains(orikey_str)) {
                         s_runningKeySequenceOrikeyList.removeAll(orikey_str);
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence finished remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+                        qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence finished remove OriginalKey:" << orikey_str << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
+                        resendRealKeyCodeOnStop(findindex);
                     }
                 }
             }
@@ -1725,8 +1742,23 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                 if (s_runningKeySequenceOrikeyList.contains(orikey_str)) {
                     s_runningKeySequenceOrikeyList.removeAll(orikey_str);
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_DOWN, remove OriginalKey:" << orikey_str << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+                    qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_DOWN, remove OriginalKey:" << orikey_str << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
+
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str);
+                    if (findindex >= 0) {
+                        resendRealKeyCodeOnStop(findindex);
+
+                        int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+                        QStringList repeat_mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+                        QString repeat_original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                        int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
+                        if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
+                            if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
+                                s_KeySequenceRepeatCount.remove(repeat_original_key);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -10570,9 +10602,18 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
 {
     QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS, true);
 
+    QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
+    for (const QString &blockedKey : blockedKeysList) {
+        pressedRealKeysListToCheck.removeAll(blockedKey);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "\033[1;34m[clearPressedVirtualKeysOfMappingKeys] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck << "\033[0m";
+#endif
+
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
-        if (mappingKeyListToClear.contains(virtualkeystr)) {
+        if (mappingKeyListToClear.contains(virtualkeystr)
+            && !pressedRealKeysListToCheck.contains(virtualkeystr)) {
             QStringList mappingKeyList = QStringList() << virtualkeystr;
             QString original_key = QString(CLEAR_VIRTUALKEYS);
             // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
@@ -10844,7 +10885,7 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
             if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
                 s_runningKeySequenceOrikeyList.append(original_key);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendKeySequenceList] Running KeySequence add OriginalKey:" << original_key << ", runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+                qDebug().nospace().noquote() << "[sendKeySequenceList] Running KeySequence add OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
             }
 
