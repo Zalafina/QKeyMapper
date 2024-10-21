@@ -1600,9 +1600,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     }
                 }
                 else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[sendInputKeys] VirtualKey send Key Start ->" << key << ", task_stop_flag=" << *controller.task_stop_flag << ", line:" << __LINE__;
-#endif
                     if (SENDTYPE_NORMAL == sendtype && true == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug("sendInputKeys(): Key Down -> \"%s\" already exist!!!", key.toStdString().c_str());
@@ -1692,10 +1689,6 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
 #endif
                         }
                     }
-
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[sendInputKeys] VirtualKey send Key End ->" << key << ", task_stop_flag=" << *controller.task_stop_flag << ", line:" << __LINE__;
-#endif
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON

@@ -529,6 +529,7 @@ const char *SETTING_DESCRIPTION_FORMAT = "%1【%2】";
 const char *ORIKEY_WITHNOTE_FORMAT = "%1【%2】";
 
 const char *SENDTEXT_STR    = "SendText";
+const char *KEYSEQUENCEBREAK_STR = "KeySequenceBreak";
 
 const char *JOY_KEY_PREFIX  = "Joy-";
 const char *VJOY_KEY_PREFIX  = "vJoy-";

@@ -463,6 +463,7 @@ extern const char *MOUSE_WHEEL_RIGHT_STR;
 extern const char *SETTING_DESCRIPTION_FORMAT;
 extern const char *ORIKEY_WITHNOTE_FORMAT;
 extern const char *SENDTEXT_STR;
+extern const char *KEYSEQUENCEBREAK_STR;
 extern const char* JOY_KEY_PREFIX;
 extern const char* VJOY_KEY_PREFIX;
 extern const char* VJOY_MOUSE2LS_STR;

@@ -7958,6 +7958,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << MOUSE_WHEEL_LEFT_STR
             << MOUSE_WHEEL_RIGHT_STR
             << SENDTEXT_STR
+            << KEYSEQUENCEBREAK_STR
             << "A"
             << "B"
             << "C"
@@ -8215,6 +8216,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(MOUSE_X1_SCREENPOINT_STR);
     orikeycodelist.removeOne(MOUSE_X2_SCREENPOINT_STR);
     orikeycodelist.removeOne(SENDTEXT_STR);
+    orikeycodelist.removeOne(KEYSEQUENCEBREAK_STR);
     orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
@@ -9833,6 +9835,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if (false == already_exist) {
         if (findindex != -1){
             if (currentMapKeyText == KEY_BLOCKED_STR
+                || currentMapKeyText == KEYSEQUENCEBREAK_STR
                 || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                 || currentMapKeyText.startsWith(FUNC_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
@@ -9846,6 +9849,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else {
                 MAP_KEYDATA keymapdata = KeyMappingDataList->at(findindex);
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
+                    || keymapdata.Mapping_Keys.contains(KEYSEQUENCEBREAK_STR)
                     || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
@@ -9861,6 +9865,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         else {
             if (ui->nextarrowCheckBox->isChecked()) {
                 if (currentMapKeyText == KEY_BLOCKED_STR
+                    || currentMapKeyText == KEYSEQUENCEBREAK_STR
                     || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                     || currentMapKeyText.startsWith(FUNC_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
@@ -9986,6 +9991,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     currentMapKeyText = QString("SendText(%1)").arg(sendtext);
                 }
             }
+            else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
+                QString message;
+                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                    message = QString("KeySequenceBreak key can not be set duplicated!");
+                }
+                else {
+                    message = QString("按键映射序列打断键不能重复设置!");
+                }
+                showWarningPopup(message);
+                return;
+            }
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
@@ -10095,6 +10111,15 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("SendText(%1)").arg(sendtext);
+                    }
+                }
+                else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
+                    QString break_keysStr = ui->combinationKeyLineEdit->text();
+                    if (break_keysStr.isEmpty()) {
+                        currentMapKeyText = KEYSEQUENCEBREAK_STR;
+                    }
+                    else {
+                        // check break_keysStr as on_originalKeyUpdateButton_clicked use validateOriginalKeyString
                     }
                 }
 
