@@ -1623,9 +1623,11 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     }
 
     // Validate time suffix if it exists
+    bool isLongPress = false;
+    bool isDoublePress = false;
     if (!longPressTimeString.isEmpty() || !doublePressTimeString.isEmpty()) {
-        bool isLongPress = !longPressTimeString.isEmpty();
-        bool isDoublePress = !doublePressTimeString.isEmpty();
+        isLongPress = !longPressTimeString.isEmpty();
+        isDoublePress = !doublePressTimeString.isEmpty();
 
         if (isLongPress || isDoublePress) {
             bool ok;
@@ -1661,6 +1663,15 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
                     result.errorMessage = QString("Game controller keys could not be blocked!");
                 } else {
                     result.errorMessage = QString("游戏手柄按键无法被屏蔽!");
+                }
+                return result;
+            }
+            else if (isLongPress || isDoublePress) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Could not block original key with time suffix!");
+                } else {
+                    result.errorMessage = QString("不能屏蔽带有时间后缀的原始按键!");
                 }
                 return result;
             }
@@ -1944,6 +1955,15 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     result.errorMessage = QString("Game controller keys could not be blocked!");
                 } else {
                     result.errorMessage = QString("游戏手柄按键无法被屏蔽!");
+                }
+                return result;
+            }
+            else if (originalkeystr.contains(SEPARATOR_LONGPRESS) || originalkeystr.contains(SEPARATOR_DOUBLEPRESS)) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Could not block original key with time suffix!");
+                } else {
+                    result.errorMessage = QString("不能屏蔽带有时间后缀的原始按键!");
                 }
                 return result;
             }
@@ -9833,10 +9853,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
     currentOriKeyTextWithoutPostfix = currentOriKeyText;
     int pressTime = ui->pressTimeSpinBox->value();
     bool isSpecialOriginalKey = QKeyMapper_Worker::SpecialOriginalKeysList.contains(currentOriKeyComboBoxText);
-    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false) {
+    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
     }
-    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0 && isSpecialOriginalKey == false){
+    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0 && isSpecialOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR){
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_DOUBLEPRESS) + QString::number(pressTime);
         isDoublePress = true;
     }
