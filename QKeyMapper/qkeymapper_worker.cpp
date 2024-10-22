@@ -8753,7 +8753,7 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex)
         pressedRealKeysListToCheck.removeAll(blockedKey);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "\033[1;34m[resendRealKeyCodeOnStop] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck << "\033[0m";
+    qDebug().nospace() << "[resendRealKeyCodeOnStop] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck;
 #endif
 
     if (pressedRealKeysListToCheck.isEmpty()) {
@@ -10622,7 +10622,7 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
         pressedRealKeysListToCheck.removeAll(blockedKey);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "\033[1;34m[clearPressedVirtualKeysOfMappingKeys] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck << "\033[0m";
+    qDebug().nospace() << "[clearPressedVirtualKeysOfMappingKeys] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck;
 #endif
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;

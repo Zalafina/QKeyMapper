@@ -1651,6 +1651,22 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         }
     }
 
+    if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
+        QStringList mappingkeys = QKeyMapper::KeyMappingDataList->at(update_rowindex).Mapping_Keys;
+
+        if (mappingkeys.size() == 1 && mappingkeys.constFirst() == KEY_BLOCKED_STR) {
+            if (originalkeystr.contains(JOY_KEY_PREFIX)) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Game controller keys could not be blocked!");
+                } else {
+                    result.errorMessage = QString("游戏手柄按键无法被屏蔽!");
+                }
+                return result;
+            }
+        }
+    }
+
     return result;
 }
 
@@ -1913,6 +1929,22 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
             result = validateSingleMappingKey(mapkey);
             if (result.isValid == false) {
+                return result;
+            }
+        }
+    }
+
+    if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
+        QString originalkeystr = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
+
+        if (mappingkeystr == KEY_BLOCKED_STR) {
+            if (originalkeystr.contains(JOY_KEY_PREFIX)) {
+                result.isValid = false;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Game controller keys could not be blocked!");
+                } else {
+                    result.errorMessage = QString("游戏手柄按键无法被屏蔽!");
+                }
                 return result;
             }
         }
@@ -10111,6 +10143,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("SendText(%1)").arg(sendtext);
+                    }
+                }
+                else if (currentMapKeyText == KEY_BLOCKED_STR) {
+                    if (currentOriKeyText.contains(JOY_KEY_PREFIX)) {
+                        QString message;
+                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                            message = QString("Game controller keys could not be blocked!");
+                        }
+                        else {
+                            message = QString("游戏手柄按键无法被屏蔽!");
+                        }
+                        showWarningPopup(message);
+                        return;
                     }
                 }
                 else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
