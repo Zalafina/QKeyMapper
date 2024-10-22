@@ -6310,7 +6310,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                 QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                 QString firstmappingkey = mappingKeyList.constFirst();
                 int mappingkeylist_size = mappingKeyList.size();
-                if (firstmappingkey == KEY_BLOCKED_STR && mappingkeylist_size == 1) {
+                if (mappingkeylist_size == 1 && firstmappingkey == KEY_BLOCKED_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     if (KEY_DOWN == keyupdown){
                         qDebug() << "[InterceptionKeyboardHookProc]" << "RealKey KEY_DOWN Blocked ->" << original_key;
@@ -6584,7 +6584,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                 QString firstmappingkey = mappingKeyList.constFirst();
                 int mappingkeylist_size = mappingKeyList.size();
-                if (firstmappingkey == KEY_BLOCKED_STR && mappingkeylist_size == 1) {
+                if (mappingkeylist_size == 1 && firstmappingkey == KEY_BLOCKED_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     if (KEY_DOWN == keyupdown){
                         qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Button Down Blocked ->" << original_key;
@@ -6828,7 +6828,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
 
-                    if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
+                    if (mappingKeyList.size() == 1 && mappingKeyList.constFirst() == KEY_BLOCKED_STR) {
 #ifdef DEBUG_LOGOUT_ON
                         if (wheel_left_found) {
                             qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelLeft;
@@ -7117,7 +7117,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                     QString firstmappingkey = mappingKeyList.constFirst();
                     int mappingkeylist_size = mappingKeyList.size();
-                    if (firstmappingkey == KEY_BLOCKED_STR && mappingkeylist_size == 1) {
+                    if (mappingkeylist_size == 1 && firstmappingkey == KEY_BLOCKED_STR) {
 #ifdef DEBUG_LOGOUT_ON
                         if (KEY_DOWN == keyupdown){
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_DOWN Blocked ->" << original_key;
@@ -7624,7 +7624,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                         QString firstmappingkey = mappingKeyList.constFirst();
                         int mappingkeylist_size = mappingKeyList.size();
-                        if (firstmappingkey == KEY_BLOCKED_STR && mappingkeylist_size == 1) {
+                        if (mappingkeylist_size == 1 && firstmappingkey == KEY_BLOCKED_STR) {
 #ifdef DEBUG_LOGOUT_ON
                             if (KEY_DOWN == keyupdown){
                                 qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Button Down Blocked ->" << original_key;
@@ -7916,7 +7916,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
 
-                        if (mappingKeyList.constFirst() == KEY_BLOCKED_STR && mappingKeyList.size() == 1) {
+                        if (mappingKeyList.size() == 1 && mappingKeyList.constFirst() == KEY_BLOCKED_STR) {
 #ifdef DEBUG_LOGOUT_ON
                             if (wheel_left_found) {
                                 qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelLeft;
@@ -8443,7 +8443,7 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
             if (KEY_DOWN == keyupdown){
                 if (!KeyUp_Action) {
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                    bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
+                    bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
                     int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
                     if (releasemodifier) {
                         sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
@@ -8468,7 +8468,7 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                 else {
                     if (KeyUp_Action) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
+                        bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
                         int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
                         if (releasemodifier) {
                             sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
@@ -8491,8 +8491,12 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
     return findindex;
 }
 
-bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key)
+bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key, const QStringList mappingkeyslist)
 {
+    if (mappingkeyslist.size() == 1 && mappingkeyslist.constFirst() == KEY_BLOCKED_STR) {
+        return false;
+    }
+
     bool releasemodifier = false;
     QStringList pressedKeyboardModifiersList;
     if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0 && modifiers.testFlag(Qt::ShiftModifier)) {
@@ -8776,7 +8780,7 @@ void QKeyMapper_Worker::collectBlockedKeysList()
     blockedKeysList.clear();
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
-        if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
+        if (keymapdata.Mapping_Keys.size() == 1 && keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
             blockedKeysList.append(keymapdata.Original_Key);
         }
     }
