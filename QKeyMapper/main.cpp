@@ -179,6 +179,16 @@ int main(int argc, char *argv[])
 
     updateQtDisplayEnvironment();
 
+    // Check if a scaling factor argument is passed to program.
+    QString argument = QString(argv[1]);
+    if (argument.startsWith("--scale=")) {
+        QString scaleValue = argument.mid(QString("--scale=").length());
+        qputenv("QT_SCALE_FACTOR", scaleValue.toUtf8());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Passed scale parameter ->" << scaleValue;
+#endif
+    }
+
     QApplication::setApplicationName(QString(argv[0]));
     QApplication::setOrganizationName("AsukaVoV");
 #ifdef DEBUG_LOGOUT_ON
