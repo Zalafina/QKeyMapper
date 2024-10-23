@@ -8794,12 +8794,8 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
     {
         if (keymapdata.Original_Key.contains(SEPARATOR_PLUS))
         {
-            QString combinationkey = keymapdata.Original_Key;
-            if (combinationkey.contains(SEPARATOR_LONGPRESS)
-                || combinationkey.contains(SEPARATOR_DOUBLEPRESS)) {
-                /* Add by collectLongPressOriginalKeysMap() & collectDoublePressOriginalKeysMap() */
-            }
-            else {
+            QString combinationkey = QKeyMapper::getOriginalKeyStringWithoutSuffix(keymapdata.Original_Key);
+            if (!combinationkey.isEmpty()) {
                 combinationOriginalKeysList.append(combinationkey);
             }
         }
@@ -8822,12 +8818,6 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
             int longpresstime = longPressTimeString.toInt();
             if (longPressOriginalKeysMap[original_key].contains(longpresstime) == false) {
                 longPressOriginalKeysMap[original_key].append(longpresstime);
-                if (original_key.contains(SEPARATOR_PLUS)) {
-                    QString combinationkey = original_key;
-                    if (combinationOriginalKeysList.contains(combinationkey) == false) {
-                        combinationOriginalKeysList.append(combinationkey);
-                    }
-                }
             }
         }
     }
@@ -9052,13 +9042,6 @@ void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
             QString original_key = match.captured(1);
             if (doublePressOriginalKeysMap.contains(original_key) == false) {
                 doublePressOriginalKeysMap.insert(original_key, keymapdataindex);
-                if (original_key.contains(SEPARATOR_PLUS)) {
-                    QString combinationkey = original_key;
-                    combinationkey.chop(1);
-                    if (combinationOriginalKeysList.contains(combinationkey) == false) {
-                        combinationOriginalKeysList.append(combinationkey);
-                    }
-                }
             }
         }
         keymapdataindex += 1;

@@ -352,6 +352,7 @@ public:
     static bool checkOriginalkeyStr(const QString &originalkeystr);
     static bool checkMappingkeyStr(QString &mappingkeystr);
     static void collectMappingTableTabHotkeys(void);
+    static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);

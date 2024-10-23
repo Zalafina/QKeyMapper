@@ -2139,6 +2139,19 @@ void QKeyMapper::collectMappingTableTabHotkeys()
 #endif
 }
 
+QString QKeyMapper::getOriginalKeyStringWithoutSuffix(const QString &originalkeystr)
+{
+    static QRegularExpression full_orikey_regex(R"(^(.+?)(?:⏲(\d+)|✖(\d+))?$)");
+    QString orikey_without_suffix;
+
+    QRegularExpressionMatch full_orikey_match = full_orikey_regex.match(originalkeystr);
+    if (full_orikey_match.hasMatch()) {
+        orikey_without_suffix = full_orikey_match.captured(1);
+    }
+
+    return orikey_without_suffix;
+}
+
 void QKeyMapper::EnumProcessFunction(void)
 {
 #if 0
