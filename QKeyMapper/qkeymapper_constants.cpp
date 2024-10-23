@@ -364,6 +364,7 @@ const UINT SCANCODE_APPS            = 0x5D;
 const char *PROGRAM_NAME = "QKeyMapper";
 
 const char *PREFIX_SHORTCUT = "★";
+const char *OLD_PREFIX_SHORTCUT = "★";
 const char *JOIN_DEVICE     = "##";
 const char *PREFIX_PASSTHROUGH = "$";
 const char *PREFIX_SEND_DOWN    = "↓";
@@ -388,7 +389,6 @@ const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
 
 const char *DISPLAYSWITCH_KEY_DEFAULT    = "L-Ctrl+`";
 const char *MAPPINGSWITCH_KEY_DEFAULT    = "L-Ctrl+F6";
-const char *ORIGINAL_KEYSEQ_DEFAULT      = PREFIX_SHORTCUT;
 
 /* General global settings >>> */
 const char *LAST_WINDOWPOSITION = "LastWindowPosition";

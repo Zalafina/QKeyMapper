@@ -326,6 +326,7 @@ extern const UINT SCANCODE_APPS;
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;
 extern const char *PREFIX_SHORTCUT;
+extern const char *OLD_PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;
 extern const char *PREFIX_PASSTHROUGH;
 extern const char *PREFIX_SEND_DOWN;
@@ -346,7 +347,6 @@ extern const char* CONFIG_BACKUP_FILENAME;
 #endif
 extern const char* DISPLAYSWITCH_KEY_DEFAULT;
 extern const char* MAPPINGSWITCH_KEY_DEFAULT;
-extern const char* ORIGINAL_KEYSEQ_DEFAULT;
 extern const char* LAST_WINDOWPOSITION;
 extern const char* LANGUAGE_INDEX;
 extern const char *SHOW_PROCESSLIST;

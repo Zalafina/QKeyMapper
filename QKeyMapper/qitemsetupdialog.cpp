@@ -228,9 +228,6 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
 
         /* Load Original Key String */
         QString originalkey_str = keymapdata.Original_Key;
-        if (originalkey_str.startsWith(PREFIX_SHORTCUT)) {
-            originalkey_str.remove(0, 1);
-        }
         ui->originalKeyLineEdit->setText(originalkey_str);
 
         /* Load Mapping Keys String */
@@ -425,9 +422,6 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
 #endif
         /* Load Original Key String */
         QString originalkey_str = keymapdata.Original_Key;
-        if (originalkey_str.startsWith(PREFIX_SHORTCUT)) {
-            originalkey_str.remove(0, 1);
-        }
         ui->originalKeyLineEdit->setText(originalkey_str);
 
         /* Load Burst */
@@ -863,17 +857,8 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
             popupMessage = "原始按键更新成功";
         }
 
-        QStringList originalKeyList = originalKey.split(SEPARATOR_PLUS);
-        QString update_originalkey;
-        if (originalKeyList.size() > 1) {
-            update_originalkey = QString(PREFIX_SHORTCUT) + originalKey;
-        }
-        else {
-            update_originalkey = originalKey;
-        }
-
-        if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != update_originalkey) {
-            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = update_originalkey;
+        if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
         }
 
         QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);

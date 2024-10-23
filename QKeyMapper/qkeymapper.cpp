@@ -1577,8 +1577,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
         // Check for duplicate combination key
         if (result.isValid && update_rowindex >= 0) {
-            QString original_key = QString(PREFIX_SHORTCUT) + originalkeystr;
-            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(original_key);
+            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(originalkeystr);
 
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
@@ -3069,7 +3068,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             int loadindex = 0;
             for (const QString &ori_key_nochange : qAsConst(original_keys)){
                 QString ori_key = ori_key_nochange;
-                if (ori_key.startsWith(PREFIX_SHORTCUT)) {
+                if (ori_key.startsWith(OLD_PREFIX_SHORTCUT)) {
                     ori_key.remove(0, 1);
                 }
 
@@ -3077,7 +3076,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
                 if (true == checkoriginalstr && true == checkmappingstr) {
-                    loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
+                    loadkeymapdata.append(MAP_KEYDATA(ori_key,
                                                       mapping_keys.at(loadindex),
                                                       notesList.at(loadindex),
                                                       burstList.at(loadindex),
@@ -5600,7 +5599,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         int loadindex = 0;
                         for (const QString &ori_key_nochange : qAsConst(original_keys)){
                             QString ori_key = ori_key_nochange;
-                            if (ori_key.startsWith(PREFIX_SHORTCUT)) {
+                            if (ori_key.startsWith(OLD_PREFIX_SHORTCUT)) {
                                 ori_key.remove(0, 1);
                             }
 
@@ -5608,7 +5607,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
 
                             if (true == checkoriginalstr && true == checkmappingstr) {
-                                loadkeymapdata.append(MAP_KEYDATA(ori_key_nochange,
+                                loadkeymapdata.append(MAP_KEYDATA(ori_key,
                                                                   mapping_keys.at(loadindex),
                                                                   notesList.at(loadindex),
                                                                   burstList.at(loadindex),
@@ -8633,6 +8632,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             else {
                 orikey_withnote = keymapdata.Original_Key;
             }
+            if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+                orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
+            }
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
             ori_TableItem->setToolTip(orikey_withnote);
             if (keymapdata.PassThrough) {
@@ -9502,10 +9504,10 @@ void QKeyMapper::updateShortcutsMap()
 
     for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
     {
-        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
+        if (keymapdata.Original_Key.startsWith(OLD_PREFIX_SHORTCUT))
         {
             QString shortcutstr = keymapdata.Original_Key;
-            shortcutstr.remove(PREFIX_SHORTCUT);
+            shortcutstr.remove(OLD_PREFIX_SHORTCUT);
             if (false == ShortcutsMap.contains(shortcutstr)) {
                 ShortcutsMap.insert(shortcutstr, new QHotkey(this));
             }
@@ -9830,7 +9832,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
 
         if (valid_combinationkey) {
-            currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriCombinationKeyText;
+            currentOriKeyText = currentOriCombinationKeyText;
         }
         else {
             if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
@@ -9842,9 +9844,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             return;
         }
     }
-    // else if (false == currentOriKeyShortcutText.isEmpty()) {
-    //     currentOriKeyText = QString(PREFIX_SHORTCUT) + currentOriKeyShortcutText;
-    // }
 
     if (currentOriKeyText.isEmpty() || (m_mapkeyComboBox->isEnabled() && currentMapKeyText.isEmpty() && ui->nextarrowCheckBox->isChecked() == false)) {
         return;

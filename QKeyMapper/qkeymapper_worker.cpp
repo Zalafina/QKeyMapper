@@ -4158,7 +4158,7 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
 #endif
 
     bool returnFlag = false;
-    QString keycodeStringForSearch = QString(PREFIX_SHORTCUT) + keycodeString;
+    QString keycodeStringForSearch = QString(OLD_PREFIX_SHORTCUT) + keycodeString;
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeStringForSearch);
     returnFlag = hookBurstAndLockProc(keycodeStringForSearch, keyupdown);
     updatePressedRealKeysList(keycodeStringForSearch, keyupdown);
@@ -8333,7 +8333,6 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
 
     for (const QString &combinationkey : qAsConst(combinationOriginalKeysList))
     {
-        QString combinationkeyForSearch = QString(PREFIX_SHORTCUT) + combinationkey;
         QStringList keys = combinationkey.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
         QStringList pressedCombinationRealKeys;
@@ -8386,7 +8385,7 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             }
             break;
         }
-        else if (pressedRealKeysList.contains(combinationkeyForSearch)) {
+        else if (pressedRealKeysList.contains(combinationkey)) {
             if (KEY_UP == keyupdown
                 && (combinationkey.contains(keycodeString)
                     || combinationkey.contains(getKeycodeStringRemoveMultiInput(keycodeString))))
@@ -8424,10 +8423,9 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
 int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
-    QString keycodeStringForSearch = QString(PREFIX_SHORTCUT) + keycodeString;
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeStringForSearch);
-    returnFlag = (hookBurstAndLockProc(keycodeStringForSearch, keyupdown) != KEY_PROC_NONE);
-    int intercept = updatePressedRealKeysList(keycodeStringForSearch, keyupdown);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+    returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
+    int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
 
     if (intercept == KEY_INTERCEPT_BLOCK) {
         return findindex;
@@ -8794,10 +8792,9 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
 {
     for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList))
     {
-        if (keymapdata.Original_Key.startsWith(PREFIX_SHORTCUT))
+        if (keymapdata.Original_Key.contains(SEPARATOR_PLUS))
         {
             QString combinationkey = keymapdata.Original_Key;
-            combinationkey.remove(0, 1);
             if (combinationkey.contains(SEPARATOR_LONGPRESS)
                 || combinationkey.contains(SEPARATOR_DOUBLEPRESS)) {
                 /* Add by collectLongPressOriginalKeysMap() & collectDoublePressOriginalKeysMap() */
@@ -8825,9 +8822,8 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
             int longpresstime = longPressTimeString.toInt();
             if (longPressOriginalKeysMap[original_key].contains(longpresstime) == false) {
                 longPressOriginalKeysMap[original_key].append(longpresstime);
-                if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                if (original_key.contains(SEPARATOR_PLUS)) {
                     QString combinationkey = original_key;
-                    combinationkey.remove(0, 1);
                     if (combinationOriginalKeysList.contains(combinationkey) == false) {
                         combinationOriginalKeysList.append(combinationkey);
                     }
@@ -8974,7 +8970,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 if (KEY_PROC_NONE == keyproc) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                    if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                    if (original_key.contains(SEPARATOR_PLUS)) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
                         releaseKeyboardModifiers(modifiers_arg, original_key);
                     }
@@ -9056,9 +9052,8 @@ void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
             QString original_key = match.captured(1);
             if (doublePressOriginalKeysMap.contains(original_key) == false) {
                 doublePressOriginalKeysMap.insert(original_key, keymapdataindex);
-                if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                if (original_key.contains(SEPARATOR_PLUS)) {
                     QString combinationkey = original_key;
-                    combinationkey.remove(0, 1);
                     combinationkey.chop(1);
                     if (combinationOriginalKeysList.contains(combinationkey) == false) {
                         combinationOriginalKeysList.append(combinationkey);
@@ -9273,7 +9268,7 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                     bool releasemodifier = false;
                     int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
-                    if (original_key.startsWith(PREFIX_SHORTCUT)) {
+                    if (original_key.contains(SEPARATOR_PLUS)) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
                         releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
                         if (releasemodifier) {
@@ -10645,7 +10640,7 @@ void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
 {
     QStringList newPressedRealKeysList;
     for (const QString& key : qAsConst(pressedRealKeysList)) {
-        if (!key.startsWith(PREFIX_SHORTCUT)) {
+        if (false == key.contains(SEPARATOR_PLUS)) {
             newPressedRealKeysList.append(key);
         }
     }
@@ -10653,7 +10648,7 @@ void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
 
     newPressedRealKeysList.clear();
     for (const QString& key : qAsConst(pressedRealKeysListRemoveMultiInput)) {
-        if (!key.startsWith(PREFIX_SHORTCUT)) {
+        if (false == key.contains(SEPARATOR_PLUS)) {
             newPressedRealKeysList.append(key);
         }
     }
