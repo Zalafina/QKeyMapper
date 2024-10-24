@@ -276,7 +276,12 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->keyupActionCheckBox->setChecked(false);
-            ui->keySeqHoldDownCheckBox->setEnabled(true);
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                ui->keySeqHoldDownCheckBox->setEnabled(true);
+            }
+            else {
+                ui->keySeqHoldDownCheckBox->setEnabled(false);
+            }
         }
 
         /* Load PassThrough Status */
@@ -347,11 +352,19 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
         }
         else {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+            ui->repeatByKeyCheckBox->setEnabled(false);
+            ui->repeatByTimesCheckBox->setEnabled(false);
+            ui->repeatTimesSpinBox->setEnabled(false);
+        }
+
+        if (keymapdata.KeySeqHoldDown) {
             ui->repeatByKeyCheckBox->setEnabled(false);
             ui->repeatByTimesCheckBox->setEnabled(false);
             ui->repeatTimesSpinBox->setEnabled(false);
@@ -463,7 +476,12 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->keyupActionCheckBox->setChecked(false);
-            ui->keySeqHoldDownCheckBox->setEnabled(true);
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                ui->keySeqHoldDownCheckBox->setEnabled(true);
+            }
+            else {
+                ui->keySeqHoldDownCheckBox->setEnabled(false);
+            }
         }
 
         /* Load PassThrough Status */
@@ -534,11 +552,19 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
         }
         else {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+            ui->repeatByKeyCheckBox->setEnabled(false);
+            ui->repeatByTimesCheckBox->setEnabled(false);
+            ui->repeatTimesSpinBox->setEnabled(false);
+        }
+
+        if (keymapdata.KeySeqHoldDown) {
             ui->repeatByKeyCheckBox->setEnabled(false);
             ui->repeatByTimesCheckBox->setEnabled(false);
             ui->repeatTimesSpinBox->setEnabled(false);
@@ -571,6 +597,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         else {
             if (keymapdata.Burst) {
                 (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = false;
+                keymapdata.Burst = false;
                 value_changed = true;
             }
             ui->burstCheckBox->setEnabled(false);
@@ -585,12 +612,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             if (keymapdata.Lock) {
                 (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = false;
                 (*QKeyMapper::KeyMappingDataList)[m_ItemRow].LockStatus = false;
+                keymapdata.Lock = false;
                 value_changed = true;
             }
             ui->lockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
@@ -598,6 +627,24 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         else {
             if (keymapdata.RepeatMode != REPEAT_MODE_NONE) {
                 (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = REPEAT_MODE_NONE;
+                keymapdata.RepeatMode = REPEAT_MODE_NONE;
+                value_changed = true;
+            }
+            if (keymapdata.KeySeqHoldDown) {
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
+                keymapdata.KeySeqHoldDown = false;
+                value_changed = true;
+            }
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+            ui->repeatByKeyCheckBox->setEnabled(false);
+            ui->repeatByTimesCheckBox->setEnabled(false);
+            ui->repeatTimesSpinBox->setEnabled(false);
+        }
+
+        if (keymapdata.KeySeqHoldDown) {
+            if (keymapdata.RepeatMode != REPEAT_MODE_NONE) {
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = REPEAT_MODE_NONE;
+                keymapdata.RepeatMode = REPEAT_MODE_NONE;
                 value_changed = true;
             }
             ui->repeatByKeyCheckBox->setEnabled(false);
@@ -650,7 +697,12 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->keyupActionCheckBox->setChecked(false);
-            ui->keySeqHoldDownCheckBox->setEnabled(true);
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                ui->keySeqHoldDownCheckBox->setEnabled(true);
+            }
+            else {
+                ui->keySeqHoldDownCheckBox->setEnabled(false);
+            }
         }
 
         /* Load PassThrough Status */
@@ -822,6 +874,8 @@ void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
 #endif
     }
+
+    (void)refreshMappingKeyRelatedUI();
 }
 
 void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
