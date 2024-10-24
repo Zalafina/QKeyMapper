@@ -176,7 +176,8 @@ const int SENDVIRTUALKEY_STATE_FORCE            = 1;
 const int SENDVIRTUALKEY_STATE_MODIFIERS        = 2;
 const int SENDVIRTUALKEY_STATE_BURST_TIMEOUT    = 3;
 const int SENDVIRTUALKEY_STATE_BURST_STOP       = 4;
-const int SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT    = 5;
+const int SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN  = 5;
+const int SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT    = 6;
 
 const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
@@ -337,6 +338,7 @@ ULONG_PTR VIRTUAL_KEY_SEND_FORCE;
 ULONG_PTR VIRTUAL_KEY_SEND_MODIFIERS;
 ULONG_PTR VIRTUAL_KEY_SEND_BURST_TIMEOUT;
 ULONG_PTR VIRTUAL_KEY_SEND_BURST_STOP;
+ULONG_PTR VIRTUAL_KEY_SEND_KEYSEQ_HOLDDOWN;
 ULONG_PTR VIRTUAL_KEY_SEND_KEYSEQ_REPEAT;
 ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
 ULONG_PTR VIRTUAL_MOUSE_WHEEL;
@@ -874,6 +876,7 @@ void generateVirtualInputRandomValues() {
     VIRTUAL_KEY_SEND_MODIFIERS = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_MODIFIERS;
     VIRTUAL_KEY_SEND_BURST_TIMEOUT = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
     VIRTUAL_KEY_SEND_BURST_STOP = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_BURST_STOP;
+    VIRTUAL_KEY_SEND_KEYSEQ_HOLDDOWN = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN;
     VIRTUAL_KEY_SEND_KEYSEQ_REPEAT = VIRTUAL_KEY_SEND | SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -883,6 +886,7 @@ void generateVirtualInputRandomValues() {
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_MODIFIERS: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_MODIFIERS, 0, 16).toUpper();
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_BURST_TIMEOUT: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_BURST_TIMEOUT, 0, 16).toUpper();
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_BURST_STOP: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_BURST_STOP, 0, 16).toUpper();
+    qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_KEYSEQ_HOLDDOWN: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_KEYSEQ_HOLDDOWN, 0, 16).toUpper();
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_KEY_SEND_KEYSEQ_REPEAT: 0x%08").arg((qulonglong)VIRTUAL_KEY_SEND_KEYSEQ_REPEAT, 0, 16).toUpper();
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_MOUSE_POINTCLICK: 0x%08").arg((qulonglong)VIRTUAL_MOUSE_POINTCLICK, 0, 16).toUpper();
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_MOUSE_WHEEL: 0x%08").arg((qulonglong)VIRTUAL_MOUSE_WHEEL, 0, 16).toUpper();

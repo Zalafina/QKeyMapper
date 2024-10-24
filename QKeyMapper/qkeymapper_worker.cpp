@@ -6909,7 +6909,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
     ULONG_PTR extraInfo_nochanged = pKeyBoard->dwExtraInfo;
     ULONG_PTR extraInfo = extraInfo_nochanged & ~0xF;
 
-    if (extraInfo == VIRTUAL_UNICODE_CHAR) {
+    if (extraInfo == VIRTUAL_RESEND_REALKEY
+        || extraInfo == VIRTUAL_UNICODE_CHAR) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
@@ -7371,6 +7372,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     ULONG_PTR extraInfo_nochanged = pMouse->dwExtraInfo;
     ULONG_PTR extraInfo = extraInfo_nochanged & ~0xF;
     DWORD mousedata = pMouse->mouseData;
+
+    if (extraInfo == VIRTUAL_RESEND_REALKEY) {
+        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+    }
 
     bool returnFlag = false;
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
@@ -10872,11 +10877,14 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
     for (const QString &keyseq : qAsConst(keyseq_list)){
         QStringList mappingKeyList = QStringList() << keyseq;
 
+        if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN) {
+            sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN;
+        }
         /* Add for KeySequenceHoldDown >>> */
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && index == size) {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN);
+            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
         }
         else {
             if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
@@ -10891,26 +10899,6 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
                 QString finalPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
                 original_key_forKeySeq.append(finalPostStr);
             }
-
-//             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
-//             if (findindex >= 0) {
-//                 int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
-//                 int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
-//                 if (sendmode == SENDMODE_NORMAL
-//                     && index == 1
-//                     && repeat_mode == REPEAT_MODE_BYTIMES
-//                     && repeat_times > 0) {
-//                     s_KeySequenceRepeatCount[original_key] = 0;
-// #ifdef DEBUG_LOGOUT_ON
-//                     qDebug().nospace().noquote() << "\033[1;34m[sendKeySequenceList]" << " original_key(" << original_key << ") repeat by times(" << repeat_times << ") start, sendmode(" << sendmode << ")\033[0m";
-// #endif
-//                 }
-
-//                 if (index == size) {
-//                     QString finalPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
-//                     original_key_forKeySeq.append(finalPostStr);
-//                 }
-//             }
 
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
             emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
@@ -11182,6 +11170,9 @@ void SendInputTask::run()
     }
     else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT) {
         controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT;
+    }
+    else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN) {
+        controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN;
     }
     QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
     controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
