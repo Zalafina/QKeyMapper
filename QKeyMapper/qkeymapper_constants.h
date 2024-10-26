@@ -151,6 +151,7 @@ extern const int SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT;
 
 extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
+extern const int SENDMODE_BURSTKEY_START;
 extern const int SENDMODE_BURSTKEY_STOP;
 extern const int SENDMODE_KEYSEQ_NORMAL;
 extern const int SENDMODE_KEYSEQ_HOLDDOWN;

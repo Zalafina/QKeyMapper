@@ -181,10 +181,11 @@ const int SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT    = 6;
 
 const int SENDMODE_NORMAL           = 1;
 const int SENDMODE_FORCE_STOP       = 2;
-const int SENDMODE_BURSTKEY_STOP    = 3;
-const int SENDMODE_KEYSEQ_NORMAL    = 4;
-const int SENDMODE_KEYSEQ_HOLDDOWN  = 5;
-const int SENDMODE_KEYSEQ_REPEAT    = 6;
+const int SENDMODE_BURSTKEY_START   = 3;
+const int SENDMODE_BURSTKEY_STOP    = 4;
+const int SENDMODE_KEYSEQ_NORMAL    = 5;
+const int SENDMODE_KEYSEQ_HOLDDOWN  = 6;
+const int SENDMODE_KEYSEQ_REPEAT    = 7;
 
 const int SENDTYPE_NORMAL   = 0;
 const int SENDTYPE_DOWN     = 1;
