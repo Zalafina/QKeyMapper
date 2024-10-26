@@ -231,7 +231,8 @@ int sign(T val) {
 class SendInputTask : public QRunnable
 {
 public:
-    SendInputTask(const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state) :
+    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state) :
+        m_rowindex(rowindex),
         m_inputKeys(inputKeys),
         m_keyupdown(keyupdown),
         m_original_key(original_key),
@@ -277,6 +278,7 @@ public:
     static SendInputTaskController s_GlobalSendInputTaskController;
 
 public:
+    int m_rowindex;
     QStringList m_inputKeys;
     int m_keyupdown;
     QString m_original_key;
@@ -562,11 +564,11 @@ public slots:
 #endif
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
-    void onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
-    void sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
+    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
+    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
-    void emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
+    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
 
 public:
     static void sendBurstKeyDown(const QString &burstKey);
@@ -630,7 +632,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
-    void sendInputKeys_Signal(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
+    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif

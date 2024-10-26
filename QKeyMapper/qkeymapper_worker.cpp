@@ -849,9 +849,9 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
     }
 }
 
-void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state)
+void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state)
 {
-    SendInputTask *sendInputTask = new SendInputTask(inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
+    SendInputTask *sendInputTask = new SendInputTask(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
 
     SendInputTaskController *controller = Q_NULLPTR;
     if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
@@ -869,7 +869,7 @@ void QKeyMapper_Worker::onSendInputKeys(QStringList inputKeys, int keyupdown, QS
 #endif
 }
 
-void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller)
+void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -959,7 +959,7 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                     qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown Final KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "KeySequenceLastKeys[" << inputKeys.last() << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
 #endif
                     QStringList mappingKeyList = QStringList() << inputKeys.last();
-                    emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_holddown, SENDMODE_NORMAL);
+                    emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key_holddown, SENDMODE_NORMAL);
                 }
             }
             /* Add for KeySequenceHoldDown <<< */
@@ -1293,8 +1293,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by key -> OriginalKey:" << orikey_str << ", Index:" << findindex;
 #endif
                         real_finished = false;
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
                     }
                 }
                 else if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
@@ -1312,8 +1312,8 @@ void QKeyMapper_Worker::sendInputKeys(QStringList inputKeys, int keyupdown, QStr
                         }
                         else {
                             real_finished = false;
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
                         }
                     }
                 }
@@ -1849,7 +1849,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state)
+void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state)
 {
     bool skip_emitsignal = false;
     SendInputTaskController *controller = Q_NULLPTR;
@@ -1905,8 +1905,8 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
             }
         }
 
+        int findindex = rowindex;
         if (isKeySequence) {
-            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
             if (findindex >= 0) {
                 int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
                 int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
@@ -1944,6 +1944,13 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
             }
         }
         else {
+            if (findindex >= 0) {
+                bool burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
+                if (burst && sendmode == SENDMODE_NORMAL) {
+                    sendmode = SENDMODE_BURSTKEY_START;
+                }
+            }
+
             if (sendmode == SENDMODE_NORMAL) {
                 if (pressedMappingKeysMap.contains(original_key) && controller != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1959,7 +1966,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(QStringList &inputKeys,
     }
 
     if (false == skip_emitsignal) {
-        emit sendInputKeys_Signal(inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
+        emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
 #ifdef DEBUG_LOGOUT_ON
         QAtomicInt task_stop_flag(INPUTSTOP_NONE);
         if (controller != Q_NULLPTR) {
@@ -2011,8 +2018,8 @@ void QKeyMapper_Worker::sendBurstKeyDown(const QString &burstKey)
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
         SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
-        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
+        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
         controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
     }
 }
@@ -2040,7 +2047,7 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
             qDebug().noquote().nospace() << "[sendBurstKeyUp(burstKey)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT";
 #endif
         }
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_UP, original_key, sendmode, controller);
 #ifdef DEBUG_LOGOUT_ON
             qDebug().noquote().nospace() << "[sendBurstKeyUp(burstKey)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL";
 #endif
@@ -2055,8 +2062,8 @@ void QKeyMapper_Worker::sendBurstKeyDown(int findindex)
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
         SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
-        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
+        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
         controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
     }
 }
@@ -2082,7 +2089,7 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
             qDebug().noquote().nospace() << "[sendBurstKeyUp(findindex)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT";
 #endif
         }
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_UP, original_key, sendmode, controller);
 #ifdef DEBUG_LOGOUT_ON
         qDebug().noquote().nospace() << "[sendBurstKeyUp(findindex)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL";
 #endif
@@ -2097,7 +2104,7 @@ void QKeyMapper_Worker::sendBurstKeyUpForce(int findindex)
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
         int sendmode = SENDMODE_FORCE_STOP;
         SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, sendmode, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_UP, original_key, sendmode, controller);
     }
 }
 
@@ -4184,10 +4191,10 @@ void QKeyMapper_Worker::HotKeyHookProc(const QString &keycodeString, int keyupdo
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
                     releaseKeyboardModifiers(modifiers_arg);
                 }
-                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
             }
             else { /* KEY_UP == keyupdown */
-                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
             }
         }
     }
@@ -6355,18 +6362,14 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
 
                     bool KeyUp_Action = QKeyMapper::KeyMappingDataList->at(findindex).KeyUp_Action;
                     bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
-                    bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
                     if (KEY_DOWN == keyupdown){
                         if (!KeyUp_Action) {
                             /* Add for KeySequenceHoldDown >>> */
                             if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
-                            }
-                            else if (Burst) {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                             }
                             else {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             }
                             /* Add for KeySequenceHoldDown <<< */
                         }
@@ -6381,20 +6384,15 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         }
                         else {
                             if (KeyUp_Action) {
-                                if (Burst) {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
-                                }
-                                else {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                                }
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             }
                         }
                         /* Add for KeySequenceHoldDown >>> */
                         if (mappingkeylist_size > 1 && KeySeqHoldDown && !KeyUp_Action) {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                         }
                         else {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         }
                         /* Add for KeySequenceHoldDown <<< */
                         returnFlag = true;
@@ -6638,18 +6636,14 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
 
                     bool KeyUp_Action = QKeyMapper::KeyMappingDataList->at(findindex).KeyUp_Action;
                     bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
-                    bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
                     if (KEY_DOWN == keyupdown){
                         if (!KeyUp_Action) {
                             /* Add for KeySequenceHoldDown >>> */
                             if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
-                            }
-                            else if (Burst) {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                             }
                             else {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             }
                             /* Add for KeySequenceHoldDown <<< */
                         }
@@ -6664,20 +6658,15 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         }
                         else {
                             if (KeyUp_Action) {
-                                if (Burst) {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
-                                }
-                                else {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                                }
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             }
                         }
                         /* Add for KeySequenceHoldDown >>> */
                         if (mappingkeylist_size > 1 && KeySeqHoldDown && !KeyUp_Action) {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                         }
                         else {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         }
                         /* Add for KeySequenceHoldDown <<< */
                         returnFlag = true;
@@ -6870,8 +6859,8 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         returnFlag = true;
                     }
                     else {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                         returnFlag = true;
                     }
 
@@ -7181,18 +7170,14 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
                         bool KeyUp_Action = QKeyMapper::KeyMappingDataList->at(findindex).KeyUp_Action;
                         bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
-                        bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
                         if (KEY_DOWN == keyupdown){
                             if (!KeyUp_Action) {
                                 /* Add for KeySequenceHoldDown >>> */
                                 if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
-                                }
-                                else if (Burst) {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
+                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                                 }
                                 else {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                                 }
                                 /* Add for KeySequenceHoldDown <<< */
                             }
@@ -7207,20 +7192,15 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             }
                             else {
                                 if (KeyUp_Action) {
-                                    if (Burst) {
-                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
-                                    }
-                                    else {
-                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                                    }
+                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                                 }
                             }
                             /* Add for KeySequenceHoldDown >>> */
                             if (mappingkeylist_size > 1 && KeySeqHoldDown && !KeyUp_Action) {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                             }
                             else {
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             }
                             /* Add for KeySequenceHoldDown <<< */
                             returnFlag = true;
@@ -7701,18 +7681,14 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 
                             bool KeyUp_Action = QKeyMapper::KeyMappingDataList->at(findindex).KeyUp_Action;
                             bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
-                            bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
                             if (KEY_DOWN == keyupdown){
                                 if (!KeyUp_Action) {
                                     /* Add for KeySequenceHoldDown >>> */
                                     if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
-                                    }
-                                    else if (Burst) {
-                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
+                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                                     }
                                     else {
-                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                                     }
                                     /* Add for KeySequenceHoldDown <<< */
                                 }
@@ -7727,20 +7703,15 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                 }
                                 else {
                                     if (KeyUp_Action) {
-                                        if (Burst) {
-                                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
-                                        }
-                                        else {
-                                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                                        }
+                                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                                     }
                                 }
                                 /* Add for KeySequenceHoldDown >>> */
                                 if (mappingkeylist_size > 1 && KeySeqHoldDown && !KeyUp_Action) {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                                 }
                                 else {
-                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                                 }
                                 /* Add for KeySequenceHoldDown <<< */
                                 returnFlag = true;
@@ -7981,8 +7952,8 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             returnFlag = true;
                         }
                         else {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             returnFlag = true;
                         }
 
@@ -8482,7 +8453,6 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
             int mappingkeylist_size = mappingKeyList.size();
             bool KeyUp_Action = QKeyMapper::KeyMappingDataList->at(findindex).KeyUp_Action;
             bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
-            bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
             if (KEY_DOWN == keyupdown){
                 if (!KeyUp_Action) {
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
@@ -8493,13 +8463,10 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                     }
                     /* Add for KeySequenceHoldDown >>> */
                     if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
-                    }
-                    else if (Burst) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START, sendvirtualkey_state);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
                     }
                     else {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
                     }
                     /* Add for KeySequenceHoldDown <<< */
                 }
@@ -8519,20 +8486,15 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                         if (releasemodifier) {
                             sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
                         }
-                        if (Burst) {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START, sendvirtualkey_state);
-                        }
-                        else {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
-                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
                     }
                 }
                 /* Add for KeySequenceHoldDown >>> */
                 if (mappingkeylist_size > 1 && KeySeqHoldDown && !KeyUp_Action) {
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                 }
                 else {
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                 }
                 /* Add for KeySequenceHoldDown <<< */
             }
@@ -8587,8 +8549,8 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
-        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
     }
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 
@@ -8616,21 +8578,11 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             releasemodifier = true;
             SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
-            // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
-            // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
-            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
-            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+            // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+            // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
-
-            // BYTE keyState[256];
-            // GetKeyboardState(keyState);
-            // if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
-            //     keyState[VK_LMENU] &= ~0x80;
-            // }
-            // if ((GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
-            //     keyState[VK_RMENU] &= ~0x80;
-            // }
-            // SetKeyboardState(keyState);
         }
     }
 
@@ -8679,7 +8631,7 @@ bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifie
     for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
     }
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 
@@ -9013,17 +8965,11 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 if (KEY_PROC_NONE == keyproc) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                    bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
                     if (original_key.contains(SEPARATOR_PLUS)) {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
                         releaseKeyboardModifiers(modifiers_arg, original_key);
                     }
-                    if (Burst) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
-                    }
-                    else {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                    }
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -9062,7 +9008,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                     if (keyproc != KEY_PROC_LOCK) {
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -9308,7 +9254,6 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                 if (KEY_PROC_NONE == keyproc) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                    bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
                     bool releasemodifier = false;
                     int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
                     if (original_key.contains(SEPARATOR_PLUS)) {
@@ -9318,12 +9263,7 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                             sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
                         }
                     }
-                    if (Burst) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START, sendvirtualkey_state);
-                    }
-                    else {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
-                    }
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -9364,7 +9304,7 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                     if (keyproc != KEY_PROC_LOCK) {
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -9580,18 +9520,14 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
             int mappingkeylist_size = mappingKeyList.size();
             bool KeyUp_Action = QKeyMapper::KeyMappingDataList->at(findindex).KeyUp_Action;
             bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
-            bool Burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
             if (KEY_DOWN == keyupdown){
                 if (!KeyUp_Action) {
                     /* Add for KeySequenceHoldDown >>> */
                     if (mappingkeylist_size > 1 && KeySeqHoldDown) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
-                    }
-                    else if (Burst) {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                     }
                     else {
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                     }
                     /* Add for KeySequenceHoldDown <<< */
                 }
@@ -9606,20 +9542,15 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
                 }
                 else {
                     if (KeyUp_Action) {
-                        if (Burst) {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_BURSTKEY_START);
-                        }
-                        else {
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                     }
                 }
                 /* Add for KeySequenceHoldDown >>> */
                 if (mappingkeylist_size > 1 && KeySeqHoldDown && !KeyUp_Action) {
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
                 }
                 else {
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                 }
                 /* Add for KeySequenceHoldDown <<< */
                 returnFlag = true;
@@ -10658,7 +10589,7 @@ void QKeyMapper_Worker::clearAllPressedVirtualKeys()
         QStringList mappingKeyList = QStringList() << virtualkeystr;
         QString original_key = QString(CLEAR_VIRTUALKEYS);
         // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
-        QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
     }
 
     // QStringList pressedMappingOriginalKeys = pressedMappingKeysMap.keys();
@@ -10688,7 +10619,7 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
             QStringList mappingKeyList = QStringList() << virtualkeystr;
             QString original_key = QString(CLEAR_VIRTUALKEYS);
             // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
-            QKeyMapper_Worker::getInstance()->sendInputKeys(mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
         }
     }
 }
@@ -10927,8 +10858,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
     qDebug().nospace().noquote() << "[sendKeySequenceList]" << " original_key(" << original_key << "), sendmode(" << sendmode << ")";
 #endif
 
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
     if (sendmode == SENDMODE_NORMAL) {
-        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
         if (findindex >= 0) {
             int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
             if (repeat_mode != REPEAT_MODE_NONE) {
@@ -10952,8 +10883,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         /* Add for KeySequenceHoldDown >>> */
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && index == size) {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
         }
         else {
             if (!s_runningKeySequenceOrikeyList.contains(original_key)) {
@@ -10969,8 +10900,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
                 original_key_forKeySeq.append(finalPostStr);
             }
 
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
-            emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
         }
         /* Add for KeySequenceHoldDown <<< */
 
@@ -11243,7 +11174,7 @@ void SendInputTask::run()
     else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN) {
         controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN;
     }
-    QKeyMapper_Worker::getInstance()->sendInputKeys(m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
+    QKeyMapper_Worker::getInstance()->sendInputKeys(m_rowindex, m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
     controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 
 #ifdef DEBUG_LOGOUT_ON
