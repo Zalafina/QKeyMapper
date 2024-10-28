@@ -571,9 +571,9 @@ public slots:
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
 
 public:
-    static void sendBurstKeyDown(const QString &burstKey);
+    static void sendBurstKeyDown(const QString &burstKey, bool start);
     static void sendBurstKeyUp(const QString &burstKey, bool stop);
-    static void sendBurstKeyDown(int findindex);
+    static void sendBurstKeyDown(int findindex, bool start);
     static void sendBurstKeyUp(int findindex, bool stop);
     void sendBurstKeyUpForce(int findindex);
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
