@@ -10593,12 +10593,14 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
 void QKeyMapper_Worker::clearAllPressedVirtualKeys()
 {
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
     for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
         QStringList mappingKeyList = QStringList() << virtualkeystr;
         QString original_key = QString(CLEAR_VIRTUALKEYS);
         // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
         QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
     }
+    controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 
     // QStringList pressedMappingOriginalKeys = pressedMappingKeysMap.keys();
 
@@ -10621,6 +10623,7 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
 #endif
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
     for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
         if (mappingKeyListToClear.contains(virtualkeystr)
             && !pressedRealKeysListToCheck.contains(virtualkeystr)) {
@@ -10630,6 +10633,7 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
             QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP, controller);
         }
     }
+    controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 }
 
 void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
