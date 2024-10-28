@@ -1013,7 +1013,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         }
         /* Add for KeySequenceHoldDown <<< */
 
-        pressedMappingKeysMap.remove(original_key);
+        bool pressedMappingKeysContains = false;
+        if (pressedMappingKeysMap.contains(original_key)) {
+            pressedMappingKeysMap.remove(original_key);
+            pressedMappingKeysContains = true;
+        }
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
@@ -1111,8 +1115,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
             }
             else if (true == VirtualMouseButtonMap.contains(key)) {
-                if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
-                    && sendtype != SENDTYPE_EXCLUSION
+                if (sendtype != SENDTYPE_EXCLUSION
+                    // && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     QString debugmessage = QString("[sendInputKeys-Mouse] pressedVirtualKeysList not contains \"%1\" on send Mouse KEY_UP!!!! -> sendtype = %2, sendvirtualkey_state = %3").arg(key).arg(sendtype).arg(controller.sendvirtualkey_state);
@@ -1162,7 +1166,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
-                    && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
+                    // && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1233,6 +1237,16 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
                 qWarning("sendInputKeys(): VirtualMap do not contains \"%s\" !!!", key.toStdString().c_str());
 #endif
+            }
+        }
+
+        if (sendmode == SENDMODE_BURSTKEY_STOP && rowindex >= 0) {
+            if (!pressedMappingKeysContains) {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP, call resendRealKeyCodeOnStop()").arg(original_key);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+                resendRealKeyCodeOnStop(rowindex);
             }
         }
 
@@ -2027,18 +2041,13 @@ void QKeyMapper_Worker::sendBurstKeyDown(const QString &burstKey, bool start)
     if (findindex >=0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-        SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         int sendmode = SENDMODE_NORMAL;
+        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
         if (true == start) {
             sendmode = SENDMODE_BURSTKEY_START;
-            controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+            sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
         }
-        else {
-            controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
-        }
-        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_DOWN, original_key, sendmode, controller);
-        // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-        controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, sendmode, sendvirtualkey_state);
     }
 }
 
@@ -2049,27 +2058,13 @@ void QKeyMapper_Worker::sendBurstKeyUp(const QString &burstKey, bool stop)
     if (findindex >=0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-
-        SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
         int sendmode = SENDMODE_NORMAL;
+        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
         if (true == stop) {
             sendmode = SENDMODE_BURSTKEY_STOP;
-            controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP;
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().noquote().nospace() << "[sendBurstKeyUp(burstKey)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP";
-#endif
+            sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP;
         }
-        else {
-            controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().noquote().nospace() << "[sendBurstKeyUp(burstKey)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT";
-#endif
-        }
-        QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_UP, original_key, sendmode, controller);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().noquote().nospace() << "[sendBurstKeyUp(burstKey)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL";
-#endif
-        controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, sendmode, sendvirtualkey_state);
     }
 }
 
@@ -2078,20 +2073,6 @@ void QKeyMapper_Worker::sendBurstKeyDown(int findindex, bool start)
     if (findindex >= 0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-
-        // SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
-        // int sendmode = SENDMODE_NORMAL;
-        // if (true == start) {
-        //     sendmode = SENDMODE_BURSTKEY_START;
-        //     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
-        // }
-        // else {
-        //     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
-        // }
-        // QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_DOWN, original_key, sendmode, controller);
-        // // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
-        // controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
-
         int sendmode = SENDMODE_NORMAL;
         int sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
         if (true == start) {
@@ -2107,28 +2088,6 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
     if (findindex >= 0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-
-//         SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
-//         int sendmode = SENDMODE_NORMAL;
-//         if (true == stop) {
-//             sendmode = SENDMODE_BURSTKEY_STOP;
-//             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP;
-// #ifdef DEBUG_LOGOUT_ON
-//             qDebug().noquote().nospace() << "[sendBurstKeyUp(findindex)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP";
-// #endif
-//         }
-//         else {
-//             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
-// #ifdef DEBUG_LOGOUT_ON
-//             qDebug().noquote().nospace() << "[sendBurstKeyUp(findindex)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT";
-// #endif
-//         }
-//         QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_UP, original_key, sendmode, controller);
-// #ifdef DEBUG_LOGOUT_ON
-//         qDebug().noquote().nospace() << "[sendBurstKeyUp(findindex)] controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL";
-// #endif
-//         controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
-
         int sendmode = SENDMODE_NORMAL;
         int sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
         if (true == stop) {
@@ -2144,11 +2103,6 @@ void QKeyMapper_Worker::sendBurstKeyUpForce(int findindex)
     if (findindex >= 0){
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-
-        // int sendmode = SENDMODE_FORCE_STOP;
-        // SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
-        // QKeyMapper_Worker::getInstance()->sendInputKeys(findindex, mappingKeyList, KEY_UP, original_key, sendmode, controller);
-
         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_FORCE_STOP);
     }
 }
@@ -8744,13 +8698,9 @@ void QKeyMapper_Worker::stopBurstKeyTimer(const QString &burstKey, int mappingIn
         timer->stop();
         delete timer;
         s_BurstKeyPressTimerMap.remove(burstKey);
-        sendBurstKeyUp(mappingIndex, true);
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[stopBurstKeyTimer] sendBurstKeyUp(" << burstKey << "), BurstKeyPressTimer stopped & removed.";
 #endif
-    }
-    else {
-        resendRealKeyCodeOnStop(mappingIndex);
     }
 
     if (s_BurstKeyTimerMap.contains(burstKey)) {
@@ -8762,6 +8712,8 @@ void QKeyMapper_Worker::stopBurstKeyTimer(const QString &burstKey, int mappingIn
         qDebug().nospace().noquote() << "[stopBurstKeyTimer] Key [" << burstKey << "], BurstKeyTimer stopped & removed.";
 #endif
     }
+
+    sendBurstKeyUp(mappingIndex, true);
 }
 
 void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex)
