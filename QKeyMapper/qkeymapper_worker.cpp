@@ -1111,8 +1111,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
             }
             else if (true == VirtualMouseButtonMap.contains(key)) {
-                if (sendtype != SENDTYPE_EXCLUSION
-                    // && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
+                if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
+                    && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     QString debugmessage = QString("[sendInputKeys-Mouse] pressedVirtualKeysList not contains \"%1\" on send Mouse KEY_UP!!!! -> sendtype = %2, sendvirtualkey_state = %3").arg(key).arg(sendtype).arg(controller.sendvirtualkey_state);
@@ -1162,7 +1162,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
-                    // && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
+                    && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
