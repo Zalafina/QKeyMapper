@@ -30,10 +30,8 @@
 #include <dinput.h>
 #endif
 
-#ifdef HOOKSTART_ONSTARTUP
 #include <QAtomicInteger>
 using QAtomicBool = QAtomicInteger<bool>;
-#endif
 
 #include "qkeymapper_constants.h"
 
@@ -789,9 +787,7 @@ public:
 
 public:
     static bool s_isWorkerDestructing;
-#ifdef HOOKSTART_ONSTARTUP
     static QAtomicBool s_AtomicHookProcStart;
-#endif
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Mouse2vJoy_Direct;
     static QAtomicBool s_Key2Mouse_Up;
