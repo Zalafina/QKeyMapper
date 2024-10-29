@@ -808,8 +808,8 @@ void QKeyMapper::setKeyHook(HWND hWnd)
     else {
         s_CurrentMappingHWND = hWnd;
     }
-    emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(hWnd);
-    emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(hWnd);
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal();
+    emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal();
 }
 
 void QKeyMapper::setKeyUnHook(void)

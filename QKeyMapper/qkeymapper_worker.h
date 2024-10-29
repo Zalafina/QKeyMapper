@@ -620,7 +620,7 @@ public:
 #endif
 
 signals:
-    void setKeyHook_Signal(HWND hWnd);
+    void setKeyHook_Signal(void);
     void setKeyUnHook_Signal(void);
     void setKeyMappingRestart_Signal(void);
     void sessionLockStateChanged_Signal(bool locked);
@@ -653,7 +653,7 @@ signals:
 
 public slots:
     void threadStarted(void);
-    void setWorkerKeyHook(HWND hWnd);
+    void setWorkerKeyHook(void);
     void setWorkerKeyUnHook(void);
     void setKeyMappingRestart(void);
     void sessionLockStateChanged(bool locked);
@@ -935,14 +935,14 @@ public:
     }
 
 signals:
-    void setKeyHook_Signal(HWND hWnd);
+    void setKeyHook_Signal(void);
     void setKeyUnHook_Signal(void);
     void setKeyMappingRestart_Signal(void);
 
 public slots:
     void HookProcThreadStarted(void);
     void HookProcThreadFinished(void);
-    void onSetHookProcKeyHook(HWND hWnd);
+    void onSetHookProcKeyHook();
     void onSetHookProcKeyUnHook(void);
     void onSetHookProcKeyMappingRestart(void);
 

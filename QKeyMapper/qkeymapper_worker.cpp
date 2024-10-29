@@ -1132,7 +1132,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (sendtype != SENDTYPE_EXCLUSION
                     && sendmode != SENDMODE_FORCE_STOP
-                    // && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
+                    && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
                     QString debugmessage = QString("[sendInputKeys-Mouse] pressedVirtualKeysList not contains \"%1\" on send Mouse KEY_UP!!!! -> sendtype = %2, sendvirtualkey_state = %3").arg(key).arg(sendtype).arg(controller.sendvirtualkey_state);
@@ -1183,7 +1183,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
-                    // && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
+                    && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -3773,9 +3773,9 @@ void QKeyMapper_Worker::threadStarted()
     QObject::connect(m_UdpSocket, &QUdpSocket::readyRead, this, &QKeyMapper_Worker::processUdpPendingDatagrams);
 }
 
-void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
+void QKeyMapper_Worker::setWorkerKeyHook()
 {
-    Q_UNUSED(hWnd);
+    // Q_UNUSED(hWnd);
     // clearAllBurstTimersAndLockKeys();
     clearAllBurstKeyTimersAndLockKeys();
     clearAllPressedVirtualKeys();
@@ -3923,7 +3923,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
-    pressedVirtualKeysList.clear();
+    // pressedVirtualKeysList.clear();
     pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
@@ -3934,10 +3934,10 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
-    {
-    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
-    pressedMappingKeysMap.clear();
-    }
+    // {
+    // QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    // pressedMappingKeysMap.clear();
+    // }
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
     SendInputTask::clearSendInputTaskControllerMap();
@@ -4183,7 +4183,7 @@ void QKeyMapper_Worker::sessionLockStateChanged(bool locked)
             setWorkerKeyUnHook();
         }
         else {
-            setWorkerKeyHook(NULL);
+            setWorkerKeyHook();
         }
     }
 
@@ -11086,10 +11086,8 @@ void QKeyMapper_Hook_Proc::HookProcThreadFinished()
 #endif
 }
 
-void QKeyMapper_Hook_Proc::onSetHookProcKeyHook(HWND hWnd)
+void QKeyMapper_Hook_Proc::onSetHookProcKeyHook()
 {
-    Q_UNUSED(hWnd);
-
     QKeyMapper_Worker::clearAllLongPressTimers();
     QKeyMapper_Worker::clearAllDoublePressTimers();
 
