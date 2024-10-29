@@ -10568,7 +10568,8 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
                 }
             }
 
-            stopBurstKeyTimerForce(burstKey, findindex);
+            // stopBurstKeyTimerForce(burstKey, findindex);
+            stopBurstKeyTimer(burstKey, findindex);
         }
     }
 
@@ -10689,6 +10690,10 @@ void QKeyMapper_Worker::collectExchangeKeysList()
 
 bool QKeyMapper_Worker::isPressedMappingKeysContains(QString &key)
 {
+    if (pressedMappingKeysMap.isEmpty()) {
+        return false;
+    }
+
     bool result = false;
 
     QList<QStringList> remainPressedMappingKeys = pressedMappingKeysMap.values();
