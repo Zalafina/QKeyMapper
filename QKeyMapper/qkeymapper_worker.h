@@ -842,6 +842,7 @@ public:
     static QList<QStringList> pressedvJoyButtonsList;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
+    static QMutex s_PressedMappingKeysMapMutex;
     static QStringList pressedLockKeysList;
     static QStringList exchangeKeysList;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

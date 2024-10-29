@@ -59,7 +59,8 @@ QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
 #endif
-QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap = QHash<QString, QStringList>();
+QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
+QMutex QKeyMapper_Worker::s_PressedMappingKeysMapMutex;
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -954,9 +955,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             /* Add for KeySequenceHoldDown >>> */
             if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN) {
                 QString original_key_holddown = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
-                if (pressedMappingKeysMap.contains(original_key_holddown)) {
+                bool pressedmappingkeys_contains = false;
+                {
+                QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+                pressedmappingkeys_contains = pressedMappingKeysMap.contains(original_key_holddown);
+                }
+                if (pressedmappingkeys_contains) {
 #ifdef DEBUG_LOGOUT_ON
+                    {
+                    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                     qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown Final KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "KeySequenceLastKeys[" << inputKeys.last() << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
+                    }
 #endif
                     QStringList mappingKeyList = QStringList() << inputKeys.last();
                     emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key_holddown, SENDMODE_NORMAL);
@@ -1014,6 +1023,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         /* Add for KeySequenceHoldDown <<< */
 
         bool pressedMappingKeysContains = false;
+        {
+        QMutexLocker locker(&s_PressedMappingKeysMapMutex);
         if (pressedMappingKeysMap.contains(original_key)) {
             pressedMappingKeysMap.remove(original_key);
             pressedMappingKeysContains = true;
@@ -1021,6 +1032,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
+        }
 
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
@@ -1076,7 +1088,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
             if (isPressedMappingKeysContains(key) && sendmode != SENDMODE_FORCE_STOP) {
 #ifdef DEBUG_LOGOUT_ON
+                {
+                QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                 qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys still remain Key[ " << key << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+                }
                 qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys skip KeyUp[ " << key << " ]" << " -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]";
 #endif
                 continue;
@@ -1383,17 +1398,28 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 return;
             }
 
-            if (pressedMappingKeysMap.contains(original_key)) {
+            bool pressedmappingkeys_contains = false;
+            {
+            QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+            pressedmappingkeys_contains = pressedMappingKeysMap.contains(original_key);
+            }
+            if (pressedmappingkeys_contains) {
 #ifdef DEBUG_LOGOUT_ON
+                {
+                QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                 qDebug().nospace().noquote() << "[sendInputKeys] Mapping KeyDown Skiped! pressedMappingKeys already exist! -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+                }
 #endif
                 return;
             }
 
+            {
+            QMutexLocker locker(&s_PressedMappingKeysMapMutex);
             pressedMappingKeysMap.insert(original_key, mappingKeys);
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
+            }
 
             for (const QString &keyStr : qAsConst(mappingKeys)) {
                 if (*controller.task_stop_flag) {
@@ -1747,7 +1773,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 *controller.task_stop_flag = INPUTSTOP_NONE;
 
+                {
+                QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                 pressedMappingKeysMap.remove(original_key);
+                }
                 clearPressedVirtualKeysOfMappingKeys(mappingkeys_str);
 
                 QString orikey_str = original_key.left(original_key.indexOf(":"));
@@ -1985,9 +2014,17 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         }
         else {
             if (sendmode == SENDMODE_NORMAL) {
-                if (pressedMappingKeysMap.contains(original_key) && controller != Q_NULLPTR) {
+                bool pressedmappingkeys_contains = false;
+                {
+                QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+                pressedmappingkeys_contains = pressedMappingKeysMap.contains(original_key);
+                }
+                if (pressedmappingkeys_contains && controller != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
+                    {
+                    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                     qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_SINGLE, pressedMappingKeysMap contains OriginalKey:" << original_key << ", pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
+                    }
 #endif
                     // controller->task_stop_mutex->lock();
                     *controller->task_stop_flag = INPUTSTOP_SINGLE;
@@ -3767,7 +3804,10 @@ void QKeyMapper_Worker::setWorkerKeyHook(HWND hWnd)
     }
 #endif
 
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     pressedMappingKeysMap.clear();
+    }
     pressedLockKeysList.clear();
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
@@ -3894,7 +3934,10 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     pressedMappingKeysMap.clear();
+    }
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
     SendInputTask::clearSendInputTaskControllerMap();
@@ -4010,7 +4053,10 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     pressedMappingKeysMap.clear();
+    }
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
     SendInputTask::clearSendInputTaskControllerMap();
@@ -10690,13 +10736,21 @@ void QKeyMapper_Worker::collectExchangeKeysList()
 
 bool QKeyMapper_Worker::isPressedMappingKeysContains(QString &key)
 {
-    if (pressedMappingKeysMap.isEmpty()) {
+    bool pressedmappingkeys_isempty = false;
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    pressedmappingkeys_isempty = pressedMappingKeysMap.isEmpty();
+    }
+    if (pressedmappingkeys_isempty) {
         return false;
     }
 
     bool result = false;
-
-    QList<QStringList> remainPressedMappingKeys = pressedMappingKeysMap.values();
+    QList<QStringList> remainPressedMappingKeys;
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    remainPressedMappingKeys = pressedMappingKeysMap.values();
+    }
 
     for (const QStringList &mappingkeys : qAsConst(remainPressedMappingKeys)){
         for (const QString &mapkey : qAsConst(mappingkeys)){
