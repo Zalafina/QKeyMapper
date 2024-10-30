@@ -166,6 +166,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyMappingRestart_Signal, this, &QKeyMapper_Worker::setKeyMappingRestart, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::allMappingKeysReleased_Signal, this, &QKeyMapper_Worker::allMappingKeysReleased, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::setKeyMappingRestart_Signal, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart, Qt::QueuedConnection);
@@ -1026,6 +1027,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         if (pressedMappingKeysMap.contains(original_key)) {
             pressedMappingKeysMap.remove(original_key);
             pressedMappingKeysContains = true;
+            if (false == s_AtomicHookProcStart) {
+                if (pressedMappingKeysMap.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+                    QString debugmessage = QString("[sendInputKeys] pressedMappingKeysMap is empty on s_AtomicHookProcStart = false!");
+                    qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+                    emit QKeyMapper_Worker::getInstance()->allMappingKeysReleased_Signal();
+                }
+            }
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
@@ -3779,7 +3789,6 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 #endif
 
     // Q_UNUSED(hWnd);
-    // clearAllBurstTimersAndLockKeys();
     clearAllBurstKeyTimersAndLockKeys();
     clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
@@ -3811,10 +3820,11 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     pressedMappingKeysMap.clear();
     }
+    SendInputTask::clearSendInputTaskControllerMap();
+    resetGlobalSendInputTaskController();
     pressedLockKeysList.clear();
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
-    resetGlobalSendInputTaskController();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
@@ -3922,13 +3932,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Start.");
 #endif
-    // clearAllBurstTimersAndLockKeys();
     clearAllBurstKeyTimersAndLockKeys();
-    clearAllPressedVirtualKeys();
+    // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
-#ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Part2.");
-#endif
     s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
@@ -3948,15 +3954,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // }
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
-#ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Part3.");
-#endif
-    SendInputTask::clearSendInputTaskControllerMap();
-    resetGlobalSendInputTaskController();
+    // SendInputTask::clearSendInputTaskControllerMap();
+    // resetGlobalSendInputTaskController();
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Part4.");
-#endif
     s_AtomicHookProcStart = false;
 
 //    if (m_MouseHook != Q_NULLPTR) {
@@ -4057,7 +4057,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
     /* Stop Key Mapping Process */
     clearAllBurstKeyTimersAndLockKeys();
-    clearAllPressedVirtualKeys();
+    // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     pressedCombinationRealKeysList.clear();
@@ -4067,14 +4067,14 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
-    {
-    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
-    pressedMappingKeysMap.clear();
-    }
+    // {
+    // QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    // pressedMappingKeysMap.clear();
+    // }
     pressedLockKeysList.clear();
     exchangeKeysList.clear();
-    SendInputTask::clearSendInputTaskControllerMap();
-    resetGlobalSendInputTaskController();
+    // SendInputTask::clearSendInputTaskControllerMap();
+    // resetGlobalSendInputTaskController();
 
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableStateMap.clear();
@@ -4118,6 +4118,10 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
     QKeyMapper::KeyMappingDataList = backup_KeyMappingDataList;
     /* Start Key Mapping Process */
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    pressedMappingKeysMap.clear();
+    }
     collectLongPressOriginalKeysMap();
     collectDoublePressOriginalKeysMap();
     collectCombinationOriginalKeysList();
@@ -4129,6 +4133,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 #endif
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
+    resetGlobalSendInputTaskController();
 
     s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
@@ -4187,6 +4192,25 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart <<<");
 #endif
+}
+
+void QKeyMapper_Worker::allMappingKeysReleased()
+{
+    if (false == s_AtomicHookProcStart) {
+        bool pressedmappingkeys_empty = false;
+        {
+            QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+            pressedmappingkeys_empty = pressedMappingKeysMap.isEmpty();
+        }
+        if (pressedmappingkeys_empty) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[allMappingKeysReleased] pressedMappingKeysMap is empty on s_AtomicHookProcStart = false, do virtualkey release process.");
+            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            clearAllPressedVirtualKeys();
+            pressedVirtualKeysList.clear();
+        }
+    }
 }
 
 void QKeyMapper_Worker::sessionLockStateChanged(bool locked)
@@ -8753,7 +8777,7 @@ void QKeyMapper_Worker::stopBurstKeyTimer(const QString &burstKey, int mappingIn
         delete timer;
         s_BurstKeyPressTimerMap.remove(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[stopBurstKeyTimer] sendBurstKeyUp(" << burstKey << "), BurstKeyPressTimer stopped & removed.";
+        qDebug().nospace().noquote() << "[stopBurstKeyTimer] s_BurstKeyPressTimerMap contains [" << burstKey << "], BurstKeyPressTimer stopped & removed.";
 #endif
     }
 
@@ -10551,55 +10575,6 @@ bool QKeyMapper_Worker::isCursorAtBottomRight()
     }
 
     return ret;
-}
-#endif
-
-#if 0
-void QKeyMapper_Worker::clearAllBurstTimersAndLockKeys()
-{
-    QMutexLocker locker(&m_BurstTimerMutex);
-
-    QList<QString> burstKeys = m_BurstTimerMap.keys();
-    for (const QString &burstKey : qAsConst(burstKeys)) {
-        int timerID = m_BurstTimerMap.value(burstKey, 0);
-        if (timerID > 0) {
-            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
-            if (findindex >= 0) {
-                if (true == QKeyMapper::KeyMappingDataList->at(findindex).Lock) {
-                    if (true == pressedLockKeysList.contains(burstKey)){
-                        (*QKeyMapper::KeyMappingDataList)[findindex].LockStatus = false;
-                        pressedLockKeysList.removeAll(burstKey);
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug("clearAllBurstTimersAndLockKeys() : Key \"%s\" KeyDown LockStatus -> OFF", burstKey.toStdString().c_str());
-#endif
-                    }
-                }
-
-                stopBurstTimer(burstKey, findindex);
-            }
-        }
-    }
-
-    QList<QString> burstKeyUpKeys = m_BurstKeyUpTimerMap.keys();
-    for (const QString &burstKey : qAsConst(burstKeyUpKeys)) {
-        int timerID = m_BurstKeyUpTimerMap.value(burstKey, 0);
-        if (timerID > 0) {
-            killTimer(timerID);
-            m_BurstKeyUpTimerMap.remove(burstKey);
-        }
-        else {
-#ifdef DEBUG_LOGOUT_ON
-            qWarning("[clearAllBurstTimersAndLockKeys] Key \"%s\" could not find in m_BurstKeyUpTimerMap!!!", burstKey.toStdString().c_str());
-#endif
-        }
-    }
-
-    for (int index = 0; index < QKeyMapper::KeyMappingDataList->size(); index++) {
-        (*QKeyMapper::KeyMappingDataList)[index].LockStatus = false;
-    }
-
-    m_BurstTimerMap.clear();
-    m_BurstKeyUpTimerMap.clear();
 }
 #endif
 

@@ -621,6 +621,7 @@ signals:
     void setKeyHook_Signal(void);
     void setKeyUnHook_Signal(void);
     void setKeyMappingRestart_Signal(void);
+    void allMappingKeysReleased_Signal(void);
     void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
@@ -654,6 +655,7 @@ public slots:
     void setWorkerKeyHook(void);
     void setWorkerKeyUnHook(void);
     void setKeyMappingRestart(void);
+    void allMappingKeysReleased(void);
     void sessionLockStateChanged(bool locked);
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
@@ -768,7 +770,6 @@ private:
     void initViGEmKeyMap(void);
     bool isCursorAtBottomRight(void);
 #endif
-    // void clearAllBurstTimersAndLockKeys(void);
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
     void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
