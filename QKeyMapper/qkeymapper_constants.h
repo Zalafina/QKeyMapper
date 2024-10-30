@@ -141,6 +141,8 @@ extern const int REMOVE_MAPPINGTAB_FAILED;
 extern const int REMOVE_MAPPINGTAB_LASTONE;
 extern const int REMOVE_MAPPINGTAB_SUCCESS;
 
+extern const int TRY_LOCK_WAIT_TIME;
+
 extern const int SENDVIRTUALKEY_STATE_NORMAL;
 extern const int SENDVIRTUALKEY_STATE_FORCE;
 extern const int SENDVIRTUALKEY_STATE_MODIFIERS;

@@ -61,11 +61,7 @@ QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
 QMutex QKeyMapper_Worker::s_PressedMappingKeysMapMutex;
 QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-QRecursiveMutex QKeyMapper_Worker::s_BurstKeyTimerMutex;
-#else
-QMutex QKeyMapper_Worker::s_BurstKeyTimerMutex(QMutex::Recursive);
-#endif
+QMutex QKeyMapper_Worker::s_BurstKeyTimerMutex;
 #ifdef DINPUT_TEST
 GetDeviceStateT QKeyMapper_Worker::FuncPtrGetDeviceState = Q_NULLPTR;
 GetDeviceDataT QKeyMapper_Worker::FuncPtrGetDeviceData = Q_NULLPTR;
@@ -86,11 +82,7 @@ QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState 
 // QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::s_Joy2vJoy_EnableStateMap;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
-#else
-QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
-#endif
+QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex;
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 // QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List;
@@ -3393,8 +3385,6 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
         return;
     }
 
-    QMutexLocker locker(&s_ViGEmClient_Mutex);
-
     // Convert the joystick axis values from qreal to short
     int leftX_int = 0;
     int leftY_int = 0;
@@ -3497,6 +3487,8 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
     }
 
     VIGEM_ERROR error;
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
         DS4_REPORT ds4_report;
         DS4_REPORT_INIT(&ds4_report);
@@ -3505,6 +3497,7 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
     }
     else {
         error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
+    }
     }
     Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
@@ -3649,7 +3642,6 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
         return;
     }
 
-    QMutexLocker locker(&s_ViGEmClient_Mutex);
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
     Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index).states;
     if (MOUSE2VJOY_LEFT == Mouse2vJoy_EnableState) {
@@ -3670,6 +3662,8 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
     ViGEmClient_CheckJoysticksReportData(gamepad_index);
 
     VIGEM_ERROR error;
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
         DS4_REPORT ds4_report;
         DS4_REPORT_INIT(&ds4_report);
@@ -3678,6 +3672,7 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
     }
     else {
         error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
+    }
     }
     Q_UNUSED(error);
 #ifdef DEBUG_LOGOUT_ON
@@ -4209,6 +4204,9 @@ void QKeyMapper_Worker::allMappingKeysReleased()
 #endif
             clearAllPressedVirtualKeys();
             pressedVirtualKeysList.clear();
+
+            SendInputTask::clearSendInputTaskControllerMap();
+            resetGlobalSendInputTaskController();
         }
     }
 }
@@ -8809,7 +8807,7 @@ void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mapp
         delete timer;
         s_BurstKeyPressTimerMap.remove(burstKey);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[stopBurstKeyTimerForce] sendBurstKeyUp(" << burstKey << "), BurstKeyPressTimer stopped & removed.";
+        qDebug().nospace().noquote() << "[stopBurstKeyTimerForce] s_BurstKeyPressTimerMap contains [" << burstKey << "], BurstKeyPressTimer stopped & removed.";
 #endif
     }
 
@@ -10580,9 +10578,11 @@ bool QKeyMapper_Worker::isCursorAtBottomRight()
 
 void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
 {
+    QList<QString> burstKeys;
+    {
     QMutexLocker locker(&s_BurstKeyTimerMutex);
-
-    QList<QString> burstKeys = s_BurstKeyTimerMap.keys();
+    burstKeys = s_BurstKeyTimerMap.keys();
+    }
     for (const QString &burstKey : qAsConst(burstKeys)) {
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
         if (findindex >= 0) {
@@ -10601,6 +10601,8 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
         }
     }
 
+    {
+    QMutexLocker locker(&s_BurstKeyTimerMutex);
     QList<QString> burstKeyPressKeys = s_BurstKeyPressTimerMap.keys();
     for (const QString &burstKey : qAsConst(burstKeyPressKeys)) {
         QTimer* timer = s_BurstKeyPressTimerMap.value(burstKey);
@@ -10611,6 +10613,7 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
 
     s_BurstKeyPressTimerMap.clear();
     s_BurstKeyTimerMap.clear();
+    }
 
     if (!s_isWorkerDestructing) {
         for (int index = 0; index < QKeyMapper::KeyMappingDataList->size(); index++) {
@@ -10760,8 +10763,13 @@ void QKeyMapper_Worker::resetGlobalSendInputTaskController()
 {
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.task_stop_condition->wakeAll();
-    if (controller.task_stop_mutex->tryLock()) {
+    if (controller.task_stop_mutex->try_lock_for(std::chrono::milliseconds(TRY_LOCK_WAIT_TIME))) {
         controller.task_stop_mutex->unlock();
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "\033[1;34m[resetGlobalSendInputTaskController] Try lock wait failed!!!\033[0m";
+#endif
     }
     *controller.task_stop_flag = INPUTSTOP_NONE;
     controller.task_threadpool->clear();
@@ -10774,8 +10782,13 @@ void QKeyMapper_Worker::clearGlobalSendInputTaskController()
 
     // Ensure mutex is unlocked before deleting it
     controller.task_stop_condition->wakeAll();
-    if (controller.task_stop_mutex->tryLock()) {
+    if (controller.task_stop_mutex->try_lock_for(std::chrono::milliseconds(TRY_LOCK_WAIT_TIME))) {
         controller.task_stop_mutex->unlock();
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "\033[1;34m[clearGlobalSendInputTaskController] Try lock wait failed!!!\033[0m";
+#endif
     }
     *controller.task_stop_flag = INPUTSTOP_NONE;
 
@@ -11286,8 +11299,14 @@ void SendInputTask::clearSendInputTaskControllerMap()
     {
         // Ensure mutex is unlocked before deleting it
         controller.task_stop_condition->wakeAll();
-        if (controller.task_stop_mutex->tryLock()) {
+        if (controller.task_stop_mutex->try_lock_for(std::chrono::milliseconds(TRY_LOCK_WAIT_TIME))) {
             controller.task_stop_mutex->unlock();
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "\033[1;34m[clearSendInputTaskControllerMap] Try lock wait failed, skip this lock!!!\033[0m";
+            continue;
+#endif
         }
         *controller.task_stop_flag = INPUTSTOP_NONE;
 
