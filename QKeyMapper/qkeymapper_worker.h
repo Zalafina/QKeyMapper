@@ -265,6 +265,7 @@ public:
 public:
     static void initSendInputTaskControllerMap(void);
     static void clearSendInputTaskControllerMap(void);
+    static void clearSendInputTaskControllerThreadPool(void);
 
 public:
     static QMutex s_SendInputTaskControllerMapMutex;
@@ -775,6 +776,7 @@ private:
     void initGlobalSendInputTaskController(void);
     void resetGlobalSendInputTaskController(void);
     void clearGlobalSendInputTaskController(void);
+    void clearGlobalSendInputTaskControllerThreadPool(void);
 
 public:
 #if 0

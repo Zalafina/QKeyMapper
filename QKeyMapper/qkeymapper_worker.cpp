@@ -1741,7 +1741,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
 
-                controller.task_stop_mutex->lock();
                 if (*controller.task_stop_flag) {
                     waitTime = 0;
 #ifdef DEBUG_LOGOUT_ON
@@ -1753,12 +1752,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     qDebug() << "[sendInputKeys] StopConditionWait Start -> Time=" << waitTime << ", task_stop_flag=" << *controller.task_stop_flag << ", line:" << __LINE__;
 #endif
                     QDeadlineTimer deadline(waitTime, Qt::PreciseTimer);
+                    controller.task_stop_mutex->lock();
                     controller.task_stop_condition->wait(controller.task_stop_mutex, deadline);
+                    controller.task_stop_mutex->unlock();
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[sendInputKeys] StopConditionWait Finished -> Time=" << waitTime << ", task_stop_flag=" << *controller.task_stop_flag << ", line:" << __LINE__;
 #endif
                 }
-                controller.task_stop_mutex->unlock();
             }
 
             if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
@@ -3780,7 +3780,7 @@ void QKeyMapper_Worker::threadStarted()
 void QKeyMapper_Worker::setWorkerKeyHook()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc Start.");
+    qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc Start.\033[0m");
 #endif
 
     // Q_UNUSED(hWnd);
@@ -3925,8 +3925,11 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Start.");
+    qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Start.\033[0m");
 #endif
+    clearGlobalSendInputTaskControllerThreadPool();
+    SendInputTask::clearSendInputTaskControllerThreadPool();
+
     clearAllBurstKeyTimersAndLockKeys();
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
@@ -4034,15 +4037,34 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     m_LastMouseCursorPoint.y = -1;
 #endif
 
+    bool allmappingkeysreleased = false;
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    allmappingkeysreleased = pressedMappingKeysMap.isEmpty();
+    }
+
+    if (allmappingkeysreleased) {
+        clearAllPressedVirtualKeys();
+        pressedVirtualKeysList.clear();
+
+        SendInputTask::clearSendInputTaskControllerMap();
+        resetGlobalSendInputTaskController();
+    }
+    else {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc End.");
+        qDebug().nospace().noquote() << "\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] pressedMappingKeysMap is not empty, wait SendInputTask to clear all controllers & virtualkeys!\033[0m";
+#endif
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc End.\033[0m");
 #endif
 }
 
 void QKeyMapper_Worker::setKeyMappingRestart()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart >>>");
+    qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart Start.>>>\033[0m");
 #endif
 
     QList<MAP_KEYDATA> *backup_KeyMappingDataList = QKeyMapper::KeyMappingDataList;
@@ -4051,6 +4073,9 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
     /* Stop Key Mapping Process */
+    clearGlobalSendInputTaskControllerThreadPool();
+    SendInputTask::clearSendInputTaskControllerThreadPool();
+
     clearAllBurstKeyTimersAndLockKeys();
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
@@ -4110,6 +4135,20 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     m_LastMouseCursorPoint.x = -1;
     m_LastMouseCursorPoint.y = -1;
 
+    bool allmappingkeysreleased = false;
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    allmappingkeysreleased = pressedMappingKeysMap.isEmpty();
+    }
+    if (!allmappingkeysreleased) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] pressedMappingKeysMap is not empty, try to clear all controllers & virtualkeys!\033[0m";
+#endif
+    }
+    clearAllPressedVirtualKeys();
+    pressedVirtualKeysList.clear();
+    SendInputTask::clearSendInputTaskControllerMap();
+    resetGlobalSendInputTaskController();
 
     QKeyMapper::KeyMappingDataList = backup_KeyMappingDataList;
     /* Start Key Mapping Process */
@@ -4128,7 +4167,6 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 #endif
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
-    resetGlobalSendInputTaskController();
 
     s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
@@ -4185,7 +4223,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     startDataPortListener();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart <<<");
+    qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart End.<<<\033[0m");
 #endif
 }
 
@@ -10762,6 +10800,7 @@ void QKeyMapper_Worker::initGlobalSendInputTaskController()
 void QKeyMapper_Worker::resetGlobalSendInputTaskController()
 {
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    controller.task_threadpool->clear();
     controller.task_stop_condition->wakeAll();
     if (controller.task_stop_mutex->try_lock_for(std::chrono::milliseconds(TRY_LOCK_WAIT_TIME))) {
         controller.task_stop_mutex->unlock();
@@ -10772,14 +10811,18 @@ void QKeyMapper_Worker::resetGlobalSendInputTaskController()
 #endif
     }
     *controller.task_stop_flag = INPUTSTOP_NONE;
-    controller.task_threadpool->clear();
     controller.task_threadpool->waitForDone(100);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "\033[1;34m[resetGlobalSendInputTaskController] Reset Global SendInputTask controllers finished.\033[0m";
+#endif
 }
 
 void QKeyMapper_Worker::clearGlobalSendInputTaskController()
 {
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
 
+    controller.task_threadpool->clear();
     // Ensure mutex is unlocked before deleting it
     controller.task_stop_condition->wakeAll();
     if (controller.task_stop_mutex->try_lock_for(std::chrono::milliseconds(TRY_LOCK_WAIT_TIME))) {
@@ -10798,9 +10841,15 @@ void QKeyMapper_Worker::clearGlobalSendInputTaskController()
     delete controller.task_stop_flag;
 
     // Delete the ThreadPool
-    controller.task_threadpool->clear();
     controller.task_threadpool->waitForDone(100);
     delete controller.task_threadpool;
+}
+
+void QKeyMapper_Worker::clearGlobalSendInputTaskControllerThreadPool()
+{
+    SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
+    controller.task_threadpool->clear();
+    controller.task_stop_condition->wakeAll();
 }
 
 #if 0
@@ -11297,6 +11346,7 @@ void SendInputTask::clearSendInputTaskControllerMap()
     // Iterate through the map to delete each QMutex pointer
     for (SendInputTaskController &controller : s_SendInputTaskControllerMap)
     {
+        controller.task_threadpool->clear();
         // Ensure mutex is unlocked before deleting it
         controller.task_stop_condition->wakeAll();
         if (controller.task_stop_mutex->try_lock_for(std::chrono::milliseconds(TRY_LOCK_WAIT_TIME))) {
@@ -11316,11 +11366,23 @@ void SendInputTask::clearSendInputTaskControllerMap()
         delete controller.task_stop_flag;
 
         // Delete the ThreadPool
-        controller.task_threadpool->clear();
         controller.task_threadpool->waitForDone(100);
         delete controller.task_threadpool;
     }
 
     // Clear the entire map
     s_SendInputTaskControllerMap.clear();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::clearSendInputTaskControllerMap] Clear all SendInputTask controllers finished.\033[0m";
+#endif
+}
+
+void SendInputTask::clearSendInputTaskControllerThreadPool()
+{
+    for (SendInputTaskController &controller : s_SendInputTaskControllerMap)
+    {
+        controller.task_threadpool->clear();
+        controller.task_stop_condition->wakeAll();
+    }
 }
