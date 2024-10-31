@@ -717,7 +717,7 @@ public:
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
-    static void resendRealKeyCodeOnStop(int rowindex);
+    static void resendRealKeyCodeOnStop(int rowindex, bool restart = false);
 
     static void collectBlockedKeysList(void);
     static void collectCombinationOriginalKeysList(void);
@@ -786,7 +786,7 @@ public:
 
 public:
     static bool s_isWorkerDestructing;
-    static QAtomicBool s_AtomicHookProcStart;
+    static QAtomicInt s_AtomicHookProcState;
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Mouse2vJoy_Direct;
     static QAtomicBool s_Key2Mouse_Up;

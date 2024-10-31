@@ -125,6 +125,13 @@ extern const int INITIAL_PLAYER_INDEX;
 extern const int INITIAL_KEYBOARD_INDEX;
 extern const int INITIAL_MOUSE_INDEX;
 
+extern const int HOOKPROC_STATE_STOPPED;
+extern const int HOOKPROC_STATE_STARTED;
+extern const int HOOKPROC_STATE_STOPPING;
+extern const int HOOKPROC_STATE_STARTING;
+extern const int HOOKPROC_STATE_RESTART_STOPPING;
+extern const int HOOKPROC_STATE_RESTART_STARTING;
+
 extern const int KEY_INTERCEPT_NONE;
 extern const int KEY_INTERCEPT_BLOCK;
 extern const int KEY_INTERCEPT_PASSTHROUGH;
@@ -155,6 +162,7 @@ extern const int SENDMODE_NORMAL;
 extern const int SENDMODE_FORCE_STOP;
 extern const int SENDMODE_BURSTKEY_START;
 extern const int SENDMODE_BURSTKEY_STOP;
+extern const int SENDMODE_BURSTKEY_STOP_ON_RESTART;
 extern const int SENDMODE_KEYSEQ_NORMAL;
 extern const int SENDMODE_KEYSEQ_HOLDDOWN;
 extern const int SENDMODE_KEYSEQ_REPEAT;

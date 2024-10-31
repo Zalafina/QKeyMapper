@@ -155,6 +155,13 @@ const int INITIAL_PLAYER_INDEX = -1;
 const int INITIAL_KEYBOARD_INDEX = -1;
 const int INITIAL_MOUSE_INDEX = -1;
 
+const int HOOKPROC_STATE_STOPPED            = 0;
+const int HOOKPROC_STATE_STARTED            = 1;
+const int HOOKPROC_STATE_STOPPING           = 2;
+const int HOOKPROC_STATE_STARTING           = 3;
+const int HOOKPROC_STATE_RESTART_STOPPING   = 4;
+const int HOOKPROC_STATE_RESTART_STARTING   = 5;
+
 const int KEY_INTERCEPT_NONE            = 0;
 const int KEY_INTERCEPT_BLOCK           = 1;
 const int KEY_INTERCEPT_PASSTHROUGH     = 2;
@@ -181,13 +188,14 @@ const int SENDVIRTUALKEY_STATE_BURST_STOP       = 4;
 const int SENDVIRTUALKEY_STATE_KEYSEQ_HOLDDOWN  = 5;
 const int SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT    = 6;
 
-const int SENDMODE_NORMAL           = 1;
-const int SENDMODE_FORCE_STOP       = 2;
-const int SENDMODE_BURSTKEY_START   = 3;
-const int SENDMODE_BURSTKEY_STOP    = 4;
-const int SENDMODE_KEYSEQ_NORMAL    = 5;
-const int SENDMODE_KEYSEQ_HOLDDOWN  = 6;
-const int SENDMODE_KEYSEQ_REPEAT    = 7;
+const int SENDMODE_NORMAL                   = 1;
+const int SENDMODE_FORCE_STOP               = 2;
+const int SENDMODE_BURSTKEY_START           = 3;
+const int SENDMODE_BURSTKEY_STOP            = 4;
+const int SENDMODE_BURSTKEY_STOP_ON_RESTART = 5;
+const int SENDMODE_KEYSEQ_NORMAL            = 6;
+const int SENDMODE_KEYSEQ_HOLDDOWN          = 7;
+const int SENDMODE_KEYSEQ_REPEAT            = 8;
 
 const int SENDTYPE_NORMAL   = 0;
 const int SENDTYPE_DOWN     = 1;
