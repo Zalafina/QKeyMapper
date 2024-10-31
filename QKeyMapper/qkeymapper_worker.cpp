@@ -2147,6 +2147,13 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
         int sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_TIMEOUT;
         if (true == stop) {
             sendmode = SENDMODE_BURSTKEY_STOP;
+            if (HOOKPROC_STATE_RESTART_STOPPING == s_AtomicHookProcState) {
+                sendmode = SENDMODE_BURSTKEY_STOP_ON_RESTART;
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[sendBurstKeyUp] Burst key stopped on s_AtomicHookProcState = HOOKPROC_STATE_RESTART_STOPPING!");
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            }
             sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP;
         }
         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, sendmode, sendvirtualkey_state);
