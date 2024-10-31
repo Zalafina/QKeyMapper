@@ -3220,7 +3220,15 @@ void QKeyMapper::changeEvent(QEvent *event)
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
 {
-    if (event->key() == KEY_REFRESH) {
+    /* Check Ctrl+S to Save settings */
+    if (m_KeyMapStatus == KEYMAP_IDLE && event->key() == Qt::Key_S && (event->modifiers() & Qt::ControlModifier)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyPressEvent]" << "Ctrl+S Key Pressed -> saveKeyMappingDataToFile()";
+#endif
+        saveKeyMapSetting();
+        return;
+    }
+    else if (event->key() == KEY_REFRESH) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
 #endif
