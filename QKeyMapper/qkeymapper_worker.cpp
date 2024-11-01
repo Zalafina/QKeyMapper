@@ -966,7 +966,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             return;
         }
 
-        QStringList mappingKeys = splitMappingKeyString(inputKeys.constFirst(), SPLIT_WITH_PLUS);
+        const QString mappingkeys_str = inputKeys.constFirst();
+        QStringList mappingKeys = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS);
         keycount = mappingKeys.size();
 
         if (keycount > MAPPING_KEYS_MAX) {
@@ -1019,19 +1020,20 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         if (pressedMappingKeysMap.contains(original_key)) {
             pressedMappingKeysMap.remove(original_key);
             pressedMappingKeysContains = true;
-            if (HOOKPROC_STATE_STOPPED == s_AtomicHookProcState) {
-                if (pressedMappingKeysMap.isEmpty()) {
-#ifdef DEBUG_LOGOUT_ON
-                    QString debugmessage = QString("[sendInputKeys] pressedMappingKeysMap is empty on s_AtomicHookProcState = HOOKPROC_STATE_STOPPED!");
-                    qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
-#endif
-                    emit QKeyMapper_Worker::getInstance()->allMappingKeysReleased_Signal();
-                }
-            }
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+        qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingkeys_str << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
+
+        if (HOOKPROC_STATE_STOPPED == s_AtomicHookProcState) {
+            if (pressedMappingKeysMap.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[sendInputKeys] pressedMappingKeysMap is empty on s_AtomicHookProcState = HOOKPROC_STATE_STOPPED!");
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+                emit QKeyMapper_Worker::getInstance()->allMappingKeysReleased_Signal();
+            }
+        }
         }
 
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
@@ -1092,7 +1094,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                 qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys still remain Key[ " << key << " ]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
                 }
-                qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys skip KeyUp[ " << key << " ]" << " -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingKeys << " ]";
+                qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys skip KeyUp[ " << key << " ]" << " -> original_key[ " << original_key << " ], " << "mappingKeys[ " << mappingkeys_str << " ]";
 #endif
                 continue;
             }
@@ -1278,13 +1280,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
         if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "\033[1;34m[sendInputKeys] Single Mappingkeys KEY_UP finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m";
+            QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) Single Mappingkeys KEY_UP finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m").arg(original_key);
+            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             *controller.task_stop_flag = INPUTSTOP_NONE;
         }
         else if (*controller.task_stop_flag == INPUTSTOP_KEYSEQ) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "\033[1;34m[sendInputKeys] Mapping Key Sequence KEY_UP breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m";
+            QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) KeySequence KEY_UP breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m").arg(original_key);
+            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             *controller.task_stop_flag = INPUTSTOP_NONE;
 
@@ -1377,7 +1381,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (keyseq_finished) {
                     if (*controller.task_stop_flag != INPUTSTOP_NONE) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace() << "\033[1;34m[sendInputKeys] Mapping Key Sequence KEY_DOWN finished, task_stop_flag set back (" << *controller.task_stop_flag << ") -> INPUTSTOP_NONE\033[0m";
+                        QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) KeySequence KEY_DOWN finished, task_stop_flag set back (%2) -> INPUTSTOP_NONE\033[0m").arg(original_key).arg(*controller.task_stop_flag);
+                        qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
                         *controller.task_stop_flag = INPUTSTOP_NONE;
                     }
@@ -1385,7 +1390,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "\033[1;34m[sendInputKeys] Single Mappingkeys KEY_DOWN start, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m";
+                    QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) Single Mappingkeys KEY_DOWN start, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m").arg(original_key);
+                    qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
                     *controller.task_stop_flag = INPUTSTOP_NONE;
                     skip = false;
@@ -1416,7 +1422,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
                 {
                 QMutexLocker locker(&s_PressedMappingKeysMapMutex);
-                qDebug().nospace().noquote() << "[sendInputKeys] Mapping KeyDown Skiped! pressedMappingKeys already exist! -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+                qDebug().nospace().noquote() << "[sendInputKeys] Mapping KeyDown Skiped! pressedMappingKeys already exist! -> original_key[" << original_key << "], " << "mappingKeys[" << mappingkeys_str << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
                 }
 #endif
                 return;
@@ -1426,7 +1432,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QMutexLocker locker(&s_PressedMappingKeysMapMutex);
             pressedMappingKeysMap.insert(original_key, mappingKeys);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingKeys << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+            qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyDown -> original_key[" << original_key << "], " << "mappingKeys[" << mappingkeys_str << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
             }
 
@@ -1773,18 +1779,23 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
                 *controller.task_stop_flag = INPUTSTOP_NONE;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "\033[1;34m[sendInputKeys] Single Mappingkeys KEY_DOWN finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m";
+                QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) Single Mappingkeys KEY_DOWN finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m").arg(original_key);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             }
             else if (*controller.task_stop_flag == INPUTSTOP_KEYSEQ) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "\033[1;34m[sendInputKeys] Mapping Key Sequence KEY_DOWN breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m";
+                QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) KeySequence KEY_DOWN breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m").arg(original_key);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
                 *controller.task_stop_flag = INPUTSTOP_NONE;
 
                 {
                 QMutexLocker locker(&s_PressedMappingKeysMapMutex);
                 pressedMappingKeysMap.remove(original_key);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeySequence break -> original_key[" << original_key << "], " << "mappingKeys[" << mappingkeys_str << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
+#endif
                 }
                 clearPressedVirtualKeysOfMappingKeys(mappingkeys_str);
 
@@ -10754,6 +10765,13 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
     for (const QString &blockedKey : blockedKeysList) {
         pressedRealKeysListToCheck.removeAll(blockedKey);
     }
+    QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
+    for (const QString &realkey : pressedRealKeysListToCheckCopy) {
+        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey);
+        if (findindex >= 0 && !QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+            pressedRealKeysListToCheck.removeAll(realkey);
+        }
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[clearPressedVirtualKeysOfMappingKeys] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck;
 #endif
@@ -11081,6 +11099,14 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
                 original_key_forKeySeq.append(finalPostStr);
             }
 
+            // if (SENDVIRTUALKEY_STATE_NORMAL == sendvirtualkey_state) {
+            //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, SENDVIRTUALKEY_STATE_KEYSEQ_NORMAL);
+            //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, SENDVIRTUALKEY_STATE_KEYSEQ_NORMAL);
+            // }
+            // else {
+            //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
+            //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
+            // }
             emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
             emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
         }
@@ -11361,6 +11387,9 @@ void SendInputTask::run()
     }
     else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_BURST_STOP) {
         controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_BURST_STOP;
+    }
+    else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_KEYSEQ_NORMAL) {
+        controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_NORMAL;
     }
     else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT) {
         controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT;
