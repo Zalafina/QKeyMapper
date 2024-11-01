@@ -10761,26 +10761,27 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
 {
     QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS, true);
 
-    QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
-    for (const QString &blockedKey : blockedKeysList) {
-        pressedRealKeysListToCheck.removeAll(blockedKey);
-    }
-    QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
-    for (const QString &realkey : pressedRealKeysListToCheckCopy) {
-        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey);
-        if (findindex >= 0 && !QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
-            pressedRealKeysListToCheck.removeAll(realkey);
-        }
-    }
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[clearPressedVirtualKeysOfMappingKeys] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck;
-#endif
+//     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
+//     for (const QString &blockedKey : blockedKeysList) {
+//         pressedRealKeysListToCheck.removeAll(blockedKey);
+//     }
+//     QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
+//     for (const QString &realkey : pressedRealKeysListToCheckCopy) {
+//         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey);
+//         if (findindex >= 0 && !QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+//             pressedRealKeysListToCheck.removeAll(realkey);
+//         }
+//     }
+// #ifdef DEBUG_LOGOUT_ON
+//     qDebug().nospace() << "[clearPressedVirtualKeysOfMappingKeys] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck;
+// #endif
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
     for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
         if (mappingKeyListToClear.contains(virtualkeystr)
-            && !pressedRealKeysListToCheck.contains(virtualkeystr)) {
+            // && !pressedRealKeysListToCheck.contains(virtualkeystr)
+            ) {
             QStringList mappingKeyList = QStringList() << virtualkeystr;
             QString original_key = QString(CLEAR_VIRTUALKEYS);
             // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
