@@ -618,7 +618,9 @@ private:
     int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
     int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
+public:
     void saveKeyMapSetting(void);
+private:
     bool loadKeyMapSetting(const QString &settingtext);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);

@@ -3220,15 +3220,17 @@ void QKeyMapper::changeEvent(QEvent *event)
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
 {
-    /* Check Ctrl+S to Save settings */
-    if (m_KeyMapStatus == KEYMAP_IDLE && event->key() == Qt::Key_S && (event->modifiers() & Qt::ControlModifier)) {
+    /* Check L-Ctrl+S to Save settings */
+    if (m_KeyMapStatus == KEYMAP_IDLE
+        && event->key() == Qt::Key_S
+        && QT_KEY_L_CTRL == (event->nativeModifiers() & QT_KEY_L_CTRL)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[keyPressEvent]" << "Ctrl+S Key Pressed -> saveKeyMappingDataToFile()";
+        qDebug() << "[QKeyMapper::keyPressEvent]" << "\"L-Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
 #endif
         saveKeyMapSetting();
         return;
     }
-    else if (event->key() == KEY_REFRESH) {
+    else if (m_KeyMapStatus == KEYMAP_IDLE && event->key() == KEY_REFRESH) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
 #endif
@@ -10330,6 +10332,17 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
 
 void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 {
+    /* Check L-Ctrl+S to Save settings */
+    if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus
+        && keyevent->key() == Qt::Key_S
+        && QT_KEY_L_CTRL == (keyevent->nativeModifiers() & QT_KEY_L_CTRL)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[KeyListComboBox::keyPressEvent]" << "\"L-Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
+#endif
+        QKeyMapper::getInstance()->saveKeyMapSetting();
+        return;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBox_KeyPress]" << "Key:" << (Qt::Key)keyevent->key() << "Modifiers:" << keyevent->modifiers();
     qDebug("[KeyListComboBox_KeyPress] VirtualKey(0x%08X), ScanCode(0x%08X), nModifiers(0x%08X)", keyevent->nativeVirtualKey(), keyevent->nativeScanCode(), keyevent->nativeModifiers());
