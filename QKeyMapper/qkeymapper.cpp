@@ -3247,6 +3247,15 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         initInputDeviceSelectComboBoxes();
         return;
     }
+#ifdef DEBUG_LOGOUT_ON
+    else if (event->key() == KEY_SHOW_DEBUGINFO) {
+        qDebug().nospace() << "\033[1;34m[QKeyMapper::keyPressEvent]" << "Show debug info pressedMappingKeysMap -> " << QKeyMapper_Worker::pressedMappingKeysMap << "\033[0m";
+        qDebug().nospace() << "\033[1;34m[QKeyMapper::keyPressEvent]" << "Show debug info pressedVirtualKeysList -> " << QKeyMapper_Worker::pressedVirtualKeysList << "\033[0m";
+        qDebug().nospace() << "\033[1;34m[QKeyMapper::keyPressEvent]" << "Show debug info pressedRealKeysList -> " << QKeyMapper_Worker::pressedRealKeysList << "\033[0m";
+        qDebug().nospace() << "\033[1;34m[QKeyMapper::keyPressEvent]" << "Show debug info pressedRealKeysListRemoveMultiInput -> " << QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput << "\033[0m";
+        return;
+    }
+#endif
 #if 0
     else if (event->key() == KEY_PASSTHROUGH) {
         if (m_KeyMapStatus == KEYMAP_IDLE){

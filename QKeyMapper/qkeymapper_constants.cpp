@@ -51,7 +51,8 @@ const int MOUSEWHEEL_SCROLL_NONE = 0;
 const int MOUSEWHEEL_SCROLL_UP = 1;
 const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
-const Qt::Key KEY_REFRESH       = Qt::Key_F5;
+const Qt::Key KEY_REFRESH           = Qt::Key_F5;
+const Qt::Key KEY_SHOW_DEBUGINFO    = Qt::Key_Menu;
 // const Qt::Key KEY_PASSTHROUGH   = Qt::Key_F12;
 // const Qt::Key KEY_KEYUP_ACTION  = Qt::Key_F2;
 // const Qt::Key KEY_REMOVE_LAST   = Qt::Key_Backspace;

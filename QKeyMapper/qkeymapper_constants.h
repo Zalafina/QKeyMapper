@@ -37,6 +37,7 @@ extern const int MOUSEWHEEL_SCROLL_NONE;
 extern const int MOUSEWHEEL_SCROLL_UP;
 extern const int MOUSEWHEEL_SCROLL_DOWN;
 extern const Qt::Key KEY_REFRESH;
+extern const Qt::Key KEY_SHOW_DEBUGINFO;
 // extern const Qt::Key KEY_PASSTHROUGH;
 // extern const Qt::Key KEY_KEYUP_ACTION;
 // extern const Qt::Key KEY_REMOVE_LAST;

@@ -48,9 +48,9 @@ using QAtomicBool = QAtomicInteger<bool>;
 // #define KEYSEQUENCE_STR         ("KeySequence")
 // #define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
 
-#define MAPPING_KEYS_MAX        (60)
-#define SEND_INPUTS_MAX         (100)
-#define KEY_SEQUENCE_MAX        (60)
+#define MAPPING_KEYS_MAX        (1000)
+// #define SEND_INPUTS_MAX         (100)
+#define KEY_SEQUENCE_MAX        (20000)
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 
