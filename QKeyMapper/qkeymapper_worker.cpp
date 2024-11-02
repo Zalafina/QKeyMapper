@@ -1925,27 +1925,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         const QString mappingkeys_str = inputKeys.constFirst();
         if (mappingkeys_str.startsWith(KEYSEQUENCEBREAK_STR)) {
             if (keyupdown == KEY_DOWN) {
-                for (const QString &keyseq_orikey : s_runningKeySequenceOrikeyList) {
-                    SendInputTaskController *keyseq_break_controller = Q_NULLPTR;
-
-                    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
-                        keyseq_break_controller = &SendInputTask::s_GlobalSendInputTaskController;
-                    }
-                    else {
-                        if (SendInputTask::s_SendInputTaskControllerMap.contains(keyseq_orikey)) {
-                            keyseq_break_controller = &SendInputTask::s_SendInputTaskControllerMap[keyseq_orikey];
-                        }
-                    }
-
-                    if (keyseq_break_controller != Q_NULLPTR) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Break KeySequence(" << keyseq_orikey << ")\033[0m";
-#endif
-                        keyseq_break_controller->task_threadpool->clear();
-                        *keyseq_break_controller->task_stop_flag = INPUTSTOP_KEYSEQ;
-                        keyseq_break_controller->task_stop_condition->wakeAll();
-                    }
-                }
+                breakAllRunningKeySequence();
             }
             return;
         }
@@ -3814,6 +3794,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     // Q_UNUSED(hWnd);
     clearAllBurstKeyTimersAndLockKeys();
+    breakAllRunningKeySequence();
     clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
@@ -3960,10 +3941,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPING;
 
-    clearGlobalSendInputTaskControllerThreadPool();
-    SendInputTask::clearSendInputTaskControllerThreadPool();
-
     clearAllBurstKeyTimersAndLockKeys();
+    breakAllRunningKeySequence();
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
@@ -3972,7 +3951,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
-    s_runningKeySequenceOrikeyList.clear();
     // pressedShortcutKeysList.clear();
     // clearAllLongPressTimers();
     // clearAllDoublePressTimers();
@@ -3987,6 +3965,10 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
     // resetGlobalSendInputTaskController();
+
+    s_runningKeySequenceOrikeyList.clear();
+    clearGlobalSendInputTaskControllerThreadPool();
+    SendInputTask::clearSendInputTaskControllerThreadPool();
 
 //    if (m_MouseHook != Q_NULLPTR) {
 //        UnhookWindowsHookEx(m_MouseHook);
@@ -4083,7 +4065,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] pressedMappingKeysMap is not empty, wait SendInputTask to clear all controllers & virtualkeys!\033[0m";
+        qDebug().nospace().noquote() << "\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] pressedMappingKeysMap is not empty, wait SendInputTask to clear all controllers & virtualkeys! pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
 #endif
     }
 
@@ -4109,17 +4091,14 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_AtomicHookProcState = HOOKPROC_STATE_RESTART_STOPPING;
 
     /* Stop Key Mapping Process */
-    clearGlobalSendInputTaskControllerThreadPool();
-    SendInputTask::clearSendInputTaskControllerThreadPool();
-
     clearAllBurstKeyTimersAndLockKeys();
+    breakAllRunningKeySequence();
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
-    s_runningKeySequenceOrikeyList.clear();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
@@ -4131,6 +4110,10 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
     // resetGlobalSendInputTaskController();
+
+    s_runningKeySequenceOrikeyList.clear();
+    clearGlobalSendInputTaskControllerThreadPool();
+    SendInputTask::clearSendInputTaskControllerThreadPool();
 
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableStateMap.clear();
@@ -4178,7 +4161,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
     if (!allmappingkeysreleased) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] pressedMappingKeysMap is not empty, try to clear all controllers & virtualkeys!\033[0m";
+        qDebug().nospace().noquote() << "\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] pressedMappingKeysMap is not empty, try to clear all controllers & virtualkeys! pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
 #endif
     }
     clearAllPressedVirtualKeys();
@@ -9566,6 +9549,36 @@ QString QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(const QString &keyco
     QString result = keycodeString;
     result.remove(regex);
     return result;
+}
+
+void QKeyMapper_Worker::breakAllRunningKeySequence()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[breakAllRunningKeySequence] Current Running KeySequence, s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
+#endif
+
+    for (const QString &keyseq_orikey : s_runningKeySequenceOrikeyList) {
+        SendInputTaskController *keyseq_break_controller = Q_NULLPTR;
+
+        if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
+            keyseq_break_controller = &SendInputTask::s_GlobalSendInputTaskController;
+        }
+        else {
+            if (SendInputTask::s_SendInputTaskControllerMap.contains(keyseq_orikey)) {
+                keyseq_break_controller = &SendInputTask::s_SendInputTaskControllerMap[keyseq_orikey];
+            }
+        }
+
+        if (keyseq_break_controller != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("\033[1;34m[breakAllRunningKeySequence] OriginalKey(%1) Running KeySequence breaked, task_stop_flag = INPUTSTOP_KEYSEQ\033[0m").arg(keyseq_orikey);
+            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            keyseq_break_controller->task_threadpool->clear();
+            *keyseq_break_controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+            keyseq_break_controller->task_stop_condition->wakeAll();
+        }
+    }
 }
 
 void QKeyMapper_Worker::onLongPressTimeOut(const QString keycodeStringWithPressTime)

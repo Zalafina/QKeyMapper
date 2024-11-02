@@ -737,6 +737,7 @@ public:
     static int doublePressKeyProc(const QString &keycodeString, int keyupdown);
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
+    static void breakAllRunningKeySequence(void);
 
 public slots:
     static void onLongPressTimeOut(const QString keycodeStringWithPressTime);
