@@ -1268,14 +1268,19 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 resendRealKeyCodeOnStop(rowindex);
             }
         }
-        else if (sendmode == SENDMODE_BURSTKEY_STOP_ON_RESTART && rowindex >= 0) {
-            if (!pressedMappingKeysContains) {
+        else if (sendmode == SENDMODE_BURSTKEY_STOP_ON_HOOKSTOPPED && rowindex >= 0) {
 #ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP_ON_RESTART, call resendRealKeyCodeOnStop(restart)").arg(original_key);
-                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+            QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP_ON_HOOKSTOPPED, call resendRealKeyCodeOnStop()").arg(original_key);
+            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
-                resendRealKeyCodeOnStop(rowindex, true);
-            }
+            resendRealKeyCodeOnStop(rowindex);
+        }
+        else if (sendmode == SENDMODE_BURSTKEY_STOP_ON_HOOKRESTART && rowindex >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP_ON_HOOKRESTART, call resendRealKeyCodeOnStop(restart)").arg(original_key);
+            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            resendRealKeyCodeOnStop(rowindex, true);
         }
 
         if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
@@ -2139,9 +2144,16 @@ void QKeyMapper_Worker::sendBurstKeyUp(int findindex, bool stop)
         if (true == stop) {
             sendmode = SENDMODE_BURSTKEY_STOP;
             if (HOOKPROC_STATE_RESTART_STOPPING == s_AtomicHookProcState) {
-                sendmode = SENDMODE_BURSTKEY_STOP_ON_RESTART;
+                sendmode = SENDMODE_BURSTKEY_STOP_ON_HOOKRESTART;
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[sendBurstKeyUp] Burst key stopped on s_AtomicHookProcState = HOOKPROC_STATE_RESTART_STOPPING!");
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            }
+            else if (HOOKPROC_STATE_STOPPING == s_AtomicHookProcState) {
+                sendmode = SENDMODE_BURSTKEY_STOP_ON_HOOKSTOPPED;
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[sendBurstKeyUp] Burst key stopped on s_AtomicHookProcState = SENDMODE_BURSTKEY_STOP_ON_HOOKSTOPPED!");
                 qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             }
@@ -4266,7 +4278,10 @@ void QKeyMapper_Worker::allMappingKeysReleased()
             QString debugmessage = QString("[allMappingKeysReleased] pressedMappingKeysMap is empty on s_AtomicHookProcState = HOOKPROC_STATE_STOPPED, do virtualkey release process.");
             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
-            clearAllPressedVirtualKeys();
+            /* Remove clearAllPressedVirtualKeys when Burst keys stop
+             * on setWorkerKeyUnHook will call resendRealKeyCodeOnStop() */
+            // clearAllPressedVirtualKeys();
+
             pressedVirtualKeysList.clear();
 
             SendInputTask::clearSendInputTaskControllerMap();
@@ -8910,13 +8925,6 @@ void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mapp
 
 void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart)
 {
-//     if (false == s_AtomicHookProcState) {
-// #ifdef DEBUG_LOGOUT_ON
-//         qDebug().nospace() << "[resendRealKeyCodeOnStop] s_AtomicHookProcState = false, skip resend real keys!";
-// #endif
-//         return;
-//     }
-
     if (pressedRealKeysListRemoveMultiInput.isEmpty()) {
         return;
     }
@@ -8929,16 +8937,24 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart)
         }
     }
 
+    bool hook_proc_stopped = false;
+    if (HOOKPROC_STATE_STOPPED == s_AtomicHookProcState
+        || HOOKPROC_STATE_STOPPING == s_AtomicHookProcState) {
+        hook_proc_stopped = true;
+    }
     QStringList pure_mappingKeys = KeyMappingDataList_ForResend->at(rowindex).Pure_MappingKeys;
     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
-    for (const QString &blockedKey : blockedKeysList) {
-        pressedRealKeysListToCheck.removeAll(blockedKey);
-    }
-    QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
-    for (const QString &realkey : pressedRealKeysListToCheckCopy) {
-        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey);
-        if (findindex >= 0 && !QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
-            pressedRealKeysListToCheck.removeAll(realkey);
+    if (!hook_proc_stopped) {
+        for (const QString &blockedKey : blockedKeysList) {
+            pressedRealKeysListToCheck.removeAll(blockedKey);
+        }
+
+        QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
+        for (const QString &realkey : pressedRealKeysListToCheckCopy) {
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey);
+            if (findindex >= 0 && !QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+                pressedRealKeysListToCheck.removeAll(realkey);
+            }
         }
     }
 #ifdef DEBUG_LOGOUT_ON
