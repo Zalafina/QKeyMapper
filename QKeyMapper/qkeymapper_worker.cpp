@@ -3955,6 +3955,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     clearAllBurstKeyTimersAndLockKeys();
     breakAllRunningKeySequence();
+    clearAllNormalPressedMappingKeys();
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
@@ -4105,6 +4106,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     /* Stop Key Mapping Process */
     clearAllBurstKeyTimersAndLockKeys();
     breakAllRunningKeySequence();
+    clearAllNormalPressedMappingKeys(true);
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
@@ -10820,6 +10822,80 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 }
 
+void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart)
+{
+    QHash<QString, QStringList> pressedMappingKeysMapCopy;
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    pressedMappingKeysMapCopy = pressedMappingKeysMap;
+    }
+
+    if (pressedMappingKeysMapCopy.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] pressedMappingKeysMap is empty, skip clear NormalPressedMappingKeys.\033[0m";
+#endif
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Current pressedMappingKeysMap -> " << pressedMappingKeysMap <<"\033[0m";
+#endif
+
+    QList<MAP_KEYDATA> *KeyMappingDataList_ToClear = QKeyMapper::KeyMappingDataList;
+    if (restart) {
+        if (QKeyMapper::lastKeyMappingDataList != Q_NULLPTR) {
+            KeyMappingDataList_ToClear = QKeyMapper::lastKeyMappingDataList;
+        }
+    }
+
+    QStringList pressedOriginalKeys = pressedMappingKeysMapCopy.keys();
+    for (const QString& original_key : pressedOriginalKeys) {
+        bool cleared = false;
+        QString real_originalkey = getRealOriginalKey(original_key);
+        SendInputTaskController *controller = Q_NULLPTR;
+        if (SendInputTask::s_SendInputTaskControllerMap.contains(real_originalkey)) {
+            controller = &SendInputTask::s_SendInputTaskControllerMap[real_originalkey];
+        }
+        int findindex = QKeyMapper::findOriKeyInCertainKeyMappingDataList(real_originalkey, KeyMappingDataList_ToClear);
+        if (findindex >= 0) {
+            QStringList mappingKeyList = KeyMappingDataList_ToClear->at(findindex).Mapping_Keys;
+            int mappingkeylist_size = mappingKeyList.size();
+            bool burst = KeyMappingDataList_ToClear->at(findindex).Burst;
+            if (controller != Q_NULLPTR
+                && mappingkeylist_size == 1
+                && false == burst) {
+                *controller->task_stop_flag = INPUTSTOP_SINGLE;
+                controller->task_stop_condition->wakeAll();
+                QStringList pure_mappingKeys = KeyMappingDataList_ToClear->at(findindex).Pure_MappingKeys;
+                for (const QString &keycodeString : qAsConst(pure_mappingKeys)) {
+                    if (pressedVirtualKeysList.contains(keycodeString)) {
+#ifdef DEBUG_LOGOUT_ON
+                        QString debugmessage = QString("[clearAllNormalPressedMappingKeys] VirtualKey \"%1\" of OriginalKey(%2) is still pressed down on Mapping stop, send KEY_UP to clear directly.").arg(keycodeString, real_originalkey);
+                        qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+                        QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_UP);
+                        pressedVirtualKeysList.removeAll(keycodeString);
+                    }
+                }
+                cleared = true;
+            }
+        }
+
+        if (cleared) {
+            QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+            pressedMappingKeysMap.remove(original_key);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Clear OriginalKey(" << original_key << ") -> MappingKeys(" << pressedMappingKeysMapCopy[original_key] << "from pressedMappingKeysMap.\033[0m";
+#endif
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Cleared pressedMappingKeysMap -> " << pressedMappingKeysMap <<"\033[0m";
+    qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Cleared pressedVirtualKeysList -> " << pressedVirtualKeysList <<"\033[0m";
+#endif
+}
+
 void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
 {
     QStringList newPressedRealKeysList;
@@ -10909,6 +10985,7 @@ void QKeyMapper_Worker::initGlobalSendInputTaskController()
     controller.task_stop_mutex = new QMutex();
     controller.task_stop_condition = new QWaitCondition();
     controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
+    controller.task_rowindex = INITIAL_ROW_INDEX;
 }
 
 void QKeyMapper_Worker::resetGlobalSendInputTaskController()
@@ -11391,6 +11468,11 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     return splitted_mappingkeys;
 }
 
+QString getRealOriginalKey(const QString &original_key)
+{
+    return original_key.left(original_key.indexOf(":"));
+}
+
 void SendInputTask::run()
 {
     // Retrieve the controller for m_real_originalkey
@@ -11404,8 +11486,15 @@ void SendInputTask::run()
 
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();
-    qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Start Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "\033[0m";
+    qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Start Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "], RowIndex:" << m_rowindex << "\033[0m";
 #endif
+
+    if (m_rowindex >= 0) {
+        controller->task_rowindex = m_rowindex;
+    }
+    else {
+        controller->task_rowindex = INITIAL_ROW_INDEX;
+    }
 
     // Execute the input sending task
     controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
@@ -11432,6 +11521,7 @@ void SendInputTask::run()
     }
     QKeyMapper_Worker::getInstance()->sendInputKeys(m_rowindex, m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
     controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+    controller->task_rowindex = INITIAL_ROW_INDEX;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "\033[1;34m[SendInputTask::run] Task Run Finished Thread -> ID:" << threadIdStr << ", Originalkey[" << m_original_key << "], Real_originalkey[" << m_real_originalkey << "] " << ((m_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << ", MappingKeys[" << m_inputKeys << "], SendMode:" << m_sendmode << "\033[0m";
@@ -11458,6 +11548,7 @@ void SendInputTask::initSendInputTaskControllerMap()
             controller.task_stop_condition = new QWaitCondition();
             controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+            controller.task_rowindex = INITIAL_ROW_INDEX;
             s_SendInputTaskControllerMap.insert(originalKey, controller);
         }
     }

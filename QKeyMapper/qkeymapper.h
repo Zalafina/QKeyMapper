@@ -339,6 +339,7 @@ public:
     static BOOL CALLBACK EnumWindowsBgProc(HWND hWnd, LPARAM lParam);
     static void collectWindowsHWND(const QString& WindowText, HWND hWnd);
     static int findOriKeyInKeyMappingDataList(const QString &keyname);
+    static int findOriKeyInCertainKeyMappingDataList(const QString &keyname, QList<MAP_KEYDATA> *keyMappingDataListToCheck);
     static int findOriKeyInKeyMappingDataList(const QString &keyname, bool& removemultiinput);
     static int findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &keyname);
     static int findOriKeyInKeyMappingDataList_ForDoublePress(const QString &keyname);

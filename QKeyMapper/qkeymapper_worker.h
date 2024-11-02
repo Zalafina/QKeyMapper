@@ -53,6 +53,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define KEY_SEQUENCE_MAX        (20000)
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
+QString getRealOriginalKey(const QString &original_key);
 
 typedef struct MAP_KEYDATA
 {
@@ -209,6 +210,7 @@ struct SendInputTaskController {
     QMutex *task_stop_mutex;
     QWaitCondition *task_stop_condition;
     int sendvirtualkey_state;
+    int task_rowindex;
 };
 
 #ifdef DINPUT_TEST
@@ -221,7 +223,6 @@ template <typename T>
 int sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
-
 class SendInputTask : public QRunnable
 {
 public:
@@ -235,11 +236,7 @@ public:
         m_sendvirtualkey_state(sendvirtualkey_state)
     {
         // Set the real original key
-        int colonIndex = original_key.indexOf(':');
-        if (colonIndex > 0)
-        {
-            m_real_originalkey = original_key.left(colonIndex);
-        }
+        m_real_originalkey = getRealOriginalKey(original_key);
 
         {
             // Lock the map access mutex
@@ -255,6 +252,7 @@ public:
                 controller.task_stop_condition = new QWaitCondition();
                 controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
                 controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                controller.task_rowindex = INITIAL_ROW_INDEX;
                 s_SendInputTaskControllerMap.insert(m_real_originalkey, controller);
             }
         }
@@ -771,6 +769,7 @@ private:
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
     void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
+    void clearAllNormalPressedMappingKeys(bool restart = false);
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
