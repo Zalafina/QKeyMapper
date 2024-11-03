@@ -10912,11 +10912,10 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
         }
         int findindex = QKeyMapper::findOriKeyInCertainKeyMappingDataList(real_originalkey, KeyMappingDataList_ToClear);
         if (findindex >= 0) {
-            QStringList mappingKeyList = KeyMappingDataList_ToClear->at(findindex).Mapping_Keys;
-            int mappingkeylist_size = mappingKeyList.size();
+            // QStringList mappingKeyList = KeyMappingDataList_ToClear->at(findindex).Mapping_Keys;
             bool burst = KeyMappingDataList_ToClear->at(findindex).Burst;
             if (controller != Q_NULLPTR
-                && mappingkeylist_size == 1
+                // && mappingKeyList.size() == 1
                 && false == burst) {
                 *controller->task_stop_flag = INPUTSTOP_SINGLE;
                 controller->task_stop_condition->wakeAll();
