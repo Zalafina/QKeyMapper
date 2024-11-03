@@ -1015,18 +1015,23 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         /* Add for KeySequenceHoldDown <<< */
 
         bool pressedMappingKeysContains = false;
+        bool pressedMappingKeysEmpty = false;
         {
         QMutexLocker locker(&s_PressedMappingKeysMapMutex);
         if (pressedMappingKeysMap.contains(original_key)) {
             pressedMappingKeysMap.remove(original_key);
             pressedMappingKeysContains = true;
+
+            if (pressedMappingKeysMap.isEmpty()) {
+                pressedMappingKeysEmpty = true;
+            }
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeyUp -> original_key[" << original_key << "], " << "mappingKeys[" << mappingkeys_str << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
 
         if (HOOKPROC_STATE_STOPPED == s_AtomicHookProcState) {
-            if (pressedMappingKeysMap.isEmpty()) {
+            if (pressedMappingKeysEmpty) {
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[sendInputKeys] pressedMappingKeysMap is empty on s_AtomicHookProcState = HOOKPROC_STATE_STOPPED!");
                 qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
@@ -4106,7 +4111,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     /* Stop Key Mapping Process */
     clearAllBurstKeyTimersAndLockKeys();
     breakAllRunningKeySequence();
-    clearAllNormalPressedMappingKeys(true);
+    clearAllNormalPressedMappingKeys(true, backup_KeyMappingDataList);
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
@@ -8925,7 +8930,7 @@ void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mapp
     sendBurstKeyUpForce(mappingIndex);
 }
 
-void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart)
+void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
 {
     if (pressedRealKeysListRemoveMultiInput.isEmpty()) {
         return;
@@ -8944,21 +8949,44 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart)
         || HOOKPROC_STATE_STOPPING == s_AtomicHookProcState) {
         hook_proc_stopped = true;
     }
-    QStringList pure_mappingKeys = KeyMappingDataList_ForResend->at(rowindex).Pure_MappingKeys;
     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
     if (!hook_proc_stopped) {
-        for (const QString &blockedKey : blockedKeysList) {
+        QList<MAP_KEYDATA> *KeyMappingDataList_ToCheck = KeyMappingDataList_ForResend;
+        if (restart && keyMappingDataListToCheck != Q_NULLPTR) {
+            KeyMappingDataList_ToCheck = keyMappingDataListToCheck;
+        }
+
+        QStringList currentBlockedKeysList = collectCertainMappingDataListBlockedKeysList(KeyMappingDataList_ToCheck);
+        for (const QString &blockedKey : currentBlockedKeysList) {
             pressedRealKeysListToCheck.removeAll(blockedKey);
         }
 
         QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
         for (const QString &realkey : pressedRealKeysListToCheckCopy) {
-            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey);
-            if (findindex >= 0 && !QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+            int findindex = QKeyMapper::findOriKeyInCertainKeyMappingDataList(realkey, KeyMappingDataList_ToCheck);
+            if (findindex >= 0 && !KeyMappingDataList_ToCheck->at(findindex).PassThrough) {
                 pressedRealKeysListToCheck.removeAll(realkey);
             }
         }
     }
+
+    if (restart) {
+        /* resendRealKeyCodeOnStop on mapping restart do not resend mapping tab switch hotkey */
+        QString tabHotkey = QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).TabHotkey;
+        if (tabHotkey.startsWith(PREFIX_PASSTHROUGH)) {
+            tabHotkey.remove(0, 1);
+        }
+        pressedRealKeysListToCheck.removeAll(tabHotkey);
+    }
+    else {
+        /* resendRealKeyCodeOnStop on mapping stop do not resend mapping stop hotkey */
+        QString mappingStopKeyStr = QKeyMapper::s_MappingStopKeyString;
+        if (mappingStopKeyStr.startsWith(PREFIX_PASSTHROUGH)) {
+            mappingStopKeyStr.remove(0, 1);
+        }
+        pressedRealKeysListToCheck.removeAll(mappingStopKeyStr);
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[resendRealKeyCodeOnStop] pressedRealKeysListToCheck -> " << pressedRealKeysListToCheck;
 #endif
@@ -8967,7 +8995,20 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart)
         return;
     }
 
-    for (const QString &keycodeString : qAsConst(pure_mappingKeys)) {
+    QStringList keyListToCheck = KeyMappingDataList_ForResend->at(rowindex).Pure_MappingKeys;
+    QStringList pure_originalkeylist = KeyMappingDataList_ForResend->at(rowindex).Pure_OriginalKeys;
+    keyListToCheck = keyListToCheck + pure_originalkeylist;
+    keyListToCheck.removeDuplicates();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[resendRealKeyCodeOnStop] keyListToCheck -> " << keyListToCheck;
+#endif
+
+    if (keyListToCheck.isEmpty()) {
+        return;
+    }
+
+    for (const QString &keycodeString : keyListToCheck) {
         if (pressedRealKeysListToCheck.contains(keycodeString)) {
 #ifdef DEBUG_LOGOUT_ON
             QString debugmessage = QString("[resendRealKeyCodeOnStop] RealKey \"%1\" is still pressed down on BurstKey stop, resend \"%2\" KEY_DOWN.").arg(keycodeString, keycodeString);
@@ -8991,6 +9032,23 @@ void QKeyMapper_Worker::collectBlockedKeysList()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[collectBlockedKeysList]" << "blockedKeysList ->" << blockedKeysList;
 #endif
+}
+
+QStringList QKeyMapper_Worker::collectCertainMappingDataListBlockedKeysList(QList<MAP_KEYDATA> *keyMappingDataListToCheck)
+{
+    QStringList collected_blockedKeysList;
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(*keyMappingDataListToCheck)) {
+        if (keymapdata.Mapping_Keys.size() == 1 && keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
+            collected_blockedKeysList.append(keymapdata.Original_Key);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[collectCertainMappingDataListBlockedKeysList]" << "collected_blockedKeysList ->" << collected_blockedKeysList;
+#endif
+
+    return collected_blockedKeysList;
 }
 
 void QKeyMapper_Worker::collectCombinationOriginalKeysList()
@@ -10822,7 +10880,7 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 }
 
-void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart)
+void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
 {
     QHash<QString, QStringList> pressedMappingKeysMapCopy;
     {
@@ -10842,12 +10900,8 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart)
 #endif
 
     QList<MAP_KEYDATA> *KeyMappingDataList_ToClear = QKeyMapper::KeyMappingDataList;
-    if (restart) {
-        if (QKeyMapper::lastKeyMappingDataList != Q_NULLPTR) {
-            KeyMappingDataList_ToClear = QKeyMapper::lastKeyMappingDataList;
-        }
-    }
 
+    QList<int> clearedRowIndexList;
     QStringList pressedOriginalKeys = pressedMappingKeysMapCopy.keys();
     for (const QString& original_key : pressedOriginalKeys) {
         bool cleared = false;
@@ -10888,12 +10942,40 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart)
             qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Clear OriginalKey(" << original_key << ") -> MappingKeys(" << pressedMappingKeysMapCopy[original_key] << "from pressedMappingKeysMap.\033[0m";
 #endif
         }
+
+        if (cleared) {
+            if (!clearedRowIndexList.contains(findindex)) {
+                clearedRowIndexList.append(findindex);
+            }
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Cleared pressedMappingKeysMap -> " << pressedMappingKeysMap <<"\033[0m";
     qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] Cleared pressedVirtualKeysList -> " << pressedVirtualKeysList <<"\033[0m";
+    qDebug().nospace().noquote() << "\033[1;34m[clearAllNormalPressedMappingKeys] clearedRowIndexList -> " << clearedRowIndexList <<"\033[0m";
 #endif
+
+    bool pressedMappingKeysEmpty = false;
+    {
+    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+    if (pressedMappingKeysMap.isEmpty()) {
+        pressedMappingKeysEmpty = true;
+    }
+    }
+
+    if (pressedMappingKeysEmpty) {
+        for (const int &rowindex : clearedRowIndexList) {
+            if (rowindex >= 0 && rowindex < KeyMappingDataList_ToClear->size()) {
+                if (restart) {
+                    resendRealKeyCodeOnStop(rowindex, true, keyMappingDataListToCheck);
+                }
+                else {
+                    resendRealKeyCodeOnStop(rowindex);
+                }
+            }
+        }
+    }
 }
 
 void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
@@ -11466,6 +11548,26 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     }
 
     return splitted_mappingkeys;
+}
+
+QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys)
+{
+    QString original_key = QKeyMapper::getOriginalKeyStringWithoutSuffix(originalkeystr);
+    QStringList orikeylist = original_key.split(SEPARATOR_PLUS);
+
+    if (pure_keys) {
+        QStringList pure_orikeylist;
+        static QRegularExpression orikey_regex(R"(^(.+?)(?:@([0-9]))?$)");
+        for (const QString &orikey : orikeylist) {
+            QRegularExpressionMatch orikey_match = orikey_regex.match(orikey);
+            if (orikey_match.hasMatch()) {
+                pure_orikeylist.append(orikey_match.captured(1));
+            }
+        }
+        orikeylist = pure_orikeylist;
+    }
+
+    return orikeylist;
 }
 
 QString getRealOriginalKey(const QString &original_key)

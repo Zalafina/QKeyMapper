@@ -53,6 +53,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #define KEY_SEQUENCE_MAX        (20000)
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
+QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
 QString getRealOriginalKey(const QString &original_key);
 
 typedef struct MAP_KEYDATA
@@ -60,6 +61,7 @@ typedef struct MAP_KEYDATA
     QString Original_Key;
     QStringList Mapping_Keys;
     QStringList Pure_MappingKeys;
+    QStringList Pure_OriginalKeys;
     QString Note;
     bool Burst;
     int BurstPressTime;
@@ -98,6 +100,8 @@ typedef struct MAP_KEYDATA
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
         Pure_MappingKeys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUSANDNEXT, true);
         Pure_MappingKeys.removeDuplicates();
+        Pure_OriginalKeys = splitOriginalKeyString(originalkey, true);
+        Pure_OriginalKeys.removeDuplicates();
         Note = note;
         Burst = burst;
         BurstPressTime = burstpresstime;
@@ -715,9 +719,10 @@ public:
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
-    static void resendRealKeyCodeOnStop(int rowindex, bool restart = false);
+    static void resendRealKeyCodeOnStop(int rowindex, bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
 
     static void collectBlockedKeysList(void);
+    static QStringList collectCertainMappingDataListBlockedKeysList(QList<MAP_KEYDATA> *keyMappingDataListToCheck);
     static void collectCombinationOriginalKeysList(void);
     static void collectLongPressOriginalKeysMap(void);
     static QHash<QString, int> currentLongPressOriginalKeysMap(void);
@@ -769,7 +774,7 @@ private:
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
     void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
-    void clearAllNormalPressedMappingKeys(bool restart = false);
+    void clearAllNormalPressedMappingKeys(bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
