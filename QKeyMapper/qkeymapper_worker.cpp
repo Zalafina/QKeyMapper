@@ -3848,6 +3848,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
 
+    releasePressedRealKeysOfOriginalKeys();
+
 #ifdef VIGEM_CLIENT_SUPPORT
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
@@ -4210,6 +4212,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 #endif
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
+
+    releasePressedRealKeysOfOriginalKeys();
 
     s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
@@ -11122,6 +11126,43 @@ void QKeyMapper_Worker::clearGlobalSendInputTaskControllerThreadPool()
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.task_threadpool->clear();
     controller.task_stop_condition->wakeAll();
+}
+
+void QKeyMapper_Worker::releasePressedRealKeysOfOriginalKeys(void)
+{
+    if (pressedRealKeysListRemoveMultiInput.isEmpty()) {
+        return;
+    }
+
+    QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
+
+    QStringList keycodeStringListToRelease;
+    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+        QStringList pure_originalkeylist = keymapdata.Pure_OriginalKeys;
+        for (const QString &keycodeString : pure_originalkeylist) {
+            if (pressedRealKeysListToCheck.contains(keycodeString)) {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[releasePressedRealKeysOfOriginalKeys] RealKey \"%1\" is pressed down on Mapping Start/Restart, add to keycodeStringListToRelease.").arg(keycodeString);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+                keycodeStringListToRelease.append(keycodeString);
+            }
+        }
+    }
+
+    keycodeStringListToRelease.removeDuplicates();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "\033[1;34m[releasePressedRealKeysOfOriginalKeys] keycodeStringListToRelease -> " << keycodeStringListToRelease <<"\033[0m";
+#endif
+
+    if (keycodeStringListToRelease.isEmpty()) {
+        return;
+    }
+
+    for (const QString &keycodeString : keycodeStringListToRelease) {
+        QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_UP);
+    }
 }
 
 #if 0

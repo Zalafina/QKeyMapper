@@ -782,6 +782,7 @@ private:
     void resetGlobalSendInputTaskController(void);
     void clearGlobalSendInputTaskController(void);
     void clearGlobalSendInputTaskControllerThreadPool(void);
+    void releasePressedRealKeysOfOriginalKeys(void);
 
 public:
 #if 0
