@@ -844,7 +844,7 @@ public:
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QMutex s_PressedMappingKeysMapMutex;
-    static QStringList pressedLockKeysList;
+    static QHash<QString, int> pressedLockKeysMap;
     static QStringList exchangeKeysList;
     static QMutex s_BurstKeyTimerMutex;
 #ifdef DINPUT_TEST

@@ -167,9 +167,11 @@ const int KEY_INTERCEPT_NONE            = 0;
 const int KEY_INTERCEPT_BLOCK           = 1;
 const int KEY_INTERCEPT_PASSTHROUGH     = 2;
 
-const int KEY_PROC_NONE         = 0;
-const int KEY_PROC_BURST        = 1;
-const int KEY_PROC_LOCK         = 2;
+const int KEY_PROC_NONE             = 0;
+const int KEY_PROC_BURST            = 1;
+const int KEY_PROC_LOCK             = 2;
+const int KEY_PROC_LOCK_PASSTHROUGH = 3;
+const int KEY_PROC_PASSTHROUGH      = 4;
 
 const int SPLIT_WITH_PLUS           = 0;
 const int SPLIT_WITH_NEXT           = 1;

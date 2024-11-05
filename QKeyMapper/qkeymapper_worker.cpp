@@ -59,7 +59,7 @@ QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
 QMutex QKeyMapper_Worker::s_PressedMappingKeysMapMutex;
-QStringList QKeyMapper_Worker::pressedLockKeysList = QStringList();
+QHash<QString, int> QKeyMapper_Worker::pressedLockKeysMap;
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
 QMutex QKeyMapper_Worker::s_BurstKeyTimerMutex;
 #ifdef DINPUT_TEST
@@ -3844,7 +3844,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     }
     SendInputTask::clearSendInputTaskControllerMap();
     resetGlobalSendInputTaskController();
-    pressedLockKeysList.clear();
+    pressedLockKeysMap.clear();
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
 
@@ -3981,7 +3981,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     // pressedMappingKeysMap.clear();
     // }
-    pressedLockKeysList.clear();
+    pressedLockKeysMap.clear();
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
     // resetGlobalSendInputTaskController();
@@ -4127,7 +4127,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     // QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     // pressedMappingKeysMap.clear();
     // }
-    pressedLockKeysList.clear();
+    pressedLockKeysMap.clear();
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
     // resetGlobalSendInputTaskController();
@@ -8222,6 +8222,7 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
 {
     int keyproc = KEY_PROC_NONE;
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+    bool update_lockstatus = false;
 
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
@@ -8230,7 +8231,8 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                     if (true == QKeyMapper::KeyMappingDataList->at(findindex).LockStatus) {
                         keyproc = KEY_PROC_LOCK;
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("hookBurstAndLockProc(): Lock ON & Burst ON(KEY_DOWN) -> Key \"%s\" LockStatus is ON, skip startBurstTimer()!", keycodeString.toStdString().c_str());
+                        QString debugmessage = QString("[hookBurstAndLockProc] Lock ON & Burst ON(KEY_DOWN) -> Key \"%1\" LockStatus is ON, skip startBurstTimer()!").arg(keycodeString);
+                        qDebug().nospace().noquote() << debugmessage;
 #endif
                     }
                     else {
@@ -8248,20 +8250,22 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
         }
 
         if (findindex >=0 && true == QKeyMapper::KeyMappingDataList->at(findindex).Lock) {
-            if (true == pressedLockKeysList.contains(keycodeString)){
+            if (true == pressedLockKeysMap.contains(keycodeString)){
                 (*QKeyMapper::KeyMappingDataList)[findindex].LockStatus = false;
-                pressedLockKeysList.removeAll(keycodeString);
-                updateLockStatus();
+                update_lockstatus = true;
+                pressedLockKeysMap.remove(keycodeString);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("hookBurstAndLockProc(): Key \"%s\" KeyDown LockStatus -> OFF", keycodeString.toStdString().c_str());
+                QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KeyDown LockStatus = OFF").arg(keycodeString);
+                qDebug().nospace().noquote() << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap;
 #endif
             }
             else {
                 (*QKeyMapper::KeyMappingDataList)[findindex].LockStatus = true;
-                pressedLockKeysList.append(keycodeString);
-                updateLockStatus();
+                update_lockstatus = true;
+                pressedLockKeysMap.insert(keycodeString, findindex);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug("hookBurstAndLockProc(): Key \"%s\" KeyDown LockStatus -> ON", keycodeString.toStdString().c_str());
+                QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KeyDown LockStatus = ON").arg(keycodeString);
+                qDebug().nospace().noquote() << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap;
 #endif
             }
         }
@@ -8277,7 +8281,8 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                         if (true == QKeyMapper::KeyMappingDataList->at(findindex).LockStatus) {
                             keyproc = KEY_PROC_LOCK;
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug("hookBurstAndLockProc(): Lock ON & Burst ON(KEY_UP) -> Key \"%s\" LockStatus is ON, skip stopBurstTimer()!", keycodeString.toStdString().c_str());
+                            QString debugmessage = QString("[hookBurstAndLockProc] Lock ON & Burst ON(KEY_UP) -> Key \"%1\" LockStatus is ON, skip stopBurstTimer()!").arg(keycodeString);
+                            qDebug().nospace().noquote() << debugmessage;
 #endif
                         }
                         else {
@@ -8285,14 +8290,51 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                             emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(keycodeString, findindex);
                             keyproc = KEY_PROC_BURST;
                         }
+
+                        QString original_key = (*QKeyMapper::KeyMappingDataList)[findindex].Original_Key;
+                        if (original_key.contains(SEPARATOR_LONGPRESS)) {
+                            QStringList pure_mappingkeys = (*QKeyMapper::KeyMappingDataList)[findindex].Pure_MappingKeys;
+                            QString pure_originalkeyStr = QKeyMapper::getOriginalKeyStringWithoutSuffix(original_key);
+                            if (!pure_mappingkeys.contains(pure_originalkeyStr)) {
+                                if (KEY_PROC_LOCK == keyproc) {
+                                    keyproc = KEY_PROC_LOCK_PASSTHROUGH;
+#ifdef DEBUG_LOGOUT_ON
+                                    QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KEY_UP on longpress MappingKeys(%2), do not skip KeyUp!").arg(keycodeString, (*QKeyMapper::KeyMappingDataList)[findindex].Mapping_Keys.constFirst());
+                                    qDebug().nospace().noquote() << debugmessage;
+#endif
+                                }
+                                else {
+                                    keyproc = KEY_PROC_PASSTHROUGH;
+                                }
+                            }
+                        }
                     }
                     /* Lock ON &  Burst OFF */
                     else {
                         if (true == QKeyMapper::KeyMappingDataList->at(findindex).LockStatus) {
                             keyproc = KEY_PROC_LOCK;
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug("hookBurstAndLockProc(): Lock ON & Burst OFF -> Key \"%s\" LockStatus is ON, skip KeyUp!", keycodeString.toStdString().c_str());
+                            QString debugmessage = QString("[hookBurstAndLockProc] Lock ON & Burst OFF -> Key \"%1\" LockStatus is ON, skip KeyUp!").arg(keycodeString);
+                            qDebug().nospace().noquote() << debugmessage;
 #endif
+                        }
+
+                        QString original_key = (*QKeyMapper::KeyMappingDataList)[findindex].Original_Key;
+                        if (original_key.contains(SEPARATOR_LONGPRESS)) {
+                            QStringList pure_mappingkeys = (*QKeyMapper::KeyMappingDataList)[findindex].Pure_MappingKeys;
+                            QString pure_originalkeyStr = QKeyMapper::getOriginalKeyStringWithoutSuffix(original_key);
+                            if (!pure_mappingkeys.contains(pure_originalkeyStr)) {
+                                if (KEY_PROC_LOCK == keyproc) {
+                                    keyproc = KEY_PROC_LOCK_PASSTHROUGH;
+#ifdef DEBUG_LOGOUT_ON
+                                    QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KEY_UP on longpress MappingKeys(%2), do not skip KeyUp!").arg(keycodeString, (*QKeyMapper::KeyMappingDataList)[findindex].Mapping_Keys.constFirst());
+                                    qDebug().nospace().noquote() << debugmessage;
+#endif
+                                }
+                                else {
+                                    keyproc = KEY_PROC_PASSTHROUGH;
+                                }
+                            }
                         }
                     }
                 }
@@ -8307,6 +8349,10 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                 }
             }
         }
+    }
+
+    if (update_lockstatus) {
+        updateLockStatus();
     }
 
     return keyproc;
@@ -9266,14 +9312,16 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 releaseKeys.append(key);
 
                 if (findindex >=0){
-                    if (keyproc != KEY_PROC_LOCK) {
+                    if (keyproc != KEY_PROC_LOCK && keyproc != KEY_PROC_LOCK_PASSTHROUGH) {
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
-                    if (PassThrough) {
+                    if (PassThrough
+                        || keyproc == KEY_PROC_LOCK_PASSTHROUGH
+                        || keyproc == KEY_PROC_PASSTHROUGH) {
                         intercept = KEY_INTERCEPT_PASSTHROUGH;
                     }
                     else {
@@ -10795,9 +10843,9 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
         if (findindex >= 0) {
             if (true == QKeyMapper::KeyMappingDataList->at(findindex).Lock) {
-                if (true == pressedLockKeysList.contains(burstKey)){
+                if (true == pressedLockKeysMap.contains(burstKey)){
                     (*QKeyMapper::KeyMappingDataList)[findindex].LockStatus = false;
-                    pressedLockKeysList.removeAll(burstKey);
+                    pressedLockKeysMap.remove(burstKey);
 #ifdef DEBUG_LOGOUT_ON
                     qDebug("[clearAllBurstKeyTimersAndLockKeys] Key \"%s\" KeyDown LockStatus -> OFF", burstKey.toStdString().c_str());
 #endif

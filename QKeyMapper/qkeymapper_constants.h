@@ -140,6 +140,8 @@ extern const int KEY_INTERCEPT_PASSTHROUGH;
 extern const int KEY_PROC_NONE;
 extern const int KEY_PROC_BURST;
 extern const int KEY_PROC_LOCK;
+extern const int KEY_PROC_LOCK_PASSTHROUGH;
+extern const int KEY_PROC_PASSTHROUGH;
 
 extern const int SPLIT_WITH_PLUS;
 extern const int SPLIT_WITH_NEXT;
