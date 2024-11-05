@@ -41,7 +41,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>Burst</string>
@@ -60,7 +60,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>Lock</string>
@@ -79,7 +79,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>KeyUpAction</string>
@@ -98,7 +98,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>PassThrough</string>
@@ -117,7 +117,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="value">
     <number>40</number>
@@ -136,7 +136,7 @@
     <string>BurstPress</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="burstreleaseLabel">
@@ -152,7 +152,7 @@
     <string>BurstRelease</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QSpinBox" name="burstreleaseSpinBox">
@@ -165,7 +165,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="value">
     <number>20</number>
@@ -204,7 +204,7 @@
     <string>OriginalKey</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="mappingKeyLabel">
@@ -220,7 +220,7 @@
     <string>MappingKey</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="orikeyListLabel">
@@ -236,7 +236,7 @@
     <string>OriginalKeyList</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="mapkeyListLabel">
@@ -252,7 +252,7 @@
     <string>MappingKeyList</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QPushButton" name="originalKeyUpdateButton">
@@ -265,7 +265,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>Update</string>
@@ -284,7 +284,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>Update</string>
@@ -303,7 +303,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>KeySeqHoldDown</string>
@@ -322,7 +322,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>RepeatByKey</string>
@@ -341,7 +341,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>RepeatTimes</string>
@@ -360,7 +360,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="value">
     <number>1</number>
@@ -379,7 +379,7 @@
     <string>Note</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="itemNoteLineEdit">
@@ -402,12 +402,31 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
+    <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
     <string>Update</string>
    </property>
    <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="mappingKeysUnlockCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>230</x>
+     <y>170</y>
+     <width>141</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>MappingKeysUnlock</string>
+   </property>
+   <property name="checked">
     <bool>false</bool>
    </property>
   </widget>
