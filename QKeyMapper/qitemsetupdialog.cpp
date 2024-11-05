@@ -611,7 +611,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         else {
             if (keymapdata.Lock) {
                 (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = false;
-                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].LockStatus = false;
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].LockState = LOCK_STATE_LOCKOFF;
                 keymapdata.Lock = false;
                 value_changed = true;
             }

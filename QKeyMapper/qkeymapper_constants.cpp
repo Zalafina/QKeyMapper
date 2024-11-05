@@ -173,6 +173,10 @@ const int KEY_PROC_LOCK             = 2;
 const int KEY_PROC_LOCK_PASSTHROUGH = 3;
 const int KEY_PROC_PASSTHROUGH      = 4;
 
+const uint LOCK_STATE_LOCKOFF       = 0;
+const uint LOCK_STATE_LOCKON        = 1;
+const uint LOCK_STATE_LOCKON_PLUS   = 2;
+
 const int SPLIT_WITH_PLUS           = 0;
 const int SPLIT_WITH_NEXT           = 1;
 const int SPLIT_WITH_PLUSANDNEXT    = 2;

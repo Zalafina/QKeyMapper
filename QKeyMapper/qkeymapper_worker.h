@@ -67,7 +67,8 @@ typedef struct MAP_KEYDATA
     int BurstPressTime;
     int BurstReleaseTime;
     bool Lock;
-    bool LockStatus;
+    bool MappingKeysUnlock;
+    uint LockState;
     bool PassThrough;
     bool KeyUp_Action;
     bool KeySeqHoldDown;
@@ -82,7 +83,8 @@ typedef struct MAP_KEYDATA
     , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
     , Lock(false)
-    , LockStatus(false)
+    , MappingKeysUnlock(true)
+    , LockState(LOCK_STATE_LOCKOFF)
     , PassThrough(false)
     , KeyUp_Action(false)
     , KeySeqHoldDown(false)
@@ -92,7 +94,7 @@ typedef struct MAP_KEYDATA
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
-                bool lock, bool passthrough,
+                bool lock, bool mappingkeys_unlock, bool passthrough,
                 bool keyup_action, bool keyseqholddown,
                 int repeat_mode, int repeat_times)
     {
@@ -107,7 +109,8 @@ typedef struct MAP_KEYDATA
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
         Lock = lock;
-        LockStatus = false;
+        MappingKeysUnlock = mappingkeys_unlock;
+        LockState = LOCK_STATE_LOCKOFF;
         PassThrough = passthrough;
         KeyUp_Action = keyup_action;
         KeySeqHoldDown = keyseqholddown;
@@ -124,6 +127,7 @@ typedef struct MAP_KEYDATA
                 && (BurstPressTime == other.BurstPressTime)
                 && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
+                && (MappingKeysUnlock == other.MappingKeysUnlock)
                 && (PassThrough == other.PassThrough)
                 && (KeyUp_Action == other.KeyUp_Action)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
@@ -143,7 +147,8 @@ typedef struct MAP_KEYDATA
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
                         << ", Lock:" << data.Lock
-                        << ", LockStatus:" << data.LockStatus
+                        << ", MappingKeysUnlock:" << data.MappingKeysUnlock
+                        << ", LockState:" << data.LockState
                         << ", PassThrough:" << data.PassThrough
                         << ", KeyUp_Action:" << data.KeyUp_Action
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown

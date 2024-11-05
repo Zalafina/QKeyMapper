@@ -3122,6 +3122,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       burstpresstimeList.at(loadindex),
                                                       burstreleasetimeList.at(loadindex),
                                                       lockList.at(loadindex),
+                                                      true,
                                                       passthroughList.at(loadindex),
                                                       keyup_actionList.at(loadindex),
                                                       keyseqholddownList.at(loadindex),
@@ -5672,6 +5673,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   burstpresstimeList.at(loadindex),
                                                                   burstreleasetimeList.at(loadindex),
                                                                   lockList.at(loadindex),
+                                                                  true,
                                                                   passthroughList.at(loadindex),
                                                                   keyup_actionList.at(loadindex),
                                                                   keyseqholddownList.at(loadindex),
@@ -9269,7 +9271,7 @@ void QKeyMapper::updateLockStatusDisplay()
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
             if (keymapdata.Lock == true) {
-                if (keymapdata.LockStatus == true) {
+                if (keymapdata.LockState != LOCK_STATE_LOCKOFF) {
                     m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setForeground(QBrush(STATUS_ON_COLOR));
                 }
                 else {
@@ -10137,6 +10139,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.BurstPressTime,
                                                                keymapdata.BurstReleaseTime,
                                                                keymapdata.Lock,
+                                                               keymapdata.MappingKeysUnlock,
                                                                keymapdata.PassThrough,
                                                                keymapdata.KeyUp_Action,
                                                                keymapdata.KeySeqHoldDown,
@@ -10270,6 +10273,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    BURST_PRESS_TIME_DEFAULT,
                                                    BURST_RELEASE_TIME_DEFAULT,
                                                    false,
+                                                   true,
                                                    false,
                                                    false,
                                                    false,

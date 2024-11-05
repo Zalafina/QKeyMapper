@@ -143,6 +143,10 @@ extern const int KEY_PROC_LOCK;
 extern const int KEY_PROC_LOCK_PASSTHROUGH;
 extern const int KEY_PROC_PASSTHROUGH;
 
+extern const uint LOCK_STATE_LOCKOFF;
+extern const uint LOCK_STATE_LOCKON;
+extern const uint LOCK_STATE_LOCKON_PLUS;
+
 extern const int SPLIT_WITH_PLUS;
 extern const int SPLIT_WITH_NEXT;
 extern const int SPLIT_WITH_PLUSANDNEXT;
