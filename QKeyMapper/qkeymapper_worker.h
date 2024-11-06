@@ -67,7 +67,7 @@ typedef struct MAP_KEYDATA
     int BurstPressTime;
     int BurstReleaseTime;
     bool Lock;
-    bool MappingKeysUnlock;
+    bool MappingKeyUnlock;
     uint LockState;
     bool PassThrough;
     bool KeyUp_Action;
@@ -83,7 +83,7 @@ typedef struct MAP_KEYDATA
     , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
     , Lock(false)
-    , MappingKeysUnlock(true)
+    , MappingKeyUnlock(false)
     , LockState(LOCK_STATE_LOCKOFF)
     , PassThrough(false)
     , KeyUp_Action(false)
@@ -109,7 +109,7 @@ typedef struct MAP_KEYDATA
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
         Lock = lock;
-        MappingKeysUnlock = mappingkeys_unlock;
+        MappingKeyUnlock = mappingkeys_unlock;
         LockState = LOCK_STATE_LOCKOFF;
         PassThrough = passthrough;
         KeyUp_Action = keyup_action;
@@ -127,7 +127,7 @@ typedef struct MAP_KEYDATA
                 && (BurstPressTime == other.BurstPressTime)
                 && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
-                && (MappingKeysUnlock == other.MappingKeysUnlock)
+                && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (PassThrough == other.PassThrough)
                 && (KeyUp_Action == other.KeyUp_Action)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
@@ -147,7 +147,7 @@ typedef struct MAP_KEYDATA
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
                         << ", Lock:" << data.Lock
-                        << ", MappingKeysUnlock:" << data.MappingKeysUnlock
+                        << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", LockState:" << data.LockState
                         << ", PassThrough:" << data.PassThrough
                         << ", KeyUp_Action:" << data.KeyUp_Action

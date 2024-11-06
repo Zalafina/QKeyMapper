@@ -411,7 +411,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="mappingKeysUnlockCheckBox">
+  <widget class="QCheckBox" name="mappingKeyUnlockCheckBox">
    <property name="geometry">
     <rect>
      <x>230</x>
@@ -424,7 +424,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="text">
-    <string>MappingKeysUnlock</string>
+    <string>MappingKeyUnlock</string>
    </property>
    <property name="checked">
     <bool>false</bool>

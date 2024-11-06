@@ -2830,6 +2830,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList burstpresstimeList;
     QStringList burstreleasetimeList;
     QStringList lockList;
+    QStringList mappingkeyunlockList;
     QStringList passthroughList;
     QStringList keyup_actionList;
     QStringList keyseqholddownList;
@@ -2865,6 +2866,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         }
         else {
             lockList.append("OFF");
+        }
+        if (true == keymapdata.MappingKeyUnlock) {
+            mappingkeyunlockList.append("ON");
+        }
+        else {
+            mappingkeyunlockList.append("OFF");
         }
         if (true == keymapdata.PassThrough) {
             passthroughList.append("ON");
@@ -2905,6 +2912,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTPRESS_TIME, burstpresstimeList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
     keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
+    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
     keyMappingDataFile.setValue(KEYMAPDATA_KEYUP_ACTION, keyup_actionList);
     keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
@@ -2934,6 +2942,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList burstpressStringList;
     QStringList burstreleaseStringList;
     QStringList lockStringList;
+    QStringList mappingkeyunlockStringList;
     QStringList passthroughStringList;
     QStringList keyup_actionStringList;
     QStringList keyseqholddownStringList;
@@ -2944,6 +2953,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
     QList<bool> lockList;
+    QList<bool> mappingkeyunlockList;
     QList<bool> passthroughList;
     QList<bool> keyup_actionList;
     QList<bool> keyseqholddownList;
@@ -2973,6 +2983,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         burstpressStringList    = burstpressStringListDefault;
         burstreleaseStringList  = burstreleaseStringListDefault;
         lockStringList          = stringListAllOFF;
+        mappingkeyunlockStringList = stringListAllOFF;
         passthroughStringList   = stringListAllOFF;
         keyup_actionStringList   = stringListAllOFF;
         keyseqholddownStringList = stringListAllOFF;
@@ -2993,6 +3004,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_LOCK)) {
             lockStringList = keyMappingDataFile.value(KEYMAPDATA_LOCK).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_MAPPINGKEYUNLOCK)) {
+            mappingkeyunlockStringList = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYUNLOCK).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_PASSTHROUGH)) {
             passthroughStringList = keyMappingDataFile.value(KEYMAPDATA_PASSTHROUGH).toStringList();
@@ -3054,6 +3068,15 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     lockList.append(true);
                 } else {
                     lockList.append(false);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &mappingkeyunlock = (i < mappingkeyunlockStringList.size()) ? mappingkeyunlockStringList.at(i) : "OFF";
+                if (mappingkeyunlock == "ON") {
+                    mappingkeyunlockList.append(true);
+                } else {
+                    mappingkeyunlockList.append(false);
                 }
             }
 
@@ -3122,7 +3145,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       burstpresstimeList.at(loadindex),
                                                       burstreleasetimeList.at(loadindex),
                                                       lockList.at(loadindex),
-                                                      true,
+                                                      mappingkeyunlockList.at(loadindex),
                                                       passthroughList.at(loadindex),
                                                       keyup_actionList.at(loadindex),
                                                       keyseqholddownList.at(loadindex),
@@ -4563,6 +4586,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString burstpresstimeList_forsave;
     QString burstreleasetimeList_forsave;
     QString lockList_forsave;
+    QString mappingkeyunlockList_forsave;
     QString passthroughList_forsave;
     QString keyup_actionList_forsave;
     QString keyseqholddownList_forsave;
@@ -4592,6 +4616,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             burstpresstimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstreleasetimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             lockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            mappingkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             passthroughList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             keyup_actionList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             keyseqholddownList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -4606,6 +4631,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList burstpresstimeList;
         QStringList burstreleasetimeList;
         QStringList lockList;
+        QStringList mappingkeyunlockList;
         QStringList passthroughList;
         QStringList keyup_actionList;
         QStringList keyseqholddownList;
@@ -4641,6 +4667,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 }
                 else {
                     lockList.append("OFF");
+                }
+                if (true == keymapdata.MappingKeyUnlock) {
+                    mappingkeyunlockList.append("ON");
+                }
+                else {
+                    mappingkeyunlockList.append("OFF");
                 }
                 if (true == keymapdata.PassThrough) {
                     passthroughList.append("ON");
@@ -4682,6 +4714,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString burstpresstimeList_str = burstpresstimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstreleasetimeList_str = burstreleasetimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString lockList_str = lockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString mappingkeyunlockList_str = mappingkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString passthroughList_str = passthroughList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString keyup_actionList_str = keyup_actionList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString keyseqholddownList_str = keyseqholddownList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -4696,6 +4729,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         burstpresstimeList_forsave.append(burstpresstimeList_str);
         burstreleasetimeList_forsave.append(burstreleasetimeList_str);
         lockList_forsave.append(lockList_str);
+        mappingkeyunlockList_forsave.append(mappingkeyunlockList_str);
         passthroughList_forsave.append(passthroughList_str);
         keyup_actionList_forsave.append(keyup_actionList_str);
         keyseqholddownList_forsave.append(keyseqholddownList_str);
@@ -4713,6 +4747,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpresstimeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
@@ -5390,6 +5425,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString burstpressData_loaded;
         QString burstreleaseData_loaded;
         QString lockData_loaded;
+        QString mappingkeyunlockData_loaded;
         QString passthroughData_loaded;
         QString keyup_actionData_loaded;
         QString keyseqholddownData_loaded;
@@ -5403,6 +5439,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList burstpressData_split;
         QStringList burstreleaseData_split;
         QStringList lockData_split;
+        QStringList mappingkeyunlockData_split;
         QStringList passthroughData_split;
         QStringList keyup_actionData_split;
         QStringList keyseqholddownData_split;
@@ -5451,6 +5488,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 lockData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_LOCK).toString();
                 lockData_split = lockData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK)) {
+                mappingkeyunlockData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK).toString();
+                mappingkeyunlockData_split = mappingkeyunlockData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_PASSTHROUGH)) {
                 passthroughData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_PASSTHROUGH).toString();
                 passthroughData_split = passthroughData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -5487,6 +5528,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList burstpressStringList;
                     QStringList burstreleaseStringList;
                     QStringList lockStringList;
+                    QStringList mappingkeyunlockStringList;
                     QStringList passthroughStringList;
                     QStringList keyup_actionStringList;
                     QStringList keyseqholddownStringList;
@@ -5497,6 +5539,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QList<int> burstpresstimeList;
                     QList<int> burstreleasetimeList;
                     QList<bool> lockList;
+                    QList<bool> mappingkeyunlockList;
                     QList<bool> passthroughList;
                     QList<bool> keyup_actionList;
                     QList<bool> keyseqholddownList;
@@ -5523,6 +5566,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     burstpressStringList    = burstpressStringListDefault;
                     burstreleaseStringList  = burstreleaseStringListDefault;
                     lockStringList          = stringListAllOFF;
+                    mappingkeyunlockStringList = stringListAllOFF;
                     passthroughStringList   = stringListAllOFF;
                     keyup_actionStringList   = stringListAllOFF;
                     keyseqholddownStringList = stringListAllOFF;
@@ -5543,6 +5587,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                     if (lockData_split.size() == table_count) {
                         lockStringList = lockData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (mappingkeyunlockData_split.size() == table_count) {
+                        mappingkeyunlockStringList = mappingkeyunlockData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (passthroughData_split.size() == table_count) {
                         passthroughStringList = passthroughData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -5605,6 +5652,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                 lockList.append(true);
                             } else {
                                 lockList.append(false);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &mappingkeyunlock = (i < mappingkeyunlockStringList.size()) ? mappingkeyunlockStringList.at(i) : "OFF";
+                            if (mappingkeyunlock == "ON") {
+                                mappingkeyunlockList.append(true);
+                            } else {
+                                mappingkeyunlockList.append(false);
                             }
                         }
 
@@ -5673,7 +5729,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   burstpresstimeList.at(loadindex),
                                                                   burstreleasetimeList.at(loadindex),
                                                                   lockList.at(loadindex),
-                                                                  true,
+                                                                  mappingkeyunlockList.at(loadindex),
                                                                   passthroughList.at(loadindex),
                                                                   keyup_actionList.at(loadindex),
                                                                   keyseqholddownList.at(loadindex),
@@ -10139,7 +10195,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.BurstPressTime,
                                                                keymapdata.BurstReleaseTime,
                                                                keymapdata.Lock,
-                                                               keymapdata.MappingKeysUnlock,
+                                                               keymapdata.MappingKeyUnlock,
                                                                keymapdata.PassThrough,
                                                                keymapdata.KeyUp_Action,
                                                                keymapdata.KeySeqHoldDown,
@@ -10273,7 +10329,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    BURST_PRESS_TIME_DEFAULT,
                                                    BURST_RELEASE_TIME_DEFAULT,
                                                    false,
-                                                   true,
+                                                   false,
                                                    false,
                                                    false,
                                                    false,

@@ -59,6 +59,7 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
 
         ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
+        ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
@@ -80,6 +81,7 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
 
         ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
+        ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
         ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
@@ -120,6 +122,7 @@ void QItemSetupDialog::resetFontSize()
 
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
+    ui->mappingKeyUnlockCheckBox->setFont(customFont);
     ui->keyupActionCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
     ui->keySeqHoldDownCheckBox->setFont(customFont);
@@ -264,9 +267,21 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         /* Load Lock */
         if (true == keymapdata.Lock) {
             ui->lockCheckBox->setChecked(true);
+            ui->mappingKeyUnlockCheckBox->setEnabled(true);
         }
         else {
             ui->lockCheckBox->setChecked(false);
+            ui->mappingKeyUnlockCheckBox->setEnabled(false);
+            ui->mappingKeyUnlockCheckBox->setChecked(false);
+            keymapdata.MappingKeyUnlock = false;
+        }
+
+        /* Load MappingKeyUnlock */
+        if (true == keymapdata.MappingKeyUnlock) {
+            ui->mappingKeyUnlockCheckBox->setChecked(true);
+        }
+        else {
+            ui->mappingKeyUnlockCheckBox->setChecked(false);
         }
 
         /* Load KeyUp Action Status */
@@ -349,6 +364,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->lockCheckBox->setEnabled(false);
+            ui->mappingKeyUnlockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
@@ -464,9 +480,21 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         /* Load Lock */
         if (true == keymapdata.Lock) {
             ui->lockCheckBox->setChecked(true);
+            ui->mappingKeyUnlockCheckBox->setEnabled(true);
         }
         else {
             ui->lockCheckBox->setChecked(false);
+            ui->mappingKeyUnlockCheckBox->setEnabled(false);
+            ui->mappingKeyUnlockCheckBox->setChecked(false);
+            keymapdata.MappingKeyUnlock = false;
+        }
+
+        /* Load MappingKeyUnlock */
+        if (true == keymapdata.MappingKeyUnlock) {
+            ui->mappingKeyUnlockCheckBox->setChecked(true);
+        }
+        else {
+            ui->mappingKeyUnlockCheckBox->setChecked(false);
         }
 
         /* Load KeyUp Action Status */
@@ -549,6 +577,7 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->lockCheckBox->setEnabled(false);
+            ui->mappingKeyUnlockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
@@ -615,7 +644,13 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
                 keymapdata.Lock = false;
                 value_changed = true;
             }
+            if (keymapdata.MappingKeyUnlock) {
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = false;
+                keymapdata.MappingKeyUnlock = false;
+                value_changed = true;
+            }
             ui->lockCheckBox->setEnabled(false);
+            ui->mappingKeyUnlockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
@@ -685,9 +720,21 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         /* Load Lock */
         if (true == keymapdata.Lock) {
             ui->lockCheckBox->setChecked(true);
+            ui->mappingKeyUnlockCheckBox->setEnabled(true);
         }
         else {
             ui->lockCheckBox->setChecked(false);
+            ui->mappingKeyUnlockCheckBox->setEnabled(false);
+            ui->mappingKeyUnlockCheckBox->setChecked(false);
+            keymapdata.MappingKeyUnlock = false;
+        }
+
+        /* Load MappingKeyUnlock */
+        if (true == keymapdata.MappingKeyUnlock) {
+            ui->mappingKeyUnlockCheckBox->setChecked(true);
+        }
+        else {
+            ui->mappingKeyUnlockCheckBox->setChecked(false);
         }
 
         /* Load KeyUp Action Status */
@@ -815,6 +862,8 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Lock -> " << lock;
 #endif
     }
+
+    refreshMappingKeyRelatedUI();
 }
 
 
@@ -1080,4 +1129,20 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
     QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
 
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool mappingkeyunlock = ui->mappingKeyUnlockCheckBox->isChecked();
+    if (mappingkeyunlock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).MappingKeyUnlock) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
+#endif
+    }
 }

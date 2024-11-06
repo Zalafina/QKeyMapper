@@ -8281,7 +8281,7 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
     else {  /* KEY_UP == keyupdown */
         QList<int> pressedLockedRowIndexList = pressedLockKeysMap.values();
         for (const int rowindex : pressedLockedRowIndexList) {
-            bool mappingkeys_unlock = (*QKeyMapper::KeyMappingDataList)[rowindex].MappingKeysUnlock;
+            bool mappingkeys_unlock = (*QKeyMapper::KeyMappingDataList)[rowindex].MappingKeyUnlock;
             if (mappingkeys_unlock) {
                 QStringList pure_mappingkeys = (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys;
                 if (pure_mappingkeys.contains(keycodeString)) {
