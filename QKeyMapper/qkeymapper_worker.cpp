@@ -6365,6 +6365,18 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
         static bool show_screenpoints = false;
         static bool show_windowpoints = false;
         if (KEY_DOWN == keyupdown){
+#ifdef DEBUG_LOGOUT_ON
+            if (keycodeString == SHOW_KEY_DEBUGINFO) {
+                {
+                QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+                qDebug().nospace() << "\033[1;34m[InterceptionKeyboardHookProc]" << "Show debug info pressedMappingKeysMap -> " << QKeyMapper_Worker::pressedMappingKeysMap << "\033[0m";
+                }
+                qDebug().nospace() << "\033[1;34m[InterceptionKeyboardHookProc]" << "Show debug info pressedVirtualKeysList -> " << QKeyMapper_Worker::pressedVirtualKeysList << "\033[0m";
+                qDebug().nospace() << "\033[1;34m[InterceptionKeyboardHookProc]" << "Show debug info pressedRealKeysList -> " << QKeyMapper_Worker::pressedRealKeysList << "\033[0m";
+                qDebug().nospace() << "\033[1;34m[InterceptionKeyboardHookProc]" << "Show debug info pressedRealKeysListRemoveMultiInput -> " << QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput << "\033[0m";
+            }
+#endif
+
             if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
                     if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
@@ -7159,6 +7171,18 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             static bool show_screenpoints = false;
             static bool show_windowpoints = false;
             if (KEY_DOWN == keyupdown){
+#ifdef DEBUG_LOGOUT_ON
+                if (keycodeString == SHOW_KEY_DEBUGINFO) {
+                    {
+                    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+                    qDebug().nospace() << "\033[1;34m[LowLevelKeyboardHookProc]" << "Show debug info pressedMappingKeysMap -> " << QKeyMapper_Worker::pressedMappingKeysMap << "\033[0m";
+                    }
+                    qDebug().nospace() << "\033[1;34m[LowLevelKeyboardHookProc]" << "Show debug info pressedVirtualKeysList -> " << QKeyMapper_Worker::pressedVirtualKeysList << "\033[0m";
+                    qDebug().nospace() << "\033[1;34m[LowLevelKeyboardHookProc]" << "Show debug info pressedRealKeysList -> " << QKeyMapper_Worker::pressedRealKeysList << "\033[0m";
+                    qDebug().nospace() << "\033[1;34m[LowLevelKeyboardHookProc]" << "Show debug info pressedRealKeysListRemoveMultiInput -> " << QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput << "\033[0m";
+                }
+#endif
+
                 if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
                         if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
