@@ -1093,7 +1093,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 continue;
             }
 
-            if (isPressedMappingKeysContains(key) && sendmode != SENDMODE_FORCE_STOP) {
+            if (isPressedMappingKeysContains(key) && sendmode != SENDMODE_FORCE_STOP && sendtype != SENDTYPE_EXCLUSION) {
 #ifdef DEBUG_LOGOUT_ON
                 {
                 QMutexLocker locker(&s_PressedMappingKeysMapMutex);
@@ -1150,7 +1150,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                    if (pressedRealKeysListRemoveMultiInput.contains(key)
+                        || pressedVirtualKeysList.contains(key)) {
                         send_keyupdown = KEY_DOWN;
                     }
                     else {
@@ -1202,7 +1203,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                    if (pressedRealKeysListRemoveMultiInput.contains(key)
+                        || pressedVirtualKeysList.contains(key)) {
                         send_keyupdown = KEY_DOWN;
                     }
                     else {
@@ -1594,7 +1596,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         send_keyupdown = KEY_UP;
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                        if (pressedRealKeysListRemoveMultiInput.contains(key)
+                            || pressedVirtualKeysList.contains(key)) {
                             send_keyupdown = KEY_UP;
                         }
                         else {
@@ -1682,7 +1685,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         send_keyupdown = KEY_UP;
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        if (true == pressedRealKeysListRemoveMultiInput.contains(key)) {
+                        if (pressedRealKeysListRemoveMultiInput.contains(key)
+                            || pressedVirtualKeysList.contains(key)) {
                             send_keyupdown = KEY_UP;
                         }
                         else {
