@@ -1150,8 +1150,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    if (pressedRealKeysListRemoveMultiInput.contains(key)
-                        || pressedVirtualKeysList.contains(key)) {
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+                    bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+
+                    if (send_exclusion
+                        && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
                         send_keyupdown = KEY_DOWN;
                     }
                     else {
@@ -1203,8 +1206,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    if (pressedRealKeysListRemoveMultiInput.contains(key)
-                        || pressedVirtualKeysList.contains(key)) {
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+                    bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+
+                    if (send_exclusion
+                        && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
                         send_keyupdown = KEY_DOWN;
                     }
                     else {
@@ -1596,8 +1602,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         send_keyupdown = KEY_UP;
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        if (pressedRealKeysListRemoveMultiInput.contains(key)
-                            || pressedVirtualKeysList.contains(key)) {
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+                        bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+
+                        if (send_exclusion
+                            && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
                             send_keyupdown = KEY_UP;
                         }
                         else {
@@ -1685,8 +1694,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         send_keyupdown = KEY_UP;
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        if (pressedRealKeysListRemoveMultiInput.contains(key)
-                            || pressedVirtualKeysList.contains(key)) {
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
+                        bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+
+                        if (send_exclusion
+                            && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
                             send_keyupdown = KEY_UP;
                         }
                         else {
@@ -7423,10 +7435,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         }
         else {
             int sendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
-            if (VIRTUAL_KEY_OVERLAY == extraInfo) {
-                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-            }
-            else if (VIRTUAL_KEY_SEND == extraInfo) {
+            if (VIRTUAL_KEY_SEND == extraInfo) {
                 sendVirtualKeyState = static_cast<int>(extraInfo_nochanged & 0xF);
             }
 
@@ -7444,6 +7453,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 qDebug("[LowLevelKeyboardHookProc] VirtualKey: \"%s\" (0x%02X) SysKeyUp, scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X), sendVirtualKeyState(%d)", keycodeString.toStdString().c_str(), pKeyBoard->vkCode, pKeyBoard->scanCode, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo, sendVirtualKeyState);
             }
 #endif
+
+            if (VIRTUAL_KEY_OVERLAY == extraInfo) {
+                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+            }
 
             if (KEY_DOWN == keyupdown){
                 if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
@@ -7628,16 +7641,18 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 || VIRTUAL_KEY_OVERLAY == extraInfo
                 || VIRTUAL_MOUSE_POINTCLICK == extraInfo) {
                 int sendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
-                if (VIRTUAL_KEY_OVERLAY == extraInfo) {
-                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-                }
-                else if (VIRTUAL_KEY_SEND == extraInfo) {
+                if (VIRTUAL_KEY_SEND == extraInfo) {
                     sendVirtualKeyState = static_cast<int>(extraInfo_nochanged & 0xF);
                 }
 
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("[LowLevelMouseHookProc] Virtual \"%s\" %s, extraInfo(0x%08X), sendVirtualKeyState(%d)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo, sendVirtualKeyState);
 #endif
+
+                if (VIRTUAL_KEY_OVERLAY == extraInfo) {
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
+
                 if (KEY_DOWN == keyupdown) {
                     if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
