@@ -398,6 +398,7 @@ public:
     static bool exportKeyMappingDataToFile(int tabindex, const QString &filename);
     static bool importKeyMappingDataFromFile(int tabindex, const QString &filename);
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
+    static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);

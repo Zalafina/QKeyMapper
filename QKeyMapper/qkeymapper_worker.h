@@ -62,6 +62,8 @@ typedef struct MAP_KEYDATA
     QStringList Mapping_Keys;
     QStringList Pure_MappingKeys;
     QStringList Pure_OriginalKeys;
+    QStringList MappingKeys_KeyUp;
+    QStringList Pure_MappingKeys_KeyUp;
     QString Note;
     bool Burst;
     int BurstPressTime;
@@ -71,6 +73,7 @@ typedef struct MAP_KEYDATA
     uint LockState;
     bool PassThrough;
     bool KeyUp_Action;
+    int SendTiming;
     bool KeySeqHoldDown;
     int RepeatMode;
     int RepeatTimes;
@@ -78,6 +81,10 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA() :
       Original_Key()
     , Mapping_Keys()
+    , Pure_MappingKeys()
+    , Pure_OriginalKeys()
+    , MappingKeys_KeyUp()
+    , Pure_MappingKeys_KeyUp()
     , Note()
     , Burst(false)
     , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
@@ -87,15 +94,16 @@ typedef struct MAP_KEYDATA
     , LockState(LOCK_STATE_LOCKOFF)
     , PassThrough(false)
     , KeyUp_Action(false)
+    , SendTiming(SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)
     , RepeatMode(REPEAT_MODE_NONE)
     , RepeatTimes(REPEAT_TIMES_DEFAULT)
     {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString note,
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool mappingkeys_unlock, bool passthrough,
-                bool keyup_action, bool keyseqholddown,
+                bool keyup_action, int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times)
     {
         Original_Key = originalkey;
@@ -104,6 +112,15 @@ typedef struct MAP_KEYDATA
         Pure_MappingKeys.removeDuplicates();
         Pure_OriginalKeys = splitOriginalKeyString(originalkey, true);
         Pure_OriginalKeys.removeDuplicates();
+        if (mappingkeys_keyup.isEmpty()) {
+            MappingKeys_KeyUp = Mapping_Keys;
+            Pure_MappingKeys_KeyUp = Pure_MappingKeys;
+        }
+        else {
+            MappingKeys_KeyUp = splitMappingKeyString(mappingkeys_keyup, SPLIT_WITH_NEXT);
+            Pure_MappingKeys_KeyUp = splitMappingKeyString(mappingkeys_keyup, SPLIT_WITH_PLUSANDNEXT, true);
+            Pure_MappingKeys_KeyUp.removeDuplicates();
+        }
         Note = note;
         Burst = burst;
         BurstPressTime = burstpresstime;
@@ -113,6 +130,7 @@ typedef struct MAP_KEYDATA
         LockState = LOCK_STATE_LOCKOFF;
         PassThrough = passthrough;
         KeyUp_Action = keyup_action;
+        SendTiming = sendtiming;
         KeySeqHoldDown = keyseqholddown;
         RepeatMode = repeat_mode;
         RepeatTimes = repeat_times;
@@ -122,6 +140,7 @@ typedef struct MAP_KEYDATA
     {
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
+                && (MappingKeys_KeyUp == other.MappingKeys_KeyUp)
                 && (Note == other.Note)
                 && (Burst == other.Burst)
                 && (BurstPressTime == other.BurstPressTime)
@@ -130,6 +149,7 @@ typedef struct MAP_KEYDATA
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (PassThrough == other.PassThrough)
                 && (KeyUp_Action == other.KeyUp_Action)
+                && (SendTiming == other.SendTiming)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
                 && (RepeatMode == other.RepeatMode)
                 && (RepeatTimes == other.RepeatTimes));
@@ -142,6 +162,7 @@ typedef struct MAP_KEYDATA
         debug.nospace() << "\nMAP_KEYDATA["
                         << "Original_Key:" << data.Original_Key
                         << ", Mapping_Keys:" << data.Mapping_Keys
+                        << ", MappingKeys_KeyUp:" << data.MappingKeys_KeyUp
                         << ", Note:" << data.Note
                         << ", Burst:" << data.Burst
                         << ", BurstPressTime:" << data.BurstPressTime
@@ -151,6 +172,7 @@ typedef struct MAP_KEYDATA
                         << ", LockState:" << data.LockState
                         << ", PassThrough:" << data.PassThrough
                         << ", KeyUp_Action:" << data.KeyUp_Action
+                        << ", SendTiming:" << data.SendTiming
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
                         << ", RepeatMode:" << data.RepeatMode
                         << ", RepeatTimes:" << data.RepeatTimes

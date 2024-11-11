@@ -162,15 +162,22 @@ const int HOOKPROC_STATE_STARTING           = 3;
 const int HOOKPROC_STATE_RESTART_STOPPING   = 4;
 const int HOOKPROC_STATE_RESTART_STARTING   = 5;
 
-const int KEY_INTERCEPT_NONE            = 0;
-const int KEY_INTERCEPT_BLOCK           = 1;
-const int KEY_INTERCEPT_PASSTHROUGH     = 2;
+const int KEY_INTERCEPT_NONE                            = 0;
+const int KEY_INTERCEPT_BLOCK                           = 1;
+const int KEY_INTERCEPT_PASSTHROUGH                     = 2;
+const int KEY_INTERCEPT_BLOCK_COMBINATIONKEYUP          = 3;
 
 const int KEY_PROC_NONE             = 0;
 const int KEY_PROC_BURST            = 1;
 const int KEY_PROC_LOCK             = 2;
 const int KEY_PROC_LOCK_PASSTHROUGH = 3;
 const int KEY_PROC_PASSTHROUGH      = 4;
+
+const int SENDTIMING_NORMAL             = 0;
+const int SENDTIMING_KEYDOWN            = 1;
+const int SENDTIMING_KEYUP              = 2;
+const int SENDTIMING_KEYDOWN_AND_KEYUP  = 3;
+const int SENDTIMING_NORMAL_AND_KEYUP   = 4;
 
 const uint LOCK_STATE_LOCKOFF       = 0;
 const uint LOCK_STATE_LOCKON        = 1;
@@ -443,12 +450,14 @@ const char *ANYWINDOWTITLE_STRING = "AnyTitle";
 
 const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
 const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
+const char *KEYMAPDATA_MAPPINGKEYS_KEYUP = "KeyMapData_MappingKeys_KeyUp";
 const char *KEYMAPDATA_NOTE = "KeyMapData_Note";
 const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 const char *KEYMAPDATA_MAPPINGKEYUNLOCK = "KeyMapData_MappingKeyUnlock";
 const char *KEYMAPDATA_PASSTHROUGH = "KeyMapData_PassThrough";
 const char *KEYMAPDATA_KEYUP_ACTION = "KeyMapData_KeyUp_Action";
+const char *KEYMAPDATA_SENDTIMING = "KeyMapData_SendTiming";
 const char *KEYMAPDATA_KEYSEQHOLDDOWN = "KeyMapData_KeySeqHoldDown";
 const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
@@ -501,6 +510,9 @@ const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
 const char *SETUPDIALOG_ORIKEY_COMBOBOX_NAME = "SetupDialog_OriginalKeyListComboBox";
 const char *SETUPDIALOG_MAPKEY_COMBOBOX_NAME = "SetupDialog_MappingKeyListComboBox";
 
+const char *SETUPDIALOG_MAPKEY_LINEEDIT_NAME        = "SetupDialog_MappingKeyLineEdit";
+const char *SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME  = "SetupDialog_MappingKey_KeyUpLineEdit";
+
 const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
 const char *MAPPINGSTARTKEY_LINEEDIT_NAME = "mappingStartKeyLineEdit";
 const char *MAPPINGSTOPKEY_LINEEDIT_NAME = "mappingStopKeyLineEdit";
@@ -536,6 +548,12 @@ const int SHOW_MODE_WINDOW  = 1;
 
 const int PICK_WINDOW_POINT_KEY  = VK_LMENU;
 const int PICK_SCREEN_POINT_KEY  = VK_LCONTROL;
+
+const char *SENDTIMING_STR_NORMAL               = "NORMAL";
+const char *SENDTIMING_STR_KEYDOWN              = "KEYDOWN";
+const char *SENDTIMING_STR_KEYUP                = "KEYUP";
+const char *SENDTIMING_STR_KEYDOWN_AND_KEYUP    = "KEYDOWN_AND_KEYUP";
+const char *SENDTIMING_STR_NORMAL_AND_KEYUP     = "NORMAL_AND_KEYUP";
 
 const char *SHOW_KEY_DEBUGINFO          = "Application";
 const char *SHOW_POINTS_IN_WINDOW_KEY   = "F8";
@@ -681,11 +699,13 @@ const char *TRAYMENU_HIDEACTION_CHINESE = "隐藏";
 const char *TRAYMENU_QUITACTION_CHINESE = "退出";
 const char *ORIGINALKEYLABEL_CHINESE = "原始按键";
 const char *MAPPINGKEYLABEL_CHINESE = "映射按键";
+const char *KEYUPMAPPINGLABEL_CHINESE = "抬起映射";
 const char *ITEMNOTELABEL_CHINESE = "备注";
 const char *BURSTCHECKBOX_CHINESE = "连发";
 const char *LOCKCHECKBOX_CHINESE = "锁定";
 const char *MAPPINGKEYUNLOCKCHECKBOX_CHINESE = "映射按键解锁";
 const char *KEYUPACTIONCHECKBOX_CHINESE = "按键抬起时动作";
+const char *SENDTIMINGLABEL_CHINESE = "发送时机";
 const char *PASSTHROUGHCHECKBOX_CHINESE = "原始按键穿透";
 const char *KEYSEQHOLDDOWNCHECKBOX_CHINESE = "按键序列按下保持";
 const char *REPEATBYKEYCHECKBOX_CHINESE = "按键按下时循环";
@@ -708,6 +728,11 @@ const char *POSITION_TOP_RIGHT_STR_CHINESE      = "顶部右侧";
 const char *POSITION_BOTTOM_LEFT_STR_CHINESE    = "底部左侧";
 const char *POSITION_BOTTOM_CENTER_STR_CHINESE  = "底部居中";
 const char *POSITION_BOTTOM_RIGHT_STR_CHINESE   = "底部右侧";
+const char *SENDTIMING_NORMAL_STR_CHINESE               = "正常";
+const char *SENDTIMING_KEYDOWN_STR_CHINESE              = "按下";
+const char *SENDTIMING_KEYUP_STR_CHINESE                = "抬起";
+const char *SENDTIMING_KEYDOWN_AND_KEYUP_STR_CHINESE    = "按下+抬起";
+const char *SENDTIMING_NORMAL_AND_KEYUP_STR_CHINESE     = "正常+抬起";
 
 /* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -791,11 +816,13 @@ const char *TRAYMENU_HIDEACTION_ENGLISH = "Hide";
 const char *TRAYMENU_QUITACTION_ENGLISH = "Quit";
 const char *ORIGINALKEYLABEL_ENGLISH = "OriginalKey";
 const char *MAPPINGKEYLABEL_ENGLISH = "MappingKey";
+const char *KEYUPMAPPINGLABEL_ENGLISH = "KeyUpMapping";
 const char *ITEMNOTELABEL_ENGLISH = "Note";
 const char *BURSTCHECKBOX_ENGLISH = "Burst";
 const char *LOCKCHECKBOX_ENGLISH = "Lock";
 const char *MAPPINGKEYUNLOCKCHECKBOX_ENGLISH = "MappingKeyUnlock";
 const char *KEYUPACTIONCHECKBOX_ENGLISH = "KeyUpAction";
+const char *SENDTIMINGLABEL_ENGLISH = "SendTiming";
 const char *PASSTHROUGHCHECKBOX_ENGLISH = "PassThrough";
 const char *KEYSEQHOLDDOWNCHECKBOX_ENGLISH = "KeySeqHoldDown";
 const char *REPEATBYKEYCHECKBOX_ENGLISH = "RepeatByKey";
@@ -818,6 +845,15 @@ const char *POSITION_TOP_RIGHT_STR_ENGLISH      = "T-Right";
 const char *POSITION_BOTTOM_LEFT_STR_ENGLISH    = "B-Left";
 const char *POSITION_BOTTOM_CENTER_STR_ENGLISH  = "B-Center";
 const char *POSITION_BOTTOM_RIGHT_STR_ENGLISH   = "B-Right";
+const char *SENDTIMING_NORMAL_STR_ENGLISH               = "Normal";
+const char *SENDTIMING_KEYDOWN_STR_ENGLISH              = "KeyDown";
+const char *SENDTIMING_KEYUP_STR_ENGLISH                = "KeyUp";
+const char *SENDTIMING_KEYDOWN_AND_KEYUP_STR_ENGLISH    = "KeyDown+KeyUp";
+const char *SENDTIMING_NORMAL_AND_KEYUP_STR_ENGLISH     = "Normal+KeyUp";
+
+/* constant values for QItemSetupDialog */
+const int ITEMSETUP_EDITING_MAPPINGKEY      = 0;
+const int ITEMSETUP_EDITING_KEYUPMAPPINGKEY = 1;
 
 /* constant values for QInputDeviceListWindow */
 const int DEVICE_TABLE_NUMBER_COLUMN         = 0;

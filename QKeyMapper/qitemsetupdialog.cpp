@@ -6,6 +6,7 @@
 QItemSetupDialog *QItemSetupDialog::m_instance = Q_NULLPTR;
 QStringList QItemSetupDialog::s_valiedOriginalKeyList;
 QStringList QItemSetupDialog::s_valiedMappingKeyList;
+int QItemSetupDialog::s_editingMappingKeyLineEdit = ITEMSETUP_EDITING_MAPPINGKEY;
 
 QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     : QDialog(parent)
@@ -14,18 +15,23 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , m_ItemRow(-1)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
+    , m_MappingKeyLineEdit(new KeyStringLineEdit(this))
+    , m_MappingKey_KeyUpLineEdit(new KeyStringLineEdit(this))
 {
     m_instance = this;
     ui->setupUi(this);
 
     initKeyListComboBoxes();
+    initKeyStringLineEdit();
 
     ui->originalKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
-    ui->mappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
+    m_MappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
+    m_MappingKey_KeyUpLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->itemNoteLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->originalKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
-    ui->mappingKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    m_MappingKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    m_MappingKey_KeyUpLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->itemNoteLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstpressSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstreleaseSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
@@ -43,7 +49,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     // ui->mappingKeyUpdateButton->setVisible(false);
 
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_originalKeyUpdateButton_clicked);
-    QObject::connect(ui->mappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
+    QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
+    QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked);
     QObject::connect(ui->itemNoteLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemNoteUpdateButton_clicked);
 }
 
@@ -69,12 +76,26 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
         ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_ENGLISH);
+        ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_ENGLISH);
         ui->itemNoteLabel->setText(ITEMNOTELABEL_ENGLISH);
         ui->orikeyListLabel->setText(ORIKEYLISTLABEL_ENGLISH);
         ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_ENGLISH);
         ui->originalKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->itemNoteUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+
+        ui->sendTimingLabel->setText(SENDTIMINGLABEL_ENGLISH);
+        ui->sendTimingComboBox->clear();
+        QStringList sendtiming_list = QStringList() \
+                                    << SENDTIMING_NORMAL_STR_ENGLISH
+                                    << SENDTIMING_KEYDOWN_STR_ENGLISH
+                                    << SENDTIMING_KEYUP_STR_ENGLISH
+                                    << SENDTIMING_KEYDOWN_AND_KEYUP_STR_ENGLISH
+                                    << SENDTIMING_NORMAL_AND_KEYUP_STR_ENGLISH
+                                    ;
+        ui->sendTimingComboBox->addItems(sendtiming_list);
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
     }
     else {
         setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_CHINESE);
@@ -91,12 +112,26 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
         ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_CHINESE);
+        ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_CHINESE);
         ui->itemNoteLabel->setText(ITEMNOTELABEL_CHINESE);
         ui->orikeyListLabel->setText(ORIKEYLISTLABEL_CHINESE);
         ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_CHINESE);
         ui->originalKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->itemNoteUpdateButton->setText(UPDATEBUTTON_CHINESE);
+
+        ui->sendTimingLabel->setText(SENDTIMINGLABEL_CHINESE);
+        ui->sendTimingComboBox->clear();
+        QStringList sendtiming_list = QStringList() \
+                                    << SENDTIMING_NORMAL_STR_CHINESE
+                                    << SENDTIMING_KEYDOWN_STR_CHINESE
+                                    << SENDTIMING_KEYUP_STR_CHINESE
+                                    << SENDTIMING_KEYDOWN_AND_KEYUP_STR_CHINESE
+                                    << SENDTIMING_NORMAL_AND_KEYUP_STR_CHINESE
+                                    ;
+        ui->sendTimingComboBox->addItems(sendtiming_list);
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
     }
 }
 
@@ -132,12 +167,16 @@ void QItemSetupDialog::resetFontSize()
     ui->burstreleaseLabel->setFont(customFont);
     ui->originalKeyLabel->setFont(customFont);
     ui->mappingKeyLabel->setFont(customFont);
+    ui->mappingKey_KeyUpLabel->setFont(customFont);
     ui->itemNoteLabel->setFont(customFont);
     ui->orikeyListLabel->setFont(customFont);
     ui->mapkeyListLabel->setFont(customFont);
     ui->originalKeyUpdateButton->setFont(customFont);
     ui->mappingKeyUpdateButton->setFont(customFont);
+    ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
     ui->itemNoteUpdateButton->setFont(customFont);
+    ui->sendTimingLabel->setFont(customFont);
+    ui->sendTimingComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
 }
 
 void QItemSetupDialog::setTabIndex(int tabindex)
@@ -175,17 +214,32 @@ void QItemSetupDialog::setOriginalKeyText(const QString &new_keytext)
 
 QString QItemSetupDialog::getMappingKeyText()
 {
-    return getInstance()->ui->mappingKeyLineEdit->text();
+    if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == s_editingMappingKeyLineEdit) {
+        return getInstance()->m_MappingKey_KeyUpLineEdit->text();
+    }
+    else {
+        return getInstance()->m_MappingKeyLineEdit->text();
+    }
 }
 
 int QItemSetupDialog::getMappingKeyCursorPosition()
 {
-    return getInstance()->ui->mappingKeyLineEdit->cursorPosition();
+    if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == s_editingMappingKeyLineEdit) {
+        return getInstance()->m_MappingKey_KeyUpLineEdit->cursorPosition();
+    }
+    else {
+        return getInstance()->m_MappingKeyLineEdit->cursorPosition();
+    }
 }
 
 void QItemSetupDialog::setMappingKeyText(const QString &new_keytext)
 {
-    return getInstance()->ui->mappingKeyLineEdit->setText(new_keytext);
+    if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == s_editingMappingKeyLineEdit) {
+        return getInstance()->m_MappingKey_KeyUpLineEdit->setText(new_keytext);
+    }
+    else {
+        return getInstance()->m_MappingKeyLineEdit->setText(new_keytext);
+    }
 }
 
 QString QItemSetupDialog::getCurrentOriKeyListText()
@@ -196,6 +250,22 @@ QString QItemSetupDialog::getCurrentOriKeyListText()
 QString QItemSetupDialog::getCurrentMapKeyListText()
 {
     return getInstance()->m_MappingKeyListComboBox->currentText();
+}
+
+void QItemSetupDialog::setEditingMappingKeyLineEdit(int editing_lineedit)
+{
+    if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == editing_lineedit) {
+        s_editingMappingKeyLineEdit = ITEMSETUP_EDITING_KEYUPMAPPINGKEY;
+
+        getInstance()->m_MappingKey_KeyUpLineEdit->setStyleSheet("QLineEdit { border: 2px solid #546de5; }");
+        getInstance()->m_MappingKeyLineEdit->setStyleSheet("");
+    }
+    else {
+        s_editingMappingKeyLineEdit = ITEMSETUP_EDITING_MAPPINGKEY;
+
+        getInstance()->m_MappingKeyLineEdit->setStyleSheet("QLineEdit { border: 2px solid #546de5; }");
+        getInstance()->m_MappingKey_KeyUpLineEdit->setStyleSheet("");
+    }
 }
 
 bool QItemSetupDialog::event(QEvent *event)
@@ -235,7 +305,17 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
 
         /* Load Mapping Keys String */
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-        ui->mappingKeyLineEdit->setText(mappingkeys_str);
+        m_MappingKeyLineEdit->setText(mappingkeys_str);
+
+        /* Load KeyUp MappingKeys String */
+        if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
+            keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
+            m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+        }
+        else {
+            QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+            m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+        }
 
         /* Load Note String */
         ui->itemNoteLineEdit->setText(keymapdata.Note);
@@ -297,6 +377,23 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             else {
                 ui->keySeqHoldDownCheckBox->setEnabled(false);
             }
+        }
+
+        /* Load SendTiming State */
+        if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
+        }
+        else if (SENDTIMING_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYUP);
+        }
+        else if (SENDTIMING_KEYDOWN_AND_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN_AND_KEYUP);
+        }
+        else if (SENDTIMING_NORMAL_AND_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL_AND_KEYUP);
+        }
+        else {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
         }
 
         /* Load PassThrough Status */
@@ -442,6 +539,24 @@ void QItemSetupDialog::initKeyListComboBoxes()
     m_MappingKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
 }
 
+void QItemSetupDialog::initKeyStringLineEdit()
+{
+    int width = ui->originalKeyLineEdit->width();
+    int height = ui->originalKeyLineEdit->height();
+
+    int left = ui->mappingKeyLabel->x() + ui->mappingKeyLabel->width() + 4;
+    int top = ui->mappingKeyLabel->y();
+    m_MappingKeyLineEdit->setObjectName(SETUPDIALOG_MAPKEY_LINEEDIT_NAME);
+    m_MappingKeyLineEdit->setGeometry(QRect(left, top, width, height));
+
+    left = ui->mappingKey_KeyUpLabel->x() + ui->mappingKey_KeyUpLabel->width() + 4;
+    top = ui->mappingKey_KeyUpLabel->y();
+    m_MappingKey_KeyUpLineEdit->setObjectName(SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME);
+    m_MappingKey_KeyUpLineEdit->setGeometry(QRect(left, top, width, height));
+
+    setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
+}
+
 void QItemSetupDialog::refreshOriginalKeyRelatedUI()
 {
     if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
@@ -510,6 +625,23 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             else {
                 ui->keySeqHoldDownCheckBox->setEnabled(false);
             }
+        }
+
+        /* Load SendTiming State */
+        if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
+        }
+        else if (SENDTIMING_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYUP);
+        }
+        else if (SENDTIMING_KEYDOWN_AND_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN_AND_KEYUP);
+        }
+        else if (SENDTIMING_NORMAL_AND_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL_AND_KEYUP);
+        }
+        else {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
         }
 
         /* Load PassThrough Status */
@@ -691,7 +823,17 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
 
         /* Load Mapping Keys String */
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-        ui->mappingKeyLineEdit->setText(mappingkeys_str);
+        m_MappingKeyLineEdit->setText(mappingkeys_str);
+
+        /* Load KeyUp MappingKeys String */
+        if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
+            keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
+            m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+        }
+        else {
+            QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+            m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+        }
 
         /* Load Burst */
         if (true == keymapdata.Burst) {
@@ -750,6 +892,23 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             else {
                 ui->keySeqHoldDownCheckBox->setEnabled(false);
             }
+        }
+
+        /* Load SendTiming State */
+        if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
+        }
+        else if (SENDTIMING_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYUP);
+        }
+        else if (SENDTIMING_KEYDOWN_AND_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN_AND_KEYUP);
+        }
+        else if (SENDTIMING_NORMAL_AND_KEYUP == keymapdata.SendTiming) {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL_AND_KEYUP);
+        }
+        else {
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
         }
 
         /* Load PassThrough Status */
@@ -987,7 +1146,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 
     int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
-    QString mappingKey = ui->mappingKeyLineEdit->text();
+    QString mappingKey = m_MappingKeyLineEdit->text();
     mappingKey.remove(whitespace_reg);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -1010,6 +1169,65 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
         }
 
         QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
+
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
+        (void)refreshMappingKeyRelatedUI();
+    }
+    else {
+        popupMessageColor = "#d63031";
+        popupMessage = result.errorMessage;
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
+    mappingKey.remove(whitespace_reg);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText remove whitespace -> " << mappingKey;
+#endif
+
+    ValidationResult result;
+    if (mappingKey.isEmpty()) {
+        result.isValid = true;
+    }
+    else {
+        QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
+        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
+    }
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (result.isValid) {
+        popupMessageColor = "#44bd32";
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            popupMessage = "KeyUp MappingKey update success.";
+        }
+        else {
+            popupMessage = "抬起映射更新成功";
+        }
+
+        if (mappingKey.isEmpty()) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys;
+        }
+        else {
+            QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey);
+        }
 
         QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
 
@@ -1144,5 +1362,39 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
 #endif
+    }
+}
+
+void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int sendtiming_index = ui->sendTimingComboBox->currentIndex();
+    if (sendtiming_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendTiming) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = sendtiming_index;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendTiming -> " << sendtiming_index;
+#endif
+    }
+}
+
+void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
+{
+    QLineEdit::focusInEvent(event);
+
+    if (objectName() == SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[KeyStringLineEdit::focusInEvent]" << "MappingKey_KeyUp LineEdit focus in, set editing boarder to it.";
+#endif
+        QItemSetupDialog::setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_KEYUPMAPPINGKEY);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[KeyStringLineEdit::focusInEvent]" << "MappingKey LineEdit focus in, set editing boarder to it.";
+#endif
+        QItemSetupDialog::setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
     }
 }

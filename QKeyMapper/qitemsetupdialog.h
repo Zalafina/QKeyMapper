@@ -2,12 +2,14 @@
 #define QITEMSETUPDIALOG_H
 
 #include <QDialog>
+#include <QLineEdit>
 
 namespace Ui {
 class QItemSetupDialog;
 }
 
 class KeyListComboBox;
+class KeyStringLineEdit;
 
 class QItemSetupDialog : public QDialog
 {
@@ -36,6 +38,7 @@ public:
     static void setMappingKeyText(const QString &new_keytext);
     static QString getCurrentOriKeyListText(void);
     static QString getCurrentMapKeyListText(void);
+    static void setEditingMappingKeyLineEdit(int editing_lineedit);
 
 protected:
     bool event(QEvent *event) override;
@@ -45,6 +48,7 @@ protected:
 
 private:
     void initKeyListComboBoxes(void);
+    void initKeyStringLineEdit(void);
     void refreshOriginalKeyRelatedUI(void);
     bool refreshMappingKeyRelatedUI(void);
 
@@ -57,10 +61,13 @@ private:
 public:
     KeyListComboBox *m_OriginalKeyListComboBox;
     KeyListComboBox *m_MappingKeyListComboBox;
+    KeyStringLineEdit *m_MappingKeyLineEdit;
+    KeyStringLineEdit *m_MappingKey_KeyUpLineEdit;
 
 public:
     static QStringList s_valiedOriginalKeyList;
     static QStringList s_valiedMappingKeyList;
+    static int s_editingMappingKeyLineEdit;
 
 private slots:
     void on_burstpressSpinBox_editingFinished();
@@ -72,11 +79,32 @@ private slots:
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
     void on_originalKeyUpdateButton_clicked();
     void on_mappingKeyUpdateButton_clicked();
+    void on_mappingKey_KeyUpUpdateButton_clicked();
     void on_repeatByKeyCheckBox_stateChanged(int state);
     void on_repeatByTimesCheckBox_stateChanged(int state);
     void on_repeatTimesSpinBox_editingFinished();
     void on_itemNoteUpdateButton_clicked();
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
+    void on_sendTimingComboBox_currentIndexChanged(int index);
+};
+
+class KeyStringLineEdit : public QLineEdit
+{
+    Q_OBJECT
+
+public:
+    explicit KeyStringLineEdit(QWidget *parent = Q_NULLPTR) : QLineEdit(parent)
+    {
+        if (parent != Q_NULLPTR){
+            m_parentWidget_ptr = parent;
+        }
+    }
+
+protected:
+    void focusInEvent(QFocusEvent *event) override;
+
+private:
+    QWidget *m_parentWidget_ptr;
 };
 
 #endif // QITEMSETUPDIALOG_H
