@@ -36,7 +36,7 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
-QStringList QKeyMapper_Worker::pressedCombinationRealKeysList;
+// QStringList QKeyMapper_Worker::pressedCombinationRealKeysList;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedLongPressKeysList;
 QStringList QKeyMapper_Worker::pressedDoublePressKeysList;
@@ -3833,7 +3833,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
-    pressedCombinationRealKeysList.clear();
+    // pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     s_runningKeySequenceOrikeyList.clear();
@@ -3984,7 +3984,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_KeySequenceRepeatCount.clear();
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
-    pressedCombinationRealKeysList.clear();
+    // pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     // pressedShortcutKeysList.clear();
@@ -4133,7 +4133,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
-    pressedCombinationRealKeysList.clear();
+    // pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     combinationOriginalKeysList.clear();
@@ -6601,13 +6601,6 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         returnFlag = true;
                     }
                     else { /* KEY_UP == keyupdown */
-                        if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
-                            pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionKeyboardHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
-#endif
-                        }
-
                         if (SENDTIMING_KEYDOWN == SendTiming) {
                             /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
                         }
@@ -6913,13 +6906,6 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         returnFlag = true;
                     }
                     else { /* KEY_UP == keyupdown */
-                        if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
-                            pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionMouseHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
-#endif
-                        }
-
                         if (SENDTIMING_KEYDOWN == SendTiming) {
                             /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
                         }
@@ -7382,7 +7368,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 else {
                     if (findindex >= 0) {
 #ifdef DEBUG_LOGOUT_ON
-                        QString debugmessage = QString("[LowLevelKeyboardHookProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
+                        QString debugmessage = QString("[LowLevelKeyboardHookProc] OriginalKey \"%1\" found rowindex(%2), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
                         qDebug().nospace().noquote() << debugmessage;
 #endif
                         return (LRESULT)TRUE;
@@ -7498,13 +7484,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             returnFlag = true;
                         }
                         else { /* KEY_UP == keyupdown */
-                            if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
-                                pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
-#ifdef DEBUG_LOGOUT_ON
-                                qDebug() << "[LowLevelKeyboardHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
-#endif
-                            }
-
                             if (SENDTIMING_KEYDOWN == SendTiming) {
                                 /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
                             }
@@ -8069,13 +8048,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                 returnFlag = true;
                             }
                             else { /* KEY_UP == keyupdown */
-                                if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
-                                    pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug() << "[LowLevelMouseHookProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
-#endif
-                                }
-
                                 if (SENDTIMING_KEYDOWN == SendTiming) {
                                     /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
                                 }
@@ -8867,10 +8839,10 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
                     intercept = KEY_INTERCEPT_BLOCK;
                 }
 
-                pressedCombinationRealKeysList.append(pressedCombinationRealKeys);
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[detectCombinationKeys]" << "CombinationKey Down pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
-#endif
+//                 pressedCombinationRealKeysList.append(pressedCombinationRealKeys);
+// #ifdef DEBUG_LOGOUT_ON
+//                 qDebug() << "[detectCombinationKeys]" << "CombinationKey Down pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
+// #endif
             }
             break;
         }
@@ -8898,10 +8870,10 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
                             }
                         }
 
-                        pressedCombinationRealKeysList.removeAll(getKeycodeStringRemoveMultiInput(keycodeString));
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[detectCombinationKeys]" << "CombinationKey Up pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
-#endif
+//                         pressedCombinationRealKeysList.removeAll(getKeycodeStringRemoveMultiInput(keycodeString));
+// #ifdef DEBUG_LOGOUT_ON
+//                         qDebug() << "[detectCombinationKeys]" << "CombinationKey Up pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
+// #endif
                     }
                     break;
                 }
@@ -8982,13 +8954,6 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
                 }
             }
             else { /* KEY_UP == keyupdown */
-                if (pressedCombinationRealKeysList.contains(keycodeString)) {
-                    pressedCombinationRealKeysList.removeAll(keycodeString);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[CombinationKeyProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
-#endif
-                }
-
                 if (SENDTIMING_KEYDOWN == SendTiming) {
                     /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
                 }
@@ -10201,13 +10166,6 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
                 returnFlag = true;
             }
             else { /* KEY_UP == keyupdown */
-                if (pressedCombinationRealKeysList.contains(keycodeString_nochanged)) {
-                    pressedCombinationRealKeysList.removeAll(keycodeString_nochanged);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[JoyStickKeysProc]" << "KEY_UP pressedCombinationRealKeysList ->" << pressedCombinationRealKeysList;
-#endif
-                }
-
                 if (SENDTIMING_KEYDOWN == SendTiming) {
                     /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
                 }

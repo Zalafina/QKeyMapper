@@ -2833,7 +2833,6 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList lockList;
     QStringList mappingkeyunlockList;
     QStringList passthroughList;
-    QStringList keyup_actionList;
     QStringList sendtimingList;
     QStringList keyseqholddownList;
     QStringList repeatmodeList;
@@ -2888,12 +2887,6 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             passthroughList.append("OFF");
         }
-        if (true == keymapdata.KeyUp_Action) {
-            keyup_actionList.append("ON");
-        }
-        else {
-            keyup_actionList.append("OFF");
-        }
 
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             sendtimingList.append(SENDTIMING_STR_KEYDOWN);
@@ -2941,7 +2934,6 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
-    keyMappingDataFile.setValue(KEYMAPDATA_KEYUP_ACTION, keyup_actionList);
     keyMappingDataFile.setValue(KEYMAPDATA_SENDTIMING, sendtimingList);
     keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
     keyMappingDataFile.setValue(KEYMAPDATA_REPEATMODE, repeatmodeList);
@@ -2973,7 +2965,6 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList lockStringList;
     QStringList mappingkeyunlockStringList;
     QStringList passthroughStringList;
-    QStringList keyup_actionStringList;
     QStringList sendtimingStringList;
     QStringList keyseqholddownStringList;
     QStringList repeatmodeStringList;
@@ -2985,7 +2976,6 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> lockList;
     QList<bool> mappingkeyunlockList;
     QList<bool> passthroughList;
-    QList<bool> keyup_actionList;
     QList<int> sendtimingList;
     QList<bool> keyseqholddownList;
     QList<int> repeatmodeList;
@@ -3019,7 +3009,6 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         lockStringList          = stringListAllOFF;
         mappingkeyunlockStringList = stringListAllOFF;
         passthroughStringList   = stringListAllOFF;
-        keyup_actionStringList   = stringListAllOFF;
         sendtimingStringList   = stringListAllNORMAL;
         keyseqholddownStringList = stringListAllOFF;
         repeatmodeStringList = stringListAllZERO;
@@ -3045,9 +3034,6 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_PASSTHROUGH)) {
             passthroughStringList = keyMappingDataFile.value(KEYMAPDATA_PASSTHROUGH).toStringList();
-        }
-        if (true == keyMappingDataFile.contains(KEYMAPDATA_KEYUP_ACTION)) {
-            keyup_actionStringList = keyMappingDataFile.value(KEYMAPDATA_KEYUP_ACTION).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_SENDTIMING)) {
             sendtimingStringList = keyMappingDataFile.value(KEYMAPDATA_SENDTIMING).toStringList();
@@ -3124,15 +3110,6 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     passthroughList.append(true);
                 } else {
                     passthroughList.append(false);
-                }
-            }
-
-            for (int i = 0; i < original_keys.size(); i++) {
-                const QString &keyup_action = (i < keyup_actionStringList.size()) ? keyup_actionStringList.at(i) : "OFF";
-                if (keyup_action == "ON") {
-                    keyup_actionList.append(true);
-                } else {
-                    keyup_actionList.append(false);
                 }
             }
 
@@ -3214,7 +3191,6 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       lockList.at(loadindex),
                                                       mappingkeyunlockList.at(loadindex),
                                                       passthroughList.at(loadindex),
-                                                      keyup_actionList.at(loadindex),
                                                       sendtimingList.at(loadindex),
                                                       keyseqholddownList.at(loadindex),
                                                       repeatmodeList.at(loadindex),
@@ -4662,7 +4638,6 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString lockList_forsave;
     QString mappingkeyunlockList_forsave;
     QString passthroughList_forsave;
-    QString keyup_actionList_forsave;
     QString sendtimingList_forsave;
     QString keyseqholddownList_forsave;
     QString repeatmodeList_forsave;
@@ -4694,7 +4669,6 @@ void QKeyMapper::saveKeyMapSetting(void)
             lockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mappingkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             passthroughList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
-            keyup_actionList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             sendtimingList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             keyseqholddownList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             repeatmodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -4711,7 +4685,6 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QStringList mappingkeyunlockList;
         QStringList passthroughList;
-        QStringList keyup_actionList;
         QStringList sendtimingList;
         QStringList keyseqholddownList;
         QStringList repeatmodeList;
@@ -4766,12 +4739,6 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     passthroughList.append("OFF");
                 }
-                if (true == keymapdata.KeyUp_Action) {
-                    keyup_actionList.append("ON");
-                }
-                else {
-                    keyup_actionList.append("OFF");
-                }
 
                 if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
                     sendtimingList.append(SENDTIMING_STR_KEYDOWN);
@@ -4820,7 +4787,6 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString lockList_str = lockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mappingkeyunlockList_str = mappingkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString passthroughList_str = passthroughList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
-        QString keyup_actionList_str = keyup_actionList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString sendtimingList_str = sendtimingList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString keyseqholddownList_str = keyseqholddownList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString repeatmodeList_str = repeatmodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -4837,7 +4803,6 @@ void QKeyMapper::saveKeyMapSetting(void)
         lockList_forsave.append(lockList_str);
         mappingkeyunlockList_forsave.append(mappingkeyunlockList_str);
         passthroughList_forsave.append(passthroughList_str);
-        keyup_actionList_forsave.append(keyup_actionList_str);
         sendtimingList_forsave.append(sendtimingList_str);
         keyseqholddownList_forsave.append(keyseqholddownList_str);
         repeatmodeList_forsave.append(repeatmodeList_str);
@@ -4857,7 +4822,6 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYUP_ACTION , keyup_actionList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_SENDTIMING , sendtimingList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATMODE, repeatmodeList_forsave);
@@ -5537,7 +5501,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString lockData_loaded;
         QString mappingkeyunlockData_loaded;
         QString passthroughData_loaded;
-        QString keyup_actionData_loaded;
+        // QString keyup_actionData_loaded;
         QString sendtimingData_loaded;
         QString keyseqholddownData_loaded;
         QString repeatmodeData_loaded;
@@ -5553,7 +5517,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList lockData_split;
         QStringList mappingkeyunlockData_split;
         QStringList passthroughData_split;
-        QStringList keyup_actionData_split;
+        // QStringList keyup_actionData_split;
         QStringList sendtimingData_split;
         QStringList keyseqholddownData_split;
         QStringList repeatmodeData_split;
@@ -5616,10 +5580,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 passthroughData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_PASSTHROUGH).toString();
                 passthroughData_split = passthroughData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
-            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_KEYUP_ACTION)) {
-                keyup_actionData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_KEYUP_ACTION).toString();
-                keyup_actionData_split = keyup_actionData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
-            }
+            // if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_KEYUP_ACTION)) {
+            //     keyup_actionData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_KEYUP_ACTION).toString();
+            //     keyup_actionData_split = keyup_actionData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            // }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_SENDTIMING)) {
                 sendtimingData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_SENDTIMING).toString();
                 sendtimingData_split = sendtimingData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -5655,7 +5619,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList lockStringList;
                     QStringList mappingkeyunlockStringList;
                     QStringList passthroughStringList;
-                    QStringList keyup_actionStringList;
+                    // QStringList keyup_actionStringList;
                     QStringList sendtimingStringList;
                     QStringList keyseqholddownStringList;
                     QStringList repeatmodeStringList;
@@ -5667,7 +5631,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QList<bool> lockList;
                     QList<bool> mappingkeyunlockList;
                     QList<bool> passthroughList;
-                    QList<bool> keyup_actionList;
+                    // QList<bool> keyup_actionList;
                     QList<int> sendtimingList;
                     QList<bool> keyseqholddownList;
                     QList<int> repeatmodeList;
@@ -5698,7 +5662,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     lockStringList          = stringListAllOFF;
                     mappingkeyunlockStringList = stringListAllOFF;
                     passthroughStringList   = stringListAllOFF;
-                    keyup_actionStringList   = stringListAllOFF;
+                    // keyup_actionStringList   = stringListAllOFF;
                     sendtimingStringList   = stringListAllNORMAL;
                     keyseqholddownStringList = stringListAllOFF;
                     repeatmodeStringList = stringListAllZERO;
@@ -5725,9 +5689,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     if (passthroughData_split.size() == table_count) {
                         passthroughStringList = passthroughData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
-                    if (keyup_actionData_split.size() == table_count) {
-                        keyup_actionStringList = keyup_actionData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
-                    }
+                    // if (keyup_actionData_split.size() == table_count) {
+                    //     keyup_actionStringList = keyup_actionData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    // }
                     if (sendtimingData_split.size() == table_count) {
                         sendtimingStringList = sendtimingData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
@@ -5807,14 +5771,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             }
                         }
 
-                        for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &keyup_action = (i < keyup_actionStringList.size()) ? keyup_actionStringList.at(i) : "OFF";
-                            if (keyup_action == "ON") {
-                                keyup_actionList.append(true);
-                            } else {
-                                keyup_actionList.append(false);
-                            }
-                        }
+                        // for (int i = 0; i < original_keys.size(); i++) {
+                        //     const QString &keyup_action = (i < keyup_actionStringList.size()) ? keyup_actionStringList.at(i) : "OFF";
+                        //     if (keyup_action == "ON") {
+                        //         keyup_actionList.append(true);
+                        //     } else {
+                        //         keyup_actionList.append(false);
+                        //     }
+                        // }
 
                         for (int i = 0; i < original_keys.size(); i++) {
                             const QString &sendtiming = (i < sendtimingStringList.size()) ? sendtimingStringList.at(i) : SENDTIMING_STR_NORMAL;
@@ -5893,7 +5857,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   lockList.at(loadindex),
                                                                   mappingkeyunlockList.at(loadindex),
                                                                   passthroughList.at(loadindex),
-                                                                  keyup_actionList.at(loadindex),
                                                                   sendtimingList.at(loadindex),
                                                                   keyseqholddownList.at(loadindex),
                                                                   repeatmodeList.at(loadindex),
@@ -10365,7 +10328,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.Lock,
                                                                keymapdata.MappingKeyUnlock,
                                                                keymapdata.PassThrough,
-                                                               keymapdata.KeyUp_Action,
                                                                keymapdata.SendTiming,
                                                                keymapdata.KeySeqHoldDown,
                                                                keymapdata.RepeatMode,
@@ -10498,7 +10460,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    false,
                                                    BURST_PRESS_TIME_DEFAULT,
                                                    BURST_RELEASE_TIME_DEFAULT,
-                                                   false,
                                                    false,
                                                    false,
                                                    false,

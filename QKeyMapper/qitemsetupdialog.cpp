@@ -67,7 +67,6 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
-        ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_ENGLISH);
@@ -103,7 +102,6 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
-        ui->keyupActionCheckBox->setText(KEYUPACTIONCHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_CHINESE);
@@ -158,7 +156,6 @@ void QItemSetupDialog::resetFontSize()
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
-    ui->keyupActionCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
     ui->keySeqHoldDownCheckBox->setFont(customFont);
     ui->repeatByKeyCheckBox->setFont(customFont);
@@ -364,21 +361,6 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->mappingKeyUnlockCheckBox->setChecked(false);
         }
 
-        /* Load KeyUp Action Status */
-        if (true == keymapdata.KeyUp_Action) {
-            ui->keyupActionCheckBox->setChecked(true);
-            ui->keySeqHoldDownCheckBox->setEnabled(false);
-        }
-        else {
-            ui->keyupActionCheckBox->setChecked(false);
-            if (keymapdata.Mapping_Keys.size() > 1) {
-                ui->keySeqHoldDownCheckBox->setEnabled(true);
-            }
-            else {
-                ui->keySeqHoldDownCheckBox->setEnabled(false);
-            }
-        }
-
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -394,6 +376,19 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+        }
+
+        /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
+        if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                ui->keySeqHoldDownCheckBox->setEnabled(true);
+            }
+            else {
+                ui->keySeqHoldDownCheckBox->setEnabled(false);
+            }
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
         }
 
         /* Load PassThrough Status */
@@ -612,21 +607,6 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->mappingKeyUnlockCheckBox->setChecked(false);
         }
 
-        /* Load KeyUp Action Status */
-        if (true == keymapdata.KeyUp_Action) {
-            ui->keyupActionCheckBox->setChecked(true);
-            ui->keySeqHoldDownCheckBox->setEnabled(false);
-        }
-        else {
-            ui->keyupActionCheckBox->setChecked(false);
-            if (keymapdata.Mapping_Keys.size() > 1) {
-                ui->keySeqHoldDownCheckBox->setEnabled(true);
-            }
-            else {
-                ui->keySeqHoldDownCheckBox->setEnabled(false);
-            }
-        }
-
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -642,6 +622,19 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+        }
+
+        /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
+        if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                ui->keySeqHoldDownCheckBox->setEnabled(true);
+            }
+            else {
+                ui->keySeqHoldDownCheckBox->setEnabled(false);
+            }
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
         }
 
         /* Load PassThrough Status */
@@ -879,21 +872,6 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->mappingKeyUnlockCheckBox->setChecked(false);
         }
 
-        /* Load KeyUp Action Status */
-        if (true == keymapdata.KeyUp_Action) {
-            ui->keyupActionCheckBox->setChecked(true);
-            ui->keySeqHoldDownCheckBox->setEnabled(false);
-        }
-        else {
-            ui->keyupActionCheckBox->setChecked(false);
-            if (keymapdata.Mapping_Keys.size() > 1) {
-                ui->keySeqHoldDownCheckBox->setEnabled(true);
-            }
-            else {
-                ui->keySeqHoldDownCheckBox->setEnabled(false);
-            }
-        }
-
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -909,6 +887,19 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+        }
+
+        /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
+        if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
+            if (keymapdata.Mapping_Keys.size() > 1) {
+                ui->keySeqHoldDownCheckBox->setEnabled(true);
+            }
+            else {
+                ui->keySeqHoldDownCheckBox->setEnabled(false);
+            }
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
         }
 
         /* Load PassThrough Status */
@@ -1025,31 +1016,29 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
     refreshMappingKeyRelatedUI();
 }
 
-
-void QItemSetupDialog::on_keyupActionCheckBox_stateChanged(int state)
+void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
 {
-    Q_UNUSED(state);
+    Q_UNUSED(index);
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
-    bool keyup_action = ui->keyupActionCheckBox->isChecked();
-    if (keyup_action != QKeyMapper::KeyMappingDataList->at(m_ItemRow).KeyUp_Action) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeyUp_Action = keyup_action;
+    int sendtiming_index = ui->sendTimingComboBox->currentIndex();
+    if (sendtiming_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendTiming) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = sendtiming_index;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] KeyUpAction -> " << keyup_action;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendTiming -> " << sendtiming_index;
 #endif
+    }
 
-        /* Update KeySeqHoldDown Status */
-        if (true == keyup_action) {
-            ui->keySeqHoldDownCheckBox->setEnabled(false);
-        }
-        else {
-            ui->keySeqHoldDownCheckBox->setEnabled(true);
-        }
+    /* Update KeySeqHoldDown Status */
+    if (SENDTIMING_NORMAL == sendtiming_index) {
+        ui->keySeqHoldDownCheckBox->setEnabled(false);
+    }
+    else {
+        ui->keySeqHoldDownCheckBox->setEnabled(true);
     }
 }
-
 
 void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
 {
@@ -1361,22 +1350,6 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
-#endif
-    }
-}
-
-void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    int sendtiming_index = ui->sendTimingComboBox->currentIndex();
-    if (sendtiming_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendTiming) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = sendtiming_index;
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendTiming -> " << sendtiming_index;
 #endif
     }
 }

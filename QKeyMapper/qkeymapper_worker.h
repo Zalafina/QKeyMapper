@@ -72,7 +72,6 @@ typedef struct MAP_KEYDATA
     bool MappingKeyUnlock;
     uint LockState;
     bool PassThrough;
-    bool KeyUp_Action;
     int SendTiming;
     bool KeySeqHoldDown;
     int RepeatMode;
@@ -93,7 +92,6 @@ typedef struct MAP_KEYDATA
     , MappingKeyUnlock(false)
     , LockState(LOCK_STATE_LOCKOFF)
     , PassThrough(false)
-    , KeyUp_Action(false)
     , SendTiming(SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)
     , RepeatMode(REPEAT_MODE_NONE)
@@ -103,7 +101,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool mappingkeys_unlock, bool passthrough,
-                bool keyup_action, int sendtiming, bool keyseqholddown,
+                int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times)
     {
         Original_Key = originalkey;
@@ -129,7 +127,6 @@ typedef struct MAP_KEYDATA
         MappingKeyUnlock = mappingkeys_unlock;
         LockState = LOCK_STATE_LOCKOFF;
         PassThrough = passthrough;
-        KeyUp_Action = keyup_action;
         SendTiming = sendtiming;
         KeySeqHoldDown = keyseqholddown;
         RepeatMode = repeat_mode;
@@ -148,7 +145,6 @@ typedef struct MAP_KEYDATA
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (PassThrough == other.PassThrough)
-                && (KeyUp_Action == other.KeyUp_Action)
                 && (SendTiming == other.SendTiming)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
                 && (RepeatMode == other.RepeatMode)
@@ -171,7 +167,6 @@ typedef struct MAP_KEYDATA
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", LockState:" << data.LockState
                         << ", PassThrough:" << data.PassThrough
-                        << ", KeyUp_Action:" << data.KeyUp_Action
                         << ", SendTiming:" << data.SendTiming
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
                         << ", RepeatMode:" << data.RepeatMode
@@ -848,7 +843,7 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
-    static QStringList pressedCombinationRealKeysList;
+    // static QStringList pressedCombinationRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLongPressKeysList;
     static QStringList pressedDoublePressKeysList;

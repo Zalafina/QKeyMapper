@@ -74,7 +74,7 @@ private slots:
     void on_burstreleaseSpinBox_editingFinished();
     void on_burstCheckBox_stateChanged(int state);
     void on_lockCheckBox_stateChanged(int state);
-    void on_keyupActionCheckBox_stateChanged(int state);
+    void on_sendTimingComboBox_currentIndexChanged(int index);
     void on_passThroughCheckBox_stateChanged(int state);
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
     void on_originalKeyUpdateButton_clicked();
@@ -85,7 +85,6 @@ private slots:
     void on_repeatTimesSpinBox_editingFinished();
     void on_itemNoteUpdateButton_clicked();
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
-    void on_sendTimingComboBox_currentIndexChanged(int index);
 };
 
 class KeyStringLineEdit : public QLineEdit

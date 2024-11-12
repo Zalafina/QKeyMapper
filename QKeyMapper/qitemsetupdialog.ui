@@ -69,25 +69,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="keyupActionCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>300</x>
-     <y>220</y>
-     <width>131</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>KeyUpAction</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QCheckBox" name="passThroughCheckBox">
    <property name="geometry">
     <rect>

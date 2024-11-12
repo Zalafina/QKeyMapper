@@ -408,7 +408,7 @@ extern const char* KEYMAPDATA_BURST;
 extern const char* KEYMAPDATA_LOCK;
 extern const char *KEYMAPDATA_MAPPINGKEYUNLOCK;
 extern const char *KEYMAPDATA_PASSTHROUGH;
-extern const char *KEYMAPDATA_KEYUP_ACTION;
+// extern const char *KEYMAPDATA_KEYUP_ACTION;
 extern const char *KEYMAPDATA_SENDTIMING;
 extern const char *KEYMAPDATA_KEYSEQHOLDDOWN;
 extern const char* KEYMAPDATA_BURSTPRESS_TIME;
