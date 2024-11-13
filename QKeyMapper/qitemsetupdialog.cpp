@@ -13,6 +13,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , ui(new Ui::QItemSetupDialog)
     , m_TabIndex(-1)
     , m_ItemRow(-1)
+    , m_KeyRecordDialog(Q_NULLPTR)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyLineEdit(new KeyStringLineEdit(this))
@@ -20,6 +21,9 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    m_KeyRecordDialog = new QKeyRecord(this);
+    m_KeyRecordDialog->setWindowFlags(Qt::Popup);
 
     initKeyListComboBoxes();
     initKeyStringLineEdit();
@@ -83,6 +87,7 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->itemNoteUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        ui->recordKeysButton->setText(RECORDKEYSBUTTON_ENGLISH);
 
         ui->sendTimingLabel->setText(SENDTIMINGLABEL_ENGLISH);
         ui->sendTimingComboBox->clear();
@@ -118,6 +123,7 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->itemNoteUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        ui->recordKeysButton->setText(RECORDKEYSBUTTON_CHINESE);
 
         ui->sendTimingLabel->setText(SENDTIMINGLABEL_CHINESE);
         ui->sendTimingComboBox->clear();
@@ -171,6 +177,7 @@ void QItemSetupDialog::resetFontSize()
     ui->originalKeyUpdateButton->setFont(customFont);
     ui->mappingKeyUpdateButton->setFont(customFont);
     ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
+    ui->recordKeysButton->setFont(customFont);
     ui->itemNoteUpdateButton->setFont(customFont);
     ui->sendTimingLabel->setFont(customFont);
     ui->sendTimingComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
@@ -1227,6 +1234,21 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
         popupMessage = result.errorMessage;
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QItemSetupDialog::on_recordKeysButton_clicked()
+{
+    if (Q_NULLPTR == m_KeyRecordDialog) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[on_recordKeysButton_clicked] Show Record Keys Dialog Window";
+#endif
+
+    if (!m_KeyRecordDialog->isVisible()) {
+        m_KeyRecordDialog->show();
+    }
 }
 
 void QItemSetupDialog::on_repeatByKeyCheckBox_stateChanged(int state)

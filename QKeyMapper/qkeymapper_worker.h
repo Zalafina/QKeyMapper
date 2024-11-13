@@ -230,6 +230,26 @@ struct Joystick_AxisState {
     bool isvirtual;
 };
 
+struct RecordKeyData {
+    QString keystring;
+    int keyupdown;
+    qint64 elapsed_time;
+
+    RecordKeyData() : keystring(), keyupdown(KEY_INIT), elapsed_time(0) {}
+
+#ifdef DEBUG_LOGOUT_ON
+    friend QDebug operator<<(QDebug debug, const RecordKeyData& data)
+    {
+        QDebugStateSaver saver(debug);
+        debug.nospace() << "\nRecordKeyData["
+                        << "KeyString: " << data.keystring
+                        << ", KeyUpDown: " << (data.keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP")
+                        << ", ElapsedTime: " << data.elapsed_time << "]";
+        return debug;
+    }
+#endif
+};
+
 struct SendInputTaskController {
     QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag;
@@ -729,6 +749,9 @@ public:
 
     static int hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
+    static void keyRecordStart(void);
+    static void keyRecordStop(void);
+    static void updateRecordKeyList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingStartKey(const QString &keycodeString, int keyupdown);
@@ -821,6 +844,7 @@ public:
     static QAtomicBool s_Key2Mouse_Down;
     static QAtomicBool s_Key2Mouse_Left;
     static QAtomicBool s_Key2Mouse_Right;
+    static QAtomicBool s_KeyRecording;
     static qint32 s_LastCarOrdinal;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
@@ -843,6 +867,8 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
+    static QList<RecordKeyData> recordKeyList;
+    static QElapsedTimer recordElapsedTimer;
     // static QStringList pressedCombinationRealKeysList;
     static QStringList pressedVirtualKeysList;
     static QStringList pressedLongPressKeysList;

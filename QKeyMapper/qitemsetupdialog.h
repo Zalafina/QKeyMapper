@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QLineEdit>
 
+#include "qkeyrecord.h"
+
 namespace Ui {
 class QItemSetupDialog;
 }
@@ -57,6 +59,7 @@ private:
     Ui::QItemSetupDialog *ui;
     int m_TabIndex;
     int m_ItemRow;
+    QKeyRecord *m_KeyRecordDialog;
 
 public:
     KeyListComboBox *m_OriginalKeyListComboBox;
@@ -80,6 +83,7 @@ private slots:
     void on_originalKeyUpdateButton_clicked();
     void on_mappingKeyUpdateButton_clicked();
     void on_mappingKey_KeyUpUpdateButton_clicked();
+    void on_recordKeysButton_clicked();
     void on_repeatByKeyCheckBox_stateChanged(int state);
     void on_repeatByTimesCheckBox_stateChanged(int state);
     void on_repeatTimesSpinBox_editingFinished();

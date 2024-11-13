@@ -146,6 +146,7 @@ HEADERS     += \
     Interception/include/interception.h \
     libusb/include/libusb.h \
     qitemsetupdialog.h \
+    qkeyrecord.h \
     qtablesetupdialog.h
 # Interception Driver Support <<<
 
@@ -161,6 +162,7 @@ SOURCES     += \
     qkeymapper.cpp \
     qkeymapper_constants.cpp \
     qkeymapper_worker.cpp \
+    qkeyrecord.cpp \
     qtablesetupdialog.cpp
 
 HEADERS     += \
@@ -184,6 +186,7 @@ FORMS       += \
     qinputdevicelistwindow.ui \
     qitemsetupdialog.ui \
     qkeymapper.ui \
+    qkeyrecord.ui \
     qtablesetupdialog.ui
 
 RESOURCES   += \

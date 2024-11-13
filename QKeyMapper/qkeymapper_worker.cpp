@@ -14,6 +14,7 @@ QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Right = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_KeyRecording = QAtomicBool();
 qint32 QKeyMapper_Worker::s_LastCarOrdinal = 0;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
@@ -36,6 +37,8 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+QList<RecordKeyData> QKeyMapper_Worker::recordKeyList;
+QElapsedTimer QKeyMapper_Worker::recordElapsedTimer;
 // QStringList QKeyMapper_Worker::pressedCombinationRealKeysList;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedLongPressKeysList;
@@ -8575,13 +8578,13 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
 {
     int intercept = KEY_INTERCEPT_NONE;
 
+    QString keycodeString_RemoveMultiInput = getKeycodeStringRemoveMultiInput(keycodeString);
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
             pressedRealKeysList.append(keycodeString);
             sendLongPressTimers(keycodeString);
             intercept = sendDoublePressTimers(keycodeString);
         }
-        QString keycodeString_RemoveMultiInput = getKeycodeStringRemoveMultiInput(keycodeString);
         if (false == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
             pressedRealKeysListRemoveMultiInput.append(keycodeString_RemoveMultiInput);
         }
@@ -8599,10 +8602,13 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
                 intercept = intercept_doublepress;
             }
         }
-        QString keycodeString_RemoveMultiInput = getKeycodeStringRemoveMultiInput(keycodeString);
         if (true == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
             pressedRealKeysListRemoveMultiInput.removeAll(keycodeString_RemoveMultiInput);
         }
+    }
+
+    if (s_KeyRecording) {
+        updateRecordKeyList(keycodeString_RemoveMultiInput, keyupdown);
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -8611,6 +8617,55 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
 #endif
 
     return intercept;
+}
+
+void QKeyMapper_Worker::keyRecordStart()
+{
+    recordElapsedTimer.invalidate();
+    recordKeyList.clear();
+    s_KeyRecording = true;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper_Worker::keyRecordStart]" << "Key Record Started.";
+#endif
+}
+
+void QKeyMapper_Worker::keyRecordStop()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper_Worker::keyRecordStop]" << "Key Record Stopped.";
+#endif
+    s_KeyRecording = false;
+    recordElapsedTimer.invalidate();
+
+    if (!recordKeyList.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[LowLevelKeyboardHookProc]" << "Key record finished, recordKeyList ->" << recordKeyList;
+#endif
+    }
+}
+
+void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int keyupdown)
+{
+    RecordKeyData record_keydata;
+    qint64 elapsed_time = 0;
+    if (recordElapsedTimer.isValid()) {
+        elapsed_time = recordElapsedTimer.elapsed();
+    }
+    else {
+        recordElapsedTimer.start();
+        elapsed_time = 0;
+    }
+
+    if (recordKeyList.isEmpty()) {
+        elapsed_time = 0;
+    }
+
+    record_keydata.keystring = keycodeString;
+    record_keydata.keyupdown = keyupdown;
+    record_keydata.elapsed_time = elapsed_time;
+
+    recordKeyList.append(record_keydata);
 }
 
 bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int keyupdown)
