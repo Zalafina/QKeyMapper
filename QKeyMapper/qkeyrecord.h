@@ -34,6 +34,10 @@ signals:
 public slots:
     void updateKeyRecordLineEdit(bool finished);
 
+public:
+    void procKeyRecordStart(void);
+    void procKeyRecordStop(void);
+
 protected:
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;

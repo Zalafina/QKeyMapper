@@ -40,6 +40,34 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
     }
 }
 
+void QKeyRecord::procKeyRecordStart()
+{
+    if (false == QKeyMapper_Worker::s_KeyRecording) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[QKeyRecord::procKeyRecordStart] \"%1\" Key pressed on key record STOP state, Start Key Record.").arg(KEY_RECORD_START_STR);
+        qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+        setKeyRecordLabel(KEYRECORD_STATE_START);
+        QKeyMapper_Worker::keyRecordStart();
+        ui->keyRecordLineEdit->clear();
+    }
+}
+
+void QKeyRecord::procKeyRecordStop()
+{
+    if (QKeyMapper_Worker::s_KeyRecording) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[QKeyRecord::procKeyRecordStop] \"%1\" Key pressed on key record START state, Stop Key Record.").arg(KEY_RECORD_STOP_STR);
+        qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+        QKeyMapper_Worker::keyRecordStop();
+        setKeyRecordLabel(KEYRECORD_STATE_STOP);
+        QKeyMapper_Worker::collectRecordKeysList();
+        emit updateKeyRecordLineEdit_Signal(true);
+        // close();
+    }
+}
+
 void QKeyRecord::showEvent(QShowEvent *event)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -74,28 +102,10 @@ void QKeyRecord::closeEvent(QCloseEvent *event)
 void QKeyRecord::keyPressEvent(QKeyEvent *event)
 {
     if (event->key() == KEY_RECORD_START) {
-        if (false == QKeyMapper_Worker::s_KeyRecording) {
-#ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[QKeyRecord::keyPressEvent] \"%1\" Key pressed on key record STOP state, Start Key Record.").arg(KEY_RECORD_START_STR);
-            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
-#endif
-            setKeyRecordLabel(KEYRECORD_STATE_START);
-            QKeyMapper_Worker::keyRecordStart();
-            ui->keyRecordLineEdit->clear();
-        }
+        procKeyRecordStart();
     }
     else if (event->key() == KEY_RECORD_STOP) {
-        if (QKeyMapper_Worker::s_KeyRecording) {
-#ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[QKeyRecord::keyPressEvent] \"%1\" Key pressed on key record START state, Stop Key Record.").arg(KEY_RECORD_STOP_STR);
-            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
-#endif
-            QKeyMapper_Worker::keyRecordStop();
-            setKeyRecordLabel(KEYRECORD_STATE_STOP);
-            QKeyMapper_Worker::collectRecordKeysList();
-            emit updateKeyRecordLineEdit_Signal(true);
-            // close();
-        }
+        procKeyRecordStop();
     }
 
     QDialog::keyPressEvent(event);
