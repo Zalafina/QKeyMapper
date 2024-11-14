@@ -75,6 +75,7 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
 
 void QKeyRecord::procKeyRecordStart(bool clicked)
 {
+    Q_UNUSED(clicked);
     if (false == QKeyMapper_Worker::s_KeyRecording) {
 #ifdef DEBUG_LOGOUT_ON
         QString debugmessage = QString("[QKeyRecord::procKeyRecordStart] \"%1\" Key pressed on key record STOP state, Start Key Record.").arg(KEY_RECORD_START_STR);
