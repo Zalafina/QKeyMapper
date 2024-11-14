@@ -21,7 +21,7 @@ QInputDeviceListWindow::~QInputDeviceListWindow()
     delete ui;
 }
 
-void QInputDeviceListWindow::setUILanguagee(int languageindex)
+void QInputDeviceListWindow::setUILanguage(int languageindex)
 {
     if (LANGUAGE_ENGLISH == languageindex) {
         setWindowTitle(DEVICELIST_WINDOWTITLE_ENGLISH);

@@ -15,7 +15,7 @@ public:
     explicit QInputDeviceListWindow(QWidget *parent = nullptr);
     ~QInputDeviceListWindow();
 
-    void setUILanguagee(int languageindex);
+    void setUILanguage(int languageindex);
     void resetFontSize(void);
     void updateDeviceListInfo(void);
     void updateKeyboardDeviceListInfo(void);

@@ -28,6 +28,9 @@ public:
     };
     Q_ENUM(KeyRecordState)
 
+    void setUILanguage(int languageindex);
+    void resetFontSize(void);
+
 signals:
     void updateKeyRecordLineEdit_Signal(bool finished);
 
@@ -35,13 +38,16 @@ public slots:
     void updateKeyRecordLineEdit(bool finished);
 
 public:
-    void procKeyRecordStart(void);
-    void procKeyRecordStop(void);
+    void procKeyRecordStart(bool clicked);
+    void procKeyRecordStop(bool clicked);
 
 protected:
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
+
+private slots:
+    void on_recordStartStopButton_clicked();
 
 private:
     void setKeyRecordLabel(KeyRecordState record_state);

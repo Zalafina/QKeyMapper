@@ -63,7 +63,7 @@ QItemSetupDialog::~QItemSetupDialog()
     delete ui;
 }
 
-void QItemSetupDialog::setUILanguagee(int languageindex)
+void QItemSetupDialog::setUILanguage(int languageindex)
 {
     if (LANGUAGE_ENGLISH == languageindex) {
         setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH);
@@ -137,6 +137,10 @@ void QItemSetupDialog::setUILanguagee(int languageindex)
         ui->sendTimingComboBox->addItems(sendtiming_list);
         ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
     }
+
+    if (m_KeyRecordDialog != Q_NULLPTR) {
+        m_KeyRecordDialog->setUILanguage(languageindex);
+    }
 }
 
 void QItemSetupDialog::resetFontSize()
@@ -181,6 +185,10 @@ void QItemSetupDialog::resetFontSize()
     ui->itemNoteUpdateButton->setFont(customFont);
     ui->sendTimingLabel->setFont(customFont);
     ui->sendTimingComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
+
+    if (m_KeyRecordDialog != Q_NULLPTR) {
+        m_KeyRecordDialog->resetFontSize();
+    }
 }
 
 void QItemSetupDialog::setTabIndex(int tabindex)

@@ -28,7 +28,7 @@ QTableSetupDialog::~QTableSetupDialog()
     delete ui;
 }
 
-void QTableSetupDialog::setUILanguagee(int languageindex)
+void QTableSetupDialog::setUILanguage(int languageindex)
 {
     if (LANGUAGE_ENGLISH == languageindex) {
         setWindowTitle(TABLESETUPDIALOG_WINDOWTITLE_ENGLISH);

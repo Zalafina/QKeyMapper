@@ -20,7 +20,7 @@ public:
         return m_instance;
     }
 
-    void setUILanguagee(int languageindex);
+    void setUILanguage(int languageindex);
     void resetFontSize(void);
     void setTabIndex(int tabindex);
 

@@ -751,7 +751,7 @@ public:
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static void keyRecordStart(void);
     static void keyRecordStop(void);
-    static void collectRecordKeysList(void);
+    static void collectRecordKeysList(bool clicked);
     static void updateRecordKeyList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);

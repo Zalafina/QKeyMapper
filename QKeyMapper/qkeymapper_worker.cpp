@@ -8636,20 +8636,59 @@ void QKeyMapper_Worker::keyRecordStop()
     // recordMappingKeysList.clear();
 }
 
-void QKeyMapper_Worker::collectRecordKeysList()
+void QKeyMapper_Worker::collectRecordKeysList(bool clicked)
 {
-    if (!recordKeyList.isEmpty()) {
-        RecordKeyData last_record_keydata = recordKeyList.constLast();
-        if (last_record_keydata.keystring == KEY_RECORD_STOP_STR
-            && last_record_keydata.keyupdown == KEY_DOWN) {
-            recordKeyList.removeLast();
+    if (clicked) {
+        if (recordKeyList.size() >= 2) {
+            RecordKeyData prev_last_record_keydata = recordKeyList.at(recordKeyList.size() - 2);
+            RecordKeyData last_record_keydata = recordKeyList.constLast();
+            if (prev_last_record_keydata.keystring == MOUSE_L_STR
+                && prev_last_record_keydata.keyupdown == KEY_DOWN
+                && last_record_keydata.keystring == MOUSE_L_STR
+                && last_record_keydata.keyupdown == KEY_UP) {
+                recordKeyList.removeLast();
+                recordKeyList.removeLast();
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "\033[1;34m[collectRecordKeysList]" << "recordKeyList remove record stop Mouse-L click.\033[0m";
+#endif
+            }
+        }
+
+        if (recordMappingKeysList.size() >= 2) {
+            QString record_stop_click_down_str = QString("%1%2").arg(PREFIX_SEND_DOWN, MOUSE_L_STR);
+            QString record_stop_click_up_str = QString("%1%2").arg(PREFIX_SEND_UP, MOUSE_L_STR);
+            if (recordMappingKeysList.at(recordMappingKeysList.size() - 2).startsWith(record_stop_click_down_str)
+                && recordMappingKeysList.constLast() == record_stop_click_up_str) {
+                recordMappingKeysList.removeLast();
+                recordMappingKeysList.removeLast();
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "\033[1;34m[collectRecordKeysList]" << "recordMappingKeysList remove record stop Mouse-L click.\033[0m";
+#endif
+            }
         }
     }
+    else {
+        if (!recordKeyList.isEmpty()) {
+            RecordKeyData last_record_keydata = recordKeyList.constLast();
+            if (last_record_keydata.keystring == KEY_RECORD_STOP_STR
+                && last_record_keydata.keyupdown == KEY_DOWN) {
+                recordKeyList.removeLast();
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[collectRecordKeysList] recordKeyList remove record stop \"%1\" KEY_DOWN.").arg(KEY_RECORD_STOP_STR);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            }
+        }
 
-    if (!recordMappingKeysList.isEmpty()) {
-        QString record_stop_key_str = QString("%1%2").arg(PREFIX_SEND_DOWN, KEY_RECORD_STOP_STR);
-        if (recordMappingKeysList.constLast() == record_stop_key_str) {
-            recordMappingKeysList.removeLast();
+        if (!recordMappingKeysList.isEmpty()) {
+            QString record_stop_key_str = QString("%1%2").arg(PREFIX_SEND_DOWN, KEY_RECORD_STOP_STR);
+            if (recordMappingKeysList.constLast() == record_stop_key_str) {
+                recordMappingKeysList.removeLast();
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[collectRecordKeysList] recordMappingKeysList remove record stop \"%1\" KEY_DOWN.").arg(KEY_RECORD_STOP_STR);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+            }
         }
     }
 

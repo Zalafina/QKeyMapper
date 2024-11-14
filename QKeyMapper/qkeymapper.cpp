@@ -9179,15 +9179,15 @@ void QKeyMapper::setUILanguage_Chinese()
                                                                   << PROCESSINFOTABLE_COL3_CHINESE );
 
     if (m_deviceListWindow != Q_NULLPTR) {
-        m_deviceListWindow->setUILanguagee(LANGUAGE_CHINESE);
+        m_deviceListWindow->setUILanguage(LANGUAGE_CHINESE);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
-        m_TableSetupDialog->setUILanguagee(LANGUAGE_CHINESE);
+        m_TableSetupDialog->setUILanguage(LANGUAGE_CHINESE);
     }
 
     if (m_ItemSetupDialog != Q_NULLPTR) {
-        m_ItemSetupDialog->setUILanguagee(LANGUAGE_CHINESE);
+        m_ItemSetupDialog->setUILanguage(LANGUAGE_CHINESE);
     }
 }
 
@@ -9314,15 +9314,15 @@ void QKeyMapper::setUILanguage_English()
                                                                   << PROCESSINFOTABLE_COL3_ENGLISH );
 
     if (m_deviceListWindow != Q_NULLPTR) {
-        m_deviceListWindow->setUILanguagee(LANGUAGE_ENGLISH);
+        m_deviceListWindow->setUILanguage(LANGUAGE_ENGLISH);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
-        m_TableSetupDialog->setUILanguagee(LANGUAGE_ENGLISH);
+        m_TableSetupDialog->setUILanguage(LANGUAGE_ENGLISH);
     }
 
     if (m_ItemSetupDialog != Q_NULLPTR) {
-        m_ItemSetupDialog->setUILanguagee(LANGUAGE_ENGLISH);
+        m_ItemSetupDialog->setUILanguage(LANGUAGE_ENGLISH);
     }
 }
 
