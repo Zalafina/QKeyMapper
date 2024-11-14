@@ -52,7 +52,8 @@ const int MOUSEWHEEL_SCROLL_UP = 1;
 const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
 const Qt::Key KEY_REFRESH           = Qt::Key_F5;
-const Qt::Key KEY_RECORD_STARTSTOP  = Qt::Key_F12;
+const Qt::Key KEY_RECORD_START      = Qt::Key_F11;
+const Qt::Key KEY_RECORD_STOP       = Qt::Key_F12;
 // const Qt::Key KEY_PASSTHROUGH   = Qt::Key_F12;
 // const Qt::Key KEY_KEYUP_ACTION  = Qt::Key_F2;
 // const Qt::Key KEY_REMOVE_LAST   = Qt::Key_Backspace;
@@ -78,7 +79,7 @@ const int BURST_PRESS_TIME_DEFAULT   = 40;
 const int BURST_RELEASE_TIME_DEFAULT = 20;
 
 const int MAPPING_WAITTIME_MIN = 0;
-const int MAPPING_WAITTIME_MAX = 9999;
+const int MAPPING_WAITTIME_MAX = 999999;
 
 const int PRESSTIME_MIN = 0;
 const int PRESSTIME_MAX = 9999;
@@ -419,6 +420,9 @@ const char *CONFIG_BACKUP_FILENAME = "keymapdata_backup.ini";
 
 const char *DISPLAYSWITCH_KEY_DEFAULT    = "L-Ctrl+`";
 const char *MAPPINGSWITCH_KEY_DEFAULT    = "L-Ctrl+F6";
+
+const char *KEY_RECORD_START_STR    = "F11";
+const char *KEY_RECORD_STOP_STR     = "F12";
 
 /* General global settings >>> */
 const char *LAST_WINDOWPOSITION = "LastWindowPosition";

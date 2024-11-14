@@ -16,14 +16,14 @@
   <widget class="QLabel" name="keyRecordLabel">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>30</x>
      <y>20</y>
-     <width>271</width>
+     <width>541</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Press &quot;F12&quot; to start key record.</string>
+    <string>Wait to start key recording, press &quot;F11&quot; to start key recording.</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>

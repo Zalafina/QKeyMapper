@@ -38,6 +38,7 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QList<RecordKeyData> QKeyMapper_Worker::recordKeyList;
+QStringList QKeyMapper_Worker::recordMappingKeysList;
 QElapsedTimer QKeyMapper_Worker::recordElapsedTimer;
 // QStringList QKeyMapper_Worker::pressedCombinationRealKeysList;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
@@ -8623,49 +8624,105 @@ void QKeyMapper_Worker::keyRecordStart()
 {
     recordElapsedTimer.invalidate();
     recordKeyList.clear();
+    recordMappingKeysList.clear();
     s_KeyRecording = true;
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QKeyMapper_Worker::keyRecordStart]" << "Key Record Started.";
-#endif
 }
 
 void QKeyMapper_Worker::keyRecordStop()
 {
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QKeyMapper_Worker::keyRecordStop]" << "Key Record Stopped.";
-#endif
     s_KeyRecording = false;
     recordElapsedTimer.invalidate();
+    // recordKeyList.clear();
+    // recordMappingKeysList.clear();
+}
 
+void QKeyMapper_Worker::collectRecordKeysList()
+{
     if (!recordKeyList.isEmpty()) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[LowLevelKeyboardHookProc]" << "Key record finished, recordKeyList ->" << recordKeyList;
-#endif
+        RecordKeyData last_record_keydata = recordKeyList.constLast();
+        if (last_record_keydata.keystring == KEY_RECORD_STOP_STR
+            && last_record_keydata.keyupdown == KEY_DOWN) {
+            recordKeyList.removeLast();
+        }
     }
+
+    if (!recordMappingKeysList.isEmpty()) {
+        QString record_stop_key_str = QString("%1%2").arg(PREFIX_SEND_DOWN, KEY_RECORD_STOP_STR);
+        if (recordMappingKeysList.constLast() == record_stop_key_str) {
+            recordMappingKeysList.removeLast();
+        }
+    }
+
+    if (!recordMappingKeysList.isEmpty()) {
+        if (recordMappingKeysList.constLast().contains(SEPARATOR_WAITTIME)) {
+            QString lastRecordMappingKey = recordMappingKeysList.constLast();
+
+            int index = lastRecordMappingKey.indexOf(SEPARATOR_WAITTIME);
+            if (index != -1) {
+                lastRecordMappingKey = lastRecordMappingKey.left(index);
+                recordMappingKeysList[recordMappingKeysList.size() - 1] = lastRecordMappingKey;
+            }
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "\033[1;34m[collectRecordKeysList]" << "recordKeyList ->" << recordKeyList << "\033[0m";
+    qDebug() << "\033[1;34m[collectRecordKeysList]" << "recordMappingKeysList ->" << recordMappingKeysList << "\033[0m";
+#endif
 }
 
 void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int keyupdown)
 {
-    RecordKeyData record_keydata;
-    qint64 elapsed_time = 0;
-    if (recordElapsedTimer.isValid()) {
-        elapsed_time = recordElapsedTimer.elapsed();
-    }
-    else {
-        recordElapsedTimer.start();
-        elapsed_time = 0;
+    bool skip_record_start_key = false;
+    if (recordKeyList.isEmpty()
+        && keycodeString == KEY_RECORD_START_STR
+        && keyupdown == KEY_UP) {
+        skip_record_start_key = true;
     }
 
-    if (recordKeyList.isEmpty()) {
-        elapsed_time = 0;
+    if (!skip_record_start_key) {
+        RecordKeyData record_keydata;
+        qint64 elapsed_time = 0;
+
+        if (recordElapsedTimer.isValid()) {
+            elapsed_time = recordElapsedTimer.elapsed();
+        }
+        else {
+            recordElapsedTimer.start();
+            elapsed_time = 0;
+        }
+
+        if (recordKeyList.isEmpty()) {
+            elapsed_time = 0;
+        }
+
+        record_keydata.keystring = keycodeString;
+        record_keydata.keyupdown = keyupdown;
+        record_keydata.elapsed_time = elapsed_time;
+
+        recordKeyList.append(record_keydata);
+
+        int recordlist_size = recordKeyList.size();
+        QString prefix_keyupdown_str = (record_keydata.keyupdown == KEY_DOWN ? PREFIX_SEND_DOWN : PREFIX_SEND_UP);
+        QString mappingKeyString = prefix_keyupdown_str + record_keydata.keystring;
+        if (recordlist_size == 1) {
+            recordMappingKeysList.clear();
+        }
+        else { /* recordlist_size > 1 */
+            RecordKeyData prev_record_keydata = recordKeyList.at(recordlist_size - 2);
+            int wait_time = record_keydata.elapsed_time - prev_record_keydata.elapsed_time;
+            if (wait_time > MAPPING_WAITTIME_MAX) {
+                wait_time = MAPPING_WAITTIME_MAX;
+            }
+
+            if (wait_time > 0) {
+                QString wait_time_str = QString("%1%2").arg(SEPARATOR_WAITTIME).arg(wait_time);
+                recordMappingKeysList[recordMappingKeysList.size() - 1].append(wait_time_str);
+            }
+        }
+
+        recordMappingKeysList.append(mappingKeyString);
     }
-
-    record_keydata.keystring = keycodeString;
-    record_keydata.keyupdown = keyupdown;
-    record_keydata.elapsed_time = elapsed_time;
-
-    recordKeyList.append(record_keydata);
 }
 
 bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int keyupdown)

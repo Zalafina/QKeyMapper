@@ -2178,6 +2178,12 @@ QString QKeyMapper::getOriginalKeyStringWithoutSuffix(const QString &originalkey
     return orikey_without_suffix;
 }
 
+void QKeyMapper::copyStringToClipboard(const QString &string)
+{
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    clipboard->setText(string);
+}
+
 void QKeyMapper::EnumProcessFunction(void)
 {
 #if 0

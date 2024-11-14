@@ -37,7 +37,8 @@ extern const int MOUSEWHEEL_SCROLL_NONE;
 extern const int MOUSEWHEEL_SCROLL_UP;
 extern const int MOUSEWHEEL_SCROLL_DOWN;
 extern const Qt::Key KEY_REFRESH;
-extern const Qt::Key KEY_RECORD_STARTSTOP;
+extern const Qt::Key KEY_RECORD_START;
+extern const Qt::Key KEY_RECORD_STOP;
 // extern const Qt::Key KEY_PASSTHROUGH;
 // extern const Qt::Key KEY_KEYUP_ACTION;
 // extern const Qt::Key KEY_REMOVE_LAST;
@@ -376,6 +377,8 @@ extern const char* CONFIG_BACKUP_FILENAME;
 #endif
 extern const char* DISPLAYSWITCH_KEY_DEFAULT;
 extern const char* MAPPINGSWITCH_KEY_DEFAULT;
+extern const char *KEY_RECORD_START_STR;
+extern const char *KEY_RECORD_STOP_STR;
 extern const char* LAST_WINDOWPOSITION;
 extern const char* LANGUAGE_INDEX;
 extern const char *SHOW_PROCESSLIST;

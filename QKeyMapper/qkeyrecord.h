@@ -2,6 +2,7 @@
 #define QKEYRECORD_H
 
 #include <QDialog>
+#include <QClipboard>
 
 namespace Ui {
 class QKeyRecord;
@@ -20,9 +21,26 @@ public:
         return m_instance;
     }
 
+    enum KeyRecordState
+    {
+        KEYRECORD_STATE_STOP = 0U,
+        KEYRECORD_STATE_START
+    };
+    Q_ENUM(KeyRecordState)
+
+signals:
+    void updateKeyRecordLineEdit_Signal(bool finished);
+
+public slots:
+    void updateKeyRecordLineEdit(bool finished);
+
 protected:
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
+
+private:
+    void setKeyRecordLabel(KeyRecordState record_state);
 
 private:
     static QKeyRecord *m_instance;

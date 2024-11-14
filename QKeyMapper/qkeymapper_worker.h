@@ -751,6 +751,7 @@ public:
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static void keyRecordStart(void);
     static void keyRecordStop(void);
+    static void collectRecordKeysList(void);
     static void updateRecordKeyList(const QString &keycodeString, int keyupdown);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
@@ -868,6 +869,7 @@ public:
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
     static QList<RecordKeyData> recordKeyList;
+    static QStringList recordMappingKeysList;
     static QElapsedTimer recordElapsedTimer;
     // static QStringList pressedCombinationRealKeysList;
     static QStringList pressedVirtualKeysList;
