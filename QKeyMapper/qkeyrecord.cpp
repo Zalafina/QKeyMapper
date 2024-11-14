@@ -69,6 +69,17 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
 
         if (finished) {
             QKeyMapper::copyStringToClipboard(recordMappingKeysString);
+
+            QString popupMessage;
+            QString popupMessageColor = "#44bd32";
+            int popupMessageDisplayTime = 2000;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                popupMessage = "Recorded keys have been automatically copied to the clipboard.";
+            }
+            else {
+                popupMessage = "按键记录已自动复制到剪贴板";
+            }
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
     }
 }
