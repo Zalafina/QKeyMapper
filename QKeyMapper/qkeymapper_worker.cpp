@@ -8744,12 +8744,13 @@ void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int ke
         int recordlist_size = recordKeyList.size();
         QString prefix_keyupdown_str = (record_keydata.keyupdown == KEY_DOWN ? PREFIX_SEND_DOWN : PREFIX_SEND_UP);
         QString mappingKeyString = prefix_keyupdown_str + record_keydata.keystring;
+        int wait_time = 0;
         if (recordlist_size == 1) {
             recordMappingKeysList.clear();
         }
         else { /* recordlist_size > 1 */
             RecordKeyData prev_record_keydata = recordKeyList.at(recordlist_size - 2);
-            int wait_time = record_keydata.elapsed_time - prev_record_keydata.elapsed_time;
+            wait_time = record_keydata.elapsed_time - prev_record_keydata.elapsed_time;
             if (wait_time > MAPPING_WAITTIME_MAX) {
                 wait_time = MAPPING_WAITTIME_MAX;
             }
@@ -8761,6 +8762,12 @@ void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int ke
         }
 
         recordMappingKeysList.append(mappingKeyString);
+        emit QKeyRecord::getInstance()->updateKeyRecordLineEdit_Signal(false);
+
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[updateRecordKeyList] WaitTime:%1 -> \"%2\"").arg(wait_time).arg(mappingKeyString);
+        qDebug().noquote().nospace() << debugmessage;
+#endif
     }
 }
 
