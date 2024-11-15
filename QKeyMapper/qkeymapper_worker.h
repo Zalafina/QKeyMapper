@@ -232,18 +232,35 @@ struct Joystick_AxisState {
 
 struct RecordKeyData {
     QString keystring;
-    int keyupdown;
+    int input_type;
     qint64 elapsed_time;
 
-    RecordKeyData() : keystring(), keyupdown(KEY_INIT), elapsed_time(0) {}
+    RecordKeyData() : keystring(), input_type(INPUT_INIT), elapsed_time(0) {}
 
 #ifdef DEBUG_LOGOUT_ON
     friend QDebug operator<<(QDebug debug, const RecordKeyData& data)
     {
         QDebugStateSaver saver(debug);
+        QString input_type_str;
+        if (INPUT_INIT == data.input_type) {
+			input_type_str = "INPUT_INIT";
+		}
+		else if (INPUT_KEY_UP == data.input_type) {
+			input_type_str = "INPUT_KEY_UP";
+		}
+		else if (INPUT_KEY_DOWN == data.input_type) {
+			input_type_str = "INPUT_KEY_DOWN";
+		}
+		else if (INPUT_MOUSE_WHEEL == data.input_type) {
+			input_type_str = "INPUT_MOUSE_WHEEL";
+		}
+		else {
+			input_type_str = "UNKNOWN_INPUT_TYPE";
+		}
+
         debug.nospace() << "\nRecordKeyData["
                         << "KeyString: " << data.keystring
-                        << ", KeyUpDown: " << (data.keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP")
+                        << ", InputType: " << input_type_str
                         << ", ElapsedTime: " << data.elapsed_time << "]";
         return debug;
     }
@@ -752,7 +769,7 @@ public:
     static void keyRecordStart(void);
     static void keyRecordStop(void);
     static void collectRecordKeysList(bool clicked);
-    static void updateRecordKeyList(const QString &keycodeString, int keyupdown);
+    static bool updateRecordKeyList(const QString &keycodeString, int input_type);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingStartKey(const QString &keycodeString, int keyupdown);

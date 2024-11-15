@@ -147,6 +147,11 @@ const int KEY_INIT = -1;
 const int KEY_UP = 0;
 const int KEY_DOWN = 1;
 
+const int INPUT_INIT        = -1;
+const int INPUT_KEY_UP      = 0;
+const int INPUT_KEY_DOWN    = 1;
+const int INPUT_MOUSE_WHEEL = 2;
+
 const bool EXTENED_FLAG_TRUE = true;
 const bool EXTENED_FLAG_FALSE = false;
 
@@ -168,6 +173,7 @@ const int KEY_INTERCEPT_NONE                            = 0;
 const int KEY_INTERCEPT_BLOCK                           = 1;
 const int KEY_INTERCEPT_PASSTHROUGH                     = 2;
 const int KEY_INTERCEPT_BLOCK_COMBINATIONKEYUP          = 3;
+const int KEY_INTERCEPT_BLOCK_KEY_RECORD                = 4;
 
 const int KEY_PROC_NONE             = 0;
 const int KEY_PROC_BURST            = 1;

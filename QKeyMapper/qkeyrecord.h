@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QClipboard>
 
+#include "qkeymapper_worker.h"
+
 namespace Ui {
 class QKeyRecord;
 }
@@ -51,6 +53,9 @@ private slots:
 
 private:
     void setKeyRecordLabel(KeyRecordState record_state);
+
+public:
+    static QAtomicBool s_KeyRecordDiagShow;
 
 private:
     static QKeyRecord *m_instance;

@@ -117,6 +117,11 @@ extern const int KEY_INIT;
 extern const int KEY_UP;
 extern const int KEY_DOWN;
 
+extern const int INPUT_INIT;
+extern const int INPUT_KEY_UP;
+extern const int INPUT_KEY_DOWN;
+extern const int INPUT_MOUSE_WHEEL;
+
 extern const bool EXTENED_FLAG_TRUE;
 extern const bool EXTENED_FLAG_FALSE;
 
@@ -138,6 +143,7 @@ extern const int KEY_INTERCEPT_NONE;
 extern const int KEY_INTERCEPT_BLOCK;
 extern const int KEY_INTERCEPT_PASSTHROUGH;
 extern const int KEY_INTERCEPT_BLOCK_COMBINATIONKEYUP;
+extern const int KEY_INTERCEPT_BLOCK_KEY_RECORD;
 
 extern const int KEY_PROC_NONE;
 extern const int KEY_PROC_BURST;

@@ -6458,6 +6458,9 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
             if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
             }
+            else if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
+                return true;
+            }
             else {
                 return false;
             }
@@ -6758,6 +6761,9 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
             if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return true;
             }
+            else if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
+                return true;
+            }
             else {
                 return false;
             }
@@ -6984,25 +6990,43 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
             }
         }
 #endif
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
-            return false;
-        }
-
         QString keycodeString;
+        int input_type;
         if (zDelta > 0) {
             if (mouse_event == EVENT_MOUSEHWHEEL) {
                 keycodeString = MOUSE_WHEEL_RIGHT_STR;
+                input_type = INPUT_MOUSE_WHEEL;
             }
             else {
                 keycodeString = MOUSE_WHEEL_UP_STR;
+                input_type = INPUT_MOUSE_WHEEL;
             }
         }
         else {
             if (mouse_event == EVENT_MOUSEHWHEEL) {
                 keycodeString = MOUSE_WHEEL_LEFT_STR;
+                input_type = INPUT_MOUSE_WHEEL;
             }
             else {
                 keycodeString = MOUSE_WHEEL_DOWN_STR;
+                input_type = INPUT_MOUSE_WHEEL;
+            }
+        }
+
+        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+            bool block = false;
+            if (s_KeyRecording) {
+                bool recorded = updateRecordKeyList(keycodeString, input_type);
+                if (recorded) {
+                    block = true;
+                }
+            }
+
+            if (block) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
 
@@ -7334,6 +7358,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
             if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
                 if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
+                    return (LRESULT)TRUE;
+                }
+                else if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
                     return (LRESULT)TRUE;
                 }
                 else {
@@ -7900,6 +7927,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                         return (LRESULT)TRUE;
                     }
+                    else if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
+                        return (LRESULT)TRUE;
+                    }
                     else {
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                     }
@@ -8163,25 +8193,43 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
             }
 #endif
-            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
-                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-            }
-
             QString keycodeString;
+            int input_type;
             if (zDelta > 0) {
                 if (wParam == WM_MOUSEHWHEEL) {
                     keycodeString = MOUSE_WHEEL_RIGHT_STR;
+                    input_type = INPUT_MOUSE_WHEEL;
                 }
                 else {
                     keycodeString = MOUSE_WHEEL_UP_STR;
+                    input_type = INPUT_MOUSE_WHEEL;
                 }
             }
             else {
                 if (wParam == WM_MOUSEHWHEEL) {
                     keycodeString = MOUSE_WHEEL_LEFT_STR;
+                    input_type = INPUT_MOUSE_WHEEL;
                 }
                 else {
                     keycodeString = MOUSE_WHEEL_DOWN_STR;
+                    input_type = INPUT_MOUSE_WHEEL;
+                }
+            }
+
+            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                bool block = false;
+                if (s_KeyRecording) {
+                    bool recorded = updateRecordKeyList(keycodeString, input_type);
+                    if (recorded) {
+                        block = true;
+                    }
+                }
+
+                if (block) {
+                    return (LRESULT)TRUE;
+                }
+                else {
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
             }
 
@@ -8609,7 +8657,10 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
     }
 
     if (s_KeyRecording) {
-        updateRecordKeyList(keycodeString_RemoveMultiInput, keyupdown);
+        bool recorded = updateRecordKeyList(keycodeString_RemoveMultiInput, keyupdown);
+        if (recorded) {
+            intercept = KEY_INTERCEPT_BLOCK_KEY_RECORD;
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -8643,9 +8694,9 @@ void QKeyMapper_Worker::collectRecordKeysList(bool clicked)
             RecordKeyData prev_last_record_keydata = recordKeyList.at(recordKeyList.size() - 2);
             RecordKeyData last_record_keydata = recordKeyList.constLast();
             if (prev_last_record_keydata.keystring == MOUSE_L_STR
-                && prev_last_record_keydata.keyupdown == KEY_DOWN
+                && prev_last_record_keydata.input_type == INPUT_KEY_DOWN
                 && last_record_keydata.keystring == MOUSE_L_STR
-                && last_record_keydata.keyupdown == KEY_UP) {
+                && last_record_keydata.input_type == INPUT_KEY_UP) {
                 recordKeyList.removeLast();
                 recordKeyList.removeLast();
 #ifdef DEBUG_LOGOUT_ON
@@ -8671,7 +8722,7 @@ void QKeyMapper_Worker::collectRecordKeysList(bool clicked)
         if (!recordKeyList.isEmpty()) {
             RecordKeyData last_record_keydata = recordKeyList.constLast();
             if (last_record_keydata.keystring == KEY_RECORD_STOP_STR
-                && last_record_keydata.keyupdown == KEY_DOWN) {
+                && last_record_keydata.input_type == INPUT_KEY_DOWN) {
                 recordKeyList.removeLast();
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[collectRecordKeysList] recordKeyList remove record stop \"%1\" KEY_DOWN.").arg(KEY_RECORD_STOP_STR);
@@ -8710,16 +8761,20 @@ void QKeyMapper_Worker::collectRecordKeysList(bool clicked)
 #endif
 }
 
-void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int keyupdown)
+bool QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int input_type)
 {
-    bool skip_record_start_key = false;
+    bool input_recorded = false;
+    bool skip_record_startstop_key = false;
     if (recordKeyList.isEmpty()
         && keycodeString == KEY_RECORD_START_STR
-        && keyupdown == KEY_UP) {
-        skip_record_start_key = true;
+        && input_type == INPUT_KEY_UP) {
+        skip_record_startstop_key = true;
+    }
+    else if (keycodeString == KEY_RECORD_STOP_STR) {
+        skip_record_startstop_key = true;
     }
 
-    if (!skip_record_start_key) {
+    if (!skip_record_startstop_key) {
         RecordKeyData record_keydata;
         qint64 elapsed_time = 0;
 
@@ -8736,13 +8791,19 @@ void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int ke
         }
 
         record_keydata.keystring = keycodeString;
-        record_keydata.keyupdown = keyupdown;
+        record_keydata.input_type = input_type;
         record_keydata.elapsed_time = elapsed_time;
 
         recordKeyList.append(record_keydata);
 
         int recordlist_size = recordKeyList.size();
-        QString prefix_keyupdown_str = (record_keydata.keyupdown == KEY_DOWN ? PREFIX_SEND_DOWN : PREFIX_SEND_UP);
+        QString prefix_keyupdown_str;
+        if (record_keydata.input_type == INPUT_KEY_DOWN) {
+            prefix_keyupdown_str = PREFIX_SEND_DOWN;
+        }
+        else if (record_keydata.input_type == INPUT_KEY_UP) {
+            prefix_keyupdown_str = PREFIX_SEND_UP;
+        }
         QString mappingKeyString = prefix_keyupdown_str + record_keydata.keystring;
         int wait_time = 0;
         if (recordlist_size == 1) {
@@ -8763,12 +8824,19 @@ void QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int ke
 
         recordMappingKeysList.append(mappingKeyString);
         emit QKeyRecord::getInstance()->updateKeyRecordLineEdit_Signal(false);
+        input_recorded = true;
 
 #ifdef DEBUG_LOGOUT_ON
         QString debugmessage = QString("[updateRecordKeyList] WaitTime:%1 -> \"%2\"").arg(wait_time).arg(mappingKeyString);
         qDebug().noquote().nospace() << debugmessage;
 #endif
+
+        if (keycodeString == MOUSE_L_STR) {
+            input_recorded = false;
+        }
     }
+
+    return input_recorded;
 }
 
 bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int keyupdown)
@@ -10245,7 +10313,12 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
     Q_UNUSED(mappingswitch_detected);
     Q_UNUSED(displayswitch_detected);
     if (!m_JoystickCapture) {
-        return false;
+        if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
     else {
         bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);

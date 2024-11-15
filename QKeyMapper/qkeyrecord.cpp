@@ -3,6 +3,7 @@
 #include "ui_qkeyrecord.h"
 #include "qkeymapper_constants.h"
 
+QAtomicBool QKeyRecord::s_KeyRecordDiagShow;
 QKeyRecord *QKeyRecord::m_instance = Q_NULLPTR;
 
 QKeyRecord::QKeyRecord(QWidget *parent)
@@ -16,7 +17,7 @@ QKeyRecord::QKeyRecord(QWidget *parent)
 
     ui->keyRecordLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
 
-    QObject::connect(this, &QKeyRecord::updateKeyRecordLineEdit_Signal, this, &QKeyRecord::updateKeyRecordLineEdit);
+    QObject::connect(this, &QKeyRecord::updateKeyRecordLineEdit_Signal, this, &QKeyRecord::updateKeyRecordLineEdit, Qt::QueuedConnection);
 }
 
 QKeyRecord::~QKeyRecord()
@@ -82,6 +83,9 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
     }
+    else {
+        ui->keyRecordLineEdit->clear();
+    }
 }
 
 void QKeyRecord::procKeyRecordStart(bool clicked)
@@ -124,6 +128,8 @@ void QKeyRecord::showEvent(QShowEvent *event)
     qDebug().nospace().noquote() << "[QKeyRecord::showEvent]" << "Show Key Record Dialog";
 #endif
 
+    s_KeyRecordDiagShow = true;
+
     QKeyMapper_Worker::keyRecordStop();
     setKeyRecordLabel(KEYRECORD_STATE_STOP);
     QKeyMapper_Worker::recordKeyList.clear();
@@ -135,6 +141,12 @@ void QKeyRecord::showEvent(QShowEvent *event)
 
 void QKeyRecord::closeEvent(QCloseEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[QKeyRecord::closeEvent]" << "Close Key Record Dialog";
+#endif
+
+    s_KeyRecordDiagShow = false;
+
     Q_UNUSED(event);
     if (QKeyMapper_Worker::s_KeyRecording) {
 #ifdef DEBUG_LOGOUT_ON
