@@ -9053,30 +9053,47 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             && (combinationkey.contains(keycodeString)
                || combinationkey.contains(getKeycodeStringRemoveMultiInput(keycodeString))))
         {
+            bool combinationkey_matched = true;
             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(combinationkey);
-            bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
-
+            bool checkcombkeyorder = QKeyMapper::KeyMappingDataList->at(findindex).CheckCombKeyOrder;
+            if (checkcombkeyorder) {
+                bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+                if (!keyorder_increasing) {
+                    combinationkey_matched = false;
+                }
 #ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, isKeyOrderIncreasing(%2), pressedCombinationRealKeysOrder -> ").arg(combinationkey).arg(keyorder_increasing?"true":"false");
-            qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
+                QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, isKeyOrderIncreasing(%2), pressedCombinationRealKeysOrder -> ").arg(combinationkey, (keyorder_increasing?"true":"false"));
+                qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
 #endif
-
-            CombinationKeyProc(findindex, combinationkey, KEY_DOWN);
-            if (findindex >= 0) {
-                PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
-                if (PassThrough) {
-                    intercept = KEY_INTERCEPT_PASSTHROUGH;
-                }
-                else {
-                    intercept = KEY_INTERCEPT_BLOCK;
-                }
-
-//                 pressedCombinationRealKeysList.append(pressedCombinationRealKeys);
-// #ifdef DEBUG_LOGOUT_ON
-//                 qDebug() << "[detectCombinationKeys]" << "CombinationKey Down pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
-// #endif
             }
-            break;
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, pressedCombinationRealKeysOrder -> ").arg(combinationkey);
+                qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
+#endif
+            }
+
+            if (combinationkey_matched) {
+                CombinationKeyProc(findindex, combinationkey, KEY_DOWN);
+                if (findindex >= 0) {
+                    PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
+                    if (PassThrough) {
+                        intercept = KEY_INTERCEPT_PASSTHROUGH;
+                    }
+                    else {
+                        intercept = KEY_INTERCEPT_BLOCK;
+                    }
+
+//                     pressedCombinationRealKeysList.append(pressedCombinationRealKeys);
+// #ifdef DEBUG_LOGOUT_ON
+//                     qDebug() << "[detectCombinationKeys]" << "CombinationKey Down pressedCombinationRealKeys ->" << pressedCombinationRealKeys;
+// #endif
+                }
+                break;
+            }
+            else {
+                continue;
+            }
         }
         else if (pressedRealKeysList.contains(combinationkey)) {
             if (KEY_UP == keyupdown

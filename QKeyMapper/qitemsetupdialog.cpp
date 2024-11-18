@@ -71,6 +71,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
+        ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_ENGLISH);
@@ -107,6 +108,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
+        ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_CHINESE);
@@ -166,6 +168,7 @@ void QItemSetupDialog::resetFontSize()
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
+    ui->checkCombKeyOrderCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
     ui->keySeqHoldDownCheckBox->setFont(customFont);
     ui->repeatByKeyCheckBox->setFont(customFont);
@@ -419,6 +422,20 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->keySeqHoldDownCheckBox->setEnabled(false);
             keymapdata.KeySeqHoldDown = false;
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
+        }
+
+        /* Update CheckCombKeyOrder Enable Status & Load CheckCombKeyOrder Status */
+        if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+            ui->checkCombKeyOrderCheckBox->setEnabled(true);
+        }
+        else {
+            ui->checkCombKeyOrderCheckBox->setEnabled(false);
+        }
+        if (true == keymapdata.CheckCombKeyOrder) {
+            ui->checkCombKeyOrderCheckBox->setChecked(true);
+        }
+        else {
+            ui->checkCombKeyOrderCheckBox->setChecked(false);
         }
 
         /* Load PassThrough Status */
@@ -678,6 +695,20 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->keySeqHoldDownCheckBox->setEnabled(false);
             keymapdata.KeySeqHoldDown = false;
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
+        }
+
+        /* Update CheckCombKeyOrder Enable Status & Load CheckCombKeyOrder Status */
+        if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+            ui->checkCombKeyOrderCheckBox->setEnabled(true);
+        }
+        else {
+            ui->checkCombKeyOrderCheckBox->setEnabled(false);
+        }
+        if (true == keymapdata.CheckCombKeyOrder) {
+            ui->checkCombKeyOrderCheckBox->setChecked(true);
+        }
+        else {
+            ui->checkCombKeyOrderCheckBox->setChecked(false);
         }
 
         /* Load PassThrough Status */
@@ -958,6 +989,20 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
         }
 
+        /* Update CheckCombKeyOrder Enable Status & Load CheckCombKeyOrder Status */
+        if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+            ui->checkCombKeyOrderCheckBox->setEnabled(true);
+        }
+        else {
+            ui->checkCombKeyOrderCheckBox->setEnabled(false);
+        }
+        if (true == keymapdata.CheckCombKeyOrder) {
+            ui->checkCombKeyOrderCheckBox->setChecked(true);
+        }
+        else {
+            ui->checkCombKeyOrderCheckBox->setChecked(false);
+        }
+
         /* Load PassThrough Status */
         if (true == keymapdata.PassThrough) {
             ui->passThroughCheckBox->setChecked(true);
@@ -1088,6 +1133,22 @@ void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
     }
 
     refreshMappingKeyRelatedUI();
+}
+
+void QItemSetupDialog::on_checkCombKeyOrderCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool checkcombkeyorder = ui->checkCombKeyOrderCheckBox->isChecked();
+    if (checkcombkeyorder != QKeyMapper::KeyMappingDataList->at(m_ItemRow).CheckCombKeyOrder) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].CheckCombKeyOrder = checkcombkeyorder;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] CheckCombKeyOrder -> " << checkcombkeyorder;
+#endif
+    }
 }
 
 void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)

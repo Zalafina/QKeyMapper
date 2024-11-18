@@ -78,6 +78,7 @@ private slots:
     void on_burstCheckBox_stateChanged(int state);
     void on_lockCheckBox_stateChanged(int state);
     void on_sendTimingComboBox_currentIndexChanged(int index);
+    void on_checkCombKeyOrderCheckBox_stateChanged(int state);
     void on_passThroughCheckBox_stateChanged(int state);
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
     void on_originalKeyUpdateButton_clicked();

@@ -71,6 +71,7 @@ typedef struct MAP_KEYDATA
     bool Lock;
     bool MappingKeyUnlock;
     uint LockState;
+    bool CheckCombKeyOrder;
     bool PassThrough;
     int SendTiming;
     bool KeySeqHoldDown;
@@ -91,6 +92,7 @@ typedef struct MAP_KEYDATA
     , Lock(false)
     , MappingKeyUnlock(false)
     , LockState(LOCK_STATE_LOCKOFF)
+    , CheckCombKeyOrder(false)
     , PassThrough(false)
     , SendTiming(SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)
@@ -100,7 +102,8 @@ typedef struct MAP_KEYDATA
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
-                bool lock, bool mappingkeys_unlock, bool passthrough,
+                bool lock, bool mappingkeys_unlock,
+                bool checkcombkeyorder, bool passthrough,
                 int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times)
     {
@@ -126,6 +129,7 @@ typedef struct MAP_KEYDATA
         Lock = lock;
         MappingKeyUnlock = mappingkeys_unlock;
         LockState = LOCK_STATE_LOCKOFF;
+        CheckCombKeyOrder = checkcombkeyorder;
         PassThrough = passthrough;
         SendTiming = sendtiming;
         KeySeqHoldDown = keyseqholddown;
@@ -144,6 +148,7 @@ typedef struct MAP_KEYDATA
                 && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
+                && (CheckCombKeyOrder == other.CheckCombKeyOrder)
                 && (PassThrough == other.PassThrough)
                 && (SendTiming == other.SendTiming)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
@@ -166,6 +171,7 @@ typedef struct MAP_KEYDATA
                         << ", Lock:" << data.Lock
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", LockState:" << data.LockState
+                        << ", CheckCombKeyOrder:" << data.CheckCombKeyOrder
                         << ", PassThrough:" << data.PassThrough
                         << ", SendTiming:" << data.SendTiming
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
