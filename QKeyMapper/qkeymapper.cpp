@@ -3258,6 +3258,59 @@ void QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QS
     (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys_KeyUp = pure_mappingKeys;
 }
 
+bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
+{
+    bool disable_sendtiming = false;
+
+    if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
+        disable_sendtiming = true;
+    }
+
+    if (keymapdata.Original_Key == JOY_LS2VJOYLS_STR
+        || keymapdata.Original_Key == JOY_RS2VJOYRS_STR
+        || keymapdata.Original_Key == JOY_LS2VJOYRS_STR
+        || keymapdata.Original_Key == JOY_RS2VJOYLS_STR
+        || keymapdata.Original_Key == JOY_LT2VJOYLT_STR
+        || keymapdata.Original_Key == JOY_RT2VJOYRT_STR) {
+        disable_sendtiming = true;
+    }
+
+    if (keymapdata.Original_Key == JOY_LS2MOUSE_STR || keymapdata.Original_Key == JOY_RS2MOUSE_STR) {
+        disable_sendtiming = true;
+    }
+
+    if (keymapdata.Original_Key.contains(MOUSE_WHEEL_STR)) {
+        disable_sendtiming = true;
+    }
+
+    if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(KEY_BLOCKED_STR)) {
+        disable_sendtiming = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)
+        || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
+        disable_sendtiming = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)) {
+        disable_sendtiming = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_BRAKE_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_ACCEL_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_ACCEL_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(VJOY_LT_BRAKE_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(VJOY_RT_BRAKE_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(VJOY_LT_ACCEL_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(VJOY_RT_ACCEL_STR)) {
+        disable_sendtiming = true;
+    }
+
+    return (!disable_sendtiming);
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 #else

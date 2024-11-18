@@ -400,6 +400,7 @@ public:
     static bool importKeyMappingDataFromFile(int tabindex, const QString &filename);
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
     static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
+    static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);

@@ -393,6 +393,17 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
         }
 
+        bool isSendTimingValid = QKeyMapper::validateSendTimingByKeyMapData(keymapdata);
+        if (!isSendTimingValid) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = SENDTIMING_NORMAL;
+            keymapdata.SendTiming = SENDTIMING_NORMAL;
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+            ui->sendTimingComboBox->setEnabled(false);
+        }
+        else {
+            ui->sendTimingComboBox->setEnabled(true);
+        }
+
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
             if (keymapdata.Mapping_Keys.size() > 1) {
@@ -400,10 +411,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             }
             else {
                 ui->keySeqHoldDownCheckBox->setEnabled(false);
+                keymapdata.KeySeqHoldDown = false;
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
             }
         }
         else {
             ui->keySeqHoldDownCheckBox->setEnabled(false);
+            keymapdata.KeySeqHoldDown = false;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
         }
 
         /* Load PassThrough Status */
@@ -475,13 +490,11 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
-            ui->keySeqHoldDownCheckBox->setEnabled(true);
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
         }
         else {
-            ui->keySeqHoldDownCheckBox->setEnabled(false);
             ui->repeatByKeyCheckBox->setEnabled(false);
             ui->repeatByTimesCheckBox->setEnabled(false);
             ui->repeatTimesSpinBox->setEnabled(false);
@@ -639,6 +652,17 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
         }
 
+        bool isSendTimingValid = QKeyMapper::validateSendTimingByKeyMapData(keymapdata);
+        if (!isSendTimingValid) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = SENDTIMING_NORMAL;
+            keymapdata.SendTiming = SENDTIMING_NORMAL;
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+            ui->sendTimingComboBox->setEnabled(false);
+        }
+        else {
+            ui->sendTimingComboBox->setEnabled(true);
+        }
+
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
             if (keymapdata.Mapping_Keys.size() > 1) {
@@ -646,10 +670,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             }
             else {
                 ui->keySeqHoldDownCheckBox->setEnabled(false);
+                keymapdata.KeySeqHoldDown = false;
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
             }
         }
         else {
             ui->keySeqHoldDownCheckBox->setEnabled(false);
+            keymapdata.KeySeqHoldDown = false;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
         }
 
         /* Load PassThrough Status */
@@ -721,13 +749,11 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
-            ui->keySeqHoldDownCheckBox->setEnabled(true);
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
         }
         else {
-            ui->keySeqHoldDownCheckBox->setEnabled(false);
             ui->repeatByKeyCheckBox->setEnabled(false);
             ui->repeatByTimesCheckBox->setEnabled(false);
             ui->repeatTimesSpinBox->setEnabled(false);
@@ -904,6 +930,17 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
         }
 
+        bool isSendTimingValid = QKeyMapper::validateSendTimingByKeyMapData(keymapdata);
+        if (!isSendTimingValid) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = SENDTIMING_NORMAL;
+            keymapdata.SendTiming = SENDTIMING_NORMAL;
+            ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+            ui->sendTimingComboBox->setEnabled(false);
+        }
+        else {
+            ui->sendTimingComboBox->setEnabled(true);
+        }
+
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
             if (keymapdata.Mapping_Keys.size() > 1) {
@@ -911,10 +948,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             }
             else {
                 ui->keySeqHoldDownCheckBox->setEnabled(false);
+                keymapdata.KeySeqHoldDown = false;
+                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
             }
         }
         else {
             ui->keySeqHoldDownCheckBox->setEnabled(false);
+            keymapdata.KeySeqHoldDown = false;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
         }
 
         /* Load PassThrough Status */
@@ -1046,13 +1087,7 @@ void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
 #endif
     }
 
-    /* Update KeySeqHoldDown Status */
-    if (SENDTIMING_NORMAL == sendtiming_index) {
-        ui->keySeqHoldDownCheckBox->setEnabled(false);
-    }
-    else {
-        ui->keySeqHoldDownCheckBox->setEnabled(true);
-    }
+    refreshMappingKeyRelatedUI();
 }
 
 void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
