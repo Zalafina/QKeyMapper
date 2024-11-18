@@ -69,7 +69,8 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
         ui->keyRecordLineEdit->setText(recordMappingKeysString);
 
         if (finished) {
-            QKeyMapper::copyStringToClipboard(recordMappingKeysString);
+            QString convertRecordMappingKeysString = recordMappingKeysString.replace(JOY_KEY_PREFIX, VJOY_KEY_PREFIX);
+            QKeyMapper::copyStringToClipboard(convertRecordMappingKeysString);
 
             QString popupMessage;
             QString popupMessageColor = "#44bd32";
