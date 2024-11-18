@@ -776,7 +776,8 @@ public:
     static bool detectMappingStopKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingTableTabHotkeys(const QString &keycodeString, int keyupdown);
     static int detectCombinationKeys(const QString &keycodeString, int keyupdown);
-    static int CombinationKeyProc(const QString &keycodeString, int keyupdown);
+    static bool isKeyOrderIncreasing(const QList<int>& keyorder);
+    static void CombinationKeyProc(int rowindex, const QString &keycodeString, int keyupdown);
     static bool releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key,const QStringList mappingkeyslist = QStringList());
     static bool releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);

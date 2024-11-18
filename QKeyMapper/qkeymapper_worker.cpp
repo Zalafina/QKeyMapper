@@ -9011,7 +9011,6 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
 int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int keyupdown)
 {
     int intercept = KEY_INTERCEPT_NONE;
-    int findindex = -1;
     bool PassThrough = false;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -9022,28 +9021,30 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
     {
         QStringList keys = combinationkey.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
-        QStringList pressedCombinationRealKeys;
+        QList<int> pressedCombinationRealKeysOrder;
 
         for (const QString &key : keys)
         {
             if (key.contains('@')) {
-                if (!pressedRealKeysList.contains(key))
+                int index = pressedRealKeysList.indexOf(key);
+                if (index < 0)
                 {
                     allKeysPressed = false;
                     break;
                 }
                 else {
-                    pressedCombinationRealKeys.append(key);
+                    pressedCombinationRealKeysOrder.append(index);
                 }
             }
             else {
-                if (!pressedRealKeysListRemoveMultiInput.contains(key))
+                int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
+                if (index < 0)
                 {
                     allKeysPressed = false;
                     break;
                 }
                 else {
-                    pressedCombinationRealKeys.append(key);
+                    pressedCombinationRealKeysOrder.append(index);
                 }
             }
         }
@@ -9052,10 +9053,15 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             && (combinationkey.contains(keycodeString)
                || combinationkey.contains(getKeycodeStringRemoveMultiInput(keycodeString))))
         {
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(combinationkey);
+            bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[detectCombinationKeys]" << "CombinationKey Down detected ->" << combinationkey;
+            QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, isKeyOrderIncreasing(%2), pressedCombinationRealKeysOrder -> ").arg(combinationkey).arg(keyorder_increasing?"true":"false");
+            qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
 #endif
-            findindex = CombinationKeyProc(combinationkey, KEY_DOWN);
+
+            CombinationKeyProc(findindex, combinationkey, KEY_DOWN);
             if (findindex >= 0) {
                 PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                 if (PassThrough) {
@@ -9079,9 +9085,11 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             {
                 if (false == allKeysPressed) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[detectCombinationKeys]" << "CombinationKey Up detected ->" << combinationkey;
+                    QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_UP detected").arg(combinationkey);
+                    qDebug().nospace().noquote() << debugmessage;
 #endif
-                    findindex = CombinationKeyProc(combinationkey, KEY_UP);
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(combinationkey);
+                    CombinationKeyProc(findindex, combinationkey, KEY_UP);
                     if (findindex >= 0) {
                         PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                         if (PassThrough) {
@@ -9110,15 +9118,25 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
     return intercept;
 }
 
-int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyupdown)
+bool QKeyMapper_Worker::isKeyOrderIncreasing(const QList<int> &keyorder)
+{
+    for (int i = 1; i < keyorder.size(); ++i) {
+        if (keyorder[i] <= keyorder[i - 1]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void QKeyMapper_Worker::CombinationKeyProc(int rowindex, const QString &keycodeString, int keyupdown)
 {
     bool returnFlag = false;
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+    int findindex = rowindex;
     returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
     int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
 
     if (intercept == KEY_INTERCEPT_BLOCK) {
-        return findindex;
+        return;
     }
 
     if (false == returnFlag) {
@@ -9228,8 +9246,6 @@ int QKeyMapper_Worker::CombinationKeyProc(const QString &keycodeString, int keyu
             }
         }
     }
-
-    return findindex;
 }
 
 bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key, const QStringList mappingkeyslist)
