@@ -92,7 +92,7 @@ typedef struct MAP_KEYDATA
     , Lock(false)
     , MappingKeyUnlock(false)
     , LockState(LOCK_STATE_LOCKOFF)
-    , CheckCombKeyOrder(false)
+    , CheckCombKeyOrder(true)
     , PassThrough(false)
     , SendTiming(SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)

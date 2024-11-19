@@ -3005,6 +3005,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         mappingkeys_keyup = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS_KEYUP).toStringList();
 
         int mappingdata_size = original_keys.size();
+        QStringList stringListAllON;
         QStringList stringListAllOFF;
         QStringList stringListAllZERO;
         QStringList stringListAllNORMAL;
@@ -3012,6 +3013,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList burstreleaseStringListDefault;
         QStringList repeattimesStringListDefault;
         for (int i = 0; i < mappingdata_size; ++i) {
+            stringListAllON << "ON";
             stringListAllOFF << "OFF";
             stringListAllZERO << "0";
             stringListAllNORMAL << SENDTIMING_STR_NORMAL;
@@ -3024,7 +3026,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         burstreleaseStringList  = burstreleaseStringListDefault;
         lockStringList          = stringListAllOFF;
         mappingkeyunlockStringList = stringListAllOFF;
-        checkcombkeyorderStringList   = stringListAllOFF;
+        checkcombkeyorderStringList = stringListAllON;
         passthroughStringList   = stringListAllOFF;
         sendtimingStringList   = stringListAllNORMAL;
         keyseqholddownStringList = stringListAllOFF;
@@ -3125,11 +3127,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &checkcombkeyorder = (i < checkcombkeyorderStringList.size()) ? checkcombkeyorderStringList.at(i) : "OFF";
-                if (checkcombkeyorder == "ON") {
-                    checkcombkeyorderList.append(true);
-                } else {
+                const QString &checkcombkeyorder = (i < checkcombkeyorderStringList.size()) ? checkcombkeyorderStringList.at(i) : "ON";
+                if (checkcombkeyorder == "OFF") {
                     checkcombkeyorderList.append(false);
+                } else {
+                    checkcombkeyorderList.append(true);
                 }
             }
 
@@ -5745,6 +5747,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     mappingkeys_keyup = mappingkeys_keyup_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
 
                     int mappingdata_size = original_keys.size();
+                    QStringList stringListAllON;
                     QStringList stringListAllOFF;
                     QStringList stringListAllZERO;
                     QStringList stringListAllNORMAL;
@@ -5752,6 +5755,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList burstreleaseStringListDefault;
                     QStringList repeattimesStringListDefault;
                     for (int i = 0; i < mappingdata_size; ++i) {
+                        stringListAllON << "ON";
                         stringListAllOFF << "OFF";
                         stringListAllZERO << "0";
                         stringListAllNORMAL << SENDTIMING_STR_NORMAL;
@@ -5764,7 +5768,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     burstreleaseStringList  = burstreleaseStringListDefault;
                     lockStringList          = stringListAllOFF;
                     mappingkeyunlockStringList = stringListAllOFF;
-                    checkcombkeyorderStringList = stringListAllOFF;
+                    checkcombkeyorderStringList = stringListAllON;
                     passthroughStringList   = stringListAllOFF;
                     // keyup_actionStringList   = stringListAllOFF;
                     sendtimingStringList   = stringListAllNORMAL;
@@ -5870,11 +5874,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &checkcombkeyorder = (i < checkcombkeyorderStringList.size()) ? checkcombkeyorderStringList.at(i) : "OFF";
-                            if (checkcombkeyorder == "ON") {
-                                checkcombkeyorderList.append(true);
-                            } else {
+                            const QString &checkcombkeyorder = (i < checkcombkeyorderStringList.size()) ? checkcombkeyorderStringList.at(i) : "ON";
+                            if (checkcombkeyorder == "OFF") {
                                 checkcombkeyorderList.append(false);
+                            } else {
+                                checkcombkeyorderList.append(true);
                             }
                         }
 
@@ -10571,21 +10575,21 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
 
-            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,
-                                                   currentMapKeyText,
-                                                   currentMapKeyText,
-                                                   QString(),
-                                                   false,
-                                                   BURST_PRESS_TIME_DEFAULT,
-                                                   BURST_RELEASE_TIME_DEFAULT,
-                                                   false,
-                                                   false,
-                                                   false,
-                                                   SENDTIMING_NORMAL,
-                                                   false,
-                                                   false,
-                                                   REPEAT_MODE_NONE,
-                                                   REPEAT_TIMES_DEFAULT
+            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,               /* originalkey QString */
+                                                   currentMapKeyText,               /* mappingkeys QString */
+                                                   currentMapKeyText,               /* mappingkeys_keyup QString */
+                                                   QString(),                       /* note QString */
+                                                   false,                           /* burst bool */
+                                                   BURST_PRESS_TIME_DEFAULT,        /* burstpresstime int */
+                                                   BURST_RELEASE_TIME_DEFAULT,      /* burstreleasetime int */
+                                                   false,                           /* lock bool */
+                                                   false,                           /* mappingkeys_unlock bool */
+                                                   true,                            /* checkcombkeyorder bool */
+                                                   false,                           /* passthrough bool */
+                                                   SENDTIMING_NORMAL,               /* sendtiming int */
+                                                   false,                           /* keyseqholddown bool */
+                                                   REPEAT_MODE_NONE,                /* repeat_mode int */
+                                                   REPEAT_TIMES_DEFAULT             /* repeat_times int */
                                                    ));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
