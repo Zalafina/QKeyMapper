@@ -7398,11 +7398,11 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
                 else {
                     if (findindex >= 0) {
-#ifdef DEBUG_LOGOUT_ON
-                        QString debugmessage = QString("[LowLevelKeyboardHookProc] OriginalKey \"%1\" found rowindex(%2), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
-                        qDebug().nospace().noquote() << debugmessage;
-#endif
-                        return (LRESULT)TRUE;
+// #ifdef DEBUG_LOGOUT_ON
+//                         QString debugmessage = QString("[LowLevelKeyboardHookProc] OriginalKey \"%1\" found rowindex(%2), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
+//                         qDebug().nospace().noquote() << debugmessage;
+// #endif
+//                         return (LRESULT)TRUE;
                     }
                     else {
                         if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
