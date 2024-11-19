@@ -6799,11 +6799,11 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
             }
             else {
                 if (findindex >= 0) {
-#ifdef DEBUG_LOGOUT_ON
-                    QString debugmessage = QString("[InterceptionMouseHookProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
-                    qDebug().nospace().noquote() << debugmessage;
-#endif
-                    return true;
+// #ifdef DEBUG_LOGOUT_ON
+//                     QString debugmessage = QString("[InterceptionMouseHookProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
+//                     qDebug().nospace().noquote() << debugmessage;
+// #endif
+//                     return true;
                 }
                 else {
                     if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
@@ -7965,11 +7965,11 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                     else {
                         if (findindex >= 0) {
-    #ifdef DEBUG_LOGOUT_ON
-                            QString debugmessage = QString("[LowLevelMouseHookProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
-                            qDebug().nospace().noquote() << debugmessage;
-    #endif
-                            return (LRESULT)TRUE;
+// #ifdef DEBUG_LOGOUT_ON
+//                             QString debugmessage = QString("[LowLevelMouseHookProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
+//                             qDebug().nospace().noquote() << debugmessage;
+// #endif
+//                             return (LRESULT)TRUE;
                         }
                         else {
                             if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
@@ -10376,11 +10376,11 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
         }
         else {
             if (findindex >= 0) {
-#ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[JoyStickKeysProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
-                qDebug().nospace().noquote() << debugmessage;
-#endif
-                return true;
+// #ifdef DEBUG_LOGOUT_ON
+//                 QString debugmessage = QString("[JoyStickKeysProc] OriginalKey \"%1\" found rowindex(%d), detectCombinationKeys KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString).arg(findindex);
+//                 qDebug().nospace().noquote() << debugmessage;
+// #endif
+//                 return true;
             }
             else {
                 if (KEY_INTERCEPT_BLOCK == combinationkey_detected) {
