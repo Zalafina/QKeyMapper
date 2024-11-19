@@ -75,9 +75,9 @@
           - If **"MappingKeyUnlock"** is also checked, a short press of any mapped key can unlock and release the locked key.  
           - Example: Mapping **L-Shift⏲500** to **L-Shift** with **Lock** enabled will lock **L-Shift** when long-pressed. Unlock it with either another long press or a short press of the mapped key if **MappingKeyUnlock** is enabled.
 
-    * **Extended "!" Prefix Functionality**:  
-        * Enhanced the **"!" prefix** in the mapping configuration to support **overwriting both physical and virtual keys**.  
-        * Overwriting is now available for both keyboard keys and mouse buttons, ensuring seamless key remapping across physical and virtual devices.
+    * **Extended "！" Prefix Functionality**:  
+        * Enhanced the **"！" prefix** in the mapping configuration to support **Input override(SOCD Second-Input Priority) for both physical and virtual keys**.  
+        * Input override(SOCD Second-Input Priority) is now available for both keyboard keys and mouse buttons, ensuring seamless key remapping across physical and virtual devices.
 * v1.3.7 (Build 20241030)
 
   * **Crash Fix for Burst Key Presses**:
@@ -125,7 +125,7 @@
   * Added "RepeatByKey" and "RepeatTimes" checkboxes in the mapping settings window. Only one of these checkboxes can be selected at a time:
     - **RepeatByKey**: Sends the key sequence repeatedly while the original key remains pressed.
     - **RepeatTimes**: Specifies how many times the key sequence will be repeated for a single press of the original key.
-  * Introduced the "！" prefix for the "Mapped Key List" in the mapping settings window. This prefix can be added before a normal keyboard or mouse mapped key to implement key input override(SOCD 2nd input priority). For example:
+  * Introduced the "！" prefix for the "Mapped Key List" in the mapping settings window. This prefix can be added before a normal keyboard or mouse mapped key to implement key input override(SOCD Second-Input Priority). For example:
     - If the "D" key is mapped to "！A," pressing the "D" key after pressing the "A" key will automatically send a release signal for "A."
     - When the "D" key is released, if the "A" key's physical button is still pressed, it will automatically send an "A key pressed" message.
     - (Note: This character is not the exclamation mark on the keyboard and must be added through the "Mapped Key List" in the mapping settings window or copied from elsewhere.)
