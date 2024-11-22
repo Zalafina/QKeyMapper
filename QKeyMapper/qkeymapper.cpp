@@ -2346,7 +2346,9 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
 #endif
 
         COLORREF color = MOUSE_L_COLOR;
-        if (pointInfo.map_key.startsWith(MOUSE_R_STR)) {
+        if (pointInfo.map_key.startsWith(MOUSE_MOVE_PREFIX)) {
+            color = MOUSE_MOVE_COLOR;
+        } else if (pointInfo.map_key.startsWith(MOUSE_R_STR)) {
             color = MOUSE_R_COLOR;
         } else if (pointInfo.map_key.startsWith(MOUSE_M_STR)) {
             color = MOUSE_M_COLOR;
