@@ -536,6 +536,7 @@ const char *KEY_NONE_STR = "NONE";
 const char *KEY_BLOCKED_STR = "BLOCKED";
 const char *GAMEPAD_HOME_STR = "GamepadHome";
 
+const char *MOUSE_MOVE_PREFIX  = "Mouse-Move";
 const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
 const char *MOUSE_WINDOWPOINT_POSTFIX  = "_WindowPoint";
 const char *MOUSE_SCREENPOINT_POSTFIX  = "_ScreenPoint";
@@ -554,6 +555,8 @@ const char *MOUSE_R_SCREENPOINT_STR  = "Mouse-R_ScreenPoint";
 const char *MOUSE_M_SCREENPOINT_STR  = "Mouse-M_ScreenPoint";
 const char *MOUSE_X1_SCREENPOINT_STR = "Mouse-X1_ScreenPoint";
 const char *MOUSE_X2_SCREENPOINT_STR = "Mouse-X2_ScreenPoint";
+const char *MOUSE_MOVE_WINDOWPOINT_STR  = "Mouse-Move_WindowPoint";
+const char *MOUSE_MOVE_SCREENPOINT_STR  = "Mouse-Move_ScreenPoint";
 
 const int SHOW_MODE_SCREEN  = 0;
 const int SHOW_MODE_WINDOW  = 1;

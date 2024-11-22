@@ -366,6 +366,53 @@ void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mous
     }
 }
 
+void QKeyMapper_Worker::sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint)
+{
+    // Get the client area rectangle (relative to the window)
+    RECT clientRect;
+    if (!GetClientRect(hwnd, &clientRect)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[sendWindowMouseMoveToPoint] GetClientRect() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+        return;
+    }
+
+    // Convert the top-left corner of the client area to screen coordinates
+    POINT clientTopLeft = { clientRect.left, clientRect.top };
+    if (!ClientToScreen(hwnd, &clientTopLeft)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[sendWindowMouseMoveToPoint] ClientToScreen() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+        return;
+    }
+
+    // Convert the relative coordinates within the client area to screen coordinates
+    int x = clientTopLeft.x + mousepoint.x();
+    int y = clientTopLeft.y + mousepoint.y();
+
+    // Convert the screen coordinates to absolute coordinates required by SendInput
+    double fScreenWidth  = GetSystemMetrics(SM_CXSCREEN) - 1;
+    double fScreenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
+    double fx = x * (65535.0 / fScreenWidth);
+    double fy = y * (65535.0 / fScreenHeight);
+
+    // Configure the input structure
+    INPUT mouse_input = { 0 };
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = static_cast<LONG>(fx);
+    mouse_input.mi.dy = static_cast<LONG>(fy);
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+
+    // Send the mouse_input event
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[sendWindowMouseMoveToPoint] SendInput() failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+
 void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
     UINT messageMouseButton;
@@ -501,6 +548,16 @@ void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
 #endif
 }
 
+void QKeyMapper_Worker::postMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint)
+{
+    POINT newPos;
+    newPos.x = mousepoint.x();
+    newPos.y = mousepoint.y();
+
+    LPARAM lParam = MAKELPARAM(newPos.x, newPos.y);
+    PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+}
+
 void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
     INPUT keyboard_input = { 0 };
@@ -628,15 +685,15 @@ void QKeyMapper_Worker::setMouseToScreenCenter(void)
 void QKeyMapper_Worker::setMouseToPoint(POINT point)
 {
     // Calculate the new coordinates for the mouse input structure.
-    double fScreenWidth    = ::GetSystemMetrics( SM_CXSCREEN )-1;
-    double fScreenHeight  = ::GetSystemMetrics( SM_CYSCREEN )-1;
+    double fScreenWidth     = GetSystemMetrics( SM_CXSCREEN )-1;
+    double fScreenHeight    = GetSystemMetrics( SM_CYSCREEN )-1;
     double fx = point.x * ( 65535.0f / fScreenWidth );
     double fy = point.y * ( 65535.0f / fScreenHeight );
 
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
-    mouse_input.mi.dx = fx;
-    mouse_input.mi.dy = fy;
+    mouse_input.mi.dx = static_cast<LONG>(fx);
+    mouse_input.mi.dy = static_cast<LONG>(fy);
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
     mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
 
@@ -1192,6 +1249,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
             }
+            else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
+                sendMouseMoveToPoint(key);
+            }
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                 sendMousePointClick(key, KEY_UP);
             }
@@ -1666,6 +1726,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                 }
+                else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
+                    sendMouseMoveToPoint(key);
+                }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                     int send_keyupdown = KEY_DOWN;
                     if (sendtype == SENDTYPE_UP) {
@@ -1938,6 +2001,59 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
                 }
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendMousePointClick] Screen : postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_last_HWNDList;
+#endif
+            }
+        }
+    }
+}
+
+void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str)
+{
+    static QRegularExpression regex(R"(Mouse-Move(:W)?\((\d+),(\d+)\))");
+    QRegularExpressionMatch match = regex.match(mousepoint_str);
+
+    if (match.hasMatch()) {
+        bool isWindowPoint = !match.captured(1).isEmpty();
+        bool x_ok;
+        bool y_ok;
+        int x = match.captured(2).toInt(&x_ok);
+        int y = match.captured(3).toInt(&y_ok);
+
+        if (!x_ok || !y_ok || x < 0 || y < 0) {
+            return;
+        }
+
+        QPoint mousepoint(x, y);
+        if (isWindowPoint) {
+            if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMouseMoveToPoint] sendWindowMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                sendWindowMouseMoveToPoint(QKeyMapper::s_CurrentMappingHWND, mousepoint);
+            }
+
+            if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                    postMouseMoveToPoint(hwnd, mousepoint);
+                }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMouseMoveToPoint] Window : postMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_last_HWNDList;
+#endif
+            }
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[sendMouseMoveToPoint] Screen : setMouseToPoint(" << x << ", " << y << ")";
+#endif
+            POINT point = {x, y};
+            setMouseToPoint(point);
+
+            if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                    postMouseMoveToPoint(hwnd, mousepoint);
+                }
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMousePointClick] Screen : postMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_last_HWNDList;
 #endif
             }
         }

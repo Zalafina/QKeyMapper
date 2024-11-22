@@ -2025,7 +2025,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
             static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
-            static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2)(:W)?\((\d+),(\d+)\)$)");
+            static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?\((\d+),(\d+)\)$)");
             static QRegularExpression sendtext_regex(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
@@ -8362,11 +8362,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << MOUSE_M_WINDOWPOINT_STR
             << MOUSE_X1_WINDOWPOINT_STR
             << MOUSE_X2_WINDOWPOINT_STR
+            << MOUSE_MOVE_WINDOWPOINT_STR
             << MOUSE_L_SCREENPOINT_STR
             << MOUSE_R_SCREENPOINT_STR
             << MOUSE_M_SCREENPOINT_STR
             << MOUSE_X1_SCREENPOINT_STR
             << MOUSE_X2_SCREENPOINT_STR
+            << MOUSE_MOVE_SCREENPOINT_STR
             << MOUSE_WHEEL_UP_STR
             << MOUSE_WHEEL_DOWN_STR
             << MOUSE_WHEEL_LEFT_STR
@@ -8629,6 +8631,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(MOUSE_M_SCREENPOINT_STR);
     orikeycodelist.removeOne(MOUSE_X1_SCREENPOINT_STR);
     orikeycodelist.removeOne(MOUSE_X2_SCREENPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_MOVE_WINDOWPOINT_STR);
+    orikeycodelist.removeOne(MOUSE_MOVE_SCREENPOINT_STR);
     orikeycodelist.removeOne(SENDTEXT_STR);
     orikeycodelist.removeOne(KEYSEQUENCEBREAK_STR);
     orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
@@ -9083,7 +9087,7 @@ void QKeyMapper::updateMousePointsList()
         return;
     }
 
-    static QRegularExpression mousepoint_regex(R"(Mouse-(L|R|M|X1|X2)(:W)?\((\d+),(\d+)\))");
+    static QRegularExpression mousepoint_regex(R"(Mouse-(L|R|M|X1|X2|Move)(:W)?\((\d+),(\d+)\))");
     QRegularExpressionMatch mousepoint_match;
     ScreenMousePointsList.clear();
     WindowMousePointsList.clear();

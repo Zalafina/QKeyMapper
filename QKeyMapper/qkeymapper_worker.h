@@ -608,9 +608,11 @@ public slots:
     void sendUnicodeChar(wchar_t aChar);
     void sendText(HWND window_hwnd, const QString& text);
     void sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
+    void sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseWheel(HWND hwnd, const QString &mousewheel);
     void postMouseMove(HWND hwnd, int delta_x, int delta_y);
+    void postMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint = QPoint(-1, -1));
     void sendMouseMove(int delta_x, int delta_y);
     void sendMouseWheel(int wheel_updown);
     void setMouseToScreenCenter(void);
@@ -630,6 +632,7 @@ public slots:
     void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown);
+    void sendMouseMoveToPoint(QString &mousepoint_str);
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
 
 public:
