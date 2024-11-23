@@ -86,7 +86,11 @@ QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState 
 // QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::s_Joy2vJoy_EnableStateMap;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
-QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
+#else
+QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
+#endif
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 // QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List;
