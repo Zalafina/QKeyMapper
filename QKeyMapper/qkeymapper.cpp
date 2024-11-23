@@ -2025,7 +2025,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
         if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
             static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
-            static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?\((\d+),(\d+)\)$)");
+            static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((\d+),(\d+)\)$)");
             static QRegularExpression sendtext_regex(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
@@ -9089,7 +9089,7 @@ void QKeyMapper::updateMousePointsList()
         return;
     }
 
-    static QRegularExpression mousepoint_regex(R"(Mouse-(L|R|M|X1|X2|Move)(:W)?\((\d+),(\d+)\))");
+    static QRegularExpression mousepoint_regex(R"(Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((\d+),(\d+)\))");
     QRegularExpressionMatch mousepoint_match;
     ScreenMousePointsList.clear();
     WindowMousePointsList.clear();
@@ -9104,8 +9104,8 @@ void QKeyMapper::updateMousePointsList()
             QString ori_key = keymapdata.Original_Key;
             QString map_key = mousepoint_match.captured(0);
             bool isWindowPoint = !mousepoint_match.captured(2).isEmpty();
-            QString x_str = mousepoint_match.captured(3);
-            QString y_str = mousepoint_match.captured(4);
+            QString x_str = mousepoint_match.captured(4);
+            QString y_str = mousepoint_match.captured(5);
             int x = x_str.isEmpty() ? -1 : x_str.toInt();
             int y = y_str.isEmpty() ? -1 : y_str.toInt();
 
