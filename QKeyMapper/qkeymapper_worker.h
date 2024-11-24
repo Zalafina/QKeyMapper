@@ -944,11 +944,7 @@ public:
     static GripDetectStates s_GripDetect_EnableState;
     // static Joy2vJoyState s_Joy2vJoyState;
     static QHash<int, Joy2vJoyState> s_Joy2vJoy_EnableStateMap;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    static QRecursiveMutex s_ViGEmClient_Mutex;
-#else
     static QMutex s_ViGEmClient_Mutex;
-#endif
     static QPoint s_Mouse2vJoy_delta;
     static QPoint s_Mouse2vJoy_prev;
     // static QList<QPoint> s_Mouse2vJoy_delta_List;

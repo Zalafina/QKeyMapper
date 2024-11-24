@@ -86,11 +86,7 @@ QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState 
 // QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::s_Joy2vJoy_EnableStateMap;
 QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_ConnectState = VIGEMCLIENT_DISCONNECTED;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-QRecursiveMutex QKeyMapper_Worker::s_ViGEmClient_Mutex = QRecursiveMutex();
-#else
-QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex(QMutex::Recursive);
-#endif
+QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex;
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 // QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List;
@@ -2847,6 +2843,7 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
     QStringList& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
 
+    {
     QMutexLocker locker(&s_ViGEmClient_Mutex);
     if (s_ViGEmClient != Q_NULLPTR && ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
@@ -3037,6 +3034,7 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
             }
         }
     }
+    }
 }
 
 void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index)
@@ -3057,6 +3055,7 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
     QStringList& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
 
+    {
     QMutexLocker locker(&s_ViGEmClient_Mutex);
     if (s_ViGEmClient != Q_NULLPTR && ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
@@ -3186,6 +3185,7 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
 #endif
             }
         }
+    }
     }
 }
 
