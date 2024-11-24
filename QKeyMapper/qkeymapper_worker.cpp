@@ -936,19 +936,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
     QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
 
-    if (original_key.contains(MOUSE_WHEEL_STR)) {
-        if (KEY_UP == keyupdown) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait start ->" << original_key;
-#endif
-            QThread::msleep(MOUSE_WHEEL_KEYUP_WAITTIME);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait end ->" << original_key;
-#endif
-        }
-    }
-#ifdef VIGEM_CLIENT_SUPPORT
-    else if (original_key.contains(keySequenceStr)) {
+    if (original_key.contains(keySequenceStr)) {
         QString firstKeySeqPostStr = QString("%1%2").arg(keySequenceStr).arg(1);
         QString finalKeySeqPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
         if (original_key.endsWith(firstKeySeqPostStr)) {
@@ -979,7 +967,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
         }
     }
+    else if (original_key.contains(MOUSE_WHEEL_STR)) {
+        if (KEY_UP == keyupdown) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait start ->" << original_key;
 #endif
+            QThread::msleep(MOUSE_WHEEL_KEYUP_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait end ->" << original_key;
+#endif
+        }
+    }
 
     int key_sequence_count = inputKeys.size();
     if (key_sequence_count <= 0) {
