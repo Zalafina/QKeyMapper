@@ -5651,6 +5651,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 && original_keys_split.size() > 0) {
                 table_count = original_keys_split.size();
             }
+
+            if (mappingkeys_keyup_split.size() != mapping_keys_split.size()) {
+                mappingkeys_keyup_split = mapping_keys_split;
+            }
         }
 
         if (false == initKeyMappingTable && table_count > 0) {
