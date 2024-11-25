@@ -3006,6 +3006,10 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         mapping_keys    = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
         mappingkeys_keyup = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS_KEYUP).toStringList();
 
+        if (mappingkeys_keyup.size() != mapping_keys.size()) {
+            mappingkeys_keyup = mapping_keys;
+        }
+
         int mappingdata_size = original_keys.size();
         QStringList stringListAllON;
         QStringList stringListAllOFF;
@@ -5747,6 +5751,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     original_keys = original_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     mapping_keys = mapping_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     mappingkeys_keyup = mappingkeys_keyup_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+
+                    if (mappingkeys_keyup.size() != mapping_keys.size()) {
+                        mappingkeys_keyup = mapping_keys;
+                    }
 
                     int mappingdata_size = original_keys.size();
                     QStringList stringListAllON;
