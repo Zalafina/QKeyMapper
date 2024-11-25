@@ -7,8 +7,8 @@
 | E             | Mouse-X2          | Joy-RS-Up           |
 | F             | Mouse-WheelUp     | Joy-RS-Down         |
 | G             | Mouse-WheelDown   | Joy-RS-Left         |
-| H             |                   | Joy-RS-Right        |
-| I             |                   | Joy-DPad-Up         |
+| H             | Mouse-WheelLeft   | Joy-RS-Right        |
+| I             | Mouse-WheelRight  | Joy-DPad-Up         |
 | J             |                   | Joy-DPad-Down       |
 | K             |                   | Joy-DPad-Left       |
 | L             |                   | Joy-DPad-Right      |
