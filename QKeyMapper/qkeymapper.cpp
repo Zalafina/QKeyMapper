@@ -1878,6 +1878,16 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         }
         return result;
     }
+    else if (mappingkeyseqlist.size() > 1 && mappingkeystr.contains(PREFIX_SEND_EXCLUSION)) {
+        result.isValid = false;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            result.errorMessage = QString("After override prefix \"%1\" could not be used in keysequence").arg(PREFIX_SEND_EXCLUSION);
+        }
+        else {
+            result.errorMessage = QString("后覆盖前缀\"%1\"不能使用在按键序列中").arg(PREFIX_SEND_EXCLUSION);
+        }
+        return result;
+    }
 
     static QRegularExpression removeindex_regex("@\\d$");
 
