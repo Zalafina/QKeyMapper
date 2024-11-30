@@ -2114,8 +2114,11 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     }
 
     int findindex = rowindex;
+    bool burst = false;
+    bool unbreakable = false;
     if (findindex >= 0) {
-        bool burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
+        burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
+        unbreakable = QKeyMapper::KeyMappingDataList->at(findindex).Unbreakable;
         if (burst && controller != Q_NULLPTR) {
             if (sendmode == SENDMODE_BURSTKEY_START) {
                 controller->task_threadpool->clear();
@@ -2138,7 +2141,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         }
     }
 
-    if (keyupdown == KEY_DOWN) {
+    if (keyupdown == KEY_DOWN || unbreakable) {
         bool isKeySequence = false;
         bool isKeySequenceRunning = false;
         if (key_sequence_count > 1) {
@@ -2174,14 +2177,25 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
 
             if (sendmode == SENDMODE_NORMAL) {
                 if (isKeySequenceRunning && controller != Q_NULLPTR) {
+                    if (unbreakable) {
+                        if (keyupdown == KEY_DOWN
+                            || (keyupdown == KEY_UP && controller->task_keyup_sent)) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
+                            qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] Runing KeySequence contains unbreakable OriginalKey:" << original_key << ", skip " << ((keyupdown == KEY_DOWN) ? " KeyDown" : " KeyUp") << " sendInputKeys_Signal, s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
 #endif
-                    // controller->task_stop_mutex->lock();
-                    controller->task_threadpool->clear();
-                    *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
-                    controller->task_stop_condition->wakeAll();
-                    // controller->task_stop_mutex->unlock();
+                            skip_emitsignal = true;
+                        }
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
+#endif
+                        // controller->task_stop_mutex->lock();
+                        controller->task_threadpool->clear();
+                        *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+                        controller->task_stop_condition->wakeAll();
+                        // controller->task_stop_mutex->unlock();
+                    }
                 }
             }
         }
@@ -2194,16 +2208,27 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
                 pressedmappingkeys_contains = pressedMappingKeysMap.contains(original_key);
                 }
                 if (pressedmappingkeys_contains && controller != Q_NULLPTR) {
+                    if (unbreakable) {
+                        if (keyupdown == KEY_DOWN
+                            || (keyupdown == KEY_UP && controller->task_keyup_sent)) {
 #ifdef DEBUG_LOGOUT_ON
-                    {
-                    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
-                    qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_SINGLE, pressedMappingKeysMap contains OriginalKey:" << original_key << ", pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
-                    }
+                            qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] pressedMappingKeysMap contains unbreakable OriginalKey:" << original_key << ", skip " << ((keyupdown == KEY_DOWN) ? " KeyDown" : " KeyUp") << " sendInputKeys_Signal, pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
 #endif
-                    // controller->task_stop_mutex->lock();
-                    *controller->task_stop_flag = INPUTSTOP_SINGLE;
-                    controller->task_stop_condition->wakeAll();
-                    // controller->task_stop_mutex->unlock();
+                            skip_emitsignal = true;
+                        }
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        {
+                        QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+                        qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] task_stop_flag = INPUTSTOP_SINGLE, pressedMappingKeysMap contains OriginalKey:" << original_key << ", pressedMappingKeysMap -> " << pressedMappingKeysMap << "\033[0m";
+                        }
+#endif
+                        // controller->task_stop_mutex->lock();
+                        *controller->task_stop_flag = INPUTSTOP_SINGLE;
+                        controller->task_stop_condition->wakeAll();
+                        // controller->task_stop_mutex->unlock();
+                    }
                 }
             }
         }
@@ -11831,6 +11856,7 @@ void QKeyMapper_Worker::initGlobalSendInputTaskController()
     controller.task_stop_condition = new QWaitCondition();
     controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
     controller.task_rowindex = INITIAL_ROW_INDEX;
+    controller.task_keyup_sent = false;
 }
 
 void QKeyMapper_Worker::resetGlobalSendInputTaskController()
@@ -12451,6 +12477,7 @@ void SendInputTask::initSendInputTaskControllerMap()
             controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
             controller.task_rowindex = INITIAL_ROW_INDEX;
+            controller.task_keyup_sent = false;
             s_SendInputTaskControllerMap.insert(originalKey, controller);
         }
     }

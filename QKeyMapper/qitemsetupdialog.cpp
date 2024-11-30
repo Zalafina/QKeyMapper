@@ -72,6 +72,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_ENGLISH);
+        ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_ENGLISH);
@@ -109,6 +110,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_CHINESE);
+        ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_CHINESE);
@@ -169,6 +171,7 @@ void QItemSetupDialog::resetFontSize()
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
     ui->checkCombKeyOrderCheckBox->setFont(customFont);
+    ui->unbreakableCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
     ui->keySeqHoldDownCheckBox->setFont(customFont);
     ui->repeatByKeyCheckBox->setFont(customFont);
@@ -436,6 +439,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->checkCombKeyOrderCheckBox->setChecked(false);
+        }
+
+        /* Load Unbreakable */
+        if (true == keymapdata.Unbreakable) {
+            ui->unbreakableCheckBox->setChecked(true);
+        }
+        else {
+            ui->unbreakableCheckBox->setChecked(false);
         }
 
         /* Load PassThrough Status */
@@ -709,6 +720,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->checkCombKeyOrderCheckBox->setChecked(false);
+        }
+
+        /* Load Unbreakable */
+        if (true == keymapdata.Unbreakable) {
+            ui->unbreakableCheckBox->setChecked(true);
+        }
+        else {
+            ui->unbreakableCheckBox->setChecked(false);
         }
 
         /* Load PassThrough Status */
@@ -1001,6 +1020,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->checkCombKeyOrderCheckBox->setChecked(false);
+        }
+
+        /* Load Unbreakable */
+        if (true == keymapdata.Unbreakable) {
+            ui->unbreakableCheckBox->setChecked(true);
+        }
+        else {
+            ui->unbreakableCheckBox->setChecked(false);
         }
 
         /* Load PassThrough Status */
@@ -1476,6 +1503,22 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
+#endif
+    }
+}
+
+void QItemSetupDialog::on_unbreakableCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool unbreakable = ui->unbreakableCheckBox->isChecked();
+    if (unbreakable != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Unbreakable) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Unbreakable = unbreakable;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Unbreakable -> " << unbreakable;
 #endif
     }
 }

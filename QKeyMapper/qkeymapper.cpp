@@ -2851,6 +2851,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList lockList;
     QStringList mappingkeyunlockList;
     QStringList checkcombkeyorderList;
+    QStringList unbreakableList;
     QStringList passthroughList;
     QStringList sendtimingList;
     QStringList keyseqholddownList;
@@ -2906,6 +2907,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             checkcombkeyorderList.append("OFF");
         }
+        if (true == keymapdata.Unbreakable) {
+            unbreakableList.append("ON");
+        }
+        else {
+            unbreakableList.append("OFF");
+        }
         if (true == keymapdata.PassThrough) {
             passthroughList.append("ON");
         }
@@ -2959,6 +2966,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_CHECKCOMBKEYORDER, checkcombkeyorderList);
+    keyMappingDataFile.setValue(KEYMAPDATA_UNBREAKABLE, unbreakableList);
     keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
     keyMappingDataFile.setValue(KEYMAPDATA_SENDTIMING, sendtimingList);
     keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
@@ -2991,6 +2999,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList lockStringList;
     QStringList mappingkeyunlockStringList;
     QStringList checkcombkeyorderStringList;
+    QStringList unbreakableStringList;
     QStringList passthroughStringList;
     QStringList sendtimingStringList;
     QStringList keyseqholddownStringList;
@@ -3003,6 +3012,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> lockList;
     QList<bool> mappingkeyunlockList;
     QList<bool> checkcombkeyorderList;
+    QList<bool> unbreakableList;
     QList<bool> passthroughList;
     QList<int> sendtimingList;
     QList<bool> keyseqholddownList;
@@ -3043,6 +3053,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         lockStringList          = stringListAllOFF;
         mappingkeyunlockStringList = stringListAllOFF;
         checkcombkeyorderStringList = stringListAllON;
+        unbreakableStringList = stringListAllOFF;
         passthroughStringList   = stringListAllOFF;
         sendtimingStringList   = stringListAllNORMAL;
         keyseqholddownStringList = stringListAllOFF;
@@ -3069,6 +3080,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_CHECKCOMBKEYORDER)) {
             checkcombkeyorderStringList = keyMappingDataFile.value(KEYMAPDATA_CHECKCOMBKEYORDER).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_UNBREAKABLE)) {
+            unbreakableStringList = keyMappingDataFile.value(KEYMAPDATA_UNBREAKABLE).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_PASSTHROUGH)) {
             passthroughStringList = keyMappingDataFile.value(KEYMAPDATA_PASSTHROUGH).toStringList();
@@ -3148,6 +3162,15 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     checkcombkeyorderList.append(false);
                 } else {
                     checkcombkeyorderList.append(true);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &unbreakable = (i < unbreakableStringList.size()) ? unbreakableStringList.at(i) : "OFF";
+                if (unbreakable == "ON") {
+                    unbreakableList.append(true);
+                } else {
+                    unbreakableList.append(false);
                 }
             }
 
@@ -3238,6 +3261,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       lockList.at(loadindex),
                                                       mappingkeyunlockList.at(loadindex),
                                                       checkcombkeyorderList.at(loadindex),
+                                                      unbreakableList.at(loadindex),
                                                       passthroughList.at(loadindex),
                                                       sendtimingList.at(loadindex),
                                                       keyseqholddownList.at(loadindex),
@@ -4739,6 +4763,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString lockList_forsave;
     QString mappingkeyunlockList_forsave;
     QString checkcombkeyorderList_forsave;
+    QString unbreakableList_forsave;
     QString passthroughList_forsave;
     QString sendtimingList_forsave;
     QString keyseqholddownList_forsave;
@@ -4771,6 +4796,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             lockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mappingkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             checkcombkeyorderList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            unbreakableList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             passthroughList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             sendtimingList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             keyseqholddownList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -4788,6 +4814,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QStringList mappingkeyunlockList;
         QStringList checkcombkeyorderList;
+        QStringList unbreakableList;
         QStringList passthroughList;
         QStringList sendtimingList;
         QStringList keyseqholddownList;
@@ -4843,6 +4870,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     checkcombkeyorderList.append("OFF");
                 }
+                if (true == keymapdata.Unbreakable) {
+                    unbreakableList.append("ON");
+                }
+                else {
+                    unbreakableList.append("OFF");
+                }
                 if (true == keymapdata.PassThrough) {
                     passthroughList.append("ON");
                 }
@@ -4897,6 +4930,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString lockList_str = lockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mappingkeyunlockList_str = mappingkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString checkcombkeyorderList_str = checkcombkeyorderList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString unbreakableList_str = unbreakableList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString passthroughList_str = passthroughList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString sendtimingList_str = sendtimingList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString keyseqholddownList_str = keyseqholddownList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -4914,6 +4948,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         lockList_forsave.append(lockList_str);
         mappingkeyunlockList_forsave.append(mappingkeyunlockList_str);
         checkcombkeyorderList_forsave.append(checkcombkeyorderList_str);
+        unbreakableList_forsave.append(unbreakableList_str);
         passthroughList_forsave.append(passthroughList_str);
         sendtimingList_forsave.append(sendtimingList_str);
         keyseqholddownList_forsave.append(keyseqholddownList_str);
@@ -4934,6 +4969,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER , checkcombkeyorderList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_UNBREAKABLE , unbreakableList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_SENDTIMING , sendtimingList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
@@ -5614,6 +5650,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString lockData_loaded;
         QString mappingkeyunlockData_loaded;
         QString checkcombkeyorderData_loaded;
+        QString unbreakableData_loaded;
         QString passthroughData_loaded;
         // QString keyup_actionData_loaded;
         QString sendtimingData_loaded;
@@ -5631,6 +5668,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList lockData_split;
         QStringList mappingkeyunlockData_split;
         QStringList checkcombkeyorderData_split;
+        QStringList unbreakableData_split;
         QStringList passthroughData_split;
         // QStringList keyup_actionData_split;
         QStringList sendtimingData_split;
@@ -5699,6 +5737,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 checkcombkeyorderData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER).toString();
                 checkcombkeyorderData_split = checkcombkeyorderData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_UNBREAKABLE)) {
+                unbreakableData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_UNBREAKABLE).toString();
+                unbreakableData_split = unbreakableData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_PASSTHROUGH)) {
                 passthroughData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_PASSTHROUGH).toString();
                 passthroughData_split = passthroughData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -5742,6 +5784,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList lockStringList;
                     QStringList mappingkeyunlockStringList;
                     QStringList checkcombkeyorderStringList;
+                    QStringList unbreakableStringList;
                     QStringList passthroughStringList;
                     // QStringList keyup_actionStringList;
                     QStringList sendtimingStringList;
@@ -5755,6 +5798,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QList<bool> lockList;
                     QList<bool> mappingkeyunlockList;
                     QList<bool> checkcombkeyorderList;
+                    QList<bool> unbreakableList;
                     QList<bool> passthroughList;
                     // QList<bool> keyup_actionList;
                     QList<int> sendtimingList;
@@ -5793,6 +5837,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     lockStringList          = stringListAllOFF;
                     mappingkeyunlockStringList = stringListAllOFF;
                     checkcombkeyorderStringList = stringListAllON;
+                    unbreakableStringList   = stringListAllOFF;
                     passthroughStringList   = stringListAllOFF;
                     // keyup_actionStringList   = stringListAllOFF;
                     sendtimingStringList   = stringListAllNORMAL;
@@ -5820,6 +5865,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                     if (checkcombkeyorderData_split.size() == table_count) {
                         checkcombkeyorderStringList = checkcombkeyorderData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (unbreakableData_split.size() == table_count) {
+                        unbreakableStringList = unbreakableData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (passthroughData_split.size() == table_count) {
                         passthroughStringList = passthroughData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -5903,6 +5951,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                 checkcombkeyorderList.append(false);
                             } else {
                                 checkcombkeyorderList.append(true);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &unbreakable = (i < unbreakableStringList.size()) ? unbreakableStringList.at(i) : "OFF";
+                            if (unbreakable == "ON") {
+                                unbreakableList.append(true);
+                            } else {
+                                unbreakableList.append(false);
                             }
                         }
 
@@ -6001,6 +6058,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   lockList.at(loadindex),
                                                                   mappingkeyunlockList.at(loadindex),
                                                                   checkcombkeyorderList.at(loadindex),
+                                                                  unbreakableList.at(loadindex),
                                                                   passthroughList.at(loadindex),
                                                                   sendtimingList.at(loadindex),
                                                                   keyseqholddownList.at(loadindex),
@@ -10477,6 +10535,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.Lock,
                                                                keymapdata.MappingKeyUnlock,
                                                                keymapdata.CheckCombKeyOrder,
+                                                               keymapdata.Unbreakable,
                                                                keymapdata.PassThrough,
                                                                keymapdata.SendTiming,
                                                                keymapdata.KeySeqHoldDown,
@@ -10613,6 +10672,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    false,                           /* lock bool */
                                                    false,                           /* mappingkeys_unlock bool */
                                                    true,                            /* checkcombkeyorder bool */
+                                                   false,                           /* unbreakable bool */
                                                    false,                           /* passthrough bool */
                                                    SENDTIMING_NORMAL,               /* sendtiming int */
                                                    false,                           /* keyseqholddown bool */

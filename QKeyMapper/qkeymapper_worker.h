@@ -72,6 +72,7 @@ typedef struct MAP_KEYDATA
     bool MappingKeyUnlock;
     uint LockState;
     bool CheckCombKeyOrder;
+    bool Unbreakable;
     bool PassThrough;
     int SendTiming;
     bool KeySeqHoldDown;
@@ -93,6 +94,7 @@ typedef struct MAP_KEYDATA
     , MappingKeyUnlock(false)
     , LockState(LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
+    , Unbreakable(false)
     , PassThrough(false)
     , SendTiming(SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)
@@ -103,7 +105,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool mappingkeys_unlock,
-                bool checkcombkeyorder, bool passthrough,
+                bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times)
     {
@@ -130,6 +132,7 @@ typedef struct MAP_KEYDATA
         MappingKeyUnlock = mappingkeys_unlock;
         LockState = LOCK_STATE_LOCKOFF;
         CheckCombKeyOrder = checkcombkeyorder;
+        Unbreakable = unbreakable;
         PassThrough = passthrough;
         SendTiming = sendtiming;
         KeySeqHoldDown = keyseqholddown;
@@ -149,6 +152,7 @@ typedef struct MAP_KEYDATA
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (CheckCombKeyOrder == other.CheckCombKeyOrder)
+                && (Unbreakable == other.Unbreakable)
                 && (PassThrough == other.PassThrough)
                 && (SendTiming == other.SendTiming)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
@@ -172,6 +176,7 @@ typedef struct MAP_KEYDATA
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", LockState:" << data.LockState
                         << ", CheckCombKeyOrder:" << data.CheckCombKeyOrder
+                        << ", Unbreakable:" << data.Unbreakable
                         << ", PassThrough:" << data.PassThrough
                         << ", SendTiming:" << data.SendTiming
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
@@ -280,6 +285,7 @@ struct SendInputTaskController {
     QWaitCondition *task_stop_condition;
     int sendvirtualkey_state;
     int task_rowindex;
+    bool task_keyup_sent;
 };
 
 #ifdef DINPUT_TEST
@@ -323,6 +329,16 @@ public:
                 controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
                 controller.task_rowindex = INITIAL_ROW_INDEX;
                 s_SendInputTaskControllerMap.insert(m_real_originalkey, controller);
+            }
+            else {
+                SendInputTaskController *controller = Q_NULLPTR;
+                controller = &s_SendInputTaskControllerMap[m_real_originalkey];
+                if (keyupdown == KEY_UP) {
+                    controller->task_keyup_sent = true;
+                }
+                else {
+                    controller->task_keyup_sent = false;
+                }
             }
         }
     }
