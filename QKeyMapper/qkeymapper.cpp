@@ -1906,6 +1906,18 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
             return result;
         }
 
+        QStringList pure_Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS, true);
+        int pure_duplicatesRemoved = pure_Mapping_Keys.removeDuplicates();
+        if (pure_duplicatesRemoved > 0) {
+            result.isValid = false;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                result.errorMessage = QString("MappingKeys contains duplicate key \"%1\"").arg(mappingkeys);
+            } else {
+                result.errorMessage = QString("映射按键中包含重复按键 \"%1\"").arg(mappingkeys);
+            }
+            return result;
+        }
+
         if (Mapping_Keys.size() > 1) {
             QString foundSpecialOriginalKey;
             QString foundSpecialMappingKey;
