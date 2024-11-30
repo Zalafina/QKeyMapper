@@ -89,7 +89,7 @@ const int REPEAT_MODE_BYKEY     = 1;
 const int REPEAT_MODE_BYTIMES   = 2;
 
 const int REPEAT_TIMES_MIN = 1;
-const int REPEAT_TIMES_MAX = 99999;
+const int REPEAT_TIMES_MAX = 99999999;
 const int REPEAT_TIMES_DEFAULT = 1;
 
 const int DATA_PORT_MIN = 1;
