@@ -907,12 +907,7 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
     SendInputTask *sendInputTask = new SendInputTask(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
 
     SendInputTaskController *controller = Q_NULLPTR;
-    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
-        controller = &SendInputTask::s_GlobalSendInputTaskController;
-    }
-    else {
-        controller = &SendInputTask::s_SendInputTaskControllerMap[sendInputTask->m_real_originalkey];
-    }
+    controller = &SendInputTask::s_SendInputTaskControllerMap[sendInputTask->m_real_originalkey];
 
     controller->task_threadpool->start(sendInputTask);
 
@@ -2104,13 +2099,8 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         }
     }
 
-    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
-        controller = &SendInputTask::s_GlobalSendInputTaskController;
-    }
-    else {
-        if (SendInputTask::s_SendInputTaskControllerMap.contains(original_key)) {
-            controller = &SendInputTask::s_SendInputTaskControllerMap[original_key];
-        }
+    if (SendInputTask::s_SendInputTaskControllerMap.contains(original_key)) {
+        controller = &SendInputTask::s_SendInputTaskControllerMap[original_key];
     }
 
     int findindex = rowindex;
@@ -5324,11 +5314,10 @@ void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
     qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
 #endif
 
-#ifdef SDL_VIRTUALGAMEPAD_IGNORE
-    if (e.joystick->blacklisted) {
+    if (e.joystick->blacklisted
+        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
         return;
     }
-#endif
 
     checkJoystickPOV(e);
 }
@@ -5339,11 +5328,10 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
     qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
 
-#ifdef SDL_VIRTUALGAMEPAD_IGNORE
-    if (e.joystick->blacklisted) {
+    if (e.joystick->blacklisted
+        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
         return;
     }
-#endif
 
     QJoystickAxisEvent axisEvent = e;
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -5364,11 +5352,10 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
     qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
 #endif
 
-#ifdef SDL_VIRTUALGAMEPAD_IGNORE
-    if (e.joystick->blacklisted) {
+    if (e.joystick->blacklisted
+        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
         return;
     }
-#endif
 
     checkJoystickButtons(e);
 }
@@ -10388,13 +10375,8 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
     for (const QString &keyseq_orikey : s_runningKeySequenceOrikeyList) {
         SendInputTaskController *keyseq_break_controller = Q_NULLPTR;
 
-        if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
-            keyseq_break_controller = &SendInputTask::s_GlobalSendInputTaskController;
-        }
-        else {
-            if (SendInputTask::s_SendInputTaskControllerMap.contains(keyseq_orikey)) {
-                keyseq_break_controller = &SendInputTask::s_SendInputTaskControllerMap[keyseq_orikey];
-            }
+        if (SendInputTask::s_SendInputTaskControllerMap.contains(keyseq_orikey)) {
+            keyseq_break_controller = &SendInputTask::s_SendInputTaskControllerMap[keyseq_orikey];
         }
 
         if (keyseq_break_controller != Q_NULLPTR) {
@@ -12405,12 +12387,7 @@ void SendInputTask::run()
 {
     // Retrieve the controller for m_real_originalkey
     SendInputTaskController *controller = Q_NULLPTR;
-    if (QKeyMapper::getKeySequenceSerialProcessStatus()) {
-        controller = &s_GlobalSendInputTaskController;
-    }
-    else {
-        controller = &s_SendInputTaskControllerMap[m_real_originalkey];
-    }
+    controller = &s_SendInputTaskControllerMap[m_real_originalkey];
 
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()), 8, 16, QChar('0')).toUpper();

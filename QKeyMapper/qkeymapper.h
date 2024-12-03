@@ -392,7 +392,7 @@ public:
     static double getBrakeThreshold(void);
     static double getAccelThreshold(void);
     static bool getSendToSameTitleWindowsStatus(void);
-    static bool getKeySequenceSerialProcessStatus(void);
+    static bool getAcceptVirtualGamepadInputStatus(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static bool validateCombinationKey(QString &input);

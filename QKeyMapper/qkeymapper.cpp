@@ -2757,9 +2757,14 @@ bool QKeyMapper::getSendToSameTitleWindowsStatus()
     }
 }
 
-bool QKeyMapper::getKeySequenceSerialProcessStatus()
+bool QKeyMapper::getAcceptVirtualGamepadInputStatus()
 {
-    return false;
+    if (true == getInstance()->ui->acceptVirtualGamepadInputCheckBox->isChecked()) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
@@ -5032,6 +5037,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
     settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, ui->acceptVirtualGamepadInputCheckBox->isChecked());
 #ifdef VIGEM_CLIENT_SUPPORT
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
 #endif
@@ -6501,6 +6507,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
     }
 
+    if (true == settingFile.contains(settingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED)){
+        bool acceptVirtualGamepadInputChecked = settingFile.value(settingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED).toBool();
+        if (true == acceptVirtualGamepadInputChecked) {
+            ui->acceptVirtualGamepadInputCheckBox->setChecked(true);
+        }
+        else {
+            ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "AcceptVirtualGamdpadInputChecked =" << acceptVirtualGamepadInputChecked;
+#endif
+    }
+    else {
+        ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
+    }
+
 //     QString loadedmappingswitchKeySeqStr;
 //     if (true == settingFile.contains(settingSelectStr+MAPPINGSTART_KEY)){
 //         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSTART_KEY).toString();
@@ -6744,6 +6766,7 @@ void QKeyMapper::setControlFontEnglish()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
+    ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
@@ -6855,6 +6878,7 @@ void QKeyMapper::setControlFontChinese()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
+    ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
@@ -6901,6 +6925,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->descriptionLabel->setEnabled(status);
     ui->descriptionLineEdit->setEnabled(status);
     ui->autoStartMappingCheckBox->setEnabled(status);
+    ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
@@ -9314,6 +9339,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
     ui->sendToSameTitleWindowsCheckBox->setText(SENDTOSAMETITLEWINDOWSCHECKBOX_CHINESE);
+    ui->acceptVirtualGamepadInputCheckBox->setText(ACCEPTVIRTUALGAMEPADINPUTCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
@@ -9455,6 +9481,7 @@ void QKeyMapper::setUILanguage_English()
     ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_ENGLISH);
     ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_ENGLISH);
     ui->sendToSameTitleWindowsCheckBox->setText(SENDTOSAMETITLEWINDOWSCHECKBOX_ENGLISH);
+    ui->acceptVirtualGamepadInputCheckBox->setText(ACCEPTVIRTUALGAMEPADINPUTCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_ENGLISH);
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);

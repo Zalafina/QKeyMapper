@@ -562,7 +562,7 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -778,7 +778,7 @@
     <widget class="QSpinBox" name="mouseYSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>270</x>
+       <x>260</x>
        <y>40</y>
        <width>35</width>
        <height>22</height>
@@ -794,7 +794,7 @@
     <widget class="QLabel" name="mouseXSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>204</x>
+       <x>194</x>
        <y>10</y>
        <width>61</width>
        <height>22</height>
@@ -810,7 +810,7 @@
     <widget class="QSpinBox" name="mouseXSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>270</x>
+       <x>260</x>
        <y>10</y>
        <width>35</width>
        <height>22</height>
@@ -826,7 +826,7 @@
     <widget class="QLabel" name="mouseYSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>204</x>
+       <x>194</x>
        <y>40</y>
        <width>61</width>
        <height>22</height>
@@ -879,6 +879,22 @@
        <width>110</width>
        <height>21</height>
       </rect>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="acceptVirtualGamepadInputCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>10</y>
+       <width>181</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Accept Virtual Gamepad Input</string>
      </property>
     </widget>
    </widget>
