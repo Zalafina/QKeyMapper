@@ -5255,7 +5255,7 @@ void QKeyMapper_Worker::onJoystickcountChanged()
 }
 #endif
 
-void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
+void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 {
 #ifdef DEBUG_LOGOUT_ON
     QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
@@ -5263,34 +5263,29 @@ void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice *joystick_added)
     qDebug().nospace() << "[onJoystickAdded] Added a New Gamepad -> " << "Name = " << joystick_added->name << ", PlayerIndex = " << joystick_added->playerindex << ", ID = " << joystick_added->id << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", ButtonNumbers = " << joystick_added->numbuttons << ", Serial = " << joystick_added->serial;
 #endif
 
-    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+    if (joystick_added == Q_NULLPTR) {
+        return;
+    }
 
-    int joystick_index = 0;
-    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
-        if (joystick_added == joystick) {
-            bool virtualgamepad = false;
-            USHORT vendorid = joystick->vendorid;
-            USHORT productid = joystick->productid;
+    bool virtualgamepad = false;
+    USHORT vendorid = joystick_added->vendorid;
+    USHORT productid = joystick_added->productid;
 
-            if (vendorid == VIRTUALGAMPAD_VENDORID_X360
-                && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
-                virtualgamepad = true;
-            }
-            else if (joystick->serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
-                && vendorid == VIRTUALGAMPAD_VENDORID_DS4
-                && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
-                virtualgamepad = true;
-            }
+    if (vendorid == VIRTUALGAMPAD_VENDORID_X360
+        && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
+        virtualgamepad = true;
+    }
+    else if (joystick_added->serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
+        && vendorid == VIRTUALGAMPAD_VENDORID_DS4
+        && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
+        virtualgamepad = true;
+    }
 
-            if (virtualgamepad) {
-                QJoysticks::getInstance()->setBlacklisted(joystick_index, true);
+    if (virtualgamepad) {
+        joystick_added->blacklisted = true;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_index << "][" << joystick_added->name << "] is Blacklisted.";
+        qDebug().noquote().nospace() << "[onJoystickAdded] VirtualGamdpad[" << joystick_added->name << "] PlayerIndex = " << joystick_added->playerindex << ", ID = " << joystick_added->id << ", VendorID = " << vendorIdStr << ", ProductID = " << productIdStr << ", is Blacklisted!";
 #endif
-            }
-        }
-
-        joystick_index += 1;
     }
 
     emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();

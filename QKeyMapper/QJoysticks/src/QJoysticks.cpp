@@ -305,7 +305,7 @@ void QJoysticks::setBlacklisted(const int index, bool blacklisted)
    Q_UNUSED(changed);
 }
 
-void QJoysticks::onJoystickAdded(const QJoystickDevice *joystick)
+void QJoysticks::onJoystickAdded(QJoystickDevice *joystick)
 {
     emit joystickAdded(joystick);
 }
