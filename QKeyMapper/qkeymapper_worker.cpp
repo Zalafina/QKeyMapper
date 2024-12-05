@@ -2888,12 +2888,14 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         if (joystickButton.isEmpty() && autoAdjust) {
             if (autoAdjust & AUTO_ADJUST_LT) {
                 Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
-                ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>(JoyAxisState.left_trigger * 255 + 0.5);
+                // Map -1.0~1.0 to 0~255 for BYTE representation
+                ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>((JoyAxisState.left_trigger + 1.0) * 127.5 + 0.5);
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
             else if (autoAdjust & AUTO_ADJUST_RT) {
                 Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
-                ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>(JoyAxisState.right_trigger * 255 + 0.5);
+                // Map -1.0~1.0 to 0~255 for BYTE representation
+                ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>((JoyAxisState.right_trigger + 1.0) * 127.5 + 0.5);
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
             else {
@@ -5306,7 +5308,7 @@ void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
 {
 #ifdef JOYSTICK_VERBOSE_LOG
-    qDebug() << "[onJoystickPOVEvent]" << "POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
+    qDebug().nospace() << "[onJoystickPOVEvent]" << "P[" << e.joystick->playerindex << "] POV ->" << e.pov << "," << "POV Angle ->" << e.angle;
 #endif
 
     if (e.joystick->blacklisted
@@ -5320,7 +5322,7 @@ void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
 void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 {
 #ifdef JOYSTICK_VERBOSE_LOG
-    qDebug() << "[onJoystickAxisEvent]" << "axis ->" << e.axis << "," << "axis value ->" << e.value;
+    qDebug().nospace() << "[onJoystickAxisEvent]" << "P[" << e.joystick->playerindex << "] axis ->" << e.axis << "," << "axis value ->" << e.value;
 #endif
 
     if (e.joystick->blacklisted
@@ -5344,7 +5346,7 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
 void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 {
 #ifdef JOYSTICK_VERBOSE_LOG
-    qDebug() << "[onJoystickButtonEvent]" << "Button ->" << e.button << "," << "Pressed ->" << e.pressed;
+    qDebug().nospace() << "[onJoystickButtonEvent]" << "P[" << e.joystick->playerindex << "] Button ->" << e.button << "," << "Pressed ->" << e.pressed;
 #endif
 
     if (e.joystick->blacklisted
