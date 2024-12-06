@@ -6424,12 +6424,12 @@ void QKeyMapper_Worker::key2MouseMoveProc()
     }
 }
 
-bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index)
+int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index)
 {
     Q_UNUSED(scan_code);
     Q_UNUSED(ExtenedFlag_e1);
 
-    bool returnFlag = false;
+    int returnFlag = INTERCEPTION_RETURN_NORMALSEND;
     ULONG_PTR extraInfo = extra_info;
     Q_UNUSED(extraInfo);
     V_KEYCODE vkeycode;
@@ -6500,7 +6500,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
     if (KEY_DOWN == keyupdown){
         if (pressedVKeyCodeList.contains(vkeycode.KeyCode)) {
             if (Interception_Worker::s_FilterKeys) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
         }
         else {
@@ -6612,23 +6612,23 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
         bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
         if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
             if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             else if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             else {
-                return false;
+                return INTERCEPTION_RETURN_NORMALSEND;
             }
         }
         else {
             bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
             if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
 
             if (intercept == KEY_INTERCEPT_BLOCK) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
         }
 
@@ -6640,14 +6640,14 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                     QString debugmessage = QString("[InterceptionKeyboardHookProc] detectCombinationKeys (%1) KEY_DOWN return -> KEY_INTERCEPT_PASSTHROUGH").arg(keycodeString);
                     qDebug().nospace().noquote() << debugmessage;
 #endif
-                    return false;
+                    return INTERCEPTION_RETURN_NORMALSEND;
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
                     QString debugmessage = QString("[InterceptionKeyboardHookProc] detectCombinationKeys (%1) KEY_DOWN return -> KEY_INTERCEPT_BLOCK").arg(keycodeString);
                     qDebug().nospace().noquote() << debugmessage;
 #endif
-                    return true;
+                    return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
             }
             else {
@@ -6659,14 +6659,14 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         QString debugmessage = QString("[InterceptionKeyboardHookProc] detectCombinationKeys (%1) KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString);
                         qDebug().nospace().noquote() << debugmessage;
 #endif
-                        return true;
+                        return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                     else {
 #ifdef DEBUG_LOGOUT_ON
                         QString debugmessage = QString("[InterceptionKeyboardHookProc] detectCombinationKeys (%1) KEY_UP return -> %2").arg(keycodeString).arg(combinationkey_detected);
                         qDebug().nospace().noquote() << debugmessage;
 #endif
-                        return false;
+                        return INTERCEPTION_RETURN_NORMALSEND;
                     }
                 }
             }
@@ -6679,7 +6679,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
             }
             else {
                 if (pressedVirtualKeysList.contains(keycodeString_nochanged)) {
-                    returnFlag = true;
+                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_LOWLEVELHOOK;
 #ifdef DEBUG_LOGOUT_ON
                     qDebug("[InterceptionKeyboardHookProc] VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString_nochanged.toStdString().c_str(), keycodeString_nochanged.toStdString().c_str());
 #endif
@@ -6687,7 +6687,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
             }
         }
 
-        if (false == returnFlag) {
+        if (INTERCEPTION_RETURN_NORMALSEND == returnFlag) {
             if (findindex >=0){
                 QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                 QStringList mappingKey_KeyUpList = QKeyMapper::KeyMappingDataList->at(findindex).MappingKeys_KeyUp;
@@ -6703,7 +6703,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         qDebug() << "[InterceptionKeyboardHookProc]" << "RealKey KEY_UP Blocked ->" << original_key;
                     }
 #endif
-                    returnFlag = true;
+                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
 #ifdef DEBUG_LOGOUT_ON
@@ -6718,7 +6718,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                         emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
                     }
 
-                    returnFlag = true;
+                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else {
                     if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
@@ -6761,7 +6761,7 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                             }
                             /* Add for KeySequenceHoldDown <<< */
                         }
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                     else { /* KEY_UP == keyupdown */
                         if (SENDTIMING_KEYDOWN == SendTiming) {
@@ -6791,13 +6791,13 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                             }
                             /* Add for KeySequenceHoldDown <<< */
                         }
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                 if (PassThrough && returnFlag) {
-                    returnFlag = false;
+                    returnFlag = INTERCEPTION_RETURN_NORMALSEND;
 #ifdef DEBUG_LOGOUT_ON
                     QString keyUpDown;
                     if (KEY_DOWN == keyupdown){
@@ -6821,11 +6821,11 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
     return returnFlag;
 }
 
-bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int delta_x, int delta_y, short delta_wheel, unsigned short flags, ULONG_PTR extra_info, int mouse_index)
+int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int delta_x, int delta_y, short delta_wheel, unsigned short flags, ULONG_PTR extra_info, int mouse_index)
 {
     Q_UNUSED(flags);
 
-    bool returnFlag = false;
+    int returnFlag = INTERCEPTION_RETURN_NORMALSEND;
     ULONG_PTR extraInfo = extra_info;
     Q_UNUSED(extraInfo);
 
@@ -6915,23 +6915,23 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
         bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
         if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
             if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             else if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             else {
-                return false;
+                return INTERCEPTION_RETURN_NORMALSEND;
             }
         }
         else {
             bool tabswitch_detected = detectMappingTableTabHotkeys(keycodeString_nochanged, keyupdown);
             if ((mappingswitch_detected || displayswitch_detected || tabswitch_detected) && KEY_DOWN == keyupdown) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
 
             if (intercept == KEY_INTERCEPT_BLOCK) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
         }
 
@@ -6943,14 +6943,14 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                     QString debugmessage = QString("[InterceptionMouseHookProc] detectCombinationKeys (%1) KEY_DOWN return -> KEY_INTERCEPT_PASSTHROUGH").arg(keycodeString);
                     qDebug().nospace().noquote() << debugmessage;
 #endif
-                    return false;
+                    return INTERCEPTION_RETURN_NORMALSEND;
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
                     QString debugmessage = QString("[InterceptionMouseHookProc] detectCombinationKeys (%1) KEY_DOWN return -> KEY_INTERCEPT_BLOCK").arg(keycodeString);
                     qDebug().nospace().noquote() << debugmessage;
 #endif
-                    return true;
+                    return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
             }
             else {
@@ -6967,27 +6967,27 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         QString debugmessage = QString("[InterceptionMouseHookProc] detectCombinationKeys (%1) KEY_UP return -> KEY_INTERCEPT_BLOCK").arg(keycodeString);
                         qDebug().nospace().noquote() << debugmessage;
 #endif
-                        return true;
+                        return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                     else {
 #ifdef DEBUG_LOGOUT_ON
                         QString debugmessage = QString("[InterceptionMouseHookProc] detectCombinationKeys (%1) KEY_UP return -> %2").arg(keycodeString).arg(combinationkey_detected);
                         qDebug().nospace().noquote() << debugmessage;
 #endif
-                        return false;
+                        return INTERCEPTION_RETURN_NORMALSEND;
                     }
                 }
             }
         }
 
-        if (KEY_UP == keyupdown && false == returnFlag){
+        if (KEY_UP == keyupdown && INTERCEPTION_RETURN_NORMALSEND == returnFlag){
             if (findindex >= 0
                 && (QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == keycodeString
                     || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
             }
             else {
                 if (pressedVirtualKeysList.contains(keycodeString)) {
-                    returnFlag = true;
+                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_LOWLEVELHOOK;
 #ifdef DEBUG_LOGOUT_ON
                     qDebug("[InterceptionMouseHookProc] Virtual \"%s\" is pressed down, skip Real \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
 #endif
@@ -6995,7 +6995,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
             }
         }
 
-        if (false == returnFlag) {
+        if (INTERCEPTION_RETURN_NORMALSEND == returnFlag) {
             if (findindex >=0){
                 QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                 QStringList mappingKey_KeyUpList = QKeyMapper::KeyMappingDataList->at(findindex).MappingKeys_KeyUp;
@@ -7011,7 +7011,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Button Up Blocked ->" << original_key;
                     }
 #endif
-                    returnFlag = true;
+                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
 #ifdef DEBUG_LOGOUT_ON
@@ -7026,7 +7026,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                         emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
                     }
 
-                    returnFlag = true;
+                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else {
                     if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
@@ -7069,7 +7069,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                             }
                             /* Add for KeySequenceHoldDown <<< */
                         }
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                     else { /* KEY_UP == keyupdown */
                         if (SENDTIMING_KEYDOWN == SendTiming) {
@@ -7099,13 +7099,13 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                             }
                             /* Add for KeySequenceHoldDown <<< */
                         }
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                 if (PassThrough && returnFlag) {
-                    returnFlag = false;
+                    returnFlag = INTERCEPTION_RETURN_NORMALSEND;
 #ifdef DEBUG_LOGOUT_ON
                     QString keyUpDown;
                     if (KEY_DOWN == keyupdown){
@@ -7124,7 +7124,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
         short zDelta = delta_wheel;
 
         if (zDelta == 0) {
-            return false;
+            return INTERCEPTION_RETURN_NORMALSEND;
         }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -7179,10 +7179,10 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
             }
 
             if (block) {
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             else {
-                return false;
+                return INTERCEPTION_RETURN_NORMALSEND;
             }
         }
 
@@ -7203,14 +7203,14 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                 QString debugmessage = QString("[InterceptionMouseHookProc] detectCombinationKeys MouseWheel (%1) return -> KEY_INTERCEPT_PASSTHROUGH").arg(keycodeString);
                 qDebug().nospace().noquote() << debugmessage;
 #endif
-                return false;
+                return INTERCEPTION_RETURN_NORMALSEND;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[InterceptionMouseHookProc] detectCombinationKeys MouseWheel (%1) return -> KEY_INTERCEPT_BLOCK").arg(keycodeString);
                 qDebug().nospace().noquote() << debugmessage;
 #endif
-                return true;
+                return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
         }
 
@@ -7303,20 +7303,20 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
                             qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Wheel Operation Blocked ->" << keycodeString_WheelDown;
                         }
 #endif
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                     else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
                     else {
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
-                        returnFlag = true;
+                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                     if (PassThrough && returnFlag) {
-                        returnFlag = false;
+                        returnFlag = INTERCEPTION_RETURN_NORMALSEND;
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().noquote().nospace() << "[InterceptionMouseHookProc]" << "PassThrough MouseWheel[" << original_key << "]";
 #endif
@@ -7327,7 +7327,7 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
     }
     else if (mouse_event == EVENT_MOUSEMOVE) {
         if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
-            return false;
+            return INTERCEPTION_RETURN_NORMALSEND;
         }
 
 #ifdef MOUSE_VERBOSE_LOG
@@ -7337,15 +7337,15 @@ bool QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int de
         if (!s_Mouse2vJoy_EnableStateMap.isEmpty()) {
             if (s_Mouse2vJoy_Hold) {
                 if (QKeyMapper::getLockCursorStatus()) {
-                    return true;
+                    return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else {
-                    return false;
+                    return INTERCEPTION_RETURN_NORMALSEND;
                 }
             }
 
             if (QKeyMapper::getLockCursorStatus()) {
-                returnFlag = true;
+                returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(delta_x, delta_y, mouse_index);
         }
@@ -7411,7 +7411,15 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             && extraInfo != VIRTUAL_KEY_OVERLAY
             && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
             if (Interception_Worker::s_InterceptStart) {
-                return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                if (extraInfo == INTERCEPTION_EXTRA_INFO_BLOCKED) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[LowLevelKeyboardHookProc]" << "Block" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << "extraInfo = INTERCEPTION_EXTRA_INFO_BLOCKED";
+#endif
+                    return (LRESULT)TRUE;
+                }
+                else {
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
             }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -8022,7 +8030,15 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             }
             else {
                 if (Interception_Worker::s_InterceptStart) {
-                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                    if (extraInfo == INTERCEPTION_EXTRA_INFO_BLOCKED) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelMouseHookProc]" << "Block" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << "extraInfo = INTERCEPTION_EXTRA_INFO_BLOCKED";
+#endif
+                        return (LRESULT)TRUE;
+                    }
+                    else {
+                        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                    }
                 }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -8326,8 +8342,19 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         else {
             short zDelta = GET_WHEEL_DELTA_WPARAM(mousedata);
 
-            if (Interception_Worker::s_InterceptStart || zDelta == 0) {
+            if (zDelta == 0) {
                 return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+            }
+            else if (Interception_Worker::s_InterceptStart) {
+                if (extraInfo == INTERCEPTION_EXTRA_INFO_BLOCKED) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[LowLevelMouseHookProc]" << "Block Mouse Wheel extraInfo = INTERCEPTION_EXTRA_INFO_BLOCKED";
+#endif
+                    return (LRESULT)TRUE;
+                }
+                else {
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
             }
 
 #ifdef DEBUG_LOGOUT_ON

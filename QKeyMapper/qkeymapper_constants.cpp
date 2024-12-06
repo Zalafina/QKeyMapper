@@ -361,7 +361,12 @@ const quint8 VK_KEY2MOUSE_LEFT  = 0x8C;
 const quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
 const quint8 VK_GAMEPAD_HOME    = 0x07;
 
-const unsigned int INTERCEPTION_EXTRA_INFO = 0xAAAA0000;
+const int INTERCEPTION_RETURN_NORMALSEND = 0;
+const int INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION = 1;
+const int INTERCEPTION_RETURN_BLOCKEDBY_LOWLEVELHOOK = 2;
+
+const unsigned int INTERCEPTION_EXTRA_INFO          = 0xAAAA0000;
+const unsigned int INTERCEPTION_EXTRA_INFO_BLOCKED  = 0xBBBB0000;
 
 // const ULONG_PTR VIRTUAL_KEY_SEND   = 0xACBDACBD;
 // const ULONG_PTR VIRTUAL_MOUSE_POINTCLICK = 0xBBDFBBDF;
@@ -950,6 +955,7 @@ ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues) {
 
 void generateVirtualInputRandomValues() {
     QSet<ULONG_PTR> generatedValues;
+    generatedValues.insert(INTERCEPTION_EXTRA_INFO_BLOCKED);
     generatedValues.insert(VIRTUAL_UNICODE_CHAR);
     generatedValues.insert(VIRTUAL_MOUSE2JOY_KEYS);
     generatedValues.insert(VIRTUAL_MOUSE_MOVE);
