@@ -1404,6 +1404,27 @@ int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
+int QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(const QString &keyname)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
+    QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
+
+    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    {
+        QString originalkey_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keymapdata.Original_Key);
+        if (originalkey_RemoveMultiInput == keyname_RemoveMultiInput
+            || originalkey_RemoveMultiInput == keyname){
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
 int QKeyMapper::findOriKeyInCertainKeyMappingDataList(const QString &keyname, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
 {
     int returnindex = -1;

@@ -6678,10 +6678,10 @@ bool QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdo
                     || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
             }
             else {
-                if (pressedVirtualKeysList.contains(keycodeString)) {
+                if (pressedVirtualKeysList.contains(keycodeString_nochanged)) {
                     returnFlag = true;
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("[InterceptionKeyboardHookProc] VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                    qDebug("[InterceptionKeyboardHookProc] VirtualKey \"%s\" is pressed down, skip RealKey \"%s\" KEY_UP!", keycodeString_nochanged.toStdString().c_str(), keycodeString_nochanged.toStdString().c_str());
 #endif
                 }
             }
@@ -7784,7 +7784,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     || SENDVIRTUALKEY_STATE_BURST_STOP == sendVirtualKeyState
                     || SENDVIRTUALKEY_STATE_FORCE == sendVirtualKeyState) {
                     if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && !blockedKeysList.contains(keycodeString)){
-                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(keycodeString);
                         if (findindex < 0) {
 #ifdef DEBUG_LOGOUT_ON
                             QString debugmessage = QString("[LowLevelKeyboardHookProc] RealKey \"%1\" is pressed down on keyboard, skip send mapping VirtualKey \"%2\" KEYUP! sendVirtualKeyState = %3").arg(keycodeString, keycodeString).arg(sendVirtualKeyState);
