@@ -6675,7 +6675,11 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
         if (KEY_UP == keyupdown && false == returnFlag){
             if (findindex >= 0
                 && (QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == keycodeString
-                    || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
+                    || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == keycodeString_nochanged)) {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[InterceptionKeyboardHookProc] \"%1\" or \"%2\" has found in OriginalKeys, do not skip RealKey \"%3\" KEY_UP").arg(keycodeString_nochanged, keycodeString, keycodeString);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
             }
             else {
                 if (pressedVirtualKeysList.contains(keycodeString_nochanged)) {
@@ -6983,13 +6987,17 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
         if (KEY_UP == keyupdown && INTERCEPTION_RETURN_NORMALSEND == returnFlag){
             if (findindex >= 0
                 && (QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == keycodeString
-                    || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
+                    || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == keycodeString_nochanged)) {
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[InterceptionMouseHookProc] \"%1\" or \"%2\" has found in OriginalKeys, do not skip RealKey \"%3\" KEY_UP").arg(keycodeString_nochanged, keycodeString, keycodeString);
+                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
             }
             else {
-                if (pressedVirtualKeysList.contains(keycodeString)) {
+                if (pressedVirtualKeysList.contains(keycodeString_nochanged)) {
                     returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_LOWLEVELHOOK;
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("[InterceptionMouseHookProc] Virtual \"%s\" is pressed down, skip Real \"%s\" KEY_UP!", keycodeString.toStdString().c_str(), keycodeString.toStdString().c_str());
+                    qDebug("[InterceptionMouseHookProc] Virtual \"%s\" is pressed down, skip Real \"%s\" KEY_UP!", keycodeString_nochanged.toStdString().c_str(), keycodeString_nochanged.toStdString().c_str());
 #endif
                 }
             }
@@ -7591,6 +7599,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (findindex >= 0
                     && (QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == keycodeString
                         || QKeyMapper::KeyMappingDataList->at(findindex).Original_Key == QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString))) {
+#ifdef DEBUG_LOGOUT_ON
+                    QString debugmessage = QString("[LowLevelKeyboardHookProc] \"%1\" has found in OriginalKeys, do not skip RealKey \"%2\" KEY_UP").arg(keycodeString, keycodeString);
+                    qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
                 }
                 else {
                     if (pressedVirtualKeysList.contains(keycodeString)) {
@@ -7795,7 +7807,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(keycodeString);
                         if (findindex < 0) {
 #ifdef DEBUG_LOGOUT_ON
-                            QString debugmessage = QString("[LowLevelKeyboardHookProc] RealKey \"%1\" is pressed down on keyboard, skip send mapping VirtualKey \"%2\" KEYUP! sendVirtualKeyState = %3").arg(keycodeString, keycodeString).arg(sendVirtualKeyState);
+                            QString debugmessage = QString("[LowLevelKeyboardHookProc] RealKey \"%1\" is pressed down on keyboard, skip send mapping VirtualKey \"%2\" KEY_UP! sendVirtualKeyState = %3").arg(keycodeString, keycodeString).arg(sendVirtualKeyState);
                             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
                             returnFlag = true;
