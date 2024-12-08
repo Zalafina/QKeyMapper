@@ -2828,6 +2828,14 @@ bool QKeyMapper::validateCombinationKey(QString &input)
                 break;
             }
         }
+
+        if (isvalid) {
+            // Check for duplicate keys
+            int numRemoved = keylist.removeDuplicates();
+            if (numRemoved > 0) {
+                isvalid = false;
+            }
+        }
     }
 
     return isvalid;
@@ -7900,6 +7908,7 @@ void QKeyMapper::updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabh
 
     if (s_KeyMappingTabInfoList.at(tabindex).TabHotkey != tabhotkey) {
         s_KeyMappingTabInfoList[tabindex].TabHotkey = tabhotkey;
+        updateKeyMappingTabWidgetTabDisplay(tabindex);
     }
 
     collectMappingTableTabHotkeys();
@@ -9205,6 +9214,42 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     }
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
+}
+
+void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
+{
+    if ((tabindex < 0) || (tabindex > m_KeyMappingTabWidget->count() - 2) || (tabindex > s_KeyMappingTabInfoList.size() - 1)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[setKeyMappingTabWidgetTabBGColor] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+#endif
+        return;
+    }
+
+    const QString tab_hotkey = s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
+    if (false == tab_hotkey.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Set Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
+#endif
+
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, QColor(Qt::darkMagenta));
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Clear Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
+#endif
+
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, Qt::black);
+    }
+
+
+    QString tooltip_str;
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        tooltip_str = QString("Hotkey : %1").arg(tab_hotkey);
+    }
+    else {
+        tooltip_str = QString("快捷键 : %1").arg(tab_hotkey);
+    }
+    m_KeyMappingTabWidget->tabBar()->setTabToolTip(tabindex, tooltip_str);
 }
 
 void QKeyMapper::refreshAllKeyMappingTagWidget()

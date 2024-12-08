@@ -607,6 +607,7 @@ private:
 public:
     void refreshKeyMappingDataTableByTabIndex(int tabindex);
     void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);
+    void updateKeyMappingTabWidgetTabDisplay(int tabindex);
 private:
     void refreshAllKeyMappingTagWidget(void);
     void updateMousePointsList(void);
