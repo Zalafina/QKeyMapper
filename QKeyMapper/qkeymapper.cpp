@@ -6193,6 +6193,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             s_KeyMappingTabInfoList[index].TabHotkey.clear();
         }
+        updateKeyMappingTabWidgetTabDisplay(index);
     }
 
     collectMappingTableTabHotkeys();
