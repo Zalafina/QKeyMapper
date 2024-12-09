@@ -35,7 +35,7 @@
    <property name="geometry">
     <rect>
      <x>899</x>
-     <y>520</y>
+     <y>550</y>
      <width>151</width>
      <height>51</height>
     </rect>
@@ -1292,7 +1292,7 @@
    <property name="geometry">
     <rect>
      <x>796</x>
-     <y>470</y>
+     <y>500</y>
      <width>254</width>
      <height>22</height>
     </rect>
@@ -1302,7 +1302,7 @@
    <property name="geometry">
     <rect>
      <x>740</x>
-     <y>470</y>
+     <y>500</y>
      <width>51</width>
      <height>22</height>
     </rect>
@@ -1419,6 +1419,45 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QSlider" name="pushLevelSlider">
+   <property name="geometry">
+    <rect>
+     <x>796</x>
+     <y>473</y>
+     <width>141</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="pushLevelLabel">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>470</y>
+     <width>51</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PushLevel</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="pushLevelSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>946</x>
+     <y>470</y>
+     <width>51</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -1458,6 +1497,9 @@
   <zorder>descriptionLabel</zorder>
   <zorder>processListButton</zorder>
   <zorder>showNotesButton</zorder>
+  <zorder>pushLevelSlider</zorder>
+  <zorder>pushLevelLabel</zorder>
+  <zorder>pushLevelSpinBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

@@ -86,6 +86,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QStyle* fusionStyle = QStyleFactory::create("Fusion");
 
     ui->settingTabWidget->setStyle(windowsStyle);
+    ui->pushLevelSlider->setStyle(windowsStyle);
 
     // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
     for (int tabindex = 0; tabindex < ui->settingTabWidget->count(); ++tabindex) {
@@ -126,6 +127,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initCombinationKeyLineEdit();
     initInputDeviceSelectComboBoxes();
     initPopupMessage();
+    initPushLevelSlider();
 
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
@@ -221,6 +223,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->brakeThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_BRAKE_MIN, GRIP_THRESHOLD_BRAKE_MAX);
     ui->accelThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
     ui->accelThresholdDoubleSpinBox->setRange(GRIP_THRESHOLD_ACCEL_MIN, GRIP_THRESHOLD_ACCEL_MAX);
+    ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
     // ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
@@ -6771,6 +6774,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
+    ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
     ui->keyPressTypeComboBox->setFont(customFont);
     ui->pointLabel->setFont(customFont);
@@ -6880,6 +6884,7 @@ void QKeyMapper::setControlFontChinese()
     ui->removeSettingButton->setFont(customFont);
     ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
+    ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
     ui->keyPressTypeComboBox->setFont(customFont);
     ui->pointLabel->setFont(customFont);
@@ -6993,10 +6998,13 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->burstreleaseLabel->setEnabled(status);
     // ui->burstrelease_msLabel->setEnabled(status);
     ui->waitTimeLabel->setEnabled(status);
+    ui->pushLevelLabel->setEnabled(status);
     ui->sendTextLabel->setEnabled(status);
     ui->pointLabel->setEnabled(status);
     // ui->waitTime_msLabel->setEnabled(status);
     ui->waitTimeSpinBox->setEnabled(status);
+    ui->pushLevelSlider->setEnabled(status);
+    ui->pushLevelSpinBox->setEnabled(status);
     ui->pressTimeSpinBox->setEnabled(status);
     ui->mouseXSpeedLabel->setEnabled(status);
     ui->mouseYSpeedLabel->setEnabled(status);
@@ -8015,6 +8023,19 @@ void QKeyMapper::initPopupMessage()
     m_PopupMessageAnimation = new QPropertyAnimation(m_PopupMessageLabel, "windowOpacity", this);
     m_PopupMessageAnimation->setStartValue(1.0);
     m_PopupMessageAnimation->setEndValue(0.0);
+}
+
+void QKeyMapper::initPushLevelSlider()
+{
+    ui->pushLevelSlider->setRange(VJOY_PUSHLEVEL_MIN + 1, VJOY_PUSHLEVEL_MAX);
+    ui->pushLevelSpinBox->setRange(VJOY_PUSHLEVEL_MIN + 1, VJOY_PUSHLEVEL_MAX);
+
+    ui->pushLevelSlider->setValue(VJOY_PUSHLEVEL_MAX);
+    ui->pushLevelSpinBox->setValue(VJOY_PUSHLEVEL_MAX);
+
+    QObject::connect(ui->pushLevelSlider, &QSlider::valueChanged, ui->pushLevelSpinBox, &QSpinBox::setValue);
+    // QObject::connect(ui->pushLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), ui->pushLevelSlider, &QSlider::setValue);
+    QObject::connect(ui->pushLevelSpinBox, &QSpinBox::valueChanged, ui->pushLevelSlider, &QSlider::setValue);
 }
 
 void QKeyMapper::updateSysTrayIconMenuText()
@@ -9409,6 +9430,7 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
+    ui->pushLevelLabel->setText(PUSHLEVEL_CHINESE);
     ui->sendTextLabel->setText(SENDTEXTLABEL_CHINESE);
     ui->keyPressTypeComboBox->clear();
     ui->keyPressTypeComboBox->addItem(LONGPRESS_CHINESE);
@@ -9551,6 +9573,7 @@ void QKeyMapper::setUILanguage_English()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
+    ui->pushLevelLabel->setText(PUSHLEVEL_ENGLISH);
     ui->sendTextLabel->setText(SENDTEXTLABEL_ENGLISH);
     ui->keyPressTypeComboBox->clear();
     ui->keyPressTypeComboBox->addItem(LONGPRESS_ENGLISH);
