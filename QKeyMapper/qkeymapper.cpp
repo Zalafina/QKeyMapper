@@ -8034,8 +8034,8 @@ void QKeyMapper::initPushLevelSlider()
     ui->pushLevelSpinBox->setValue(VJOY_PUSHLEVEL_MAX);
 
     QObject::connect(ui->pushLevelSlider, &QSlider::valueChanged, ui->pushLevelSpinBox, &QSpinBox::setValue);
-    // QObject::connect(ui->pushLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), ui->pushLevelSlider, &QSlider::setValue);
-    QObject::connect(ui->pushLevelSpinBox, &QSpinBox::valueChanged, ui->pushLevelSlider, &QSlider::setValue);
+    QObject::connect(ui->pushLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), ui->pushLevelSlider, &QSlider::setValue);
+    // QObject::connect(ui->pushLevelSpinBox, &QSpinBox::valueChanged, ui->pushLevelSlider, &QSlider::setValue);
 }
 
 void QKeyMapper::updateSysTrayIconMenuText()
