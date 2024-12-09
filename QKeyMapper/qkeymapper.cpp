@@ -2077,10 +2077,29 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
+                // static QRegularExpression vjoy_pushlevel_keys_regex(R"(vJoy-(Key11\(LT\)|Key12\(RT\)|LS-(Up|Down|Left|Right)|RS-(Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
+                static QRegularExpression vjoy_pushlevel_keys_regex(R"(vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
                 QString vjoy_key = vjoy_match.captured(1);
+                QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(vjoy_key);
 
-                if (!vJoyKeyList.contains(vjoy_key)) {
+                if (vjoy_pushlevel_keys_match.hasMatch()) {
+                    QString pushlevelString = vjoy_pushlevel_keys_match.captured(2);
+                    if (!pushlevelString.isEmpty()) {
+                        bool ok = true;
+                        int pushlevel = 0;
+                        pushlevel = pushlevelString.toInt(&ok);
+                        if (!ok || pushlevelString == "0" || pushlevelString.startsWith('0') || pushlevel <= VJOY_PUSHLEVEL_MIN || pushlevel >= VJOY_PUSHLEVEL_MAX) {
+                            result.isValid = false;
+                            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                                result.errorMessage = QString("Invalid pushlevel[%1] of vJoy-Key \"%2\"").arg(pushlevelString, mapping_key);
+                            } else {
+                                result.errorMessage = QString("虚拟游戏手柄按键 \"%1\" 的轻推值[%2]无效").arg(mapping_key, pushlevelString);
+                            }
+                        }
+                    }
+                }
+                else if (!vJoyKeyList.contains(vjoy_key)) {
                     result.isValid = false;
                     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                         result.errorMessage = QString("Invalid vJoy-Key \"%1\"").arg(mapping_key);
