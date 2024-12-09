@@ -8035,7 +8035,6 @@ void QKeyMapper::initPushLevelSlider()
 
     QObject::connect(ui->pushLevelSlider, &QSlider::valueChanged, ui->pushLevelSpinBox, &QSpinBox::setValue);
     QObject::connect(ui->pushLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), ui->pushLevelSlider, &QSlider::setValue);
-    // QObject::connect(ui->pushLevelSpinBox, &QSpinBox::valueChanged, ui->pushLevelSlider, &QSlider::setValue);
 }
 
 void QKeyMapper::updateSysTrayIconMenuText()
@@ -9708,6 +9707,7 @@ void QKeyMapper::resetFontSize()
         ui->combinationKeyLineEdit->setFont(customFont);
         ui->sendTextLineEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
+        ui->pushLevelSpinBox->setFont(customFont);
         ui->pressTimeSpinBox->setFont(customFont);
         ui->pointDisplayLabel->setFont(customFont);
         ui->dataPortSpinBox->setFont(customFont);
@@ -9754,6 +9754,7 @@ void QKeyMapper::resetFontSize()
         ui->combinationKeyLineEdit->setFont(customFont);
         ui->sendTextLineEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
+        ui->pushLevelSpinBox->setFont(customFont);
         ui->pressTimeSpinBox->setFont(customFont);
         ui->pointDisplayLabel->setFont(customFont);
         ui->dataPortSpinBox->setFont(customFont);
