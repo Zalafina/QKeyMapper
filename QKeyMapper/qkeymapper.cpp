@@ -10684,6 +10684,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + currentMapKeyText;
             }
 
+            QStringList mappingKeySeqList = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_NEXT);
+            ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeys_str, mappingKeySeqList, INITIAL_ROW_INDEX);
+            if (!result.isValid) {
+                showWarningPopup(result.errorMessage);
+                return;
+            }
+
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
 #endif
@@ -10850,6 +10857,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyComboBoxText != VJOY_RT_ACCEL_STR) {
                     currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
                 }
+            }
+
+            QStringList mappingKeySeqList = splitMappingKeyString(currentMapKeyText, SPLIT_WITH_NEXT);
+            ValidationResult result = QKeyMapper::validateMappingKeyString(currentMapKeyText, mappingKeySeqList, INITIAL_ROW_INDEX);
+            if (!result.isValid) {
+                showWarningPopup(result.errorMessage);
+                return;
             }
 
             KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,               /* originalkey QString */
