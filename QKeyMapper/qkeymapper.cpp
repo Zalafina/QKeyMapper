@@ -2080,8 +2080,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
-                // static QRegularExpression vjoy_pushlevel_keys_regex(R"(vJoy-(Key11\(LT\)|Key12\(RT\)|LS-(Up|Down|Left|Right)|RS-(Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
-                static QRegularExpression vjoy_pushlevel_keys_regex(R"(vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
+                // static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LS-(Up|Down|Left|Right)|RS-(Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
+                static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
                 QString vjoy_key = vjoy_match.captured(1);
                 QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(vjoy_key);
@@ -2097,7 +2097,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                                 result.errorMessage = QString("Invalid pushlevel[%1] of vJoy-Key \"%2\"").arg(pushlevelString, mapping_key);
                             } else {
-                                result.errorMessage = QString("虚拟游戏手柄按键 \"%1\" 的轻推值[%2]无效").arg(mapping_key, pushlevelString);
+                                result.errorMessage = QString("虚拟游戏手柄按键 \"%1\" 的轻推值 [%2] 无效").arg(mapping_key, pushlevelString);
                             }
                         }
                     }
@@ -10455,6 +10455,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         isDoublePress = true;
     }
 
+    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))$)");
     bool already_exist = false;
     int findindex = -1;
     // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
@@ -10541,8 +10542,28 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 return;
             }
 
+            QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(currentMapKeyText);
             int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
-            if (virtualgamepad_index > 0
+            if (vjoy_pushlevel_keys_match.hasMatch()) {
+                int pushlevel = ui->pushLevelSpinBox->value();
+                if (virtualgamepad_index > 0) {
+                    if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                        /* Add [pushlevel] value postfix */
+                        currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
+                    }
+                    else { /* pushlevel == VJOY_PUSHLEVEL_MAX */
+                        /* Do not add [pushlevel] value postfix */
+                        currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+                    }
+                }
+                else {
+                    if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                        /* Add [pushlevel] value postfix */
+                        currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
+                    }
+                }
+            }
+            else if (virtualgamepad_index > 0
                 && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
                 currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
             }
@@ -10702,8 +10723,28 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else {
+                QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(currentMapKeyText);
                 int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
-                if (virtualgamepad_index > 0
+                if (vjoy_pushlevel_keys_match.hasMatch()) {
+                    int pushlevel = ui->pushLevelSpinBox->value();
+                    if (virtualgamepad_index > 0) {
+                        if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                            /* Add [pushlevel] value postfix */
+                            currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
+                        }
+                        else { /* pushlevel == VJOY_PUSHLEVEL_MAX */
+                            /* Do not add [pushlevel] value postfix */
+                            currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+                        }
+                    }
+                    else {
+                        if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                            /* Add [pushlevel] value postfix */
+                            currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
+                        }
+                    }
+                }
+                else if (virtualgamepad_index > 0
                     && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
                     currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
                 }
