@@ -2095,9 +2095,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                         if (!ok || pushlevelString == "0" || pushlevelString.startsWith('0') || pushlevel <= VJOY_PUSHLEVEL_MIN || pushlevel >= VJOY_PUSHLEVEL_MAX) {
                             result.isValid = false;
                             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                                result.errorMessage = QString("Invalid pushlevel[%1] of vJoy-Key \"%2\"").arg(pushlevelString, mapping_key);
+                                result.errorMessage = QString("Invalid pushlevel[%1] of vJoy-Key \"%2\", valid range 1~254").arg(pushlevelString, mapping_key);
                             } else {
-                                result.errorMessage = QString("虚拟游戏手柄按键 \"%1\" 的轻推值 [%2] 无效").arg(mapping_key, pushlevelString);
+                                result.errorMessage = QString("虚拟游戏手柄按键 \"%1\" 的轻推值 [%2] 无效, 有效范围 1~254").arg(mapping_key, pushlevelString);
                             }
                         }
                     }
