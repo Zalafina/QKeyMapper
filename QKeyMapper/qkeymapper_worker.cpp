@@ -57,8 +57,8 @@ QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyPressTimerMap;
 QHash<QString, int> QKeyMapper_Worker::s_KeySequenceRepeatCount;
 #ifdef VIGEM_CLIENT_SUPPORT
-QList<QStringList> QKeyMapper_Worker::pressedvJoyLStickKeysList;
-QList<QStringList> QKeyMapper_Worker::pressedvJoyRStickKeysList;
+QList<QHash<QString, BYTE>> QKeyMapper_Worker::pressedvJoyLStickKeysList;
+QList<QHash<QString, BYTE>> QKeyMapper_Worker::pressedvJoyRStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
@@ -151,8 +151,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
         pressedMultiKeyboardVKeyCodeList.append(QList<quint8>());
     }
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QStringList());
-        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     // for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
@@ -2850,10 +2850,12 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         return;
     }
 
+    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
+    QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
-    QStringList& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    QStringList& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    QHash<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    QHash<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
 
     {
@@ -2930,6 +2932,43 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                 }
             }
         }
+        else if (vjoy_pushlevel_keys_match.hasMatch()) {
+            QString pushlevelKeyStr = vjoy_pushlevel_keys_match.captured(1);
+            QString pushlevelString = vjoy_pushlevel_keys_match.captured(2);
+            int pushlevel = VJOY_PUSHLEVEL_MAX;
+            if (!pushlevelString.isEmpty()) {
+                bool ok = true;
+                pushlevel = pushlevelString.toInt(&ok);
+                if (!ok || pushlevelString == "0" || pushlevelString.startsWith('0') || pushlevel <= VJOY_PUSHLEVEL_MIN || pushlevel >= VJOY_PUSHLEVEL_MAX) {
+                    pushlevel = VJOY_PUSHLEVEL_MAX;
+                }
+            }
+
+            BYTE pushlevel_byte = static_cast<BYTE>(pushlevel);
+            if (pushlevelKeyStr.startsWith("LS-")) {
+                pressedvJoyLStickKeys_ref.insert(pushlevelKeyStr, pushlevel_byte);
+                ViGEmClient_CheckJoysticksReportData(gamepad_index);
+                updateFlag = VJOY_UPDATE_JOYSTICKS;
+            }
+            else if (pushlevelKeyStr.startsWith("RS-")) {
+                pressedvJoyRStickKeys_ref.insert(pushlevelKeyStr, pushlevel_byte);
+                ViGEmClient_CheckJoysticksReportData(gamepad_index);
+                updateFlag = VJOY_UPDATE_JOYSTICKS;
+            }
+            else if (pushlevelKeyStr.endsWith("(LT)")) {
+                ViGEmTarget_Report.bLeftTrigger = pushlevel_byte;
+                updateFlag = VJOY_UPDATE_BUTTONS;
+            }
+            else if (pushlevelKeyStr.endsWith("(RT)")) {
+                ViGEmTarget_Report.bRightTrigger = pushlevel_byte;
+                updateFlag = VJOY_UPDATE_BUTTONS;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace() << "[ViGEmClient_PressButton]" << " VirtualGamepad(" << gamepad_index << ") PushLevel Button Press [" << joystickButton << "], but updateFlag is not set!!! ";
+#endif
+            }
+        }
         else if (ViGEmButtonMap.contains(joystickButton)) {
             XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
 
@@ -2955,56 +2994,6 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
             ViGEmTarget_Report.bRightTrigger = s_Auto_Accel;
             updateFlag = VJOY_UPDATE_BUTTONS;
             s_last_Auto_Accel = s_Auto_Accel;
-        }
-        else if (joystickButton == "vJoy-Key11(LT)") {
-            ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MAX;
-            updateFlag = VJOY_UPDATE_BUTTONS;
-        }
-        else if (joystickButton == "vJoy-Key12(RT)") {
-            ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MAX;
-            updateFlag = VJOY_UPDATE_BUTTONS;
-        }
-        else if (joystickButton.startsWith("vJoy-LS-")) {
-            if (joystickButton == "vJoy-LS-Up") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-LS-Down") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-LS-Left") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-LS-Right") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-
-            if (updateFlag) {
-                if (false == pressedvJoyLStickKeys_ref.contains(joystickButton)){
-                    pressedvJoyLStickKeys_ref.append(joystickButton);
-                }
-                ViGEmClient_CheckJoysticksReportData(gamepad_index);
-            }
-        }
-        else if (joystickButton.startsWith("vJoy-RS-")) {
-            if (joystickButton == "vJoy-RS-Up") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-RS-Down") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-RS-Left") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-RS-Right") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-
-            if (updateFlag) {
-                if (false == pressedvJoyRStickKeys_ref.contains(joystickButton)){
-                    pressedvJoyRStickKeys_ref.append(joystickButton);
-                }
-                ViGEmClient_CheckJoysticksReportData(gamepad_index);
-            }
         }
 
         if (updateFlag) {
@@ -3064,10 +3053,12 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
         return;
     }
 
+    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
+    QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
-    QStringList& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    QStringList& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    QHash<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    QHash<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
 
     {
@@ -3092,7 +3083,33 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
         }
 
         int updateFlag = VJOY_UPDATE_NONE;
-        if (ViGEmButtonMap.contains(joystickButton)) {
+        if (vjoy_pushlevel_keys_match.hasMatch()) {
+            QString pushlevelKeyStr = vjoy_pushlevel_keys_match.captured(1);
+            if (pushlevelKeyStr.startsWith("LS-")) {
+                pressedvJoyLStickKeys_ref.remove(pushlevelKeyStr);
+                ViGEmClient_CheckJoysticksReportData(gamepad_index);
+                updateFlag = VJOY_UPDATE_JOYSTICKS;
+            }
+            else if (pushlevelKeyStr.startsWith("RS-")) {
+                pressedvJoyRStickKeys_ref.remove(pushlevelKeyStr);
+                ViGEmClient_CheckJoysticksReportData(gamepad_index);
+                updateFlag = VJOY_UPDATE_JOYSTICKS;
+            }
+            else if (pushlevelKeyStr.endsWith("(LT)")) {
+                ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
+                updateFlag = VJOY_UPDATE_BUTTONS;
+            }
+            else if (pushlevelKeyStr.endsWith("(RT)")) {
+                ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
+                updateFlag = VJOY_UPDATE_BUTTONS;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace() << "[ViGEmClient_ReleaseButton]" << " VirtualGamepad(" << gamepad_index << ") PushLevel Button Release [" << joystickButton << "], but updateFlag is not set!!! ";
+#endif
+            }
+        }
+        else if (ViGEmButtonMap.contains(joystickButton)) {
             XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
 
             ViGEmTarget_Report.wButtons = ViGEmTarget_Report.wButtons & ~button;
@@ -3113,52 +3130,6 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
         else if (joystickButton == VJOY_RT_ACCEL_STR) {
             ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
             updateFlag = VJOY_UPDATE_BUTTONS;
-        }
-        else if (joystickButton == "vJoy-Key11(LT)") {
-            ViGEmTarget_Report.bLeftTrigger = XINPUT_TRIGGER_MIN;
-            updateFlag = VJOY_UPDATE_BUTTONS;
-        }
-        else if (joystickButton == "vJoy-Key12(RT)") {
-            ViGEmTarget_Report.bRightTrigger = XINPUT_TRIGGER_MIN;
-            updateFlag = VJOY_UPDATE_BUTTONS;
-        }
-        else if (joystickButton.startsWith("vJoy-LS-")) {
-            if (joystickButton == "vJoy-LS-Up") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-LS-Down") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-LS-Left") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-LS-Right") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-
-            if (updateFlag) {
-                pressedvJoyLStickKeys_ref.removeAll(joystickButton);
-                ViGEmClient_CheckJoysticksReportData(gamepad_index);
-            }
-        }
-        else if (joystickButton.startsWith("vJoy-RS-")) {
-            if (joystickButton == "vJoy-RS-Up") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-RS-Down") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-RS-Left") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-            else if (joystickButton == "vJoy-RS-Right") {
-                updateFlag = VJOY_UPDATE_JOYSTICKS;
-            }
-
-            if (updateFlag) {
-                pressedvJoyRStickKeys_ref.removeAll(joystickButton);
-                ViGEmClient_CheckJoysticksReportData(gamepad_index);
-            }
         }
 
         if (updateFlag) {
@@ -3206,8 +3177,8 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
 
 void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
 {
-    QStringList& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    QStringList& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    QHash<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    QHash<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3222,26 +3193,28 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
 
     // Update thumb values based on pressed keys
-    for (const QString &key : pressedvJoyLStickKeys_ref) {
-        if (key == "vJoy-LS-Up") {
+    QStringList pressedLStickKeysList = pressedvJoyLStickKeys_ref.keys();
+    for (const QString &key : pressedLStickKeysList) {
+        if (key == "LS-Up") {
             ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MAX;
-        } else if (key == "vJoy-LS-Down") {
+        } else if (key == "LS-Down") {
             ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_MIN;
-        } else if (key == "vJoy-LS-Left") {
+        } else if (key == "LS-Left") {
             ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_MIN;
-        } else if (key == "vJoy-LS-Right") {
+        } else if (key == "LS-Right") {
             ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_MAX;
         }
     }
 
-    for (const QString &key : pressedvJoyRStickKeys_ref) {
-        if (key == "vJoy-RS-Up") {
+    QStringList pressedRStickKeysList = pressedvJoyRStickKeys_ref.keys();
+    for (const QString &key : pressedRStickKeysList) {
+        if (key == "RS-Up") {
             ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MAX;
-        } else if (key == "vJoy-RS-Down") {
+        } else if (key == "RS-Down") {
             ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_MIN;
-        } else if (key == "vJoy-RS-Left") {
+        } else if (key == "RS-Left") {
             ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MIN;
-        } else if (key == "vJoy-RS-Right") {
+        } else if (key == "RS-Right") {
             ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_MAX;
         }
     }
@@ -3867,6 +3840,8 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
         ViGEmTarget_Report.sThumbRY = 0;
     }
 
+    pressedvJoyLStickKeysList[gamepad_index].clear();
+    pressedvJoyRStickKeysList[gamepad_index].clear();
     ViGEmClient_CheckJoysticksReportData(gamepad_index);
 
     VIGEM_ERROR error;
@@ -4056,8 +4031,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QStringList());
-        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     // m_Mouse2vJoyResetTimer.stop();
@@ -4238,8 +4213,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QStringList());
-        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     // m_Mouse2vJoyResetTimer.stop();
@@ -4349,8 +4324,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QStringList());
-        pressedvJoyRStickKeysList.append(QStringList());
+        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     stopMouse2vJoyResetTimerMap();
