@@ -3848,8 +3848,6 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
         ViGEmTarget_Report.sThumbRY = 0;
     }
 
-    pressedvJoyLStickKeysList[gamepad_index].clear();
-    pressedvJoyRStickKeysList[gamepad_index].clear();
     ViGEmClient_CheckJoysticksReportData(gamepad_index);
 
     VIGEM_ERROR error;
