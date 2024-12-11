@@ -1,18 +1,14 @@
 # QKeyMapper
 
-<p align="left">
-    <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?color=09e"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=ccf"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg"/></a>
-</p>
-
+---------------
 ## 在Win10和Win11下可以正常使用的按键映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231220)新增游戏手柄按键和虚拟游戏手柄支持。v1.3.7(Build 20240410)增加多键鼠+多虚拟手柄支持。
+
 ---------------
 ### 最新Release版本压缩包下载:
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
 ### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
+
 ---------------
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 注意: 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
@@ -20,15 +16,34 @@
 
 ### [注意: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 * https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
+
 ---------------
 ## 按键映射工具使用技巧等参考Wiki页面：
 * [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
+
 ---------------
 ## 使用教学视频合集请点击下方图片
-[<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png" width="572" height="auto"/></div>](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
+[<div align="center"><img src="..\screenshot\show_video.png" width="572" height="auto"/></div>](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
+
 ---------------
 ## 使用中有疑问也可以加Q群咨询 (群号: 906963961)
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png" width="357" height="auto"/></div>
+<div align="center"><img src="..\screenshot\QKeyMapper_QGroup_Number.png" width="357" height="auto"/></div>
+
+---------------
+### 基本功能列表
+1. 左侧显示当前正在运行的可见的窗口进程列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
+2. 鼠标左键双击左侧窗口程序列表的某一行可以将选定的窗口程序的可自行文件名和窗口标题设定到图标/文件名/窗口标题区域。
+3. 按下"KeyMappingStart"按钮可以开始执行按键映射处理流程，映射工具会定时循环检测当前处于前台的窗口与设定的可自行文件名和窗口标题是否匹配，按键映射功能可以只在前台窗口与当前进程可执行文件名和窗口标题都匹配的情况才生效，前台窗口不匹配的情况下按键映射自动失效。
+4. 支持在右侧添加和删除按键映射表，下拉列表获取焦点时按下特定键盘按键可以自动将按键名设置到下拉列表上。
+5. "SaveMapData"按钮会将按键映射表中的信息和进程及窗口标题信息保存到同一路径下的ini设定文件中，之后按键映射工具下次启动时可以自动加载同一路径下的"keymapdata.ini"文件读取已保存的设定值。
+6. 按下"Ctrl + `"组合键会自动将QKeyMapper最小化显示到任务栏的系统程序托盘上，左键双击程序托盘图标会恢复显示程序窗口。
+7. 将多个按键映射到同一个原始按键会按照"A + B"的形式来显示在按键映射表中，以此来支持用一个原始按键来同时映射多个按键。
+8. 加入了"禁用WIN键"功能可以让键盘上的Windows按键在游戏中无效。
+9. 右侧按键映射表中加入了连发(Burst)选择框，可以按照设定的连发按下时间(BurstPress)和连发抬起时间(BurstRelease)设定来反复发送映射表中的按键。
+10. 右侧按键映射表中加入了锁定(Lock)选择框，选择后第一次按下对应的原始按键后会保持此按键的按下状态，再次按下此原始按键后接触锁定状态，支持与连发(Burst)选择框来组合使用，映射表中的Lock列的ON和OFF表示当前按键锁定状态。
+11. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始按键映射，并且最小化到系统托盘, 。
+12. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
+13. 增加了支持将鼠标左键&右键&中键映射到各种按键。
 
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)
@@ -230,33 +245,14 @@
     * "Auto Startup"勾选框可以让QKeyMapper按键映射程序在Windows用户登录的时候自动启动，配合"Auto Start Mapping"勾选框开机启动后可以自动最小化到系统托盘图标，取消勾选框则取消开机登录自动启动。
 * v1.3.0
     * 开始支持"SaveMapData"可以将多个程序的不同按键映射配置都保存到"keymapdata.ini"文件中。如果配置了"Auto Start Mapping"功能，那么在"KeyMappingStart"状态下会根据当前前台窗口的进程可执行文件名进行自动匹配切换到对应的按键映射配置。
----------------
-### 基本功能列表
-1. 左侧显示当前正在运行的可见的窗口进程列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
-2. 鼠标左键双击左侧窗口程序列表的某一行可以将选定的窗口程序的可自行文件名和窗口标题设定到图标/文件名/窗口标题区域。
-3. 按下"KeyMappingStart"按钮可以开始执行按键映射处理流程，映射工具会定时循环检测当前处于前台的窗口与设定的可自行文件名和窗口标题是否匹配，按键映射功能可以只在前台窗口与当前进程可执行文件名和窗口标题都匹配的情况才生效，前台窗口不匹配的情况下按键映射自动失效。
-4. 支持在右侧添加和删除按键映射表，下拉列表获取焦点时按下特定键盘按键可以自动将按键名设置到下拉列表上。
-5. "SaveMapData"按钮会将按键映射表中的信息和进程及窗口标题信息保存到同一路径下的ini设定文件中，之后按键映射工具下次启动时可以自动加载同一路径下的"keymapdata.ini"文件读取已保存的设定值。
-6. 按下"Ctrl + `"组合键会自动将QKeyMapper最小化显示到任务栏的系统程序托盘上，左键双击程序托盘图标会恢复显示程序窗口。
-7. 将多个按键映射到同一个原始按键会按照"A + B"的形式来显示在按键映射表中，以此来支持用一个原始按键来同时映射多个按键。
-8. 加入了"禁用WIN键"功能可以让键盘上的Windows按键在游戏中无效。
-9. 右侧按键映射表中加入了连发(Burst)选择框，可以按照设定的连发按下时间(BurstPress)和连发抬起时间(BurstRelease)设定来反复发送映射表中的按键。
-10. 右侧按键映射表中加入了锁定(Lock)选择框，选择后第一次按下对应的原始按键后会保持此按键的按下状态，再次按下此原始按键后接触锁定状态，支持与连发(Burst)选择框来组合使用，映射表中的Lock列的ON和OFF表示当前按键锁定状态。
-11. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始按键映射，并且最小化到系统托盘, 。
-12. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
-13. 增加了支持将鼠标左键&右键&中键映射到各种按键。
 
 ---------------
 ## 软件截图
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_04.png" width="auto" height="auto"/></div>
+<div align="center"><img src="..\screenshot\QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
+<div align="center"><img src="..\screenshot\QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
+<div align="center"><img src="..\screenshot\QKeyMapper_screenshot_04.png" width="auto" height="auto"/></div>
 
 ---------------
 ## XBox手柄按键名称布局参照图
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_en.png" width="700" height="auto"/></div>
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_cn.png" width="700" height="auto"/></div>
-
----------------
-## VirScan result
-![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_VirScan.png)
+<div align="center"><img src="..\screenshot\XBox_Controller_layout_en.png" width="700" height="auto"/></div>
+<div align="center"><img src="..\screenshot\XBox_Controller_layout_cn.png" width="700" height="auto"/></div>
