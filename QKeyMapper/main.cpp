@@ -215,6 +215,7 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication::setStyle(QStyleFactory::create("Fusion"));
+    QApplication::setFont(QFont(FONTNAME_ENGLISH, 9));
 
     QThread::currentThread()->setObjectName("QKeyMapper");
 
