@@ -9283,11 +9283,13 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
 
 
     QString tooltip_str;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        tooltip_str = QString("Hotkey : %1").arg(tab_hotkey);
-    }
-    else {
-        tooltip_str = QString("快捷键 : %1").arg(tab_hotkey);
+    if (false == tab_hotkey.isEmpty()) {
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            tooltip_str = QString("Hotkey : %1").arg(tab_hotkey);
+        }
+        else {
+            tooltip_str = QString("快捷键 : %1").arg(tab_hotkey);
+        }
     }
     m_KeyMappingTabWidget->tabBar()->setTabToolTip(tabindex, tooltip_str);
 }
