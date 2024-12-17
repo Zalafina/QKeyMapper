@@ -141,10 +141,12 @@ LIBS        += libusb-1.0.lib
 
 INCLUDEPATH += $$PWD/Interception/include
 INCLUDEPATH += $$PWD/libusb/include
+INCLUDEPATH += $$PWD/orderedmap
 
 HEADERS     += \
     Interception/include/interception.h \
     libusb/include/libusb.h \
+    orderedmap/orderedmap.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
     qtablesetupdialog.h

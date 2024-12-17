@@ -57,8 +57,8 @@ QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyPressTimerMap;
 QHash<QString, int> QKeyMapper_Worker::s_KeySequenceRepeatCount;
 #ifdef VIGEM_CLIENT_SUPPORT
-QList<QHash<QString, BYTE>> QKeyMapper_Worker::pressedvJoyLStickKeysList;
-QList<QHash<QString, BYTE>> QKeyMapper_Worker::pressedvJoyRStickKeysList;
+QList<OrderedMap<QString, BYTE>> QKeyMapper_Worker::pressedvJoyLStickKeysList;
+QList<OrderedMap<QString, BYTE>> QKeyMapper_Worker::pressedvJoyRStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
@@ -151,8 +151,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
         pressedMultiKeyboardVKeyCodeList.append(QList<quint8>());
     }
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
-        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     // for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
@@ -2854,8 +2854,8 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
-    QHash<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    QHash<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
 
     {
@@ -3057,8 +3057,8 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
-    QHash<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    QHash<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
 
     {
@@ -3177,8 +3177,8 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
 
 void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
 {
-    QHash<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    QHash<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4037,8 +4037,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
-        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     // m_Mouse2vJoyResetTimer.stop();
@@ -4219,8 +4219,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
-        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     // m_Mouse2vJoyResetTimer.stop();
@@ -4330,8 +4330,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
-        pressedvJoyLStickKeysList.append(QHash<QString, BYTE>());
-        pressedvJoyRStickKeysList.append(QHash<QString, BYTE>());
+        pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
+        pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
     }
     stopMouse2vJoyResetTimerMap();

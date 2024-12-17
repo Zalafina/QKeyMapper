@@ -18,6 +18,7 @@
 #endif
 #include <QMutex>
 #include <QJoysticks.h>
+#include <orderedmap.h>
 #ifdef VIGEM_CLIENT_SUPPORT
 #include <ViGEm/Client.h>
 #include <ViGEm/Util.h>
@@ -931,8 +932,8 @@ public:
     static QHash<QString, QTimer*> s_BurstKeyPressTimerMap;
     static QHash<QString, int> s_KeySequenceRepeatCount;
 #ifdef VIGEM_CLIENT_SUPPORT
-    static QList<QHash<QString, BYTE>> pressedvJoyLStickKeysList;
-    static QList<QHash<QString, BYTE>> pressedvJoyRStickKeysList;
+    static QList<OrderedMap<QString, BYTE>> pressedvJoyLStickKeysList;
+    static QList<OrderedMap<QString, BYTE>> pressedvJoyRStickKeysList;
     static QList<QStringList> pressedvJoyButtonsList;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
