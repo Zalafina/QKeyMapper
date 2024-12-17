@@ -428,7 +428,11 @@ bool OrderedMap<Key, Value>::isEmpty() const
 template<typename Key, typename Value>
 QList<Key> OrderedMap<Key, Value>::keys() const
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     return QList<Key>(insertOrder.begin(), insertOrder.end());
+#else
+    return QList<Key>::fromStdList(insertOrder);
+#endif
 }
 
 template<typename Key, typename Value>
