@@ -3200,13 +3200,13 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
 
         if (key == "LS-Up") {
-            ViGEmTarget_Report.sThumbLY += scaledValue;
+            ViGEmTarget_Report.sThumbLY = scaledValue;
         } else if (key == "LS-Down") {
-            ViGEmTarget_Report.sThumbLY = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : ViGEmTarget_Report.sThumbLY - scaledValue;
+            ViGEmTarget_Report.sThumbLY = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "LS-Left") {
-            ViGEmTarget_Report.sThumbLX = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : ViGEmTarget_Report.sThumbLX - scaledValue;
+            ViGEmTarget_Report.sThumbLX = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "LS-Right") {
-            ViGEmTarget_Report.sThumbLX += scaledValue;
+            ViGEmTarget_Report.sThumbLX = scaledValue;
         }
     }
 
@@ -3217,13 +3217,13 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
 
         if (key == "RS-Up") {
-            ViGEmTarget_Report.sThumbRY += scaledValue;
+            ViGEmTarget_Report.sThumbRY = scaledValue;
         } else if (key == "RS-Down") {
-            ViGEmTarget_Report.sThumbRY = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : ViGEmTarget_Report.sThumbRY - scaledValue;
+            ViGEmTarget_Report.sThumbRY = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "RS-Left") {
-            ViGEmTarget_Report.sThumbRX = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : ViGEmTarget_Report.sThumbRX - scaledValue;
+            ViGEmTarget_Report.sThumbRX = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "RS-Right") {
-            ViGEmTarget_Report.sThumbRX += scaledValue;
+            ViGEmTarget_Report.sThumbRX = scaledValue;
         }
     }
 
