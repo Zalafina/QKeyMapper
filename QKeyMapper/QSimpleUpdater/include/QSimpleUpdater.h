@@ -68,6 +68,7 @@ signals:
 public:
    static QSimpleUpdater *getInstance();
    static bool compareVersions(const QString &remote, const QString &local);
+   static bool compareVersionsForQKeyMapper(const QString &remote, const QString &local);
 
    bool usesCustomAppcast(const QString &url) const;
    bool getNotifyOnUpdate(const QString &url) const;

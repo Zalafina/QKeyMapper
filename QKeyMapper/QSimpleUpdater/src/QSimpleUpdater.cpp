@@ -87,6 +87,47 @@ bool QSimpleUpdater::compareVersions(const QString &remote, const QString &local
    return remoteSuffixNum > localSuffixNum;
 }
 
+bool QSimpleUpdater::compareVersionsForQKeyMapper(const QString &remote, const QString &local)
+{
+    static QRegularExpression re("v?(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?(?:-(\\w+)(?:(\\d+))?)?");
+    QRegularExpressionMatch remoteMatch = re.match(remote);
+    QRegularExpressionMatch localMatch = re.match(local);
+
+    if (!remoteMatch.hasMatch() || !localMatch.hasMatch())
+    {
+        // Invalid version format
+        return false;
+    }
+
+    for (int i = 1; i <= 3; ++i)
+    {
+        int remoteNum = remoteMatch.captured(i).toInt();
+        int localNum = localMatch.captured(i).toInt();
+
+        if (remoteNum > localNum)
+            return true;
+        else if (localNum > remoteNum)
+            return false;
+    }
+
+    QString remoteSuffix = remoteMatch.captured(4);
+    QString localSuffix = localMatch.captured(4);
+
+    if (remoteSuffix.isEmpty() && !localSuffix.isEmpty())
+        // Remote is stable, local is pre-release
+        return true;
+    if (!remoteSuffix.isEmpty() && localSuffix.isEmpty())
+        // Remote is pre-release, local is stable
+        return false;
+    if (remoteSuffix != localSuffix)
+        // Compare suffixes lexicographically
+        return remoteSuffix > localSuffix;
+
+    int remoteSuffixNum = remoteMatch.captured(5).toInt();
+    int localSuffixNum = localMatch.captured(5).toInt();
+    return remoteSuffixNum > localSuffixNum;
+}
+
 /**
  * Returns \c true if the \c Updater instance registered with the given \a url
  * uses a custom appcast format and/or allows the application to read and

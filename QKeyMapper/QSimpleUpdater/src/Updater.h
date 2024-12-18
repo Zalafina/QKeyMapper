@@ -85,10 +85,12 @@ public slots:
 
 private slots:
    void onReply(QNetworkReply *reply);
+   void onReplyForQKeyMapper(QNetworkReply *reply);
    void setUpdateAvailable(const bool available);
 
 private:
    bool compare(const QString &x, const QString &y);
+   bool compareForQKeyMapper(const QString &x, const QString &y);
 
 private:
    QString m_url;

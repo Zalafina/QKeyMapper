@@ -119,6 +119,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 #endif
 
+    initQSimpleUpdater();
     extractSoundFiles();
     initAddKeyComboBoxes();
     initWindowSwitchKeyLineEdit();
@@ -8564,6 +8565,19 @@ void QKeyMapper::clearLockStatusDisplay()
         m_KeyMappingDataTable->item(row, LOCK_COLUMN)->setForeground(Qt::black);
     }
 }
+
+void QKeyMapper::initQSimpleUpdater()
+{
+    QString qkeymapper_updates_url = CHECK_UPDATES_URL;
+    QString productVersion = getExeProductVersion();
+    QSimpleUpdater::getInstance()->setModuleName    (qkeymapper_updates_url, PROGRAM_NAME);
+    QSimpleUpdater::getInstance()->setModuleVersion (qkeymapper_updates_url, productVersion);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().noquote().nospace() << "[initQSimpleUpdater] setModuleName     : " << PROGRAM_NAME;
+    qDebug().noquote().nospace() << "[initQSimpleUpdater] setModuleVersion  : " << productVersion;
+#endif
+}
 void QKeyMapper::initAddKeyComboBoxes(void)
 {
     QStringList keycodelist = QStringList() \
@@ -12156,6 +12170,6 @@ void QKeyMapper::on_showNotesButton_toggled(bool checked)
 
 void QKeyMapper::on_checkUpdateButton_clicked()
 {
-    QString check_updates_url = CHECK_UPDATES_URL;
-    QSimpleUpdater::getInstance()->checkForUpdates(check_updates_url);
+    QString qkeymapper_updates_url = CHECK_UPDATES_URL;
+    QSimpleUpdater::getInstance()->checkForUpdates(qkeymapper_updates_url);
 }

@@ -65,7 +65,8 @@ Updater::Updater()
    setUserAgentString(QString("%1/%2 (Qt; QSimpleUpdater)").arg(qApp->applicationName(), qApp->applicationVersion()));
 
    connect(m_downloader, SIGNAL(downloadFinished(QString, QString)), this, SIGNAL(downloadFinished(QString, QString)));
-   connect(m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(onReply(QNetworkReply *)));
+   // connect(m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(onReply(QNetworkReply *)));
+   connect(m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(onReplyForQKeyMapper(QNetworkReply *)));
 }
 
 Updater::~Updater()
@@ -377,72 +378,128 @@ void Updater::setDownloadPassword(const QString &password)
  */
 void Updater::onReply(QNetworkReply *reply)
 {
-   /* Check if we need to redirect */
-   QUrl redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
-   if (!redirect.isEmpty())
-   {
-      setUrl(redirect.toString());
-      checkForUpdates();
-      return;
-   }
+    /* Check if we need to redirect */
+    QUrl redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
+    if (!redirect.isEmpty())
+    {
+        setUrl(redirect.toString());
+        checkForUpdates();
+        return;
+    }
 
-   /* There was a network error */
-   if (reply->error() != QNetworkReply::NoError)
-   {
-      setUpdateAvailable(false);
-      emit checkingFinished(url());
-      return;
-   }
+    /* There was a network error */
+    if (reply->error() != QNetworkReply::NoError)
+    {
+        setUpdateAvailable(false);
+        emit checkingFinished(url());
+        return;
+    }
 
-   /* The application wants to interpret the appcast by itself */
-   if (customAppcast())
-   {
-      emit appcastDownloaded(url(), reply->readAll());
-      emit checkingFinished(url());
-      return;
-   }
+    /* The application wants to interpret the appcast by itself */
+    if (customAppcast())
+    {
+        emit appcastDownloaded(url(), reply->readAll());
+        emit checkingFinished(url());
+        return;
+    }
 
-   QJsonParseError error;
-   QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &error);
-   if ((QJsonParseError::NoError == error.error)
-       && (true == document.isObject())
-       && (false == document.isNull())){
-       QJsonObject json_obj = document.object();
-       QString tag_name;
-       bool prerelease = false;
-       QJsonArray assets;
-       if(true == json_obj.contains("tag_name")) {
-           tag_name = json_obj.value("tag_name").toString();
-       }
-       if(true == json_obj.contains("prerelease")) {
-           prerelease = json_obj.value("prerelease").toBool();
-       }
-       if(true == json_obj.contains("assets")) {
-           assets = json_obj.value("assets").toArray();
-       }
-   }
-   else {
-       /* JSON is invalid */
-       setUpdateAvailable(false);
-       emit checkingFinished(url());
-       return;
-   }
+    /* Try to create a JSON document from downloaded data */
+    QJsonDocument document = QJsonDocument::fromJson(reply->readAll());
 
-   /* Get the platform information */
-   QJsonObject updates = document.object().value("updates").toObject();
-   QJsonObject platform = updates.value(platformKey()).toObject();
+    /* JSON is invalid */
+    if (document.isNull())
+    {
+        setUpdateAvailable(false);
+        emit checkingFinished(url());
+        return;
+    }
 
-   /* Get update information */
-   m_openUrl = platform.value("open-url").toString();
-   m_changelog = platform.value("changelog").toString();
-   m_downloadUrl = platform.value("download-url").toString();
-   m_latestVersion = platform.value("latest-version").toString();
-   if (platform.contains("mandatory-update"))
-      m_mandatoryUpdate = platform.value("mandatory-update").toBool();
+    /* Get the platform information */
+    QJsonObject updates = document.object().value("updates").toObject();
+    QJsonObject platform = updates.value(platformKey()).toObject();
 
-   /* Compare latest and current version */
-   setUpdateAvailable(compare(latestVersion(), moduleVersion()));
-   emit checkingFinished(url());
+    /* Get update information */
+    m_openUrl = platform.value("open-url").toString();
+    m_changelog = platform.value("changelog").toString();
+    m_downloadUrl = platform.value("download-url").toString();
+    m_latestVersion = platform.value("latest-version").toString();
+    if (platform.contains("mandatory-update"))
+        m_mandatoryUpdate = platform.value("mandatory-update").toBool();
+
+    /* Compare latest and current version */
+    setUpdateAvailable(compare(latestVersion(), moduleVersion()));
+    emit checkingFinished(url());
+}
+
+/* QKeyMapper customize onRely function */
+void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
+{
+    /* Check if we need to redirect */
+    QUrl redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
+    if (!redirect.isEmpty())
+    {
+        setUrl(redirect.toString());
+        checkForUpdates();
+        return;
+    }
+
+    /* There was a network error */
+    if (reply->error() != QNetworkReply::NoError)
+    {
+        setUpdateAvailable(false);
+        emit checkingFinished(url());
+        return;
+    }
+
+    /* The application wants to interpret the appcast by itself */
+    if (customAppcast())
+    {
+        emit appcastDownloaded(url(), reply->readAll());
+        emit checkingFinished(url());
+        return;
+    }
+
+    QJsonParseError error;
+    QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &error);
+    if ((QJsonParseError::NoError == error.error)
+        && (true == document.isObject())
+        && (false == document.isNull())){
+        QJsonObject json_obj = document.object();
+        QString tag_name;
+        bool prerelease = false;
+        QJsonArray assets;
+        if(true == json_obj.contains("tag_name")) {
+            tag_name = json_obj.value("tag_name").toString();
+        }
+        if(true == json_obj.contains("prerelease")) {
+            prerelease = json_obj.value("prerelease").toBool();
+        }
+        if(true == json_obj.contains("assets")) {
+            assets = json_obj.value("assets").toArray();
+        }
+    }
+    else {
+        /* JSON is invalid */
+        setUpdateAvailable(false);
+        emit checkingFinished(url());
+        return;
+    }
+
+    /* Get the platform information */
+    QJsonObject updates = document.object().value("updates").toObject();
+    QJsonObject platform = updates.value(platformKey()).toObject();
+
+    /* Get update information */
+    m_openUrl = platform.value("open-url").toString();
+    m_changelog = platform.value("changelog").toString();
+    m_downloadUrl = platform.value("download-url").toString();
+    m_latestVersion = platform.value("latest-version").toString();
+    if (platform.contains("mandatory-update"))
+        m_mandatoryUpdate = platform.value("mandatory-update").toBool();
+
+    /* Compare latest and current version */
+    setUpdateAvailable(compareForQKeyMapper(latestVersion(), moduleVersion()));
+    emit checkingFinished(url());
 }
 
 /**
@@ -528,6 +585,11 @@ void Updater::setUpdateAvailable(const bool available)
 bool Updater::compare(const QString &x, const QString &y)
 {
    return QSimpleUpdater::compareVersions(x, y);
+}
+
+bool Updater::compareForQKeyMapper(const QString &x, const QString &y)
+{
+    return QSimpleUpdater::compareVersionsForQKeyMapper(x, y);
 }
 
 #if QSU_INCLUDE_MOC

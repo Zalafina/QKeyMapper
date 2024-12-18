@@ -594,6 +594,7 @@ public:
     void resizeAllKeyMappingTabWidgetColumnWidth(void);
 private:
     void clearLockStatusDisplay(void);
+    void initQSimpleUpdater(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);
