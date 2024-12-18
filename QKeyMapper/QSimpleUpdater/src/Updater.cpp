@@ -461,13 +461,13 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
 
     QJsonParseError error;
     QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &error);
+    QString tag_name;
+    bool prerelease = false;
+    QJsonArray assets;
     if ((QJsonParseError::NoError == error.error)
         && (true == document.isObject())
         && (false == document.isNull())){
         QJsonObject json_obj = document.object();
-        QString tag_name;
-        bool prerelease = false;
-        QJsonArray assets;
         if(true == json_obj.contains("tag_name")) {
             tag_name = json_obj.value("tag_name").toString();
         }
@@ -480,6 +480,12 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     }
     else {
         /* JSON is invalid */
+        setUpdateAvailable(false);
+        emit checkingFinished(url());
+        return;
+    }
+
+    if (prerelease || assets.isEmpty()) {
         setUpdateAvailable(false);
         emit checkingFinished(url());
         return;
