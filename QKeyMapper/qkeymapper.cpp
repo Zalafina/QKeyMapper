@@ -11422,6 +11422,9 @@ void QKeyMapper::on_moveupButton_clicked()
         }
 #endif
     }
+
+    QString url = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
+    QSimpleUpdater::getInstance()->checkForUpdates(url);
 }
 
 void QKeyMapper::on_movedownButton_clicked()

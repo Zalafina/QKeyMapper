@@ -12,6 +12,7 @@ TEMPLATE = app
 
 # include(qhotkey.pri)
 include(QJoysticks/QJoysticks.pri)
+include(QSimpleUpdater/QSimpleUpdater.pri)
 
 DEFINES += SINGLE_APPLICATION
 
@@ -141,6 +142,7 @@ LIBS        += libusb-1.0.lib
 
 INCLUDEPATH += $$PWD/Interception/include
 INCLUDEPATH += $$PWD/libusb/include
+INCLUDEPATH += $$PWD/QSimpleUpdater/include
 INCLUDEPATH += $$PWD/orderedmap
 
 HEADERS     += \

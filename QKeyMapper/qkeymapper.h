@@ -49,6 +49,7 @@
 #include <setupapi.h>
 #include <interception.h>
 #include <libusb.h>
+#include <QSimpleUpdater.h>
 //#include <QKeyEvent>
 //#include <QProcess>
 //#include <QTextCodec>
