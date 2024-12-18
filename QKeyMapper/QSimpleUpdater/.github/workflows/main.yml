@@ -1,0 +1,125 @@
+name: Build
+on: [push]
+env:
+  QT_VERSION_LINUX: 6.8.0
+  QT_VERSION_MACOS: 6.8.0
+  QT_VERSION_WINDOWS: 6.8.0
+  
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    name: '🐧 Ubuntu 22.04'
+    steps:
+    - name: '🧰 Checkout'
+      uses: actions/checkout@v4
+      
+    - name: '⚙️ Install Qt'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{env.QT_VERSION_LINUX}}
+        cache: true
+        install-deps: 'true'
+
+    - name: '⚙️ Install dependencies'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+        libcups2-dev \
+        libgl1-mesa-dev \
+        libxkbcommon-x11-0 \
+        libxcb-icccm4 \
+        libxcb-image0 \
+        libxcb-keysyms1 \
+        libxcb-render-util0 \
+        libxcb-xinerama0 \
+        libzstd-dev \
+        libxcb-image0-dev \
+        libxcb-util0-dev \
+        libxcb-cursor-dev \
+        libssl-dev \
+        libudev-dev \
+        rpm \
+        libfuse2 \
+        fakeroot
+        
+    - name: '⚙️ Install CMake'
+      uses: lukka/get-cmake@latest
+      with:
+        useLocalCache: true
+      
+    - name: '🚧 Configure with CMake'
+      run: |
+        mkdir build
+        cd build
+        cmake ../ -DCMAKE_BUILD_TYPE=Release
+
+    - name: '🚧 Build library'
+      run: |
+        cd build
+        cmake --build . --config Release -j 16
+             
+  build-mac-aarch64:
+    runs-on: macos-latest
+    name: '🍎 macOS (aarch64)'
+    steps:
+    - name: '🧰 Checkout'
+      uses: actions/checkout@v4
+
+    - name: '⚙️ Install Qt'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{env.QT_VERSION_MACOS}}
+        arch: clang_64
+        cache: 'true'
+
+    - name: '⚙️ Install CMake'
+      uses: lukka/get-cmake@latest
+      with:
+        useLocalCache: true
+
+    - name: '⚙️ Install Node'
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: '🚧 Configure with CMake'
+      run: |
+        mkdir build
+        cd build
+        cmake ../ -DCMAKE_BUILD_TYPE=Release
+
+    - name: '🚧 Build library'
+      run: |
+        cd build
+        cmake --build . --config Release -j 16
+               
+  build-windows:
+    runs-on: windows-latest
+    name: '🧊 Windows'
+    steps:
+    - run: git config --global core.autocrlf input
+    - name: '🧰 Checkout'
+      uses: actions/checkout@v4
+
+    - name: '⚙️ Install Qt'
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{env.QT_VERSION_WINDOWS}}
+        cache: 'true'
+        arch: win64_msvc2022_64
+      
+    - name: '⚙️ Install CMake'
+      uses: lukka/get-cmake@latest
+      with:
+        useLocalCache: true
+
+    - name: '🚧 Configure with CMake'
+      run: |
+        mkdir build
+        cd build
+        cmake ../ -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl -DCMAKE_BUILD_TYPE=Release
+        
+    - name: '🚧 Build library'
+      run: |
+        cd build
+        cmake --build . --config Release -j 16
