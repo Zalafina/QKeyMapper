@@ -129,10 +129,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initPopupMessage();
     initPushLevelSlider();
 
+    QString productVersion = getExeProductVersion();
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "QKeyMapper() -> Set WindowTitle to FileDescription :" << fileDescription;
+    qDebug() << "QKeyMapper() -> ProductVersion :" << productVersion;
 #endif
 
 #ifdef USE_SAOFONT
@@ -869,6 +871,31 @@ QString QKeyMapper::getExeFileDescription()
     void *value = nullptr;
     UINT length;
     if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\FileDescription", &value, &length)) {
+        return QString();
+    }
+
+    QString retStr = QString::fromUtf16((ushort *)value, length);
+    retStr.remove(QChar('\0'));
+    return retStr;
+}
+
+QString QKeyMapper::getExeProductVersion()
+{
+    QString exeFilePath = QCoreApplication::applicationFilePath();
+    DWORD dummy;
+    DWORD size = GetFileVersionInfoSize((LPCWSTR)exeFilePath.utf16(), &dummy);
+    if (size == 0) {
+        return QString();
+    }
+
+    QByteArray data(size, 0);
+    if (!GetFileVersionInfo((LPCWSTR)exeFilePath.utf16(), 0, size, data.data())) {
+        return QString();
+    }
+
+    void *value = nullptr;
+    UINT length;
+    if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\ProductVersion", &value, &length)) {
         return QString();
     }
 
@@ -6794,6 +6821,7 @@ void QKeyMapper::setControlFontEnglish()
     // }
     ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
+    ui->checkUpdateButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -6907,6 +6935,7 @@ void QKeyMapper::setControlFontChinese()
     // }
     ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
+    ui->checkUpdateButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -7102,6 +7131,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->nextarrowCheckBox->setEnabled(status);
 
     ui->windowswitchkeyLabel->setEnabled(status);
+    ui->checkUpdateButton->setEnabled(status);
     // m_windowswitchKeySeqEdit->setEnabled(status);
     ui->windowswitchkeyLineEdit->setEnabled(status);
     ui->mappingStartKeyLabel->setEnabled(status);
@@ -9455,6 +9485,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
     ui->languageLabel->setText(LANGUAGELABEL_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
+    ui->checkUpdateButton->setText(CHECKUPDATEBUTTON_CHINESE);
     ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_CHINESE);
     ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_CHINESE);
 
@@ -9598,6 +9629,7 @@ void QKeyMapper::setUILanguage_English()
     ui->notificationLabel->setText(NOTIFICATIONLABEL_ENGLISH);
     ui->languageLabel->setText(LANGUAGELABEL_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
+    ui->checkUpdateButton->setText(CHECKUPDATEBUTTON_ENGLISH);
     ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_ENGLISH);
     ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_ENGLISH);
 
@@ -11422,9 +11454,6 @@ void QKeyMapper::on_moveupButton_clicked()
         }
 #endif
     }
-
-    QString url = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
-    QSimpleUpdater::getInstance()->checkForUpdates(url);
 }
 
 void QKeyMapper::on_movedownButton_clicked()
@@ -12124,4 +12153,10 @@ void QKeyMapper::on_showNotesButton_toggled(bool checked)
 {
     Q_UNUSED(checked);
     refreshAllKeyMappingTagWidget();
+}
+
+void QKeyMapper::on_checkUpdateButton_clicked()
+{
+    QString check_updates_url = CHECK_UPDATES_URL;
+    QSimpleUpdater::getInstance()->checkForUpdates(check_updates_url);
 }

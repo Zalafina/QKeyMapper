@@ -369,6 +369,7 @@ extern const UINT SCANCODE_APPS;
 
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;
+extern const char *CHECK_UPDATES_URL;
 extern const char *PREFIX_SHORTCUT;
 extern const char *OLD_PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;
@@ -680,6 +681,7 @@ extern const char *SENDTIMING_KEYDOWN_STR_CHINESE;
 extern const char *SENDTIMING_KEYUP_STR_CHINESE;
 extern const char *SENDTIMING_KEYDOWN_AND_KEYUP_STR_CHINESE;
 extern const char *SENDTIMING_NORMAL_AND_KEYUP_STR_CHINESE;
+extern const char *CHECKUPDATEBUTTON_CHINESE;
 
 /* English const Strings */
 extern const char* REFRESHBUTTON_ENGLISH;
@@ -799,6 +801,7 @@ extern const char *SENDTIMING_KEYDOWN_STR_ENGLISH;
 extern const char *SENDTIMING_KEYUP_STR_ENGLISH;
 extern const char *SENDTIMING_KEYDOWN_AND_KEYUP_STR_ENGLISH;
 extern const char *SENDTIMING_NORMAL_AND_KEYUP_STR_ENGLISH;
+extern const char *CHECKUPDATEBUTTON_ENGLISH;
 
 /* constant values for QItemSetupDialog */
 extern const int ITEMSETUP_EDITING_MAPPINGKEY;

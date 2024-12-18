@@ -407,6 +407,7 @@ const UINT SCANCODE_APPS            = 0x5D;
 
 /* constant chars for QKeyMapper */
 const char *PROGRAM_NAME = "QKeyMapper";
+const char *CHECK_UPDATES_URL = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";
@@ -765,6 +766,7 @@ const char *SENDTIMING_KEYDOWN_STR_CHINESE              = "按下";
 const char *SENDTIMING_KEYUP_STR_CHINESE                = "抬起";
 const char *SENDTIMING_KEYDOWN_AND_KEYUP_STR_CHINESE    = "按下+抬起";
 const char *SENDTIMING_NORMAL_AND_KEYUP_STR_CHINESE     = "正常+抬起";
+const char *CHECKUPDATEBUTTON_CHINESE = "检查更新";
 
 /* English const Strings */
 const char *REFRESHBUTTON_ENGLISH = "Refresh";
@@ -889,6 +891,7 @@ const char *SENDTIMING_KEYDOWN_STR_ENGLISH              = "KeyDown";
 const char *SENDTIMING_KEYUP_STR_ENGLISH                = "KeyUp";
 const char *SENDTIMING_KEYDOWN_AND_KEYUP_STR_ENGLISH    = "KeyDown+KeyUp";
 const char *SENDTIMING_NORMAL_AND_KEYUP_STR_ENGLISH     = "Normal+KeyUp";
+const char *CHECKUPDATEBUTTON_ENGLISH = "Check Updates";
 
 /* constant values for QItemSetupDialog */
 const int ITEMSETUP_EDITING_MAPPINGKEY      = 0;

@@ -328,7 +328,8 @@ public:
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
-    QString getExeFileDescription(void);
+    static QString getExeFileDescription(void);
+    static QString getExeProductVersion(void);
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
@@ -557,6 +558,8 @@ private slots:
     void on_processListButton_toggled(bool checked);
 
     void on_showNotesButton_toggled(bool checked);
+
+    void on_checkUpdateButton_clicked();
 
 private:
     // void initHotKeySequence(void);

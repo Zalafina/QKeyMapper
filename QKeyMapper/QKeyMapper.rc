@@ -27,7 +27,7 @@ BEGIN
         BEGIN
             VALUE "Comments", "https://github.com/Zalafina/QKeyMapper"
             VALUE "FileDescription", "QKeyMapper v1.3.7 Build 20241216"
-            VALUE "FileVersion", "v1.3.7.20241216"
+            VALUE "FileVersion", "v1.3.7.0"
             VALUE "InternalName", "QKeyMapper"
             VALUE "LegalCopyright", "Copyright (c) 2024, AsukaVoV"
             VALUE "OriginalFilename", "QKeyMapper.exe"
