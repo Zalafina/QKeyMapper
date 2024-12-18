@@ -129,12 +129,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initPopupMessage();
     initPushLevelSlider();
 
-    QString productVersion = getExeProductVersion();
     QString fileDescription = getExeFileDescription();
     setWindowTitle(fileDescription);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "QKeyMapper() -> Set WindowTitle to FileDescription :" << fileDescription;
-    qDebug() << "QKeyMapper() -> ProductVersion :" << productVersion;
+    qDebug() << "QKeyMapper() -> ProductVersion :" << getExeProductVersion();
 #endif
 
 #ifdef USE_SAOFONT
