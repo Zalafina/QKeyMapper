@@ -114,8 +114,6 @@ public:
 
     const_iterator find(const Key& key) const;
 
-    class const_iterator;
-
     class iterator
     {
         QllIterator qllIter;
