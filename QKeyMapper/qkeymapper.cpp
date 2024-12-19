@@ -10181,6 +10181,37 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
     qDebug() << "[onUpdateDownloadFinished]" << "filename ->" << filename;
     qDebug() << "[onUpdateDownloadFinished]" << "dirname ->" << dirname;
 #endif
+
+    QMessageBox box(this);
+    box.setWindowTitle(tr(PROGRAM_NAME));
+    box.setTextFormat(Qt::RichText);
+    box.setIcon(QMessageBox::Information);
+
+    QString text;
+    QString title;
+
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        text = tr("%1 has been successfully downloaded to the %2 directory.").arg(filename, dirname);
+        text += "<br/><br/>";
+        text += tr("Please manually extract the update package and replace the existing files.");
+        title = "<h3>" + tr("Update Download Complete") + "</h3>";
+        box.setStandardButtons(QMessageBox::Close);
+        box.setButtonText(QMessageBox::Close, tr("Close"));
+    }
+    else { /* CHINESE */
+        text += tr("%1 已成功下载至 %2 目录").arg(filename, dirname);
+        text += "<br/><br/>";
+        text += tr("请手动解压升级包并替换现有文件。");
+        title = "<h3>" + tr("更新下载完成") + "</h3>";
+        box.setStandardButtons(QMessageBox::Close);
+        box.setButtonText(QMessageBox::Close, tr("关闭"));
+    }
+
+    box.setText(title);
+    box.setInformativeText(text);
+    box.setDefaultButton(QMessageBox::Close);
+
+    box.exec();
 }
 
 #if 0

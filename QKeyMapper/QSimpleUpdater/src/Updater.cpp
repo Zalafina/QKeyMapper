@@ -635,6 +635,15 @@ void Updater::setUpdateAvailableForQKeyMapper(const bool available)
         box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
         box.setDefaultButton(QMessageBox::Yes);
 
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            box.button(QMessageBox::Yes)->setText(tr("Yes"));
+            box.button(QMessageBox::No)->setText(tr("No"));
+        }
+        else {
+            box.button(QMessageBox::Yes)->setText(tr("是"));
+            box.button(QMessageBox::No)->setText(tr("否"));
+        }
+
         if (box.exec() == QMessageBox::Yes)
         {
             if (!openUrl().isEmpty())
@@ -666,6 +675,7 @@ void Updater::setUpdateAvailableForQKeyMapper(const bool available)
                              "latest version of %1")
                               .arg(moduleName())
                         + "</h3>");
+            box.button(QMessageBox::Close)->setText(tr("Close"));
         }
         else { /* CHINESE */
             box.setInformativeText(tr("目前没有可用的更新"));
@@ -673,6 +683,7 @@ void Updater::setUpdateAvailableForQKeyMapper(const bool available)
                         + tr("您当前已正在使用最新版本的 %1")
                               .arg(moduleName())
                         + "</h3>");
+            box.button(QMessageBox::Close)->setText(tr("关闭"));
         }
 
         box.exec();

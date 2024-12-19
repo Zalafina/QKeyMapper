@@ -316,9 +316,13 @@ void Downloader::cancelDownloadForQKeyMapper()
 
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             text = tr("Are you sure you want to cancel the download?");
+            box.button(QMessageBox::Yes)->setText(tr("Yes"));
+            box.button(QMessageBox::No)->setText(tr("No"));
         }
         else {
             text = tr("您确定要取消下载吗？");
+            box.button(QMessageBox::Yes)->setText(tr("是"));
+            box.button(QMessageBox::No)->setText(tr("否"));
         }
 
         box.setText(text);
