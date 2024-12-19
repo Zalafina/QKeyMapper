@@ -909,24 +909,24 @@ QString QKeyMapper::getPlatformString()
     QString platform_string;
     QString qt_version;
     QString architecture;
-    if (QSysInfo::currentCpuArchitecture() == "x86_64")
+    if (QSysInfo::buildCpuArchitecture() == "x86_64")
     {
         architecture = "x64";
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[getPlatformString] Running on a 64-bit operating system ->" << " architecture =" << architecture;
+        qDebug() << "[getPlatformString] Qt is build for a 64-bit operating system ->" << " architecture =" << architecture;
 #endif
 
     }
-    else if (QSysInfo::currentCpuArchitecture() == "i386")
+    else if (QSysInfo::buildCpuArchitecture() == "i386")
     {
         architecture = "x86";
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[getPlatformString] Running on a 32-bit operating system ->" << " architecture =" << architecture;
+        qDebug() << "[getPlatformString] Qt is build for a 32-bit operating system ->" << " architecture =" << architecture;
 #endif
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[getPlatformString] Unknown operating system architecture!";
+        qDebug() << "[getPlatformString] Unknown Qt build architecture!";
 #endif
     }
 
