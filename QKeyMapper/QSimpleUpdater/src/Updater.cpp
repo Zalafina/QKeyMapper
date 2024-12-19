@@ -447,7 +447,7 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     /* There was a network error */
     if (reply->error() != QNetworkReply::NoError)
     {
-        setUpdateAvailable(false);
+        setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
         return;
     }
@@ -473,13 +473,13 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     }
     else {
         /* JSON is invalid */
-        setUpdateAvailable(false);
+        setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
         return;
     }
 
     if (prerelease || assets.isEmpty()) {
-        setUpdateAvailable(false);
+        setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
         return;
     }
@@ -502,6 +502,18 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
             else if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241210.zip") {
                 name = "QKeyMapper_v1.3.7.20241210_Qt6_x64.zip";
             }
+            else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241216.zip") {
+                name = "QKeyMapper_v1.3.7.20241220_Qt5_x64.zip";
+            }
+            else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241210.zip") {
+                name = "QKeyMapper_v1.3.7.20241210_Qt5_x64.zip";
+            }
+            else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241216.zip") {
+                name = "QKeyMapper_v1.3.7.20241220_Qt5_x86.zip";
+            }
+            else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241210.zip") {
+                name = "QKeyMapper_v1.3.7.20241210_Qt5_x86.zip";
+            }
             /* For Debug <<< */
 #endif
 
@@ -517,7 +529,7 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     }
 
     if (bestMatch.isEmpty()) {
-        setUpdateAvailable(false);
+        setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
         return;
     }

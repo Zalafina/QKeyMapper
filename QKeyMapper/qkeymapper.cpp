@@ -10171,6 +10171,7 @@ void QKeyMapper::setupDialogClosed()
 
 void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &filepath)
 {
+    Q_UNUSED(url);
     QFileInfo fileinfo(filepath);
     QString filename = fileinfo.fileName();
     QString dirname = fileinfo.dir().dirName();
