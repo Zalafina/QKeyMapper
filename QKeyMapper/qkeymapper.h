@@ -330,6 +330,7 @@ public:
 
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);
+    static QString getPlatformString(void);
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
@@ -463,6 +464,8 @@ public slots:
     // void keyMappingTableCellDoubleClicked(int row, int column);
 
     void setupDialogClosed(void);
+
+    void onUpdateDownloadFinished(const QString &url, const QString &filepath);
 
 #ifdef SINGLE_APPLICATION
     void otherInstancesStarted(void);

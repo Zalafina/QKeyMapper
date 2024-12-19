@@ -408,6 +408,7 @@ const UINT SCANCODE_APPS            = 0x5D;
 /* constant chars for QKeyMapper */
 const char *PROGRAM_NAME = "QKeyMapper";
 const char *CHECK_UPDATES_URL = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
+const char *DOWNLOAD_DIR = "update_files";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";

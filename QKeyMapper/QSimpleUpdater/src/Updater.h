@@ -87,6 +87,7 @@ private slots:
    void onReply(QNetworkReply *reply);
    void onReplyForQKeyMapper(QNetworkReply *reply);
    void setUpdateAvailable(const bool available);
+   void setUpdateAvailableForQKeyMapper(const bool available);
 
 private:
    bool compare(const QString &x, const QString &y);

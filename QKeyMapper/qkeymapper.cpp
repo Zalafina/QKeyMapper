@@ -904,6 +904,45 @@ QString QKeyMapper::getExeProductVersion()
     return retStr;
 }
 
+QString QKeyMapper::getPlatformString()
+{
+    QString platform_string;
+    QString qt_version;
+    QString architecture;
+    if (QSysInfo::currentCpuArchitecture() == "x86_64")
+    {
+        architecture = "x64";
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[getPlatformString] Running on a 64-bit operating system ->" << " architecture =" << architecture;
+#endif
+
+    }
+    else if (QSysInfo::currentCpuArchitecture() == "i386")
+    {
+        architecture = "x86";
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[getPlatformString] Running on a 32-bit operating system ->" << " architecture =" << architecture;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[getPlatformString] Unknown operating system architecture!";
+#endif
+    }
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    qt_version = "Qt6";
+#else
+    qt_version = "Qt5";
+#endif
+
+    if (!architecture.isEmpty()) {
+        platform_string = QString("%1_%2").arg(qt_version, architecture);
+    }
+
+    return platform_string;
+}
+
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
 {
     TCHAR szProcessPath[MAX_PATH] = TEXT("");
@@ -8570,12 +8609,25 @@ void QKeyMapper::initQSimpleUpdater()
 {
     QString qkeymapper_updates_url = CHECK_UPDATES_URL;
     QString productVersion = getExeProductVersion();
-    QSimpleUpdater::getInstance()->setModuleName    (qkeymapper_updates_url, PROGRAM_NAME);
-    QSimpleUpdater::getInstance()->setModuleVersion (qkeymapper_updates_url, productVersion);
+    QString platformString = getPlatformString();
+    QString downloadDir = DOWNLOAD_DIR;
+
+    QSimpleUpdater::getInstance()->setModuleName                (qkeymapper_updates_url, PROGRAM_NAME);
+    QSimpleUpdater::getInstance()->setModuleVersion             (qkeymapper_updates_url, productVersion);
+    QSimpleUpdater::getInstance()->setPlatformKey               (qkeymapper_updates_url, platformString);
+    QSimpleUpdater::getInstance()->setDownloaderEnabled         (qkeymapper_updates_url, true);
+    QSimpleUpdater::getInstance()->setUseCustomInstallProcedures(qkeymapper_updates_url, true);
+    QSimpleUpdater::getInstance()->setNotifyOnUpdate            (qkeymapper_updates_url, true);
+    QSimpleUpdater::getInstance()->setNotifyOnFinish            (qkeymapper_updates_url, true);
+    QSimpleUpdater::getInstance()->setDownloadDir               (qkeymapper_updates_url, downloadDir);
+
+    QObject::connect(QSimpleUpdater::getInstance(), &QSimpleUpdater::downloadFinished, this, &QKeyMapper::onUpdateDownloadFinished);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().noquote().nospace() << "[initQSimpleUpdater] setModuleName     : " << PROGRAM_NAME;
     qDebug().noquote().nospace() << "[initQSimpleUpdater] setModuleVersion  : " << productVersion;
+    qDebug().noquote().nospace() << "[initQSimpleUpdater] setPlatformKey    : " << platformString;
+    qDebug().noquote().nospace() << "[initQSimpleUpdater] setDownloadDir    : " << downloadDir;
 #endif
 }
 void QKeyMapper::initAddKeyComboBoxes(void)
@@ -10115,6 +10167,20 @@ void QKeyMapper::setupDialogClosed()
         QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->setRangeSelected(selection, true);
     }
+}
+
+void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &filepath)
+{
+    QFileInfo fileinfo(filepath);
+    QString filename = fileinfo.fileName();
+    QString dirname = fileinfo.dir().dirName();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onUpdateDownloadFinished]" << "URL ->" << url;
+    qDebug() << "[onUpdateDownloadFinished]" << "filepath ->" << filepath;
+    qDebug() << "[onUpdateDownloadFinished]" << "filename ->" << filename;
+    qDebug() << "[onUpdateDownloadFinished]" << "dirname ->" << dirname;
+#endif
 }
 
 #if 0

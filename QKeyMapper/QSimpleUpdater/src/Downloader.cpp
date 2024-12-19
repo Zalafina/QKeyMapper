@@ -36,6 +36,7 @@
 
 #include "AuthenticateDialog.h"
 #include "Downloader.h"
+#include "qkeymapper.h"
 
 static const QString PARTIAL_DOWN(".part");
 
@@ -65,7 +66,8 @@ Downloader::Downloader(QWidget *parent)
    /* Configure the appearance and behavior of the buttons */
    m_ui->openButton->setEnabled(false);
    m_ui->openButton->setVisible(false);
-   connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownload()));
+   // connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownload()));
+   connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownloadForQKeyMapper()));
    connect(m_ui->openButton, SIGNAL(clicked()), this, SLOT(installUpdate()));
 
    connect(m_manager, &QNetworkAccessManager::authenticationRequired, this, &Downloader::authenticate);
@@ -110,9 +112,17 @@ void Downloader::startDownload(const QUrl &url)
 {
    /* Reset UI */
    m_ui->progressBar->setValue(0);
-   m_ui->stopButton->setText(tr("Stop"));
-   m_ui->downloadLabel->setText(tr("Downloading updates"));
-   m_ui->timeLabel->setText(tr("Time remaining") + ": " + tr("unknown"));
+
+   if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+       m_ui->stopButton->setText(tr("Stop"));
+       m_ui->downloadLabel->setText(tr("Downloading updates"));
+       m_ui->timeLabel->setText(tr("Time remaining") + ": " + tr("unknown"));
+   }
+   else {
+       m_ui->stopButton->setText(tr("停止"));
+       m_ui->downloadLabel->setText(tr("正在下载更新"));
+       m_ui->timeLabel->setText(tr("剩余时间") + ": " + tr("未知"));
+   }
 
    /* Configure the network request */
    QNetworkRequest request(url);
@@ -263,7 +273,7 @@ void Downloader::cancelDownload()
 {
    if (!m_reply->isFinished())
    {
-      QMessageBox box;
+      QMessageBox box(QKeyMapper::getInstance());
       box.setWindowTitle(tr("Updater"));
       box.setIcon(QMessageBox::Question);
       box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
@@ -291,6 +301,38 @@ void Downloader::cancelDownload()
 
       hide();
    }
+}
+
+void Downloader::cancelDownloadForQKeyMapper()
+{
+    if (!m_reply->isFinished())
+    {
+        QMessageBox box(QKeyMapper::getInstance());
+        box.setWindowTitle(tr("Updater"));
+        box.setIcon(QMessageBox::Question);
+        box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+
+        QString text;
+
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            text = tr("Are you sure you want to cancel the download?");
+        }
+        else {
+            text = tr("您确定要取消下载吗？");
+        }
+
+        box.setText(text);
+
+        if (box.exec() == QMessageBox::Yes)
+        {
+            hide();
+            m_reply->abort();
+        }
+    }
+    else
+    {
+        hide();
+    }
 }
 
 /**
@@ -346,8 +388,14 @@ void Downloader::calculateSizes(qint64 received, qint64 total)
    else
       receivedSize = tr("%1 MB").arg(received / 1048576);
 
-   m_ui->downloadLabel->setText(tr("Downloading updates") + " (" + receivedSize + " " + tr("of") + " " + totalSize
-                                + ")");
+   if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+       m_ui->downloadLabel->setText(tr("Downloading updates") + " (" + receivedSize + " " + tr("/") + " " + totalSize
+                                    + ")");
+   }
+   else {
+       m_ui->downloadLabel->setText(tr("正在下载更新") + " (" + receivedSize + " " + tr("/") + " " + totalSize
+                                    + ")");
+   }
 }
 
 /**
@@ -392,8 +440,14 @@ void Downloader::updateProgress(qint64 received, qint64 total)
       m_ui->progressBar->setMinimum(0);
       m_ui->progressBar->setMaximum(0);
       m_ui->progressBar->setValue(-1);
-      m_ui->downloadLabel->setText(tr("Downloading Updates") + "...");
-      m_ui->timeLabel->setText(QString("%1: %2").arg(tr("Time Remaining")).arg(tr("Unknown")));
+      if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+          m_ui->downloadLabel->setText(tr("Downloading Updates") + "...");
+          m_ui->timeLabel->setText(QString("%1: %2").arg(tr("Time Remaining")).arg(tr("Unknown")));
+      }
+      else {
+          m_ui->downloadLabel->setText(tr("正在下载更新") + "...");
+          m_ui->timeLabel->setText(QString("%1: %2").arg(tr("剩余时间")).arg(tr("未知")));
+      }
    }
 }
 
@@ -419,10 +473,18 @@ void Downloader::calculateTimeRemaining(qint64 received, qint64 total)
          timeRemaining /= 3600;
          int hours = int(timeRemaining + 0.5);
 
-         if (hours > 1)
-            timeString = tr("about %1 hours").arg(hours);
-         else
-            timeString = tr("about one hour");
+         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+             if (hours > 1)
+                timeString = tr("about %1 hours").arg(hours);
+             else
+                timeString = tr("about one hour");
+         }
+         else {
+             if (hours > 1)
+                 timeString = tr("大约 %1 小时").arg(hours);
+             else
+                 timeString = tr("大约 1 小时");
+         }
       }
 
       else if (timeRemaining > 60)
@@ -430,23 +492,44 @@ void Downloader::calculateTimeRemaining(qint64 received, qint64 total)
          timeRemaining /= 60;
          int minutes = int(timeRemaining + 0.5);
 
-         if (minutes > 1)
-            timeString = tr("%1 minutes").arg(minutes);
-         else
-            timeString = tr("1 minute");
+         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+             if (minutes > 1)
+                timeString = tr("%1 minutes").arg(minutes);
+             else
+                timeString = tr("1 minute");
+         }
+         else {
+             if (minutes > 1)
+                 timeString = tr("%1 分钟").arg(minutes);
+             else
+                 timeString = tr("1 分钟");
+         }
       }
 
       else if (timeRemaining <= 60)
       {
          int seconds = int(timeRemaining + 0.5);
 
-         if (seconds > 1)
-            timeString = tr("%1 seconds").arg(seconds);
-         else
-            timeString = tr("1 second");
+         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+             if (seconds > 1)
+                timeString = tr("%1 seconds").arg(seconds);
+             else
+                timeString = tr("1 second");
+         }
+         else {
+             if (seconds > 1)
+                 timeString = tr("%1 秒").arg(seconds);
+             else
+                 timeString = tr("1 秒");
+         }
       }
 
-      m_ui->timeLabel->setText(tr("Time remaining") + ": " + timeString);
+      if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+         m_ui->timeLabel->setText(tr("Time remaining") + ": " + timeString);
+      }
+      else {
+         m_ui->timeLabel->setText(tr("剩余时间") + ": " + timeString);
+      }
    }
 }
 

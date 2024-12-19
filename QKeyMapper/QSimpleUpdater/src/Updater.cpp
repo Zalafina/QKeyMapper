@@ -30,6 +30,7 @@
 
 #include "Updater.h"
 #include "Downloader.h"
+#include "qkeymapper.h"
 
 Updater::Updater()
 {
@@ -47,7 +48,7 @@ Updater::Updater()
    m_moduleVersion = qApp->applicationVersion();
    m_mandatoryUpdate = false;
 
-   m_downloader = new Downloader();
+   m_downloader = new Downloader(QKeyMapper::getInstance());
    m_manager = new QNetworkAccessManager();
 
 #if defined Q_OS_WIN
@@ -451,14 +452,6 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
         return;
     }
 
-    /* The application wants to interpret the appcast by itself */
-    if (customAppcast())
-    {
-        emit appcastDownloaded(url(), reply->readAll());
-        emit checkingFinished(url());
-        return;
-    }
-
     QJsonParseError error;
     QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &error);
     QString tag_name;
@@ -491,20 +484,50 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
         return;
     }
 
-    /* Get the platform information */
-    QJsonObject updates = document.object().value("updates").toObject();
-    QJsonObject platform = updates.value(platformKey()).toObject();
+    static QRegularExpression version_regex(R"(^QKeyMapper_(v\d+\.\d+\.\d+\.\d{8})_(Qt[56]_[x](?:64|86))\.zip$)");
+    QString platformString = platformKey();
+    QJsonObject bestMatch;
+    QString bestVersion;
 
-    /* Get update information */
-    m_openUrl = platform.value("open-url").toString();
-    m_changelog = platform.value("changelog").toString();
-    m_downloadUrl = platform.value("download-url").toString();
-    m_latestVersion = platform.value("latest-version").toString();
-    if (platform.contains("mandatory-update"))
-        m_mandatoryUpdate = platform.value("mandatory-update").toBool();
+    for (const QJsonValue &value : assets) {
+        QJsonObject asset = value.toObject();
+        if (asset.contains("name")) {
+            QString name = asset["name"].toString();
+
+#ifdef DEBUG_LOGOUT_ON
+            /* For Debug >>> */
+            if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241216.zip") {
+                name = "QKeyMapper_v1.3.7.20241220_Qt6_x64.zip";
+            }
+            else if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241210.zip") {
+                name = "QKeyMapper_v1.3.7.20241210_Qt6_x64.zip";
+            }
+            /* For Debug <<< */
+#endif
+
+            QRegularExpressionMatch match = version_regex.match(name);
+            if (match.hasMatch() && match.captured(2) == platformString) {
+                QString version = match.captured(1);
+                if (bestVersion.isEmpty() || compareForQKeyMapper(version, bestVersion)) {
+                    bestVersion = version;
+                    bestMatch = asset;
+                }
+            }
+        }
+    }
+
+    if (bestMatch.isEmpty()) {
+        setUpdateAvailable(false);
+        emit checkingFinished(url());
+        return;
+    }
+
+    /* Get latest update information */
+    m_latestVersion = bestVersion;
+    m_downloadUrl = bestMatch.value("browser_download_url").toString();
 
     /* Compare latest and current version */
-    setUpdateAvailable(compareForQKeyMapper(latestVersion(), moduleVersion()));
+    setUpdateAvailableForQKeyMapper(compareForQKeyMapper(latestVersion(), moduleVersion()));
     emit checkingFinished(url());
 }
 
@@ -580,6 +603,80 @@ void Updater::setUpdateAvailable(const bool available)
 
       box.exec();
    }
+}
+
+void Updater::setUpdateAvailableForQKeyMapper(const bool available)
+{
+    m_updateAvailable = available;
+
+    QMessageBox box(QKeyMapper::getInstance());
+    box.setWindowTitle(m_moduleName);
+    box.setTextFormat(Qt::RichText);
+    box.setIcon(QMessageBox::Information);
+
+    if (updateAvailable() && (notifyOnUpdate() || notifyOnFinish()))
+    {
+        QString text;
+        QString title;
+
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            text = tr("Would you like to download the update now?");
+            text += "<br/><br/>";
+            title = "<h3>" + tr("Version %1 of %2 has been released!").arg(latestVersion()).arg(moduleName()) + "</h3>";
+        }
+        else { /* CHINESE */
+            text = tr("您想立即下载更新吗？");
+            text += "<br/><br/>";
+            title = "<h3>" + tr("版本 %1 的 %2 已发布！").arg(latestVersion()).arg(moduleName()) + "</h3>";
+        }
+
+        box.setText(title);
+        box.setInformativeText(text);
+        box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
+        box.setDefaultButton(QMessageBox::Yes);
+
+        if (box.exec() == QMessageBox::Yes)
+        {
+            if (!openUrl().isEmpty())
+                QDesktopServices::openUrl(QUrl(openUrl()));
+
+            else if (downloaderEnabled())
+            {
+                m_downloader->setUrlId(url());
+                m_downloader->setFileName(downloadUrl().split("/").last());
+                m_downloader->setMandatoryUpdate(m_mandatoryUpdate);
+                auto url = QUrl(downloadUrl());
+                url.setUserName(m_downloadUserName);
+                url.setPassword(m_downloadPassword);
+                m_downloader->startDownload(url);
+            }
+
+            else
+                QDesktopServices::openUrl(QUrl(downloadUrl()));
+        }
+    }
+    else if (notifyOnFinish())
+    {
+        box.setStandardButtons(QMessageBox::Close);
+
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            box.setInformativeText(tr("No updates are available for the moment"));
+            box.setText("<h3>"
+                        + tr("Congratulations! You are running the "
+                             "latest version of %1")
+                              .arg(moduleName())
+                        + "</h3>");
+        }
+        else { /* CHINESE */
+            box.setInformativeText(tr("目前没有可用的更新"));
+            box.setText("<h3>"
+                        + tr("您当前已正在使用最新版本的 %1")
+                              .arg(moduleName())
+                        + "</h3>");
+        }
+
+        box.exec();
+    }
 }
 
 /**

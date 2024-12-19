@@ -370,6 +370,7 @@ extern const UINT SCANCODE_APPS;
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;
 extern const char *CHECK_UPDATES_URL;
+extern const char *DOWNLOAD_DIR;
 extern const char *PREFIX_SHORTCUT;
 extern const char *OLD_PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;

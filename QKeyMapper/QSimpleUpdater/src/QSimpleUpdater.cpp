@@ -89,10 +89,10 @@ bool QSimpleUpdater::compareVersions(const QString &remote, const QString &local
 
 bool QSimpleUpdater::compareVersionsForQKeyMapper(const QString &remote, const QString &local)
 {
-    // Updated regex to capture up to four numerical parts (major.minor.patch.date)
-    static QRegularExpression re("^v?(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?(?:\\.(\\d{8}))?$");
-    QRegularExpressionMatch remoteMatch = re.match(remote);
-    QRegularExpressionMatch localMatch = re.match(local);
+    // Updated regex to capture up to four numerical parts (major.minor.patch.build date)
+    static QRegularExpression version_regex(R"(^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d{8}))?$)");
+    QRegularExpressionMatch remoteMatch = version_regex.match(remote);
+    QRegularExpressionMatch localMatch = version_regex.match(local);
 
     if (!remoteMatch.hasMatch() || !localMatch.hasMatch())
     {
@@ -100,8 +100,8 @@ bool QSimpleUpdater::compareVersionsForQKeyMapper(const QString &remote, const Q
         return false;
     }
 
-    // Compare major, minor, and patch numbers
-    for (int i = 1; i <= 3; ++i)
+    // Compare major, minor, patch, build date numbers
+    for (int i = 1; i <= 4; ++i)
     {
         int remoteNum = remoteMatch.captured(i).toInt();
         int localNum = localMatch.captured(i).toInt();
@@ -110,31 +110,6 @@ bool QSimpleUpdater::compareVersionsForQKeyMapper(const QString &remote, const Q
             return true;
         else if (localNum > remoteNum)
             return false;
-    }
-
-    // Compare 8-digit date (if present)
-    QString remoteDateStr = remoteMatch.captured(4);
-    QString localDateStr = localMatch.captured(4);
-
-    if (!remoteDateStr.isEmpty() && !localDateStr.isEmpty())
-    {
-        int remoteDate = remoteDateStr.toInt();
-        int localDate = localDateStr.toInt();
-
-        if (remoteDate > localDate)
-            return true;
-        else if (localDate > remoteDate)
-            return false;
-    }
-    else if (!remoteDateStr.isEmpty())
-    {
-        // Remote has date, local does not -> remote is newer
-        return true;
-    }
-    else if (!localDateStr.isEmpty())
-    {
-        // Local has date, remote does not -> local is newer
-        return false;
     }
 
     // Versions are equal
