@@ -8611,10 +8611,12 @@ void QKeyMapper::initQSimpleUpdater()
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
     QString downloadDir = DOWNLOAD_DIR;
+    QString user_agent = UPDATER_USER_AGENT_X64;
 
     QSimpleUpdater::getInstance()->setModuleName                (qkeymapper_updates_url, PROGRAM_NAME);
     QSimpleUpdater::getInstance()->setModuleVersion             (qkeymapper_updates_url, productVersion);
     QSimpleUpdater::getInstance()->setPlatformKey               (qkeymapper_updates_url, platformString);
+    QSimpleUpdater::getInstance()->setUserAgentString           (qkeymapper_updates_url, user_agent);
     QSimpleUpdater::getInstance()->setDownloaderEnabled         (qkeymapper_updates_url, true);
     QSimpleUpdater::getInstance()->setUseCustomInstallProcedures(qkeymapper_updates_url, true);
     QSimpleUpdater::getInstance()->setNotifyOnUpdate            (qkeymapper_updates_url, true);
@@ -8628,6 +8630,7 @@ void QKeyMapper::initQSimpleUpdater()
     qDebug().noquote().nospace() << "[initQSimpleUpdater] setModuleVersion  : " << productVersion;
     qDebug().noquote().nospace() << "[initQSimpleUpdater] setPlatformKey    : " << platformString;
     qDebug().noquote().nospace() << "[initQSimpleUpdater] setDownloadDir    : " << downloadDir;
+    qDebug().noquote().nospace() << "[initQSimpleUpdater] setUserAgentString: " << user_agent;
 #endif
 }
 void QKeyMapper::initAddKeyComboBoxes(void)
