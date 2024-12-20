@@ -239,6 +239,7 @@ void Updater::checkForUpdates()
    QNetworkRequest request(url());
 
    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+   request.setTransferTimeout(10000);   /* 10s timeout */
 
    if (!userAgentString().isEmpty())
       request.setRawHeader("User-Agent", userAgentString().toUtf8());
@@ -435,25 +436,37 @@ void Updater::onReply(QNetworkReply *reply)
 /* QKeyMapper customize onRely function */
 void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
 {
+    QVariant status_code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+
     /* Check if we need to redirect */
     QUrl redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
     if (!redirect.isEmpty())
     {
         setUrl(redirect.toString());
         checkForUpdates();
+        reply->deleteLater();
         return;
     }
 
     /* There was a network error */
     if (reply->error() != QNetworkReply::NoError)
     {
+        QByteArray reply_bytes = reply->readAll();
+
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[Updater::onReplyForQKeyMapper] Error ->" << reply->error() << ", ErrorString ->" << reply->errorString();
+        qDebug() << "[Updater::onReplyForQKeyMapper] Reply error :" << reply->error() << ", HttpStatusCode:" << status_code.toInt() << ", ErrorString :" << reply->errorString();
+        qDebug() << "[Updater::onReplyForQKeyMapper] Reply Data :" << reply_bytes;
 #endif
+
         setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
+        reply->deleteLater();
         return;
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[Updater::onReplyForQKeyMapper] Reply HttpStatusCode:" << status_code.toInt();
+#endif
 
     QJsonParseError error;
     QJsonDocument document = QJsonDocument::fromJson(reply->readAll(), &error);
@@ -478,12 +491,14 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
         /* JSON is invalid */
         setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
+        reply->deleteLater();
         return;
     }
 
     if (prerelease || assets.isEmpty()) {
         setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
+        reply->deleteLater();
         return;
     }
 
@@ -534,6 +549,7 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     if (bestMatch.isEmpty()) {
         setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
+        reply->deleteLater();
         return;
     }
 
@@ -544,6 +560,8 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     /* Compare latest and current version */
     setUpdateAvailableForQKeyMapper(compareForQKeyMapper(latestVersion(), moduleVersion()));
     emit checkingFinished(url());
+
+    reply->deleteLater();
 }
 
 /**

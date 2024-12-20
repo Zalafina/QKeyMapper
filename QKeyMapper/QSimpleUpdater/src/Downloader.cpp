@@ -55,6 +55,7 @@ Downloader::Downloader(QWidget *parent)
    m_startTime = 0;
    m_useCustomProcedures = false;
    m_mandatoryUpdate = false;
+   m_reply = Q_NULLPTR;
 
    /* Set download directory */
    m_downloadDir.setPath(QDir::homePath() + "/Downloads/");
@@ -78,9 +79,12 @@ Downloader::Downloader(QWidget *parent)
 
 Downloader::~Downloader()
 {
-   delete m_ui;
-   delete m_reply;
-   delete m_manager;
+    delete m_ui;
+    // if (m_reply != Q_NULLPTR) {
+    //     delete m_reply;
+    //     m_reply = Q_NULLPTR;
+    // }
+    delete m_manager;
 }
 
 /**
@@ -128,11 +132,7 @@ void Downloader::startDownload(const QUrl &url)
    QNetworkRequest request(url);
 
    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-   
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-   /* 10s timeout */
-   request.setTransferTimeout(10000);
-#endif
+   request.setTransferTimeout(10000);   /* 10s timeout */
 
    if (!m_userAgentString.isEmpty())
       request.setRawHeader("User-Agent", m_userAgentString.toUtf8());
@@ -181,6 +181,7 @@ void Downloader::finished()
    if (m_reply->error() != QNetworkReply::NoError)
    {
       QFile::remove(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN));
+      m_reply->deleteLater();
       return;
    }
 
@@ -192,6 +193,7 @@ void Downloader::finished()
 
    /* Install the update */
    m_reply->close();
+   m_reply->deleteLater();
    installUpdate();
    setVisible(false);
 }
