@@ -129,7 +129,7 @@ void Downloader::startDownload(const QUrl &url)
 
    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-   request.setTransferTimeout(10000);   /* 10s timeout */
+   request.setTransferTimeout(30000);   /* 30s timeout */
 #endif
 
    if (!m_userAgentString.isEmpty())
@@ -316,6 +316,12 @@ void Downloader::cancelDownloadForQKeyMapper()
 {
     if (m_reply->isRunning())
     {
+        hide();
+        if (m_reply != Q_NULLPTR && m_reply->isRunning()) {
+            m_reply->abort();
+            m_manager->clearAccessCache();
+        }
+#if 0
         QMessageBox box(QKeyMapper::getInstance());
         box.setWindowTitle(tr("Updater"));
         box.setIcon(QMessageBox::Question);
@@ -344,6 +350,7 @@ void Downloader::cancelDownloadForQKeyMapper()
                 m_manager->clearAccessCache();
             }
         }
+#endif
     }
     else
     {
