@@ -239,7 +239,9 @@ void Updater::checkForUpdates()
    QNetworkRequest request(url());
 
    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
    request.setTransferTimeout(10000);   /* 10s timeout */
+#endif
 
    if (!userAgentString().isEmpty())
       request.setRawHeader("User-Agent", userAgentString().toUtf8());
