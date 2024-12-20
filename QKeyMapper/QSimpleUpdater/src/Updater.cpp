@@ -447,6 +447,9 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     /* There was a network error */
     if (reply->error() != QNetworkReply::NoError)
     {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::onReplyForQKeyMapper] Error ->" << reply->error() << ", ErrorString ->" << reply->errorString();
+#endif
         setUpdateAvailableForQKeyMapper(false);
         emit checkingFinished(url());
         return;
