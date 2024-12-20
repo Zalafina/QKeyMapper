@@ -80,10 +80,6 @@ Downloader::Downloader(QWidget *parent)
 Downloader::~Downloader()
 {
     delete m_ui;
-    // if (m_reply != Q_NULLPTR) {
-    //     delete m_reply;
-    //     m_reply = Q_NULLPTR;
-    // }
     delete m_manager;
 }
 
@@ -141,6 +137,13 @@ void Downloader::startDownload(const QUrl &url)
 
    /* Start download */
    m_reply = m_manager->get(request);
+   QObject::connect(m_reply, &QObject::destroyed, this, [this]() {
+#ifdef DEBUG_LOGOUT_ON
+       qDebug() << "[Downloader::startDownload] m_reply is destroyed!";
+#endif
+       m_reply = Q_NULLPTR;
+   });
+
    m_startTime = QDateTime::currentDateTime().toSecsSinceEpoch();
 
    /* Ensure that downloads directory exists */
@@ -184,6 +187,7 @@ void Downloader::finished()
    {
       QFile::remove(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN));
       m_reply->deleteLater();
+      m_manager->clearAccessCache();
       return;
    }
 
@@ -196,6 +200,7 @@ void Downloader::finished()
    /* Install the update */
    m_reply->close();
    m_reply->deleteLater();
+   m_manager->clearAccessCache();
    installUpdate();
    setVisible(false);
 }
@@ -309,7 +314,7 @@ void Downloader::cancelDownload()
 
 void Downloader::cancelDownloadForQKeyMapper()
 {
-    if (!m_reply->isFinished())
+    if (m_reply->isRunning())
     {
         QMessageBox box(QKeyMapper::getInstance());
         box.setWindowTitle(tr("Updater"));
@@ -334,7 +339,10 @@ void Downloader::cancelDownloadForQKeyMapper()
         if (box.exec() == QMessageBox::Yes)
         {
             hide();
-            m_reply->abort();
+            if (m_reply != Q_NULLPTR && m_reply->isRunning()) {
+                m_reply->abort();
+                m_manager->clearAccessCache();
+            }
         }
     }
     else
