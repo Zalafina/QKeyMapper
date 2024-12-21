@@ -8645,15 +8645,23 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
 #endif
                     }
                     else {
-                        // emit QKeyMapper_Worker::getInstance()->startBurstTimer_Signal(keycodeString, findindex);
                         emit QKeyMapper_Worker::getInstance()->startBurstKeyTimer_Signal(keycodeString, findindex);
-                        keyproc = KEY_PROC_BURST;
+                        if (QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+                            keyproc = KEY_PROC_NONE;
+                        }
+                        else {
+                            keyproc = KEY_PROC_BURST;
+                        }
                     }
                 }
                 else {
-                    // emit QKeyMapper_Worker::getInstance()->startBurstTimer_Signal(keycodeString, findindex);
                     emit QKeyMapper_Worker::getInstance()->startBurstKeyTimer_Signal(keycodeString, findindex);
-                    keyproc = KEY_PROC_BURST;
+                    if (QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+                        keyproc = KEY_PROC_NONE;
+                    }
+                    else {
+                        keyproc = KEY_PROC_BURST;
+                    }
                 }
             }
         }
@@ -8730,9 +8738,13 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
 #endif
                         }
                         else {
-                            // emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
                             emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(keycodeString, findindex);
-                            keyproc = KEY_PROC_BURST;
+                            if (QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+                                keyproc = KEY_PROC_NONE;
+                            }
+                            else {
+                                keyproc = KEY_PROC_BURST;
+                            }
                         }
 
                         QString original_key = (*QKeyMapper::KeyMappingDataList)[findindex].Original_Key;
@@ -8785,9 +8797,13 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                 else {
                     /* Lock OFF &  Burst ON */
                     if (true == QKeyMapper::KeyMappingDataList->at(findindex).Burst) {
-                        // emit QKeyMapper_Worker::getInstance()->stopBurstTimer_Signal(keycodeString, findindex);
                         emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(keycodeString, findindex);
-                        keyproc = KEY_PROC_BURST;
+                        if (QKeyMapper::KeyMappingDataList->at(findindex).PassThrough) {
+                            keyproc = KEY_PROC_NONE;
+                        }
+                        else {
+                            keyproc = KEY_PROC_BURST;
+                        }
                     }
                     /* Lock OFF &  Burst OFF do nothing */
                 }
@@ -12142,7 +12158,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
