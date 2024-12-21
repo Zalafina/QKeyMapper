@@ -161,9 +161,9 @@ bool QSimpleUpdater::getNotifyOnFinish(const QString &url) const
  * \note If an \c Updater instance registered with the given \a url is not
  *       found, that \c Updater instance will be initialized automatically
  */
-bool QSimpleUpdater::getUpdateAvailable(const QString &url) const
+QSimpleUpdater::UpdateState QSimpleUpdater::getUpdateState(const QString &url) const
 {
-   return getUpdater(url)->updateAvailable();
+   return getUpdater(url)->updateState();
 }
 
 /**

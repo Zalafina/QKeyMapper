@@ -66,6 +66,15 @@ signals:
    void downloadFinished(const QString &url, const QString &filepath);
 
 public:
+   enum UpdateState {
+       UPDATE_ISALREADY_LATEST = 0,
+       UPDATE_REQUEST_ISRUNNING,
+       UPDATE_REQUEST_FAILED,
+       UPDATE_NO_MATCHED,
+       UPDATE_ISAVAILABLE
+   };
+   Q_ENUM(UpdateState)
+
    static QSimpleUpdater *getInstance();
    static bool compareVersions(const QString &remote, const QString &local);
    static bool compareVersionsForQKeyMapper(const QString &remote, const QString &local);
@@ -73,7 +82,7 @@ public:
    bool usesCustomAppcast(const QString &url) const;
    bool getNotifyOnUpdate(const QString &url) const;
    bool getNotifyOnFinish(const QString &url) const;
-   bool getUpdateAvailable(const QString &url) const;
+   UpdateState getUpdateState(const QString &url) const;
    bool getDownloaderEnabled(const QString &url) const;
    bool usesCustomInstallProcedures(const QString &url) const;
 

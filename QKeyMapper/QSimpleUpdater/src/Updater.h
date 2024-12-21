@@ -62,7 +62,7 @@ public:
    bool customAppcast() const;
    bool notifyOnUpdate() const;
    bool notifyOnFinish() const;
-   bool updateAvailable() const;
+   QSimpleUpdater::UpdateState updateState() const;
    bool downloaderEnabled() const;
    bool useCustomInstallProcedures() const;
 
@@ -86,8 +86,8 @@ public slots:
 private slots:
    void onReply(QNetworkReply *reply);
    void onReplyForQKeyMapper(QNetworkReply *reply);
-   void setUpdateAvailable(const bool available);
-   void setUpdateAvailableForQKeyMapper(const bool available);
+   void setUpdateState(const QSimpleUpdater::UpdateState update_state);
+   void setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState update_state);
 
 private:
    bool compare(const QString &x, const QString &y);
@@ -100,7 +100,7 @@ private:
    bool m_customAppcast;
    bool m_notifyOnUpdate;
    bool m_notifyOnFinish;
-   bool m_updateAvailable;
+   QSimpleUpdater::UpdateState m_updateState;
    bool m_downloaderEnabled;
    bool m_mandatoryUpdate;
 

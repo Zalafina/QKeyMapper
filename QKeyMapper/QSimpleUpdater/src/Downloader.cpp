@@ -183,26 +183,52 @@ void Downloader::setUserAgentString(const QString &agent)
 
 void Downloader::finished()
 {
-   if (m_reply->error() != QNetworkReply::NoError)
-   {
-      QFile::remove(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN));
-      m_reply->deleteLater();
-      m_manager->clearAccessCache();
-      return;
-   }
+    if (m_reply == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Downloader::finished] Reply is Q_NULLPTR!!!";
+#endif
+        return;
+    }
 
-   /* Rename file */
-   QFile::rename(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN), m_downloadDir.filePath(m_fileName));
+    QVariant status_code = m_reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
 
-   /* Notify application */
-   emit downloadFinished(m_url, m_downloadDir.filePath(m_fileName));
+    /* There was a network error */
+    if (m_reply->error() != QNetworkReply::NoError)
+    {
+#ifdef DEBUG_LOGOUT_ON
+        QByteArray reply_bytes = m_reply->readAll();
+        qDebug() << "[Downloader::finished] Reply error :" << m_reply->error() << ", HttpStatusCode:" << status_code.toInt() << ", ErrorString :" << m_reply->errorString();
+        qDebug() << "[Downloader::finished] Reply Data :" << reply_bytes;
+#endif
 
-   /* Install the update */
-   m_reply->close();
-   m_reply->deleteLater();
-   m_manager->clearAccessCache();
-   installUpdate();
-   setVisible(false);
+        QFile::remove(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN));
+        if (m_reply != Q_NULLPTR)
+        {
+            m_reply->deleteLater();
+        }
+        m_manager->clearAccessCache();
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[Downloader::finished] Reply HttpStatusCode:" << status_code.toInt();
+#endif
+
+    /* Rename file */
+    QFile::rename(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN), m_downloadDir.filePath(m_fileName));
+
+    /* Notify application */
+    emit downloadFinished(m_url, m_downloadDir.filePath(m_fileName));
+
+    /* Install the update */
+    if (m_reply != Q_NULLPTR)
+    {
+        m_reply->close();
+        m_reply->deleteLater();
+    }
+    m_manager->clearAccessCache();
+    installUpdate();
+    setVisible(false);
 }
 
 /**

@@ -42,7 +42,7 @@ Updater::Updater()
    m_customAppcast = false;
    m_notifyOnUpdate = true;
    m_notifyOnFinish = false;
-   m_updateAvailable = false;
+   m_updateState = QSimpleUpdater::UPDATE_ISALREADY_LATEST;
    m_downloaderEnabled = true;
    m_moduleName = qApp->applicationName();
    m_moduleVersion = qApp->applicationVersion();
@@ -205,9 +205,9 @@ bool Updater::mandatoryUpdate() const
  * Returns \c true if there is an update available.
  * \warning You should call \c checkForUpdates() before using this function
  */
-bool Updater::updateAvailable() const
+QSimpleUpdater::UpdateState Updater::updateState() const
 {
-   return m_updateAvailable;
+   return m_updateState;
 }
 
 /**
@@ -236,17 +236,29 @@ bool Updater::useCustomInstallProcedures() const
  */
 void Updater::checkForUpdates()
 {
-   QNetworkRequest request(url());
+    if (updateState() != QSimpleUpdater::UPDATE_REQUEST_ISRUNNING)
+    {
+        m_updateState = QSimpleUpdater::UPDATE_REQUEST_ISRUNNING;
+    }
+    else
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::checkForUpdates] updateState() is UPDATE_REQUEST_ISRUNNING, skip checkForUpdates()!";
+#endif
+        return;
+    }
 
-   request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    QNetworkRequest request(url());
+
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
-   request.setTransferTimeout(10000);   /* 10s timeout */
+    request.setTransferTimeout(10000);   /* 10s timeout */
 #endif
 
-   if (!userAgentString().isEmpty())
-      request.setRawHeader("User-Agent", userAgentString().toUtf8());
+    if (!userAgentString().isEmpty())
+        request.setRawHeader("User-Agent", userAgentString().toUtf8());
 
-   m_manager->get(request);
+    m_manager->get(request);
 }
 
 /**
@@ -387,6 +399,7 @@ void Updater::onReply(QNetworkReply *reply)
     if (!redirect.isEmpty())
     {
         setUrl(redirect.toString());
+        setUpdateState(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         checkForUpdates();
         return;
     }
@@ -394,7 +407,7 @@ void Updater::onReply(QNetworkReply *reply)
     /* There was a network error */
     if (reply->error() != QNetworkReply::NoError)
     {
-        setUpdateAvailable(false);
+        setUpdateState(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         emit checkingFinished(url());
         return;
     }
@@ -413,7 +426,7 @@ void Updater::onReply(QNetworkReply *reply)
     /* JSON is invalid */
     if (document.isNull())
     {
-        setUpdateAvailable(false);
+        setUpdateState(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         emit checkingFinished(url());
         return;
     }
@@ -431,7 +444,9 @@ void Updater::onReply(QNetworkReply *reply)
         m_mandatoryUpdate = platform.value("mandatory-update").toBool();
 
     /* Compare latest and current version */
-    setUpdateAvailable(compare(latestVersion(), moduleVersion()));
+    bool update_available = compare(latestVersion(), moduleVersion());
+    QSimpleUpdater::UpdateState update_state = update_available ? QSimpleUpdater::UPDATE_ISAVAILABLE : QSimpleUpdater::UPDATE_ISALREADY_LATEST;
+    setUpdateState(update_state);
     emit checkingFinished(url());
 }
 
@@ -444,23 +459,29 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     QUrl redirect = reply->attribute(QNetworkRequest::RedirectionTargetAttribute).toUrl();
     if (!redirect.isEmpty())
     {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::onReplyForQKeyMapper] Redirect to :" << redirect.toString();
+#endif
         setUrl(redirect.toString());
-        checkForUpdates();
+        setUpdateState(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         reply->deleteLater();
+        checkForUpdates();
         return;
     }
 
     /* There was a network error */
     if (reply->error() != QNetworkReply::NoError)
     {
-        QByteArray reply_bytes = reply->readAll();
-
 #ifdef DEBUG_LOGOUT_ON
+        QByteArray reply_bytes = reply->readAll();
         qDebug() << "[Updater::onReplyForQKeyMapper] Reply error :" << reply->error() << ", HttpStatusCode:" << status_code.toInt() << ", ErrorString :" << reply->errorString();
         qDebug() << "[Updater::onReplyForQKeyMapper] Reply Data :" << reply_bytes;
 #endif
 
-        setUpdateAvailableForQKeyMapper(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::onReplyForQKeyMapper] Update request failed!";
+#endif
+        setUpdateStateForQKeyMapper(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         emit checkingFinished(url());
         reply->deleteLater();
         return;
@@ -491,14 +512,20 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     }
     else {
         /* JSON is invalid */
-        setUpdateAvailableForQKeyMapper(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::onReplyForQKeyMapper] Latest release JSON is invalid.";
+#endif
+        setUpdateStateForQKeyMapper(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         emit checkingFinished(url());
         reply->deleteLater();
         return;
     }
 
-    if (prerelease || assets.isEmpty()) {
-        setUpdateAvailableForQKeyMapper(false);
+    if (assets.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::onReplyForQKeyMapper] Latest release has no update file.";
+#endif
+        setUpdateStateForQKeyMapper(QSimpleUpdater::UPDATE_NO_MATCHED);
         emit checkingFinished(url());
         reply->deleteLater();
         return;
@@ -514,28 +541,26 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
         if (asset.contains("name")) {
             QString name = asset["name"].toString();
 
-#ifdef DEBUG_LOGOUT_ON
             /* For Debug >>> */
-            if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241216.zip") {
-                name = "QKeyMapper_v1.3.7.20241220_Qt6_x64.zip";
-            }
-            else if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241210.zip") {
-                name = "QKeyMapper_v1.3.7.20241210_Qt6_x64.zip";
-            }
-            else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241216.zip") {
-                name = "QKeyMapper_v1.3.7.20241220_Qt5_x64.zip";
-            }
-            else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241210.zip") {
-                name = "QKeyMapper_v1.3.7.20241210_Qt5_x64.zip";
-            }
-            else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241216.zip") {
-                name = "QKeyMapper_v1.3.7.20241220_Qt5_x86.zip";
-            }
-            else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241210.zip") {
-                name = "QKeyMapper_v1.3.7.20241210_Qt5_x86.zip";
-            }
+            // if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241216.zip") {
+            //     name = "QKeyMapper_v1.3.7.20241220_Qt6_x64.zip";
+            // }
+            // else if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241210.zip") {
+            //     name = "QKeyMapper_v1.3.7.20241210_Qt6_x64.zip";
+            // }
+            // else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241216.zip") {
+            //     name = "QKeyMapper_v1.3.7.20241220_Qt5_x64.zip";
+            // }
+            // else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241210.zip") {
+            //     name = "QKeyMapper_v1.3.7.20241210_Qt5_x64.zip";
+            // }
+            // else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241216.zip") {
+            //     name = "QKeyMapper_v1.3.7.20241220_Qt5_x86.zip";
+            // }
+            // else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241210.zip") {
+            //     name = "QKeyMapper_v1.3.7.20241210_Qt5_x86.zip";
+            // }
             /* For Debug <<< */
-#endif
 
             QRegularExpressionMatch match = version_regex.match(name);
             if (match.hasMatch() && match.captured(2) == platformString) {
@@ -549,7 +574,10 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     }
 
     if (bestMatch.isEmpty()) {
-        setUpdateAvailableForQKeyMapper(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[Updater::onReplyForQKeyMapper] There is no matched update file for updating!";
+#endif
+        setUpdateStateForQKeyMapper(QSimpleUpdater::UPDATE_NO_MATCHED);
         emit checkingFinished(url());
         reply->deleteLater();
         return;
@@ -560,9 +588,14 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
     m_downloadUrl = bestMatch.value("browser_download_url").toString();
 
     /* Compare latest and current version */
-    setUpdateAvailableForQKeyMapper(compareForQKeyMapper(latestVersion(), moduleVersion()));
-    emit checkingFinished(url());
+    bool update_available = compareForQKeyMapper(latestVersion(), moduleVersion());
+    QSimpleUpdater::UpdateState update_state = update_available ? QSimpleUpdater::UPDATE_ISAVAILABLE : QSimpleUpdater::UPDATE_ISALREADY_LATEST;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[Updater::onReplyForQKeyMapper] Request Update Completed, UpdateState ->" << update_state;
+#endif
+    setUpdateStateForQKeyMapper(update_state);
 
+    emit checkingFinished(url());
     reply->deleteLater();
 }
 
@@ -570,15 +603,15 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
  * Prompts the user based on the value of the \a available parameter and the
  * settings of this instance of the \c Updater class.
  */
-void Updater::setUpdateAvailable(const bool available)
+void Updater::setUpdateState(const QSimpleUpdater::UpdateState update_state)
 {
-   m_updateAvailable = available;
+   m_updateState = update_state;
 
    QMessageBox box;
    box.setTextFormat(Qt::RichText);
    box.setIcon(QMessageBox::Information);
 
-   if (updateAvailable() && (notifyOnUpdate() || notifyOnFinish()))
+   if (updateState() && (notifyOnUpdate() || notifyOnFinish()))
    {
       QString text = tr("Would you like to download the update now?");
       if (m_mandatoryUpdate)
@@ -640,16 +673,16 @@ void Updater::setUpdateAvailable(const bool available)
    }
 }
 
-void Updater::setUpdateAvailableForQKeyMapper(const bool available)
+void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState update_state)
 {
-    m_updateAvailable = available;
+    m_updateState = update_state;
 
     QMessageBox box(QKeyMapper::getInstance());
     box.setWindowTitle(m_moduleName);
-    box.setTextFormat(Qt::RichText);
+    // box.setTextFormat(Qt::RichText);
     box.setIcon(QMessageBox::Information);
 
-    if (updateAvailable() && (notifyOnUpdate() || notifyOnFinish()))
+    if (updateState() == QSimpleUpdater::UPDATE_ISAVAILABLE && (notifyOnUpdate() || notifyOnFinish()))
     {
         QString text;
         QString title;
@@ -703,21 +736,39 @@ void Updater::setUpdateAvailableForQKeyMapper(const bool available)
     {
         box.setStandardButtons(QMessageBox::Close);
 
+        if (updateState() == QSimpleUpdater::UPDATE_REQUEST_FAILED) {
+            box.setIcon(QMessageBox::Warning);
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                box.setText(tr("Failed to check for updates. Please try again later."));
+            }
+            else { /* CHINESE */
+                box.setText(tr("检查更新失败，请稍后再试。"));
+            }
+        }
+        else if (updateState() == QSimpleUpdater::UPDATE_NO_MATCHED) {
+            box.setIcon(QMessageBox::Warning);
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                box.setText(tr("No suitable update files found for this version."));
+            }
+            else { /* CHINESE */
+                box.setText(tr("未找到适合此版本的更新文件。"));
+            }
+        }
+        else {
+            QString message;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                message = QString("<html><head/><body><p align=\"center\">You are running the latest version of %1</p><p align=\"center\">%2</p></body></html>").arg(moduleName(), moduleVersion());
+            }
+            else { /* CHINESE */
+                message = QString("<html><head/><body><p align=\"center\">您当前已正在使用最新版本的 %1</p><p align=\"center\">%2</p></body></html>").arg(moduleName(), moduleVersion());
+            }
+            box.setText(message);
+        }
+
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            box.setInformativeText(tr("No updates are available for the moment"));
-            box.setText("<h3>"
-                        + tr("Congratulations! You are running the "
-                             "latest version of %1")
-                              .arg(moduleName())
-                        + "</h3>");
             box.button(QMessageBox::Close)->setText(tr("Close"));
         }
-        else { /* CHINESE */
-            box.setInformativeText(tr("目前没有可用的更新"));
-            box.setText("<h3>"
-                        + tr("您当前已正在使用最新版本的 %1")
-                              .arg(moduleName())
-                        + "</h3>");
+        else {
             box.button(QMessageBox::Close)->setText(tr("关闭"));
         }
 
