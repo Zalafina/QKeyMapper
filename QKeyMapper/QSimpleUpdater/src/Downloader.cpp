@@ -207,6 +207,20 @@ void Downloader::finished()
             m_reply->deleteLater();
         }
         m_manager->clearAccessCache();
+
+        if (m_reply->error() == QNetworkReply::OperationCanceledError) {
+            if (200 == status_code.toInt()) {
+            }
+            else {
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    QMessageBox::warning(this, "Updater", "Update download timed out. Please check your network connection and try again.");
+                }
+                else {
+                    QMessageBox::warning(this, "Updater", "更新下载超时，请检查网络连接后重试。");
+                }
+            }
+        }
+        hide();
         return;
     }
 
@@ -340,13 +354,10 @@ void Downloader::cancelDownload()
 
 void Downloader::cancelDownloadForQKeyMapper()
 {
-    if (m_reply->isRunning())
+    if (m_reply != Q_NULLPTR && m_reply->isRunning())
     {
-        hide();
-        if (m_reply != Q_NULLPTR && m_reply->isRunning()) {
-            m_reply->abort();
-            m_manager->clearAccessCache();
-        }
+        m_reply->abort();
+
 #if 0
         QMessageBox box(QKeyMapper::getInstance());
         box.setWindowTitle(tr("Updater"));
@@ -378,10 +389,9 @@ void Downloader::cancelDownloadForQKeyMapper()
         }
 #endif
     }
-    else
-    {
-        hide();
-    }
+
+    hide();
+    m_manager->clearAccessCache();
 }
 
 /**
