@@ -9769,8 +9769,10 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
     }
 
     QStringList keyListToCheck = KeyMappingDataList_ForResend->at(rowindex).Pure_MappingKeys;
-    QStringList pure_originalkeylist = KeyMappingDataList_ForResend->at(rowindex).Pure_OriginalKeys;
-    keyListToCheck = keyListToCheck + pure_originalkeylist;
+    if (hook_proc_stopped || restart) {
+        QStringList pure_originalkeylist = KeyMappingDataList_ForResend->at(rowindex).Pure_OriginalKeys;
+        keyListToCheck = keyListToCheck + pure_originalkeylist;
+    }
     keyListToCheck.removeDuplicates();
 
 #ifdef DEBUG_LOGOUT_ON
