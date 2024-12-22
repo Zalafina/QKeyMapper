@@ -451,6 +451,7 @@ const char *LANGUAGE_INDEX = "LanguageIndex";
 const char *SHOW_PROCESSLIST = "ShowProcessList";
 const char *SHOW_NOTES = "ShowNotes";
 const char *NOTIFICATION_POSITION = "NotificationPosition";
+const char *UPDATE_SITE = "UpdateSite";
 const char *SETTINGSELECT = "SettingSelect";
 const char *AUTO_STARTUP = "AutoStartup";
 const char *STARTUP_MINIMIZED = "StartupMinimized";

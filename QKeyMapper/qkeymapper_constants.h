@@ -404,6 +404,7 @@ extern const char* LANGUAGE_INDEX;
 extern const char *SHOW_PROCESSLIST;
 extern const char *SHOW_NOTES;
 extern const char *NOTIFICATION_POSITION;
+extern const char *UPDATE_SITE;
 extern const char* SETTINGSELECT;
 extern const char* AUTO_STARTUP;
 extern const char *STARTUP_MINIMIZED;

@@ -4747,6 +4747,12 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
+    if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {
+        settingFile.setValue(UPDATE_SITE, UPDATE_SITE_GITEE);
+    }
+    else {
+        settingFile.setValue(UPDATE_SITE, UPDATE_SITE_GITHUB);
+    }
     settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
     settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
 
@@ -5412,6 +5418,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
+#endif
+
+        if (true == settingFile.contains(UPDATE_SITE)){
+            int update_site = settingFile.value(UPDATE_SITE).toInt();
+            if (UPDATE_SITE_GITEE == update_site) {
+                ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITEE);
+            }
+            else {
+                ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITHUB);
+            }
+        }
+        else {
+            ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITHUB);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Update Site ->" << (ui->updateSiteComboBox->currentIndex() == UPDATE_SITE_GITEE ? "Gitee" : "GitHub");
 #endif
 
         if (true == settingFile.contains(AUTO_STARTUP)){
