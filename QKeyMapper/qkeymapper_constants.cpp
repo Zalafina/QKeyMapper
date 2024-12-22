@@ -61,6 +61,9 @@ const Qt::Key KEY_RECORD_STOP       = Qt::Key_F12;
 const int LANGUAGE_CHINESE = 0;
 const int LANGUAGE_ENGLISH = 1;
 
+const int UPDATE_SITE_GITHUB = 0;
+const int UPDATE_SITE_GITEE = 1;
+
 const int KEYPRESS_TYPE_LONGPRESS   = 0;
 const int KEYPRESS_TYPE_DOUBLEPRESS = 1;
 
@@ -407,7 +410,8 @@ const UINT SCANCODE_APPS            = 0x5D;
 
 /* constant chars for QKeyMapper */
 const char *PROGRAM_NAME = "QKeyMapper";
-const char *CHECK_UPDATES_URL = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
+const char *CHECK_UPDATES_URL_GITHUB = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
+const char *CHECK_UPDATES_URL_GITEE = "https://gitee.com/api/v5/repos/asukavov/QKeyMapper/releases/latest";
 const char *UPDATER_USER_AGENT_X64 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0";
 const char *DOWNLOAD_DIR = "update_files";
 
@@ -691,6 +695,7 @@ const char *STARTUPMINIMIZEDCHECKBOX_CHINESE = "启动后自动最小化";
 const char *SOUNDEFFECTCHECKBOX_CHINESE = "音效";
 const char *NOTIFICATIONLABEL_CHINESE = "提示信息";
 const char *LANGUAGELABEL_CHINESE = "语言";
+const char *UPDATESITELABEL_CHINESE = "更新网站";
 const char *WINDOWSWITCHKEYLABEL_CHINESE = "显示切换键";
 const char *MAPPINGSTARTKEYLABEL_CHINESE = "映射开启键";
 const char *MAPPINGSTOPKEYLABEL_CHINESE = "映射关闭键";
@@ -816,6 +821,7 @@ const char *STARTUPMINIMIZEDCHECKBOX_ENGLISH = "Startup Minimized";
 const char *SOUNDEFFECTCHECKBOX_ENGLISH = "Sound Effect";
 const char *NOTIFICATIONLABEL_ENGLISH = "Notification";
 const char *LANGUAGELABEL_ENGLISH = "Language";
+const char *UPDATESITELABEL_ENGLISH = "UpdateSite";
 const char *WINDOWSWITCHKEYLABEL_ENGLISH = "WindowKey";
 const char *MAPPINGSTARTKEYLABEL_ENGLISH = "MappingStart";
 const char *MAPPINGSTOPKEYLABEL_ENGLISH = "MappingStop";

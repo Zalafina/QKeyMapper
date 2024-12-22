@@ -587,9 +587,9 @@
     <widget class="QCheckBox" name="soundEffectCheckBox">
      <property name="geometry">
       <rect>
-       <x>210</x>
-       <y>70</y>
-       <width>131</width>
+       <x>360</x>
+       <y>40</y>
+       <width>121</width>
        <height>21</height>
       </rect>
      </property>
@@ -689,7 +689,7 @@
        <x>260</x>
        <y>10</y>
        <width>81</width>
-       <height>22</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
@@ -731,8 +731,8 @@
     <widget class="QPushButton" name="checkUpdateButton">
      <property name="geometry">
       <rect>
-       <x>370</x>
-       <y>10</y>
+       <x>350</x>
+       <y>70</y>
        <width>91</width>
        <height>21</height>
       </rect>
@@ -746,6 +746,51 @@
      <property name="autoDefault">
       <bool>false</bool>
      </property>
+    </widget>
+    <widget class="QLabel" name="updateSiteLabel">
+     <property name="geometry">
+      <rect>
+       <x>185</x>
+       <y>70</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>UpdateSite</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="updateSiteComboBox">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>70</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="currentText">
+      <string>Github</string>
+     </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <item>
+      <property name="text">
+       <string>Github</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Gitee</string>
+      </property>
+     </item>
     </widget>
    </widget>
    <widget class="QWidget" name="mapping">

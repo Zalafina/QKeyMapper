@@ -6892,6 +6892,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
+    ui->updateSiteLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -7006,6 +7007,7 @@ void QKeyMapper::setControlFontChinese()
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
+    ui->updateSiteLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(11);
@@ -7055,6 +7057,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->notificationComboBox->setEnabled(status);
     ui->languageLabel->setEnabled(status);
     ui->languageComboBox->setEnabled(status);
+    ui->updateSiteLabel->setEnabled(status);
+    ui->updateSiteComboBox->setEnabled(status);
     ui->virtualGamepadTypeComboBox->setEnabled(status);
     ui->keyPressTypeComboBox->setEnabled(status);
     // ui->burstpressSpinBox->setEnabled(status);
@@ -8607,21 +8611,34 @@ void QKeyMapper::clearLockStatusDisplay()
 
 void QKeyMapper::initQSimpleUpdater()
 {
-    QString qkeymapper_updates_url = CHECK_UPDATES_URL;
+    QString qkeymapper_updates_url_github = CHECK_UPDATES_URL_GITHUB;
+    QString qkeymapper_updates_url_gitee = CHECK_UPDATES_URL_GITEE;
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
     QString downloadDir = DOWNLOAD_DIR;
     QString user_agent = UPDATER_USER_AGENT_X64;
 
-    QSimpleUpdater::getInstance()->setModuleName                (qkeymapper_updates_url, PROGRAM_NAME);
-    QSimpleUpdater::getInstance()->setModuleVersion             (qkeymapper_updates_url, productVersion);
-    QSimpleUpdater::getInstance()->setPlatformKey               (qkeymapper_updates_url, platformString);
-    QSimpleUpdater::getInstance()->setUserAgentString           (qkeymapper_updates_url, user_agent);
-    QSimpleUpdater::getInstance()->setDownloaderEnabled         (qkeymapper_updates_url, true);
-    QSimpleUpdater::getInstance()->setUseCustomInstallProcedures(qkeymapper_updates_url, true);
-    QSimpleUpdater::getInstance()->setNotifyOnUpdate            (qkeymapper_updates_url, true);
-    QSimpleUpdater::getInstance()->setNotifyOnFinish            (qkeymapper_updates_url, true);
-    QSimpleUpdater::getInstance()->setDownloadDir               (qkeymapper_updates_url, downloadDir);
+    /* Config Update parameter for Github */
+    QSimpleUpdater::getInstance()->setModuleName                (qkeymapper_updates_url_github, PROGRAM_NAME);
+    QSimpleUpdater::getInstance()->setModuleVersion             (qkeymapper_updates_url_github, productVersion);
+    QSimpleUpdater::getInstance()->setPlatformKey               (qkeymapper_updates_url_github, platformString);
+    QSimpleUpdater::getInstance()->setUserAgentString           (qkeymapper_updates_url_github, user_agent);
+    QSimpleUpdater::getInstance()->setDownloaderEnabled         (qkeymapper_updates_url_github, true);
+    QSimpleUpdater::getInstance()->setUseCustomInstallProcedures(qkeymapper_updates_url_github, true);
+    QSimpleUpdater::getInstance()->setNotifyOnUpdate            (qkeymapper_updates_url_github, true);
+    QSimpleUpdater::getInstance()->setNotifyOnFinish            (qkeymapper_updates_url_github, true);
+    QSimpleUpdater::getInstance()->setDownloadDir               (qkeymapper_updates_url_github, downloadDir);
+
+    /* Config Update parameter for Gitee */
+    QSimpleUpdater::getInstance()->setModuleName                (qkeymapper_updates_url_gitee, PROGRAM_NAME);
+    QSimpleUpdater::getInstance()->setModuleVersion             (qkeymapper_updates_url_gitee, productVersion);
+    QSimpleUpdater::getInstance()->setPlatformKey               (qkeymapper_updates_url_gitee, platformString);
+    QSimpleUpdater::getInstance()->setUserAgentString           (qkeymapper_updates_url_gitee, user_agent);
+    QSimpleUpdater::getInstance()->setDownloaderEnabled         (qkeymapper_updates_url_gitee, true);
+    QSimpleUpdater::getInstance()->setUseCustomInstallProcedures(qkeymapper_updates_url_gitee, true);
+    QSimpleUpdater::getInstance()->setNotifyOnUpdate            (qkeymapper_updates_url_gitee, true);
+    QSimpleUpdater::getInstance()->setNotifyOnFinish            (qkeymapper_updates_url_gitee, true);
+    QSimpleUpdater::getInstance()->setDownloadDir               (qkeymapper_updates_url_gitee, downloadDir);
 
     QObject::connect(QSimpleUpdater::getInstance(), &QSimpleUpdater::downloadFinished, this, &QKeyMapper::onUpdateDownloadFinished);
 
@@ -9552,6 +9569,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
     ui->languageLabel->setText(LANGUAGELABEL_CHINESE);
+    ui->updateSiteLabel->setText(UPDATESITELABEL_CHINESE);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
     ui->checkUpdateButton->setText(CHECKUPDATEBUTTON_CHINESE);
     ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_CHINESE);
@@ -9696,6 +9714,7 @@ void QKeyMapper::setUILanguage_English()
     ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_ENGLISH);
     ui->languageLabel->setText(LANGUAGELABEL_ENGLISH);
+    ui->updateSiteLabel->setText(UPDATESITELABEL_ENGLISH);
     ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_ENGLISH);
     ui->checkUpdateButton->setText(CHECKUPDATEBUTTON_ENGLISH);
     ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_ENGLISH);
@@ -9793,6 +9812,7 @@ void QKeyMapper::resetFontSize()
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
+        ui->updateSiteComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
         m_orikeyComboBox->setFont(customFont);
         m_mapkeyComboBox->setFont(customFont);
@@ -9840,6 +9860,7 @@ void QKeyMapper::resetFontSize()
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
+        ui->updateSiteComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
         m_orikeyComboBox->setFont(customFont);
         m_mapkeyComboBox->setFont(customFont);
@@ -12271,6 +12292,14 @@ void QKeyMapper::on_showNotesButton_toggled(bool checked)
 
 void QKeyMapper::on_checkUpdateButton_clicked()
 {
-    QString qkeymapper_updates_url = CHECK_UPDATES_URL;
+    QString qkeymapper_updates_url;
+
+    if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {
+        qkeymapper_updates_url = CHECK_UPDATES_URL_GITEE;
+    }
+    else {
+        qkeymapper_updates_url = CHECK_UPDATES_URL_GITHUB;
+    }
+
     QSimpleUpdater::getInstance()->checkForUpdates(qkeymapper_updates_url);
 }
