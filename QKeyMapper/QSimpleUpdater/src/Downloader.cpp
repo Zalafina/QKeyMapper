@@ -209,14 +209,18 @@ void Downloader::finished()
         m_manager->clearAccessCache();
 
         if (m_reply->error() == QNetworkReply::OperationCanceledError
-            || m_reply->error() == QNetworkReply::RemoteHostClosedError) {
-            if (0 == status_code.toInt()) {
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    QMessageBox::warning(this, "Updater", "Update download timed out. Please check your network connection and try again.");
-                }
-                else {
-                    QMessageBox::warning(this, "Updater", "更新下载超时，请检查网络连接后重试。");
-                }
+            && (status_code.toInt() == 200 || status_code.toInt() == 302)) {
+            /* Canceled by user */
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[Downloader::finished] Update download canceled by user!";
+#endif
+        }
+        else {
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                QMessageBox::warning(this, "Updater", "Update download failed. Please check your network connection and try again.");
+            }
+            else {
+                QMessageBox::warning(this, "Updater", "更新下载失败，请检查网络连接后重试。");
             }
         }
         hide();
