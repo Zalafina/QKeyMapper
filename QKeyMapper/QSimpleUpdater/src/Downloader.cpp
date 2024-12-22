@@ -209,9 +209,7 @@ void Downloader::finished()
         m_manager->clearAccessCache();
 
         if (m_reply->error() == QNetworkReply::OperationCanceledError) {
-            if (200 == status_code.toInt()) {
-            }
-            else {
+            if (0 == status_code.toInt()) {
                 if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                     QMessageBox::warning(this, "Updater", "Update download timed out. Please check your network connection and try again.");
                 }
