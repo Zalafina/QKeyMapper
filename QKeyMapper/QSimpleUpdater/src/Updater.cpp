@@ -757,10 +757,10 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
         else {
             QString message;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                message = QString("<html><head/><body><p align=\"center\">You are running the latest version of %1</p><p align=\"center\">%2</p></body></html>").arg(moduleName(), moduleVersion());
+                message = QString("<html><head/><body><p align=\"center\">You are running the latest version of %1</p><p align=\"center\">%2 %3</p></body></html>").arg(moduleName(), moduleVersion(), platformKey());
             }
             else { /* CHINESE */
-                message = QString("<html><head/><body><p align=\"center\">您当前已正在使用最新版本的 %1</p><p align=\"center\">%2</p></body></html>").arg(moduleName(), moduleVersion());
+                message = QString("<html><head/><body><p align=\"center\">您当前已正在使用最新版本的 %1</p><p align=\"center\">%2 %3</p></body></html>").arg(moduleName(), moduleVersion(), platformKey());
             }
             box.setText(message);
         }
