@@ -79,6 +79,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->repeatByTimesCheckBox->setText(REPEATBYTIMESCHECKBOX_ENGLISH);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
         ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
+        ui->burstpressSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
+        ui->burstreleaseSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
         ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_ENGLISH);
         ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_ENGLISH);
@@ -117,6 +119,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->repeatByTimesCheckBox->setText(REPEATBYTIMESCHECKBOX_CHINESE);
         ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
         ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
+        ui->burstpressSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
+        ui->burstreleaseSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
         ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
         ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_CHINESE);
         ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_CHINESE);

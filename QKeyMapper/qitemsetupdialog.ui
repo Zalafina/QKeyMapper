@@ -93,7 +93,7 @@
     <rect>
      <x>250</x>
      <y>180</y>
-     <width>45</width>
+     <width>85</width>
      <height>22</height>
     </rect>
    </property>
@@ -123,9 +123,9 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>295</x>
+     <x>335</x>
      <y>180</y>
-     <width>81</width>
+     <width>91</width>
      <height>22</height>
     </rect>
    </property>
@@ -139,9 +139,9 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>380</x>
+     <x>430</x>
      <y>180</y>
-     <width>45</width>
+     <width>85</width>
      <height>22</height>
     </rect>
    </property>

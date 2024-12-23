@@ -9568,6 +9568,8 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
     ui->waitTimeLabel->setText(WAITTIME_CHINESE);
+    ui->waitTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
+    ui->pressTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
     ui->pushLevelLabel->setText(PUSHLEVEL_CHINESE);
     ui->sendTextLabel->setText(SENDTEXTLABEL_CHINESE);
     ui->keyPressTypeComboBox->clear();
@@ -9713,6 +9715,8 @@ void QKeyMapper::setUILanguage_English()
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_ENGLISH);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_ENGLISH);
     ui->waitTimeLabel->setText(WAITTIME_ENGLISH);
+    ui->waitTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
+    ui->pressTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
     ui->pushLevelLabel->setText(PUSHLEVEL_ENGLISH);
     ui->sendTextLabel->setText(SENDTEXTLABEL_ENGLISH);
     ui->keyPressTypeComboBox->clear();

@@ -540,28 +540,6 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
         QJsonObject asset = value.toObject();
         if (asset.contains("name")) {
             QString name = asset["name"].toString();
-
-            /* For Debug >>> */
-            // if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241216.zip") {
-            //     name = "QKeyMapper_v1.3.7.20241220_Qt6_x64.zip";
-            // }
-            // else if (name == "QKeyMapper_v1.3.7_x64_Qt6_Build_20241210.zip") {
-            //     name = "QKeyMapper_v1.3.7.20241210_Qt6_x64.zip";
-            // }
-            // else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241216.zip") {
-            //     name = "QKeyMapper_v1.3.7.20241220_Qt5_x64.zip";
-            // }
-            // else if (name == "QKeyMapper_v1.3.7_x64_Qt5_Build_20241210.zip") {
-            //     name = "QKeyMapper_v1.3.7.20241210_Qt5_x64.zip";
-            // }
-            // else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241216.zip") {
-            //     name = "QKeyMapper_v1.3.7.20241220_Qt5_x86.zip";
-            // }
-            // else if (name == "QKeyMapper_v1.3.7_x86_Qt5_Build_20241210.zip") {
-            //     name = "QKeyMapper_v1.3.7.20241210_Qt5_x86.zip";
-            // }
-            /* For Debug <<< */
-
             QRegularExpressionMatch match = version_regex.match(name);
             if (match.hasMatch() && match.captured(2) == platformString) {
                 QString version = match.captured(1);
