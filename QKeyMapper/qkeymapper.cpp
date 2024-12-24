@@ -8494,7 +8494,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     else {
         m_KeyMappingTabWidget->setGeometry(QRect(left, 7, width, 346));
     }
-    m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
+    m_KeyMappingTabWidget->setFocusPolicy(Qt::ClickFocus);
     m_KeyMappingTabWidget->setStyle(QStyleFactory::create("windows"));
     m_KeyMappingTabWidget->setFont(QFont(FONTNAME_ENGLISH, 9));
 
@@ -11098,13 +11098,121 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 }
 
-void QKeyMapper::on_deleteoneButton_clicked()
+void QKeyMapper::on_moveupButton_clicked()
 {
-    int currentrowindex = m_KeyMappingDataTable->currentRow();
+    int currentrowindex = -1;
+    QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
+    if (items.size() > 0) {
+        QTableWidgetItem* selectedItem = items.at(0);
+        currentrowindex = m_KeyMappingDataTable->row(selectedItem);
+#ifdef DEBUG_LOGOUT_ON
+        if (currentrowindex > 0){
+            qDebug() << "[MoveUpItem]" << selectedItem->text();
+        }
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveUpItem] There is no selected item";
+#endif
+        return;
+    }
+
+    if (currentrowindex > 0){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("MoveUp: currentRow(%d)", currentrowindex);
+#endif
+        KeyMappingDataList->move(currentrowindex, currentrowindex-1);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("DeleteOne: currentRow(%d)", currentrowindex);
+        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
+        refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+
+        int reselectrow = currentrowindex - 1;
+        QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+        m_KeyMappingDataTable->setRangeSelected(selection, true);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()){
+            qDebug("MoveUp:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
+        }
+#endif
+    }
+}
+
+void QKeyMapper::on_movedownButton_clicked()
+{
+    int currentrowindex = -1;
+    QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
+    if (items.size() > 0) {
+        QTableWidgetItem* selectedItem = items.at(0);
+        currentrowindex = m_KeyMappingDataTable->row(selectedItem);
+#ifdef DEBUG_LOGOUT_ON
+        if (currentrowindex >= 0
+            && currentrowindex < (m_KeyMappingDataTable->rowCount()-1)){
+            qDebug() << "[MoveDownItem]" << selectedItem->text();
+        }
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveDownItem] There is no selected item";
+#endif
+        return;
+    }
+
+    if (currentrowindex >= 0
+        && currentrowindex < (m_KeyMappingDataTable->rowCount()-1)){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("MoveDown: currentRow(%d)", currentrowindex);
+#endif
+        KeyMappingDataList->move(currentrowindex, currentrowindex+1);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+#endif
+        refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+
+        int reselectrow = currentrowindex + 1;
+        QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+        m_KeyMappingDataTable->setRangeSelected(selection, true);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()){
+            qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
+        }
+#endif
+
+//        int keycount = 0;
+//        INPUT inputs[SEND_INPUTS_MAX] = { 0 };
+//        QStringList mappingKeyList = KeyMappingDataList.at(reselectrow).Mapping_Keys;
+//        keycount = QKeyMapper_Worker::getInstance()->makeKeySequenceInputarray(mappingKeyList, inputs);
+//#ifdef DEBUG_LOGOUT_ON
+//        qDebug("makeKeySequenceInputarray() -> keycount = %d", keycount);
+//#endif
+    }
+}
+
+void QKeyMapper::on_deleteoneButton_clicked()
+{
+    int currentrowindex = -1;
+    QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
+    if (items.size() > 0) {
+        QTableWidgetItem* selectedItem = items.at(0);
+        currentrowindex = m_KeyMappingDataTable->row(selectedItem);
+#ifdef DEBUG_LOGOUT_ON
+        if (currentrowindex >= 0){
+            qDebug("[DeleteOne] current selected row(%d)", currentrowindex);
+        }
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[DeleteOne] There is no selected item";
+#endif
+        return;
+    }
 
     if (currentrowindex >= 0){
         m_KeyMappingDataTable->removeRow(currentrowindex);
@@ -11574,100 +11682,6 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
     }
 }
 #endif
-
-void QKeyMapper::on_moveupButton_clicked()
-{
-    int currentrowindex = -1;
-    QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
-    if (items.size() > 0) {
-        QTableWidgetItem* selectedItem = items.at(0);
-        currentrowindex = m_KeyMappingDataTable->row(selectedItem);
-#ifdef DEBUG_LOGOUT_ON
-        if (currentrowindex > 0){
-            qDebug() << "[MoveUpItem]" << selectedItem->text();
-        }
-#endif
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[MoveUpItem] There is no selected item";
-#endif
-    }
-
-    if (currentrowindex > 0){
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("MoveUp: currentRow(%d)", currentrowindex);
-#endif
-        KeyMappingDataList->move(currentrowindex, currentrowindex-1);
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-        refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
-
-        int reselectrow = currentrowindex - 1;
-        QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-        m_KeyMappingDataTable->setRangeSelected(selection, true);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()){
-            qDebug("MoveUp:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
-        }
-#endif
-    }
-}
-
-void QKeyMapper::on_movedownButton_clicked()
-{
-    int currentrowindex = -1;
-    QList<QTableWidgetItem*> items = m_KeyMappingDataTable->selectedItems();
-    if (items.size() > 0) {
-        QTableWidgetItem* selectedItem = items.at(0);
-        currentrowindex = m_KeyMappingDataTable->row(selectedItem);
-#ifdef DEBUG_LOGOUT_ON
-        if (currentrowindex >= 0
-            && currentrowindex < (m_KeyMappingDataTable->rowCount()-1)){
-            qDebug() << "[MoveDownItem]" << selectedItem->text();
-        }
-#endif
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[MoveDownItem] There is no selected item";
-#endif
-    }
-
-    if (currentrowindex >= 0
-        && currentrowindex < (m_KeyMappingDataTable->rowCount()-1)){
-#ifdef DEBUG_LOGOUT_ON
-        qDebug("MoveDown: currentRow(%d)", currentrowindex);
-#endif
-        KeyMappingDataList->move(currentrowindex, currentrowindex+1);
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-        refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
-
-        int reselectrow = currentrowindex + 1;
-        QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-        m_KeyMappingDataTable->setRangeSelected(selection, true);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()){
-            qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
-        }
-#endif
-
-//        int keycount = 0;
-//        INPUT inputs[SEND_INPUTS_MAX] = { 0 };
-//        QStringList mappingKeyList = KeyMappingDataList.at(reselectrow).Mapping_Keys;
-//        keycount = QKeyMapper_Worker::getInstance()->makeKeySequenceInputarray(mappingKeyList, inputs);
-//#ifdef DEBUG_LOGOUT_ON
-//        qDebug("makeKeySequenceInputarray() -> keycount = %d", keycount);
-//#endif
-    }
-}
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
@@ -12229,8 +12243,8 @@ void QKeyMapper::keyMappingTabl_ItemSelectionChanged()
         QTableWidgetItem* selectedItem = selectedItems.at(0);
         int currentrowindex = m_KeyMappingDataTable->row(selectedItem);
         Q_UNUSED(currentrowindex);
-        m_KeyMappingDataTable->setFocus();
-        m_KeyMappingDataTable->clearFocus();
+        // m_KeyMappingDataTable->setFocus();
+        // m_KeyMappingDataTable->clearFocus();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTabl_ItemSelectionChanged] Selected Item Index =" << currentrowindex;
 #endif
@@ -12240,6 +12254,30 @@ void QKeyMapper::keyMappingTabl_ItemSelectionChanged()
         qDebug() << "[keyMappingTabl_ItemSelectionChanged] No Item Selected.";
 #endif
     }
+}
+
+void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyMappingTabWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << "Modifiers:" << event->modifiers();
+#endif
+
+    if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        if (event->key() == Qt::Key_Up) {
+            QKeyMapper::getInstance()->on_moveupButton_clicked();
+            return;
+        }
+        else if (event->key() == Qt::Key_Down) {
+            QKeyMapper::getInstance()->on_movedownButton_clicked();
+            return;
+        }
+        else if (event->key() == Qt::Key_Delete) {
+            QKeyMapper::getInstance()->on_deleteoneButton_clicked();
+            return;
+        }
+    }
+
+    QTabWidget::keyPressEvent(event);
 }
 
 void KeyMappingDataTableWidget::startDrag(Qt::DropActions supportedActions)

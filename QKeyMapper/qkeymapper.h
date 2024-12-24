@@ -157,6 +157,9 @@ class KeyMappingTabWidget : public QTabWidget
 
 public:
     explicit KeyMappingTabWidget(QWidget *parent = Q_NULLPTR) : QTabWidget(parent) {}
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
 };
 
 class KeyMappingDataTableWidget : public QTableWidget
@@ -167,6 +170,7 @@ public:
     explicit KeyMappingDataTableWidget(QWidget *parent = Q_NULLPTR)
         : QTableWidget(parent), m_DraggedRow(-1) {}
 
+protected:
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
 
@@ -514,14 +518,16 @@ private slots:
 
     void on_addmapdataButton_clicked();
 
-    void on_deleteoneButton_clicked();
-
-    void on_clearallButton_clicked();
-
+public slots:
     void on_moveupButton_clicked();
 
     void on_movedownButton_clicked();
 
+    void on_deleteoneButton_clicked();
+
+    void on_clearallButton_clicked();
+
+private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     void on_settingselectComboBox_textActivated(const QString &text);
 #else
