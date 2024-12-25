@@ -375,6 +375,7 @@ extern const char *CHECK_UPDATES_URL_GITHUB;
 extern const char *CHECK_UPDATES_URL_GITEE;
 extern const char *UPDATER_USER_AGENT_X64;
 extern const char *DOWNLOAD_DIR;
+extern const char *ZIPUPDATER_EXE;
 extern const char *PREFIX_SHORTCUT;
 extern const char *OLD_PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;

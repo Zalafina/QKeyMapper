@@ -410,6 +410,7 @@ public:
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
     static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
     static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);
+    static bool updateWithZipUpdater(const QString &update_filepath);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);

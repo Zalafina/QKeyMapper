@@ -414,6 +414,7 @@ const char *CHECK_UPDATES_URL_GITHUB = "https://api.github.com/repos/Zalafina/QK
 const char *CHECK_UPDATES_URL_GITEE = "https://gitee.com/api/v5/repos/asukavov/QKeyMapper/releases/latest";
 const char *UPDATER_USER_AGENT_X64 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0";
 const char *DOWNLOAD_DIR = "update_files";
+const char *ZIPUPDATER_EXE = "zipupdater.exe";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";

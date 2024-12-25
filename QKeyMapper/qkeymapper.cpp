@@ -3511,6 +3511,93 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
     return (!disable_sendtiming);
 }
 
+bool QKeyMapper::updateWithZipUpdater(const QString &update_filepath)
+{
+    QFileInfo updateFileInfo(update_filepath);
+    QString update_filename = updateFileInfo.fileName();
+    QString update_dirname = updateFileInfo.dir().dirName();
+
+    if (!QFile::exists(ZIPUPDATER_EXE)) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[updateWithZipUpdater] Update program %1 does not exist!").arg(ZIPUPDATER_EXE);
+        qDebug().noquote().nospace() << debugmessage;
+#endif
+        return false;
+    }
+
+    QFileInfo update_dirInfo(update_dirname);
+    if (update_dirInfo.exists() && update_dirInfo.isDir()) {
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[updateWithZipUpdater] Update directory %1 does not exist!").arg(update_dirname);
+        qDebug().noquote().nospace() << debugmessage;
+#endif
+        return false;
+    }
+
+    QString targetUpdateProgramPath = update_dirname + "/" + ZIPUPDATER_EXE;
+
+    if (QFile::exists(targetUpdateProgramPath)) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[updateWithZipUpdater] Update program file %1 already exists. Removing it first.").arg(ZIPUPDATER_EXE);
+        qDebug().noquote().nospace() << debugmessage;
+#endif
+        if (!QFile::remove(targetUpdateProgramPath)) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[updateWithZipUpdater] Failed to remove existing %1 update program.").arg(ZIPUPDATER_EXE);
+            qDebug().noquote().nospace() << debugmessage;
+#endif
+            return false;
+        }
+    }
+
+    if (!QFile::copy(ZIPUPDATER_EXE, targetUpdateProgramPath)) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[updateWithZipUpdater] Failed to copy update program %1 to update directory %2!").arg(ZIPUPDATER_EXE, update_dirname);
+        qDebug().noquote().nospace() << debugmessage;
+#endif
+        return false;
+    }
+
+    QStringList arguments;
+    QString copyToPath = "..";
+    QString copyFromFolder;
+    QString platformString = getPlatformString();
+    QString language;
+    if (update_filename.contains(platformString)) {
+        copyFromFolder = QString("%1_%2").arg(PROGRAM_NAME, platformString);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[updateWithZipUpdater] The update file name %1 does not match the platform string %2 !").arg(update_filename, platformString);
+        qDebug().noquote().nospace() << debugmessage;
+#endif
+        return false;
+    }
+    if (LANGUAGE_CHINESE == QKeyMapper::getLanguageIndex()) {
+        language = "--chinese";
+    }
+    arguments << update_filename << copyFromFolder << copyToPath << language;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateWithZipUpdater] UpdateProgram :" << targetUpdateProgramPath;
+    qDebug() << "[updateWithZipUpdater] Arguments     :" << arguments;
+#endif
+
+    QProcess process;
+    bool started = process.startDetached(targetUpdateProgramPath, arguments);
+
+    if (!started) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateWithZipUpdater] Failed to start update program zipupdater.exe!";
+#endif
+        return false;
+    }
+
+    return true;
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 #else
@@ -10263,6 +10350,19 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
     box.setDefaultButton(QMessageBox::Close);
 
     box.exec();
+
+    bool result = updateWithZipUpdater(filepath);
+    if (result) {
+        QApplication::quit();
+    }
+    else {
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            QMessageBox::warning(this, PROGRAM_NAME, "更新程序 zipupdater.exe 执行失败！");
+        }
+        else {
+            QMessageBox::warning(this, PROGRAM_NAME, "Failed to execute the update program: zipupdater.exe!");
+        }
+    }
 }
 
 #if 0
