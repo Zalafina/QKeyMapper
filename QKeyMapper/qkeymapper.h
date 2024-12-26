@@ -35,6 +35,7 @@
 #include <QDir>
 #include <QProcess>
 #include <QFileDialog>
+#include <QDateTime>
 #include <cmath>
 #include <windows.h>
 #include <process.h>
