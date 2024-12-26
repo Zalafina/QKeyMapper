@@ -364,6 +364,7 @@ public:
     static void collectMappingTableTabHotkeys(void);
     static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
     static void copyStringToClipboard(const QString &string);
+    static bool backupFile(const QString &sourceFile, const QString &backupFile);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);
@@ -633,7 +634,6 @@ private:
     void resetFontSize(void);
     void sessionLockStateChanged(bool locked);
 
-    bool backupFile(const QString &originalFile, const QString &backupFile);
 #ifdef SETTINGSFILE_CONVERT
     bool checkSettingsFileNeedtoConvert(void);
     void convertSettingsFile(void);

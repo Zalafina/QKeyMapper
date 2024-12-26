@@ -2315,6 +2315,36 @@ void QKeyMapper::copyStringToClipboard(const QString &string)
     clipboard->setText(string);
 }
 
+bool QKeyMapper::backupFile(const QString &sourceFile, const QString &backupFile)
+{
+    QFile source(sourceFile);
+    if (!source.exists()) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[QKeyMapper::backupFile] Source file does not exist: %1").arg(sourceFile);
+        qDebug().noquote() << debugmessage;
+#endif
+        return false;
+    }
+
+    QFile targetFile(backupFile);
+    if (targetFile.exists()) {
+        targetFile.remove();
+    }
+
+    QDir backupDir = QFileInfo(backupFile).absoluteDir();
+    if (!backupDir.exists()) {
+        if (!backupDir.mkpath(".")) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[QKeyMapper::backupFile] Failed to create backup directory: %1").arg(backupDir.absolutePath());
+            qDebug().noquote() << debugmessage;
+#endif
+            return false;
+        }
+    }
+
+    return QFile::copy(sourceFile, backupFile);
+}
+
 void QKeyMapper::EnumProcessFunction(void)
 {
 #if 0
@@ -4596,16 +4626,6 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
     }
 }
 #endif
-
-bool QKeyMapper::backupFile(const QString &originalFile, const QString &backupFile)
-{
-    QFile targetFile(backupFile);
-    if (targetFile.exists()) {
-        targetFile.remove();
-    }
-
-    return QFile::copy(originalFile, backupFile);
-}
 
 #ifdef SETTINGSFILE_CONVERT
 bool QKeyMapper::checkSettingsFileNeedtoConvert()
@@ -8746,7 +8766,7 @@ void QKeyMapper::initQSimpleUpdater()
     QString qkeymapper_updates_url_gitee = CHECK_UPDATES_URL_GITEE;
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
-    QString downloadDir = DOWNLOAD_DIR;
+    QString downloadDir = UPDATE_DOWNLOAD_DIR;
     QString user_agent = UPDATER_USER_AGENT_X64;
 
     /* Config Update parameter for Github */
@@ -10346,17 +10366,35 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         message = QString("<html><head/><body><p align=\"center\">The upgrade package <b>%1</b> has been successfully downloaded to the directory <b>%2</b>.</p>")
                       .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
-        message += QString("<p align=\"center\">Click <b>[Yes] to automatically close the program and upgrade</b>, otherwise handle it manually.</p></body></html>");
+        message += QString("<p align=\"center\"><b>Click [Yes] to automatically close the program and upgrade</b>, otherwise handle it manually.</p></body></html>");
     }
     else {
         message = QString("<html><head/><body><p align=\"center\">升级包 <b>%1</b> 已成功下载至 <b>%2</b> 目录</p>")
                       .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
-        message += QString("<p align=\"center\">点击 <b>[Yes] 按钮自动关闭程序并升级替换</b>，否则请自行解压替换</p></body></html>");
+        message += QString("<p align=\"center\"><b>点击 [Yes] 按钮自动关闭程序并升级替换</b>，否则请自行解压替换</p></body></html>");
     }
 
     QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message);
 
     if (reply == QMessageBox::Yes) {
+        QFileInfo configFileInfo(CONFIG_FILENAME);
+        QString backupFilename = QString("%1_%2_%3_%4.ini").arg(configFileInfo.baseName(), getExeProductVersion(), getPlatformString(),  QDateTime::currentDateTime().toString("yyyyMMdd-hhmm"));
+        QString bakcFilePath = QString(SETTINGS_BACKUP_DIR) + "/" + backupFilename;
+
+        bool backupResult = backupFile(CONFIG_LATEST_FILENAME, bakcFilePath);
+        if (backupResult) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[onUpdateDownloadFinished] Backup \"%1\" to \"%2\" success.").arg(CONFIG_LATEST_FILENAME, bakcFilePath);
+            qDebug().nospace().noquote() << debugmessage;
+#endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[onUpdateDownloadFinished] Backup \"%1\" to \"%2\" failed!").arg(CONFIG_LATEST_FILENAME, bakcFilePath);
+            qDebug().nospace().noquote() << debugmessage;
+#endif
+        }
+
         ValidationResult result = updateWithZipUpdater(filepath);
         if (result.isValid) {
             QApplication::quit();
