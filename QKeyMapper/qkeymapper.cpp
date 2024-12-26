@@ -10344,14 +10344,14 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
 
     QString message;
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        message = QString("<html><head/><body><p align=\"center\">The upgrade package %1 has been successfully downloaded to the directory %2.</p>")
+        message = QString("<html><head/><body><p align=\"center\">The upgrade package <b>%1</b> has been successfully downloaded to the directory <b>%2</b>.</p>")
                       .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
-        message += QString("<p align=\"center\">Click [Yes] to automatically extract and replace existing files, or click [No] to handle this later manually.</p></body></html>");
+        message += QString("<p align=\"center\">Click <b>[Yes] to automatically close the program and upgrade</b>, otherwise handle it manually.</p></body></html>");
     }
     else {
-        message = QString("<html><head/><body><p align=\"center\">%1 升级包已成功下载至 %2 目录</p>")
+        message = QString("<html><head/><body><p align=\"center\">升级包 <b>%1</b> 已成功下载至 <b>%2</b> 目录</p>")
                       .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
-        message += QString("<p align=\"center\">点击 [Yes] 按钮自动解压并替换现有文件，也可以点击 [No] 稍后自己手动解压替换</p></body></html>");
+        message += QString("<p align=\"center\">点击 <b>[Yes] 按钮自动关闭程序并升级替换</b>，否则请自行解压替换</p></body></html>");
     }
 
     QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message);
