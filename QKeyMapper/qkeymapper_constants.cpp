@@ -415,7 +415,10 @@ const char *CHECK_UPDATES_URL_GITEE = "https://gitee.com/api/v5/repos/asukavov/Q
 const char *UPDATER_USER_AGENT_X64 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0";
 const char *UPDATE_DOWNLOAD_DIR = "update_files";
 const char *SETTINGS_BACKUP_DIR = "settings_backup";
+const char *ZIPUPDATER_DIR = "zipupdater";
 const char *ZIPUPDATER_EXE = "zipupdater.exe";
+const char *ZIPUPDATER_DLL_MSVCP = "msvcp140.dll";
+const char *ZIPUPDATER_DLL_VCRUNTIME = "vcruntime140.dll";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";

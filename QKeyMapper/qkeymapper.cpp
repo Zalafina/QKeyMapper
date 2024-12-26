@@ -3550,12 +3550,25 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     QString update_filename = updateFileInfo.fileName();
     QString update_dirname = updateFileInfo.dir().dirName();
 
-    if (!QFile::exists(ZIPUPDATER_EXE)) {
+    QString zipupdater_exe = QString("%1/%2").arg(ZIPUPDATER_DIR, ZIPUPDATER_EXE);
+    QString zipupdater_dll_msvcp = QString("%1/%2").arg(ZIPUPDATER_DIR, ZIPUPDATER_DLL_MSVCP);
+    QString zipupdater_dll_vcruntime = QString("%1/%2").arg(ZIPUPDATER_DIR, ZIPUPDATER_DLL_VCRUNTIME);
+    QString missingFile;
+    if (!QFile::exists(zipupdater_exe)) {
+        missingFile = zipupdater_exe;
+    }
+    else if (!QFile::exists(zipupdater_dll_msvcp)) {
+        missingFile = zipupdater_dll_msvcp;
+    }
+    else if (!QFile::exists(zipupdater_dll_vcruntime)) {
+        missingFile = zipupdater_dll_vcruntime;
+    }
+
+    if (!missingFile.isEmpty()) {
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Update program %1 does not exist!").arg(ZIPUPDATER_EXE);
-        }
-        else {
-            result.errorMessage = QString("升级程序 %1 不存在！").arg(ZIPUPDATER_EXE);
+            result.errorMessage = QString("ZipUpdater program file %1 does not exist!").arg(missingFile);
+        } else {
+            result.errorMessage = QString("ZipUpdater程序文件 %1 不存在！").arg(missingFile);
         }
         result.isValid = false;
         return result;
@@ -3575,36 +3588,41 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
         return result;
     }
 
-    QString targetUpdateProgramPath = update_dirname + "/" + ZIPUPDATER_EXE;
+    QStringList filesToCopy = {ZIPUPDATER_EXE, ZIPUPDATER_DLL_MSVCP, ZIPUPDATER_DLL_VCRUNTIME};
+    for (const QString &file : filesToCopy) {
+        QString sourceFilePath = QString("%1/%2").arg(ZIPUPDATER_DIR, file);
+        QString targetFilePath = QString("%1/%2").arg(update_dirname, file);
 
-    if (QFile::exists(targetUpdateProgramPath)) {
+        if (QFile::exists(targetFilePath)) {
 #ifdef DEBUG_LOGOUT_ON
-        QString debugmessage = QString("[updateWithZipUpdater] Update program file %1 already exists. Removing it first.").arg(ZIPUPDATER_EXE);
-        qDebug().noquote().nospace() << debugmessage;
+            QString debugmessage = QString("[updateWithZipUpdater] Update program file %1 already exists. Removing it first.").arg(file);
+            qDebug().noquote().nospace() << debugmessage;
 #endif
-        if (!QFile::remove(targetUpdateProgramPath)) {
+            if (!QFile::remove(targetFilePath)) {
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    result.errorMessage = QString("Failed to remove existing update program file %1").arg(file);
+                }
+                else {
+                    result.errorMessage = QString("删除旧的升级程序文件 %1 失败！").arg(file);
+                }
+                result.isValid = false;
+                return result;
+            }
+        }
+
+        if (!QFile::copy(sourceFilePath, targetFilePath)) {
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Failed to remove existing %1 update program.").arg(ZIPUPDATER_EXE);
+                result.errorMessage = QString("Failed to copy update program file %1 to %2!").arg(file).arg(update_dirname);
             }
             else {
-                result.errorMessage = QString("删除旧的 %1 升级程序失败！").arg(ZIPUPDATER_EXE);
+                result.errorMessage = QString("复制升级程序文件 %1 到 %2 失败！").arg(file).arg(update_dirname);
             }
             result.isValid = false;
             return result;
         }
     }
 
-    if (!QFile::copy(ZIPUPDATER_EXE, targetUpdateProgramPath)) {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Failed to copy update program %1 to update directory %2!").arg(ZIPUPDATER_EXE, update_dirname);
-        }
-        else {
-            result.errorMessage = QString("复制升级程序 %1 到升级目录 %2 失败！").arg(ZIPUPDATER_EXE, update_dirname);
-        }
-        result.isValid = false;
-        return result;
-    }
-
+    QString zipupdater_exe_path = QString("%1/%2").arg(update_dirname, ZIPUPDATER_EXE);
     QStringList arguments;
     QString copyToPath = "..";
     QString copyFromFolder;
@@ -3629,12 +3647,12 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     arguments << update_filename << copyFromFolder << copyToPath << language;
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateWithZipUpdater] UpdateProgram :" << targetUpdateProgramPath;
+    qDebug() << "[updateWithZipUpdater] UpdateProgram :" << zipupdater_exe_path;
     qDebug() << "[updateWithZipUpdater] Arguments     :" << arguments;
 #endif
 
     QProcess process;
-    bool started = process.startDetached(targetUpdateProgramPath, arguments);
+    bool started = process.startDetached(zipupdater_exe_path, arguments);
 
     if (!started) {
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
