@@ -32,7 +32,7 @@ BEGIN
             VALUE "LegalCopyright", "Copyright (c) 2024, AsukaVoV"
             VALUE "OriginalFilename", "QKeyMapper.exe"
             VALUE "ProductName", "QKeyMapper"
-            VALUE "ProductVersion", "v1.3.7.20241220"
+            VALUE "ProductVersion", "v1.3.7.20241226"
         END
     END
     BLOCK "VarFileInfo"
