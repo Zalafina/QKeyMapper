@@ -21,6 +21,12 @@
 ### [注意: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 * https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
 ---------------
+#### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。
+  - #### Win10系统筛选键开启方式
+  Windows设置 -> 轻松使用 -> 键盘 -> 筛选键
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win10_FilterKey.png" width="1839" height="auto"/></div>
+
+---------------
 ## 按键映射工具使用技巧等参考Wiki页面：
 * [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
 ---------------
