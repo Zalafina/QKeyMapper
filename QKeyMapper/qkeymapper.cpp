@@ -3651,6 +3651,16 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     qDebug() << "[updateWithZipUpdater] Arguments     :" << arguments;
 #endif
 
+    if (false == QKeyMapper::getInstance()->isHidden()) {
+        QKeyMapper::getInstance()->closeTableSetupDialog();
+        QKeyMapper::getInstance()->closeItemSetupDialog();
+        QKeyMapper::getInstance()->hide();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateWithZipUpdater] Hide the window before start zipupdater.exe";
+#endif
+    }
+
+
     QProcess process;
     bool started = process.startDetached(zipupdater_exe_path, arguments);
 
