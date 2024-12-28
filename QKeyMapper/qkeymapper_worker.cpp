@@ -9045,13 +9045,26 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
     }
     QStringList keys = displayswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
+    bool combinationKey = (keys.size() > 1) ? true : false;
+    QList<int> pressedCombinationRealKeysOrder;
 
     for (const QString &key : keys)
     {
-        if (!pressedRealKeysListRemoveMultiInput.contains(key))
+        int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
+        if (index < 0)
         {
             allKeysPressed = false;
             break;
+        }
+        else {
+            pressedCombinationRealKeysOrder.append(index);
+        }
+    }
+
+    if (combinationKey) {
+        bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+        if (!keyorder_increasing) {
+            allKeysPressed = false;
         }
     }
 
@@ -9097,13 +9110,26 @@ bool QKeyMapper_Worker::detectMappingStartKey(const QString &keycodeString, int 
     }
     QStringList keys = mappingswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
+    bool combinationKey = (keys.size() > 1) ? true : false;
+    QList<int> pressedCombinationRealKeysOrder;
 
     for (const QString &key : keys)
     {
-        if (!pressedRealKeysListRemoveMultiInput.contains(key))
+        int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
+        if (index < 0)
         {
             allKeysPressed = false;
             break;
+        }
+        else {
+            pressedCombinationRealKeysOrder.append(index);
+        }
+    }
+
+    if (combinationKey) {
+        bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+        if (!keyorder_increasing) {
+            allKeysPressed = false;
         }
     }
 
@@ -9135,13 +9161,26 @@ bool QKeyMapper_Worker::detectMappingStopKey(const QString &keycodeString, int k
     }
     QStringList keys = mappingswitchKey.split(SEPARATOR_PLUS);
     bool allKeysPressed = true;
+    bool combinationKey = (keys.size() > 1) ? true : false;
+    QList<int> pressedCombinationRealKeysOrder;
 
     for (const QString &key : keys)
     {
-        if (!pressedRealKeysListRemoveMultiInput.contains(key))
+        int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
+        if (index < 0)
         {
             allKeysPressed = false;
             break;
+        }
+        else {
+            pressedCombinationRealKeysOrder.append(index);
+        }
+    }
+
+    if (combinationKey) {
+        bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+        if (!keyorder_increasing) {
+            allKeysPressed = false;
         }
     }
 
@@ -9172,13 +9211,26 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
         QString keyToCheck = tabHotkey;
         QStringList keys = keyToCheck.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
+        bool combinationKey = (keys.size() > 1) ? true : false;
+        QList<int> pressedCombinationRealKeysOrder;
 
         for (const QString &key : keys)
         {
-            if (!pressedRealKeysListRemoveMultiInput.contains(key))
+            int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
+            if (index < 0)
             {
                 allKeysPressed = false;
                 break;
+            }
+            else {
+                pressedCombinationRealKeysOrder.append(index);
+            }
+        }
+
+        if (combinationKey) {
+            bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+            if (!keyorder_increasing) {
+                allKeysPressed = false;
             }
         }
 
