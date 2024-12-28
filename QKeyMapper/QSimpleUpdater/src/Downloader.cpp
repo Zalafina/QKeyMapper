@@ -234,18 +234,19 @@ void Downloader::finished()
     /* Rename file */
     QFile::rename(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN), m_downloadDir.filePath(m_fileName));
 
-    /* Notify application */
-    emit downloadFinished(m_url, m_downloadDir.filePath(m_fileName));
-
-    /* Install the update */
+    /* Close Download manager */
     if (m_reply != Q_NULLPTR)
     {
         m_reply->close();
         m_reply->deleteLater();
     }
     m_manager->clearAccessCache();
-    installUpdate();
     setVisible(false);
+
+    // installUpdate();
+
+    /* Notify application */
+    emit downloadFinished(m_url, m_downloadDir.filePath(m_fileName));
 }
 
 /**

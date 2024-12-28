@@ -586,6 +586,7 @@ private:
     void updateSystemTrayDisplay(void);
     void showQKeyMapperWindowToTop(void);
     void switchShowHide(void);
+    void forceHide(void);
     void hideProcessList(void);
     void showProcessList(void);
     void setKeyMappingTabWidgetWideMode(void);
@@ -664,6 +665,7 @@ private:
     void mappingTabSwitchNotification();
 
     void showInputDeviceListWindow(void);
+    void closeInputDeviceListWindow(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
 

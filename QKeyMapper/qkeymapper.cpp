@@ -3651,15 +3651,12 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     qDebug() << "[updateWithZipUpdater] Arguments     :" << arguments;
 #endif
 
-    if (false == QKeyMapper::getInstance()->isHidden()) {
-        QKeyMapper::getInstance()->closeTableSetupDialog();
-        QKeyMapper::getInstance()->closeItemSetupDialog();
-        QKeyMapper::getInstance()->hide();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[updateWithZipUpdater] Hide the window before start zipupdater.exe";
-#endif
+    if (false == QKeyMapper::getInstance()->isHidden()) {
+        qDebug() << "[updateWithZipUpdater] Force hide the window before start zipupdater.exe";
     }
-
+#endif
+    QKeyMapper::getInstance()->forceHide();
 
     QProcess process;
     bool started = process.startDetached(zipupdater_exe_path, arguments);
@@ -7551,6 +7548,17 @@ void QKeyMapper::showInputDeviceListWindow()
     }
 }
 
+void QKeyMapper::closeInputDeviceListWindow()
+{
+    if (Q_NULLPTR == m_deviceListWindow) {
+        return;
+    }
+
+    if (m_deviceListWindow->isVisible()) {
+        m_deviceListWindow->close();
+    }
+}
+
 void QKeyMapper::showItemSetupDialog(int tabindex, int row)
 {
     if (Q_NULLPTR == m_ItemSetupDialog) {
@@ -8553,6 +8561,20 @@ void QKeyMapper::switchShowHide()
         }
 
         showQKeyMapperWindowToTop();
+    }
+}
+
+void QKeyMapper::forceHide()
+{
+    if (false == isHidden()) {
+        m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeInputDeviceListWindow();
+        closeTableSetupDialog();
+        closeItemSetupDialog();
+        hide();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
     }
 }
 
