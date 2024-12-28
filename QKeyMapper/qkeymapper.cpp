@@ -3624,9 +3624,10 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
 
     QString zipupdater_exe_path = QString("%1/%2").arg(update_dirname, ZIPUPDATER_EXE);
     QStringList arguments;
-    QString copyToPath = "..";
     QString copyFromFolder;
     QString platformString = getPlatformString();
+    QString copyToPath = QCoreApplication::applicationDirPath();
+    QString restartExePath = QCoreApplication::applicationFilePath();
     QString language;
     if (update_filename.contains(platformString)) {
         copyFromFolder = QString("%1_%2").arg(PROGRAM_NAME, platformString);
@@ -3644,7 +3645,7 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     if (LANGUAGE_CHINESE == QKeyMapper::getLanguageIndex()) {
         language = "--chinese";
     }
-    arguments << update_filename << copyFromFolder << copyToPath << language;
+    arguments << update_filename << copyFromFolder << copyToPath << restartExePath << language;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[updateWithZipUpdater] UpdateProgram :" << zipupdater_exe_path;
