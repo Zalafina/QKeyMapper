@@ -10345,35 +10345,18 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
     int mappingdata_size = KeyMappingDataList->size();
     if (top_row >= 0 && bottom_row < mappingdata_size && dragged_to >= 0 && dragged_to < mappingdata_size
         && (dragged_to > bottom_row || dragged_to < top_row)) {
-        // Collect the rows to be moved
-        QList<MAP_KEYDATA> rowsData;
-        for (int row = top_row; row <= bottom_row; ++row) {
-            rowsData.append(KeyMappingDataList->at(row));
-        }
-
+        int draged_row_count = bottom_row - top_row + 1;
         bool isDraggedToBottom = (dragged_to > bottom_row);
 
         if (isDraggedToBottom) {
-            // Insert the rows at the new position on reverse order
-            for (int i = rowsData.size() - 1; i >= 0; --i) {
-                KeyMappingDataList->insert(dragged_to + 1, rowsData.at(i));
-            }
-
-            // Remove the rows from the original position
-            for (int row = bottom_row; row >= top_row; --row) {
-                KeyMappingDataList->removeAt(row);
+            for (int i = 0; i < draged_row_count; ++i) {
+                KeyMappingDataList->move(top_row, dragged_to);
             }
         }
         else {
             /* Dragged to top */
-            // Remove the rows from the original position
-            for (int row = bottom_row; row >= top_row; --row) {
-                KeyMappingDataList->removeAt(row);
-            }
-
-            // Insert the rows at the new position
-            for (int i = 0; i < rowsData.size(); ++i) {
-                KeyMappingDataList->insert(dragged_to + i, rowsData.at(i));
+            for (int i = draged_row_count - 1; i >= 0; --i) {
+                KeyMappingDataList->move(bottom_row, dragged_to);
             }
         }
 
