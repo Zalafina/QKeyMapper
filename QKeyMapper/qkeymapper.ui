@@ -196,7 +196,7 @@
     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="deleteoneButton">
+  <widget class="QPushButton" name="deleteSelectedButton">
    <property name="geometry">
     <rect>
      <x>990</x>
@@ -1531,7 +1531,7 @@
   <zorder>addmapdataButton</zorder>
   <zorder>orikeyLabel</zorder>
   <zorder>mapkeyLabel</zorder>
-  <zorder>deleteoneButton</zorder>
+  <zorder>deleteSelectedButton</zorder>
   <zorder>clearallButton</zorder>
   <zorder>iconLabel</zorder>
   <zorder>moveupButton</zorder>

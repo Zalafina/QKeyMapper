@@ -169,14 +169,15 @@ class KeyMappingDataTableWidget : public QTableWidget
 
 public:
     explicit KeyMappingDataTableWidget(QWidget *parent = Q_NULLPTR)
-        : QTableWidget(parent), m_DraggedRow(-1) {}
+        : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
 protected:
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
 
 private:
-    int m_DraggedRow;
+    int m_DraggedTopRow;
+    int m_DraggedBottomRow;
 };
 
 struct KeyMappingTab_Info
@@ -431,7 +432,7 @@ signals:
     void updateMultiInputStatus_Signal(void);
     void updateInputDeviceSelectComboBoxes_Signal(void);
     void updateGamepadSelectComboBox_Signal(void);
-    void keyMappingTableDragDropMove_Signal(int from, int to);
+    void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayTime);
 
@@ -464,7 +465,7 @@ public slots:
 
     void keyMappingTabWidgetCurrentChanged(int index);
 
-    void keyMappingTableDragDropMove(int from, int to);
+    void keyMappingTableDragDropMove(int top_row, int bottom_row, int dragged_to);
 
     void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
 
@@ -526,7 +527,7 @@ public slots:
 
     void on_movedownButton_clicked();
 
-    void on_deleteoneButton_clicked();
+    void on_deleteSelectedButton_clicked();
 
     void on_clearallButton_clicked();
 
