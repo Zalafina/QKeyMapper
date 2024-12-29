@@ -495,6 +495,8 @@ public slots:
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
     int removeTabFromKeyMappingTabWidget(int tabindex);
+    void copySelectedKeyMappingDataToClipboard(void);
+    void pasteKeyMappingDataFromClipboard(void);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);
@@ -715,6 +717,7 @@ public:
     static QString s_MappingStopKeyString;
     static QHash<QString, QList<int>> s_MappingTableTabHotkeyMap;
     static qreal s_UI_scale_value;
+    static QList<MAP_KEYDATA> s_CopiedMappingData;
     int m_UI_Scale;
     KeyMapStatus m_KeyMapStatus;
 

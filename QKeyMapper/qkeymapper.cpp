@@ -27,6 +27,7 @@ QString QKeyMapper::s_MappingStartKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 QString QKeyMapper::s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 QHash<QString, QList<int>> QKeyMapper::s_MappingTableTabHotkeyMap;
 qreal QKeyMapper::s_UI_scale_value = 1.0;
+QList<MAP_KEYDATA> QKeyMapper::s_CopiedMappingData;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -4360,6 +4361,36 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
     m_KeyMappingTabWidget->blockSignals(false);
 
     return REMOVE_MAPPINGTAB_SUCCESS;
+}
+
+void QKeyMapper::copySelectedKeyMappingDataToClipboard()
+{
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[DeleteItem] There is no selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int top_row = range.topRow();
+    int bottom_row = range.bottomRow();
+
+    s_CopiedMappingData.clear();
+    for (int row = top_row; row <= bottom_row; ++row) {
+        s_CopiedMappingData.append(KeyMappingDataList->at(row));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[copySelectedKeyMappingDataToClipboard] Ctrl+C pressed, copy selected keymapping data to clipboard ->" << s_CopiedMappingData;
+#endif
+}
+
+void QKeyMapper::pasteKeyMappingDataFromClipboard()
+{
+
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
@@ -10368,10 +10399,10 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
         // Reselect the moved rows
         QTableWidgetSelectionRange newSelection;
         if (isDraggedToBottom) {
-            newSelection = QTableWidgetSelectionRange(dragged_to - rowsData.size() + 1, 0, dragged_to, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+            newSelection = QTableWidgetSelectionRange(dragged_to - draged_row_count + 1, 0, dragged_to, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         }
         else {
-            newSelection = QTableWidgetSelectionRange(dragged_to, 0, dragged_to + rowsData.size() - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+            newSelection = QTableWidgetSelectionRange(dragged_to, 0, dragged_to + draged_row_count - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         }
         m_KeyMappingDataTable->clearSelection();
         m_KeyMappingDataTable->setRangeSelected(newSelection, true);
@@ -12498,6 +12529,13 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
         else if (event->key() == Qt::Key_Delete) {
             QKeyMapper::getInstance()->on_deleteSelectedButton_clicked();
             return;
+        }
+        else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
+            QKeyMapper::getInstance()->copySelectedKeyMappingDataToClipboard();
+            return;
+        }
+        else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
+            QKeyMapper::getInstance()->pasteKeyMappingDataFromClipboard();
         }
     }
 
