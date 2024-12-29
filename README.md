@@ -23,8 +23,11 @@
 ---------------
 #### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。
   - #### Win10系统筛选键开启方式
-  Windows设置 -> 轻松使用 -> 键盘 -> 筛选键
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win10_FilterKey.png" width="1839" height="auto"/></div>
+    Windows设置 -> 轻松使用 -> 键盘 -> 筛选键
+    <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win10_FilterKey.png" width="1839" height="auto"/></div>
+  - #### Win11系统筛选键开启方式
+    设置 -> 辅助功能 -> 键盘 -> 筛选键
+    <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win11_FilterKey.png" width="1182" height="auto"/></div>
 
 ---------------
 ## 按键映射工具使用技巧等参考Wiki页面：
