@@ -4363,14 +4363,15 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
     return REMOVE_MAPPINGTAB_SUCCESS;
 }
 
-void QKeyMapper::copySelectedKeyMappingDataToClipboard()
+int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
 {
+    int copied_count = 0;
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[DeleteItem] There is no selected item";
 #endif
-        return;
+        return copied_count;
     }
 
     // Get the first selected range
@@ -4382,15 +4383,90 @@ void QKeyMapper::copySelectedKeyMappingDataToClipboard()
     for (int row = top_row; row <= bottom_row; ++row) {
         s_CopiedMappingData.append(KeyMappingDataList->at(row));
     }
+    copied_count = s_CopiedMappingData.size();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[copySelectedKeyMappingDataToClipboard] Ctrl+C pressed, copy selected keymapping data to clipboard ->" << s_CopiedMappingData;
+    qDebug().nospace() << "[copySelectedKeyMappingDataToCopiedList] Ctrl+C pressed, copy(" << copied_count << ") selected keymapping data to s_CopiedMappingData -> " << s_CopiedMappingData;
 #endif
+
+    return copied_count;
 }
 
-void QKeyMapper::pasteKeyMappingDataFromClipboard()
+int QKeyMapper::insertKeyMappingDataFromCopiedList()
 {
+    int inserted_count = -1;
+    if (s_CopiedMappingData.isEmpty()) {
+        return inserted_count;
+    }
 
+    QList<MAP_KEYDATA> insertMappingDataList;
+    for (const MAP_KEYDATA &keymapdata : s_CopiedMappingData) {
+        int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(keymapdata.Original_Key);
+        if (findindex != -1) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[insertKeyMappingDataFromCopiedList]" << "Duplicate original key found -> index : " << findindex << ", originalkey : " << keymapdata.Original_Key;
+#endif
+            continue;
+        }
+        insertMappingDataList.append(keymapdata);
+    }
+
+    inserted_count = insertMappingDataList.size();
+    if (insertMappingDataList.isEmpty()) {
+        return inserted_count;
+    }
+
+    bool insertToEnd = false;
+    int insertRow = -1;
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[insertKeyMappingDataFromCopiedList] There is no selected item, insert to the end.";
+#endif
+        insertToEnd = true;
+    }
+    else {
+        // Get the selected top row
+        QTableWidgetSelectionRange range = selectedRanges.first();
+        insertRow = range.topRow();
+    }
+
+    if (insertToEnd) {
+        KeyMappingDataList->append(insertMappingDataList);
+    }
+    else {
+        // Insert the rows at the new position on reverse order
+        for (int i = insertMappingDataList.size() - 1; i >= 0; --i) {
+            KeyMappingDataList->insert(insertRow, insertMappingDataList.at(i));
+        }
+    }
+
+    // refresh table display
+    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    // Update the mouse points list
+    updateMousePointsList();
+
+    // Reselect inserted rows
+    if (inserted_count > 0) {
+        int startRow = insertToEnd ? m_KeyMappingDataTable->rowCount() - inserted_count : insertRow;
+        int endRow = startRow + inserted_count - 1;
+        QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+        m_KeyMappingDataTable->clearSelection();
+        m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage;
+    if (insertToEnd) {
+        debugmessage = QString("[copySelectedKeyMappingDataToCopiedList] Ctrl+V pressed, append (%1) items to the end of current mapping table -> ").arg(inserted_count);
+    }
+    else {
+        debugmessage = QString("[copySelectedKeyMappingDataToCopiedList] Ctrl+V pressed, insert (%1) items to row(%2) of current mapping table -> ").arg(inserted_count).arg(insertRow);
+    }
+    qDebug().nospace().noquote() << debugmessage << insertMappingDataList;
+#endif
+
+    return inserted_count;
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
@@ -8676,6 +8752,11 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
     }
 }
 
+void QKeyMapper::showInformationPopup(const QString &message)
+{
+    showPopupMessage(message, "#44bd32", 3000);
+}
+
 void QKeyMapper::showWarningPopup(const QString &message)
 {
     showPopupMessage(message, "#d63031", 3000);
@@ -11467,6 +11548,8 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
         KeyMappingDataList->removeAt(row);
     }
 
+    // refresh table display
+    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
     // Update the mouse points list
     updateMousePointsList();
 
@@ -12531,11 +12614,55 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             return;
         }
         else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
-            QKeyMapper::getInstance()->copySelectedKeyMappingDataToClipboard();
+            int copied_count = QKeyMapper::getInstance()->copySelectedKeyMappingDataToCopiedList();
+            QString message;
+            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                message = QString("%1 selected mapping data copied.").arg(copied_count);
+            }
+            else {
+                message = QString("复制 %1 条当前选中映射表内容。").arg(copied_count);
+            }
+            QKeyMapper::getInstance()->showInformationPopup(message);
             return;
         }
         else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
-            QKeyMapper::getInstance()->pasteKeyMappingDataFromClipboard();
+            int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList();
+            int copied_count = QKeyMapper::s_CopiedMappingData.size();
+            if (inserted_count == 0) {
+                QString message;
+                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                    message = QString("All %1 copied mapping data are duplicated and could not be inserted.").arg(copied_count);
+
+                }
+                else {
+                    message = QString("全部 %1 条复制内容与当前映射表已有原始按键重复，未能插入！").arg(copied_count);
+                }
+                QKeyMapper::getInstance()->showWarningPopup(message);
+            }
+            else if (inserted_count > 0) {
+                QString message;
+                if (inserted_count != copied_count) {
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        message = QString("Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.")
+                                      .arg(inserted_count)
+                                      .arg(copied_count - inserted_count);
+                    } else {
+                        message = QString("插入 %1 条复制内容到当前映射表中，其余 %2 条由于原始按键重复未能插入。")
+                                      .arg(inserted_count)
+                                      .arg(copied_count - inserted_count);
+                    }
+                } else {
+                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+                        message = QString("Inserted %1 copied mapping data into current mapping table.")
+                                      .arg(inserted_count);
+                    } else {
+                        message = QString("插入 %1 条复制的映射表内容到当前映射表中。")
+                                      .arg(inserted_count);
+                    }
+                }
+                QKeyMapper::getInstance()->showInformationPopup(message);
+            }
+            return;
         }
     }
 
