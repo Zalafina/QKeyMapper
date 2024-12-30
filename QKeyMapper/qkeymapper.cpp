@@ -3960,10 +3960,10 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         }
         else{
             if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                showWarningPopup("Please doubleclick process info table to select valid processinfo for key mapping.");
+                showFailurePopup("Please doubleclick process info table to select valid processinfo for key mapping.");
             }
             else {
-                showWarningPopup("请双击进程列表为按键映射选择有效的进程信息");
+                showFailurePopup("请双击进程列表为按键映射选择有效的进程信息");
             }
         }
     }
@@ -4496,28 +4496,28 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_WindowSwitchKeyString);
                 if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showWarningPopup("Invalid input format for WindowSwitchKey!");
+                    showFailurePopup("Invalid input format for WindowSwitchKey!");
                 }
                 else {
-                    showWarningPopup("显示切换键输入格式错误！");
+                    showFailurePopup("显示切换键输入格式错误！");
                 }
             }
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_MappingStartKeyString);
                 if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showWarningPopup("Invalid input format for MappingStartKey!");
+                    showFailurePopup("Invalid input format for MappingStartKey!");
                 }
                 else {
-                    showWarningPopup("映射开启键输入格式错误！");
+                    showFailurePopup("映射开启键输入格式错误！");
                 }
             }
             else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_MappingStopKeyString);
                 if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showWarningPopup("Invalid input format for MappingStopKey!");
+                    showFailurePopup("Invalid input format for MappingStopKey!");
                 }
                 else {
-                    showWarningPopup("映射关闭键输入格式错误！");
+                    showFailurePopup("映射关闭键输入格式错误！");
                 }
             }
         }
@@ -5079,7 +5079,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
             if (lastNumberStr.toInt() >= CUSTOMSETTING_INDEX_MAX) {
                 QString message = "There is already " + lastNumberStr + " CustomGlobalSettings, please remove some CustomGlobalSettings!";
-                showWarningPopup(message);
+                showFailurePopup(message);
                 return;
             }
             else {
@@ -5126,7 +5126,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             }
             else {
                 QString message = "There is already " + QString::number(TITLESETTING_INDEX_MAX) + " settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "] first!";
-                showWarningPopup(message);
+                showFailurePopup(message);
                 return;
             }
         }
@@ -5492,7 +5492,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         else {
             popupMessage = "保存成功 : " + savedSettingName;
         }
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
         if (backupRet) {
 #ifdef DEBUG_LOGOUT_ON
@@ -5507,7 +5507,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         else {
             popupMessage = "映射数据错误 : " + savedSettingName;
         }
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[saveKeyMapSetting]" << "Mapping data error, Save setting failure!!! ->" << savedSettingName;
 #endif
@@ -6981,10 +6981,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         //     QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">从INI文件加载了无效的设定数据。</p><p align=\"center\">显示默认设定。</p></body></html>");
         // }
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            showWarningPopup("Invalid mapping data : " + settingtext);
+            showFailurePopup("Invalid mapping data : " + settingtext);
         }
         else {
-            showWarningPopup("无效的映射数据 : " + settingtext);
+            showFailurePopup("无效的映射数据 : " + settingtext);
         }
         return false;
     }
@@ -8754,12 +8754,17 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
 
 void QKeyMapper::showInformationPopup(const QString &message)
 {
-    showPopupMessage(message, "#44bd32", 3000);
+    showPopupMessage(message, SUCCESS_COLOR, 3000);
 }
 
 void QKeyMapper::showWarningPopup(const QString &message)
 {
-    showPopupMessage(message, "#d63031", 3000);
+    showPopupMessage(message, WARNING_COLOR, 3000);
+}
+
+void QKeyMapper::showFailurePopup(const QString &message)
+{
+    showPopupMessage(message, FAILURE_COLOR, 3000);
 }
 
 void QKeyMapper::showNotificationPopup(const QString &message, const QString &color, int position)
@@ -10584,7 +10589,7 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
             QApplication::quit();
         }
         else {
-            showWarningPopup(result.errorMessage);
+            showFailurePopup(result.errorMessage);
         }
     }
     else {
@@ -10955,10 +10960,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
         else {
             if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                showWarningPopup("Invalid input format for the original key combination!");
+                showFailurePopup("Invalid input format for the original key combination!");
             }
             else {
-                showWarningPopup("原始组合键输入格式错误！");
+                showFailurePopup("原始组合键输入格式错误！");
             }
             return;
         }
@@ -11062,7 +11067,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else {
                     message = QString("映射到\"%1\"的按键序列太长了!").arg(currentOriKeyText);
                 }
-                showWarningPopup(message);
+                showFailurePopup(message);
                 return;
             }
 
@@ -11101,7 +11106,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     else {
                         message = QString("需要使用\"%1\"设置一个屏幕坐标点!").arg("L-Ctrl+鼠标左键点击");
                     }
-                    showWarningPopup(message);
+                    showFailurePopup(message);
                     return;
                 }
                 else {
@@ -11122,7 +11127,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                             else {
                                 message = QString("已经保存了一个相同的屏幕坐标点!");
                             }
-                            showWarningPopup(message);
+                            showFailurePopup(message);
                             return;
                         }
                     }
@@ -11138,7 +11143,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     else {
                         message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
                     }
-                    showWarningPopup(message);
+                    showFailurePopup(message);
                     return;
                 }
                 else {
@@ -11159,7 +11164,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                             else {
                                 message = QString("已经保存了一个相同的窗口坐标点!");
                             }
-                            showWarningPopup(message);
+                            showFailurePopup(message);
                             return;
                         }
                     }
@@ -11175,7 +11180,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     else {
                         message = QString("请输入要发送的文本!");
                     }
-                    showWarningPopup(message);
+                    showFailurePopup(message);
                     return;
                 }
                 else {
@@ -11190,7 +11195,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else {
                     message = QString("按键映射序列打断键不能重复设置!");
                 }
-                showWarningPopup(message);
+                showFailurePopup(message);
                 return;
             }
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
@@ -11211,7 +11216,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             QStringList mappingKeySeqList = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_NEXT);
             ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeys_str, mappingKeySeqList, INITIAL_ROW_INDEX);
             if (!result.isValid) {
-                showWarningPopup(result.errorMessage);
+                showFailurePopup(result.errorMessage);
                 return;
             }
 
@@ -11289,7 +11294,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         else {
                             message = QString("需要使用\"%1\"设置一个屏幕坐标点!").arg("L-Ctrl+鼠标左键点击");
                         }
-                        showWarningPopup(message);
+                        showFailurePopup(message);
                         return;
                     }
                     else {
@@ -11312,7 +11317,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         else {
                             message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
                         }
-                        showWarningPopup(message);
+                        showFailurePopup(message);
                         return;
                     }
                     else {
@@ -11335,7 +11340,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         else {
                             message = QString("请输入要发送的文本!");
                         }
-                        showWarningPopup(message);
+                        showFailurePopup(message);
                         return;
                     }
                     else {
@@ -11351,7 +11356,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         else {
                             message = QString("游戏手柄按键无法被屏蔽!");
                         }
-                        showWarningPopup(message);
+                        showFailurePopup(message);
                         return;
                     }
                 }
@@ -11386,7 +11391,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             QStringList mappingKeySeqList = splitMappingKeyString(currentMapKeyText, SPLIT_WITH_NEXT);
             ValidationResult result = QKeyMapper::validateMappingKeyString(currentMapKeyText, mappingKeySeqList, INITIAL_ROW_INDEX);
             if (!result.isValid) {
-                showWarningPopup(result.errorMessage);
+                showFailurePopup(result.errorMessage);
                 return;
             }
 
@@ -11419,10 +11424,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
     else {
         if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            showWarningPopup("Conflict with exist Keys!");
+            showFailurePopup("Conflict with exist Keys!");
         }
         else {
-            showWarningPopup("与已存在的按键映射冲突！");
+            showFailurePopup("与已存在的按键映射冲突！");
         }
     }
 }
@@ -12637,7 +12642,7 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
                 else {
                     message = QString("全部 %1 条复制内容与当前映射表已有原始按键重复，未能插入！").arg(copied_count);
                 }
-                QKeyMapper::getInstance()->showWarningPopup(message);
+                QKeyMapper::getInstance()->showFailurePopup(message);
             }
             else if (inserted_count > 0) {
                 QString message;
@@ -12651,6 +12656,7 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
                                       .arg(inserted_count)
                                       .arg(copied_count - inserted_count);
                     }
+                    QKeyMapper::getInstance()->showWarningPopup(message);
                 } else {
                     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                         message = QString("Inserted %1 copied mapping data into current mapping table.")
@@ -12659,8 +12665,8 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
                         message = QString("插入 %1 条复制的映射表内容到当前映射表中。")
                                       .arg(inserted_count);
                     }
+                    QKeyMapper::getInstance()->showInformationPopup(message);
                 }
-                QKeyMapper::getInstance()->showInformationPopup(message);
             }
             return;
         }

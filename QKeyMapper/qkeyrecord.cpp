@@ -73,7 +73,7 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
             QKeyMapper::copyStringToClipboard(convertRecordMappingKeysString);
 
             QString popupMessage;
-            QString popupMessageColor = "#44bd32";
+            QString popupMessageColor = SUCCESS_COLOR;
             int popupMessageDisplayTime = 2000;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                 popupMessage = "Recorded keys have been copied to the clipboard";

@@ -450,6 +450,10 @@ const char *MAPPINGSWITCH_KEY_DEFAULT    = "L-Ctrl+F6";
 const char *KEY_RECORD_START_STR    = "F11";
 const char *KEY_RECORD_STOP_STR     = "F12";
 
+const char *SUCCESS_COLOR = "#44bd32";
+const char *FAILURE_COLOR = "#d63031";
+const char *WARNING_COLOR = "#f39c12";
+
 /* General global settings >>> */
 const char *LAST_WINDOWPOSITION = "LastWindowPosition";
 const char *LANGUAGE_INDEX = "LanguageIndex";

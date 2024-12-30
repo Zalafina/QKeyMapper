@@ -1242,7 +1242,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "OriginalKey update success.";
         }
@@ -1259,7 +1259,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
         refreshOriginalKeyRelatedUI();
     }
     else {
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
         popupMessage = result.errorMessage;
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
@@ -1291,7 +1291,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "MappingKey update success.";
         }
@@ -1306,7 +1306,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
         (void)refreshMappingKeyRelatedUI();
     }
     else {
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
         popupMessage = result.errorMessage;
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
@@ -1344,7 +1344,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "KeyUp MappingKey update success.";
         }
@@ -1365,7 +1365,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
         (void)refreshMappingKeyRelatedUI();
     }
     else {
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
         popupMessage = result.errorMessage;
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
@@ -1478,7 +1478,7 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
 
-    popupMessageColor = "#44bd32";
+    popupMessageColor = SUCCESS_COLOR;
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         popupMessage = "Mapping item note update success.";
     }

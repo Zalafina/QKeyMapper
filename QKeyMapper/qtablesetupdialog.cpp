@@ -157,7 +157,7 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
     int popupMessageDisplayTime = 3000;
 
     if (tabNameString.isEmpty()) {
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "TabName is empty!";
         }
@@ -171,7 +171,7 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
 #endif
     }
     else if (isduplicate) {
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "TabName is duplicate: " + tabNameString;
         }
@@ -180,7 +180,7 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
         }
     }
     else {
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "TabName update success: " + tabNameString;
         }
@@ -219,7 +219,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
 #endif
         }
         else {
-            popupMessageColor = "#44bd32";
+            popupMessageColor = SUCCESS_COLOR;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                 popupMessage = "TabHotkey clear success";
             }
@@ -232,7 +232,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
     }
     else if (QKeyMapper::validateCombinationKey(tabhotkeystring))
     {
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "TabHotkey update success: " + ori_tabhotkeystring;
         }
@@ -246,7 +246,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
     {
         ui->tabHotkeyLineEdit->setText(QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey);
 
-        popupMessageColor = "#d63031";
+        popupMessageColor = FAILURE_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = "Invalid input format for TabHotkey!";
         }
@@ -291,7 +291,7 @@ void QTableSetupDialog::on_exportTableButton_clicked()
         QString popupMessage;
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = QString("Mapping data of table \"%1\" export successfully").arg(TabName);;
         }
@@ -338,7 +338,7 @@ void QTableSetupDialog::on_importTableButton_clicked()
         QString popupMessage;
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
-        popupMessageColor = "#44bd32";
+        popupMessageColor = SUCCESS_COLOR;
         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
             popupMessage = QString("Import mapping data to table \"%1\" successfully").arg(TabName);;
         }
@@ -375,7 +375,7 @@ void QTableSetupDialog::on_removeTableButton_clicked()
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
         if (REMOVE_MAPPINGTAB_SUCCESS == remove_result) {
-            popupMessageColor = "#44bd32";
+            popupMessageColor = SUCCESS_COLOR;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                 popupMessage = QString("Mapping table \"%1\" removed successfully").arg(TabName);;
             }
@@ -385,7 +385,7 @@ void QTableSetupDialog::on_removeTableButton_clicked()
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
         else if (REMOVE_MAPPINGTAB_LASTONE == remove_result) {
-            popupMessageColor = "#d63031";
+            popupMessageColor = FAILURE_COLOR;
             if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
                 popupMessage = QString("Cannot remove the last mapping table!");
             }
