@@ -5936,7 +5936,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     if (true == settingtext.isEmpty()) {
         if (true == settingFile.contains(SETTINGSELECT)){
             QVariant settingSelect = settingFile.value(SETTINGSELECT);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
             if (settingSelect.metaType().id() == QMetaType::QString) {
+#else
+            if (settingSelect.canConvert(QMetaType::QString)) {
+#endif
                 settingSelectStr = settingSelect.toString();
             }
 
@@ -5978,7 +5982,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select Setting" << settingtext;
 #endif
             QVariant settingSelect = settingFile.value(SETTINGSELECT);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
             if (settingSelect.metaType().id() == QMetaType::QString) {
+#else
+            if (settingSelect.canConvert(QMetaType::QString)) {
+#endif
                 settingSelectStr = settingSelect.toString();
             }
 
