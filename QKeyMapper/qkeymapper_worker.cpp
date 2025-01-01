@@ -831,7 +831,7 @@ void QKeyMapper_Worker::initMouse2vJoyResetTimerMap()
 void QKeyMapper_Worker::stopMouse2vJoyResetTimerMap()
 {
     /* stop all the timers in m_Mouse2vJoyResetTimerMap */
-    for (QTimer *timer : qAsConst(m_Mouse2vJoyResetTimerMap)) {
+    for (QTimer *timer : std::as_const(m_Mouse2vJoyResetTimerMap)) {
         timer->stop();
     }
 }
@@ -1511,7 +1511,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
             }
 
-            for (const QString &keyStr : qAsConst(mappingKeys)) {
+            for (const QString &keyStr : std::as_const(mappingKeys)) {
                 if (*controller.task_stop_flag) {
                     continue;
                 }
@@ -3344,7 +3344,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::ViGEmClient_che
         return Mouse2vJoy_EnableStateMap;
     }
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR
             || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
             if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR) {
@@ -4655,7 +4655,7 @@ QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::checkJoy2vJoyEna
 
     static QRegularExpression joy2vjoy_orikey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-9]))?$)");
     static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         QRegularExpressionMatch joy2vjoy_orikey_match = joy2vjoy_orikey_regex.match(keymapdata.Original_Key);
 
         if (joy2vjoy_orikey_match.hasMatch()) {
@@ -5203,7 +5203,7 @@ void QKeyMapper_Worker::onJoystickcountChanged()
     qDebug() << "[onJoystickcountChanged]" << "JoystickList Start >>>" << joysticklist.size();
 #endif
     int joystick_index = 0;
-    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
+    for (const QJoystickDevice *joystick : std::as_const(joysticklist)) {
         bool virtualgamepad = false;
         USHORT vendorid = joystick->vendorid;
         USHORT productid = joystick->productid;
@@ -5394,25 +5394,25 @@ void QKeyMapper_Worker::checkJoystickPOV(const QJoystickPOVEvent &e)
             QString keycodeString = m_JoystickDPadMap.value(dpadCode);
             QStringList tempDpadCodeStringList = keycodeString.split(',');
 
-            for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
+            for (const QString &dpadcodestr : std::as_const(tempDpadCodeStringList)) {
                 QString dpadcodestrWithIndex = QString("%1@%2").arg(dpadcodestr).arg(playerIndex);
                 joydpadNeedtoRelease.removeAll(dpadcodestrWithIndex);
             }
 
-            for (const QString &dpadcodestr_withindex : qAsConst(joydpadNeedtoRelease)) {
+            for (const QString &dpadcodestr_withindex : std::as_const(joydpadNeedtoRelease)) {
                 joydpad_match = joydpad_regex.match(dpadcodestr_withindex);
                 QString dpadcodestr = joydpad_match.captured(1);
                 returnFlag = JoyStickKeysProc(dpadcodestr, KEY_UP, e.joystick);
                 Q_UNUSED(returnFlag);
             }
 
-            for (const QString &dpadcodestr : qAsConst(tempDpadCodeStringList)) {
+            for (const QString &dpadcodestr : std::as_const(tempDpadCodeStringList)) {
                 returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick);
                 Q_UNUSED(returnFlag);
             }
         }
         else {
-            for (const QString &dpadcodestr_withindex : qAsConst(joydpadpressedlist)){
+            for (const QString &dpadcodestr_withindex : std::as_const(joydpadpressedlist)){
                 joydpad_match = joydpad_regex.match(dpadcodestr_withindex);
                 QString dpadcodestr = joydpad_match.captured(1);
                 returnFlag = JoyStickKeysProc(dpadcodestr, keyupdown, e.joystick);
@@ -5610,7 +5610,7 @@ QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2Mouse
     QHash<int, Joy2MouseStates> Joy2Mouse_EnableStateMap;
 
     static QRegularExpression joy2mouse_regex(R"(^(Joy-(LS|RS)2Mouse)(?:@([0-9]))?$)");
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         QRegularExpressionMatch joy2mouse_match = joy2mouse_regex.match(keymapdata.Original_Key);
 
         if (joy2mouse_match.hasMatch()) {
@@ -9264,7 +9264,7 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
     qDebug() << "[detectCombinationKeys]" << "Current combinationOriginalKeysList ->" << combinationOriginalKeysList;
 #endif
 
-    for (const QString &combinationkey : qAsConst(combinationOriginalKeysList))
+    for (const QString &combinationkey : std::as_const(combinationOriginalKeysList))
     {
         QStringList keys = combinationkey.split(SEPARATOR_PLUS);
         bool allKeysPressed = true;
@@ -9555,7 +9555,7 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
-    for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
+    for (const QString &modifierstr : std::as_const(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
         QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
@@ -9636,7 +9636,7 @@ bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifie
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
-    for (const QString &modifierstr : qAsConst(pressedKeyboardModifiersList)) {
+    for (const QString &modifierstr : std::as_const(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         QString original_key = QString(KEYBOARD_MODIFIERS);
         QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
@@ -9850,7 +9850,7 @@ void QKeyMapper_Worker::collectBlockedKeysList()
 {
     blockedKeysList.clear();
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         if (keymapdata.Mapping_Keys.size() == 1 && keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
             blockedKeysList.append(keymapdata.Original_Key);
         }
@@ -9865,7 +9865,7 @@ QStringList QKeyMapper_Worker::collectCertainMappingDataListBlockedKeysList(QLis
 {
     QStringList collected_blockedKeysList;
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*keyMappingDataListToCheck)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*keyMappingDataListToCheck)) {
         if (keymapdata.Mapping_Keys.size() == 1 && keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
             collected_blockedKeysList.append(keymapdata.Original_Key);
         }
@@ -9880,7 +9880,7 @@ QStringList QKeyMapper_Worker::collectCertainMappingDataListBlockedKeysList(QLis
 
 void QKeyMapper_Worker::collectCombinationOriginalKeysList()
 {
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList))
     {
         if (keymapdata.Original_Key.contains(SEPARATOR_PLUS))
         {
@@ -9899,7 +9899,7 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
 void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
 {
     static QRegularExpression regex(R"(^(.+)⏲(\d+)$)");
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
         if (match.hasMatch()) {
@@ -10023,7 +10023,7 @@ void QKeyMapper_Worker::clearAllLongPressTimers(void)
 #endif
 
     QList<QTimer*> longpressTimers = s_longPressTimerMap.values();
-    for (QTimer *timer : qAsConst(longpressTimers)) {
+    for (QTimer *timer : std::as_const(longpressTimers)) {
         timer->stop();
         delete timer;
     }
@@ -10126,7 +10126,7 @@ void QKeyMapper_Worker::collectDoublePressOriginalKeysMap()
 {
     int keymapdataindex = 0;
     static QRegularExpression regex(R"(^(.+✖)(\d+)$)");
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
         if (match.hasMatch()) {
@@ -10151,7 +10151,7 @@ QHash<QString, int> QKeyMapper_Worker::currentDoublePressOriginalKeysMap()
 
     int keymapdataindex = 0;
     static QRegularExpression regex(R"(^(.+✖)(\d+)$)");
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList))
     {
         QRegularExpressionMatch match = regex.match(keymapdata.Original_Key);
         if (match.hasMatch()) {
@@ -10319,7 +10319,7 @@ void QKeyMapper_Worker::clearAllDoublePressTimers()
 #endif
 
     QList<QTimer*> doublepressTimers = s_doublePressTimerMap.values();
-    for (QTimer *timer : qAsConst(doublepressTimers)) {
+    for (QTimer *timer : std::as_const(doublepressTimers)) {
         timer->stop();
         delete timer;
     }
@@ -11648,7 +11648,7 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
     QMutexLocker locker(&s_BurstKeyTimerMutex);
     burstKeys = s_BurstKeyTimerMap.keys();
     }
-    for (const QString &burstKey : qAsConst(burstKeys)) {
+    for (const QString &burstKey : std::as_const(burstKeys)) {
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(burstKey);
         if (findindex >= 0) {
             if (true == QKeyMapper::KeyMappingDataList->at(findindex).Lock) {
@@ -11669,7 +11669,7 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
     {
     QMutexLocker locker(&s_BurstKeyTimerMutex);
     QList<QString> burstKeyPressKeys = s_BurstKeyPressTimerMap.keys();
-    for (const QString &burstKey : qAsConst(burstKeyPressKeys)) {
+    for (const QString &burstKey : std::as_const(burstKeyPressKeys)) {
         QTimer* timer = s_BurstKeyPressTimerMap.value(burstKey);
         timer->stop();
         delete timer;
@@ -11691,7 +11691,7 @@ void QKeyMapper_Worker::clearAllPressedVirtualKeys()
 {
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
-    for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
+    for (const QString &virtualkeystr : std::as_const(pressedVirtualKeysList)) {
         QStringList mappingKeyList = QStringList() << virtualkeystr;
         QString original_key = QString(CLEAR_VIRTUALKEYS);
         // emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
@@ -11701,7 +11701,7 @@ void QKeyMapper_Worker::clearAllPressedVirtualKeys()
 
     // QStringList pressedMappingOriginalKeys = pressedMappingKeysMap.keys();
 
-    // for (const QString &original_key : qAsConst(pressedMappingOriginalKeys)){
+    // for (const QString &original_key : std::as_const(pressedMappingOriginalKeys)){
     //     QStringList mappingKeyList = pressedMappingKeysMap.value(original_key);;
     //     emit_sendInputKeysSignal_Wrapper(mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     // }
@@ -11728,7 +11728,7 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mapp
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
-    for (const QString &virtualkeystr : qAsConst(pressedVirtualKeysList)) {
+    for (const QString &virtualkeystr : std::as_const(pressedVirtualKeysList)) {
         if (mappingKeyListToClear.contains(virtualkeystr)
             // && !pressedRealKeysListToCheck.contains(virtualkeystr)
             ) {
@@ -11781,7 +11781,7 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
                 *controller->task_stop_flag = INPUTSTOP_SINGLE;
                 controller->task_stop_condition->wakeAll();
                 QStringList pure_mappingKeys = KeyMappingDataList_ToClear->at(findindex).Pure_MappingKeys;
-                for (const QString &keycodeString : qAsConst(pure_mappingKeys)) {
+                for (const QString &keycodeString : std::as_const(pure_mappingKeys)) {
                     if (pressedVirtualKeysList.contains(keycodeString)) {
 #ifdef DEBUG_LOGOUT_ON
                         QString debugmessage = QString("[clearAllNormalPressedMappingKeys] VirtualKey \"%1\" of OriginalKey(%2) is still pressed down on Mapping stop, send KEY_UP to clear directly.").arg(keycodeString, real_originalkey);
@@ -11841,7 +11841,7 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
 void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
 {
     QStringList newPressedRealKeysList;
-    for (const QString& key : qAsConst(pressedRealKeysList)) {
+    for (const QString& key : std::as_const(pressedRealKeysList)) {
         if (false == key.contains(SEPARATOR_PLUS)) {
             newPressedRealKeysList.append(key);
         }
@@ -11849,7 +11849,7 @@ void QKeyMapper_Worker::clearAllPressedRealCombinationKeys()
     pressedRealKeysList = newPressedRealKeysList;
 
     newPressedRealKeysList.clear();
-    for (const QString& key : qAsConst(pressedRealKeysListRemoveMultiInput)) {
+    for (const QString& key : std::as_const(pressedRealKeysListRemoveMultiInput)) {
         if (false == key.contains(SEPARATOR_PLUS)) {
             newPressedRealKeysList.append(key);
         }
@@ -11862,7 +11862,7 @@ void QKeyMapper_Worker::collectExchangeKeysList()
     exchangeKeysList.clear();
 
     QHash<QString, QString> singlemapping_keymap;
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList))
     {
         if (keymapdata.Mapping_Keys.size() == 1)
         {
@@ -11873,7 +11873,7 @@ void QKeyMapper_Worker::collectExchangeKeysList()
     if (false == singlemapping_keymap.isEmpty())
     {
         QList<QString> singlemappingKeys = singlemapping_keymap.keys();
-        for (const QString &key : qAsConst(singlemappingKeys))
+        for (const QString &key : std::as_const(singlemappingKeys))
         {
             if (singlemapping_keymap.value(singlemapping_keymap.value(key)) == key)
             {
@@ -11907,8 +11907,8 @@ bool QKeyMapper_Worker::isPressedMappingKeysContains(QString &key)
     remainPressedMappingKeys = pressedMappingKeysMap.values();
     }
 
-    for (const QStringList &mappingkeys : qAsConst(remainPressedMappingKeys)){
-        for (const QString &mapkey : qAsConst(mappingkeys)){
+    for (const QStringList &mappingkeys : std::as_const(remainPressedMappingKeys)){
+        for (const QString &mapkey : std::as_const(mappingkeys)){
             if (mapkey == key) {
                 result = true;
                 break;
@@ -11995,7 +11995,7 @@ void QKeyMapper_Worker::releasePressedRealKeysOfOriginalKeys(void)
     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
 
     QStringList keycodeStringListToRelease;
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         QStringList pure_originalkeylist = keymapdata.Pure_OriginalKeys;
         for (const QString &keycodeString : pure_originalkeylist) {
             if (pressedRealKeysListToCheck.contains(keycodeString)) {
@@ -12030,9 +12030,9 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
     int keycount = 0;
     INPUT *input_p = Q_NULLPTR;
 
-    for (const QString &keyseq : qAsConst(keyseq_list)){
+    for (const QString &keyseq : std::as_const(keyseq_list)){
         QStringList mappingKeys = keyseq.split(SEPARATOR_PLUS);
-        for (const QString &key : qAsConst(mappingKeys)){
+        for (const QString &key : std::as_const(mappingKeys)){
             if (key == MOUSE_WHEEL_UP_STR || key == MOUSE_WHEEL_DOWN_STR) {
                 input_p = &input_array[index];
                 input_p->type = INPUT_MOUSE;
@@ -12160,7 +12160,7 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
 
     int index = 1;
     int size = keyseq_list.size();
-    for (const QString &keyseq : qAsConst(keyseq_list)){
+    for (const QString &keyseq : std::as_const(keyseq_list)){
         QStringList mappingKeyList = QStringList() << keyseq;
 
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN) {
@@ -12529,7 +12529,7 @@ void SendInputTask::initSendInputTaskControllerMap()
     QMutexLocker mapLocker(&s_SendInputTaskControllerMapMutex);
 
     // Iterate through KeyMappingDataList
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*QKeyMapper::KeyMappingDataList)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         // Get the original key from keymapdata
         QString originalKey = keymapdata.Original_Key;
 

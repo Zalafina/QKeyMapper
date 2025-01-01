@@ -331,17 +331,17 @@ bool Interception_Worker::isInterceptionDriverFileExist()
     if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\FileDescription", &value, &length)) {
         return false;
     }
-    fileDescription = QString::fromUtf16((ushort *)value, length);
+    fileDescription = QString::fromUtf16(reinterpret_cast<Utf16Pointer>(value), length);
     fileDescription.remove(QChar('\0'));
     if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\ProductName", &value, &length)) {
         return false;
     }
-    productName = QString::fromUtf16((ushort *)value, length);
+    productName = QString::fromUtf16(reinterpret_cast<Utf16Pointer>(value), length);
     productName.remove(QChar('\0'));
     if (!VerQueryValue(data.data(), L"\\StringFileInfo\\040904b0\\OriginalFilename", &value, &length)) {
         return false;
     }
-    originalFilename = QString::fromUtf16((ushort *)value, length);
+    originalFilename = QString::fromUtf16(reinterpret_cast<Utf16Pointer>(value), length);
     originalFilename.remove(QChar('\0'));
 
 #ifdef DEBUG_LOGOUT_ON

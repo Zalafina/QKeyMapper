@@ -875,7 +875,7 @@ QString QKeyMapper::getExeFileDescription()
         return QString();
     }
 
-    QString retStr = QString::fromUtf16((ushort *)value, length);
+    QString retStr = QString::fromUtf16(reinterpret_cast<Utf16Pointer>(value), length);
     retStr.remove(QChar('\0'));
     return retStr;
 }
@@ -900,7 +900,7 @@ QString QKeyMapper::getExeProductVersion()
         return QString();
     }
 
-    QString retStr = QString::fromUtf16((ushort *)value, length);
+    QString retStr = QString::fromUtf16(reinterpret_cast<Utf16Pointer>(value), length);
     retStr.remove(QChar('\0'));
     return retStr;
 }
@@ -1454,7 +1454,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
     int keymapdataindex = 0;
     QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         if (keymapdata.Original_Key == keyname
             || keymapdata.Original_Key == keyname_RemoveMultiInput){
@@ -1480,7 +1480,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(const QString &k
     int keymapdataindex = 0;
     QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         QString originalkey_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keymapdata.Original_Key);
         if (originalkey_RemoveMultiInput == keyname_RemoveMultiInput
@@ -1501,7 +1501,7 @@ int QKeyMapper::findOriKeyInCertainKeyMappingDataList(const QString &keyname, QL
     int keymapdataindex = 0;
     QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*keyMappingDataListToCheck))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*keyMappingDataListToCheck))
     {
         if (keymapdata.Original_Key == keyname
             || keymapdata.Original_Key == keyname_RemoveMultiInput){
@@ -1528,7 +1528,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname, bool &rem
     QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
     removemultiinput = false;
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         if (keymapdata.Original_Key == keyname){
             returnindex = keymapdataindex;
@@ -1551,7 +1551,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList_ForAddMappingData(const QString &
     int returnindex = -1;
     int keymapdataindex = 0;
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         if (keymapdata.Original_Key == keyname){
             returnindex = keymapdataindex;
@@ -1570,7 +1570,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList_ForDoublePress(const QString &key
     int keymapdataindex = 0;
     QString keyname_doublepress = keyname + QString(SEPARATOR_DOUBLEPRESS);
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         if (keymapdata.Original_Key.startsWith(keyname_doublepress)){
             returnindex = keymapdataindex;
@@ -1590,7 +1590,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataListGlobal(const QString &keyname)
     int keymapdataindex = 0;
     QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataListGlobal))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(KeyMappingDataListGlobal))
     {
         if (keymapdata.Original_Key == keyname
             || keymapdata.Original_Key == keyname_RemoveMultiInput){
@@ -1610,7 +1610,7 @@ int QKeyMapper::findMapKeyInKeyMappingDataList(const QString &keyname)
     int returnindex = -1;
     int keymapdataindex = 0;
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         if (keymapdata.Mapping_Keys.contains(keyname)){
             returnindex = keymapdataindex;
@@ -2236,7 +2236,7 @@ bool QKeyMapper::checkMappingkeyStr(QString &mappingkeystr)
 {
 #ifdef MOUSEBUTTON_CONVERT
     QStringList mouseNameConvertList = QKeyMapper_Worker::MouseButtonNameConvertMap.keys();
-    for (const QString &mousekey : qAsConst(mouseNameConvertList)){
+    for (const QString &mousekey : std::as_const(mouseNameConvertList)){
         mappingkeystr.replace(mousekey, QKeyMapper_Worker::MouseButtonNameConvertMap.value(mousekey));
     }
 #endif
@@ -3023,7 +3023,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList repeatmodeList;
     QStringList repeattimesList;
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*mappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
     {
         original_keys << keymapdata.Original_Key;
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
@@ -3397,7 +3397,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             int loadindex = 0;
-            for (const QString &ori_key_nochange : qAsConst(original_keys)){
+            for (const QString &ori_key_nochange : std::as_const(original_keys)){
                 QString ori_key = ori_key_nochange;
                 if (ori_key.startsWith(OLD_PREFIX_SHORTCUT)) {
                     ori_key.remove(0, 1);
@@ -3446,7 +3446,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
     bool import_result = false;
     QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
-    for (const MAP_KEYDATA &keymapdata : qAsConst(loadkeymapdata)) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(loadkeymapdata)) {
         int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(keymapdata.Original_Key);
         if (findindex != -1) {
 #ifdef DEBUG_LOGOUT_ON
@@ -5065,7 +5065,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
 #endif
 
-        for (const QString &group : qAsConst(groups)){
+        for (const QString &group : std::as_const(groups)){
             if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
                     && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
                 validgroups_customsetting.append(group);
@@ -5223,7 +5223,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList repeatmodeList;
         QStringList repeattimesList;
         if (mappingDataList->size() > 0) {
-            for (const MAP_KEYDATA &keymapdata : qAsConst(*mappingDataList))
+            for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
             {
                 original_keys << keymapdata.Original_Key;
                 QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
@@ -5820,7 +5820,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
 #endif
-    for (const QString &group : qAsConst(groups)){
+    for (const QString &group : std::as_const(groups)){
         bool valid_setting = false;
         QString tempSettingSelectStr = group + "/";
         if (group.endsWith(QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
@@ -5854,7 +5854,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
     }
 
-    for (const QString &group : qAsConst(groups)){
+    for (const QString &group : std::as_const(groups)){
         bool valid_setting = false;
         QString tempSettingSelectStr = group + "/";
         if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
@@ -5936,7 +5936,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     if (true == settingtext.isEmpty()) {
         if (true == settingFile.contains(SETTINGSELECT)){
             QVariant settingSelect = settingFile.value(SETTINGSELECT);
-            if (settingSelect.canConvert(QMetaType::QString)) {
+            if (settingSelect.metaType().id() == QMetaType::QString) {
                 settingSelectStr = settingSelect.toString();
             }
 
@@ -5978,7 +5978,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select Setting" << settingtext;
 #endif
             QVariant settingSelect = settingFile.value(SETTINGSELECT);
-            if (settingSelect.canConvert(QMetaType::QString)) {
+            if (settingSelect.metaType().id() == QMetaType::QString) {
                 settingSelectStr = settingSelect.toString();
             }
 
@@ -6449,7 +6449,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         }
 
                         int loadindex = 0;
-                        for (const QString &ori_key_nochange : qAsConst(original_keys)){
+                        for (const QString &ori_key_nochange : std::as_const(original_keys)){
                             QString ori_key = ori_key_nochange;
                             if (ori_key.startsWith(OLD_PREFIX_SHORTCUT)) {
                                 ori_key.remove(0, 1);
@@ -8069,7 +8069,7 @@ void QKeyMapper::updateVirtualGamepadListDisplay()
     QStringList gamepadList;
     gamepadList.append(QString());
     int gamepad_index = 0;
-    for (const QString &gamepad : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList))
+    for (const QString &gamepad : std::as_const(QKeyMapper_Worker::s_VirtualGamepadList))
     {
         QString gamepad_Str;
         if (gamepad == VIRTUAL_GAMEPAD_DS4) {
@@ -8220,7 +8220,7 @@ void QKeyMapper::updateGamepadSelectComboBox()
 
     QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
 
-    for (const QJoystickDevice *joystick : qAsConst(joysticklist)) {
+    for (const QJoystickDevice *joystick : std::as_const(joysticklist)) {
         int player_index = joystick->playerindex;
         if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
             Gamepad_Info gamepadinfo;
@@ -8554,7 +8554,7 @@ void QKeyMapper::updateProcessInfoDisplay()
 #endif
             QSize selectedSize = QSize(0, 0);
             QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
-            for(const QSize &iconsize : qAsConst(iconsizeList)){
+            for(const QSize &iconsize : std::as_const(iconsizeList)){
                 if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
                         && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
                     selectedSize = iconsize;
@@ -9273,7 +9273,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     vJoyStrlist.removeOne(VJOY_MOUSE2RS_STR);
 
     // Remove Strings start with "vJoy-" from orikeyComboBox
-    for (const QString &joystr : qAsConst(vJoyStrlist)){
+    for (const QString &joystr : std::as_const(vJoyStrlist)){
         orikeycodelist.removeOne(joystr);
     }
     keycodelist.removeOne(VJOY_MOUSE2LS_STR);
@@ -9284,7 +9284,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QStringList JoyStrlist = orikeycodelist.filter(re_Joy);
 
     // Remove Strings start with "Joy-" from mapkeyComboBox
-    for (const QString &joystr : qAsConst(JoyStrlist)){
+    for (const QString &joystr : std::as_const(JoyStrlist)){
         keycodelist.removeOne(joystr);
     }
     /* Remove Joy Keys from MappingKey ComboBox <<< */
@@ -9292,7 +9292,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     QRegularExpression re_Func("^Func-");
     QStringList FuncStrlist = orikeycodelist.filter(re_Func);
     // Remove Strings start with "Func-" from orikeyComboBox
-    for (const QString &funcstr : qAsConst(FuncStrlist)){
+    for (const QString &funcstr : std::as_const(FuncStrlist)){
         orikeycodelist.removeOne(funcstr);
     }
 
@@ -9549,7 +9549,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 #endif
         int rowindex = 0;
         mappingDataTable->setRowCount(mappingDataList->size());
-        for (const MAP_KEYDATA &keymapdata : qAsConst(*mappingDataList))
+        for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
         {
             bool disable_burst = false;
             bool disable_lock = false;
@@ -9753,7 +9753,7 @@ void QKeyMapper::updateMousePointsList()
     ScreenMousePointsList.clear();
     WindowMousePointsList.clear();
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
 
@@ -10247,7 +10247,7 @@ void QKeyMapper::sessionLockStateChanged(bool locked)
 void QKeyMapper::updateLockStatusDisplay()
 {
     int rowindex = 0;
-    for (const MAP_KEYDATA &keymapdata : qAsConst(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
@@ -10626,7 +10626,7 @@ void QKeyMapper::updateShortcutsMap()
 {
     freeShortcuts();
 
-    for (const MAP_KEYDATA &keymapdata : qAsConst(KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(KeyMappingDataList))
     {
         if (keymapdata.Original_Key.startsWith(OLD_PREFIX_SHORTCUT))
         {
@@ -10664,7 +10664,7 @@ void QKeyMapper::freeShortcuts()
 
     QList<QHotkey*> HotkeysList = ShortcutsMap.values();
 
-    for (QHotkey* shortcut : qAsConst(HotkeysList)) {
+    for (QHotkey* shortcut : std::as_const(HotkeysList)) {
         bool unregister = shortcut->setRegistered(false);
         Q_UNUSED(unregister);
 #ifdef DEBUG_LOGOUT_ON
@@ -10674,7 +10674,7 @@ void QKeyMapper::freeShortcuts()
 #endif
     }
 
-    for (QHotkey* shortcut : qAsConst(HotkeysList)) {
+    for (QHotkey* shortcut : std::as_const(HotkeysList)) {
         if (shortcut != Q_NULLPTR) {
             delete shortcut;
         }
@@ -10810,7 +10810,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
         QSize selectedSize = QSize(0, 0);
         QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
-        for(const QSize &iconsize : qAsConst(iconsizeList)){
+        for(const QSize &iconsize : std::as_const(iconsizeList)){
             if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
                     && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
                 selectedSize = iconsize;
@@ -10902,7 +10902,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (multiInputSupport) {
                     static QRegularExpression reg("@[0-9]$");
                     QStringList keyslist;
-                    for (const QString &key : qAsConst(combinationkeyslist)) {
+                    for (const QString &key : std::as_const(combinationkeyslist)) {
                         bool multi_input = false;
                         QString pure_key;
                         QRegularExpressionMatch match = reg.match(key);
@@ -10940,7 +10940,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
                 else {
                     QStringList keyslist;
-                    for (const QString &key : qAsConst(combinationkeyslist)) {
+                    for (const QString &key : std::as_const(combinationkeyslist)) {
                         if (keyslist.contains(key)) {
                             valid_combinationkey = false;
                             break;
@@ -12235,7 +12235,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
             }
 
             int gamepad_index = 0;
-            for (const QString &gamepad_type : qAsConst(QKeyMapper_Worker::s_VirtualGamepadList)){
+            for (const QString &gamepad_type : std::as_const(QKeyMapper_Worker::s_VirtualGamepadList)){
                 PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
                 if (added_target != Q_NULLPTR) {
                     QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
@@ -12689,7 +12689,11 @@ void KeyMappingDataTableWidget::startDrag(Qt::DropActions supportedActions)
 void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
 {
     if (event->dropAction() == Qt::MoveAction) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        int droppedRow = rowAt(event->position().toPoint().y());
+#else
         int droppedRow = rowAt(event->pos().y());
+#endif
 
         if (droppedRow < 0) {
             droppedRow = rowCount() - 1;

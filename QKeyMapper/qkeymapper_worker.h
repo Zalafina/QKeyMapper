@@ -57,6 +57,12 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
 QString getRealOriginalKey(const QString &original_key);
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+typedef char16_t* Utf16Pointer;
+#else
+typedef ushort* Utf16Pointer;
+#endif
+
 typedef struct MAP_KEYDATA
 {
     QString Original_Key;
