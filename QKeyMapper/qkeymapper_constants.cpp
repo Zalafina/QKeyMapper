@@ -510,6 +510,7 @@ const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
 const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
 const char *MOUSE2VJOY_LOCKCURSOR = "Mouse2vJoy_LockCursor";
+const char *MOUSE2VJOY_RECENTER_TIMEOUT = "Mouse2vJoy_Recenter_Timeout";
 #endif
 const char *MAPPINGTABLE_LASTTABINDEX = "MappingTable_LastTabIndex";
 const char *MAPPINGTABLE_TABNAMELIST = "MappingTable_TabNameList";

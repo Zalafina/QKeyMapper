@@ -4976,6 +4976,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 #ifdef VIGEM_CLIENT_SUPPORT
     int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
     int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
+    int vJoy_Recenter_Timeout = ui->vJoyRecenterSpinBox->value();
 #endif
 
     QString saveSettingSelectStr;
@@ -5391,6 +5392,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed);
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity);
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity);
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT, vJoy_Recenter_Timeout);
 
     if (saveGlobalSetting) {
 #ifdef DEBUG_LOGOUT_ON
@@ -6820,6 +6822,17 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     else {
         ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT)){
+        int vJoy_Recenter_Timeout = settingFile.value(settingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT).toInt();
+        ui->vJoyRecenterSpinBox->setValue(vJoy_Recenter_Timeout);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "vJoy Recenter Timeout =" << vJoy_Recenter_Timeout;
+#endif
+    }
+    else {
+        ui->vJoyRecenterSpinBox->setValue(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
     }
 
     if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_LOCKCURSOR)){

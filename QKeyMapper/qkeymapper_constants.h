@@ -459,6 +459,7 @@ extern const char* KEY2MOUSE_Y_SPEED;
 extern const char* MOUSE2VJOY_X_SENSITIVITY;
 extern const char* MOUSE2VJOY_Y_SENSITIVITY;
 extern const char* MOUSE2VJOY_LOCKCURSOR;
+extern const char *MOUSE2VJOY_RECENTER_TIMEOUT;
 #endif
 extern const char *MAPPINGTABLE_LASTTABINDEX;
 extern const char *MAPPINGTABLE_TABNAMELIST;
