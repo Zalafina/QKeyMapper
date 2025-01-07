@@ -247,6 +247,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
     ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->vJoyRecenterSpinBox->setRange(MOUSE2VJOY_RECENTER_TIMEOUT_MIN, MOUSE2VJOY_RECENTER_TIMEOUT_MAX);
+    ui->vJoyRecenterSpinBox->setValue(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
     ui->virtualGamepadNumberSpinBox->setRange(VIRTUAL_GAMEPAD_NUMBER_MIN, VIRTUAL_GAMEPAD_NUMBER_MAX);
 
     bool isWin10Above = false;
@@ -262,6 +264,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensSpinBox->setEnabled(false);
     ui->vJoyXSensLabel->setEnabled(false);
     ui->vJoyYSensLabel->setEnabled(false);
+    ui->vJoyRecenterLabel->setEnabled(false);
+    ui->vJoyRecenterSpinBox->setEnabled(false);
     ui->lockCursorCheckBox->setEnabled(false);
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
     ui->virtualGamepadNumberSpinBox->setEnabled(false);
@@ -2838,6 +2842,11 @@ int QKeyMapper::getvJoyXSensitivity()
 int QKeyMapper::getvJoyYSensitivity()
 {
     return getInstance()->ui->vJoyYSensSpinBox->value();
+}
+
+int QKeyMapper::getvJoyRecenterTimeout()
+{
+    return getInstance()->ui->vJoyRecenterSpinBox->value();
 }
 
 QString QKeyMapper::getVirtualGamepadType()
@@ -7162,6 +7171,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
+    ui->vJoyRecenterLabel->setFont(customFont);
     // ui->virtualgamepadGroupBox->setFont(customFont);
     // ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
@@ -7277,6 +7287,7 @@ void QKeyMapper::setControlFontChinese()
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
+    ui->vJoyRecenterLabel->setFont(customFont);
     // ui->virtualgamepadGroupBox->setFont(customFont);
     // ui->multiInputGroupBox->setFont(customFont);
     ui->installInterceptionButton->setFont(customFont);
@@ -7433,6 +7444,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->vJoyYSensLabel->setEnabled(status);
         ui->vJoyXSensSpinBox->setEnabled(status);
         ui->vJoyYSensSpinBox->setEnabled(status);
+        ui->vJoyRecenterLabel->setEnabled(status);
+        ui->vJoyRecenterSpinBox->setEnabled(status);
         ui->lockCursorCheckBox->setEnabled(status);
         ui->virtualGamepadNumberSpinBox->setEnabled(status);
         ui->virtualGamepadListComboBox->setEnabled(status);
@@ -9937,6 +9950,8 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
+    ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_CHINESE);
+    ui->vJoyRecenterSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
         ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
     }
@@ -10078,6 +10093,8 @@ void QKeyMapper::setUILanguage_English()
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_ENGLISH);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
+    ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_ENGLISH);
+    ui->vJoyRecenterSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
         ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
     }
@@ -12284,6 +12301,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyYSensSpinBox->setEnabled(true);
         ui->vJoyXSensLabel->setEnabled(true);
         ui->vJoyYSensLabel->setEnabled(true);
+        ui->vJoyRecenterLabel->setEnabled(true);
+        ui->vJoyRecenterSpinBox->setEnabled(true);
         ui->lockCursorCheckBox->setEnabled(true);
         ui->virtualGamepadNumberSpinBox->setEnabled(true);
         ui->virtualGamepadListComboBox->setEnabled(true);
@@ -12295,6 +12314,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyYSensSpinBox->setEnabled(false);
         ui->vJoyXSensLabel->setEnabled(false);
         ui->vJoyYSensLabel->setEnabled(false);
+        ui->vJoyRecenterLabel->setEnabled(false);
+        ui->vJoyRecenterSpinBox->setEnabled(false);
         ui->lockCursorCheckBox->setEnabled(false);
         ui->virtualGamepadNumberSpinBox->setEnabled(false);
         ui->virtualGamepadListComboBox->setEnabled(false);

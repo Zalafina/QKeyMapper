@@ -41,7 +41,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>KeyMappingStart</string>
@@ -63,7 +63,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>SaveSetting</string>
@@ -155,7 +155,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::TabFocus</enum>
+    <enum>Qt::FocusPolicy::TabFocus</enum>
    </property>
    <property name="text">
     <string>ADD</string>
@@ -177,7 +177,7 @@
     <string>OriKey</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="mapkeyLabel">
@@ -193,7 +193,7 @@
     <string>MapKey</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QPushButton" name="deleteSelectedButton">
@@ -206,7 +206,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>Delete</string>
@@ -225,7 +225,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>Clear</string>
@@ -250,16 +250,16 @@
     </sizepolicy>
    </property>
    <property name="frameShape">
-    <enum>QFrame::StyledPanel</enum>
+    <enum>QFrame::Shape::StyledPanel</enum>
    </property>
    <property name="frameShadow">
-    <enum>QFrame::Sunken</enum>
+    <enum>QFrame::Shadow::Sunken</enum>
    </property>
    <property name="text">
     <string/>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QPushButton" name="moveupButton">
@@ -272,7 +272,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>▲</string>
@@ -291,7 +291,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>▼</string>
@@ -310,7 +310,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
     <number>-1</number>
@@ -326,7 +326,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>Remove</string>
@@ -345,7 +345,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string> » </string>
@@ -364,7 +364,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
   </widget>
   <widget class="QLabel" name="waitTimeLabel">
@@ -380,7 +380,7 @@
     <string>Delay</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="orikeySeqLabel">
@@ -396,7 +396,7 @@
     <string>OriKeySeq</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="combinationKeyLineEdit">
@@ -422,7 +422,7 @@
     <string>Point</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="pointDisplayLabel">
@@ -441,16 +441,16 @@
     </sizepolicy>
    </property>
    <property name="frameShape">
-    <enum>QFrame::WinPanel</enum>
+    <enum>QFrame::Shape::WinPanel</enum>
    </property>
    <property name="frameShadow">
-    <enum>QFrame::Sunken</enum>
+    <enum>QFrame::Shadow::Sunken</enum>
    </property>
    <property name="text">
     <string/>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QComboBox" name="keyboardSelectComboBox">
@@ -463,7 +463,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
     <number>-1</number>
@@ -479,7 +479,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
     <number>-1</number>
@@ -498,7 +498,7 @@
     <string>Keyboard</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="mouseSelectLabel">
@@ -514,7 +514,7 @@
     <string>Mouse</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QSpinBox" name="pressTimeSpinBox">
@@ -527,7 +527,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::ClickFocus</enum>
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
   </widget>
   <widget class="QComboBox" name="keyPressTypeComboBox">
@@ -540,7 +540,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentText">
     <string/>
@@ -559,10 +559,10 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -578,7 +578,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Startup Minimized</string>
@@ -594,7 +594,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Sound Effect</string>
@@ -613,7 +613,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Auto Startup</string>
@@ -635,7 +635,7 @@
       <string>Notification</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QComboBox" name="notificationComboBox">
@@ -648,7 +648,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="currentText">
       <string/>
@@ -680,7 +680,7 @@
       <string>WindowKey</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QComboBox" name="languageComboBox">
@@ -693,7 +693,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="currentText">
       <string>中文</string>
@@ -725,7 +725,7 @@
       <string>Language</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QPushButton" name="checkUpdateButton">
@@ -738,7 +738,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Check Updates</string>
@@ -760,7 +760,7 @@
       <string>UpdateSite</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QComboBox" name="updateSiteComboBox">
@@ -773,7 +773,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="currentText">
       <string>Github</string>
@@ -820,7 +820,7 @@
       <string>MappingStart</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QCheckBox" name="autoStartMappingCheckBox">
@@ -833,7 +833,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Auto Match Foreground</string>
@@ -849,7 +849,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
      <property name="value">
       <number>3</number>
@@ -868,7 +868,7 @@
       <string>X Speed</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QSpinBox" name="mouseXSpeedSpinBox">
@@ -881,7 +881,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
      <property name="value">
       <number>3</number>
@@ -900,7 +900,7 @@
       <string>Y Speed</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QCheckBox" name="sendToSameTitleWindowsCheckBox">
@@ -913,7 +913,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Send To Same Windows</string>
@@ -932,7 +932,7 @@
       <string>MappingStop</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QLineEdit" name="mappingStopKeyLineEdit">
@@ -955,7 +955,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Accept Virtual Gamepad Input</string>
@@ -976,7 +976,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
     </widget>
     <widget class="QCheckBox" name="lockCursorCheckBox">
@@ -989,7 +989,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Lock Cursor</string>
@@ -1008,7 +1008,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>VirtualGamepad</string>
@@ -1027,7 +1027,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="value">
       <number>1</number>
@@ -1043,7 +1043,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="currentText">
       <string>X360</string>
@@ -1072,7 +1072,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>InstallViGEm</string>
@@ -1085,13 +1085,13 @@
      <property name="geometry">
       <rect>
        <x>340</x>
-       <y>10</y>
+       <y>40</y>
        <width>45</width>
        <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
     </widget>
     <widget class="QLabel" name="ViGEmBusStatusLabel">
@@ -1104,36 +1104,36 @@
       </rect>
      </property>
      <property name="frameShape">
-      <enum>QFrame::WinPanel</enum>
+      <enum>QFrame::Shape::WinPanel</enum>
      </property>
      <property name="frameShadow">
-      <enum>QFrame::Sunken</enum>
+      <enum>QFrame::Shadow::Sunken</enum>
      </property>
      <property name="text">
       <string/>
      </property>
      <property name="alignment">
-      <set>Qt::AlignCenter</set>
+      <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
     </widget>
     <widget class="QSpinBox" name="vJoyYSensSpinBox">
      <property name="geometry">
       <rect>
        <x>340</x>
-       <y>40</y>
+       <y>70</y>
        <width>45</width>
        <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
     </widget>
     <widget class="QLabel" name="vJoyYSensLabel">
      <property name="geometry">
       <rect>
        <x>275</x>
-       <y>40</y>
+       <y>70</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -1142,14 +1142,14 @@
       <string>Y Sens</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QLabel" name="vJoyXSensLabel">
      <property name="geometry">
       <rect>
        <x>275</x>
-       <y>10</y>
+       <y>40</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -1158,7 +1158,36 @@
       <string>X Sens</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QSpinBox" name="vJoyRecenterSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>314</x>
+       <y>10</y>
+       <width>71</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="vJoyRecenterLabel">
+     <property name="geometry">
+      <rect>
+       <x>239</x>
+       <y>10</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Recenter</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
    </widget>
@@ -1176,13 +1205,13 @@
       </rect>
      </property>
      <property name="frameShape">
-      <enum>QFrame::WinPanel</enum>
+      <enum>QFrame::Shape::WinPanel</enum>
      </property>
      <property name="frameShadow">
-      <enum>QFrame::Sunken</enum>
+      <enum>QFrame::Shadow::Sunken</enum>
      </property>
      <property name="alignment">
-      <set>Qt::AlignCenter</set>
+      <set>Qt::AlignmentFlag::AlignCenter</set>
      </property>
     </widget>
     <widget class="QPushButton" name="installInterceptionButton">
@@ -1195,7 +1224,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>Install Driver</string>
@@ -1214,7 +1243,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>FilterKeys</string>
@@ -1233,7 +1262,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>MultiDevice</string>
@@ -1249,7 +1278,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::NoFocus</enum>
+      <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
       <string>DeviceList</string>
@@ -1273,7 +1302,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
     </widget>
     <widget class="QDoubleSpinBox" name="brakeThresholdDoubleSpinBox">
@@ -1286,7 +1315,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
     </widget>
     <widget class="QSpinBox" name="dataPortSpinBox">
@@ -1299,7 +1328,7 @@
       </rect>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
     </widget>
     <widget class="QLabel" name="dataPortLabel">
@@ -1315,7 +1344,7 @@
       <string>DataPort</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QLabel" name="accelThresholdLabel">
@@ -1331,7 +1360,7 @@
       <string>AccelValue</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QLabel" name="brakeThresholdLabel">
@@ -1347,7 +1376,7 @@
       <string>BrakeValue</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
    </widget>
@@ -1375,7 +1404,7 @@
     <string>Text</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLabel" name="gamepadSelectLabel">
@@ -1391,7 +1420,7 @@
     <string>Gamepad</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QComboBox" name="gamepadSelectComboBox">
@@ -1404,7 +1433,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
     <number>-1</number>
@@ -1433,7 +1462,7 @@
     <string>Description</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QPushButton" name="processListButton">
@@ -1446,7 +1475,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>ProcessList</string>
@@ -1471,7 +1500,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>ShowNotes</string>
@@ -1493,7 +1522,7 @@
     </rect>
    </property>
    <property name="orientation">
-    <enum>Qt::Horizontal</enum>
+    <enum>Qt::Orientation::Horizontal</enum>
    </property>
   </widget>
   <widget class="QLabel" name="pushLevelLabel">
@@ -1509,7 +1538,7 @@
     <string>PushLevel</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QSpinBox" name="pushLevelSpinBox">
@@ -1520,6 +1549,9 @@
      <width>51</width>
      <height>22</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
   </widget>
   <zorder>keymapButton</zorder>

@@ -395,6 +395,7 @@ public:
     static int getJoystick2MouseSpeedY(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
+    static int getvJoyRecenterTimeout(void);
     static QString getVirtualGamepadType(void);
     static bool getLockCursorStatus(void);
     static int getGlobalSettingAutoStart(void);

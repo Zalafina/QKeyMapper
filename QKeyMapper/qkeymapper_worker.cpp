@@ -3526,12 +3526,12 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
         Q_UNUSED(error);
         if (false == s_Mouse2vJoy_Hold && false == s_Mouse2vJoy_Direct) {
-            m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(MOUSE2VJOY_RESET_TIMEOUT);
+            m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(QKeyMapper::getvJoyRecenterTimeout());
             // if (mouse_index >= 0) {
-            //     m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(MOUSE2VJOY_RESET_TIMEOUT);
+            //     m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
             // }
             // else {
-            //     m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+            //     m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
             // }
         }
 #ifdef DEBUG_LOGOUT_ON
@@ -5528,11 +5528,11 @@ void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keyst
 {
     Q_UNUSED(mouse_index_param);
     Q_UNUSED(mouse2joy_keystr);
-    // m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RESET_TIMEOUT);
+    // m_Mouse2vJoyResetTimer.start(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
 
     QList<int> mouse_index_list = s_Mouse2vJoy_EnableStateMap.keys();
     for (const int& mouse_index : mouse_index_list) {
-        m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(MOUSE2VJOY_RESET_TIMEOUT);
+        m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(QKeyMapper::getvJoyRecenterTimeout());
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[startMouse2vJoyResetTimer]" << mouse2joy_keystr << "-> Start Mouse2vJoyResetTimer, MouseIndex =" << mouse_index;
 #endif
