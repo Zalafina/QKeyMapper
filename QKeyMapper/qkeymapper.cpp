@@ -11190,7 +11190,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int y = mousepoint.y();
 
                     if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x, y);
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
 
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
