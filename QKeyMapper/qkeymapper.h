@@ -397,7 +397,8 @@ public:
     static int getvJoyYSensitivity(void);
     static int getvJoyRecenterTimeout(void);
     static QString getVirtualGamepadType(void);
-    static bool getLockCursorStatus(void);
+    static bool getvJoyLockCursorStatus(void);
+    static bool getvJoyDirectModeStatus(void);
     static int getGlobalSettingAutoStart(void);
     static bool checkGlobalSettingAutoStart(void);
     static int getDataPortNumber(void);

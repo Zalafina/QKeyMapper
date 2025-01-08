@@ -970,7 +970,7 @@
      <property name="geometry">
       <rect>
        <x>190</x>
-       <y>40</y>
+       <y>70</y>
        <width>75</width>
        <height>22</height>
       </rect>
@@ -1002,7 +1002,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>40</y>
+       <y>70</y>
        <width>80</width>
        <height>21</height>
       </rect>
@@ -1021,7 +1021,7 @@
      <property name="geometry">
       <rect>
        <x>150</x>
-       <y>40</y>
+       <y>70</y>
        <width>35</width>
        <height>22</height>
       </rect>
@@ -1037,7 +1037,7 @@
      <property name="geometry">
       <rect>
        <x>90</x>
-       <y>40</y>
+       <y>70</y>
        <width>56</width>
        <height>21</height>
       </rect>
@@ -1085,7 +1085,7 @@
      <property name="geometry">
       <rect>
        <x>340</x>
-       <y>40</y>
+       <y>10</y>
        <width>45</width>
        <height>21</height>
       </rect>
@@ -1120,7 +1120,7 @@
      <property name="geometry">
       <rect>
        <x>340</x>
-       <y>70</y>
+       <y>40</y>
        <width>45</width>
        <height>21</height>
       </rect>
@@ -1133,7 +1133,7 @@
      <property name="geometry">
       <rect>
        <x>275</x>
-       <y>70</y>
+       <y>40</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -1149,7 +1149,7 @@
      <property name="geometry">
       <rect>
        <x>275</x>
-       <y>40</y>
+       <y>10</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -1164,7 +1164,7 @@
     <widget class="QSpinBox" name="vJoyRecenterSpinBox">
      <property name="geometry">
       <rect>
-       <x>314</x>
+       <x>194</x>
        <y>10</y>
        <width>71</width>
        <height>22</height>
@@ -1177,9 +1177,9 @@
     <widget class="QLabel" name="vJoyRecenterLabel">
      <property name="geometry">
       <rect>
-       <x>239</x>
+       <x>129</x>
        <y>10</y>
-       <width>71</width>
+       <width>61</width>
        <height>21</height>
       </rect>
      </property>
@@ -1188,6 +1188,25 @@
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="directModeCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>40</y>
+       <width>111</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Direct Mode</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
      </property>
     </widget>
    </widget>

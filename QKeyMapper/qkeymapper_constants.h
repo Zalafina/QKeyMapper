@@ -326,7 +326,6 @@ extern const int MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT;
 
 extern const int VJOY_KEYUP_WAITTIME;
 extern const quint8 VK_MOUSE2VJOY_HOLD;
-extern const quint8 VK_MOUSE2VJOY_DIRECT;
 #endif
 
 extern const quint8 VK_KEY2MOUSE_UP;
@@ -459,6 +458,7 @@ extern const char* KEY2MOUSE_Y_SPEED;
 extern const char* MOUSE2VJOY_X_SENSITIVITY;
 extern const char* MOUSE2VJOY_Y_SENSITIVITY;
 extern const char* MOUSE2VJOY_LOCKCURSOR;
+extern const char *MOUSE2VJOY_DIRECTMODE;
 extern const char *MOUSE2VJOY_RECENTER_TIMEOUT;
 #endif
 extern const char *MAPPINGTABLE_LASTTABINDEX;
@@ -645,6 +645,7 @@ extern const char* INSTALLVIGEMBUSBUTTON_CHINESE;
 extern const char* UNINSTALLVIGEMBUSBUTTON_CHINESE;
 extern const char* ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE;
 extern const char* LOCKCURSORCHECKBOX_CHINESE;
+extern const char *DIRECTMODECHECKBOX_CHINESE;
 #endif
 extern const char* MULTIINPUTGROUPBOX_CHINESE;
 extern const char* MULTIINPUTENABLECHECKBOX_CHINESE;
@@ -768,6 +769,7 @@ extern const char* INSTALLVIGEMBUSBUTTON_ENGLISH;
 extern const char* UNINSTALLVIGEMBUSBUTTON_ENGLISH;
 extern const char* ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH;
 extern const char* LOCKCURSORCHECKBOX_ENGLISH;
+extern const char *DIRECTMODECHECKBOX_ENGLISH;
 #endif
 extern const char* MULTIINPUTGROUPBOX_ENGLISH;
 extern const char* MULTIINPUTENABLECHECKBOX_ENGLISH;

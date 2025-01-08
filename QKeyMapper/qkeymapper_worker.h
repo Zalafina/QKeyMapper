@@ -890,7 +890,6 @@ public:
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
     static QAtomicBool s_Mouse2vJoy_Hold;
-    static QAtomicBool s_Mouse2vJoy_Direct;
     static QAtomicBool s_Key2Mouse_Up;
     static QAtomicBool s_Key2Mouse_Down;
     static QAtomicBool s_Key2Mouse_Left;

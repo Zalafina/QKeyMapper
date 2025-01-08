@@ -267,6 +267,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyRecenterLabel->setEnabled(false);
     ui->vJoyRecenterSpinBox->setEnabled(false);
     ui->lockCursorCheckBox->setEnabled(false);
+    ui->directModeCheckBox->setEnabled(false);
     ui->enableVirtualJoystickCheckBox->setEnabled(false);
     ui->virtualGamepadNumberSpinBox->setEnabled(false);
     ui->virtualGamepadListComboBox->setEnabled(false);
@@ -2854,14 +2855,14 @@ QString QKeyMapper::getVirtualGamepadType()
     return getInstance()->ui->virtualGamepadTypeComboBox->currentText();
 }
 
-bool QKeyMapper::getLockCursorStatus()
+bool QKeyMapper::getvJoyLockCursorStatus()
 {
-    if (true == getInstance()->ui->lockCursorCheckBox->isChecked()) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return getInstance()->ui->lockCursorCheckBox->isChecked();
+}
+
+bool QKeyMapper::getvJoyDirectModeStatus()
+{
+    return getInstance()->ui->directModeCheckBox->isChecked();
 }
 
 int QKeyMapper::getGlobalSettingAutoStart()
@@ -5436,6 +5437,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, ui->acceptVirtualGamepadInputCheckBox->isChecked());
 #ifdef VIGEM_CLIENT_SUPPORT
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_DIRECTMODE, ui->directModeCheckBox->isChecked());
 #endif
     settingFile.setValue(saveSettingSelectStr+DATAPORT_NUMBER, ui->dataPortSpinBox->value());
     double gripThresholdBrake = ui->brakeThresholdDoubleSpinBox->value();
@@ -6806,7 +6808,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         int vJoy_X_Sensitivity = settingFile.value(settingSelectStr+MOUSE2VJOY_X_SENSITIVITY).toInt();
         ui->vJoyXSensSpinBox->setValue(vJoy_X_Sensitivity);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "vJoy X Sensitivity =" << vJoy_X_Sensitivity;
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy X Sensitivity =" << vJoy_X_Sensitivity;
 #endif
     }
     else {
@@ -6817,7 +6819,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         int vJoy_Y_Sensitivity = settingFile.value(settingSelectStr+MOUSE2VJOY_Y_SENSITIVITY).toInt();
         ui->vJoyYSensSpinBox->setValue(vJoy_Y_Sensitivity);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "vJoy Y Sensitivity =" << vJoy_Y_Sensitivity;
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy Y Sensitivity =" << vJoy_Y_Sensitivity;
 #endif
     }
     else {
@@ -6828,7 +6830,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         int vJoy_Recenter_Timeout = settingFile.value(settingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT).toInt();
         ui->vJoyRecenterSpinBox->setValue(vJoy_Recenter_Timeout);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "vJoy Recenter Timeout =" << vJoy_Recenter_Timeout;
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy Recenter Timeout =" << vJoy_Recenter_Timeout;
 #endif
     }
     else {
@@ -6844,11 +6846,27 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->lockCursorCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "LockCursorChecked =" << lockCursorChecked;
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy LockCursorChecked =" << lockCursorChecked;
 #endif
     }
     else {
         ui->lockCursorCheckBox->setChecked(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_DIRECTMODE)){
+        bool directModeChecked = settingFile.value(settingSelectStr+MOUSE2VJOY_DIRECTMODE).toBool();
+        if (true == directModeChecked) {
+            ui->directModeCheckBox->setChecked(true);
+        }
+        else {
+            ui->directModeCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy DirectModeChecked =" << directModeChecked;
+#endif
+    }
+    else {
+        ui->directModeCheckBox->setChecked(false);
     }
 #endif
 
@@ -7181,6 +7199,7 @@ void QKeyMapper::setControlFontEnglish()
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
     ui->lockCursorCheckBox->setFont(customFont);
+    ui->directModeCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
@@ -7297,6 +7316,7 @@ void QKeyMapper::setControlFontChinese()
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
     ui->lockCursorCheckBox->setFont(customFont);
+    ui->directModeCheckBox->setFont(customFont);
     ui->ViGEmBusStatusLabel->setFont(customFont);
     ui->vJoyXSensLabel->setFont(customFont);
     ui->vJoyYSensLabel->setFont(customFont);
@@ -7460,6 +7480,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->vJoyRecenterLabel->setEnabled(status);
         ui->vJoyRecenterSpinBox->setEnabled(status);
         ui->lockCursorCheckBox->setEnabled(status);
+        ui->directModeCheckBox->setEnabled(status);
         ui->virtualGamepadNumberSpinBox->setEnabled(status);
         ui->virtualGamepadListComboBox->setEnabled(status);
     }
@@ -9961,6 +9982,7 @@ void QKeyMapper::setUILanguage_Chinese()
     // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
+    ui->directModeCheckBox->setText(DIRECTMODECHECKBOX_CHINESE);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
     ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_CHINESE);
@@ -10104,6 +10126,7 @@ void QKeyMapper::setUILanguage_English()
     // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_ENGLISH);
     ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH);
     ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_ENGLISH);
+    ui->directModeCheckBox->setText(DIRECTMODECHECKBOX_ENGLISH);
     ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_ENGLISH);
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
     ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_ENGLISH);
@@ -12317,6 +12340,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyRecenterLabel->setEnabled(true);
         ui->vJoyRecenterSpinBox->setEnabled(true);
         ui->lockCursorCheckBox->setEnabled(true);
+        ui->directModeCheckBox->setEnabled(true);
         ui->virtualGamepadNumberSpinBox->setEnabled(true);
         ui->virtualGamepadListComboBox->setEnabled(true);
 
@@ -12330,6 +12354,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->vJoyRecenterLabel->setEnabled(false);
         ui->vJoyRecenterSpinBox->setEnabled(false);
         ui->lockCursorCheckBox->setEnabled(false);
+        ui->directModeCheckBox->setEnabled(false);
         ui->virtualGamepadNumberSpinBox->setEnabled(false);
         ui->virtualGamepadListComboBox->setEnabled(false);
 

@@ -355,13 +355,12 @@ const int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 12;
 const int VIRTUAL_GAMEPAD_NUMBER_MIN = 1;
 const int VIRTUAL_GAMEPAD_NUMBER_MAX = 4;
 
-const int MOUSE2VJOY_RECENTER_TIMEOUT_MIN = 1;
+const int MOUSE2VJOY_RECENTER_TIMEOUT_MIN = 0;
 const int MOUSE2VJOY_RECENTER_TIMEOUT_MAX = 1000;
 const int MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT = 200;
 
 const int VJOY_KEYUP_WAITTIME = 20;
 const quint8 VK_MOUSE2VJOY_HOLD = 0x3A;
-const quint8 VK_MOUSE2VJOY_DIRECT = 0x3B;
 #endif
 
 const quint8 VK_KEY2MOUSE_UP    = 0x8A;
@@ -510,6 +509,7 @@ const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
 const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";
 const char *MOUSE2VJOY_LOCKCURSOR = "Mouse2vJoy_LockCursor";
+const char *MOUSE2VJOY_DIRECTMODE = "Mouse2vJoy_DirectMode";
 const char *MOUSE2VJOY_RECENTER_TIMEOUT = "Mouse2vJoy_Recenter_Timeout";
 #endif
 const char *MAPPINGTABLE_LASTTABINDEX = "MappingTable_LastTabIndex";
@@ -732,6 +732,7 @@ const char *INSTALLVIGEMBUSBUTTON_CHINESE = "安装ViGEm";
 const char *UNINSTALLVIGEMBUSBUTTON_CHINESE = "卸载ViGEm";
 const char *ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE = "虚拟手柄";
 const char *LOCKCURSORCHECKBOX_CHINESE = "锁定光标";
+const char *DIRECTMODECHECKBOX_CHINESE = "直控模式";
 #endif
 const char *MULTIINPUTGROUPBOX_CHINESE = "多输入设备";
 const char *MULTIINPUTENABLECHECKBOX_CHINESE = "多设备";
@@ -860,6 +861,7 @@ const char *INSTALLVIGEMBUSBUTTON_ENGLISH = "InstallViGEm";
 const char *UNINSTALLVIGEMBUSBUTTON_ENGLISH = "UninstallViGEm";
 const char *ENABLEVIRTUALJOYSTICKCHECKBOX_ENGLISH = "VirtualGamepad";
 const char *LOCKCURSORCHECKBOX_ENGLISH = "Lock Cursor";
+const char *DIRECTMODECHECKBOX_ENGLISH = "Direct Mode";
 #endif
 const char *MULTIINPUTGROUPBOX_ENGLISH = "Multi-InputDevice";
 const char *MULTIINPUTENABLECHECKBOX_ENGLISH = "MultiDevice";
