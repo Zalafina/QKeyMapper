@@ -248,6 +248,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyRecenterSpinBox->setRange(MOUSE2VJOY_RECENTER_TIMEOUT_MIN, MOUSE2VJOY_RECENTER_TIMEOUT_MAX);
+    ui->vJoyRecenterSpinBox->setSpecialValueText(MOUSE2VJOY_RECENTER_SPECIAL_UNLIMITED);
     ui->vJoyRecenterSpinBox->setValue(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
     ui->virtualGamepadNumberSpinBox->setRange(VIRTUAL_GAMEPAD_NUMBER_MIN, VIRTUAL_GAMEPAD_NUMBER_MAX);
 
