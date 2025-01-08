@@ -995,7 +995,6 @@ private:
     IDirectInput8* m_DirectInput;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
-    // QTimer m_Mouse2vJoyResetTimer;
     QHash<int, QTimer*> m_Mouse2vJoyResetTimerMap;
 #endif
     QTimer m_Key2MouseCycleTimer;
