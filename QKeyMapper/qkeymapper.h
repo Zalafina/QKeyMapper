@@ -755,13 +755,13 @@ public:
     KeyListComboBox *m_mapkeyComboBox;
     QMap<int, Gamepad_Info> m_GamepadInfoMap;
     QStringList m_SettingSelectListWithoutDescription;
+    bool loadSetting_flag;
 private:
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
-    bool loadSetting_flag;
     HWND m_MainWindowHandle;
     HWND m_TransParentHandle;
     int m_TransParentWindowInitialX;

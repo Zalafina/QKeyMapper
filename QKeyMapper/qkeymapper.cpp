@@ -2139,8 +2139,13 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[validateSingleMappingKey]" << "Prefix(" << prefix << "), Time(" << waittime << ") -> " << mapkey;
 #endif
+        bool deprecated_compatible = false;
+        if (QKeyMapper::getInstance()->loadSetting_flag && mapping_key == MOUSE2VJOY_DIRECT_KEY_STR_DEPRECATED) {
+            deprecated_compatible = true;
+        }
 
-        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
+        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)
+            && !deprecated_compatible) {
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
             static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
             static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((\d+),(\d+)\)$)");
@@ -3533,9 +3538,7 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         disable_sendtiming = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
-        || keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)
-        || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
-        || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)) {
+        || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
         disable_sendtiming = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
@@ -9213,7 +9216,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
             << MOUSE2VJOY_HOLD_KEY_STR
-            << MOUSE2VJOY_DIRECT_KEY_STR
             << "vJoy-LS-Up"
             << "vJoy-LS-Down"
             << "vJoy-LS-Left"
@@ -9318,7 +9320,6 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
     orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
-    orikeycodelist.removeOne(MOUSE2VJOY_DIRECT_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -9655,8 +9656,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
-                || keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_DIRECT_KEY_STR)) {
+            else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
                 disable_burst = true;
                 // disable_lock = true;
             }
@@ -11078,7 +11078,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                 || currentMapKeyText.startsWith(FUNC_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
-                || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
                 || currentMapKeyText == VJOY_RT_BRAKE_STR
                 || currentMapKeyText == VJOY_LT_ACCEL_STR
@@ -11092,7 +11091,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
-                    || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_DIRECT_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
@@ -11108,7 +11106,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                     || currentMapKeyText.startsWith(FUNC_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
-                    || currentMapKeyText == MOUSE2VJOY_DIRECT_KEY_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
                     || currentMapKeyText == VJOY_RT_BRAKE_STR
                     || currentMapKeyText == VJOY_LT_ACCEL_STR
@@ -11442,7 +11439,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
                     && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
-                    && currentMapKeyComboBoxText != MOUSE2VJOY_DIRECT_KEY_STR
                     && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
                     && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
                     && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR

@@ -625,7 +625,7 @@ const char *VJOY_MOUSE2LS_STR = "vJoy-Mouse2LS";
 const char *VJOY_MOUSE2RS_STR = "vJoy-Mouse2RS";
 const char *MOUSE2VJOY_PREFIX = "Mouse2vJoy-";
 const char *MOUSE2VJOY_HOLD_KEY_STR = "Mouse2vJoy-Hold";
-const char *MOUSE2VJOY_DIRECT_KEY_STR = "Mouse2vJoy-Direct";
+const char *MOUSE2VJOY_DIRECT_KEY_STR_DEPRECATED = "Mouse2vJoy-Direct";
 
 const char *VJOY_LT_BRAKE_STR = "vJoy-Key11(LT)_BRAKE";
 const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";

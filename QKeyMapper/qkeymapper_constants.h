@@ -551,7 +551,7 @@ extern const char* VJOY_MOUSE2LS_STR;
 extern const char* VJOY_MOUSE2RS_STR;
 extern const char* MOUSE2VJOY_PREFIX;
 extern const char* MOUSE2VJOY_HOLD_KEY_STR;
-extern const char* MOUSE2VJOY_DIRECT_KEY_STR;
+extern const char *MOUSE2VJOY_DIRECT_KEY_STR_DEPRECATED;
 extern const char* VJOY_LT_BRAKE_STR;
 extern const char* VJOY_RT_BRAKE_STR;
 extern const char* VJOY_LT_ACCEL_STR;

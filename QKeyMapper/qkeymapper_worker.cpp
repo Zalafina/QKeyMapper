@@ -11456,7 +11456,6 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << FUNC_SLEEP
             << FUNC_HIBERNATE
             << MOUSE2VJOY_HOLD_KEY_STR
-            << MOUSE2VJOY_DIRECT_KEY_STR
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
