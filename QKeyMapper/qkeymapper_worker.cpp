@@ -3409,10 +3409,6 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         if (QKeyMapper::getvJoyDirectModeStatus()) {
             int direct_x;
             int direct_y;
-            int x_sensitivity = vJoy_X_Sensitivity;
-            int y_sensitivity = vJoy_Y_Sensitivity;
-            float x_factor = 1000.0f / x_sensitivity;
-            float y_factor = 1000.0f / y_sensitivity;
             if (leftJoystickUpdate) {
                 direct_x = ViGEmTarget_Report.sThumbLX;
                 direct_y = ViGEmTarget_Report.sThumbLY;
@@ -3421,9 +3417,11 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
                 direct_x = ViGEmTarget_Report.sThumbRX;
                 direct_y = ViGEmTarget_Report.sThumbRY;
             }
-            direct_x += delta_x * x_factor;
-            direct_y -= delta_y * y_factor;
 
+            direct_x += delta_x * vJoy_X_Sensitivity;
+            direct_y -= delta_y * vJoy_X_Sensitivity;
+
+            // Clamp values to the joystick range (-32767, 32767)
             if (direct_x > 32767) {
                 direct_x = 32767;
             }
@@ -3437,17 +3435,20 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
                 direct_y = -32767;
             }
 
+            // Assign final joystick values
             leftX = direct_x;
             leftY = direct_y;
         }
         else {
             // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
+            qreal adjustedXSensitivity = 1000.0 / vJoy_X_Sensitivity;
+            qreal adjustedYSensitivity = 1000.0 / vJoy_Y_Sensitivity;
             #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            qreal x = -qExp((-1.0 / vJoy_X_Sensitivity) * qAbs(delta_x)) + 1.0;
-            qreal y = -qExp((-1.0 / vJoy_Y_Sensitivity) * qAbs(delta_y)) + 1.0;
+            qreal x = -qExp((-1.0 / adjustedXSensitivity) * qAbs(delta_x)) + 1.0;
+            qreal y = -qExp((-1.0 / adjustedYSensitivity) * qAbs(delta_y)) + 1.0;
             #else
-            qreal x = -std::exp((-1.0 / vJoy_X_Sensitivity) * std::abs(delta_x)) + 1.0;
-            qreal y = -std::exp((-1.0 / vJoy_Y_Sensitivity) * std::abs(delta_y)) + 1.0;
+            qreal x = -std::exp((-1.0 / adjustedXSensitivity) * std::abs(delta_x)) + 1.0;
+            qreal y = -std::exp((-1.0 / adjustedYSensitivity) * std::abs(delta_y)) + 1.0;
             #endif
             // take the sign into account, expanding the range to (-1, 1)
             x *= sign(delta_x);
