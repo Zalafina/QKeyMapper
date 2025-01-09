@@ -248,7 +248,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyRecenterSpinBox->setRange(MOUSE2VJOY_RECENTER_TIMEOUT_MIN, MOUSE2VJOY_RECENTER_TIMEOUT_MAX);
-    ui->vJoyRecenterSpinBox->setSpecialValueText(MOUSE2VJOY_RECENTER_SPECIAL_UNLIMITED);
     ui->vJoyRecenterSpinBox->setValue(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
     ui->virtualGamepadNumberSpinBox->setRange(VIRTUAL_GAMEPAD_NUMBER_MIN, VIRTUAL_GAMEPAD_NUMBER_MAX);
 
@@ -9988,6 +9987,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
     ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_CHINESE);
     ui->vJoyRecenterSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
+    ui->vJoyRecenterSpinBox->setSpecialValueText(VJOYRECENTERSPINBOX_UNRECENTER_CHINESE);
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
         ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
     }
@@ -10132,6 +10132,7 @@ void QKeyMapper::setUILanguage_English()
     ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_ENGLISH);
     ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_ENGLISH);
     ui->vJoyRecenterSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
+    ui->vJoyRecenterSpinBox->setSpecialValueText(VJOYRECENTERSPINBOX_UNRECENTER_ENGLISH);
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
         ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
     }
