@@ -5502,6 +5502,7 @@ void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keyst
 void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)
 {
     Q_UNUSED(mouse_index_param);
+    Q_UNUSED(mouse2joy_keystr);
 
     QList<int> mouse_index_list = s_Mouse2vJoy_EnableStateMap.keys();
     for (const int& mouse_index : mouse_index_list) {
