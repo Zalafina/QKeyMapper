@@ -10614,6 +10614,19 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
     qDebug() << "[onUpdateDownloadFinished]" << "dirname ->" << dirname;
 #endif
 
+    // Check if the file exists
+    if (!fileinfo.exists()) {
+        QString errorMessage;
+        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+            errorMessage = QString("The upgrade package %1 does not exist in the directory %2. Download failed!").arg(filename, dirname);
+        }
+        else {
+            errorMessage = QString("升级包 %1 在目录 %2 中不存在。下载失败！").arg(filename, dirname);
+        }
+        showFailurePopup(errorMessage);
+        return;
+    }
+
     QString message;
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         message = QString("<html><head/><body><p align=\"center\">The upgrade package <b>%1</b> has been successfully downloaded to the directory <b>%2</b>.</p>")
