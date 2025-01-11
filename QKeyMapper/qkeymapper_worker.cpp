@@ -8769,10 +8769,11 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
             clearLongPressTimer(keycodeString);
             int intercept_longpress = longPressKeyProc(keycodeString, KEY_UP);
             int intercept_doublepress = doublePressKeyProc(keycodeString, KEY_UP);
-            if (intercept_longpress != KEY_INTERCEPT_NONE) {
-                intercept = intercept_longpress;
-            }
-            else if (intercept_doublepress != KEY_INTERCEPT_NONE) {
+            Q_UNUSED(intercept_longpress);
+            // if (intercept_longpress != KEY_INTERCEPT_NONE) {
+            //     intercept = intercept_longpress;
+            // } else
+            if (intercept_doublepress != KEY_INTERCEPT_NONE) {
                 intercept = intercept_doublepress;
             }
         }
