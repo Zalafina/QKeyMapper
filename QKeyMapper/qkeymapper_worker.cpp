@@ -1904,8 +1904,9 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
                 if (isPostOnly) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendMousePointClick] isPostOnly=true, skip sendWindowMousePointClick(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+                    qDebug().nospace().noquote() << "[sendMousePointClick] PostMessage=true, postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
+                    postMouseButton(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -1917,6 +1918,9 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                 for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                    if (QKeyMapper::s_CurrentMappingHWND == hwnd) {
+                        continue;
+                    }
                     postMouseButton(hwnd, mousebutton, keyupdown, mousepoint);
                 }
 #ifdef DEBUG_LOGOUT_ON
