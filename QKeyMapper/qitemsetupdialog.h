@@ -90,6 +90,7 @@ private slots:
     void on_repeatTimesSpinBox_editingFinished();
     void on_itemNoteUpdateButton_clicked();
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
+    void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
 };
 

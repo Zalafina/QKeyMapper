@@ -77,6 +77,7 @@ typedef struct MAP_KEYDATA
     int BurstReleaseTime;
     bool Lock;
     bool MappingKeyUnlock;
+    bool PostMappingKey;
     uint LockState;
     bool CheckCombKeyOrder;
     bool Unbreakable;
@@ -99,6 +100,7 @@ typedef struct MAP_KEYDATA
     , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
     , Lock(false)
     , MappingKeyUnlock(false)
+    , PostMappingKey(false)
     , LockState(LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
     , Unbreakable(false)
@@ -111,7 +113,7 @@ typedef struct MAP_KEYDATA
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
                 bool burst, int burstpresstime, int burstreleasetime,
-                bool lock, bool mappingkeys_unlock,
+                bool lock, bool mappingkeys_unlock, bool postmappingkey,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times)
@@ -137,6 +139,7 @@ typedef struct MAP_KEYDATA
         BurstReleaseTime = burstreleasetime;
         Lock = lock;
         MappingKeyUnlock = mappingkeys_unlock;
+        PostMappingKey = postmappingkey;
         LockState = LOCK_STATE_LOCKOFF;
         CheckCombKeyOrder = checkcombkeyorder;
         Unbreakable = unbreakable;
@@ -158,6 +161,7 @@ typedef struct MAP_KEYDATA
                 && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
+                && (PostMappingKey == other.PostMappingKey)
                 && (CheckCombKeyOrder == other.CheckCombKeyOrder)
                 && (Unbreakable == other.Unbreakable)
                 && (PassThrough == other.PassThrough)
@@ -181,6 +185,7 @@ typedef struct MAP_KEYDATA
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
                         << ", Lock:" << data.Lock
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
+                        << ", PostMappingKey:" << data.PostMappingKey
                         << ", LockState:" << data.LockState
                         << ", CheckCombKeyOrder:" << data.CheckCombKeyOrder
                         << ", Unbreakable:" << data.Unbreakable

@@ -71,6 +71,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
         ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
+        ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_ENGLISH);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_ENGLISH);
         ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_ENGLISH);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
@@ -111,6 +112,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
         ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
+        ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_CHINESE);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_CHINESE);
         ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_CHINESE);
         ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
@@ -174,6 +176,7 @@ void QItemSetupDialog::resetFontSize()
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
+    ui->postMappingKeyCheckBox->setFont(customFont);
     ui->checkCombKeyOrderCheckBox->setFont(customFont);
     ui->unbreakableCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
@@ -384,6 +387,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->mappingKeyUnlockCheckBox->setChecked(false);
+        }
+
+        /* Load PostMappingKey */
+        if (true == keymapdata.PostMappingKey) {
+            ui->postMappingKeyCheckBox->setChecked(true);
+        }
+        else {
+            ui->postMappingKeyCheckBox->setChecked(false);
         }
 
         /* Load SendTiming State */
@@ -665,6 +676,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->mappingKeyUnlockCheckBox->setChecked(false);
+        }
+
+        /* Load PostMappingKey */
+        if (true == keymapdata.PostMappingKey) {
+            ui->postMappingKeyCheckBox->setChecked(true);
+        }
+        else {
+            ui->postMappingKeyCheckBox->setChecked(false);
         }
 
         /* Load SendTiming State */
@@ -965,6 +984,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->mappingKeyUnlockCheckBox->setChecked(false);
+        }
+
+        /* Load PostMappingKey */
+        if (true == keymapdata.PostMappingKey) {
+            ui->postMappingKeyCheckBox->setChecked(true);
+        }
+        else {
+            ui->postMappingKeyCheckBox->setChecked(false);
         }
 
         /* Load SendTiming State */
@@ -1507,6 +1534,22 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
+#endif
+    }
+}
+
+void QItemSetupDialog::on_postMappingKeyCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool postmappingkey = ui->postMappingKeyCheckBox->isChecked();
+    if (postmappingkey != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PostMappingKey) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PostMappingKey = postmappingkey;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PostMappingKey -> " << postmappingkey;
 #endif
     }
 }
