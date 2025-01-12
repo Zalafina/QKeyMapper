@@ -1368,7 +1368,27 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
 
                 if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYKEY == repeat_mode) {
-                    if (pressedRealKeysList.contains(orikey_str)) {
+                    bool isKeyPressed = false;
+                    if (orikey_str.contains(SEPARATOR_LONGPRESS)) {
+                        if (pressedLongPressKeysList.contains(orikey_str)) {
+                            isKeyPressed = true;
+                        }
+                    }
+                    else if (orikey_str.contains(SEPARATOR_DOUBLEPRESS)) {
+                        static QRegularExpression doublepress_regex(R"(^(.+✖)(\d+)$)");
+                        QRegularExpressionMatch doublepress_match = doublepress_regex.match(orikey_str);
+                        if (doublepress_match.hasMatch()) {
+                            QString doublepress_orikeystr = doublepress_match.captured(1);
+                            if (pressedDoublePressKeysList.contains(doublepress_orikeystr)) {
+                                isKeyPressed = true;
+                            }
+                        }
+                    }
+                    else if (pressedRealKeysList.contains(orikey_str)) {
+                        isKeyPressed = true;
+                    }
+
+                    if (isKeyPressed) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by key -> OriginalKey:" << orikey_str << ", Index:" << findindex;
 #endif
