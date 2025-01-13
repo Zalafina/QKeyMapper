@@ -659,8 +659,8 @@ public slots:
     void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
     void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
     // void send_WINplusD(void);
-    void sendMousePointClick(QString &mousepoint_str, int keyupdown);
-    void sendMouseMoveToPoint(QString &mousepoint_str);
+    void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);
+    void sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey);
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
 
 public:

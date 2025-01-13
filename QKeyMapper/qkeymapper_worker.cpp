@@ -956,6 +956,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
+    bool postmappingkey = false;
+    if (rowindex >= 0) {
+        postmappingkey = QKeyMapper::KeyMappingDataList->at(rowindex).PostMappingKey;
+    }
 
     if (KEY_UP == keyupdown) {
         if (key_sequence_count > 1) {
@@ -1155,6 +1159,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (sendtype != SENDTYPE_EXCLUSION
                     && sendmode != SENDMODE_FORCE_STOP
+                    && postmappingkey != true
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1193,7 +1198,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else {
                     input.mi.dwFlags = vmousecode.MouseUpCode;
                 }
-                SendInput(1, &input, sizeof(INPUT));
+                if (postmappingkey) {
+                    if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] PostMappingKey(true), postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                        postMouseButton(QKeyMapper::s_CurrentMappingHWND, key, send_keyupdown);
+                    }
+                }
+                else {
+                    SendInput(1, &input, sizeof(INPUT));
+                }
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                     for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
@@ -1205,14 +1220,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
             }
             else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                sendMouseMoveToPoint(key);
+                sendMouseMoveToPoint(key, postmappingkey);
             }
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
-                sendMousePointClick(key, KEY_UP);
+                sendMousePointClick(key, KEY_UP, postmappingkey);
             }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
+                    && postmappingkey != true
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
@@ -1266,11 +1282,21 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else {
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
-                UINT uSent = SendInput(1, &input, sizeof(INPUT));
-                if (uSent != 1) {
+                if (postmappingkey) {
+                    if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug("sendInputKeys(): Keyboard SendInput KEY_UP failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
+                        qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postVirtualKeyCode(" << key << ") KeyUp -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
+                        postVirtualKeyCode(QKeyMapper::s_CurrentMappingHWND, vkeycode.KeyCode, send_keyupdown);
+                    }
+                }
+                else {
+                    UINT uSent = SendInput(1, &input, sizeof(INPUT));
+                    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug("sendInputKeys(): Keyboard SendInput KEY_UP failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
+#endif
+                    }
                 }
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()
@@ -1616,7 +1642,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         input.mi.mouseData = WHEEL_DELTA;
                     }
 
-                    SendInput(1, &input, sizeof(INPUT));
+                    if (postmappingkey) {
+                        if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postMouseWheel(" << key << ") -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                            postMouseWheel(QKeyMapper::s_CurrentMappingHWND, key);
+                        }
+                    }
+                    else {
+                        SendInput(1, &input, sizeof(INPUT));
+                    }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                         for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
@@ -1667,7 +1703,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         input.mi.dwFlags = vmousecode.MouseUpCode;
                     }
-                    SendInput(1, &input, sizeof(INPUT));
+                    if (postmappingkey) {
+                        if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                            postMouseButton(QKeyMapper::s_CurrentMappingHWND, key, send_keyupdown);
+                        }
+                    }
+                    else {
+                        SendInput(1, &input, sizeof(INPUT));
+                    }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                         for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
@@ -1688,7 +1734,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                         send_keyupdown = KEY_UP;
                         input.mi.dwFlags = vmousecode.MouseUpCode;
-                        SendInput(1, &input, sizeof(INPUT));
+                        if (postmappingkey) {
+                            if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), SENDTYPE_BOTH postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                                postMouseButton(QKeyMapper::s_CurrentMappingHWND, key, send_keyupdown);
+                            }
+                        }
+                        else {
+                            SendInput(1, &input, sizeof(INPUT));
+                        }
 
                         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                             for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
@@ -1701,14 +1757,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                 }
                 else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                    sendMouseMoveToPoint(key);
+                    sendMouseMoveToPoint(key, postmappingkey);
                 }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                     int send_keyupdown = KEY_DOWN;
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
                     }
-                    sendMousePointClick(key, send_keyupdown);
+                    sendMousePointClick(key, send_keyupdown, postmappingkey);
 
                     if (sendtype == SENDTYPE_BOTH) {
 #ifdef DEBUG_LOGOUT_ON
@@ -1719,7 +1775,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
 #endif
                         send_keyupdown = KEY_UP;
-                        sendMousePointClick(key, send_keyupdown);
+                        sendMousePointClick(key, send_keyupdown, postmappingkey);
                     }
                 }
                 else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
@@ -1776,11 +1832,21 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
-                    UINT uSent = SendInput(1, &input, sizeof(INPUT));
-                    if (uSent != 1) {
+                    if (postmappingkey) {
+                        if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug("sendInputKeys(): Keyboard SendInput KEY_DOWN failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
+                            qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
+                            postVirtualKeyCode(QKeyMapper::s_CurrentMappingHWND, vkeycode.KeyCode, send_keyupdown);
+                        }
+                    }
+                    else {
+                        UINT uSent = SendInput(1, &input, sizeof(INPUT));
+                        if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug("sendInputKeys(): Keyboard SendInput KEY_DOWN failed: Error=0x%X, Ret=%d", HRESULT_FROM_WIN32(GetLastError()), uSent);
+#endif
+                        }
                     }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()
@@ -1803,7 +1869,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                         send_keyupdown = KEY_UP;
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
-                        SendInput(1, &input, sizeof(INPUT));
+                        if (postmappingkey) {
+                            if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), SENDTYPE_BOTH postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                                postVirtualKeyCode(QKeyMapper::s_CurrentMappingHWND, vkeycode.KeyCode, send_keyupdown);
+                            }
+                        }
+                        else {
+                            SendInput(1, &input, sizeof(INPUT));
+                        }
 
                         if (QKeyMapper::getSendToSameTitleWindowsStatus()
                             && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
@@ -1811,7 +1887,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                                 postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
                             }
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
+                            qDebug().nospace().noquote() << "[sendInputKeys] SENDTYPE_BOTH postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
 #endif
                         }
                     }
@@ -1896,7 +1972,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
 }
 
-void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown)
+void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey)
 {
     static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((\d+),(\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
@@ -1908,7 +1984,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
         }
 
         bool isWindowPoint = !match.captured(2).isEmpty();
-        bool isPostOnly = !match.captured(3).isEmpty();
+        bool isPostBG = !match.captured(3).isEmpty();
         bool x_ok;
         bool y_ok;
         int x = match.captured(4).toInt(&x_ok);
@@ -1922,9 +1998,9 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             QPoint mousepoint(x, y);
 
             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-                if (isPostOnly) {
+                if (postmappingkey || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendMousePointClick] PostMessage=true, postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+                    qDebug().nospace().noquote() << "[sendMousePointClick] postmappingkey=true, postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
                     postMouseButton(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
                 }
@@ -1968,9 +2044,9 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
                 mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
             }
 
-            if (isPostOnly) {
+            if (postmappingkey || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendMousePointClick] isPostOnly=true, skip Screen : sendMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
+                qDebug().nospace().noquote() << "[sendMousePointClick] postmappingkey=true, skip Screen : sendMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
 #endif
             }
             else {
@@ -1998,14 +2074,14 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str)
+void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey)
 {
     static QRegularExpression regex(R"(Mouse-Move(:W)?(:BG)?\((\d+),(\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
         bool isWindowPoint = !match.captured(1).isEmpty();
-        bool isPostOnly = !match.captured(2).isEmpty();
+        bool isPostBG = !match.captured(2).isEmpty();
         bool x_ok;
         bool y_ok;
         int x = match.captured(3).toInt(&x_ok);
@@ -2018,9 +2094,9 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str)
         QPoint mousepoint(x, y);
         if (isWindowPoint) {
             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-                if (isPostOnly) {
+                if (postmappingkey || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace().noquote() << "[sendMouseMoveToPoint] isPostOnly=true, skip sendWindowMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_CurrentMappingHWND;
+                    qDebug().nospace().noquote() << "[sendMouseMoveToPoint] postmappingkey=true, skip sendWindowMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
                 }
                 else {
@@ -2041,9 +2117,9 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str)
             }
         }
         else {
-            if (isPostOnly) {
+            if (postmappingkey || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[sendMouseMoveToPoint] isPostOnly=true, skip Screen : setMouseToPoint(" << x << ", " << y << ")";
+                qDebug().nospace().noquote() << "[sendMouseMoveToPoint] postmappingkey=true, skip Screen : setMouseToPoint(" << x << ", " << y << ")";
 #endif
             }
             else {
