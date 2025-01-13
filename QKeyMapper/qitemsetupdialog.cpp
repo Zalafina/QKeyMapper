@@ -397,6 +397,15 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->postMappingKeyCheckBox->setChecked(false);
         }
 
+        QString mappingkey = keymapdata.Mapping_Keys.constFirst();
+        if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
+            ui->postMappingKeyCheckBox->setChecked(false);
+            ui->postMappingKeyCheckBox->setEnabled(false);
+        }
+        else {
+            ui->postMappingKeyCheckBox->setEnabled(true);
+        }
+
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -684,6 +693,15 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->postMappingKeyCheckBox->setChecked(false);
+        }
+
+        QString mappingkey = keymapdata.Mapping_Keys.constFirst();
+        if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
+            ui->postMappingKeyCheckBox->setChecked(false);
+            ui->postMappingKeyCheckBox->setEnabled(false);
+        }
+        else {
+            ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
         /* Load SendTiming State */
@@ -992,6 +1010,15 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->postMappingKeyCheckBox->setChecked(false);
+        }
+
+        QString mappingkey = keymapdata.Mapping_Keys.constFirst();
+        if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
+            ui->postMappingKeyCheckBox->setChecked(false);
+            ui->postMappingKeyCheckBox->setEnabled(false);
+        }
+        else {
+            ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
         /* Load SendTiming State */

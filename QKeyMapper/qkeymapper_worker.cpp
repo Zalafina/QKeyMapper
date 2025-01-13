@@ -8030,6 +8030,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                             s_Mouse2vJoy_Hold = true;
                         }
+                        else if (keycodeString == CROSSHAIR_TYPEA) {
+                            s_Crosshair_TypeA = true;
+                        }
+                        else if (keycodeString == CROSSHAIR_NORMAL) {
+                            s_Crosshair_Normal = true;
+                        }
                     }
                 }
                 else {
@@ -8076,6 +8082,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                     else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         s_Mouse2vJoy_Hold = false;
+                    }
+                    else if (keycodeString == CROSSHAIR_TYPEA) {
+                        s_Crosshair_TypeA = false;
+                    }
+                    else if (keycodeString == CROSSHAIR_NORMAL) {
+                        s_Crosshair_Normal = false;
                     }
                 }
 #ifdef DEBUG_LOGOUT_ON
@@ -11593,6 +11605,8 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << FUNC_SLEEP
             << FUNC_HIBERNATE
             << MOUSE2VJOY_HOLD_KEY_STR
+            << CROSSHAIR_NORMAL
+            << CROSSHAIR_TYPEA
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR

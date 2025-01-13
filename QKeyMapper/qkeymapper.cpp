@@ -69,6 +69,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TransParentWindowInitialY(0),
     m_TransParentWindowInitialWidth(0),
     m_TransParentWindowInitialHeight(0),
+    m_CrosshairHandle(NULL),
+    m_CrosshairWindowInitialX(0),
+    m_CrosshairWindowInitialY(0),
+    m_CrosshairWindowInitialWidth(0),
+    m_CrosshairWindowInitialHeight(0),
     m_deviceListWindow(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR),
     m_TableSetupDialog(Q_NULLPTR),
@@ -79,6 +84,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 
     m_TransParentHandle = createTransparentWindow();
+    m_CrosshairHandle = createCrosshairWindow();
 
     m_instance = this;
     ui->setupUi(this);
@@ -2497,11 +2503,11 @@ void QKeyMapper::EnumProcessFunction(void)
 void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[DrawMousePoints] Show Mode = " << (showMode == SHOW_MODE_WINDOW ? "SHOW_MODE_WINDOW" : "SHOW_MODE_SCREEN");
+    qDebug().nospace().noquote() << "[DrawMousePoints] Show Mode = " << (showMode == SHOW_MODE_WINDOW_MOUSEPOINTS ? "SHOW_MODE_WINDOW_MOUSEPOINTS" : "SHOW_MODE_SCREEN_MOUSEPOINTS");
 #endif
 
     Q_UNUSED(hwnd);
-    const QList<MousePoint_Info>& MousePointsList = (showMode == SHOW_MODE_WINDOW) ? WindowMousePointsList : ScreenMousePointsList;
+    const QList<MousePoint_Info>& MousePointsList = (showMode == SHOW_MODE_WINDOW_MOUSEPOINTS) ? WindowMousePointsList : ScreenMousePointsList;
 
     if (MousePointsList.isEmpty()) {
         return;
@@ -2618,7 +2624,7 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc)
 }
 #endif
 
-LRESULT QKeyMapper::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT QKeyMapper::MousePointsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     int showMode = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
@@ -2656,7 +2662,7 @@ HWND QKeyMapper::createTransparentWindow()
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     WNDCLASS wc = { 0 };
-    wc.lpfnWndProc = QKeyMapper::WndProc;
+    wc.lpfnWndProc = QKeyMapper::MousePointsWndProc;
     wc.hInstance = hInstance;
     wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
     wc.lpszClassName = L"QKeyMapper_TransparentWindow";
@@ -2675,8 +2681,8 @@ HWND QKeyMapper::createTransparentWindow()
     m_TransParentWindowInitialWidth = screenWidth;
     m_TransParentWindowInitialHeight = screenHeight;
 
-    // Initialize the show mode to SHOW_MODE_SCREEN
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_SCREEN);
+    // Initialize the show mode to SHOW_MODE_SCREEN_MOUSEPOINTS
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_SCREEN_MOUSEPOINTS);
 
     return hwnd;
 }
@@ -2708,6 +2714,170 @@ void QKeyMapper::clearTransparentWindow(HWND hwnd, HDC hdc)
         return;
     }
 
+    // Get the window area
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+
+    // Create a transparent brush
+    HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+    HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
+
+    // Use the transparent brush to draw a rectangle to cover the previous content
+    Rectangle(hdc, clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
+
+    // Restore the original brush
+    SelectObject(hdc, hOldBrush);
+    DeleteObject(hBrush);
+}
+
+void QKeyMapper::DrawCrossHair(HWND hwnd, HDC hdc, int showMode)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[DrawCrossHair] Show Mode = " << (showMode == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL");
+#endif
+
+    // Get the window width and height
+    RECT rect;
+    GetClientRect(hwnd, &rect);
+    int centerX = (rect.right - rect.left) / 2;
+    int centerY = (rect.bottom - rect.top) / 2;
+
+    // Crosshair color and style
+    COLORREF crossHairColor = RGB(0, 255, 0); // Green
+    int lineLength = 50; // Length of the lines
+    int lineWidth = 1;   // Width of the lines
+
+    // Set the pen for drawing
+    HPEN hPen = CreatePen(PS_SOLID, lineWidth, crossHairColor);
+    HGDIOBJ hOldPen = SelectObject(hdc, hPen);
+
+    // Horizontal line
+    MoveToEx(hdc, centerX - lineLength, centerY, NULL);
+    LineTo(hdc, centerX + lineLength, centerY);
+
+    // Vertical line
+    MoveToEx(hdc, centerX, centerY - lineLength, NULL);
+    LineTo(hdc, centerX, centerY + lineLength);
+
+    // Restore the old pen and release resources
+    SelectObject(hdc, hOldPen);
+    DeleteObject(hPen);
+}
+
+LRESULT QKeyMapper::CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    static HBITMAP hBitmap = NULL; // 缓冲区位图
+    int showMode = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+    switch (msg) {
+    case WM_PAINT:
+    {
+        RECT rect;
+        GetClientRect(hwnd, &rect);
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+
+        // 创建兼容的内存 DC 和位图
+        HDC hdcScreen = GetDC(hwnd);
+        HDC hdcMemory = CreateCompatibleDC(hdcScreen);
+
+        if (hBitmap) DeleteObject(hBitmap); // 释放旧缓冲区
+        hBitmap = CreateCompatibleBitmap(hdcScreen, width, height);
+
+        HGDIOBJ oldBitmap = SelectObject(hdcMemory, hBitmap);
+
+        // 用透明背景清空
+        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+        SetBkMode(hdcMemory, TRANSPARENT);
+        SelectObject(hdcMemory, hBrush);
+        PatBlt(hdcMemory, 0, 0, width, height, BLACKNESS);
+
+        // 绘制内容
+        DrawCrossHair(hwnd, hdcMemory, showMode);
+
+        DeleteObject(hBrush);
+
+        // 更新到窗口
+        POINT ptSrc = { 0, 0 };
+        SIZE wndSize = { width, height };
+        POINT ptDst = { 0, 0 };
+        BLENDFUNCTION blendFunc = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
+        UpdateLayeredWindow(hwnd, hdcScreen, &ptDst, &wndSize, hdcMemory, &ptSrc, 0, &blendFunc, ULW_ALPHA);
+
+        // 释放资源
+        SelectObject(hdcMemory, oldBitmap);
+        DeleteDC(hdcMemory);
+        ReleaseDC(hwnd, hdcScreen);
+        break;
+    }
+    case WM_ERASEBKGND:
+        return 1; // 标记为已处理，避免闪烁
+    case WM_DESTROY:
+        if (hBitmap) DeleteObject(hBitmap); // 清理缓冲区
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hwnd, msg, wParam, lParam);
+    }
+
+    return 0;
+}
+
+HWND QKeyMapper::createCrosshairWindow()
+{
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    WNDCLASS wc = { 0 };
+    wc.lpfnWndProc = QKeyMapper::CrosshairWndProc;
+    wc.hInstance = hInstance;
+    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    wc.lpszClassName = L"QKeyMapper_CrosshairWindow";
+    RegisterClass(&wc);
+
+    HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"QKeyMapper_CrosshairWindow",
+        NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
+
+    // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
+    // BYTE opacity = 120; // 50% opacity
+    // SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
+
+    ShowWindow(hwnd, SW_HIDE);
+
+    // Save the initial width & height of CrosshairWindow
+    m_CrosshairWindowInitialWidth = screenWidth;
+    m_CrosshairWindowInitialHeight = screenHeight;
+
+    // Initialize the show mode to SHOW_MODE_CROSSHAIR_NORMAL
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_CROSSHAIR_NORMAL);
+
+    return hwnd;
+}
+
+void QKeyMapper::resizeCrosshairWindow(HWND hwnd, int x, int y, int width, int height)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[resizeCrosshairWindow]"<< " Resize CrosshairWindow to x:" << x << " y:" << y << " width:" << width << " height:" << height;
+#endif
+    // Adjust the window size and position
+    SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_NOZORDER);
+}
+
+void QKeyMapper::destoryCrosshairWindow(HWND hwnd)
+{
+    HINSTANCE hInstance = GetModuleHandle(NULL);
+
+    // Destroy the window
+    DestroyWindow(hwnd);
+
+    // Unregister the window class
+    UnregisterClass(L"QKeyMapper_CrosshairWindow", hInstance);
+}
+
+void QKeyMapper::clearCrosshairWindow(HWND hwnd, HDC hdc)
+{
     // Get the window area
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
@@ -3565,6 +3735,10 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)
         || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
+        disable_sendtiming = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)
+        || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(CROSSHAIR_PREFIX)) {
         disable_sendtiming = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
@@ -9272,6 +9446,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << KEY2MOUSE_DOWN_STR
             << KEY2MOUSE_LEFT_STR
             << KEY2MOUSE_RIGHT_STR
+            << CROSSHAIR_NORMAL
+            << CROSSHAIR_TYPEA
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
@@ -9379,6 +9555,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
+    orikeycodelist.removeOne(CROSSHAIR_NORMAL);
+    orikeycodelist.removeOne(CROSSHAIR_TYPEA);
     orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
@@ -9709,6 +9887,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
+                disable_burst = true;
+                disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)) {
                 disable_burst = true;
                 disable_lock = true;
             }
@@ -10424,7 +10606,7 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
         }
 
         // Set show mode to SCREEN
-        SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_SCREEN);
+        SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_SCREEN_MOUSEPOINTS);
         resizeTransparentWindow(m_TransParentHandle, m_TransParentWindowInitialX, m_TransParentWindowInitialY, m_TransParentWindowInitialWidth, m_TransParentWindowInitialHeight);
 
         // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
@@ -10460,7 +10642,7 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
             int clientWidth = clientRect.right - clientRect.left;
             int clientHeight = clientRect.bottom - clientRect.top;
             // Set show mode to WINDOW
-            SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_WINDOW);
+            SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_WINDOW_MOUSEPOINTS);
             resizeTransparentWindow(m_TransParentHandle, clientRect.left, clientRect.top, clientWidth, clientHeight);
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[showMousePoints]"<< " CurrentMappingHWND clientRect -> x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << clientWidth << ", h:" << clientHeight;
@@ -10536,6 +10718,40 @@ void QKeyMapper::showCrosshairStart(const QString &crosshair_keystr)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[showCrosshairStart]" << "Crosshair =" << crosshair_keystr;
 #endif
+
+    int show_mode = SHOW_MODE_NONE;
+
+    if (QKeyMapper_Worker::s_Crosshair_TypeA) {
+        show_mode = SHOW_MODE_CROSSHAIR_TYPEA;
+    }
+    else if (QKeyMapper_Worker::s_Crosshair_Normal) {
+        show_mode = SHOW_MODE_CROSSHAIR_NORMAL;
+    }
+
+    if (show_mode == SHOW_MODE_NONE) {
+        return;
+    }
+
+    // Set show mode
+    SetWindowLongPtr(m_CrosshairHandle, GWLP_USERDATA, show_mode);
+
+    RECT clientRect;
+    WINDOWINFO winInfo;
+    winInfo.cbSize = sizeof(WINDOWINFO);
+    if (s_CurrentMappingHWND != NULL && GetWindowInfo(s_CurrentMappingHWND, &winInfo)) {
+        clientRect = winInfo.rcClient;
+        int clientWidth = clientRect.right - clientRect.left;
+        int clientHeight = clientRect.bottom - clientRect.top;
+        resizeTransparentWindow(m_CrosshairHandle, clientRect.left, clientRect.top, clientWidth, clientHeight);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[showCrosshairStart]"<< " CurrentMappingHWND clientRect -> x:" << clientRect.left << ", y:" << clientRect.top << ", w:" << clientWidth << ", h:" << clientHeight;
+#endif
+    }
+    else {
+        resizeTransparentWindow(m_CrosshairHandle, m_TransParentWindowInitialX, m_TransParentWindowInitialY, m_TransParentWindowInitialWidth, m_TransParentWindowInitialHeight);
+    }
+
+    ShowWindow(m_CrosshairHandle, SW_SHOW);
 }
 
 void QKeyMapper::showCrosshairStop(const QString &crosshair_keystr)
@@ -10543,6 +10759,11 @@ void QKeyMapper::showCrosshairStop(const QString &crosshair_keystr)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[showCrosshairStop]" << "Crosshair =" << crosshair_keystr;
 #endif
+
+    if (false == QKeyMapper_Worker::s_Crosshair_Normal
+        && false == QKeyMapper_Worker::s_Crosshair_TypeA) {
+        ShowWindow(m_CrosshairHandle, SW_HIDE);
+    }
 }
 
 void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
@@ -11163,6 +11384,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             if (currentMapKeyText == KEY_BLOCKED_STR
                 || currentMapKeyText == KEYSEQUENCEBREAK_STR
                 || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
+                || currentMapKeyText.startsWith(CROSSHAIR_PREFIX)
                 || currentMapKeyText.startsWith(FUNC_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
@@ -11176,6 +11398,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
                     || keymapdata.Mapping_Keys.contains(KEYSEQUENCEBREAK_STR)
                     || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
+                    || keymapdata.Mapping_Keys.contains(CROSSHAIR_PREFIX)
                     || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
@@ -11191,6 +11414,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (currentMapKeyText == KEY_BLOCKED_STR
                     || currentMapKeyText == KEYSEQUENCEBREAK_STR
                     || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
+                    || currentMapKeyText.startsWith(CROSSHAIR_PREFIX)
                     || currentMapKeyText.startsWith(FUNC_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
@@ -11525,6 +11749,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyComboBoxText != KEY_BLOCKED_STR
                     && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
                     && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
+                    && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
                     && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
                     && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR

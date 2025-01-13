@@ -373,11 +373,17 @@ public:
     // unused enum all process function <<<
 
     static void DrawMousePoints(HWND hwnd, HDC hdc, int showMode);
-    static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK MousePointsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     HWND createTransparentWindow(void);
     void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
     void destoryTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
+    static void DrawCrossHair(HWND hwnd, HDC hdc, int showMode);
+    static LRESULT CALLBACK CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    HWND createCrosshairWindow(void);
+    void resizeCrosshairWindow(HWND hwnd, int x, int y, int width, int height);
+    void destoryCrosshairWindow(HWND hwnd);
+    static void clearCrosshairWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
 
     static bool getStartupMinimizedStatus(void);
@@ -774,6 +780,11 @@ private:
     int m_TransParentWindowInitialY;
     int m_TransParentWindowInitialWidth;
     int m_TransParentWindowInitialHeight;
+    HWND m_CrosshairHandle;
+    int m_CrosshairWindowInitialX;
+    int m_CrosshairWindowInitialY;
+    int m_CrosshairWindowInitialWidth;
+    int m_CrosshairWindowInitialHeight;
     QInputDeviceListWindow *m_deviceListWindow;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;

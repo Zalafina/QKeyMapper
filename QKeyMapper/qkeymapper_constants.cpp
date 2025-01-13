@@ -592,8 +592,11 @@ const char *MOUSE_X2_SCREENPOINT_STR = "Mouse-X2_ScreenPoint";
 const char *MOUSE_MOVE_WINDOWPOINT_STR  = "Mouse-Move_WindowPoint";
 const char *MOUSE_MOVE_SCREENPOINT_STR  = "Mouse-Move_ScreenPoint";
 
-const int SHOW_MODE_SCREEN  = 0;
-const int SHOW_MODE_WINDOW  = 1;
+const int SHOW_MODE_NONE                = 0;
+const int SHOW_MODE_SCREEN_MOUSEPOINTS  = 1;
+const int SHOW_MODE_WINDOW_MOUSEPOINTS  = 2;
+const int SHOW_MODE_CROSSHAIR_NORMAL    = 3;
+const int SHOW_MODE_CROSSHAIR_TYPEA     = 4;
 
 const int PICK_WINDOW_POINT_KEY  = VK_LMENU;
 const int PICK_SCREEN_POINT_KEY  = VK_LCONTROL;
