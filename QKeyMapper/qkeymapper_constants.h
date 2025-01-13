@@ -333,6 +333,8 @@ extern const quint8 VK_KEY2MOUSE_DOWN;
 extern const quint8 VK_KEY2MOUSE_LEFT;
 extern const quint8 VK_KEY2MOUSE_RIGHT;
 extern const quint8 VK_GAMEPAD_HOME;
+extern const quint8 VK_CROSSHAIR_NORMAL;
+extern const quint8 VK_CROSSHAIR_TYPEA;
 
 extern const int INTERCEPTION_RETURN_NORMALSEND;
 extern const int INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
@@ -355,7 +357,7 @@ extern ULONG_PTR VIRTUAL_KEY_OVERLAY;
 extern ULONG_PTR VIRTUAL_RESEND_REALKEY;
 
 extern const ULONG_PTR VIRTUAL_UNICODE_CHAR;
-extern const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS;
+extern const ULONG_PTR VIRTUAL_CUSTOM_KEYS;
 extern const ULONG_PTR VIRTUAL_MOUSE_MOVE;
 extern const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS;
 
@@ -570,6 +572,9 @@ extern const char* KEY2MOUSE_UP_STR;
 extern const char* KEY2MOUSE_DOWN_STR;
 extern const char* KEY2MOUSE_LEFT_STR;
 extern const char* KEY2MOUSE_RIGHT_STR;
+extern const char *CROSSHAIR_PREFIX;
+extern const char *CROSSHAIR_NORMAL;
+extern const char *CROSSHAIR_TYPEA;
 extern const char* FUNC_PREFIX;
 extern const char* FUNC_REFRESH;
 extern const char* FUNC_LOCKSCREEN;

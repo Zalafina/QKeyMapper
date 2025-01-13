@@ -380,6 +380,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showCrosshairStart_Signal, this, &QKeyMapper::showCrosshairStart, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showCrosshairStop_Signal, this, &QKeyMapper::showCrosshairStop, Qt::QueuedConnection);
 #ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateVirtualGamepadListDisplay_Signal, this, &QKeyMapper::updateVirtualGamepadListDisplay);
@@ -10527,6 +10529,20 @@ void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
 
     QString car_ordinal_str = QString::number(car_ordinal);
     ui->pointDisplayLabel->setText(car_ordinal_str);
+}
+
+void QKeyMapper::showCrosshairStart(const QString &crosshair_keystr)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[showCrosshairStart]" << "Crosshair =" << crosshair_keystr;
+#endif
+}
+
+void QKeyMapper::showCrosshairStop(const QString &crosshair_keystr)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[showCrosshairStop]" << "Crosshair =" << crosshair_keystr;
+#endif
 }
 
 void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)

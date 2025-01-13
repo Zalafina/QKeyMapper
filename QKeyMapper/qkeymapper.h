@@ -427,6 +427,8 @@ signals:
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
     void showCarOrdinal_Signal(qint32 car_ordinal);
+    void showCrosshairStart_Signal(const QString &crosshair_keystr);
+    void showCrosshairStop_Signal(const QString &crosshair_keystr);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
     void updateVirtualGamepadListDisplay_Signal(void);
@@ -462,6 +464,10 @@ public slots:
     void showPopupMessage(const QString &message, const QString &color, int displayTime);
 
     void showCarOrdinal(qint32 car_ordinal);
+
+    void showCrosshairStart(const QString &crosshair_keystr);
+
+    void showCrosshairStop(const QString &crosshair_keystr);
 
     void onKeyMappingTabWidgetTabBarDoubleClicked(int index);
 

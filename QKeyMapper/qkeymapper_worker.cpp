@@ -9,6 +9,8 @@ SendInputTaskController SendInputTask::s_GlobalSendInputTaskController;
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
+QAtomicBool QKeyMapper_Worker::s_Crosshair_TypeA;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left = QAtomicBool();
@@ -1265,8 +1267,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (sendtype == SENDTYPE_EXCLUSION) {
                     input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                 }
-                else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode) {
-                    input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
+                else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                    || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
+                    || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
+                    input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS;
                 }
                 else {
                     input.ki.dwExtraInfo = VIRTUAL_KEY_SEND | sendvirtualkey_state;
@@ -1815,8 +1819,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     if (sendtype == SENDTYPE_EXCLUSION) {
                         input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                     }
-                    else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode) {
-                        input.ki.dwExtraInfo = VIRTUAL_MOUSE2JOY_KEYS;
+                    else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                        || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
+                        || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
+                        input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS;
                     }
                     else {
                         input.ki.dwExtraInfo = VIRTUAL_KEY_SEND | sendvirtualkey_state;
@@ -7440,7 +7446,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
         if (extraInfo != VIRTUAL_KEY_SEND
             && extraInfo != VIRTUAL_KEY_OVERLAY
-            && extraInfo != VIRTUAL_MOUSE2JOY_KEYS) {
+            && extraInfo != VIRTUAL_CUSTOM_KEYS) {
             if (Interception_Worker::s_InterceptStart) {
                 if (extraInfo == INTERCEPTION_EXTRA_INFO_BLOCKED) {
 #ifdef DEBUG_LOGOUT_ON
@@ -7810,6 +7816,12 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         s_Mouse2vJoy_Hold = true;
                     }
+                    else if (keycodeString == CROSSHAIR_TYPEA) {
+                        s_Crosshair_TypeA = true;
+                    }
+                    else if (keycodeString == CROSSHAIR_NORMAL) {
+                        s_Crosshair_Normal = true;
+                    }
                 }
             }
             /* KEY_UP == keyupdown */
@@ -7858,13 +7870,33 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                     s_Mouse2vJoy_Hold = false;
                 }
+                else if (keycodeString == CROSSHAIR_TYPEA) {
+                    s_Crosshair_TypeA = false;
+                }
+                else if (keycodeString == CROSSHAIR_NORMAL) {
+                    s_Crosshair_Normal = false;
+                }
             }
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
-            if (extraInfo == VIRTUAL_MOUSE2JOY_KEYS) {
-                // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
-                if (!s_Mouse2vJoy_EnableStateMap.isEmpty()) {
+            if (extraInfo == VIRTUAL_CUSTOM_KEYS) {
+                if (keycodeString.startsWith(CROSSHAIR_PREFIX)) {
+                    if (keyupdown == KEY_DOWN) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_DOWN Show Crosshair Start.";
+#endif
+                        emit QKeyMapper::getInstance()->showCrosshairStart_Signal(keycodeString);
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_UP Show Crosshair Stop.";
+#endif
+                        emit QKeyMapper::getInstance()->showCrosshairStop_Signal(keycodeString);
+                    }
+                }
+                else if (keycodeString.startsWith(MOUSE2VJOY_PREFIX)
+                    && false == s_Mouse2vJoy_EnableStateMap.isEmpty()) {
                     if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         if (keyupdown == KEY_UP) {
 #ifdef DEBUG_LOGOUT_ON
@@ -10841,6 +10873,8 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_KEY2MOUSE_RIGHT,   EXTENED_FLAG_TRUE));   // 0x8D (Key2Mouse-Right)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2VJOY_HOLD,   EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
     VirtualKeyCodeMap.insert        (GAMEPAD_HOME_STR,          V_KEYCODE(VK_GAMEPAD_HOME,      EXTENED_FLAG_FALSE));  // 0x07 (GamepadHome)
+    VirtualKeyCodeMap.insert        (CROSSHAIR_NORMAL,          V_KEYCODE(VK_CROSSHAIR_NORMAL,  EXTENED_FLAG_TRUE));   // 0x0A (Crosshair-Normal)
+    VirtualKeyCodeMap.insert        (CROSSHAIR_TYPEA,           V_KEYCODE(VK_CROSSHAIR_TYPEA,   EXTENED_FLAG_TRUE));   // 0x0B (Crosshair-TypeA)
 
     // US 104 Keyboard Main Area
     // Row 1
@@ -11575,6 +11609,8 @@ void QKeyMapper_Worker::initSpecialVirtualKeyCodeList()
             << VK_KEY2MOUSE_RIGHT
             << VK_MOUSE2VJOY_HOLD
             << VK_GAMEPAD_HOME
+            << VK_CROSSHAIR_NORMAL
+            << VK_CROSSHAIR_TYPEA
             ;
 }
 

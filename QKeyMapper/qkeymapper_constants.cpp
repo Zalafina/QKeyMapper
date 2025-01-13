@@ -368,6 +368,8 @@ const quint8 VK_KEY2MOUSE_DOWN  = 0x8B;
 const quint8 VK_KEY2MOUSE_LEFT  = 0x8C;
 const quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
 const quint8 VK_GAMEPAD_HOME    = 0x07;
+const quint8 VK_CROSSHAIR_NORMAL= 0x0A;
+const quint8 VK_CROSSHAIR_TYPEA = 0x0B;
 
 const int INTERCEPTION_RETURN_NORMALSEND = 0;
 const int INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION = 1;
@@ -394,7 +396,7 @@ ULONG_PTR VIRTUAL_KEY_OVERLAY;
 ULONG_PTR VIRTUAL_RESEND_REALKEY;
 
 const ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDC0;
-const ULONG_PTR VIRTUAL_MOUSE2JOY_KEYS   = 0x3A3A3A30;
+const ULONG_PTR VIRTUAL_CUSTOM_KEYS      = 0x3A3A3A30;
 const ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFB0;
 const ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F30;
 
@@ -649,6 +651,10 @@ const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";
 const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
 const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
 const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
+
+const char *CROSSHAIR_PREFIX    = "Crosshair-";
+const char *CROSSHAIR_NORMAL    = "Crosshair-Normal";
+const char *CROSSHAIR_TYPEA     = "Crosshair-TypeA";
 
 const char *FUNC_PREFIX          = "Func-";
 const char *FUNC_REFRESH         = "Func-Refresh";
@@ -998,7 +1004,7 @@ void generateVirtualInputRandomValues() {
     QSet<ULONG_PTR> generatedValues;
     generatedValues.insert(INTERCEPTION_EXTRA_INFO_BLOCKED);
     generatedValues.insert(VIRTUAL_UNICODE_CHAR);
-    generatedValues.insert(VIRTUAL_MOUSE2JOY_KEYS);
+    generatedValues.insert(VIRTUAL_CUSTOM_KEYS);
     generatedValues.insert(VIRTUAL_MOUSE_MOVE);
     generatedValues.insert(VIRTUAL_MOUSE_MOVE_BYKEYS);
     VIRTUAL_KEY_SEND = generateUniqueRandomValue(generatedValues);
