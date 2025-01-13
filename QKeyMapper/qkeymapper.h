@@ -378,7 +378,7 @@ public:
     void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
     void destoryTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
-    static void DrawCrossHair(HWND hwnd, HDC hdc, int showMode);
+    static void DrawCrosshair(HWND hwnd, HDC hdc, int showMode);
     static LRESULT CALLBACK CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     HWND createCrosshairWindow(void);
     void resizeCrosshairWindow(HWND hwnd, int x, int y, int width, int height);

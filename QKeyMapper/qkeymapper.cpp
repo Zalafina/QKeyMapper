@@ -2730,10 +2730,10 @@ void QKeyMapper::clearTransparentWindow(HWND hwnd, HDC hdc)
     DeleteObject(hBrush);
 }
 
-void QKeyMapper::DrawCrossHair(HWND hwnd, HDC hdc, int showMode)
+void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[DrawCrossHair] Show Mode = " << (showMode == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL");
+    qDebug().nospace().noquote() << "[DrawCrosshair] Show Mode = " << (showMode == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL");
 #endif
 
     // Get the window width and height
@@ -2770,45 +2770,40 @@ LRESULT QKeyMapper::CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     int showMode = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     switch (msg) {
-    case WM_PAINT:
+    case WM_CREATE:
     {
         RECT rect;
         GetClientRect(hwnd, &rect);
         int width = rect.right - rect.left;
         int height = rect.bottom - rect.top;
 
-        // 创建兼容的内存 DC 和位图
         HDC hdcScreen = GetDC(hwnd);
         HDC hdcMemory = CreateCompatibleDC(hdcScreen);
 
-        if (hBitmap) DeleteObject(hBitmap); // 释放旧缓冲区
+        if (hBitmap) DeleteObject(hBitmap); // 清理旧位图
         hBitmap = CreateCompatibleBitmap(hdcScreen, width, height);
 
         HGDIOBJ oldBitmap = SelectObject(hdcMemory, hBitmap);
 
-        // 用透明背景清空
+        // 绘制代码
         HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-        SetBkMode(hdcMemory, TRANSPARENT);
         SelectObject(hdcMemory, hBrush);
         PatBlt(hdcMemory, 0, 0, width, height, BLACKNESS);
-
-        // 绘制内容
-        DrawCrossHair(hwnd, hdcMemory, showMode);
-
+        DrawCrosshair(hwnd, hdcMemory, showMode);
         DeleteObject(hBrush);
 
-        // 更新到窗口
+        // 更新窗口内容
         POINT ptSrc = { 0, 0 };
         SIZE wndSize = { width, height };
         POINT ptDst = { 0, 0 };
         BLENDFUNCTION blendFunc = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
         UpdateLayeredWindow(hwnd, hdcScreen, &ptDst, &wndSize, hdcMemory, &ptSrc, 0, &blendFunc, ULW_ALPHA);
 
-        // 释放资源
+        // 恢复内存 DC 的原始状态
         SelectObject(hdcMemory, oldBitmap);
         DeleteDC(hdcMemory);
         ReleaseDC(hwnd, hdcScreen);
-        break;
+        return 0;
     }
     case WM_ERASEBKGND:
         return 1; // 标记为已处理，避免闪烁
@@ -2830,19 +2825,32 @@ HWND QKeyMapper::createCrosshairWindow()
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
+    // 注册窗口类
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = QKeyMapper::CrosshairWndProc;
     wc.hInstance = hInstance;
-    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    wc.hbrBackground = NULL;
     wc.lpszClassName = L"QKeyMapper_CrosshairWindow";
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"QKeyMapper_CrosshairWindow",
-        NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
+    // 创建分层窗口
+    HWND hwnd = CreateWindowEx(
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+        L"QKeyMapper_CrosshairWindow",
+        NULL,
+        WS_POPUP,
+        0,
+        0,
+        screenWidth,
+        screenHeight,
+        NULL,
+        NULL,
+        hInstance,
+        NULL
+    );
 
-    // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
-    // BYTE opacity = 120; // 50% opacity
-    // SetLayeredWindowAttributes(hwnd, 0, opacity, LWA_ALPHA);
+    // 设置初始透明度和图层属性（完全透明背景）
+    SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
 
