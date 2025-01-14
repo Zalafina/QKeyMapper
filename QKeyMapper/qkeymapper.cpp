@@ -2751,11 +2751,26 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
     int centerY = (rect.bottom - rect.top) / 2;
 
     if (SHOW_MODE_CROSSHAIR_TYPEA == showMode) {
+        // Crosshair color and style
+        COLORREF crossHairColor = RGB(112, 161, 255); // French Sky Blue rgb(112, 161, 255)
+        int lineLength = 20; // Length of the lines
+        int lineWidth = 1;   // Width of the lines
 
+        // Set the pen for drawing
+        hPen = CreatePen(PS_SOLID, lineWidth, crossHairColor);
+        hOldPen = SelectObject(hdc, hPen);
+
+        // Horizontal line
+        MoveToEx(hdc, centerX - lineLength, centerY, NULL);
+        LineTo(hdc, centerX + lineLength, centerY);
+
+        // Vertical line
+        MoveToEx(hdc, centerX, centerY - lineLength, NULL);
+        LineTo(hdc, centerX, centerY + lineLength);
     }
     else {
         // Crosshair color and style
-        COLORREF crossHairColor = RGB(116, 185, 255); // green darner tail RGB(116, 185, 255)
+        COLORREF crossHairColor = RGB(112, 161, 255); // French Sky Blue rgb(112, 161, 255)
         int lineLength = 20; // Length of the lines
         int lineWidth = 1;   // Width of the lines
 
