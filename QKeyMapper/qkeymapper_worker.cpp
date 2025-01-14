@@ -4316,6 +4316,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #endif
     }
 
+    clearCustomKeyFlags();
+
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4416,6 +4418,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     pressedVirtualKeysList.clear();
     SendInputTask::clearSendInputTaskControllerMap();
     resetGlobalSendInputTaskController();
+    clearCustomKeyFlags(true);
 
 
     /* Restart Starting process */
@@ -7816,10 +7819,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         s_Mouse2vJoy_Hold = true;
                     }
-                    else if (keycodeString == CROSSHAIR_TYPEA) {
+                    else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                         s_Crosshair_TypeA = true;
                     }
-                    else if (keycodeString == CROSSHAIR_NORMAL) {
+                    else if (keycodeString == CROSSHAIR_NORMAL_STR) {
                         s_Crosshair_Normal = true;
                     }
                 }
@@ -7870,10 +7873,10 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                     s_Mouse2vJoy_Hold = false;
                 }
-                else if (keycodeString == CROSSHAIR_TYPEA) {
+                else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                     s_Crosshair_TypeA = false;
                 }
-                else if (keycodeString == CROSSHAIR_NORMAL) {
+                else if (keycodeString == CROSSHAIR_NORMAL_STR) {
                     s_Crosshair_Normal = false;
                 }
             }
@@ -8030,10 +8033,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                             s_Mouse2vJoy_Hold = true;
                         }
-                        else if (keycodeString == CROSSHAIR_TYPEA) {
+                        else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                             s_Crosshair_TypeA = true;
                         }
-                        else if (keycodeString == CROSSHAIR_NORMAL) {
+                        else if (keycodeString == CROSSHAIR_NORMAL_STR) {
                             s_Crosshair_Normal = true;
                         }
                     }
@@ -8083,10 +8086,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         s_Mouse2vJoy_Hold = false;
                     }
-                    else if (keycodeString == CROSSHAIR_TYPEA) {
+                    else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                         s_Crosshair_TypeA = false;
                     }
-                    else if (keycodeString == CROSSHAIR_NORMAL) {
+                    else if (keycodeString == CROSSHAIR_NORMAL_STR) {
                         s_Crosshair_Normal = false;
                     }
                 }
@@ -10885,8 +10888,8 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        (KEY2MOUSE_RIGHT_STR,       V_KEYCODE(VK_KEY2MOUSE_RIGHT,   EXTENED_FLAG_TRUE));   // 0x8D (Key2Mouse-Right)
     VirtualKeyCodeMap.insert        (MOUSE2VJOY_HOLD_KEY_STR,   V_KEYCODE(VK_MOUSE2VJOY_HOLD,   EXTENED_FLAG_TRUE));   // 0x3A (Mouse2vJoy-Hold)
     VirtualKeyCodeMap.insert        (GAMEPAD_HOME_STR,          V_KEYCODE(VK_GAMEPAD_HOME,      EXTENED_FLAG_FALSE));  // 0x07 (GamepadHome)
-    VirtualKeyCodeMap.insert        (CROSSHAIR_NORMAL,          V_KEYCODE(VK_CROSSHAIR_NORMAL,  EXTENED_FLAG_TRUE));   // 0x0A (Crosshair-Normal)
-    VirtualKeyCodeMap.insert        (CROSSHAIR_TYPEA,           V_KEYCODE(VK_CROSSHAIR_TYPEA,   EXTENED_FLAG_TRUE));   // 0x0B (Crosshair-TypeA)
+    VirtualKeyCodeMap.insert        (CROSSHAIR_NORMAL_STR,      V_KEYCODE(VK_CROSSHAIR_NORMAL,  EXTENED_FLAG_TRUE));   // 0x0A (Crosshair-Normal)
+    VirtualKeyCodeMap.insert        (CROSSHAIR_TYPEA_STR,       V_KEYCODE(VK_CROSSHAIR_TYPEA,   EXTENED_FLAG_TRUE));   // 0x0B (Crosshair-TypeA)
 
     // US 104 Keyboard Main Area
     // Row 1
@@ -11605,8 +11608,8 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << FUNC_SLEEP
             << FUNC_HIBERNATE
             << MOUSE2VJOY_HOLD_KEY_STR
-            << CROSSHAIR_NORMAL
-            << CROSSHAIR_TYPEA
+            << CROSSHAIR_NORMAL_STR
+            << CROSSHAIR_TYPEA_STR
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
@@ -11861,7 +11864,12 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
                         QString debugmessage = QString("[clearAllNormalPressedMappingKeys] VirtualKey \"%1\" of OriginalKey(%2) is still pressed down on Mapping stop, send KEY_UP to clear directly.").arg(keycodeString, real_originalkey);
                         qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
-                        QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_UP);
+                        if (keycodeString.startsWith(CROSSHAIR_PREFIX)) {
+                            // emit showCrosshairStop_Signal in clearCustomKeyFlags()
+                        }
+                        else {
+                            QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_UP);
+                        }
                         pressedVirtualKeysList.removeAll(keycodeString);
                     }
                 }
@@ -11909,6 +11917,20 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
                 }
             }
         }
+    }
+}
+
+void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
+{
+    s_Mouse2vJoy_Hold = false;
+    s_Key2Mouse_Up = false;
+    s_Key2Mouse_Down = false;
+    s_Key2Mouse_Left = false;
+    s_Key2Mouse_Right = false;
+    if (!restart) {
+        s_Crosshair_Normal = false;
+        s_Crosshair_TypeA = false;
+        emit QKeyMapper::getInstance()->showCrosshairStop_Signal(CROSSHAIR_NORMAL_STR);
     }
 }
 
@@ -12286,7 +12308,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

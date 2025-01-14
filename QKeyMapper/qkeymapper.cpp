@@ -9445,8 +9445,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << KEY2MOUSE_DOWN_STR
             << KEY2MOUSE_LEFT_STR
             << KEY2MOUSE_RIGHT_STR
-            << CROSSHAIR_NORMAL
-            << CROSSHAIR_TYPEA
+            << CROSSHAIR_NORMAL_STR
+            << CROSSHAIR_TYPEA_STR
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
@@ -9554,8 +9554,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
-    orikeycodelist.removeOne(CROSSHAIR_NORMAL);
-    orikeycodelist.removeOne(CROSSHAIR_TYPEA);
+    orikeycodelist.removeOne(CROSSHAIR_NORMAL_STR);
+    orikeycodelist.removeOne(CROSSHAIR_TYPEA_STR);
     orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
 
     /* Remove Joy Keys from MappingKey ComboBox >>> */
@@ -9891,7 +9891,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)) {
                 disable_burst = true;
-                disable_lock = true;
+                // disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(FUNC_PREFIX)) {
                 disable_burst = true;

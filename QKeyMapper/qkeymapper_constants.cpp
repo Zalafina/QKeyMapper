@@ -655,9 +655,9 @@ const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";
 const char *KEY2MOUSE_LEFT_STR   = "Key2Mouse-Left";
 const char *KEY2MOUSE_RIGHT_STR  = "Key2Mouse-Right";
 
-const char *CROSSHAIR_PREFIX    = "Crosshair-";
-const char *CROSSHAIR_NORMAL    = "Crosshair-Normal";
-const char *CROSSHAIR_TYPEA     = "Crosshair-TypeA";
+const char *CROSSHAIR_PREFIX        = "Crosshair-";
+const char *CROSSHAIR_NORMAL_STR    = "Crosshair-Normal";
+const char *CROSSHAIR_TYPEA_STR     = "Crosshair-TypeA";
 
 const char *FUNC_PREFIX          = "Func-";
 const char *FUNC_REFRESH         = "Func-Refresh";

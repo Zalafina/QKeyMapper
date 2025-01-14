@@ -876,6 +876,7 @@ private:
     void clearAllPressedVirtualKeys(void);
     void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
     void clearAllNormalPressedMappingKeys(bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
+    void clearCustomKeyFlags(bool restart = false);
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
     bool isPressedMappingKeysContains(QString &key);
