@@ -2755,7 +2755,7 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
     }
     else {
         // Crosshair color and style
-        COLORREF crossHairColor = RGB(0, 255, 0); // Green
+        COLORREF crossHairColor = RGB(116, 185, 255); // green darner tail RGB(116, 185, 255)
         int lineLength = 20; // Length of the lines
         int lineWidth = 1;   // Width of the lines
 
