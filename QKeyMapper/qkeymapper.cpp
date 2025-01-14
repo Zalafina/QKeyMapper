@@ -10732,6 +10732,7 @@ void QKeyMapper::showCrosshairStart(const QString &crosshair_keystr)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[showCrosshairStart]" << "Crosshair =" << crosshair_keystr;
 #endif
+    Q_UNUSED(crosshair_keystr);
 
     int show_mode = SHOW_MODE_NONE;
 
@@ -10773,6 +10774,7 @@ void QKeyMapper::showCrosshairStop(const QString &crosshair_keystr)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[showCrosshairStop]" << "Crosshair =" << crosshair_keystr;
 #endif
+    Q_UNUSED(crosshair_keystr);
 
     if (false == QKeyMapper_Worker::s_Crosshair_Normal
         && false == QKeyMapper_Worker::s_Crosshair_TypeA) {
