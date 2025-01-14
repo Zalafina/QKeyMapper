@@ -6,7 +6,7 @@ import sys
 CROSS_PLATFORM=False
 
 cdict = {}
-for i, l in enumerate(open("Database.txt")):
+for i, l in enumerate(open("gamecontrollerdb.txt")):
     l = l.strip()
     if l.startswith("#") or not l:
         continue

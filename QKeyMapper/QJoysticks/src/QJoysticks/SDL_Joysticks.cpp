@@ -58,7 +58,7 @@ SDL_Joysticks::SDL_Joysticks(QObject *parent)
       qApp->quit();
    }
 
-   QFile database(":/QJoysticks/SDL/Database.txt");
+   QFile database(":/QJoysticks/SDL/gamecontrollerdb.txt");
    if (database.open(QFile::ReadOnly))
    {
       while (!database.atEnd())
