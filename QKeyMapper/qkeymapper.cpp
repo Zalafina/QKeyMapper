@@ -2737,27 +2737,40 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
 #endif
 
     // Get the window width and height
+    HPEN hPen;
+    HGDIOBJ hOldPen;
     RECT rect;
     GetClientRect(hwnd, &rect);
+
+    // clearCrosshairWindow has fill the full window to black, so do not need to set black background
+    // HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0)); // Set black color for fully transparent background
+    // FillRect(hdc, &rect, hBrush);
+    // DeleteObject(hBrush);
+
     int centerX = (rect.right - rect.left) / 2;
     int centerY = (rect.bottom - rect.top) / 2;
 
-    // Crosshair color and style
-    COLORREF crossHairColor = RGB(0, 255, 0); // Green
-    int lineLength = 50; // Length of the lines
-    int lineWidth = 1;   // Width of the lines
+    if (SHOW_MODE_CROSSHAIR_TYPEA == showMode) {
 
-    // Set the pen for drawing
-    HPEN hPen = CreatePen(PS_SOLID, lineWidth, crossHairColor);
-    HGDIOBJ hOldPen = SelectObject(hdc, hPen);
+    }
+    else {
+        // Crosshair color and style
+        COLORREF crossHairColor = RGB(0, 255, 0); // Green
+        int lineLength = 20; // Length of the lines
+        int lineWidth = 1;   // Width of the lines
 
-    // Horizontal line
-    MoveToEx(hdc, centerX - lineLength, centerY, NULL);
-    LineTo(hdc, centerX + lineLength, centerY);
+        // Set the pen for drawing
+        hPen = CreatePen(PS_SOLID, lineWidth, crossHairColor);
+        hOldPen = SelectObject(hdc, hPen);
 
-    // Vertical line
-    MoveToEx(hdc, centerX, centerY - lineLength, NULL);
-    LineTo(hdc, centerX, centerY + lineLength);
+        // Horizontal line
+        MoveToEx(hdc, centerX - lineLength, centerY, NULL);
+        LineTo(hdc, centerX + lineLength, centerY);
+
+        // Vertical line
+        MoveToEx(hdc, centerX, centerY - lineLength, NULL);
+        LineTo(hdc, centerX, centerY + lineLength);
+    }
 
     // Restore the old pen and release resources
     SelectObject(hdc, hOldPen);
@@ -2766,49 +2779,25 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
 
 LRESULT QKeyMapper::CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    static HBITMAP hBitmap = NULL; // 缓冲区位图
     int showMode = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     switch (msg) {
-    case WM_CREATE:
+    case WM_PAINT:
     {
-        RECT rect;
-        GetClientRect(hwnd, &rect);
-        int width = rect.right - rect.left;
-        int height = rect.bottom - rect.top;
-
-        HDC hdcScreen = GetDC(hwnd);
-        HDC hdcMemory = CreateCompatibleDC(hdcScreen);
-
-        if (hBitmap) DeleteObject(hBitmap); // 清理旧位图
-        hBitmap = CreateCompatibleBitmap(hdcScreen, width, height);
-
-        HGDIOBJ oldBitmap = SelectObject(hdcMemory, hBitmap);
-
-        // 绘制代码
-        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-        SelectObject(hdcMemory, hBrush);
-        PatBlt(hdcMemory, 0, 0, width, height, BLACKNESS);
-        DrawCrosshair(hwnd, hdcMemory, showMode);
-        DeleteObject(hBrush);
-
-        // 更新窗口内容
-        POINT ptSrc = { 0, 0 };
-        SIZE wndSize = { width, height };
-        POINT ptDst = { 0, 0 };
-        BLENDFUNCTION blendFunc = { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA };
-        UpdateLayeredWindow(hwnd, hdcScreen, &ptDst, &wndSize, hdcMemory, &ptSrc, 0, &blendFunc, ULW_ALPHA);
-
-        // 恢复内存 DC 的原始状态
-        SelectObject(hdcMemory, oldBitmap);
-        DeleteDC(hdcMemory);
-        ReleaseDC(hwnd, hdcScreen);
-        return 0;
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        DrawCrosshair(hwnd, hdc, showMode);
+        EndPaint(hwnd, &ps);
+        break;
     }
     case WM_ERASEBKGND:
-        return 1; // 标记为已处理，避免闪烁
+    {
+        HDC hdc = GetDC(hwnd);
+        clearCrosshairWindow(hwnd, hdc);
+        ReleaseDC(hwnd, hdc);
+        return 1;
+    }
     case WM_DESTROY:
-        if (hBitmap) DeleteObject(hBitmap); // 清理缓冲区
         PostQuitMessage(0);
         break;
     default:
@@ -2825,7 +2814,7 @@ HWND QKeyMapper::createCrosshairWindow()
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    // 注册窗口类
+    // Register window class
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = QKeyMapper::CrosshairWndProc;
     wc.hInstance = hInstance;
@@ -2833,7 +2822,7 @@ HWND QKeyMapper::createCrosshairWindow()
     wc.lpszClassName = L"QKeyMapper_CrosshairWindow";
     RegisterClass(&wc);
 
-    // 创建分层窗口
+    // Create layered window
     HWND hwnd = CreateWindowEx(
         WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
         L"QKeyMapper_CrosshairWindow",
@@ -2849,8 +2838,8 @@ HWND QKeyMapper::createCrosshairWindow()
         NULL
     );
 
-    // 设置初始透明度和图层属性（完全透明背景）
-    SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
+    // Pixels with pure black color (RGB value 0, 0, 0) will be treated as transparent
+    SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
 
     ShowWindow(hwnd, SW_HIDE);
 
@@ -2890,11 +2879,13 @@ void QKeyMapper::clearCrosshairWindow(HWND hwnd, HDC hdc)
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
 
-    // Create a transparent brush
+    // Create a black brush
     HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
     HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
 
-    // Use the transparent brush to draw a rectangle to cover the previous content
+    // Use the black brush to draw a rectangle to cover the previous content
+    // Since the window uses layered attributes with black as the transparency key,
+    // filling the window with black will clear all previous content by making it transparent
     Rectangle(hdc, clientRect.left, clientRect.top, clientRect.right, clientRect.bottom);
 
     // Restore the original brush
