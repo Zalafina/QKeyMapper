@@ -5001,7 +5001,9 @@ bool QKeyMapper::checkSettingsFileNeedtoConvert()
     QFile file(CONFIG_FILENAME);
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning("Could not open the file for reading");
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[checkSettingsFileNeedtoConvert] Could not open the file for reading");
+#endif
         return false;
     }
 
@@ -5030,7 +5032,9 @@ void QKeyMapper::convertSettingsFile()
     QFile file(CONFIG_FILENAME);
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning("Could not open the file for reading");
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[convertSettingsFile] Could not open the file for reading");
+#endif
         return;
     }
 
