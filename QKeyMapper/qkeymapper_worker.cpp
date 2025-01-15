@@ -4320,7 +4320,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #endif
     }
 
-    clearCustomKeyFlags();
+    if (!s_isWorkerDestructing) {
+        clearCustomKeyFlags();
+    }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 
