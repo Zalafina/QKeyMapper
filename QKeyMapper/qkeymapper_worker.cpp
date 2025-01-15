@@ -1268,6 +1268,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                 }
                 else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                    || VK_KEY2MOUSE_UP == vkeycode.KeyCode
+                    || VK_KEY2MOUSE_DOWN == vkeycode.KeyCode
+                    || VK_KEY2MOUSE_LEFT == vkeycode.KeyCode
+                    || VK_KEY2MOUSE_RIGHT == vkeycode.KeyCode
                     || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
                     || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
                     input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS;
@@ -7915,15 +7919,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         }
                     }
                 }
-            }
 
-            if (s_Key2Mouse_EnableState && keycodeString.startsWith(KEY2MOUSE_PREFIX)) {
-                returnFlag = true;
-            }
-            else if (keycodeString.startsWith(MOUSE2VJOY_PREFIX)) {
-                returnFlag = true;
-            }
-            else if (keycodeString.startsWith(FUNC_PREFIX)) {
                 returnFlag = true;
             }
         }
