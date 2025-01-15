@@ -238,6 +238,18 @@ private:
     int m_DisplayTime;
 };
 
+class SystrayMenu : public QMenu
+{
+    Q_OBJECT
+
+public:
+    explicit SystrayMenu(QWidget *parent = Q_NULLPTR) : QMenu(parent) {}
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+};
+
 #if 0
 class KeySequenceEditOnlyOne : public QKeySequenceEdit
 {
@@ -526,6 +538,8 @@ private slots:
 
     void onTrayIconMenuShowHideAction(void);
 
+    void onTrayIconMenuQuitAction(void);
+
     void cellChanged_slot(int row, int col);
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -748,7 +762,7 @@ public:
     MAP_PROCESSINFO m_MapProcessInfo;
 private:
     QSystemTrayIcon *m_SysTrayIcon;
-    QMenu *m_SysTrayIconMenu;
+    SystrayMenu *m_SysTrayIconMenu;
     QAction *m_TrayIconMenu_ShowHideAction;
     QAction *m_TrayIconMenu_QuitAction;
     QLabel* m_PopupMessageLabel;

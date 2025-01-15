@@ -4905,10 +4905,19 @@ void QKeyMapper::SystrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 void QKeyMapper::onTrayIconMenuShowHideAction()
 {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning() << "[onTrayIconMenuShowHideAction]" << "ShowHideAction Triggered.";
+    qDebug() << "[onTrayIconMenuShowHideAction]" << "ShowHideAction Triggered.";
 #endif
 
     switchShowHide();
+}
+
+void QKeyMapper::onTrayIconMenuQuitAction()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onTrayIconMenuQuitAction]" << "QuitAction Triggered.";
+#endif
+
+    QApplication::quit();
 }
 
 void QKeyMapper::cellChanged_slot(int row, int col)
@@ -8677,14 +8686,14 @@ void QKeyMapper::initSysTrayIcon()
     m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
     m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
 
-    m_SysTrayIconMenu = new QMenu(this);
+    m_SysTrayIconMenu = new SystrayMenu(this);
     m_TrayIconMenu_ShowHideAction = new QAction(this);
     m_TrayIconMenu_QuitAction = new QAction(this);
 
     // When the Show/Hide menu item is clicked, toggle the visibility of the window
     connect(m_TrayIconMenu_ShowHideAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuShowHideAction);
     // When the Quit menu item is clicked, close the application
-    connect(m_TrayIconMenu_QuitAction, &QAction::triggered, qApp, &QApplication::quit);
+    connect(m_TrayIconMenu_QuitAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuQuitAction);
 
     updateSysTrayIconMenuText();
 
@@ -13175,4 +13184,28 @@ void QKeyMapper::on_checkUpdateButton_clicked()
     }
 
     QSimpleUpdater::getInstance()->checkForUpdates(qkeymapper_updates_url);
+}
+
+void SystrayMenu::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Press.";
+#endif
+        QMenu::mousePressEvent(event);
+    }
+
+    // QMenu::mousePressEvent(event);
+}
+
+void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Release.";
+#endif
+        QMenu::mouseReleaseEvent(event);
+    }
+
+    // QMenu::mouseReleaseEvent(event);
 }
