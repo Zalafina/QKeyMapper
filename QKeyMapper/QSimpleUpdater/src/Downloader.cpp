@@ -41,13 +41,15 @@
 static const QString PARTIAL_DOWN(".part");
 
 Downloader::Downloader(QWidget *parent)
-   : QWidget(parent)
+   : QWidget(parent),
+    m_ui(Q_NULLPTR),
+    m_manager()
 {
    m_ui = new Ui::Downloader;
    m_ui->setupUi(this);
 
    /* Initialize private members */
-   m_manager = new QNetworkAccessManager();
+   // m_manager = new QNetworkAccessManager();
 
    /* Initialize internal values */
    m_url = "";
@@ -58,7 +60,8 @@ Downloader::Downloader(QWidget *parent)
    m_reply = Q_NULLPTR;
 
    /* Set download directory */
-   m_downloadDir.setPath(QDir::homePath() + "/Downloads/");
+   // m_downloadDir.setPath(QDir::homePath() + "/Downloads/");
+   m_downloadDir.setPath("update_files");
 
    /* Make the window look like a modal dialog */
    setWindowIcon(QIcon());
@@ -71,7 +74,7 @@ Downloader::Downloader(QWidget *parent)
    connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownloadForQKeyMapper()));
    connect(m_ui->openButton, SIGNAL(clicked()), this, SLOT(installUpdate()));
 
-   connect(m_manager, &QNetworkAccessManager::authenticationRequired, this, &Downloader::authenticate);
+   connect(&m_manager, &QNetworkAccessManager::authenticationRequired, this, &Downloader::authenticate);
 
    /* Resize to fit */
    setFixedSize(minimumSizeHint());
@@ -79,8 +82,14 @@ Downloader::Downloader(QWidget *parent)
 
 Downloader::~Downloader()
 {
-    delete m_ui;
-    delete m_manager;
+    if (m_ui != Q_NULLPTR) {
+        delete m_ui;
+        m_ui = Q_NULLPTR;
+    }
+    // if (m_manager != Q_NULLPTR) {
+    //     delete m_manager;
+    //     m_manager = Q_NULLPTR;
+    // }
 }
 
 /**
@@ -136,7 +145,7 @@ void Downloader::startDownload(const QUrl &url)
       request.setRawHeader("User-Agent", m_userAgentString.toUtf8());
 
    /* Start download */
-   m_reply = m_manager->get(request);
+   m_reply = m_manager.get(request);
    QObject::connect(m_reply, &QObject::destroyed, this, [this]() {
 #ifdef DEBUG_LOGOUT_ON
        qDebug() << "[Downloader::startDownload] m_reply is destroyed!";
@@ -206,7 +215,7 @@ void Downloader::finished()
         {
             m_reply->deleteLater();
         }
-        m_manager->clearAccessCache();
+        m_manager.clearAccessCache();
 
         if (m_reply->error() == QNetworkReply::OperationCanceledError
             && (status_code.toInt() == 200 || status_code.toInt() == 302)) {
@@ -240,7 +249,7 @@ void Downloader::finished()
         m_reply->close();
         m_reply->deleteLater();
     }
-    m_manager->clearAccessCache();
+    m_manager.clearAccessCache();
     setVisible(false);
 
     // installUpdate();
@@ -395,7 +404,7 @@ void Downloader::cancelDownloadForQKeyMapper()
     }
 
     hide();
-    m_manager->clearAccessCache();
+    m_manager.clearAccessCache();
 }
 
 /**
@@ -488,7 +497,7 @@ void Downloader::metaDataChanged()
  */
 void Downloader::updateProgress(qint64 received, qint64 total)
 {
-   if (total > 0)
+   if (total > 0 && received >0)
    {
       m_ui->progressBar->setMinimum(0);
       m_ui->progressBar->setMaximum(100);
@@ -527,7 +536,7 @@ void Downloader::calculateTimeRemaining(qint64 received, qint64 total)
 {
    uint difference = QDateTime::currentDateTime().toSecsSinceEpoch() - m_startTime;
 
-   if (difference > 0)
+   if (received > 0 && difference > 0)
    {
       QString timeString;
       qreal timeRemaining = (total - received) / (received / difference);

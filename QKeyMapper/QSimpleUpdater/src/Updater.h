@@ -29,8 +29,9 @@
 #include <QNetworkAccessManager>
 
 #include <QSimpleUpdater.h>
+#include "Downloader.h"
 
-class Downloader;
+// class Downloader;
 
 /**
  * \brief Downloads and interprests the update definition file
@@ -82,6 +83,7 @@ public slots:
    void setMandatoryUpdate(const bool mandatory_update);
    void setDownloadUserName(const QString &user_name);
    void setDownloadPassword(const QString &password);
+   void setGeometryWithParentWidget(QWidget *parent);
 
 private slots:
    void onReply(QNetworkReply *reply);
@@ -113,8 +115,8 @@ private:
    QString m_latestVersion;
    QString m_downloadUserName;
    QString m_downloadPassword;
-   Downloader *m_downloader;
-   QNetworkAccessManager *m_manager;
+   Downloader m_downloader;
+   QNetworkAccessManager m_manager;
 };
 
 #endif

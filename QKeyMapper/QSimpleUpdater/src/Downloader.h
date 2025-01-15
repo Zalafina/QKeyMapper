@@ -91,7 +91,7 @@ private:
    bool m_useCustomProcedures;
    bool m_mandatoryUpdate;
 
-   QNetworkAccessManager *m_manager;
+   QNetworkAccessManager m_manager;
 };
 
 #endif

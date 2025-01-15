@@ -32,7 +32,9 @@
 #include "Downloader.h"
 #include "qkeymapper.h"
 
-Updater::Updater()
+Updater::Updater() :
+    m_downloader(),
+    m_manager()
 {
    m_url = "";
    m_openUrl = "";
@@ -48,8 +50,8 @@ Updater::Updater()
    m_moduleVersion = qApp->applicationVersion();
    m_mandatoryUpdate = false;
 
-   m_downloader = new Downloader(QKeyMapper::getInstance());
-   m_manager = new QNetworkAccessManager();
+   // m_downloader = new Downloader(QKeyMapper::getInstance());
+   // m_manager = new QNetworkAccessManager();
 
 #if defined Q_OS_WIN
    m_platform = "windows";
@@ -65,14 +67,17 @@ Updater::Updater()
 
    setUserAgentString(QString("%1/%2 (Qt; QSimpleUpdater)").arg(qApp->applicationName(), qApp->applicationVersion()));
 
-   connect(m_downloader, SIGNAL(downloadFinished(QString, QString)), this, SIGNAL(downloadFinished(QString, QString)));
+   connect(&m_downloader, SIGNAL(downloadFinished(QString, QString)), this, SIGNAL(downloadFinished(QString, QString)));
    // connect(m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(onReply(QNetworkReply *)));
-   connect(m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(onReplyForQKeyMapper(QNetworkReply *)));
+   connect(&m_manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(onReplyForQKeyMapper(QNetworkReply *)));
 }
 
 Updater::~Updater()
 {
-   delete m_downloader;
+    // if (m_downloader != Q_NULLPTR) {
+    //     delete m_downloader;
+    //     m_downloader = Q_NULLPTR;
+    // }
 }
 
 /**
@@ -227,7 +232,7 @@ bool Updater::downloaderEnabled() const
  */
 bool Updater::useCustomInstallProcedures() const
 {
-   return m_downloader->useCustomInstallProcedures();
+   return m_downloader.useCustomInstallProcedures();
 }
 
 /**
@@ -258,7 +263,7 @@ void Updater::checkForUpdates()
     if (!userAgentString().isEmpty())
         request.setRawHeader("User-Agent", userAgentString().toUtf8());
 
-    m_manager->get(request);
+    m_manager.get(request);
 }
 
 /**
@@ -307,7 +312,7 @@ void Updater::setNotifyOnFinish(const bool notify)
 void Updater::setUserAgentString(const QString &agent)
 {
    m_userAgentString = agent;
-   m_downloader->setUserAgentString(agent);
+   m_downloader.setUserAgentString(agent);
 }
 
 /**
@@ -332,7 +337,7 @@ void Updater::setDownloaderEnabled(const bool enabled)
 
 void Updater::setDownloadDir(const QString &dir)
 {
-   m_downloader->setDownloadDir(dir);
+   m_downloader.setDownloadDir(dir);
 }
 
 /**
@@ -367,7 +372,7 @@ void Updater::setUseCustomAppcast(const bool customAppcast)
  */
 void Updater::setUseCustomInstallProcedures(const bool custom)
 {
-   m_downloader->setUseCustomInstallProcedures(custom);
+   m_downloader.setUseCustomInstallProcedures(custom);
 }
 
 /**
@@ -387,6 +392,17 @@ void Updater::setDownloadUserName(const QString &user_name)
 void Updater::setDownloadPassword(const QString &password)
 {
    m_downloadPassword = password;
+}
+
+void Updater::setGeometryWithParentWidget(QWidget *parent)
+{
+    /* Position this window at the center of the parent widget */
+    if (parent != Q_NULLPTR) {
+        QRect parentRect = parent->geometry();
+        int x = parentRect.x() + (parentRect.width() - m_downloader.width()) / 2;
+        int y = parentRect.y() + (parentRect.height() - m_downloader.height()) / 2;
+        m_downloader.move(x, y);
+    }
 }
 
 /**
@@ -616,13 +632,13 @@ void Updater::setUpdateState(const QSimpleUpdater::UpdateState update_state)
 
          else if (downloaderEnabled())
          {
-            m_downloader->setUrlId(url());
-            m_downloader->setFileName(downloadUrl().split("/").last());
-            m_downloader->setMandatoryUpdate(m_mandatoryUpdate);
+            m_downloader.setUrlId(url());
+            m_downloader.setFileName(downloadUrl().split("/").last());
+            m_downloader.setMandatoryUpdate(m_mandatoryUpdate);
             auto url = QUrl(downloadUrl());
             url.setUserName(m_downloadUserName);
             url.setPassword(m_downloadPassword);
-            m_downloader->startDownload(url);
+            m_downloader.startDownload(url);
          }
 
          else
@@ -697,13 +713,13 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
 
             else if (downloaderEnabled())
             {
-                m_downloader->setUrlId(url());
-                m_downloader->setFileName(downloadUrl().split("/").last());
-                m_downloader->setMandatoryUpdate(m_mandatoryUpdate);
+                m_downloader.setUrlId(url());
+                m_downloader.setFileName(downloadUrl().split("/").last());
+                m_downloader.setMandatoryUpdate(m_mandatoryUpdate);
                 auto url = QUrl(downloadUrl());
                 url.setUserName(m_downloadUserName);
                 url.setPassword(m_downloadPassword);
-                m_downloader->startDownload(url);
+                m_downloader.startDownload(url);
             }
 
             else

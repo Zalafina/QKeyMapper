@@ -110,6 +110,7 @@ public slots:
    void setMandatoryUpdate(const QString &url, const bool mandatory_update);
    void setDownloadUserName(const QString &url, const QString &userName);
    void setDownloadPassword(const QString &url, const QString &password);
+   void setGeometryWithParentWidget(QWidget *parent);
 
 protected:
    ~QSimpleUpdater();

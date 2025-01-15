@@ -3947,6 +3947,14 @@ void QKeyMapper::showEvent(QShowEvent *event)
 #endif
         }
 
+        if (m_MainWindowHandle != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+            QRect parentRect = geometry();
+            QString debugmessage = QString("[QKeyMapper::showEvent] Call QSimpleUpdater::setGeometryWithParentWidget(%1, %2)").arg(parentRect.x()).arg(parentRect.y());
+            qDebug().noquote().nospace() << debugmessage;
+#endif
+            QSimpleUpdater::getInstance()->setGeometryWithParentWidget(this);
+        }
 
         QTimer::singleShot(100, this, [=]() {
             if (m_KeyMapStatus == KEYMAP_IDLE){

@@ -29,12 +29,16 @@ static QList<Updater *> UPDATERS;
 
 QSimpleUpdater::~QSimpleUpdater()
 {
-   URLS.clear();
+    URLS.clear();
 
-   foreach (Updater *updater, UPDATERS)
-      updater->deleteLater();
+    foreach (Updater *updater, UPDATERS) {
+        if (updater != Q_NULLPTR) {
+            delete updater;
+            // updater->deleteLater();
+        }
+    }
 
-   UPDATERS.clear();
+    UPDATERS.clear();
 }
 
 /**
@@ -461,6 +465,15 @@ void QSimpleUpdater::setDownloadUserName(const QString &url, const QString &user
 void QSimpleUpdater::setDownloadPassword(const QString &url, const QString &password)
 {
    getUpdater(url)->setDownloadPassword(password);
+}
+
+void QSimpleUpdater::setGeometryWithParentWidget(QWidget *parent)
+{
+    for(Updater *updater : UPDATERS) {
+        if (updater != Q_NULLPTR) {
+            updater->setGeometryWithParentWidget(parent);
+        }
+    }
 }
 
 /**
