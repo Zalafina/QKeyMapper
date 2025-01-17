@@ -3551,8 +3551,8 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
         else {
             // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
-            qreal adjustedXSensitivity = 1000.0 / vJoy_X_Sensitivity;
-            qreal adjustedYSensitivity = 1000.0 / vJoy_Y_Sensitivity;
+            int adjustedXSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_X_Sensitivity;
+            int adjustedYSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_Y_Sensitivity;
             #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
             qreal x = -qExp((-1.0 / adjustedXSensitivity) * qAbs(delta_x)) + 1.0;
             qreal y = -qExp((-1.0 / adjustedYSensitivity) * qAbs(delta_y)) + 1.0;

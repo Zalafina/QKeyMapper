@@ -1065,8 +1065,8 @@
     <widget class="QPushButton" name="installViGEmBusButton">
      <property name="geometry">
       <rect>
-       <x>400</x>
-       <y>40</y>
+       <x>390</x>
+       <y>70</y>
        <width>81</width>
        <height>21</height>
       </rect>
@@ -1086,7 +1086,7 @@
       <rect>
        <x>340</x>
        <y>10</y>
-       <width>45</width>
+       <width>65</width>
        <height>21</height>
       </rect>
      </property>
@@ -1097,8 +1097,8 @@
     <widget class="QLabel" name="ViGEmBusStatusLabel">
      <property name="geometry">
       <rect>
-       <x>400</x>
-       <y>10</y>
+       <x>300</x>
+       <y>70</y>
        <width>81</width>
        <height>21</height>
       </rect>
@@ -1121,7 +1121,7 @@
       <rect>
        <x>340</x>
        <y>40</y>
-       <width>45</width>
+       <width>65</width>
        <height>21</height>
       </rect>
      </property>
