@@ -18,7 +18,9 @@
 ### 注意: 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
 * ( 32位系统则下载安装32位运行库 https://aka.ms/vs/17/release/vc_redist.x86.exe )
 
-### [注意: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
+### 注意1: ViGEMBus驱动与vJoy驱动都是虚拟手柄驱动，不建议在系统中同时安装。如果操作系统中之前安装过vJoy驱动并且出现虚拟手柄相关的异常问题，建议卸载vJoy驱动后确认是否可以解决问题。
+
+### [注意2: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 * https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
 ---------------
 #### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。
