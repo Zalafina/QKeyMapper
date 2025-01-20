@@ -2764,30 +2764,29 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
 
     // Centerdot setting values
     int centerdot_opacity = 180; // Centerdot opacity value
-    int dotRadius = 2;
+    int dotRadius = 1;
     BYTE centerdot_R = 112;
     BYTE centerdot_G = 161;
     BYTE centerdot_B = 255;
 
     // Crosshair setting values
     int crosshair_opacity = 180; // Crosshair line opacity value
-    int lineWidth = 4;   // Line width
+    int lineWidth = 2;   // Line width
     int lineLength = 30; // Line length
     BYTE crosshair_R = 112;
     BYTE crosshair_G = 161;
     BYTE crosshair_B = 255;
+
+    // Draw center dot rectangle
+    Color centerDotColor(centerdot_opacity, centerdot_R, centerdot_G, centerdot_B);
+    Pen centerdot_pen(centerDotColor, dotRadius * 2);
+    graphics.DrawLine(&centerdot_pen, centerX, centerY - dotRadius, centerX, centerY + dotRadius);
 
     // Calculate half of the line width
     int halfLineWidth = lineWidth / 2;
 
     if (SHOW_MODE_CROSSHAIR_TYPEA == showMode) {
         // SHOW_MODE_CROSSHAIR_TYPEA Crosshair color and style
-
-        // Draw center dot rectangle
-        Color centerDotColor(centerdot_opacity, centerdot_R, centerdot_G, centerdot_B);
-        Pen centerdot_pen(centerDotColor, dotRadius * 2);
-        graphics.DrawLine(&centerdot_pen, centerX, centerY - dotRadius, centerX, centerY + dotRadius);
-
 
         // Crosshair color and style
         Color crossHairColor(crosshair_opacity, crosshair_R, crosshair_G, crosshair_B);
