@@ -93,7 +93,9 @@ LIBS        += -L$$PWD/win_lib/x64
 # Win x86 libs
 LIBS        += -L$$PWD/win_lib/x86
 }
-LIBS        += User32.lib Psapi.lib dxguid.lib
+LIBS        += User32.lib
+# LIBS        += Psapi.lib
+# LIBS        += dxguid.lib
 LIBS        += Gdi32.Lib
 LIBS        += WinMM.Lib
 LIBS        += dwmapi.lib

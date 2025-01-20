@@ -2747,10 +2747,14 @@ void QKeyMapper::clearTransparentWindow(HWND hwnd, HDC hdc)
     DeleteObject(hBrush);
 }
 
-void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
+void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
 {
+    // Extract the show_mode (high 2 bytes) and rowindex (low 2 bytes) from showParam
+    int showMode = (showParam >> 16) & 0xFFFF;  // High 2 bytes for show_mode
+    int rowindex = showParam & 0xFFFF;          // Low 2 bytes for rowindex
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[DrawCrosshair] Show Mode = " << (showMode == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL");
+    qDebug().nospace().noquote() << "[DrawCrosshair] Show Mode = " << (showParam == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL") << ", Row Index = " << rowindex;
 #endif
 
     // Create Graphics object
@@ -2863,14 +2867,14 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
 
 LRESULT QKeyMapper::CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    int showMode = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    int showParam = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     switch (msg) {
     case WM_PAINT:
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        DrawCrosshair(hwnd, hdc, showMode);
+        DrawCrosshair(hwnd, hdc, showParam);
         EndPaint(hwnd, &ps);
         break;
     }
@@ -10817,11 +10821,12 @@ void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
     ui->pointDisplayLabel->setText(car_ordinal_str);
 }
 
-void QKeyMapper::showCrosshairStart(const QString &crosshair_keystr)
+void QKeyMapper::showCrosshairStart(int rowindex, const QString &crosshair_keystr)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[showCrosshairStart]" << "Crosshair =" << crosshair_keystr;
+    qDebug() << "[showCrosshairStart]" << "Crosshair =" << crosshair_keystr << ", RowIndex =" << rowindex;
 #endif
+    Q_UNUSED(rowindex);
     Q_UNUSED(crosshair_keystr);
 
     int show_mode = SHOW_MODE_NONE;
@@ -10837,8 +10842,11 @@ void QKeyMapper::showCrosshairStart(const QString &crosshair_keystr)
         return;
     }
 
-    // Set show mode
-    SetWindowLongPtr(m_CrosshairHandle, GWLP_USERDATA, show_mode);
+    // Combine show_mode and rowindex into a single 32-bit value (high 2 bytes for show_mode, low 2 bytes for rowindex)
+    ULONG_PTR show_param = (show_mode << 16) | (rowindex & 0xFFFF);
+
+    // Set the combined show_param to the window user data
+    SetWindowLongPtr(m_CrosshairHandle, GWLP_USERDATA, show_param);
 
     RECT clientRect;
     WINDOWINFO winInfo;
@@ -10859,11 +10867,12 @@ void QKeyMapper::showCrosshairStart(const QString &crosshair_keystr)
     ShowWindow(m_CrosshairHandle, SW_SHOW);
 }
 
-void QKeyMapper::showCrosshairStop(const QString &crosshair_keystr)
+void QKeyMapper::showCrosshairStop(int rowindex, const QString &crosshair_keystr)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[showCrosshairStop]" << "Crosshair =" << crosshair_keystr;
+    qDebug() << "[showCrosshairStop]" << "Crosshair =" << crosshair_keystr << ", RowIndex =" << rowindex;
 #endif
+    Q_UNUSED(rowindex);
     Q_UNUSED(crosshair_keystr);
 
     if (false == QKeyMapper_Worker::s_Crosshair_Normal

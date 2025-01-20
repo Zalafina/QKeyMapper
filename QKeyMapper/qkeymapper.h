@@ -393,7 +393,7 @@ public:
     void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
     void destoryTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
-    static void DrawCrosshair(HWND hwnd, HDC hdc, int showMode);
+    static void DrawCrosshair(HWND hwnd, HDC hdc, int showParam);
     static LRESULT CALLBACK CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     HWND createCrosshairWindow(void);
     void resizeCrosshairWindow(HWND hwnd, int x, int y, int width, int height);
@@ -448,8 +448,8 @@ signals:
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
     void showCarOrdinal_Signal(qint32 car_ordinal);
-    void showCrosshairStart_Signal(const QString &crosshair_keystr);
-    void showCrosshairStop_Signal(const QString &crosshair_keystr);
+    void showCrosshairStart_Signal(int rowindex, const QString &crosshair_keystr);
+    void showCrosshairStop_Signal(int rowindex, const QString &crosshair_keystr);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
     void updateVirtualGamepadListDisplay_Signal(void);
@@ -486,9 +486,9 @@ public slots:
 
     void showCarOrdinal(qint32 car_ordinal);
 
-    void showCrosshairStart(const QString &crosshair_keystr);
+    void showCrosshairStart(int rowindex, const QString &crosshair_keystr);
 
-    void showCrosshairStop(const QString &crosshair_keystr);
+    void showCrosshairStop(int rowindex, const QString &crosshair_keystr);
 
     void onKeyMappingTabWidgetTabBarDoubleClicked(int index);
 

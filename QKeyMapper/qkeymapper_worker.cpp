@@ -892,6 +892,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     bool keyseq_start = false;
     bool keyseq_finished = false;
     int sendvirtualkey_state = controller.sendvirtualkey_state;
+    int row_index = controller.task_rowindex;
 
     QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
 
@@ -1274,7 +1275,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     || VK_KEY2MOUSE_RIGHT == vkeycode.KeyCode
                     || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
                     || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
-                    input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS;
+                    if (0 <= row_index && row_index < USHRT_MAX) {
+                        input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | row_index;
+                    }
+                    else {
+                        input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | USHRT_MAX;
+                    }
                 }
                 else {
                     input.ki.dwExtraInfo = VIRTUAL_KEY_SEND | sendvirtualkey_state;
@@ -1826,7 +1832,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
                         || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
                         || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
-                        input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS;
+                        if (0 <= row_index && row_index < USHRT_MAX) {
+                            input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | row_index;
+                        }
+                        else {
+                            input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | USHRT_MAX;
+                        }
                     }
                     else {
                         input.ki.dwExtraInfo = VIRTUAL_KEY_SEND | sendvirtualkey_state;
@@ -7409,7 +7420,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
     ULONG_PTR extraInfo_nochanged = pKeyBoard->dwExtraInfo;
-    ULONG_PTR extraInfo = extraInfo_nochanged & ~0xF;
+    ULONG_PTR extraInfo;
+    if ((extraInfo_nochanged & VIRTUAL_CUSTOM_KEYS) == VIRTUAL_CUSTOM_KEYS) {
+        extraInfo = VIRTUAL_CUSTOM_KEYS;
+    }
+    else {
+        extraInfo = extraInfo_nochanged & ~0xF;
+    }
 
     if (extraInfo == VIRTUAL_RESEND_REALKEY
         || extraInfo == VIRTUAL_UNICODE_CHAR) {
@@ -7779,7 +7796,14 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         }
         else {
             int sendVirtualKeyState = SENDVIRTUALKEY_STATE_NORMAL;
-            if (VIRTUAL_KEY_SEND == extraInfo) {
+            int row_index = INITIAL_ROW_INDEX;
+            if (VIRTUAL_CUSTOM_KEYS == extraInfo) {
+                int temp_row_index = static_cast<int>(extraInfo_nochanged & USHRT_MAX);
+                if (0 <= temp_row_index && temp_row_index < USHRT_MAX) {
+                    row_index = temp_row_index;
+                }
+            }
+            else if (VIRTUAL_KEY_SEND == extraInfo) {
                 sendVirtualKeyState = static_cast<int>(extraInfo_nochanged & 0xF);
             }
 
@@ -7895,13 +7919,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_DOWN Show Crosshair Start.";
 #endif
-                        emit QKeyMapper::getInstance()->showCrosshairStart_Signal(keycodeString);
+                        emit QKeyMapper::getInstance()->showCrosshairStart_Signal(row_index, keycodeString);
                     }
                     else {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[LowLevelKeyboardHookProc]" << keycodeString << "KEY_UP Show Crosshair Stop.";
 #endif
-                        emit QKeyMapper::getInstance()->showCrosshairStop_Signal(keycodeString);
+                        emit QKeyMapper::getInstance()->showCrosshairStop_Signal(row_index, keycodeString);
                     }
                 }
                 else if (keycodeString.startsWith(MOUSE2VJOY_PREFIX)
@@ -11928,7 +11952,7 @@ void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
     if (!restart) {
         s_Crosshair_Normal = false;
         s_Crosshair_TypeA = false;
-        emit QKeyMapper::getInstance()->showCrosshairStop_Signal(CROSSHAIR_NORMAL_STR);
+        emit QKeyMapper::getInstance()->showCrosshairStop_Signal(INITIAL_ROW_INDEX, CROSSHAIR_NORMAL_STR);
     }
 }
 
