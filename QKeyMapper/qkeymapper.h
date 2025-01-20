@@ -38,6 +38,7 @@
 #include <QDateTime>
 #include <cmath>
 #include <windows.h>
+#include <Gdiplus.h>
 #include <process.h>
 #include <tlhelp32.h>
 #include <wtsapi32.h>
@@ -386,6 +387,8 @@ public:
 
     static void DrawMousePoints(HWND hwnd, HDC hdc, int showMode);
     static LRESULT CALLBACK MousePointsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    void InitializeGDIPlus(void);
+    void ShutdownGDIPlus(void);
     HWND createTransparentWindow(void);
     void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
     void destoryTransparentWindow(HWND hwnd);
@@ -799,6 +802,7 @@ private:
     int m_CrosshairWindowInitialY;
     int m_CrosshairWindowInitialWidth;
     int m_CrosshairWindowInitialHeight;
+    ULONG_PTR m_GdiplusToken;
     QInputDeviceListWindow *m_deviceListWindow;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;

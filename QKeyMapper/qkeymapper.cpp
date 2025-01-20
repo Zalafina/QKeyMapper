@@ -2,6 +2,8 @@
 #include "ui_qkeymapper.h"
 #include "qkeymapper_constants.h"
 
+using namespace Gdiplus;
+
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 
@@ -74,6 +76,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CrosshairWindowInitialY(0),
     m_CrosshairWindowInitialWidth(0),
     m_CrosshairWindowInitialHeight(0),
+    m_GdiplusToken(NULL),
     m_deviceListWindow(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR),
     m_TableSetupDialog(Q_NULLPTR),
@@ -83,6 +86,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
+    InitializeGDIPlus();
     m_TransParentHandle = createTransparentWindow();
     m_CrosshairHandle = createCrosshairWindow();
 
@@ -430,7 +434,9 @@ QKeyMapper::~QKeyMapper()
     m_MainWindowHandle = NULL;
     destoryTransparentWindow(m_TransParentHandle);
     m_TransParentHandle = NULL;
-    // freeShortcuts();
+    destoryCrosshairWindow(m_CrosshairHandle);
+    m_CrosshairHandle = NULL;
+    ShutdownGDIPlus();
 
     delete ui;
 
@@ -2654,6 +2660,17 @@ LRESULT QKeyMapper::MousePointsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
     return 0;
 }
 
+void QKeyMapper::InitializeGDIPlus()
+{
+    GdiplusStartupInput gdiplusStartupInput;
+    GdiplusStartup(&m_GdiplusToken, &gdiplusStartupInput, NULL);
+}
+
+void QKeyMapper::ShutdownGDIPlus()
+{
+    GdiplusShutdown(m_GdiplusToken);
+}
+
 HWND QKeyMapper::createTransparentWindow()
 {
     HINSTANCE hInstance = GetModuleHandle(NULL);
@@ -2737,60 +2754,46 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
 #endif
 
     // Get the window width and height
-    HPEN hPen;
-    HGDIOBJ hOldPen;
     RECT rect;
     GetClientRect(hwnd, &rect);
-
-    // clearCrosshairWindow has fill the full window to black, so do not need to set black background
-    // HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0)); // Set black color for fully transparent background
-    // FillRect(hdc, &rect, hBrush);
-    // DeleteObject(hBrush);
-
     int centerX = (rect.right - rect.left) / 2;
     int centerY = (rect.bottom - rect.top) / 2;
 
+    // Create Graphics object
+    Graphics graphics(hdc);
+
     if (SHOW_MODE_CROSSHAIR_TYPEA == showMode) {
-        // Crosshair color and style
-        COLORREF crossHairColor = RGB(112, 161, 255); // French Sky Blue rgb(112, 161, 255)
-        int lineLength = 20; // Length of the lines
-        int lineWidth = 1;   // Width of the lines
+        // SHOW_MODE_CROSSHAIR_TYPEA Crosshair color and style
+        Color crossHairColor(180, 112, 161, 255);
+        int lineLength = 30; // Line length
+        int lineWidth = 2;   // Line width
 
-        // Set the pen for drawing
-        hPen = CreatePen(PS_SOLID, lineWidth, crossHairColor);
-        hOldPen = SelectObject(hdc, hPen);
+        // Set the pen
+        Pen pen(crossHairColor, lineWidth);
 
-        // Horizontal line
-        MoveToEx(hdc, centerX - lineLength, centerY, NULL);
-        LineTo(hdc, centerX + lineLength, centerY);
+        // Draw horizontal line
+        graphics.DrawLine(&pen, centerX - lineLength, centerY, centerX + lineLength, centerY);
 
-        // Vertical line
-        MoveToEx(hdc, centerX, centerY - lineLength, NULL);
-        LineTo(hdc, centerX, centerY + lineLength);
+        // Draw vertical line
+        graphics.DrawLine(&pen, centerX, centerY - lineLength, centerX, centerY + lineLength);
     }
     else {
-        // Crosshair color and style
-        COLORREF crossHairColor = RGB(112, 161, 255); // French Sky Blue rgb(112, 161, 255)
-        int lineLength = 20; // Length of the lines
-        int lineWidth = 1;   // Width of the lines
+        // SHOW_MODE_CROSSHAIR_NORMAL Crosshair color and style
+        Color crossHairColor(180, 112, 161, 255);
+        int lineLength = 30; // Line length
+        int lineWidth = 2;   // Line width
 
-        // Set the pen for drawing
-        hPen = CreatePen(PS_SOLID, lineWidth, crossHairColor);
-        hOldPen = SelectObject(hdc, hPen);
+        // Set the pen
+        Pen pen(crossHairColor, lineWidth);
 
-        // Horizontal line
-        MoveToEx(hdc, centerX - lineLength, centerY, NULL);
-        LineTo(hdc, centerX + lineLength, centerY);
+        // Draw horizontal line
+        graphics.DrawLine(&pen, centerX - lineLength, centerY, centerX + lineLength, centerY);
 
-        // Vertical line
-        MoveToEx(hdc, centerX, centerY - lineLength, NULL);
-        LineTo(hdc, centerX, centerY + lineLength);
+        // Draw vertical line
+        graphics.DrawLine(&pen, centerX, centerY - lineLength, centerX, centerY + lineLength);
     }
-
-    // Restore the old pen and release resources
-    SelectObject(hdc, hOldPen);
-    DeleteObject(hPen);
 }
+
 
 LRESULT QKeyMapper::CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {

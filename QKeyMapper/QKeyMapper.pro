@@ -103,6 +103,7 @@ LIBS        += AdvAPI32.Lib
 LIBS        += powrprof.lib
 LIBS        += SetupAPI.Lib
 LIBS        += WtsApi32.Lib
+LIBS        += gdiplus.lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
 }
