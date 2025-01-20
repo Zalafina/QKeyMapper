@@ -562,7 +562,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -959,6 +959,25 @@
      </property>
      <property name="text">
       <string>Accept Virtual Gamepad Input</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="crossHairSetupButton">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>40</y>
+       <width>101</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>CrosshairConfig</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
      </property>
     </widget>
    </widget>

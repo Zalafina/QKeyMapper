@@ -150,6 +150,7 @@ HEADERS     += \
     Interception/include/interception.h \
     libusb/include/libusb.h \
     orderedmap/orderedmap.h \
+    qcrosshairsetupdialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
     qtablesetupdialog.h
@@ -162,6 +163,7 @@ QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'
 SOURCES     += \
     interception_worker.cpp \
     main.cpp \
+    qcrosshairsetupdialog.cpp \
     qinputdevicelistwindow.cpp \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
@@ -188,6 +190,7 @@ contains( DEFINES, SINGLE_APPLICATION ) {
 }
 
 FORMS       += \
+    qcrosshairsetupdialog.ui \
     qinputdevicelistwindow.ui \
     qitemsetupdialog.ui \
     qkeymapper.ui \
