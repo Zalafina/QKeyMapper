@@ -2753,34 +2753,43 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
     qDebug().nospace().noquote() << "[DrawCrosshair] Show Mode = " << (showMode == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL");
 #endif
 
+    // Create Graphics object
+    Graphics graphics(hdc);
+
     // Get the window width and height
     RECT rect;
     GetClientRect(hwnd, &rect);
     int centerX = (rect.right - rect.left) / 2;
     int centerY = (rect.bottom - rect.top) / 2;
 
-    // Create Graphics object
-    Graphics graphics(hdc);
+    // X Offset & Y Offset
+    int x_offset = 0;
+    int y_offset = 0;
+
+    centerX += x_offset;
+    centerY += y_offset;
+
+    // Draw flags
+    bool draw_centerdot = true;
+    bool draw_top = true;
+    bool draw_bottom = true;
+    bool draw_left = true;
+    bool draw_right = true;
 
     // Centerdot setting values
-    int centerdot_opacity = 180; // Centerdot opacity value
-    int dotRadius = 1;
+    int centerdot_opacity = 200; // Centerdot opacity value
+    int dotRadius = 2;
     BYTE centerdot_R = 112;
     BYTE centerdot_G = 161;
     BYTE centerdot_B = 255;
 
     // Crosshair setting values
-    int crosshair_opacity = 180; // Crosshair line opacity value
+    int crosshair_opacity = 200; // Crosshair line opacity value
     int lineWidth = 2;   // Line width
     int lineLength = 30; // Line length
     BYTE crosshair_R = 112;
     BYTE crosshair_G = 161;
     BYTE crosshair_B = 255;
-
-    // Draw center dot rectangle
-    Color centerDotColor(centerdot_opacity, centerdot_R, centerdot_G, centerdot_B);
-    Pen centerdot_pen(centerDotColor, dotRadius * 2);
-    graphics.DrawLine(&centerdot_pen, centerX, centerY - dotRadius, centerX, centerY + dotRadius);
 
     // Calculate half of the line width
     int halfLineWidth = lineWidth / 2;
@@ -2794,17 +2803,25 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
         // Set the pen
         Pen crosshair_pen(crossHairColor, lineWidth);
 
-        // Draw top line (only the far half)
-        graphics.DrawLine(&crosshair_pen, centerX, centerY - halfLineWidth - lineLength, centerX, centerY - halfLineWidth - lineLength + (lineLength / 2));
+        if (draw_top) {
+            // Draw top line (only the far half)
+            graphics.DrawLine(&crosshair_pen, centerX, centerY - halfLineWidth - lineLength, centerX, centerY - halfLineWidth - lineLength + (lineLength / 2));
+        }
 
-        // Draw bottom line (only the far half)
-        graphics.DrawLine(&crosshair_pen, centerX, centerY + halfLineWidth + (lineLength / 2), centerX, centerY + halfLineWidth + lineLength);
+        if (draw_bottom) {
+            // Draw bottom line (only the far half)
+            graphics.DrawLine(&crosshair_pen, centerX, centerY + halfLineWidth + (lineLength / 2), centerX, centerY + halfLineWidth + lineLength);
+        }
 
-        // Draw left line (only the far half)
-        graphics.DrawLine(&crosshair_pen, centerX - halfLineWidth - lineLength, centerY, centerX - halfLineWidth - lineLength + (lineLength / 2), centerY);
+        if (draw_left) {
+            // Draw left line (only the far half)
+            graphics.DrawLine(&crosshair_pen, centerX - halfLineWidth - lineLength, centerY, centerX - halfLineWidth - lineLength + (lineLength / 2), centerY);
+        }
 
-        // Draw right line (only the far half)
-        graphics.DrawLine(&crosshair_pen, centerX + halfLineWidth + (lineLength / 2), centerY, centerX + halfLineWidth + lineLength, centerY);
+        if (draw_right) {
+            // Draw right line (only the far half)
+            graphics.DrawLine(&crosshair_pen, centerX + halfLineWidth + (lineLength / 2), centerY, centerX + halfLineWidth + lineLength, centerY);
+        }
     }
     else {
         // SHOW_MODE_CROSSHAIR_NORMAL Crosshair color and style
@@ -2815,17 +2832,32 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showMode)
         // Set the pen
         Pen crosshair_pen(crossHairColor, lineWidth);
 
-        // Draw top line
-        graphics.DrawLine(&crosshair_pen, centerX, centerY - halfLineWidth - lineLength, centerX, centerY - halfLineWidth);
+        if (draw_top) {
+            // Draw top line
+            graphics.DrawLine(&crosshair_pen, centerX, centerY - halfLineWidth - lineLength, centerX, centerY - halfLineWidth);
+        }
 
-        // Draw bottom line
-        graphics.DrawLine(&crosshair_pen, centerX, centerY + halfLineWidth, centerX, centerY + halfLineWidth + lineLength);
+        if (draw_bottom) {
+            // Draw bottom line
+            graphics.DrawLine(&crosshair_pen, centerX, centerY + halfLineWidth, centerX, centerY + halfLineWidth + lineLength);
+        }
 
-        // Draw left line
-        graphics.DrawLine(&crosshair_pen, centerX - halfLineWidth - lineLength, centerY, centerX - halfLineWidth, centerY);
+        if (draw_left) {
+            // Draw left line
+            graphics.DrawLine(&crosshair_pen, centerX - halfLineWidth - lineLength, centerY, centerX - halfLineWidth, centerY);
+        }
 
-        // Draw right line
-        graphics.DrawLine(&crosshair_pen, centerX + halfLineWidth, centerY, centerX + halfLineWidth + lineLength, centerY);
+        if (draw_right) {
+            // Draw right line
+            graphics.DrawLine(&crosshair_pen, centerX + halfLineWidth, centerY, centerX + halfLineWidth + lineLength, centerY);
+        }
+    }
+
+    if (draw_centerdot) {
+        // Draw center dot rectangle
+        Color centerDotColor(centerdot_opacity, centerdot_R, centerdot_G, centerdot_B);
+        Pen centerdot_pen(centerDotColor, dotRadius * 2);
+        graphics.DrawLine(&centerdot_pen, centerX, centerY - dotRadius, centerX, centerY + dotRadius);
     }
 }
 
