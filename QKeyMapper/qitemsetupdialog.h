@@ -5,6 +5,7 @@
 #include <QLineEdit>
 
 #include "qkeyrecord.h"
+#include "qcrosshairsetupdialog.h"
 
 namespace Ui {
 class QItemSetupDialog;
@@ -60,6 +61,7 @@ private:
     int m_TabIndex;
     int m_ItemRow;
     QKeyRecord *m_KeyRecordDialog;
+    QCrosshairSetupDialog *m_CrosshairSetupDialog;
 
 public:
     KeyListComboBox *m_OriginalKeyListComboBox;
@@ -92,6 +94,7 @@ private slots:
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
     void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
+    void on_crosshairConfigButton_clicked();
 };
 
 class KeyStringLineEdit : public QLineEdit

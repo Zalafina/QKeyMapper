@@ -150,6 +150,7 @@ INCLUDEPATH += $$PWD/orderedmap
 
 HEADERS     += \
     Interception/include/interception.h \
+    colorpickerwidget.h \
     libusb/include/libusb.h \
     orderedmap/orderedmap.h \
     qcrosshairsetupdialog.h \
@@ -163,6 +164,7 @@ HEADERS     += \
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
 
 SOURCES     += \
+    colorpickerwidget.cpp \
     interception_worker.cpp \
     main.cpp \
     qcrosshairsetupdialog.cpp \

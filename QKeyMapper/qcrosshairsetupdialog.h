@@ -2,6 +2,7 @@
 #define QCROSSHAIRSETUPDIALOG_H
 
 #include <QDialog>
+#include "colorpickerwidget.h"
 
 namespace Ui {
 class QCrosshairSetupDialog;
@@ -17,6 +18,8 @@ public:
 
 private:
     Ui::QCrosshairSetupDialog *ui;
+    ColorPickerWidget *m_CenterColorPicker;
+    ColorPickerWidget *m_CrosshairColorPicker;
 };
 
 #endif // QCROSSHAIRSETUPDIALOG_H

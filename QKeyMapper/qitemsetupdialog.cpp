@@ -14,6 +14,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , m_TabIndex(-1)
     , m_ItemRow(-1)
     , m_KeyRecordDialog(Q_NULLPTR)
+    , m_CrosshairSetupDialog(Q_NULLPTR)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyLineEdit(new KeyStringLineEdit(this))
@@ -24,6 +25,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 
     m_KeyRecordDialog = new QKeyRecord(this);
     m_KeyRecordDialog->setWindowFlags(Qt::Popup);
+
+    m_CrosshairSetupDialog = new QCrosshairSetupDialog(this);
 
     initKeyListComboBoxes();
     initKeyStringLineEdit();
@@ -1612,5 +1615,20 @@ void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
         qDebug().nospace().noquote() << "[KeyStringLineEdit::focusInEvent]" << "MappingKey LineEdit focus in, set editing boarder to it.";
 #endif
         QItemSetupDialog::setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
+    }
+}
+
+void QItemSetupDialog::on_crosshairConfigButton_clicked()
+{
+    if (Q_NULLPTR == m_CrosshairSetupDialog) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[on_crosshairConfigButton_clicked] Show Crosshait Config Dialog Window";
+#endif
+
+    if (!m_CrosshairSetupDialog->isVisible()) {
+        m_CrosshairSetupDialog->show();
     }
 }

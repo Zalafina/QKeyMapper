@@ -94,7 +94,7 @@
      <x>250</x>
      <y>180</y>
      <width>85</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -110,7 +110,7 @@
      <x>165</x>
      <y>180</y>
      <width>81</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -126,7 +126,7 @@
      <x>335</x>
      <y>180</y>
      <width>91</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="text">
@@ -142,7 +142,7 @@
      <x>430</x>
      <y>180</y>
      <width>85</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -544,6 +544,25 @@
     <string>PostMappingKey</string>
    </property>
    <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="crosshairConfigButton">
+   <property name="geometry">
+    <rect>
+     <x>630</x>
+     <y>180</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>CrosshairConfig</string>
+   </property>
+   <property name="autoDefault">
     <bool>false</bool>
    </property>
   </widget>

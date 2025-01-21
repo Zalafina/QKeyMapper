@@ -961,25 +961,6 @@
       <string>Accept Virtual Gamepad Input</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="crossHairSetupButton">
-     <property name="geometry">
-      <rect>
-       <x>310</x>
-       <y>40</y>
-       <width>101</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::NoFocus</enum>
-     </property>
-     <property name="text">
-      <string>CrosshairConfig</string>
-     </property>
-     <property name="autoDefault">
-      <bool>false</bool>
-     </property>
-    </widget>
    </widget>
    <widget class="QWidget" name="virtual_gamepad">
     <attribute name="title">
