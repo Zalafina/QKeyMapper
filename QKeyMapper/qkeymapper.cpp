@@ -57,6 +57,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_KeyMappingDataTableDelegate(Q_NULLPTR),
     m_orikeyComboBox(new KeyListComboBox(this)),
     m_mapkeyComboBox(new KeyListComboBox(this)),
+    m_SelectColorDialog(Q_NULLPTR),
     m_GamepadInfoMap(),
     m_SettingSelectListWithoutDescription(),
     // m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
@@ -9173,6 +9174,13 @@ void QKeyMapper::showNotificationPopup(const QString &message, const QString &co
         return;
     }
     m_PopupNotification->showPopupNotification(message, color, 3000, position);
+}
+
+void QKeyMapper::initSelectColorDialog()
+{
+    if (m_SelectColorDialog == Q_NULLPTR) {
+        m_SelectColorDialog = new QColorDialog(this);
+    }
 }
 
 void QKeyMapper::initKeyMappingTabWidget(void)

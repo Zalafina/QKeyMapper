@@ -631,6 +631,7 @@ public:
     void showWarningPopup(const QString &message);
     void showFailurePopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
+    void initSelectColorDialog(void);
 
 private:
     void initKeyMappingTabWidget(void);
@@ -782,6 +783,7 @@ private:
 public:
     KeyListComboBox *m_orikeyComboBox;
     KeyListComboBox *m_mapkeyComboBox;
+    QColorDialog *m_SelectColorDialog;
     QMap<int, Gamepad_Info> m_GamepadInfoMap;
     QStringList m_SettingSelectListWithoutDescription;
     bool loadSetting_flag;

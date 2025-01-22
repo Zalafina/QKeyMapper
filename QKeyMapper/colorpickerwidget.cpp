@@ -19,6 +19,8 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent)
     colorButton->setFocusPolicy(Qt::NoFocus);
     colorButton->setAutoDefault(false);
 
+    colorLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
+
     // Set up layout and add the button and label to it
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(colorLabel);
@@ -43,7 +45,14 @@ void ColorPickerWidget::onPickColor()
     else if (LANGUAGE_CHINESE == QKeyMapper::getLanguageIndex()) {
         dialog_title = "颜色选择";
     }
-    QColor color = QColorDialog::getColor(Qt::white, this, dialog_title);
+
+    QKeyMapper::getInstance()->initSelectColorDialog();
+
+    // Set dialog title dynamically
+    QKeyMapper::getInstance()->m_SelectColorDialog->setWindowTitle(dialog_title);
+
+    // Open the color picker dialog and allow the user to choose a color
+    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(Qt::white, this);
 
     if (color.isValid()) {
         // If the selected color is valid, update the label with the color name
