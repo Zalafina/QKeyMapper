@@ -19,9 +19,10 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent)
     colorButton->setFocusPolicy(Qt::NoFocus);
     colorButton->setAutoDefault(false);
 
+    // Set color label style
     colorLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
 
-    // Set up layout and add the button and label to it
+    // Setup layout and add the button and label to it
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(colorLabel);
     layout->addWidget(colorButton);
