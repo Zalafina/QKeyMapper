@@ -15,6 +15,8 @@ public:
     explicit ColorPickerWidget(QWidget *parent = nullptr);
     ~ColorPickerWidget();
 
+    void setUILanguage(int languageindex);
+
 private slots:
     void onPickColor();  // Slot to handle color pick button click
 

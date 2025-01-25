@@ -154,6 +154,9 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     if (m_KeyRecordDialog != Q_NULLPTR) {
         m_KeyRecordDialog->setUILanguage(languageindex);
     }
+    if (m_CrosshairSetupDialog != Q_NULLPTR) {
+        m_CrosshairSetupDialog->setUILanguage(languageindex);
+    }
 }
 
 void QItemSetupDialog::resetFontSize()

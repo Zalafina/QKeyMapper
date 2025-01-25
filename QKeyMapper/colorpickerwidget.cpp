@@ -22,6 +22,10 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent)
     // Set color label style
     colorLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
 
+    // Set default size for colorLabel and colorButton
+    colorLabel->setFixedSize(31, 21);  // Set fixed size for the label
+    colorButton->setFixedSize(51, 21); // Set fixed size for the button
+
     // Setup layout and add the button and label to it
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(colorLabel);
@@ -34,6 +38,18 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent)
 ColorPickerWidget::~ColorPickerWidget()
 {
     // Automatic cleanup of dynamically allocated objects
+}
+
+void ColorPickerWidget::setUILanguage(int languageindex)
+{
+    QString button_string;
+    if (LANGUAGE_ENGLISH == languageindex) {
+        button_string = "Color";
+    }
+    else {
+        button_string = "颜色设定";
+    }
+    colorButton->setText(button_string);
 }
 
 void ColorPickerWidget::onPickColor()

@@ -16,7 +16,15 @@ public:
     explicit QCrosshairSetupDialog(QWidget *parent = nullptr);
     ~QCrosshairSetupDialog();
 
+    static QCrosshairSetupDialog *getInstance()
+    {
+        return m_instance;
+    }
+
+    void setUILanguage(int languageindex);
+
 private:
+    static QCrosshairSetupDialog *m_instance;
     Ui::QCrosshairSetupDialog *ui;
     ColorPickerWidget *m_CenterColorPicker;
     ColorPickerWidget *m_CrosshairColorPicker;
