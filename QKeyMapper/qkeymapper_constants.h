@@ -386,6 +386,7 @@ extern const char *ZIPUPDATER_DLL_MSVCP;
 extern const char *ZIPUPDATER_DLL_VCRUNTIME;
 extern const char *LANGUAGECODE_CHINESE;
 extern const char *LANGUAGECODE_ENGLISH;
+extern const char *LANGUAGECODE_ENGLISH_US;
 extern const char *PREFIX_SHORTCUT;
 extern const char *OLD_PREFIX_SHORTCUT;
 extern const char *JOIN_DEVICE;

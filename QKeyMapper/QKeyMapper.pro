@@ -202,6 +202,7 @@ FORMS       += \
     qtablesetupdialog.ui
 
 RESOURCES   += \
+    translations.qrc \
     image.qrc \
     sound.qrc \
     usb-ids.qrc
@@ -216,3 +217,7 @@ RC_FILE     += \
 DISTFILES   += \
     QKeyMapper.rc \
     ../README*.md
+
+TRANSLATIONS += \
+    translations/QKeyMapper_en_US.ts \
+    translations/QKeyMapper_zh_CN.ts

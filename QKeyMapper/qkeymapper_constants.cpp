@@ -426,6 +426,7 @@ const char *ZIPUPDATER_DLL_VCRUNTIME = "vcruntime140.dll";
 
 const char *LANGUAGECODE_CHINESE = "zh_CN";
 const char *LANGUAGECODE_ENGLISH = "en";
+const char *LANGUAGECODE_ENGLISH_US = "en_US";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";

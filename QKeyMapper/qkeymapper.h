@@ -796,7 +796,8 @@ private:
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
-    QTranslator *m_translator;
+    QTranslator *m_qt_Translator;
+    QTranslator *m_custom_Translator;
     HWND m_MainWindowHandle;
     HWND m_TransParentHandle;
     int m_TransParentWindowInitialX;

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="QKeyMapper_en_US.qm">translations/QKeyMapper_en_US.qm</file>
+        <file alias="QKeyMapper_zh_CN.qm">translations/QKeyMapper_zh_CN.qm</file>
+    </qresource>
+</RCC>

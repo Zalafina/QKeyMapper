@@ -66,7 +66,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
     loadSetting_flag(false),
-    m_translator(new QTranslator(this)),
+    m_qt_Translator(new QTranslator(this)),
+    m_custom_Translator(new QTranslator(this)),
     m_MainWindowHandle(NULL),
     m_TransParentHandle(NULL),
     m_TransParentWindowInitialX(0),
@@ -824,16 +825,26 @@ void QKeyMapper::updateHWNDListProc()
 
 void QKeyMapper::changeLanguage(const QString &langCode)
 {
-    QString translations_path;
+    QString qt_translations_path;
+    QString custom_translations_path;
     if (qEnvironmentVariableIsEmpty("QTDIR")) {
-        translations_path = "translations";
+        qt_translations_path = "translations";
     }
     else {
-        translations_path = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+        qt_translations_path = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+    }
+    if (LANGUAGECODE_ENGLISH == langCode || LANGUAGECODE_ENGLISH_US == langCode) {
+        custom_translations_path = ":/QKeyMapper_en_US.qm";
+    }
+    else {
+        custom_translations_path = ":/QKeyMapper_zh_CN.qm";
     }
     // Load the appropriate translation file based on language code
-    if (m_translator->load("qt_" + langCode + ".qm", translations_path)) {
-        qApp->installTranslator(m_translator);
+    if (m_qt_Translator->load("qt_" + langCode + ".qm", qt_translations_path)) {
+        qApp->installTranslator(m_qt_Translator);
+    }
+    if (m_custom_Translator->load(custom_translations_path)) {
+        qApp->installTranslator(m_custom_Translator);
     }
 }
 
