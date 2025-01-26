@@ -697,14 +697,14 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
         box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
         box.setDefaultButton(QMessageBox::Yes);
 
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            box.button(QMessageBox::Yes)->setText(tr("Yes"));
-            box.button(QMessageBox::No)->setText(tr("No"));
-        }
-        else {
-            box.button(QMessageBox::Yes)->setText(tr("是"));
-            box.button(QMessageBox::No)->setText(tr("否"));
-        }
+        // if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        //     box.button(QMessageBox::Yes)->setText(tr("Yes"));
+        //     box.button(QMessageBox::No)->setText(tr("No"));
+        // }
+        // else {
+        //     box.button(QMessageBox::Yes)->setText(tr("是"));
+        //     box.button(QMessageBox::No)->setText(tr("否"));
+        // }
 
         if (box.exec() == QMessageBox::Yes)
         {
@@ -759,12 +759,12 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
             box.setText(message);
         }
 
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            box.button(QMessageBox::Close)->setText(tr("Close"));
-        }
-        else {
-            box.button(QMessageBox::Close)->setText(tr("关闭"));
-        }
+        // if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        //     box.button(QMessageBox::Close)->setText(tr("Close"));
+        // }
+        // else {
+        //     box.button(QMessageBox::Close)->setText(tr("关闭"));
+        // }
 
         box.exec();
     }
