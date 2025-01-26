@@ -390,8 +390,8 @@
    </property>
   </widget>
   <zorder>offsetGroupBox</zorder>
-  <zorder>centerGroupBox</zorder>
   <zorder>crosshairGroupBox</zorder>
+  <zorder>centerGroupBox</zorder>
   <zorder>crosshairLineWidthLabel</zorder>
   <zorder>crosshairLineLengthSpinBox</zorder>
   <zorder>showCenterCheckBox</zorder>

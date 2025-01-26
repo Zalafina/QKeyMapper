@@ -36,6 +36,8 @@
 #include <QProcess>
 #include <QFileDialog>
 #include <QDateTime>
+#include <QTranslator>
+#include <QLibraryInfo>
 #include <cmath>
 #include <windows.h>
 #include <Gdiplus.h>
@@ -341,6 +343,7 @@ public slots:
     void updateHWNDListProc(void);
 
 public:
+    void changeLanguage(const QString &langCode);
     void setKeyHook(HWND hWnd);
     void setKeyUnHook(void);
     void setKeyMappingRestart(void);
@@ -793,6 +796,7 @@ private:
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
+    QTranslator *m_translator;
     HWND m_MainWindowHandle;
     HWND m_TransParentHandle;
     int m_TransParentWindowInitialX;

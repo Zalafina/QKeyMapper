@@ -66,6 +66,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_HotKey_ShowHide(new QHotkey(this)),
     // m_HotKey_StartStop(new QHotkey(this)),
     loadSetting_flag(false),
+    m_translator(new QTranslator(this)),
     m_MainWindowHandle(NULL),
     m_TransParentHandle(NULL),
     m_TransParentWindowInitialX(0),
@@ -819,6 +820,21 @@ void QKeyMapper::updateHWNDListProc()
         qDebug().nospace() << "[updateHWNDListProc] " << "Title=" << m_MapProcessInfo.WindowTitle << ", Process=" << m_MapProcessInfo.FileName << " -> s_CurrentMappingHWND is NULL";
     }
 #endif
+}
+
+void QKeyMapper::changeLanguage(const QString &langCode)
+{
+    QString translations_path;
+    if (qEnvironmentVariableIsEmpty("QTDIR")) {
+        translations_path = "translations";
+    }
+    else {
+        translations_path = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+    }
+    // Load the appropriate translation file based on language code
+    if (m_translator->load("qt_" + langCode + ".qm", translations_path)) {
+        qApp->installTranslator(m_translator);
+    }
 }
 
 void QKeyMapper::setKeyHook(HWND hWnd)
@@ -10222,9 +10238,11 @@ void QKeyMapper::reloadUILanguage()
     int languageIndex = ui->languageComboBox->currentIndex();
 
     if (LANGUAGE_ENGLISH == languageIndex) {
+        changeLanguage(LANGUAGECODE_ENGLISH);
         setUILanguage_English();
     }
     else {
+        changeLanguage(LANGUAGECODE_CHINESE);
         setUILanguage_Chinese();
     }
 

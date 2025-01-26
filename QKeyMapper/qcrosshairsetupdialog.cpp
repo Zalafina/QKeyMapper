@@ -28,7 +28,6 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     // Set position for the center color picker
     m_CenterColorPicker->move(center_color_x, center_color_y);
 
-
     QRect crosshairWidgetGeometry = ui->crosshairGroupBox->geometry();
     int crosshair_color_x = crosshairWidgetGeometry.x();
     int crosshair_color_y = crosshairWidgetGeometry.y();
@@ -36,6 +35,9 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     crosshair_color_y += y_offset;
     // Set position for the crosshair color picker
     m_CrosshairColorPicker->move(crosshair_color_x, crosshair_color_y);
+
+    m_CenterColorPicker->raise();
+    m_CrosshairColorPicker->raise();
 }
 
 QCrosshairSetupDialog::~QCrosshairSetupDialog()

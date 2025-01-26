@@ -54,19 +54,10 @@ void ColorPickerWidget::setUILanguage(int languageindex)
 
 void ColorPickerWidget::onPickColor()
 {
-    // Open the color picker dialog and allow the user to choose a color
-    QString dialog_title;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        dialog_title = "Select Color";
-    }
-    else {
-        dialog_title = "颜色选择";
-    }
-
     QKeyMapper::getInstance()->initSelectColorDialog();
 
     // Open the color picker dialog and allow the user to choose a color
-    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(Qt::white, this, dialog_title);
+    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(Qt::white, this);
 
     if (color.isValid()) {
         // If the selected color is valid, update the label with the color name

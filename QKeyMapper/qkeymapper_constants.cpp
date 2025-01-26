@@ -424,6 +424,9 @@ const char *ZIPUPDATER_EXE = "zipupdater.exe";
 const char *ZIPUPDATER_DLL_MSVCP = "msvcp140.dll";
 const char *ZIPUPDATER_DLL_VCRUNTIME = "vcruntime140.dll";
 
+const char *LANGUAGECODE_CHINESE = "zh_CN";
+const char *LANGUAGECODE_ENGLISH = "en";
+
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";
 const char *JOIN_DEVICE     = "##";
