@@ -831,7 +831,11 @@ void QKeyMapper::changeLanguage(const QString &langCode)
         qt_translations_path = "translations";
     }
     else {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         qt_translations_path = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+#else
+        qt_translations_path = QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+#endif
     }
     if (LANGUAGECODE_ENGLISH == langCode || LANGUAGECODE_ENGLISH_US == langCode) {
         custom_translations_path = ":/QKeyMapper_en_US.qm";
