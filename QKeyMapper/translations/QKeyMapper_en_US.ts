@@ -25,6 +25,15 @@
     </message>
 </context>
 <context>
+    <name>ColorPickerWidget</name>
+    <message>
+        <location filename="../colorpickerwidget.cpp" line="17"/>
+        <location filename="../colorpickerwidget.cpp" line="52"/>
+        <source>Color</source>
+        <translation>Color</translation>
+    </message>
+</context>
+<context>
     <name>Downloader</name>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="23"/>
@@ -277,6 +286,7 @@
     <name>QCrosshairSetupDialog</name>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="14"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="53"/>
         <source>Crosshair Setup</source>
         <translation>Crosshair Setup</translation>
     </message>
@@ -333,11 +343,13 @@
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="338"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="54"/>
         <source>Center</source>
         <translation>Center</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="354"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="55"/>
         <source>Crosshair</source>
         <translation>Crosshair</translation>
     </message>
@@ -348,6 +360,7 @@
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="386"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="56"/>
         <source>Offset</source>
         <translation>Offset</translation>
     </message>

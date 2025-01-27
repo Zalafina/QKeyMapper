@@ -803,7 +803,9 @@ private:
     // QHotkey *m_HotKey_ShowHide;
     // QHotkey *m_HotKey_StartStop;
     QTranslator *m_qt_Translator;
+#ifdef USE_QTRANSLATOR
     QTranslator *m_custom_Translator;
+#endif
     HWND m_MainWindowHandle;
     HWND m_TransParentHandle;
     int m_TransParentWindowInitialX;

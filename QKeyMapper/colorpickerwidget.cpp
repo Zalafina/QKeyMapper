@@ -7,14 +7,7 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent)
     colorLabel(Q_NULLPTR)
 {
     colorLabel = new QLabel(this);
-    QString button_string;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        button_string = "Color";
-    }
-    else if (LANGUAGE_CHINESE == QKeyMapper::getLanguageIndex()) {
-        button_string = "颜色设定";
-    }
-    colorButton = new QPushButton(button_string, this);
+    colorButton = new QPushButton(tr("Color"), this);
 
     colorButton->setFocusPolicy(Qt::NoFocus);
     colorButton->setAutoDefault(false);
@@ -42,14 +35,8 @@ ColorPickerWidget::~ColorPickerWidget()
 
 void ColorPickerWidget::setUILanguage(int languageindex)
 {
-    QString button_string;
-    if (LANGUAGE_ENGLISH == languageindex) {
-        button_string = "Color";
-    }
-    else {
-        button_string = "颜色设定";
-    }
-    colorButton->setText(button_string);
+    Q_UNUSED(languageindex);
+    colorButton->setText(tr("Color"));
 }
 
 void ColorPickerWidget::onPickColor()

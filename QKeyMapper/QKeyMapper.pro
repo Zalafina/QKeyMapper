@@ -24,6 +24,7 @@ DEFINES += SINGLE_APPLICATION
 # DEFINES += MOUSE_VERBOSE_LOG
 # DEFINES += GRIP_VERBOSE_LOG
 # DEFINES += MOUSEBUTTON_CONVERT
+DEFINES += USE_QTRANSLATOR
 DEFINES += SETTINGSFILE_CONVERT
 DEFINES += SEPARATOR_CONVERT
 DEFINES += VIGEM_CLIENT_SUPPORT
@@ -202,10 +203,13 @@ FORMS       += \
     qtablesetupdialog.ui
 
 RESOURCES   += \
-    translations.qrc \
     image.qrc \
     sound.qrc \
     usb-ids.qrc
+
+contains( DEFINES, USE_QTRANSLATOR ) {
+RESOURCES   += translations.qrc
+}
 
 contains( DEFINES, USE_SAOFONT ) {
 RESOURCES   += font.qrc
@@ -218,6 +222,8 @@ DISTFILES   += \
     QKeyMapper.rc \
     ../README*.md
 
+contains( DEFINES, USE_QTRANSLATOR ) {
 TRANSLATIONS += \
     translations/QKeyMapper_en_US.ts \
     translations/QKeyMapper_zh_CN.ts
+}

@@ -67,7 +67,7 @@
     <string>Show Center</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="leftCheckBox">
+  <widget class="QCheckBox" name="showLeftCheckBox">
    <property name="geometry">
     <rect>
      <x>250</x>
@@ -159,7 +159,7 @@
     <number>200</number>
    </property>
   </widget>
-  <widget class="QCheckBox" name="bottomCheckBox">
+  <widget class="QCheckBox" name="showBottomCheckBox">
    <property name="geometry">
     <rect>
      <x>250</x>
@@ -187,8 +187,17 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
+   <property name="buttonSymbols">
+    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
+   </property>
+   <property name="minimum">
+    <number>-5000</number>
+   </property>
+   <property name="maximum">
+    <number>5000</number>
+   </property>
   </widget>
-  <widget class="QCheckBox" name="topCheckBox">
+  <widget class="QCheckBox" name="showTopCheckBox">
    <property name="geometry">
     <rect>
      <x>250</x>
@@ -215,6 +224,9 @@
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="buttonSymbols">
+    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
    </property>
    <property name="minimum">
     <number>-5000</number>
@@ -357,7 +369,7 @@
     <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QCheckBox" name="rightCheckBox">
+  <widget class="QCheckBox" name="showRightCheckBox">
    <property name="geometry">
     <rect>
      <x>250</x>
@@ -395,14 +407,14 @@
   <zorder>crosshairLineWidthLabel</zorder>
   <zorder>crosshairLineLengthSpinBox</zorder>
   <zorder>showCenterCheckBox</zorder>
-  <zorder>leftCheckBox</zorder>
+  <zorder>showLeftCheckBox</zorder>
   <zorder>crosshairLineWidthSpinBox</zorder>
   <zorder>crosshairLineLengthLabel</zorder>
   <zorder>centerOpacitySpinBox</zorder>
   <zorder>crosshairOpacitySpinBox</zorder>
-  <zorder>bottomCheckBox</zorder>
+  <zorder>showBottomCheckBox</zorder>
   <zorder>centerOpacitySpinBox_3</zorder>
-  <zorder>topCheckBox</zorder>
+  <zorder>showTopCheckBox</zorder>
   <zorder>centerOpacitySpinBox_2</zorder>
   <zorder>y_offsetLabel</zorder>
   <zorder>centerOpacityLabel</zorder>
@@ -410,7 +422,7 @@
   <zorder>x_offsetLabel</zorder>
   <zorder>centerSizeLabel</zorder>
   <zorder>crosshairOpacityLabel</zorder>
-  <zorder>rightCheckBox</zorder>
+  <zorder>showRightCheckBox</zorder>
  </widget>
  <resources/>
  <connections/>

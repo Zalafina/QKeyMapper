@@ -49,4 +49,24 @@ void QCrosshairSetupDialog::setUILanguage(int languageindex)
 {
     m_CenterColorPicker->setUILanguage(languageindex);
     m_CrosshairColorPicker->setUILanguage(languageindex);
+
+    setWindowTitle(tr("Crosshair Setup"));
+    ui->centerGroupBox->setTitle(tr("Center"));
+    ui->crosshairGroupBox->setTitle(tr("Crosshair"));
+    ui->offsetGroupBox->setTitle(tr("Offset"));
+
+    ui->centerSizeLabel->setText(tr("Size"));
+    ui->centerOpacityLabel->setText(tr("Opacity"));
+    ui->crosshairLineWidthLabel->setText(tr("Width"));
+    ui->crosshairLineLengthLabel->setText(tr("Length"));
+    ui->crosshairOpacityLabel->setText(tr("Opacity"));
+
+    ui->showCenterCheckBox->setText(tr("Show Center"));
+    ui->showTopCheckBox->setText(tr("Show Top"));
+    ui->showBottomCheckBox->setText(tr("Show Bottom"));
+    ui->showLeftCheckBox->setText(tr("Show Left"));
+    ui->showRightCheckBox->setText(tr("Show Right"));
+
+    ui->x_offsetLabel->setText(tr("X-Offset"));
+    ui->y_offsetLabel->setText(tr("Y-Offset"));
 }
