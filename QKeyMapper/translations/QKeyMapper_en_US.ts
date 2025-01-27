@@ -27,8 +27,8 @@
 <context>
     <name>ColorPickerWidget</name>
     <message>
-        <location filename="../colorpickerwidget.cpp" line="17"/>
-        <location filename="../colorpickerwidget.cpp" line="52"/>
+        <location filename="../colorpickerwidget.cpp" line="10"/>
+        <location filename="../colorpickerwidget.cpp" line="39"/>
         <source>Color</source>
         <translation>Color</translation>
     </message>
@@ -292,74 +292,86 @@
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="26"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="60"/>
         <source>Width</source>
         <translation>Width</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="67"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="64"/>
         <source>Show Center</source>
         <translation>Show Center</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="83"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="67"/>
         <source>Show Left</source>
         <translation>Show Left</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="118"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="61"/>
         <source>Length</source>
         <translation>Length</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="175"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="66"/>
         <source>Show Bottom</source>
         <translation>Show Bottom</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="204"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="213"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="65"/>
         <source>Show Top</source>
         <translation>Show Top</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="236"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="248"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="71"/>
         <source>Y-Offset</source>
         <translation>Y-Offset</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="252"/>
-        <location filename="../qcrosshairsetupdialog.ui" line="322"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="264"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="334"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="59"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="62"/>
         <source>Opacity</source>
         <translation>Opacity</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="290"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="302"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="70"/>
         <source>X-Offset</source>
         <translation>X-Offset</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="306"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="318"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="58"/>
         <source>Size</source>
         <translation>Size</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="338"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="350"/>
         <location filename="../qcrosshairsetupdialog.cpp" line="54"/>
         <source>Center</source>
         <translation>Center</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="354"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="366"/>
         <location filename="../qcrosshairsetupdialog.cpp" line="55"/>
         <source>Crosshair</source>
         <translation>Crosshair</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="373"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="385"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="68"/>
         <source>Show Right</source>
         <translation>Show Right</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="386"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="398"/>
         <location filename="../qcrosshairsetupdialog.cpp" line="56"/>
         <source>Offset</source>
         <translation>Offset</translation>
