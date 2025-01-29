@@ -151,6 +151,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
     }
 
+    ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
+
     if (m_KeyRecordDialog != Q_NULLPTR) {
         m_KeyRecordDialog->setUILanguage(languageindex);
     }
@@ -201,6 +203,7 @@ void QItemSetupDialog::resetFontSize()
     ui->mappingKeyUpdateButton->setFont(customFont);
     ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
     ui->recordKeysButton->setFont(customFont);
+    ui->crosshairSetupButton->setFont(customFont);
     ui->itemNoteUpdateButton->setFont(customFont);
     ui->sendTimingLabel->setFont(customFont);
     ui->sendTimingComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
@@ -1603,6 +1606,25 @@ void QItemSetupDialog::on_unbreakableCheckBox_stateChanged(int state)
     }
 }
 
+void QItemSetupDialog::on_crosshairSetupButton_clicked()
+{
+    if (Q_NULLPTR == m_CrosshairSetupDialog) {
+        return;
+    }
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[on_crosshairConfigButton_clicked] Show Crosshait Config Dialog Window";
+#endif
+
+    if (!m_CrosshairSetupDialog->isVisible()) {
+        m_CrosshairSetupDialog->setItemRow(m_ItemRow);
+        m_CrosshairSetupDialog->show();
+    }
+}
+
 void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
 {
     QLineEdit::focusInEvent(event);
@@ -1618,20 +1640,5 @@ void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
         qDebug().nospace().noquote() << "[KeyStringLineEdit::focusInEvent]" << "MappingKey LineEdit focus in, set editing boarder to it.";
 #endif
         QItemSetupDialog::setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
-    }
-}
-
-void QItemSetupDialog::on_crosshairConfigButton_clicked()
-{
-    if (Q_NULLPTR == m_CrosshairSetupDialog) {
-        return;
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[on_crosshairConfigButton_clicked] Show Crosshait Config Dialog Window";
-#endif
-
-    if (!m_CrosshairSetupDialog->isVisible()) {
-        m_CrosshairSetupDialog->show();
     }
 }

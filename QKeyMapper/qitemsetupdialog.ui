@@ -547,7 +547,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="crosshairConfigButton">
+  <widget class="QPushButton" name="crosshairSetupButton">
    <property name="geometry">
     <rect>
      <x>610</x>
@@ -560,7 +560,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
-    <string>CrosshairConfig</string>
+    <string>CrosshairSetup</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>

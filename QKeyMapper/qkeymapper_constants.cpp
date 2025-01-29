@@ -95,6 +95,28 @@ const int REPEAT_TIMES_MIN = 1;
 const int REPEAT_TIMES_MAX = 99999999;
 const int REPEAT_TIMES_DEFAULT = 1;
 
+const char *CROSSHAIR_CENTERCOLOR_DEFAULT = "#70a1ff";
+const char *CROSSHAIR_CROSSHAIRCOLOR_DEFAULT = "#70a1ff";
+const int CROSSHAIR_OPACITY_MIN = 0;
+const int CROSSHAIR_OPACITY_MAX = 255;
+const int CROSSHAIR_CENTERSIZE_MIN = 1;
+const int CROSSHAIR_CENTERSIZE_MAX = 500;
+const int CROSSHAIR_CENTERSIZE_DEFAULT = 2;
+const int CROSSHAIR_CENTEROPACITY_DEFAULT = 200;
+const int CROSSHAIR_CROSSHAIRWIDTH_MIN = 1;
+const int CROSSHAIR_CROSSHAIRWIDTH_MAX = 500;
+const int CROSSHAIR_CROSSHAIRWIDTH_DEFAULT = 2;
+const int CROSSHAIR_CROSSHAIRLENGTH_MIN = 1;
+const int CROSSHAIR_CROSSHAIRLENGTH_MAX = 900;
+const int CROSSHAIR_CROSSHAIRLENGTH_DEFAULT = 30;
+const int CROSSHAIR_CROSSHAIROPACITY_DEFAULT = 200;
+const int CROSSHAIR_X_OFFSET_MIN = -5000;
+const int CROSSHAIR_X_OFFSET_MAX = 5000;
+const int CROSSHAIR_X_OFFSET_DEFAULT = 0;
+const int CROSSHAIR_Y_OFFSET_MIN = -5000;
+const int CROSSHAIR_Y_OFFSET_MAX = 5000;
+const int CROSSHAIR_Y_OFFSET_DEFAULT = 0;
+
 const int DATA_PORT_MIN = 1;
 const int DATA_PORT_MAX = 65535;
 const int DATA_PORT_DEFAULT = 5300;
@@ -510,6 +532,20 @@ const char *KEYMAPDATA_BURSTPRESS_TIME = "KeyMapData_BurstPressTime";
 const char *KEYMAPDATA_BURSTRELEASE_TIME = "KeyMapData_BurstReleaseTime";
 const char *KEYMAPDATA_REPEATMODE = "KeyMapData_RepeatMode";
 const char *KEYMAPDATA_REPEATIMES = "KeyMapData_RepeatTimes";
+const char *KEYMAPDATA_CROSSHAIR_CENTERCOLOR = "KeyMapData_Crosshair_CenterColor";
+const char *KEYMAPDATA_CROSSHAIR_CENTERSIZE = "KeyMapData_Crosshair_CenterSize";
+const char *KEYMAPDATA_CROSSHAIR_CENTEROPACITY = "KeyMapData_Crosshair_CenterOpacity";
+const char *KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR = "KeyMapData_Crosshair_CrosshairColor";
+const char *KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH = "KeyMapData_Crosshair_CrosshairWidth";
+const char *KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH = "KeyMapData_Crosshair_CrosshairLength";
+const char *KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY = "KeyMapData_Crosshair_CrosshairOpacity";
+const char *KEYMAPDATA_CROSSHAIR_SHOWCENTER = "KeyMapData_Crosshair_ShowCenter";
+const char *KEYMAPDATA_CROSSHAIR_SHOWTOP = "KeyMapData_Crosshair_ShowTop";
+const char *KEYMAPDATA_CROSSHAIR_SHOWBOTTOM = "KeyMapData_Crosshair_ShowBottom";
+const char *KEYMAPDATA_CROSSHAIR_SHOWLEFT = "KeyMapData_Crosshair_ShowLeft";
+const char *KEYMAPDATA_CROSSHAIR_SHOWRIGHT = "KeyMapData_Crosshair_ShowRight";
+const char *KEYMAPDATA_CROSSHAIR_XOFFSET = "KeyMapData_Crosshair_X_Offset";
+const char *KEYMAPDATA_CROSSHAIR_YOFFSET = "KeyMapData_Crosshair_Y_Offset";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
 const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -676,6 +712,9 @@ const char *VIRTUAL_GAMEPAD_X360 = "X360";
 const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
 
 const char *NO_INPUTDEVICE  = "No InputDevice";
+
+/* Translate const Strings */
+const char *CROSSHAIRSETUPBUTTON_STR = "CrosshairSetup";
 
 /* Chinese const Strings */
 const char *REFRESHBUTTON_CHINESE = "刷新";

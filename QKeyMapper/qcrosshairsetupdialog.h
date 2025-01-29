@@ -22,10 +22,17 @@ public:
     }
 
     void setUILanguage(int languageindex);
+    void setItemRow(int row);
+
+protected:
+    bool event(QEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     static QCrosshairSetupDialog *m_instance;
     Ui::QCrosshairSetupDialog *ui;
+    int m_ItemRow;
     ColorPickerWidget *m_CenterColorPicker;
     ColorPickerWidget *m_CrosshairColorPicker;
 };

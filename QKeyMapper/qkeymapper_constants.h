@@ -67,6 +67,27 @@ extern const int REPEAT_MODE_BYTIMES;
 extern const int REPEAT_TIMES_MIN;
 extern const int REPEAT_TIMES_MAX;
 extern const int REPEAT_TIMES_DEFAULT;
+extern const char *CROSSHAIR_CENTERCOLOR_DEFAULT;
+extern const char *CROSSHAIR_CROSSHAIRCOLOR_DEFAULT;
+extern const int CROSSHAIR_OPACITY_MIN;
+extern const int CROSSHAIR_OPACITY_MAX;
+extern const int CROSSHAIR_CENTERSIZE_MIN;
+extern const int CROSSHAIR_CENTERSIZE_MAX;
+extern const int CROSSHAIR_CENTERSIZE_DEFAULT;
+extern const int CROSSHAIR_CENTEROPACITY_DEFAULT;
+extern const int CROSSHAIR_CROSSHAIRWIDTH_MIN;
+extern const int CROSSHAIR_CROSSHAIRWIDTH_MAX;
+extern const int CROSSHAIR_CROSSHAIRWIDTH_DEFAULT;
+extern const int CROSSHAIR_CROSSHAIRLENGTH_MIN;
+extern const int CROSSHAIR_CROSSHAIRLENGTH_MAX;
+extern const int CROSSHAIR_CROSSHAIRLENGTH_DEFAULT;
+extern const int CROSSHAIR_CROSSHAIROPACITY_DEFAULT;
+extern const int CROSSHAIR_X_OFFSET_MIN;
+extern const int CROSSHAIR_X_OFFSET_MAX;
+extern const int CROSSHAIR_X_OFFSET_DEFAULT;
+extern const int CROSSHAIR_Y_OFFSET_MIN;
+extern const int CROSSHAIR_Y_OFFSET_MAX;
+extern const int CROSSHAIR_Y_OFFSET_DEFAULT;
 extern const int DATA_PORT_MIN;
 extern const int DATA_PORT_MAX;
 extern const int DATA_PORT_DEFAULT;
@@ -458,6 +479,20 @@ extern const char* KEYMAPDATA_BURSTPRESS_TIME;
 extern const char* KEYMAPDATA_BURSTRELEASE_TIME;
 extern const char *KEYMAPDATA_REPEATMODE;
 extern const char *KEYMAPDATA_REPEATIMES;
+extern const char *KEYMAPDATA_CROSSHAIR_CENTERCOLOR;
+extern const char *KEYMAPDATA_CROSSHAIR_CENTERSIZE;
+extern const char *KEYMAPDATA_CROSSHAIR_CENTEROPACITY;
+extern const char *KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR;
+extern const char *KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH;
+extern const char *KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH;
+extern const char *KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY;
+extern const char *KEYMAPDATA_CROSSHAIR_SHOWCENTER;
+extern const char *KEYMAPDATA_CROSSHAIR_SHOWTOP;
+extern const char *KEYMAPDATA_CROSSHAIR_SHOWBOTTOM;
+extern const char *KEYMAPDATA_CROSSHAIR_SHOWLEFT;
+extern const char *KEYMAPDATA_CROSSHAIR_SHOWRIGHT;
+extern const char *KEYMAPDATA_CROSSHAIR_XOFFSET;
+extern const char *KEYMAPDATA_CROSSHAIR_YOFFSET;
 extern const char* KEY2MOUSE_X_SPEED;
 extern const char* KEY2MOUSE_Y_SPEED;
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -592,6 +627,9 @@ extern const char* FUNC_HIBERNATE;
 extern const char* VIRTUAL_GAMEPAD_X360;
 extern const char* VIRTUAL_GAMEPAD_DS4;
 extern const char* NO_INPUTDEVICE;
+
+/* Translate const Strings */
+extern const char *CROSSHAIRSETUPBUTTON_STR;
 
 /* Chinese const Strings */
 extern const char* REFRESHBUTTON_CHINESE;

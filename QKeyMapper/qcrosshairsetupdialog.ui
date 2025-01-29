@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>490</width>
+    <width>520</width>
     <height>160</height>
    </rect>
   </property>
@@ -16,7 +16,7 @@
   <widget class="QLabel" name="crosshairLineWidthLabel">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>160</x>
      <y>55</y>
      <width>41</width>
      <height>21</height>
@@ -32,7 +32,7 @@
   <widget class="QSpinBox" name="crosshairLineLengthSpinBox">
    <property name="geometry">
     <rect>
-     <x>186</x>
+     <x>206</x>
      <y>85</y>
      <width>51</width>
      <height>21</height>
@@ -41,22 +41,13 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>900</number>
-   </property>
-   <property name="value">
-    <number>30</number>
-   </property>
   </widget>
   <widget class="QCheckBox" name="showCenterCheckBox">
    <property name="geometry">
     <rect>
      <x>40</x>
      <y>115</y>
-     <width>81</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
@@ -70,7 +61,7 @@
   <widget class="QCheckBox" name="showLeftCheckBox">
    <property name="geometry">
     <rect>
-     <x>250</x>
+     <x>270</x>
      <y>85</y>
      <width>71</width>
      <height>21</height>
@@ -86,7 +77,7 @@
   <widget class="QSpinBox" name="crosshairLineWidthSpinBox">
    <property name="geometry">
     <rect>
-     <x>186</x>
+     <x>206</x>
      <y>55</y>
      <width>51</width>
      <height>21</height>
@@ -95,20 +86,11 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>500</number>
-   </property>
-   <property name="value">
-    <number>2</number>
-   </property>
   </widget>
   <widget class="QLabel" name="crosshairLineLengthLabel">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>160</x>
      <y>85</y>
      <width>41</width>
      <height>21</height>
@@ -124,7 +106,7 @@
   <widget class="QSpinBox" name="centerOpacitySpinBox">
    <property name="geometry">
     <rect>
-     <x>66</x>
+     <x>76</x>
      <y>85</y>
      <width>51</width>
      <height>21</height>
@@ -133,17 +115,11 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="maximum">
-    <number>255</number>
-   </property>
-   <property name="value">
-    <number>200</number>
-   </property>
   </widget>
   <widget class="QSpinBox" name="crosshairOpacitySpinBox">
    <property name="geometry">
     <rect>
-     <x>186</x>
+     <x>206</x>
      <y>115</y>
      <width>51</width>
      <height>21</height>
@@ -152,17 +128,11 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="maximum">
-    <number>255</number>
-   </property>
-   <property name="value">
-    <number>200</number>
-   </property>
   </widget>
   <widget class="QCheckBox" name="showBottomCheckBox">
    <property name="geometry">
     <rect>
-     <x>250</x>
+     <x>270</x>
      <y>55</y>
      <width>81</width>
      <height>21</height>
@@ -175,10 +145,10 @@
     <string>Show Bottom</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="centerOpacitySpinBox_3">
+  <widget class="QSpinBox" name="y_offsetSpinBox">
    <property name="geometry">
     <rect>
-     <x>396</x>
+     <x>426</x>
      <y>55</y>
      <width>60</width>
      <height>21</height>
@@ -190,17 +160,11 @@
    <property name="buttonSymbols">
     <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
    </property>
-   <property name="minimum">
-    <number>-5000</number>
-   </property>
-   <property name="maximum">
-    <number>5000</number>
-   </property>
   </widget>
   <widget class="QCheckBox" name="showTopCheckBox">
    <property name="geometry">
     <rect>
-     <x>250</x>
+     <x>270</x>
      <y>25</y>
      <width>71</width>
      <height>21</height>
@@ -213,10 +177,10 @@
     <string>Show Top</string>
    </property>
   </widget>
-  <widget class="QSpinBox" name="centerOpacitySpinBox_2">
+  <widget class="QSpinBox" name="x_offsetSpinBox">
    <property name="geometry">
     <rect>
-     <x>396</x>
+     <x>426</x>
      <y>25</y>
      <width>60</width>
      <height>21</height>
@@ -228,19 +192,13 @@
    <property name="buttonSymbols">
     <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
    </property>
-   <property name="minimum">
-    <number>-5000</number>
-   </property>
-   <property name="maximum">
-    <number>5000</number>
-   </property>
   </widget>
   <widget class="QLabel" name="y_offsetLabel">
    <property name="geometry">
     <rect>
-     <x>350</x>
+     <x>370</x>
      <y>55</y>
-     <width>41</width>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -256,7 +214,7 @@
     <rect>
      <x>20</x>
      <y>85</y>
-     <width>41</width>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -270,7 +228,7 @@
   <widget class="QSpinBox" name="centerSizeSpinBox">
    <property name="geometry">
     <rect>
-     <x>66</x>
+     <x>76</x>
      <y>55</y>
      <width>51</width>
      <height>21</height>
@@ -279,22 +237,13 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="minimum">
-    <number>1</number>
-   </property>
-   <property name="maximum">
-    <number>500</number>
-   </property>
-   <property name="value">
-    <number>2</number>
-   </property>
   </widget>
   <widget class="QLabel" name="x_offsetLabel">
    <property name="geometry">
     <rect>
-     <x>350</x>
+     <x>370</x>
      <y>25</y>
-     <width>41</width>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -308,7 +257,7 @@
   <widget class="QLabel" name="centerSizeLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>30</x>
      <y>55</y>
      <width>41</width>
      <height>21</height>
@@ -324,9 +273,9 @@
   <widget class="QLabel" name="crosshairOpacityLabel">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>150</x>
      <y>115</y>
-     <width>41</width>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -342,7 +291,7 @@
     <rect>
      <x>20</x>
      <y>10</y>
-     <width>111</width>
+     <width>121</width>
      <height>136</height>
     </rect>
    </property>
@@ -356,9 +305,9 @@
   <widget class="QGroupBox" name="crosshairGroupBox">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>150</x>
      <y>10</y>
-     <width>191</width>
+     <width>201</width>
      <height>136</height>
     </rect>
    </property>
@@ -372,7 +321,7 @@
   <widget class="QCheckBox" name="showRightCheckBox">
    <property name="geometry">
     <rect>
-     <x>250</x>
+     <x>270</x>
      <y>115</y>
      <width>71</width>
      <height>21</height>
@@ -388,9 +337,9 @@
   <widget class="QGroupBox" name="offsetGroupBox">
    <property name="geometry">
     <rect>
-     <x>340</x>
+     <x>360</x>
      <y>10</y>
-     <width>131</width>
+     <width>141</width>
      <height>136</height>
     </rect>
    </property>
@@ -413,9 +362,9 @@
   <zorder>centerOpacitySpinBox</zorder>
   <zorder>crosshairOpacitySpinBox</zorder>
   <zorder>showBottomCheckBox</zorder>
-  <zorder>centerOpacitySpinBox_3</zorder>
+  <zorder>y_offsetSpinBox</zorder>
   <zorder>showTopCheckBox</zorder>
-  <zorder>centerOpacitySpinBox_2</zorder>
+  <zorder>x_offsetSpinBox</zorder>
   <zorder>y_offsetLabel</zorder>
   <zorder>centerOpacityLabel</zorder>
   <zorder>centerSizeSpinBox</zorder>

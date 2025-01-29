@@ -286,93 +286,93 @@
     <name>QCrosshairSetupDialog</name>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="14"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="53"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="61"/>
         <source>Crosshair Setup</source>
         <translation>十字准星设定</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="26"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="60"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="68"/>
         <source>Width</source>
         <translation>线宽</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="67"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="64"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="58"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="72"/>
         <source>Show Center</source>
-        <translation>显示上侧</translation>
+        <translation>显示中心点</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="83"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="67"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="74"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="75"/>
         <source>Show Left</source>
         <translation>显示左侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="118"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="61"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="100"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="69"/>
         <source>Length</source>
         <translation>线长</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="175"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="66"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="145"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="74"/>
         <source>Show Bottom</source>
         <translation>显示下侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="213"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="65"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="177"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="73"/>
         <source>Show Top</source>
         <translation>显示上侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="248"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="71"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="206"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="79"/>
         <source>Y-Offset</source>
         <translation>Y偏移量</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="264"/>
-        <location filename="../qcrosshairsetupdialog.ui" line="334"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="59"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="62"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="222"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="283"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="67"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="70"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="302"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="70"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="251"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="78"/>
         <source>X-Offset</source>
         <translation>X偏移量</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="318"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="58"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="267"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="66"/>
         <source>Size</source>
         <translation>大小</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="350"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="54"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="299"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="62"/>
         <source>Center</source>
         <translation>准星中心点</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="366"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="55"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="315"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="63"/>
         <source>Crosshair</source>
         <translation>准星十字线</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="385"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="68"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="334"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="76"/>
         <source>Show Right</source>
         <translation>显示右侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="398"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="56"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="347"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="64"/>
         <source>Offset</source>
         <translation>偏移量</translation>
     </message>
@@ -522,8 +522,8 @@
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="563"/>
-        <source>CrosshairConfig</source>
-        <translation type="unfinished"></translation>
+        <source>CrosshairSetup</source>
+        <translation>十字准星设定</translation>
     </message>
 </context>
 <context>

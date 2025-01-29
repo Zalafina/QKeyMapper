@@ -61,9 +61,9 @@ private:
     int m_TabIndex;
     int m_ItemRow;
     QKeyRecord *m_KeyRecordDialog;
-    QCrosshairSetupDialog *m_CrosshairSetupDialog;
 
 public:
+    QCrosshairSetupDialog *m_CrosshairSetupDialog;
     KeyListComboBox *m_OriginalKeyListComboBox;
     KeyListComboBox *m_MappingKeyListComboBox;
     KeyStringLineEdit *m_MappingKeyLineEdit;
@@ -94,7 +94,7 @@ private slots:
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
     void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
-    void on_crosshairConfigButton_clicked();
+    void on_crosshairSetupButton_clicked();
 };
 
 class KeyStringLineEdit : public QLineEdit

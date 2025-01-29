@@ -469,6 +469,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #endif
         closeTableSetupDialog();
         closeItemSetupDialog();
+        closeCrosshairSetupDialog();
         hide();
     }
 }
@@ -3334,6 +3335,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList keyseqholddownList;
     QStringList repeatmodeList;
     QStringList repeattimesList;
+    QStringList crosshair_centercolorList;
 
     for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
     {
@@ -3437,6 +3439,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
         }
+
+        BYTE crosshair_R = 112;
+        BYTE crosshair_G = 161;
+        BYTE crosshair_B = 255;
+        QColor centercolor = QColor(crosshair_R, crosshair_G, crosshair_B);
+        crosshair_centercolorList.append(centercolor.name(QColor::HexRgb)); // 使用 HexArgb 格式
     }
 
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
@@ -3456,6 +3464,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
     keyMappingDataFile.setValue(KEYMAPDATA_REPEATMODE, repeatmodeList);
     keyMappingDataFile.setValue(KEYMAPDATA_REPEATIMES, repeattimesList);
+
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTERCOLOR, crosshair_centercolorList);
 
     return true;
 }
@@ -3491,6 +3501,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList repeatmodeStringList;
     QStringList repeattimesStringList;
     QStringList notesList;
+    QStringList crosshair_centercolorStringList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
@@ -3504,6 +3515,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> keyseqholddownList;
     QList<int> repeatmodeList;
     QList<int> repeattimesList;
+    QList<QColor> crosshair_centercolorList;
     QList<MAP_KEYDATA> loadkeymapdata;
 
     if ((true == keyMappingDataFile.contains(KEYMAPDATA_ORIGINALKEYS))
@@ -3524,6 +3536,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList burstpressStringListDefault;
         QStringList burstreleaseStringListDefault;
         QStringList repeattimesStringListDefault;
+        QStringList crosshair_colorStringListDefault;
         for (int i = 0; i < mappingdata_size; ++i) {
             stringListAllON << "ON";
             stringListAllOFF << "OFF";
@@ -3532,6 +3545,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
             burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
             repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
+            crosshair_colorStringListDefault.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
         }
         burstStringList         = stringListAllOFF;
         burstpressStringList    = burstpressStringListDefault;
@@ -3546,6 +3560,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         keyseqholddownStringList = stringListAllOFF;
         repeatmodeStringList = stringListAllZERO;
         repeattimesStringList = repeattimesStringListDefault;
+        crosshair_centercolorStringList = crosshair_colorStringListDefault;
 
         if (true == keyMappingDataFile.contains(KEYMAPDATA_NOTE)) {
             notesList = keyMappingDataFile.value(KEYMAPDATA_NOTE).toStringList();
@@ -3588,6 +3603,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_REPEATIMES)) {
             repeattimesStringList = keyMappingDataFile.value(KEYMAPDATA_REPEATIMES).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CENTERCOLOR)) {
+            crosshair_centercolorStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CENTERCOLOR).toStringList();
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -3728,6 +3746,16 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     repeattimes = REPEAT_TIMES_DEFAULT;
                 }
                 repeattimesList.append(repeattimes);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_centercolorStr = (i < crosshair_centercolorStringList.size()) ? crosshair_centercolorStringList.at(i) : CROSSHAIR_CENTERCOLOR_DEFAULT;
+                QColor crosshair_centercolor = QColor(crosshair_centercolorStr);
+                bool isvalid = crosshair_centercolor.isValid();
+                if (!isvalid) {
+                    crosshair_centercolor = QColor(CROSSHAIR_CENTERCOLOR_DEFAULT);
+                }
+                crosshair_centercolorList.append(crosshair_centercolor);
             }
 
             int loadindex = 0;
@@ -4340,6 +4368,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
     if (m_KeyMapStatus != KEYMAP_IDLE){
         closeTableSetupDialog();
         closeItemSetupDialog();
+        closeCrosshairSetupDialog();
         changeControlEnableStatus(false);
     }
     else{
@@ -8149,6 +8178,17 @@ void QKeyMapper::closeItemSetupDialog()
     }
 }
 
+void QKeyMapper::closeCrosshairSetupDialog()
+{
+    if (Q_NULLPTR == QItemSetupDialog::getInstance()->m_CrosshairSetupDialog) {
+        return;
+    }
+
+    if (QItemSetupDialog::getInstance()->m_CrosshairSetupDialog->isVisible()) {
+        QItemSetupDialog::getInstance()->m_CrosshairSetupDialog->close();
+    }
+}
+
 void QKeyMapper::showTableSetupDialog(int tabindex)
 {
     if (Q_NULLPTR == m_TableSetupDialog) {
@@ -9085,6 +9125,7 @@ void QKeyMapper::switchShowHide()
         m_LastWindowPosition = pos(); // Save the current position before hiding
         closeTableSetupDialog();
         closeItemSetupDialog();
+        closeCrosshairSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -9116,6 +9157,7 @@ void QKeyMapper::forceHide()
         closeInputDeviceListWindow();
         closeTableSetupDialog();
         closeItemSetupDialog();
+        closeCrosshairSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << m_LastWindowPosition;

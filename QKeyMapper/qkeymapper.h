@@ -714,6 +714,7 @@ private:
     void closeInputDeviceListWindow(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
+    void closeCrosshairSetupDialog(void);
 
     void showTableSetupDialog(int tabindex);
     void closeTableSetupDialog(void);
