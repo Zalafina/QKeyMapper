@@ -544,8 +544,8 @@ const char *KEYMAPDATA_CROSSHAIR_SHOWTOP = "KeyMapData_Crosshair_ShowTop";
 const char *KEYMAPDATA_CROSSHAIR_SHOWBOTTOM = "KeyMapData_Crosshair_ShowBottom";
 const char *KEYMAPDATA_CROSSHAIR_SHOWLEFT = "KeyMapData_Crosshair_ShowLeft";
 const char *KEYMAPDATA_CROSSHAIR_SHOWRIGHT = "KeyMapData_Crosshair_ShowRight";
-const char *KEYMAPDATA_CROSSHAIR_XOFFSET = "KeyMapData_Crosshair_X_Offset";
-const char *KEYMAPDATA_CROSSHAIR_YOFFSET = "KeyMapData_Crosshair_Y_Offset";
+const char *KEYMAPDATA_CROSSHAIR_X_OFFSET = "KeyMapData_Crosshair_X_Offset";
+const char *KEYMAPDATA_CROSSHAIR_Y_OFFSET = "KeyMapData_Crosshair_Y_Offset";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
 const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 #ifdef VIGEM_CLIENT_SUPPORT

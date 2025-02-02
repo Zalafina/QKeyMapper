@@ -3336,6 +3336,19 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList repeatmodeList;
     QStringList repeattimesList;
     QStringList crosshair_centercolorList;
+    QStringList crosshair_centersizeList;
+    QStringList crosshair_centeropacityList;
+    QStringList crosshair_crosshaircolorList;
+    QStringList crosshair_crosshairwidthList;
+    QStringList crosshair_crosshairlengthList;
+    QStringList crosshair_crosshairopacityList;
+    QStringList crosshair_showcenterList;
+    QStringList crosshair_showtopList;
+    QStringList crosshair_showbottomList;
+    QStringList crosshair_showleftList;
+    QStringList crosshair_showrightList;
+    QStringList crosshair_x_offsetList;
+    QStringList crosshair_y_offsetList;
 
     for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
     {
@@ -3439,12 +3452,90 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
         }
-
-        BYTE crosshair_R = 112;
-        BYTE crosshair_G = 161;
-        BYTE crosshair_B = 255;
-        QColor centercolor = QColor(crosshair_R, crosshair_G, crosshair_B);
-        crosshair_centercolorList.append(centercolor.name(QColor::HexRgb)); // 使用 HexArgb 格式
+        if (keymapdata.Crosshair_CenterColor.isValid()) {
+            crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb));
+        }
+        else {
+            crosshair_centercolorList.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
+        }
+        if (CROSSHAIR_CENTERSIZE_MIN <= keymapdata.Crosshair_CenterSize && keymapdata.Crosshair_CenterSize <= CROSSHAIR_CENTERSIZE_MAX) {
+            crosshair_centersizeList.append(QString::number(keymapdata.Crosshair_CenterSize));
+        }
+        else {
+            crosshair_centersizeList.append(QString::number(CROSSHAIR_CENTERSIZE_DEFAULT));
+        }
+        if (CROSSHAIR_OPACITY_MIN <= keymapdata.Crosshair_CenterOpacity && keymapdata.Crosshair_CenterOpacity <= CROSSHAIR_OPACITY_MAX) {
+            crosshair_centeropacityList.append(QString::number(keymapdata.Crosshair_CenterOpacity));
+        }
+        else {
+            crosshair_centeropacityList.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
+        }
+        if (keymapdata.Crosshair_CrosshairColor.isValid()) {
+            crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb));
+        }
+        else {
+            crosshair_crosshaircolorList.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+        }
+        if (CROSSHAIR_CROSSHAIRWIDTH_MIN <= keymapdata.Crosshair_CrosshairWidth && keymapdata.Crosshair_CrosshairWidth <= CROSSHAIR_CROSSHAIRWIDTH_MAX) {
+            crosshair_crosshairwidthList.append(QString::number(keymapdata.Crosshair_CrosshairWidth));
+        }
+        else {
+            crosshair_crosshairwidthList.append(QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT));
+        }
+        if (CROSSHAIR_CROSSHAIRLENGTH_MIN <= keymapdata.Crosshair_CrosshairLength && keymapdata.Crosshair_CrosshairLength <= CROSSHAIR_CROSSHAIRLENGTH_MAX) {
+            crosshair_crosshairlengthList.append(QString::number(keymapdata.Crosshair_CrosshairLength));
+        }
+        else {
+            crosshair_crosshairlengthList.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
+        }
+        if (CROSSHAIR_OPACITY_MIN <= keymapdata.Crosshair_CrosshairOpacity && keymapdata.Crosshair_CrosshairOpacity <= CROSSHAIR_OPACITY_MAX) {
+            crosshair_crosshairopacityList.append(QString::number(keymapdata.Crosshair_CrosshairOpacity));
+        }
+        else {
+            crosshair_crosshairopacityList.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
+        }
+        if (true == keymapdata.Crosshair_ShowCenter) {
+            crosshair_showcenterList.append("ON");
+        }
+        else {
+            crosshair_showcenterList.append("OFF");
+        }
+        if (true == keymapdata.Crosshair_ShowTop) {
+            crosshair_showtopList.append("ON");
+        }
+        else {
+            crosshair_showtopList.append("OFF");
+        }
+        if (true == keymapdata.Crosshair_ShowBottom) {
+            crosshair_showbottomList.append("ON");
+        }
+        else {
+            crosshair_showbottomList.append("OFF");
+        }
+        if (true == keymapdata.Crosshair_ShowLeft) {
+            crosshair_showleftList.append("ON");
+        }
+        else {
+            crosshair_showleftList.append("OFF");
+        }
+        if (true == keymapdata.Crosshair_ShowRight) {
+            crosshair_showrightList.append("ON");
+        }
+        else {
+            crosshair_showrightList.append("OFF");
+        }
+        if (CROSSHAIR_X_OFFSET_MIN <= keymapdata.Crosshair_X_Offset && keymapdata.Crosshair_X_Offset <= CROSSHAIR_X_OFFSET_MAX) {
+            crosshair_x_offsetList.append(QString::number(keymapdata.Crosshair_X_Offset));
+        }
+        else {
+            crosshair_x_offsetList.append(QString::number(CROSSHAIR_X_OFFSET_DEFAULT));
+        }
+        if (CROSSHAIR_Y_OFFSET_MIN <= keymapdata.Crosshair_Y_Offset && keymapdata.Crosshair_Y_Offset <= CROSSHAIR_Y_OFFSET_MAX) {
+            crosshair_y_offsetList.append(QString::number(keymapdata.Crosshair_Y_Offset));
+        }
+        else {
+            crosshair_y_offsetList.append(QString::number(CROSSHAIR_Y_OFFSET_DEFAULT));
+        }
     }
 
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
@@ -3466,6 +3557,19 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_REPEATIMES, repeattimesList);
 
     keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTERCOLOR, crosshair_centercolorList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTERSIZE, crosshair_centersizeList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTEROPACITY, crosshair_centeropacityList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR, crosshair_crosshaircolorList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH, crosshair_crosshairwidthList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH, crosshair_crosshairlengthList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY, crosshair_crosshairopacityList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWCENTER, crosshair_showcenterList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWTOP, crosshair_showtopList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM, crosshair_showbottomList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWLEFT, crosshair_showleftList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWRIGHT, crosshair_showrightList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_X_OFFSET, crosshair_x_offsetList);
+    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_Y_OFFSET, crosshair_y_offsetList);
 
     return true;
 }
@@ -3502,6 +3606,19 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList repeattimesStringList;
     QStringList notesList;
     QStringList crosshair_centercolorStringList;
+    QStringList crosshair_centersizeStringList;
+    QStringList crosshair_centeropacityStringList;
+    QStringList crosshair_crosshaircolorStringList;
+    QStringList crosshair_crosshairwidthStringList;
+    QStringList crosshair_crosshairlengthStringList;
+    QStringList crosshair_crosshairopacityStringList;
+    QStringList crosshair_showcenterStringList;
+    QStringList crosshair_showtopStringList;
+    QStringList crosshair_showbottomStringList;
+    QStringList crosshair_showleftStringList;
+    QStringList crosshair_showrightStringList;
+    QStringList crosshair_x_offsetStringList;
+    QStringList crosshair_y_offsetStringList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
@@ -3516,6 +3633,19 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> repeatmodeList;
     QList<int> repeattimesList;
     QList<QColor> crosshair_centercolorList;
+    QList<int> crosshair_centersizeList;
+    QList<int> crosshair_centeropacityList;
+    QList<QColor> crosshair_crosshaircolorList;
+    QList<int> crosshair_crosshairwidthList;
+    QList<int> crosshair_crosshairlengthList;
+    QList<int> crosshair_crosshairopacityList;
+    QList<bool> crosshair_showcenterList;
+    QList<bool> crosshair_showtopList;
+    QList<bool> crosshair_showbottomList;
+    QList<bool> crosshair_showleftList;
+    QList<bool> crosshair_showrightList;
+    QList<int> crosshair_x_offsetList;
+    QList<int> crosshair_y_offsetList;
     QList<MAP_KEYDATA> loadkeymapdata;
 
     if ((true == keyMappingDataFile.contains(KEYMAPDATA_ORIGINALKEYS))
@@ -3536,7 +3666,13 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList burstpressStringListDefault;
         QStringList burstreleaseStringListDefault;
         QStringList repeattimesStringListDefault;
-        QStringList crosshair_colorStringListDefault;
+        QStringList crosshair_centercolorStringListDefault;
+        QStringList crosshair_centersizeStringListDefault;
+        QStringList crosshair_centeropacityStringListDefault;
+        QStringList crosshair_crosshaircolorStringListDefault;
+        QStringList crosshair_crosshairwidthStringListDefault;
+        QStringList crosshair_crosshairlengthStringListDefault;
+        QStringList crosshair_crosshairopacityStringListDefault;
         for (int i = 0; i < mappingdata_size; ++i) {
             stringListAllON << "ON";
             stringListAllOFF << "OFF";
@@ -3545,7 +3681,13 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
             burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
             repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
-            crosshair_colorStringListDefault.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
+            crosshair_centercolorStringListDefault.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
+            crosshair_centersizeStringListDefault.append(QString::number(CROSSHAIR_CENTERSIZE_DEFAULT));
+            crosshair_centeropacityStringListDefault.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
+            crosshair_crosshaircolorStringListDefault.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+            crosshair_crosshairwidthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT));
+            crosshair_crosshairlengthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
+            crosshair_crosshairopacityStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
         }
         burstStringList         = stringListAllOFF;
         burstpressStringList    = burstpressStringListDefault;
@@ -3560,7 +3702,20 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         keyseqholddownStringList = stringListAllOFF;
         repeatmodeStringList = stringListAllZERO;
         repeattimesStringList = repeattimesStringListDefault;
-        crosshair_centercolorStringList = crosshair_colorStringListDefault;
+        crosshair_centercolorStringList = crosshair_centercolorStringListDefault;
+        crosshair_centersizeStringList = crosshair_centersizeStringListDefault;
+        crosshair_centeropacityStringList = crosshair_centeropacityStringListDefault;
+        crosshair_crosshaircolorStringList = crosshair_crosshaircolorStringListDefault;
+        crosshair_crosshairwidthStringList = crosshair_crosshairwidthStringListDefault;
+        crosshair_crosshairlengthStringList = crosshair_crosshairlengthStringListDefault;
+        crosshair_crosshairopacityStringList = crosshair_crosshairopacityStringListDefault;
+        crosshair_showcenterStringList = stringListAllON;
+        crosshair_showtopStringList = stringListAllON;
+        crosshair_showbottomStringList = stringListAllON;
+        crosshair_showleftStringList = stringListAllON;
+        crosshair_showrightStringList = stringListAllON;
+        crosshair_x_offsetStringList = stringListAllZERO;
+        crosshair_y_offsetStringList = stringListAllZERO;
 
         if (true == keyMappingDataFile.contains(KEYMAPDATA_NOTE)) {
             notesList = keyMappingDataFile.value(KEYMAPDATA_NOTE).toStringList();
@@ -3606,6 +3761,45 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CENTERCOLOR)) {
             crosshair_centercolorStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CENTERCOLOR).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CENTERSIZE)) {
+            crosshair_centersizeStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CENTERSIZE).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CENTEROPACITY)) {
+            crosshair_centeropacityStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CENTEROPACITY).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR)) {
+            crosshair_crosshaircolorStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH)) {
+            crosshair_crosshairwidthStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH)) {
+            crosshair_crosshairlengthStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY)) {
+            crosshair_crosshairopacityStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_SHOWCENTER)) {
+            crosshair_showcenterStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_SHOWCENTER).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_SHOWTOP)) {
+            crosshair_showtopStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_SHOWTOP).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM)) {
+            crosshair_showbottomStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_SHOWLEFT)) {
+            crosshair_showleftStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_SHOWLEFT).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_SHOWRIGHT)) {
+            crosshair_showrightStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_SHOWRIGHT).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_X_OFFSET)) {
+            crosshair_x_offsetStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_X_OFFSET).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_CROSSHAIR_Y_OFFSET)) {
+            crosshair_y_offsetStringList = keyMappingDataFile.value(KEYMAPDATA_CROSSHAIR_Y_OFFSET).toStringList();
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -3758,6 +3952,136 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 crosshair_centercolorList.append(crosshair_centercolor);
             }
 
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_centersizeStr = (i < crosshair_centersizeStringList.size()) ? crosshair_centersizeStringList.at(i) : QString::number(CROSSHAIR_CENTERSIZE_DEFAULT);
+                bool ok;
+                int crosshair_centersize = crosshair_centersizeStr.toInt(&ok);
+                if (!ok || crosshair_centersize < CROSSHAIR_CENTERSIZE_MIN || crosshair_centersize > CROSSHAIR_CENTERSIZE_MAX) {
+                    crosshair_centersize = CROSSHAIR_CENTERSIZE_DEFAULT;
+                }
+                crosshair_centersizeList.append(crosshair_centersize);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_centeropacityStr = (i < crosshair_centeropacityStringList.size()) ? crosshair_centeropacityStringList.at(i) : QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT);
+                bool ok;
+                int crosshair_centeropacity = crosshair_centeropacityStr.toInt(&ok);
+                if (!ok || crosshair_centeropacity < CROSSHAIR_OPACITY_MIN || crosshair_centeropacity > CROSSHAIR_OPACITY_MAX) {
+                    crosshair_centeropacity = CROSSHAIR_CENTEROPACITY_DEFAULT;
+                }
+                crosshair_centeropacityList.append(crosshair_centeropacity);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_crosshaircolorStr = (i < crosshair_crosshaircolorStringList.size()) ? crosshair_crosshaircolorStringList.at(i) : CROSSHAIR_CROSSHAIRCOLOR_DEFAULT;
+                QColor crosshair_crosshaircolor = QColor(crosshair_crosshaircolorStr);
+                bool isvalid = crosshair_crosshaircolor.isValid();
+                if (!isvalid) {
+                    crosshair_crosshaircolor = QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+                }
+                crosshair_crosshaircolorList.append(crosshair_crosshaircolor);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_crosshairwidthStr = (i < crosshair_crosshairwidthStringList.size()) ? crosshair_crosshairwidthStringList.at(i) : QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT);
+                bool ok;
+                int crosshair_crosshairwidth = crosshair_crosshairwidthStr.toInt(&ok);
+                if (!ok || crosshair_crosshairwidth < CROSSHAIR_CROSSHAIRWIDTH_MIN || crosshair_crosshairwidth > CROSSHAIR_CROSSHAIRWIDTH_MAX) {
+                    crosshair_crosshairwidth = CROSSHAIR_CROSSHAIRWIDTH_DEFAULT;
+                }
+                crosshair_crosshairwidthList.append(crosshair_crosshairwidth);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_crosshairlengthStr = (i < crosshair_crosshairlengthStringList.size()) ? crosshair_crosshairlengthStringList.at(i) : QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT);
+                bool ok;
+                int crosshair_crosshairlength = crosshair_crosshairlengthStr.toInt(&ok);
+                if (!ok || crosshair_crosshairlength < CROSSHAIR_CROSSHAIRLENGTH_MIN || crosshair_crosshairlength > CROSSHAIR_CROSSHAIRLENGTH_MAX) {
+                    crosshair_crosshairlength = CROSSHAIR_CROSSHAIRLENGTH_DEFAULT;
+                }
+                crosshair_crosshairlengthList.append(crosshair_crosshairlength);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_crosshairopacityStr = (i < crosshair_crosshairopacityStringList.size()) ? crosshair_crosshairopacityStringList.at(i) : QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT);
+                bool ok;
+                int crosshair_crosshairopacity = crosshair_crosshairopacityStr.toInt(&ok);
+                if (!ok || crosshair_crosshairopacity < CROSSHAIR_OPACITY_MIN || crosshair_crosshairopacity > CROSSHAIR_OPACITY_MAX) {
+                    crosshair_crosshairopacity = CROSSHAIR_CROSSHAIROPACITY_DEFAULT;
+                }
+                crosshair_crosshairopacityList.append(crosshair_crosshairopacity);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_showcenter = (i < crosshair_showcenterStringList.size()) ? crosshair_showcenterStringList.at(i) : "ON";
+                if (crosshair_showcenter == "OFF") {
+                    crosshair_showcenterList.append(false);
+                }
+                else {
+                    crosshair_showcenterList.append(true);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_showtop = (i < crosshair_showtopStringList.size()) ? crosshair_showtopStringList.at(i) : "ON";
+                if (crosshair_showtop == "OFF") {
+                    crosshair_showtopList.append(false);
+                }
+                else {
+                    crosshair_showtopList.append(true);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_showbottom = (i < crosshair_showbottomStringList.size()) ? crosshair_showbottomStringList.at(i) : "ON";
+                if (crosshair_showbottom == "OFF") {
+                    crosshair_showbottomList.append(false);
+                }
+                else {
+                    crosshair_showbottomList.append(true);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_showleft = (i < crosshair_showleftStringList.size()) ? crosshair_showleftStringList.at(i) : "ON";
+                if (crosshair_showleft == "OFF") {
+                    crosshair_showleftList.append(false);
+                }
+                else {
+                    crosshair_showleftList.append(true);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_showright = (i < crosshair_showrightStringList.size()) ? crosshair_showrightStringList.at(i) : "ON";
+                if (crosshair_showright == "OFF") {
+                    crosshair_showrightList.append(false);
+                }
+                else {
+                    crosshair_showrightList.append(true);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_x_offsetStr = (i < crosshair_x_offsetStringList.size()) ? crosshair_x_offsetStringList.at(i) : QString::number(CROSSHAIR_X_OFFSET_DEFAULT);
+                bool ok;
+                int crosshair_x_offset = crosshair_x_offsetStr.toInt(&ok);
+                if (!ok || crosshair_x_offset < CROSSHAIR_X_OFFSET_MIN || crosshair_x_offset > CROSSHAIR_X_OFFSET_MAX) {
+                    crosshair_x_offset = CROSSHAIR_X_OFFSET_DEFAULT;
+                }
+                crosshair_x_offsetList.append(crosshair_x_offset);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &crosshair_y_offsetStr = (i < crosshair_y_offsetStringList.size()) ? crosshair_y_offsetStringList.at(i) : QString::number(CROSSHAIR_Y_OFFSET_DEFAULT);
+                bool ok;
+                int crosshair_y_offset = crosshair_y_offsetStr.toInt(&ok);
+                if (!ok || crosshair_y_offset < CROSSHAIR_Y_OFFSET_MIN || crosshair_y_offset > CROSSHAIR_Y_OFFSET_MAX) {
+                    crosshair_y_offset = CROSSHAIR_Y_OFFSET_DEFAULT;
+                }
+                crosshair_y_offsetList.append(crosshair_y_offset);
+            }
+
             int loadindex = 0;
             for (const QString &ori_key_nochange : std::as_const(original_keys)){
                 QString ori_key = ori_key_nochange;
@@ -3794,7 +4118,21 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       sendtimingList.at(loadindex),
                                                       keyseqholddownList.at(loadindex),
                                                       repeatmodeList.at(loadindex),
-                                                      repeattimesList.at(loadindex)
+                                                      repeattimesList.at(loadindex),
+                                                      crosshair_centercolorList.at(loadindex),
+                                                      crosshair_centersizeList.at(loadindex),
+                                                      crosshair_centeropacityList.at(loadindex),
+                                                      crosshair_crosshaircolorList.at(loadindex),
+                                                      crosshair_crosshairwidthList.at(loadindex),
+                                                      crosshair_crosshairlengthList.at(loadindex),
+                                                      crosshair_crosshairopacityList.at(loadindex),
+                                                      crosshair_showcenterList.at(loadindex),
+                                                      crosshair_showtopList.at(loadindex),
+                                                      crosshair_showbottomList.at(loadindex),
+                                                      crosshair_showleftList.at(loadindex),
+                                                      crosshair_showrightList.at(loadindex),
+                                                      crosshair_x_offsetList.at(loadindex),
+                                                      crosshair_y_offsetList.at(loadindex)
                                                       ));
                 }
 
@@ -5560,6 +5898,20 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString keyseqholddownList_forsave;
     QString repeatmodeList_forsave;
     QString repeattimesList_forsave;
+    QString crosshair_centercolorList_forsave;
+    QString crosshair_centersizeList_forsave;
+    QString crosshair_centeropacityList_forsave;
+    QString crosshair_crosshaircolorList_forsave;
+    QString crosshair_crosshairwidthList_forsave;
+    QString crosshair_crosshairlengthList_forsave;
+    QString crosshair_crosshairopacityList_forsave;
+    QString crosshair_showcenterList_forsave;
+    QString crosshair_showtopList_forsave;
+    QString crosshair_showbottomList_forsave;
+    QString crosshair_showleftList_forsave;
+    QString crosshair_showrightList_forsave;
+    QString crosshair_x_offsetList_forsave;
+    QString crosshair_y_offsetList_forsave;
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
@@ -5594,6 +5946,20 @@ void QKeyMapper::saveKeyMapSetting(void)
             keyseqholddownList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             repeatmodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             repeattimesList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_centercolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_centersizeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_centeropacityList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_crosshaircolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_crosshairwidthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_crosshairlengthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_crosshairopacityList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_showcenterList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_showtopList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_showbottomList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_showleftList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_showrightList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_x_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            crosshair_y_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
         }
 
         QStringList original_keys;
@@ -5613,6 +5979,20 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList keyseqholddownList;
         QStringList repeatmodeList;
         QStringList repeattimesList;
+        QStringList crosshair_centercolorList;
+        QStringList crosshair_centersizeList;
+        QStringList crosshair_centeropacityList;
+        QStringList crosshair_crosshaircolorList;
+        QStringList crosshair_crosshairwidthList;
+        QStringList crosshair_crosshairlengthList;
+        QStringList crosshair_crosshairopacityList;
+        QStringList crosshair_showcenterList;
+        QStringList crosshair_showtopList;
+        QStringList crosshair_showbottomList;
+        QStringList crosshair_showleftList;
+        QStringList crosshair_showrightList;
+        QStringList crosshair_x_offsetList;
+        QStringList crosshair_y_offsetList;
         if (mappingDataList->size() > 0) {
             for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
             {
@@ -5716,6 +6096,90 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
                 }
+                if (keymapdata.Crosshair_CenterColor.isValid()) {
+                    crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb));
+                }
+                else {
+                    crosshair_centercolorList.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
+                }
+                if (CROSSHAIR_CENTERSIZE_MIN <= keymapdata.Crosshair_CenterSize && keymapdata.Crosshair_CenterSize <= CROSSHAIR_CENTERSIZE_MAX) {
+                    crosshair_centersizeList.append(QString::number(keymapdata.Crosshair_CenterSize));
+                }
+                else {
+                    crosshair_centersizeList.append(QString::number(CROSSHAIR_CENTERSIZE_DEFAULT));
+                }
+                if (CROSSHAIR_OPACITY_MIN <= keymapdata.Crosshair_CenterOpacity && keymapdata.Crosshair_CenterOpacity <= CROSSHAIR_OPACITY_MAX) {
+                    crosshair_centeropacityList.append(QString::number(keymapdata.Crosshair_CenterOpacity));
+                }
+                else {
+                    crosshair_centeropacityList.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
+                }
+                if (keymapdata.Crosshair_CrosshairColor.isValid()) {
+                    crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb));
+                }
+                else {
+                    crosshair_crosshaircolorList.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+                }
+                if (CROSSHAIR_CROSSHAIRWIDTH_MIN <= keymapdata.Crosshair_CrosshairWidth && keymapdata.Crosshair_CrosshairWidth <= CROSSHAIR_CROSSHAIRWIDTH_MAX) {
+                    crosshair_crosshairwidthList.append(QString::number(keymapdata.Crosshair_CrosshairWidth));
+                }
+                else {
+                    crosshair_crosshairwidthList.append(QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT));
+                }
+                if (CROSSHAIR_CROSSHAIRLENGTH_MIN <= keymapdata.Crosshair_CrosshairLength && keymapdata.Crosshair_CrosshairLength <= CROSSHAIR_CROSSHAIRLENGTH_MAX) {
+                    crosshair_crosshairlengthList.append(QString::number(keymapdata.Crosshair_CrosshairLength));
+                }
+                else {
+                    crosshair_crosshairlengthList.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
+                }
+                if (CROSSHAIR_OPACITY_MIN <= keymapdata.Crosshair_CrosshairOpacity && keymapdata.Crosshair_CrosshairOpacity <= CROSSHAIR_OPACITY_MAX) {
+                    crosshair_crosshairopacityList.append(QString::number(keymapdata.Crosshair_CrosshairOpacity));
+                }
+                else {
+                    crosshair_crosshairopacityList.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
+                }
+                if (true == keymapdata.Crosshair_ShowCenter) {
+                    crosshair_showcenterList.append("ON");
+                }
+                else {
+                    crosshair_showcenterList.append("OFF");
+                }
+                if (true == keymapdata.Crosshair_ShowTop) {
+                    crosshair_showtopList.append("ON");
+                }
+                else {
+                    crosshair_showtopList.append("OFF");
+                }
+                if (true == keymapdata.Crosshair_ShowBottom) {
+                    crosshair_showbottomList.append("ON");
+                }
+                else {
+                    crosshair_showbottomList.append("OFF");
+                }
+                if (true == keymapdata.Crosshair_ShowLeft) {
+                    crosshair_showleftList.append("ON");
+                }
+                else {
+                    crosshair_showleftList.append("OFF");
+                }
+                if (true == keymapdata.Crosshair_ShowRight) {
+                    crosshair_showrightList.append("ON");
+                }
+                else {
+                    crosshair_showrightList.append("OFF");
+                }
+                if (CROSSHAIR_X_OFFSET_MIN <= keymapdata.Crosshair_X_Offset && keymapdata.Crosshair_X_Offset <= CROSSHAIR_X_OFFSET_MAX) {
+                    crosshair_x_offsetList.append(QString::number(keymapdata.Crosshair_X_Offset));
+                }
+                else {
+                    crosshair_x_offsetList.append(QString::number(CROSSHAIR_X_OFFSET_DEFAULT));
+                }
+                if (CROSSHAIR_Y_OFFSET_MIN <= keymapdata.Crosshair_Y_Offset && keymapdata.Crosshair_Y_Offset <= CROSSHAIR_Y_OFFSET_MAX) {
+                    crosshair_y_offsetList.append(QString::number(keymapdata.Crosshair_Y_Offset));
+                }
+                else {
+                    crosshair_y_offsetList.append(QString::number(CROSSHAIR_Y_OFFSET_DEFAULT));
+                }
             }
         }
         // join QStringList variables first (use SEPARATOR_KEYMAPDATA_LEVEL1)
@@ -5736,6 +6200,20 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString keyseqholddownList_str = keyseqholddownList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString repeatmodeList_str = repeatmodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString repeattimesList_str = repeattimesList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_centercolorList_str = crosshair_centercolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_centersizeList_str = crosshair_centersizeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_centeropacityList_str = crosshair_centeropacityList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_crosshaircolorList_str = crosshair_crosshaircolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_crosshairwidthList_str = crosshair_crosshairwidthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_crosshairlengthList_str = crosshair_crosshairlengthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_crosshairopacityList_str = crosshair_crosshairopacityList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_showcenterList_str = crosshair_showcenterList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_showtopList_str = crosshair_showtopList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_showbottomList_str = crosshair_showbottomList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_showleftList_str = crosshair_showleftList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_showrightList_str = crosshair_showrightList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_x_offsetList_str = crosshair_x_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString crosshair_y_offsetList_str = crosshair_y_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
 
         // append joined QString variables to forsave variables
         original_keys_forsave.append(original_keys_str);
@@ -5755,6 +6233,20 @@ void QKeyMapper::saveKeyMapSetting(void)
         keyseqholddownList_forsave.append(keyseqholddownList_str);
         repeatmodeList_forsave.append(repeatmodeList_str);
         repeattimesList_forsave.append(repeattimesList_str);
+        crosshair_centercolorList_forsave.append(crosshair_centercolorList_str);
+        crosshair_centersizeList_forsave.append(crosshair_centersizeList_str);
+        crosshair_centeropacityList_forsave.append(crosshair_centeropacityList_str);
+        crosshair_crosshaircolorList_forsave.append(crosshair_crosshaircolorList_str);
+        crosshair_crosshairwidthList_forsave.append(crosshair_crosshairwidthList_str);
+        crosshair_crosshairlengthList_forsave.append(crosshair_crosshairlengthList_str);
+        crosshair_crosshairopacityList_forsave.append(crosshair_crosshairopacityList_str);
+        crosshair_showcenterList_forsave.append(crosshair_showcenterList_str);
+        crosshair_showtopList_forsave.append(crosshair_showtopList_str);
+        crosshair_showbottomList_forsave.append(crosshair_showbottomList_str);
+        crosshair_showleftList_forsave.append(crosshair_showleftList_str);
+        crosshair_showrightList_forsave.append(crosshair_showrightList_str);
+        crosshair_x_offsetList_forsave.append(crosshair_x_offsetList_str);
+        crosshair_y_offsetList_forsave.append(crosshair_y_offsetList_str);
     }
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
@@ -5777,6 +6269,20 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATMODE, repeatmodeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATIMES, repeattimesList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERCOLOR, crosshair_centercolorList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERSIZE, crosshair_centersizeList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CENTEROPACITY, crosshair_centeropacityList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR, crosshair_crosshaircolorList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH, crosshair_crosshairwidthList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH, crosshair_crosshairlengthList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY, crosshair_crosshairopacityList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWCENTER, crosshair_showcenterList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWTOP, crosshair_showtopList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWBOTTOM, crosshair_showbottomList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWLEFT, crosshair_showleftList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWRIGHT, crosshair_showrightList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_X_OFFSET, crosshair_x_offsetList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_Y_OFFSET, crosshair_y_offsetList_forsave);
 
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed);
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed);
@@ -6487,6 +6993,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString keyseqholddownData_loaded;
         QString repeatmodeData_loaded;
         QString repeattimesData_loaded;
+        QString crosshair_centercolorData_loaded;
+        QString crosshair_centersizeData_loaded;
+        QString crosshair_centeropacityData_loaded;
+        QString crosshair_crosshaircolorData_loaded;
+        QString crosshair_crosshairwidthData_loaded;
+        QString crosshair_crosshairlengthData_loaded;
+        QString crosshair_crosshairopacityData_loaded;
+        QString crosshair_showcenterData_loaded;
+        QString crosshair_showtopData_loaded;
+        QString crosshair_showbottomData_loaded;
+        QString crosshair_showleftData_loaded;
+        QString crosshair_showrightData_loaded;
+        QString crosshair_x_offsetData_loaded;
+        QString crosshair_y_offsetData_loaded;
         int table_count = 0;
         QStringList original_keys_split;
         QStringList mapping_keys_split;
@@ -6506,6 +7026,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList keyseqholddownData_split;
         QStringList repeatmodeData_split;
         QStringList repeattimesData_split;
+        QStringList crosshair_centercolorData_split;
+        QStringList crosshair_centersizeData_split;
+        QStringList crosshair_centeropacityData_split;
+        QStringList crosshair_crosshaircolorData_split;
+        QStringList crosshair_crosshairwidthData_split;
+        QStringList crosshair_crosshairlengthData_split;
+        QStringList crosshair_crosshairopacityData_split;
+        QStringList crosshair_showcenterData_split;
+        QStringList crosshair_showtopData_split;
+        QStringList crosshair_showbottomData_split;
+        QStringList crosshair_showleftData_split;
+        QStringList crosshair_showrightData_split;
+        QStringList crosshair_x_offsetData_split;
+        QStringList crosshair_y_offsetData_split;
 
         original_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
         mapping_keys_loaded     = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toString();
@@ -6600,6 +7134,62 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 repeattimesData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_REPEATIMES).toString();
                 repeattimesData_split = repeattimesData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERCOLOR)) {
+                crosshair_centercolorData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERCOLOR).toString();
+                crosshair_centercolorData_split = crosshair_centercolorData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERSIZE)) {
+                crosshair_centersizeData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERSIZE).toString();
+                crosshair_centersizeData_split = crosshair_centersizeData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CENTEROPACITY)) {
+                crosshair_centeropacityData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CENTEROPACITY).toString();
+                crosshair_centeropacityData_split = crosshair_centeropacityData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR)) {
+                crosshair_crosshaircolorData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR).toString();
+                crosshair_crosshaircolorData_split = crosshair_crosshaircolorData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH)) {
+                crosshair_crosshairwidthData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH).toString();
+                crosshair_crosshairwidthData_split = crosshair_crosshairwidthData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH)) {
+                crosshair_crosshairlengthData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH).toString();
+                crosshair_crosshairlengthData_split = crosshair_crosshairlengthData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY)) {
+                crosshair_crosshairopacityData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY).toString();
+                crosshair_crosshairopacityData_split = crosshair_crosshairopacityData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWCENTER)) {
+                crosshair_showcenterData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWCENTER).toString();
+                crosshair_showcenterData_split = crosshair_showcenterData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWTOP)) {
+                crosshair_showtopData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWTOP).toString();
+                crosshair_showtopData_split = crosshair_showtopData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWBOTTOM)) {
+                crosshair_showbottomData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWBOTTOM).toString();
+                crosshair_showbottomData_split = crosshair_showbottomData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWLEFT)) {
+                crosshair_showleftData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWLEFT).toString();
+                crosshair_showleftData_split = crosshair_showleftData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWRIGHT)) {
+                crosshair_showrightData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWRIGHT).toString();
+                crosshair_showrightData_split = crosshair_showrightData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_X_OFFSET)) {
+                crosshair_x_offsetData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_X_OFFSET).toString();
+                crosshair_x_offsetData_split = crosshair_x_offsetData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CROSSHAIR_Y_OFFSET)) {
+                crosshair_y_offsetData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CROSSHAIR_Y_OFFSET).toString();
+                crosshair_y_offsetData_split = crosshair_y_offsetData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
 
             for (int index = 0; index < table_count && datavalidflag != false; ++index) {
                 QList<MAP_KEYDATA> loadkeymapdata;
@@ -6628,6 +7218,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList repeatmodeStringList;
                     QStringList repeattimesStringList;
                     QStringList notesList;
+                    QStringList crosshair_centercolorStringList;
+                    QStringList crosshair_centersizeStringList;
+                    QStringList crosshair_centeropacityStringList;
+                    QStringList crosshair_crosshaircolorStringList;
+                    QStringList crosshair_crosshairwidthStringList;
+                    QStringList crosshair_crosshairlengthStringList;
+                    QStringList crosshair_crosshairopacityStringList;
+                    QStringList crosshair_showcenterStringList;
+                    QStringList crosshair_showtopStringList;
+                    QStringList crosshair_showbottomStringList;
+                    QStringList crosshair_showleftStringList;
+                    QStringList crosshair_showrightStringList;
+                    QStringList crosshair_x_offsetStringList;
+                    QStringList crosshair_y_offsetStringList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
                     QList<int> burstreleasetimeList;
@@ -6642,6 +7246,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QList<bool> keyseqholddownList;
                     QList<int> repeatmodeList;
                     QList<int> repeattimesList;
+                    QList<QColor> crosshair_centercolorList;
+                    QList<int> crosshair_centersizeList;
+                    QList<int> crosshair_centeropacityList;
+                    QList<QColor> crosshair_crosshaircolorList;
+                    QList<int> crosshair_crosshairwidthList;
+                    QList<int> crosshair_crosshairlengthList;
+                    QList<int> crosshair_crosshairopacityList;
+                    QList<bool> crosshair_showcenterList;
+                    QList<bool> crosshair_showtopList;
+                    QList<bool> crosshair_showbottomList;
+                    QList<bool> crosshair_showleftList;
+                    QList<bool> crosshair_showrightList;
+                    QList<int> crosshair_x_offsetList;
+                    QList<int> crosshair_y_offsetList;
 
                     original_keys = original_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     mapping_keys = mapping_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -6659,6 +7277,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList burstpressStringListDefault;
                     QStringList burstreleaseStringListDefault;
                     QStringList repeattimesStringListDefault;
+                    QStringList crosshair_centercolorStringListDefault;
+                    QStringList crosshair_centersizeStringListDefault;
+                    QStringList crosshair_centeropacityStringListDefault;
+                    QStringList crosshair_crosshaircolorStringListDefault;
+                    QStringList crosshair_crosshairwidthStringListDefault;
+                    QStringList crosshair_crosshairlengthStringListDefault;
+                    QStringList crosshair_crosshairopacityStringListDefault;
                     for (int i = 0; i < mappingdata_size; ++i) {
                         stringListAllON << "ON";
                         stringListAllOFF << "OFF";
@@ -6667,6 +7292,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
                         burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
                         repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
+                        crosshair_centercolorStringListDefault.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
+                        crosshair_centersizeStringListDefault.append(QString::number(CROSSHAIR_CENTERSIZE_DEFAULT));
+                        crosshair_centeropacityStringListDefault.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
+                        crosshair_crosshaircolorStringListDefault.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+                        crosshair_crosshairwidthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT));
+                        crosshair_crosshairlengthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
+                        crosshair_crosshairopacityStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
                     }
                     burstStringList         = stringListAllOFF;
                     burstpressStringList    = burstpressStringListDefault;
@@ -6682,6 +7314,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     keyseqholddownStringList = stringListAllOFF;
                     repeatmodeStringList = stringListAllZERO;
                     repeattimesStringList = repeattimesStringListDefault;
+                    crosshair_centercolorStringList = crosshair_centercolorStringListDefault;
+                    crosshair_centersizeStringList = crosshair_centersizeStringListDefault;
+                    crosshair_centeropacityStringList = crosshair_centeropacityStringListDefault;
+                    crosshair_crosshaircolorStringList = crosshair_crosshaircolorStringListDefault;
+                    crosshair_crosshairwidthStringList = crosshair_crosshairwidthStringListDefault;
+                    crosshair_crosshairlengthStringList = crosshair_crosshairlengthStringListDefault;
+                    crosshair_crosshairopacityStringList = crosshair_crosshairopacityStringListDefault;
+                    crosshair_showcenterStringList = stringListAllON;
+                    crosshair_showtopStringList = stringListAllON;
+                    crosshair_showbottomStringList = stringListAllON;
+                    crosshair_showleftStringList = stringListAllON;
+                    crosshair_showrightStringList = stringListAllON;
+                    crosshair_x_offsetStringList = stringListAllZERO;
+                    crosshair_y_offsetStringList = stringListAllZERO;
 
                     if (notes_split.size() == table_count) {
                         notesList = notes_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -6727,6 +7373,48 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                     if (repeattimesData_split.size() == table_count) {
                         repeattimesStringList = repeattimesData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_centercolorData_split.size() == table_count) {
+                        crosshair_centercolorStringList = crosshair_centercolorData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_centersizeData_split.size() == table_count) {
+                        crosshair_centersizeStringList = crosshair_centersizeData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_centeropacityData_split.size() == table_count) {
+                        crosshair_centeropacityStringList = crosshair_centeropacityData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_crosshaircolorData_split.size() == table_count) {
+                        crosshair_crosshaircolorStringList = crosshair_crosshaircolorData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_crosshairwidthData_split.size() == table_count) {
+                        crosshair_crosshairwidthStringList = crosshair_crosshairwidthData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_crosshairlengthData_split.size() == table_count) {
+                        crosshair_crosshairlengthStringList = crosshair_crosshairlengthData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_crosshairopacityData_split.size() == table_count) {
+                        crosshair_crosshairopacityStringList = crosshair_crosshairopacityData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_showcenterData_split.size() == table_count) {
+                        crosshair_showcenterStringList = crosshair_showcenterData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_showtopData_split.size() == table_count) {
+                        crosshair_showtopStringList = crosshair_showtopData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_showbottomData_split.size() == table_count) {
+                        crosshair_showbottomStringList = crosshair_showbottomData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_showleftData_split.size() == table_count) {
+                        crosshair_showleftStringList = crosshair_showleftData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_showrightData_split.size() == table_count) {
+                        crosshair_showrightStringList = crosshair_showrightData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_x_offsetData_split.size() == table_count) {
+                        crosshair_x_offsetStringList = crosshair_x_offsetData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (crosshair_y_offsetData_split.size() == table_count) {
+                        crosshair_y_offsetStringList = crosshair_y_offsetData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
 
                     if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -6879,6 +7567,146 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             repeattimesList.append(repeattimes);
                         }
 
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_centercolorStr = (i < crosshair_centercolorStringList.size()) ? crosshair_centercolorStringList.at(i) : CROSSHAIR_CENTERCOLOR_DEFAULT;
+                            QColor crosshair_centercolor = QColor(crosshair_centercolorStr);
+                            bool isvalid = crosshair_centercolor.isValid();
+                            if (!isvalid) {
+                                crosshair_centercolor = QColor(CROSSHAIR_CENTERCOLOR_DEFAULT);
+                            }
+                            crosshair_centercolorList.append(crosshair_centercolor);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_centersizeStr = (i < crosshair_centersizeStringList.size()) ? crosshair_centersizeStringList.at(i) : QString::number(CROSSHAIR_CENTERSIZE_DEFAULT);
+                            bool ok;
+                            int crosshair_centersize = crosshair_centersizeStr.toInt(&ok);
+                            if (!ok || crosshair_centersize < CROSSHAIR_CENTERSIZE_MIN || crosshair_centersize > CROSSHAIR_CENTERSIZE_MAX) {
+                                crosshair_centersize = CROSSHAIR_CENTERSIZE_DEFAULT;
+                            }
+                            crosshair_centersizeList.append(crosshair_centersize);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_centeropacityStr = (i < crosshair_centeropacityStringList.size()) ? crosshair_centeropacityStringList.at(i) : QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT);
+                            bool ok;
+                            int crosshair_centeropacity = crosshair_centeropacityStr.toInt(&ok);
+                            if (!ok || crosshair_centeropacity < CROSSHAIR_OPACITY_MIN || crosshair_centeropacity > CROSSHAIR_OPACITY_MAX) {
+                                crosshair_centeropacity = CROSSHAIR_CENTEROPACITY_DEFAULT;
+                            }
+                            crosshair_centeropacityList.append(crosshair_centeropacity);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_crosshaircolorStr = (i < crosshair_crosshaircolorStringList.size()) ? crosshair_crosshaircolorStringList.at(i) : CROSSHAIR_CROSSHAIRCOLOR_DEFAULT;
+                            QColor crosshair_crosshaircolor = QColor(crosshair_crosshaircolorStr);
+                            bool isvalid = crosshair_crosshaircolor.isValid();
+                            if (!isvalid) {
+                                crosshair_crosshaircolor = QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+                            }
+                            crosshair_crosshaircolorList.append(crosshair_crosshaircolor);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_crosshairwidthStr = (i < crosshair_crosshairwidthStringList.size()) ? crosshair_crosshairwidthStringList.at(i) : QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT);
+                            bool ok;
+                            int crosshair_crosshairwidth = crosshair_crosshairwidthStr.toInt(&ok);
+                            if (!ok || crosshair_crosshairwidth < CROSSHAIR_CROSSHAIRWIDTH_MIN || crosshair_crosshairwidth > CROSSHAIR_CROSSHAIRWIDTH_MAX) {
+                                crosshair_crosshairwidth = CROSSHAIR_CROSSHAIRWIDTH_DEFAULT;
+                            }
+                            crosshair_crosshairwidthList.append(crosshair_crosshairwidth);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_crosshairlengthStr = (i < crosshair_crosshairlengthStringList.size()) ? crosshair_crosshairlengthStringList.at(i) : QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT);
+                            bool ok;
+                            int crosshair_crosshairlength = crosshair_crosshairlengthStr.toInt(&ok);
+                            if (!ok || crosshair_crosshairlength < CROSSHAIR_CROSSHAIRLENGTH_MIN || crosshair_crosshairlength > CROSSHAIR_CROSSHAIRLENGTH_MAX) {
+                                crosshair_crosshairlength = CROSSHAIR_CROSSHAIRLENGTH_DEFAULT;
+                            }
+                            crosshair_crosshairlengthList.append(crosshair_crosshairlength);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_crosshairopacityStr = (i < crosshair_crosshairopacityStringList.size()) ? crosshair_crosshairopacityStringList.at(i) : QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT);
+                            bool ok;
+                            int crosshair_crosshairopacity = crosshair_crosshairopacityStr.toInt(&ok);
+                            if (!ok || crosshair_crosshairopacity < CROSSHAIR_OPACITY_MIN || crosshair_crosshairopacity > CROSSHAIR_OPACITY_MAX) {
+                                crosshair_crosshairopacity = CROSSHAIR_CROSSHAIROPACITY_DEFAULT;
+                            }
+                            crosshair_crosshairopacityList.append(crosshair_crosshairopacity);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_showcenter = (i < crosshair_showcenterStringList.size()) ? crosshair_showcenterStringList.at(i) : "ON";
+                            if (crosshair_showcenter == "OFF") {
+                                crosshair_showcenterList.append(false);
+                            }
+                            else {
+                                crosshair_showcenterList.append(true);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_showtop = (i < crosshair_showtopStringList.size()) ? crosshair_showtopStringList.at(i) : "ON";
+                            if (crosshair_showtop == "OFF") {
+                                crosshair_showtopList.append(false);
+                            }
+                            else {
+                                crosshair_showtopList.append(true);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_showbottom = (i < crosshair_showbottomStringList.size()) ? crosshair_showbottomStringList.at(i) : "ON";
+                            if (crosshair_showbottom == "OFF") {
+                                crosshair_showbottomList.append(false);
+                            }
+                            else {
+                                crosshair_showbottomList.append(true);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_showleft = (i < crosshair_showleftStringList.size()) ? crosshair_showleftStringList.at(i) : "ON";
+                            if (crosshair_showleft == "OFF") {
+                                crosshair_showleftList.append(false);
+                            }
+                            else {
+                                crosshair_showleftList.append(true);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_showright = (i < crosshair_showrightStringList.size()) ? crosshair_showrightStringList.at(i) : "ON";
+                            if (crosshair_showright == "OFF") {
+                                crosshair_showrightList.append(false);
+                            }
+                            else {
+                                crosshair_showrightList.append(true);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_x_offsetStr = (i < crosshair_x_offsetStringList.size()) ? crosshair_x_offsetStringList.at(i) : QString::number(CROSSHAIR_X_OFFSET_DEFAULT);
+                            bool ok;
+                            int crosshair_x_offset = crosshair_x_offsetStr.toInt(&ok);
+                            if (!ok || crosshair_x_offset < CROSSHAIR_X_OFFSET_MIN || crosshair_x_offset > CROSSHAIR_X_OFFSET_MAX) {
+                                crosshair_x_offset = CROSSHAIR_X_OFFSET_DEFAULT;
+                            }
+                            crosshair_x_offsetList.append(crosshair_x_offset);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &crosshair_y_offsetStr = (i < crosshair_y_offsetStringList.size()) ? crosshair_y_offsetStringList.at(i) : QString::number(CROSSHAIR_Y_OFFSET_DEFAULT);
+                            bool ok;
+                            int crosshair_y_offset = crosshair_y_offsetStr.toInt(&ok);
+                            if (!ok || crosshair_y_offset < CROSSHAIR_Y_OFFSET_MIN || crosshair_y_offset > CROSSHAIR_Y_OFFSET_MAX) {
+                                crosshair_y_offset = CROSSHAIR_Y_OFFSET_DEFAULT;
+                            }
+                            crosshair_y_offsetList.append(crosshair_y_offset);
+                        }
+
                         int loadindex = 0;
                         for (const QString &ori_key_nochange : std::as_const(original_keys)){
                             QString ori_key = ori_key_nochange;
@@ -6914,7 +7742,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   sendtimingList.at(loadindex),
                                                                   keyseqholddownList.at(loadindex),
                                                                   repeatmodeList.at(loadindex),
-                                                                  repeattimesList.at(loadindex)
+                                                                  repeattimesList.at(loadindex),
+                                                                  crosshair_centercolorList.at(loadindex),
+                                                                  crosshair_centersizeList.at(loadindex),
+                                                                  crosshair_centeropacityList.at(loadindex),
+                                                                  crosshair_crosshaircolorList.at(loadindex),
+                                                                  crosshair_crosshairwidthList.at(loadindex),
+                                                                  crosshair_crosshairlengthList.at(loadindex),
+                                                                  crosshair_crosshairopacityList.at(loadindex),
+                                                                  crosshair_showcenterList.at(loadindex),
+                                                                  crosshair_showtopList.at(loadindex),
+                                                                  crosshair_showbottomList.at(loadindex),
+                                                                  crosshair_showleftList.at(loadindex),
+                                                                  crosshair_showrightList.at(loadindex),
+                                                                  crosshair_x_offsetList.at(loadindex),
+                                                                  crosshair_y_offsetList.at(loadindex)
                                                                   ));
                             }
                             else{
@@ -11821,7 +12663,21 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.SendTiming,
                                                                keymapdata.KeySeqHoldDown,
                                                                keymapdata.RepeatMode,
-                                                               keymapdata.RepeatTimes
+                                                               keymapdata.RepeatTimes,
+                                                               keymapdata.Crosshair_CenterColor,
+                                                               keymapdata.Crosshair_CenterSize,
+                                                               keymapdata.Crosshair_CenterOpacity,
+                                                               keymapdata.Crosshair_CrosshairColor,
+                                                               keymapdata.Crosshair_CrosshairWidth,
+                                                               keymapdata.Crosshair_CrosshairLength,
+                                                               keymapdata.Crosshair_CrosshairOpacity,
+                                                               keymapdata.Crosshair_ShowCenter,
+                                                               keymapdata.Crosshair_ShowTop,
+                                                               keymapdata.Crosshair_ShowBottom,
+                                                               keymapdata.Crosshair_ShowLeft,
+                                                               keymapdata.Crosshair_ShowRight,
+                                                               keymapdata.Crosshair_X_Offset,
+                                                               keymapdata.Crosshair_Y_Offset
                                                                ));
         }
         else {
@@ -11970,23 +12826,37 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 return;
             }
 
-            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,               /* originalkey QString */
-                                                   currentMapKeyText,               /* mappingkeys QString */
-                                                   currentMapKeyText,               /* mappingkeys_keyup QString */
-                                                   QString(),                       /* note QString */
-                                                   false,                           /* burst bool */
-                                                   BURST_PRESS_TIME_DEFAULT,        /* burstpresstime int */
-                                                   BURST_RELEASE_TIME_DEFAULT,      /* burstreleasetime int */
-                                                   false,                           /* lock bool */
-                                                   false,                           /* mappingkeys_unlock bool */
-                                                   false,                           /* postmappingkey bool */
-                                                   true,                            /* checkcombkeyorder bool */
-                                                   false,                           /* unbreakable bool */
-                                                   false,                           /* passthrough bool */
-                                                   SENDTIMING_NORMAL,               /* sendtiming int */
-                                                   false,                           /* keyseqholddown bool */
-                                                   REPEAT_MODE_NONE,                /* repeat_mode int */
-                                                   REPEAT_TIMES_DEFAULT             /* repeat_times int */
+            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,                       /* originalkey QString */
+                                                   currentMapKeyText,                       /* mappingkeys QString */
+                                                   currentMapKeyText,                       /* mappingkeys_keyup QString */
+                                                   QString(),                               /* note QString */
+                                                   false,                                   /* burst bool */
+                                                   BURST_PRESS_TIME_DEFAULT,                /* burstpresstime int */
+                                                   BURST_RELEASE_TIME_DEFAULT,              /* burstreleasetime int */
+                                                   false,                                   /* lock bool */
+                                                   false,                                   /* mappingkeys_unlock bool */
+                                                   false,                                   /* postmappingkey bool */
+                                                   true,                                    /* checkcombkeyorder bool */
+                                                   false,                                   /* unbreakable bool */
+                                                   false,                                   /* passthrough bool */
+                                                   SENDTIMING_NORMAL,                       /* sendtiming int */
+                                                   false,                                   /* keyseqholddown bool */
+                                                   REPEAT_MODE_NONE,                        /* repeat_mode int */
+                                                   REPEAT_TIMES_DEFAULT,                    /* repeat_times int */
+                                                   QColor(CROSSHAIR_CENTERCOLOR_DEFAULT),   /* crosshair_centercolor QColor */
+                                                   CROSSHAIR_CENTERSIZE_DEFAULT,            /* crosshair_centersize int */
+                                                   CROSSHAIR_CENTEROPACITY_DEFAULT,         /* crosshair_centeropacity int */
+                                                   QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT),/* crosshair_crosshaircolor QColor */
+                                                   CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,        /* crosshair_crosshairwidth int */
+                                                   CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,       /* crosshair_crosshairlength int */
+                                                   CROSSHAIR_CROSSHAIROPACITY_DEFAULT,      /* crosshair_crosshairopacity int */
+                                                   true,                                    /* crosshair_showcenter bool */
+                                                   true,                                    /* crosshair_showtop bool */
+                                                   true,                                    /* crosshair_showbottom bool */
+                                                   true,                                    /* crosshair_showleft bool */
+                                                   true,                                    /* crosshair_showright bool */
+                                                   CROSSHAIR_X_OFFSET_DEFAULT,              /* crosshair_x_offset int */
+                                                   CROSSHAIR_Y_OFFSET_DEFAULT               /* crosshair_y_offset int */
                                                    ));
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;

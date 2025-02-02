@@ -86,6 +86,20 @@ typedef struct MAP_KEYDATA
     bool KeySeqHoldDown;
     int RepeatMode;
     int RepeatTimes;
+    QColor Crosshair_CenterColor;
+    int Crosshair_CenterSize;
+    int Crosshair_CenterOpacity;
+    QColor Crosshair_CrosshairColor;
+    int Crosshair_CrosshairWidth;
+    int Crosshair_CrosshairLength;
+    int Crosshair_CrosshairOpacity;
+    bool Crosshair_ShowCenter;
+    bool Crosshair_ShowTop;
+    bool Crosshair_ShowBottom;
+    bool Crosshair_ShowLeft;
+    bool Crosshair_ShowRight;
+    int Crosshair_X_Offset;
+    int Crosshair_Y_Offset;
 
     MAP_KEYDATA() :
       Original_Key()
@@ -109,6 +123,20 @@ typedef struct MAP_KEYDATA
     , KeySeqHoldDown(false)
     , RepeatMode(REPEAT_MODE_NONE)
     , RepeatTimes(REPEAT_TIMES_DEFAULT)
+    , Crosshair_CenterColor(CROSSHAIR_CENTERCOLOR_DEFAULT)
+    , Crosshair_CenterSize(CROSSHAIR_CENTERSIZE_DEFAULT)
+    , Crosshair_CenterOpacity(CROSSHAIR_CENTEROPACITY_DEFAULT)
+    , Crosshair_CrosshairColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)
+    , Crosshair_CrosshairWidth(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT)
+    , Crosshair_CrosshairLength(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT)
+    , Crosshair_CrosshairOpacity(CROSSHAIR_CROSSHAIROPACITY_DEFAULT)
+    , Crosshair_ShowCenter(true)
+    , Crosshair_ShowTop(true)
+    , Crosshair_ShowBottom(true)
+    , Crosshair_ShowLeft(true)
+    , Crosshair_ShowRight(true)
+    , Crosshair_X_Offset(CROSSHAIR_X_OFFSET_DEFAULT)
+    , Crosshair_Y_Offset(CROSSHAIR_Y_OFFSET_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
@@ -116,7 +144,11 @@ typedef struct MAP_KEYDATA
                 bool lock, bool mappingkeys_unlock, bool postmappingkey,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, bool keyseqholddown,
-                int repeat_mode, int repeat_times)
+                int repeat_mode, int repeat_times,
+                QColor crosshair_centercolor, int crosshair_centersize, int crosshair_centeropacity,
+                QColor crosshair_crosshaircolor, int crosshair_crosshairwidth, int crosshair_crosshairlength, int crosshair_crosshairopacity,
+                int crosshair_showcenter, int crosshair_showtop, int crosshair_showbottom, int crosshair_showleft, int crosshair_showright,
+                int crosshair_x_offset, int crosshair_y_offset)
     {
         Original_Key = originalkey;
         Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
@@ -148,6 +180,20 @@ typedef struct MAP_KEYDATA
         KeySeqHoldDown = keyseqholddown;
         RepeatMode = repeat_mode;
         RepeatTimes = repeat_times;
+        Crosshair_CenterColor = crosshair_centercolor;
+        Crosshair_CenterSize = crosshair_centersize;
+        Crosshair_CenterOpacity = crosshair_centeropacity;
+        Crosshair_CrosshairColor = crosshair_crosshaircolor;
+        Crosshair_CrosshairWidth = crosshair_crosshairwidth;
+        Crosshair_CrosshairLength = crosshair_crosshairlength;
+        Crosshair_CrosshairOpacity = crosshair_crosshairopacity;
+        Crosshair_ShowCenter = crosshair_showcenter;
+        Crosshair_ShowTop = crosshair_showtop;
+        Crosshair_ShowBottom = crosshair_showbottom;
+        Crosshair_ShowLeft = crosshair_showleft;
+        Crosshair_ShowRight = crosshair_showright;
+        Crosshair_X_Offset = crosshair_x_offset;
+        Crosshair_Y_Offset = crosshair_y_offset;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -168,7 +214,21 @@ typedef struct MAP_KEYDATA
                 && (SendTiming == other.SendTiming)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
                 && (RepeatMode == other.RepeatMode)
-                && (RepeatTimes == other.RepeatTimes));
+                && (RepeatTimes == other.RepeatTimes)
+                && (Crosshair_CenterColor == other.Crosshair_CenterColor)
+                && (Crosshair_CenterSize == other.Crosshair_CenterSize)
+                && (Crosshair_CenterOpacity == other.Crosshair_CenterOpacity)
+                && (Crosshair_CrosshairColor == other.Crosshair_CrosshairColor)
+                && (Crosshair_CrosshairWidth == other.Crosshair_CrosshairWidth)
+                && (Crosshair_CrosshairLength == other.Crosshair_CrosshairLength)
+                && (Crosshair_CrosshairOpacity == other.Crosshair_CrosshairOpacity)
+                && (Crosshair_ShowCenter == other.Crosshair_ShowCenter)
+                && (Crosshair_ShowTop == other.Crosshair_ShowTop)
+                && (Crosshair_ShowBottom == other.Crosshair_ShowBottom)
+                && (Crosshair_ShowLeft == other.Crosshair_ShowLeft)
+                && (Crosshair_ShowRight == other.Crosshair_ShowRight)
+                && (Crosshair_X_Offset == other.Crosshair_X_Offset)
+                && (Crosshair_Y_Offset == other.Crosshair_Y_Offset));
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -194,6 +254,20 @@ typedef struct MAP_KEYDATA
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
                         << ", RepeatMode:" << data.RepeatMode
                         << ", RepeatTimes:" << data.RepeatTimes
+                        << ", Crosshair_CenterColor:" << data.Crosshair_CenterColor
+                        << ", Crosshair_CenterSize:" << data.Crosshair_CenterSize
+                        << ", Crosshair_CenterOpacity:" << data.Crosshair_CenterOpacity
+                        << ", Crosshair_CrosshairColor:" << data.Crosshair_CrosshairColor
+                        << ", Crosshair_CrosshairWidth:" << data.Crosshair_CrosshairWidth
+                        << ", Crosshair_CrosshairLength:" << data.Crosshair_CrosshairLength
+                        << ", Crosshair_CrosshairOpacity:" << data.Crosshair_CrosshairOpacity
+                        << ", Crosshair_ShowCenter:" << data.Crosshair_ShowCenter
+                        << ", Crosshair_ShowTop:" << data.Crosshair_ShowTop
+                        << ", Crosshair_ShowBottom:" << data.Crosshair_ShowBottom
+                        << ", Crosshair_ShowLeft:" << data.Crosshair_ShowLeft
+                        << ", Crosshair_ShowRight:" << data.Crosshair_ShowRight
+                        << ", Crosshair_X_Offset:" << data.Crosshair_X_Offset
+                        << ", Crosshair_Y_Offset:" << data.Crosshair_Y_Offset
                         << "]";
         return debug;
     }
