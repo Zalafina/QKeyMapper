@@ -1,6 +1,8 @@
 #include "qkeymapper.h"
 #include "colorpickerwidget.h"
 
+bool ColorPickerWidget::s_isColorSelecting = false;
+
 ColorPickerWidget::ColorPickerWidget(QWidget *parent)
     : QWidget(parent)
     , m_color()
@@ -42,7 +44,7 @@ void ColorPickerWidget::setUILanguage(int languageindex)
 
 void ColorPickerWidget::setColor(QColor &color)
 {
-    if (color.isValid() && (color != m_color)) {
+    if (color.isValid()) {
         m_color = color;
         // If the selected color is valid, update the label with the color name
         // and change the label's background color to the selected color
@@ -57,17 +59,29 @@ void ColorPickerWidget::onPickColor()
 {
     QKeyMapper::getInstance()->initSelectColorDialog();
 
-    // Open the color picker dialog and allow the user to choose a color
-    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(Qt::white, this);
-
-    if (color.isValid() && (color != m_color)) {
-        // If the selected color is valid, update the label with the color name
-        // and change the label's background color to the selected color
-        QPalette palette = colorLabel->palette();
-        palette.setColor(colorLabel->backgroundRole(), color);
-        colorLabel->setAutoFillBackground(true);
-        colorLabel->setPalette(palette);
-
-        emit colorChanged(color);
+    QColor defaultColor = QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+    if (m_color.isValid()) {
+        defaultColor = m_color;
     }
+
+    s_isColorSelecting = true;
+
+    // Open the color picker dialog and allow the user to choose a color
+    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this);
+
+    if (color.isValid()) {
+        m_color = color;
+    }
+    else {
+        color = m_color;
+    }
+
+    QPalette palette = colorLabel->palette();
+    palette.setColor(colorLabel->backgroundRole(), color);
+    colorLabel->setAutoFillBackground(true);
+    colorLabel->setPalette(palette);
+
+    emit colorChanged(color);
+
+    s_isColorSelecting = false;
 }

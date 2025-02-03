@@ -23,6 +23,7 @@ public:
 
     void setUILanguage(int languageindex);
     void setItemRow(int row);
+    void reShow(void);
 
 protected:
     bool event(QEvent *event) override;

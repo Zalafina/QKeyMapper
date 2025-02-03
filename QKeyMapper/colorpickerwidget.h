@@ -24,6 +24,9 @@ signals:
 private slots:
     void onPickColor();  // Slot to handle color pick button click
 
+public:
+    static bool s_isColorSelecting;
+
 private:
     QColor m_color;             // Variable to store the selected color
     QPushButton *colorButton;   // Button to trigger color picker dialog

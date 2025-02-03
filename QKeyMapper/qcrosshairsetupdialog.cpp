@@ -92,11 +92,26 @@ void QCrosshairSetupDialog::setItemRow(int row)
     m_ItemRow = row;
 }
 
+void QCrosshairSetupDialog::reShow()
+{
+    if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        if (QKeyMapper::getInstance()->isHidden() == false) {
+            if (!isVisible()) {
+                show();
+            }
+        }
+    }
+}
+
 bool QCrosshairSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            close();
+            if (ColorPickerWidget::s_isColorSelecting) {
+            }
+            else {
+                close();
+            }
         }
     }
     return QWidget::event(event);
@@ -155,6 +170,8 @@ void QCrosshairSetupDialog::onCenterColorChanged(QColor &color)
         qDebug().nospace().noquote() << "[onCenterColorSelected]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Center Color -> " << color;
 #endif
     }
+
+    // reShow();
 }
 
 void QCrosshairSetupDialog::onCrosshairColorChanged(QColor &color)
@@ -169,6 +186,8 @@ void QCrosshairSetupDialog::onCrosshairColorChanged(QColor &color)
         qDebug().nospace().noquote() << "[onCrosshairColorSelected]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Color -> " << color;
 #endif
     }
+
+    // reShow();
 }
 
 void QCrosshairSetupDialog::on_showCenterCheckBox_stateChanged(int state)
