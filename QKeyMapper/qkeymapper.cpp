@@ -2795,6 +2795,12 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
     qDebug().nospace().noquote() << "[DrawCrosshair] Show Mode = " << (showParam == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL") << ", Row Index = " << rowindex;
 #endif
 
+    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+
     // Create Graphics object
     Graphics graphics(hdc);
 
@@ -2805,33 +2811,33 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
     int centerY = (rect.bottom - rect.top) / 2;
 
     // X Offset & Y Offset
-    int x_offset = 0;
-    int y_offset = 0;
+    int x_offset = keymapdata.Crosshair_X_Offset;
+    int y_offset = keymapdata.Crosshair_Y_Offset;
 
     centerX += x_offset;
     centerY += y_offset;
 
     // Draw flags
-    bool draw_centerdot = true;
-    bool draw_top = true;
-    bool draw_bottom = true;
-    bool draw_left = true;
-    bool draw_right = true;
+    bool draw_center = keymapdata.Crosshair_ShowCenter;
+    bool draw_top = keymapdata.Crosshair_ShowTop;
+    bool draw_bottom = keymapdata.Crosshair_ShowBottom;
+    bool draw_left = keymapdata.Crosshair_ShowLeft;
+    bool draw_right = keymapdata.Crosshair_ShowRight;
 
     // Centerdot setting values
-    int centerdot_opacity = 200; // Centerdot opacity value
-    int dotRadius = 2;
-    BYTE centerdot_R = 112;
-    BYTE centerdot_G = 161;
-    BYTE centerdot_B = 255;
+    int centerdot_opacity = keymapdata.Crosshair_CenterOpacity; // Centerdot opacity value
+    int dotRadius = keymapdata.Crosshair_CenterSize;
+    BYTE centerdot_R = keymapdata.Crosshair_CenterColor.red();
+    BYTE centerdot_G = keymapdata.Crosshair_CenterColor.green();
+    BYTE centerdot_B = keymapdata.Crosshair_CenterColor.blue();
 
     // Crosshair setting values
-    int crosshair_opacity = 200; // Crosshair line opacity value
-    int lineWidth = 2;   // Line width
-    int lineLength = 30; // Line length
-    BYTE crosshair_R = 112;
-    BYTE crosshair_G = 161;
-    BYTE crosshair_B = 255;
+    int crosshair_opacity = keymapdata.Crosshair_CrosshairOpacity; // Crosshair line opacity value
+    int lineWidth = keymapdata.Crosshair_CrosshairWidth;   // Line width
+    int lineLength = keymapdata.Crosshair_CrosshairLength; // Line length
+    BYTE crosshair_R = keymapdata.Crosshair_CrosshairColor.red();
+    BYTE crosshair_G = keymapdata.Crosshair_CrosshairColor.green();
+    BYTE crosshair_B = keymapdata.Crosshair_CrosshairColor.blue();
 
     // Calculate half of the line width
     int halfLineWidth = lineWidth / 2;
@@ -2895,7 +2901,7 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
         }
     }
 
-    if (draw_centerdot) {
+    if (draw_center) {
         // Draw center dot rectangle
         Color centerDotColor(centerdot_opacity, centerdot_R, centerdot_G, centerdot_B);
         Pen centerdot_pen(centerDotColor, dotRadius * 2);
