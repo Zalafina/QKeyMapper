@@ -16,13 +16,18 @@ public:
     ~ColorPickerWidget();
 
     void setUILanguage(int languageindex);
+    void setColor(QColor &color);
+
+signals:
+    void colorChanged(QColor &color);
 
 private slots:
     void onPickColor();  // Slot to handle color pick button click
 
 private:
-    QPushButton *colorButton;  // Button to trigger color picker dialog
-    QLabel *colorLabel;        // Label to display the selected color
+    QColor m_color;             // Variable to store the selected color
+    QPushButton *colorButton;   // Button to trigger color picker dialog
+    QLabel *colorLabel;         // Label to display the selected color
 };
 
 #endif // COLORPICKERWIDGET_H

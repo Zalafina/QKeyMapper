@@ -2,9 +2,10 @@
 #include "colorpickerwidget.h"
 
 ColorPickerWidget::ColorPickerWidget(QWidget *parent)
-    : QWidget(parent),
-    colorButton(Q_NULLPTR),
-    colorLabel(Q_NULLPTR)
+    : QWidget(parent)
+    , m_color()
+    , colorButton(Q_NULLPTR)
+    , colorLabel(Q_NULLPTR)
 {
     colorLabel = new QLabel(this);
     colorButton = new QPushButton(tr("Color"), this);
@@ -39,6 +40,19 @@ void ColorPickerWidget::setUILanguage(int languageindex)
     colorButton->setText(tr("Color"));
 }
 
+void ColorPickerWidget::setColor(QColor &color)
+{
+    if (color.isValid() && (color != m_color)) {
+        m_color = color;
+        // If the selected color is valid, update the label with the color name
+        // and change the label's background color to the selected color
+        QPalette palette = colorLabel->palette();
+        palette.setColor(colorLabel->backgroundRole(), color);
+        colorLabel->setAutoFillBackground(true);
+        colorLabel->setPalette(palette);
+    }
+}
+
 void ColorPickerWidget::onPickColor()
 {
     QKeyMapper::getInstance()->initSelectColorDialog();
@@ -46,12 +60,14 @@ void ColorPickerWidget::onPickColor()
     // Open the color picker dialog and allow the user to choose a color
     QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(Qt::white, this);
 
-    if (color.isValid()) {
+    if (color.isValid() && (color != m_color)) {
         // If the selected color is valid, update the label with the color name
         // and change the label's background color to the selected color
         QPalette palette = colorLabel->palette();
         palette.setColor(colorLabel->backgroundRole(), color);
         colorLabel->setAutoFillBackground(true);
         colorLabel->setPalette(palette);
+
+        emit colorChanged(color);
     }
 }
