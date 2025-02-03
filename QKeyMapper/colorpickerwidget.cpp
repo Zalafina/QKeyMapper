@@ -59,7 +59,7 @@ void ColorPickerWidget::onPickColor()
 {
     QKeyMapper::getInstance()->initSelectColorDialog();
 
-    QColor defaultColor = QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+    QColor defaultColor = QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT));
     if (m_color.isValid()) {
         defaultColor = m_color;
     }

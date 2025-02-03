@@ -3453,7 +3453,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
         }
         if (keymapdata.Crosshair_CenterColor.isValid()) {
-            crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb));
+            crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb).remove("#"));
         }
         else {
             crosshair_centercolorList.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
@@ -3471,7 +3471,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             crosshair_centeropacityList.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
         }
         if (keymapdata.Crosshair_CrosshairColor.isValid()) {
-            crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb));
+            crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb).remove("#"));
         }
         else {
             crosshair_crosshaircolorList.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
@@ -3944,10 +3944,10 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
             for (int i = 0; i < original_keys.size(); i++) {
                 const QString &crosshair_centercolorStr = (i < crosshair_centercolorStringList.size()) ? crosshair_centercolorStringList.at(i) : CROSSHAIR_CENTERCOLOR_DEFAULT;
-                QColor crosshair_centercolor = QColor(crosshair_centercolorStr);
+                QColor crosshair_centercolor = QColor(QString("%1%2").arg("#", crosshair_centercolorStr));
                 bool isvalid = crosshair_centercolor.isValid();
                 if (!isvalid) {
-                    crosshair_centercolor = QColor(CROSSHAIR_CENTERCOLOR_DEFAULT);
+                    crosshair_centercolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CENTERCOLOR_DEFAULT));
                 }
                 crosshair_centercolorList.append(crosshair_centercolor);
             }
@@ -3974,10 +3974,10 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
             for (int i = 0; i < original_keys.size(); i++) {
                 const QString &crosshair_crosshaircolorStr = (i < crosshair_crosshaircolorStringList.size()) ? crosshair_crosshaircolorStringList.at(i) : CROSSHAIR_CROSSHAIRCOLOR_DEFAULT;
-                QColor crosshair_crosshaircolor = QColor(crosshair_crosshaircolorStr);
+                QColor crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", crosshair_crosshaircolorStr));
                 bool isvalid = crosshair_crosshaircolor.isValid();
                 if (!isvalid) {
-                    crosshair_crosshaircolor = QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+                    crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT));
                 }
                 crosshair_crosshaircolorList.append(crosshair_crosshaircolor);
             }
@@ -6097,7 +6097,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
                 }
                 if (keymapdata.Crosshair_CenterColor.isValid()) {
-                    crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb));
+                    crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb).remove("#"));
                 }
                 else {
                     crosshair_centercolorList.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
@@ -6115,7 +6115,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     crosshair_centeropacityList.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
                 }
                 if (keymapdata.Crosshair_CrosshairColor.isValid()) {
-                    crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb));
+                    crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb).remove("#"));
                 }
                 else {
                     crosshair_crosshaircolorList.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
@@ -7569,10 +7569,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                         for (int i = 0; i < original_keys.size(); i++) {
                             const QString &crosshair_centercolorStr = (i < crosshair_centercolorStringList.size()) ? crosshair_centercolorStringList.at(i) : CROSSHAIR_CENTERCOLOR_DEFAULT;
-                            QColor crosshair_centercolor = QColor(crosshair_centercolorStr);
+                            QColor crosshair_centercolor = QColor(QString("%1%2").arg("#", crosshair_centercolorStr));
                             bool isvalid = crosshair_centercolor.isValid();
                             if (!isvalid) {
-                                crosshair_centercolor = QColor(CROSSHAIR_CENTERCOLOR_DEFAULT);
+                                crosshair_centercolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CENTERCOLOR_DEFAULT));
                             }
                             crosshair_centercolorList.append(crosshair_centercolor);
                         }
@@ -7599,10 +7599,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
                         for (int i = 0; i < original_keys.size(); i++) {
                             const QString &crosshair_crosshaircolorStr = (i < crosshair_crosshaircolorStringList.size()) ? crosshair_crosshaircolorStringList.at(i) : CROSSHAIR_CROSSHAIRCOLOR_DEFAULT;
-                            QColor crosshair_crosshaircolor = QColor(crosshair_crosshaircolorStr);
+                            QColor crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", crosshair_crosshaircolorStr));
                             bool isvalid = crosshair_crosshaircolor.isValid();
                             if (!isvalid) {
-                                crosshair_crosshaircolor = QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
+                                crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT));
                             }
                             crosshair_crosshaircolorList.append(crosshair_crosshaircolor);
                         }
@@ -12843,10 +12843,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    false,                                   /* keyseqholddown bool */
                                                    REPEAT_MODE_NONE,                        /* repeat_mode int */
                                                    REPEAT_TIMES_DEFAULT,                    /* repeat_times int */
-                                                   QColor(CROSSHAIR_CENTERCOLOR_DEFAULT),   /* crosshair_centercolor QColor */
+                                                   QColor(QString("%1%2").arg("#", CROSSHAIR_CENTERCOLOR_DEFAULT)),   /* crosshair_centercolor QColor */
                                                    CROSSHAIR_CENTERSIZE_DEFAULT,            /* crosshair_centersize int */
                                                    CROSSHAIR_CENTEROPACITY_DEFAULT,         /* crosshair_centeropacity int */
-                                                   QColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT),/* crosshair_crosshaircolor QColor */
+                                                   QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)),/* crosshair_crosshaircolor QColor */
                                                    CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,        /* crosshair_crosshairwidth int */
                                                    CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,       /* crosshair_crosshairlength int */
                                                    CROSSHAIR_CROSSHAIROPACITY_DEFAULT,      /* crosshair_crosshairopacity int */
