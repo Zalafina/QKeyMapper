@@ -2801,15 +2801,16 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
 
     MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
 
-    // Create Graphics object
-    Graphics graphics(hdc);
-    graphics.SetCompositingMode(CompositingModeSourceOver);
-    graphics.SetCompositingQuality(CompositingQualityHighQuality);
-    // graphics.SetSmoothingMode(SmoothingModeAntiAlias);
-
     // Get the window width and height
     RECT rect;
     GetClientRect(hwnd, &rect);
+
+    // Create Graphics object
+    Graphics graphics(hdc);
+    // graphics.SetCompositingMode(CompositingModeSourceOver);
+    graphics.SetCompositingQuality(CompositingQualityHighQuality);
+    // graphics.SetSmoothingMode(SmoothingModeAntiAlias);
+
     int centerX = (rect.right - rect.left) / 2;
     int centerY = (rect.bottom - rect.top) / 2;
 
@@ -2974,8 +2975,8 @@ HWND QKeyMapper::createCrosshairWindow()
     );
 
     // Pixels with pure black color (RGB value 0, 0, 0) will be treated as transparent
-    SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
-    // SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
+    SetLayeredWindowAttributes(hwnd, RGB(200, 200, 200), 0, LWA_COLORKEY);
+    // SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
 
@@ -3011,13 +3012,12 @@ void QKeyMapper::destoryCrosshairWindow(HWND hwnd)
 
 void QKeyMapper::clearCrosshairWindow(HWND hwnd, HDC hdc)
 {
-#if 1
     // Get the window area
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
 
     // Create a black brush
-    HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+    HBRUSH hBrush = CreateSolidBrush(RGB(200, 200, 200));
     HGDIOBJ hOldBrush = SelectObject(hdc, hBrush);
 
     // Use the black brush to draw a rectangle to cover the previous content
@@ -3028,11 +3028,6 @@ void QKeyMapper::clearCrosshairWindow(HWND hwnd, HDC hdc)
     // Restore the original brush
     SelectObject(hdc, hOldBrush);
     DeleteObject(hBrush);
-#else
-    Graphics graphics(hdc);
-    graphics.SetCompositingMode(CompositingModeSourceCopy);
-    graphics.Clear(Color::Transparent);
-#endif
 }
 
 QPoint QKeyMapper::getMousePointFromLabelString(QString &labelstr)
