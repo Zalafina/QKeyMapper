@@ -2803,6 +2803,9 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
 
     // Create Graphics object
     Graphics graphics(hdc);
+    graphics.SetCompositingMode(CompositingModeSourceOver);
+    graphics.SetCompositingQuality(CompositingQualityHighQuality);
+    // graphics.SetSmoothingMode(SmoothingModeAntiAlias);
 
     // Get the window width and height
     RECT rect;
@@ -2972,6 +2975,7 @@ HWND QKeyMapper::createCrosshairWindow()
 
     // Pixels with pure black color (RGB value 0, 0, 0) will be treated as transparent
     SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
+    // SetLayeredWindowAttributes(hwnd, 0, 0, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_HIDE);
 
@@ -3007,6 +3011,7 @@ void QKeyMapper::destoryCrosshairWindow(HWND hwnd)
 
 void QKeyMapper::clearCrosshairWindow(HWND hwnd, HDC hdc)
 {
+#if 1
     // Get the window area
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
@@ -3023,6 +3028,11 @@ void QKeyMapper::clearCrosshairWindow(HWND hwnd, HDC hdc)
     // Restore the original brush
     SelectObject(hdc, hOldBrush);
     DeleteObject(hBrush);
+#else
+    Graphics graphics(hdc);
+    graphics.SetCompositingMode(CompositingModeSourceCopy);
+    graphics.Clear(Color::Transparent);
+#endif
 }
 
 QPoint QKeyMapper::getMousePointFromLabelString(QString &labelstr)
