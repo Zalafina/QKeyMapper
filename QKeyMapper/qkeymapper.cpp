@@ -2829,14 +2829,16 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
     bool draw_right = keymapdata.Crosshair_ShowRight;
 
     // Centerdot setting values
-    int centerdot_opacity = keymapdata.Crosshair_CenterOpacity; // Centerdot opacity value
+    // int centerdot_opacity = keymapdata.Crosshair_CenterOpacity; // Centerdot opacity value
+    int centerdot_opacity = CROSSHAIR_OPACITY_MAX; // Centerdot opacity value
     int dotRadius = keymapdata.Crosshair_CenterSize;
     BYTE centerdot_R = keymapdata.Crosshair_CenterColor.red();
     BYTE centerdot_G = keymapdata.Crosshair_CenterColor.green();
     BYTE centerdot_B = keymapdata.Crosshair_CenterColor.blue();
 
     // Crosshair setting values
-    int crosshair_opacity = keymapdata.Crosshair_CrosshairOpacity; // Crosshair line opacity value
+    // int crosshair_opacity = keymapdata.Crosshair_CrosshairOpacity; // Crosshair line opacity value
+    int crosshair_opacity = CROSSHAIR_OPACITY_MAX; // Crosshair line opacity value
     int lineWidth = keymapdata.Crosshair_CrosshairWidth;   // Line width
     int lineLength = keymapdata.Crosshair_CrosshairLength; // Line length
     BYTE crosshair_R = keymapdata.Crosshair_CrosshairColor.red();
@@ -2926,13 +2928,13 @@ LRESULT QKeyMapper::CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
         EndPaint(hwnd, &ps);
         break;
     }
-    case WM_ERASEBKGND:
-    {
-        HDC hdc = GetDC(hwnd);
-        clearCrosshairWindow(hwnd, hdc);
-        ReleaseDC(hwnd, hdc);
-        return 1;
-    }
+    // case WM_ERASEBKGND:
+    // {
+    //     HDC hdc = GetDC(hwnd);
+    //     clearCrosshairWindow(hwnd, hdc);
+    //     ReleaseDC(hwnd, hdc);
+    //     return 1;
+    // }
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -2954,7 +2956,7 @@ HWND QKeyMapper::createCrosshairWindow()
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = QKeyMapper::CrosshairWndProc;
     wc.hInstance = hInstance;
-    wc.hbrBackground = NULL;
+    wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));
     wc.lpszClassName = L"QKeyMapper_CrosshairWindow";
     RegisterClass(&wc);
 
@@ -2964,8 +2966,8 @@ HWND QKeyMapper::createCrosshairWindow()
         L"QKeyMapper_CrosshairWindow",
         NULL,
         WS_POPUP,
-        0,
-        0,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
         screenWidth,
         screenHeight,
         NULL,
@@ -2975,8 +2977,8 @@ HWND QKeyMapper::createCrosshairWindow()
     );
 
     // Pixels with pure black color (RGB value 0, 0, 0) will be treated as transparent
-    SetLayeredWindowAttributes(hwnd, RGB(200, 200, 200), 0, LWA_COLORKEY);
-    // SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+    // SetLayeredWindowAttributes(hwnd, RGB(200, 200, 200), 0, LWA_COLORKEY);
+    SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), CROSSHAIR_CROSSHAIROPACITY_DEFAULT, LWA_ALPHA | LWA_COLORKEY);
 
     ShowWindow(hwnd, SW_HIDE);
 
@@ -11783,6 +11785,11 @@ void QKeyMapper::showCrosshairStart(int rowindex, const QString &crosshair_keyst
         return;
     }
 
+    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+    MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+
     // Combine show_mode and rowindex into a single 32-bit value (high 2 bytes for show_mode, low 2 bytes for rowindex)
     ULONG_PTR show_param = (show_mode << 16) | (rowindex & 0xFFFF);
 
@@ -11805,6 +11812,8 @@ void QKeyMapper::showCrosshairStart(int rowindex, const QString &crosshair_keyst
         resizeTransparentWindow(m_CrosshairHandle, m_CrosshairWindowInitialX, m_CrosshairWindowInitialY, m_CrosshairWindowInitialWidth, m_CrosshairWindowInitialHeight);
     }
 
+    int opacity = keymapdata.Crosshair_CrosshairOpacity;
+    SetLayeredWindowAttributes(m_CrosshairHandle, RGB(0, 0, 0), opacity, LWA_ALPHA | LWA_COLORKEY);
     ShowWindow(m_CrosshairHandle, SW_SHOW);
 }
 

@@ -48,6 +48,9 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     ui->x_offsetSpinBox->setRange(CROSSHAIR_X_OFFSET_MIN, CROSSHAIR_X_OFFSET_MAX);
     ui->y_offsetSpinBox->setRange(CROSSHAIR_Y_OFFSET_MIN, CROSSHAIR_Y_OFFSET_MAX);
 
+    ui->centerOpacityLabel->setVisible(false);
+    ui->centerOpacitySpinBox->setVisible(false);
+
     QObject::connect(m_CenterColorPicker, &ColorPickerWidget::colorChanged, this, &QCrosshairSetupDialog::onCenterColorChanged);
     QObject::connect(m_CrosshairColorPicker, &ColorPickerWidget::colorChanged, this, &QCrosshairSetupDialog::onCrosshairColorChanged);
 }
