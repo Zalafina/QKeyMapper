@@ -11802,7 +11802,7 @@ void QKeyMapper::showCrosshairStart(int rowindex, const QString &crosshair_keyst
 #endif
     }
     else {
-        resizeTransparentWindow(m_CrosshairHandle, m_TransParentWindowInitialX, m_TransParentWindowInitialY, m_TransParentWindowInitialWidth, m_TransParentWindowInitialHeight);
+        resizeTransparentWindow(m_CrosshairHandle, m_CrosshairWindowInitialX, m_CrosshairWindowInitialY, m_CrosshairWindowInitialWidth, m_CrosshairWindowInitialHeight);
     }
 
     ShowWindow(m_CrosshairHandle, SW_SHOW);
