@@ -2681,13 +2681,13 @@ LRESULT QKeyMapper::MousePointsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
         EndPaint(hwnd, &ps);
         break;
     }
-    case WM_ERASEBKGND:
-    {
-        HDC hdc = GetDC(hwnd);
-        clearTransparentWindow(hwnd, hdc);
-        ReleaseDC(hwnd, hdc);
-        return 1;
-    }
+    // case WM_ERASEBKGND:
+    // {
+    //     HDC hdc = GetDC(hwnd);
+    //     clearTransparentWindow(hwnd, hdc);
+    //     ReleaseDC(hwnd, hdc);
+    //     return 1;
+    // }
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -2716,15 +2716,29 @@ HWND QKeyMapper::createTransparentWindow()
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
+    // Register window class
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = QKeyMapper::MousePointsWndProc;
     wc.hInstance = hInstance;
-    wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));
     wc.lpszClassName = L"QKeyMapper_TransparentWindow";
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST, L"QKeyMapper_TransparentWindow",
-        NULL, WS_POPUP, 0, 0, screenWidth, screenHeight, NULL, NULL, hInstance, NULL);
+    // Create layered window
+    HWND hwnd = CreateWindowEx(
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+        L"QKeyMapper_TransparentWindow",
+        NULL,
+        WS_POPUP,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        screenWidth,
+        screenHeight,
+        NULL,
+        NULL,
+        hInstance,
+        NULL
+    );
 
     // Set the opacity of the window (0 = fully transparent, 255 = fully opaque)
     BYTE opacity = 120; // 50% opacity
