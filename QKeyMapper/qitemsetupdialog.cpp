@@ -166,7 +166,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
-    ui->recordKeysButton->setText(RECORDKEYSBUTTON_STR);
+    ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
 
     if (m_KeyRecordDialog != Q_NULLPTR) {
