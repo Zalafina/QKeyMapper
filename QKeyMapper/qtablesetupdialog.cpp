@@ -35,8 +35,8 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 
         ui->tabNameLabel->setText(TABNAMELABEL_ENGLISH);
         ui->tabHotkeyLabel->setText(TABHOTKEYLABEL_ENGLISH);
-        ui->tabNameUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        // ui->tabNameUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        // ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
         ui->exportTableButton->setText(EXPORTTABLEBUTTON_ENGLISH);
         ui->importTableButton->setText(IMPORTTABLEBUTTON_ENGLISH);
         ui->removeTableButton->setText(REMOVETABLEBUTTON_ENGLISH);
@@ -46,12 +46,15 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 
         ui->tabNameLabel->setText(TABNAMELABEL_CHINESE);
         ui->tabHotkeyLabel->setText(TABHOTKEYLABEL_CHINESE);
-        ui->tabNameUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        // ui->tabNameUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        // ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
         ui->exportTableButton->setText(EXPORTTABLEBUTTON_CHINESE);
         ui->importTableButton->setText(IMPORTTABLEBUTTON_CHINESE);
         ui->removeTableButton->setText(REMOVETABLEBUTTON_CHINESE);
     }
+
+    ui->tabNameUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    ui->tabHotkeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
 }
 
 void QTableSetupDialog::resetFontSize()

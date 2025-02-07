@@ -69,33 +69,33 @@ QItemSetupDialog::~QItemSetupDialog()
 void QItemSetupDialog::setUILanguage(int languageindex)
 {
     if (LANGUAGE_ENGLISH == languageindex) {
-        setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH);
+        // setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH);
 
-        ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
-        ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
+        // ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
+        // ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
         ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_ENGLISH);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_ENGLISH);
         ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_ENGLISH);
-        ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
+        // ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_ENGLISH);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_ENGLISH);
         ui->repeatByTimesCheckBox->setText(REPEATBYTIMESCHECKBOX_ENGLISH);
-        ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
-        ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
+        // ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
+        // ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
         ui->burstpressSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
         ui->burstreleaseSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
-        ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
-        ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_ENGLISH);
-        ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_ENGLISH);
+        // ui->originalKeyLabel->setText(ORIGINALKEYLABEL_ENGLISH);
+        // ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_ENGLISH);
+        // ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_ENGLISH);
         ui->itemNoteLabel->setText(ITEMNOTELABEL_ENGLISH);
-        ui->orikeyListLabel->setText(ORIKEYLISTLABEL_ENGLISH);
-        ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_ENGLISH);
-        ui->originalKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        ui->itemNoteUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        ui->recordKeysButton->setText(RECORDKEYSBUTTON_ENGLISH);
+        // ui->orikeyListLabel->setText(ORIKEYLISTLABEL_ENGLISH);
+        // ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_ENGLISH);
+        // ui->originalKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        // ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        // ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        // ui->itemNoteUpdateButton->setText(UPDATEBUTTON_ENGLISH);
+        // ui->recordKeysButton->setText(RECORDKEYSBUTTON_ENGLISH);
 
         ui->sendTimingLabel->setText(SENDTIMINGLABEL_ENGLISH);
         ui->sendTimingComboBox->clear();
@@ -110,33 +110,33 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
     }
     else {
-        setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_CHINESE);
+        // setWindowTitle(ITEMSETUPDIALOG_WINDOWTITLE_CHINESE);
 
-        ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
-        ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
+        // ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
+        // ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
         ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
         ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_CHINESE);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_CHINESE);
         ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_CHINESE);
-        ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
+        // ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
         ui->keySeqHoldDownCheckBox->setText(KEYSEQHOLDDOWNCHECKBOX_CHINESE);
         ui->repeatByKeyCheckBox->setText(REPEATBYKEYCHECKBOX_CHINESE);
         ui->repeatByTimesCheckBox->setText(REPEATBYTIMESCHECKBOX_CHINESE);
-        ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
-        ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
+        // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
+        // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
         ui->burstpressSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
         ui->burstreleaseSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
-        ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
-        ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_CHINESE);
-        ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_CHINESE);
+        // ui->originalKeyLabel->setText(ORIGINALKEYLABEL_CHINESE);
+        // ui->mappingKeyLabel->setText(MAPPINGKEYLABEL_CHINESE);
+        // ui->mappingKey_KeyUpLabel->setText(KEYUPMAPPINGLABEL_CHINESE);
         ui->itemNoteLabel->setText(ITEMNOTELABEL_CHINESE);
-        ui->orikeyListLabel->setText(ORIKEYLISTLABEL_CHINESE);
-        ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_CHINESE);
-        ui->originalKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        ui->itemNoteUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        ui->recordKeysButton->setText(RECORDKEYSBUTTON_CHINESE);
+        // ui->orikeyListLabel->setText(ORIKEYLISTLABEL_CHINESE);
+        // ui->mapkeyListLabel->setText(MAPKEYLISTLABEL_CHINESE);
+        // ui->originalKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        // ui->mappingKeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        // ui->mappingKey_KeyUpUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        // ui->itemNoteUpdateButton->setText(UPDATEBUTTON_CHINESE);
+        // ui->recordKeysButton->setText(RECORDKEYSBUTTON_CHINESE);
 
         ui->sendTimingLabel->setText(SENDTIMINGLABEL_CHINESE);
         ui->sendTimingComboBox->clear();
@@ -151,6 +151,22 @@ void QItemSetupDialog::setUILanguage(int languageindex)
         ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
     }
 
+    setWindowTitle(tr(ITEMSETUPDIALOG_WINDOWTITLE_STR));
+    ui->burstCheckBox->setText(tr(BURSTCHECKBOX_STR));
+    ui->lockCheckBox->setText(tr(LOCKCHECKBOX_STR));
+    ui->passThroughCheckBox->setText(tr(PASSTHROUGHCHECKBOX_STR));
+    ui->burstpressLabel->setText(tr(BURSTPRESSLABEL_STR));
+    ui->burstreleaseLabel->setText(tr(BURSTRELEASE_STR));
+    ui->originalKeyLabel->setText(tr(ORIGINALKEYLABEL_STR));
+    ui->mappingKeyLabel->setText(tr(MAPPINGKEYLABEL_STR));
+    ui->mappingKey_KeyUpLabel->setText(tr(KEYUPMAPPINGLABEL_STR));
+    ui->orikeyListLabel->setText(tr(ORIKEYLISTLABEL_STR));
+    ui->mapkeyListLabel->setText(tr(MAPKEYLISTLABEL_STR));
+    ui->originalKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    ui->recordKeysButton->setText(RECORDKEYSBUTTON_STR);
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
 
     if (m_KeyRecordDialog != Q_NULLPTR) {

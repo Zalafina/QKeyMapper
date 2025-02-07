@@ -410,52 +410,52 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="32"/>
         <source>Mapping Item Setup</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping Item Setup</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="47"/>
         <source>Burst</source>
-        <translation type="unfinished"></translation>
+        <translation>Burst</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="66"/>
         <source>Lock</source>
-        <translation type="unfinished"></translation>
+        <translation>Lock</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="85"/>
         <source>PassThrough</source>
-        <translation type="unfinished"></translation>
+        <translation>PassThrough</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="117"/>
         <source>BurstPress</source>
-        <translation type="unfinished"></translation>
+        <translation>BurstPress</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="133"/>
         <source>BurstRelease</source>
-        <translation type="unfinished"></translation>
+        <translation>BurstRelease</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="175"/>
         <source>OriginalKey</source>
-        <translation type="unfinished"></translation>
+        <translation>OriginalKey</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="191"/>
         <source>MappingKey</source>
-        <translation type="unfinished"></translation>
+        <translation>MappingKey</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="207"/>
         <source>OriginalKeyList</source>
-        <translation type="unfinished"></translation>
+        <translation>OriginalKeyList</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="223"/>
         <source>MappingKeyList</source>
-        <translation type="unfinished"></translation>
+        <translation>MappingKeyList</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="242"/>
@@ -463,7 +463,7 @@
         <location filename="../qitemsetupdialog.ui" line="379"/>
         <location filename="../qitemsetupdialog.ui" line="417"/>
         <source>Update</source>
-        <translation type="unfinished"></translation>
+        <translation>Update</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="280"/>
@@ -493,7 +493,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="433"/>
         <source>KeyUpMapping</source>
-        <translation type="unfinished"></translation>
+        <translation>KeyUpMapping</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="468"/>
@@ -503,7 +503,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="487"/>
         <source>Record Keys</source>
-        <translation type="unfinished"></translation>
+        <translation>Record Keys</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="506"/>
@@ -886,7 +886,7 @@
         <location filename="../qtablesetupdialog.ui" line="47"/>
         <location filename="../qtablesetupdialog.ui" line="92"/>
         <source>Update</source>
-        <translation type="unfinished"></translation>
+        <translation>Update</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="63"/>
