@@ -73,8 +73,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
 
         // ui->burstCheckBox->setText(BURSTCHECKBOX_ENGLISH);
         // ui->lockCheckBox->setText(LOCKCHECKBOX_ENGLISH);
-        ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
-        ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_ENGLISH);
+        // ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_ENGLISH);
+        // ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_ENGLISH);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_ENGLISH);
         ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_ENGLISH);
         // ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_ENGLISH);
@@ -114,8 +114,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
 
         // ui->burstCheckBox->setText(BURSTCHECKBOX_CHINESE);
         // ui->lockCheckBox->setText(LOCKCHECKBOX_CHINESE);
-        ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
-        ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_CHINESE);
+        // ui->mappingKeyUnlockCheckBox->setText(MAPPINGKEYUNLOCKCHECKBOX_CHINESE);
+        // ui->postMappingKeyCheckBox->setText(POSTMAPPINGKEYCHECKBOX_CHINESE);
         ui->checkCombKeyOrderCheckBox->setText(CHECKCOMBKEYORDERCHECKBOX_CHINESE);
         ui->unbreakableCheckBox->setText(UNBREAKABLECHECKBOX_CHINESE);
         // ui->passThroughCheckBox->setText(PASSTHROUGHCHECKBOX_CHINESE);
@@ -154,6 +154,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     setWindowTitle(tr(ITEMSETUPDIALOG_WINDOWTITLE_STR));
     ui->burstCheckBox->setText(tr(BURSTCHECKBOX_STR));
     ui->lockCheckBox->setText(tr(LOCKCHECKBOX_STR));
+    ui->mappingKeyUnlockCheckBox->setText(tr(MAPPINGKEYUNLOCKCHECKBOX_STR));
+    ui->postMappingKeyCheckBox->setText(tr(POSTMAPPINGKEYCHECKBOX_STR));
     ui->passThroughCheckBox->setText(tr(PASSTHROUGHCHECKBOX_STR));
     ui->burstpressLabel->setText(tr(BURSTPRESSLABEL_STR));
     ui->burstreleaseLabel->setText(tr(BURSTRELEASE_STR));

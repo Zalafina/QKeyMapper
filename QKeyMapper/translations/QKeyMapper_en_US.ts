@@ -488,7 +488,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="398"/>
         <source>MappingKeyUnlock</source>
-        <translation type="unfinished"></translation>
+        <translation>MappingKeyUnlock</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="433"/>
