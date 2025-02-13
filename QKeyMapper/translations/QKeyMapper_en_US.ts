@@ -468,22 +468,22 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="280"/>
         <source>KeySeqHoldDown</source>
-        <translation type="unfinished"></translation>
+        <translation>KeySeqHoldDown</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="299"/>
         <source>RepeatByKey</source>
-        <translation type="unfinished"></translation>
+        <translation>RepeatByKey</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="318"/>
         <source>RepeatTimes</source>
-        <translation type="unfinished"></translation>
+        <translation>RepeatTimes</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="350"/>
         <source>Note</source>
-        <translation type="unfinished"></translation>
+        <translation>Note</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="398"/>
@@ -498,7 +498,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="468"/>
         <source>SendTiming</source>
-        <translation type="unfinished"></translation>
+        <translation>SendTiming</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="487"/>
@@ -508,22 +508,53 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="506"/>
         <source>CheckCombKeyOrder</source>
-        <translation type="unfinished"></translation>
+        <translation>CheckCombKeyOrder</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="525"/>
         <source>Unbreakable</source>
-        <translation type="unfinished"></translation>
+        <translation>Unbreakable</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="544"/>
         <source>PostMappingKey</source>
-        <translation type="unfinished"></translation>
+        <translation>PostMappingKey</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="563"/>
         <source>CrosshairSetup</source>
         <translation>CrosshairSetup</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="181"/>
+        <location filename="../qitemsetupdialog.cpp" line="182"/>
+        <source> ms</source>
+        <translation> ms</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="186"/>
+        <source>Normal</source>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="187"/>
+        <source>KeyDown</source>
+        <translation>KeyDown</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="188"/>
+        <source>KeyUp</source>
+        <translation>KeyUp</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="189"/>
+        <source>KeyDown+KeyUp</source>
+        <translation>KeyDown+KeyUp</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="190"/>
+        <source>Normal+KeyUp</source>
+        <translation>Normal+KeyUp</translation>
     </message>
 </context>
 <context>

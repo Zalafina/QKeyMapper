@@ -468,22 +468,22 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="280"/>
         <source>KeySeqHoldDown</source>
-        <translation type="unfinished"></translation>
+        <translation>按键序列按下保持</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="299"/>
         <source>RepeatByKey</source>
-        <translation type="unfinished"></translation>
+        <translation>按键按下时循环</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="318"/>
         <source>RepeatTimes</source>
-        <translation type="unfinished"></translation>
+        <translation>循环次数</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="350"/>
         <source>Note</source>
-        <translation type="unfinished"></translation>
+        <translation>备注</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="398"/>
@@ -498,7 +498,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="468"/>
         <source>SendTiming</source>
-        <translation type="unfinished"></translation>
+        <translation>发送时机</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="487"/>
@@ -508,22 +508,53 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="506"/>
         <source>CheckCombKeyOrder</source>
-        <translation type="unfinished"></translation>
+        <translation>检查组合键按下顺序</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="525"/>
         <source>Unbreakable</source>
-        <translation type="unfinished"></translation>
+        <translation>不可打断</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="544"/>
         <source>PostMappingKey</source>
-        <translation type="unfinished"></translation>
+        <translation>Post方式发送</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="563"/>
         <source>CrosshairSetup</source>
         <translation>十字准星设定</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="181"/>
+        <location filename="../qitemsetupdialog.cpp" line="182"/>
+        <source> ms</source>
+        <translation> 毫秒</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="186"/>
+        <source>Normal</source>
+        <translation>正常</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="187"/>
+        <source>KeyDown</source>
+        <translation>按下</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="188"/>
+        <source>KeyUp</source>
+        <translation>抬起</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="189"/>
+        <source>KeyDown+KeyUp</source>
+        <translation>按下+抬起</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="190"/>
+        <source>Normal+KeyUp</source>
+        <translation>正常+抬起</translation>
     </message>
 </context>
 <context>
