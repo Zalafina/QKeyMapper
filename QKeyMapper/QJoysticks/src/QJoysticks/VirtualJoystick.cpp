@@ -29,7 +29,7 @@ VirtualJoystick::VirtualJoystick(QObject *parent)
    m_axisRange = 1;
    m_joystickEnabled = false;
    m_joystick.blacklisted = false;
-   m_joystick.name = tr("Virtual Joystick");
+   m_joystick.name = "Virtual Joystick";
 
    /* Initialize POVs */
    m_joystick.povs.append(0);

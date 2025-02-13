@@ -10,9 +10,6 @@
     <height>140</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Dialog</string>
-  </property>
   <widget class="QLabel" name="keyRecordLabel">
    <property name="geometry">
     <rect>
@@ -23,10 +20,10 @@
     </rect>
    </property>
    <property name="text">
-    <string>Wait to start key recording, press &quot;F11&quot; to start key recording.</string>
+    <string>Wait to start key recording, press &quot;F11&quot; to start key recording</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="keyRecordLineEdit">
@@ -39,7 +36,7 @@
     </rect>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
    <property name="readOnly">
     <bool>true</bool>
@@ -55,7 +52,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>Start Record</string>

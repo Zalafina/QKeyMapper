@@ -5,23 +5,23 @@
     <name>AuthenticateDialog</name>
     <message>
         <location filename="../QSimpleUpdater/src/AuthenticateDialog.ui" line="14"/>
-        <source>Dialog</source>
-        <translation type="unfinished"></translation>
+        <source>Authenticate</source>
+        <translation>身份验证</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/AuthenticateDialog.ui" line="26"/>
         <source>Please provide the user name and password for the download location.</source>
-        <translation type="unfinished"></translation>
+        <translation>请提供下载位置的用户名和密码。</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/AuthenticateDialog.ui" line="35"/>
-        <source>&amp;User name:</source>
-        <translation type="unfinished"></translation>
+        <source>User name:</source>
+        <translation>用户名:</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/AuthenticateDialog.ui" line="48"/>
-        <source>&amp;Password:</source>
-        <translation type="unfinished"></translation>
+        <source>Password:</source>
+        <translation>密码:</translation>
     </message>
 </context>
 <context>
@@ -526,33 +526,33 @@
         <translation>十字准星设定</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="181"/>
-        <location filename="../qitemsetupdialog.cpp" line="182"/>
+        <location filename="../qitemsetupdialog.cpp" line="98"/>
+        <location filename="../qitemsetupdialog.cpp" line="99"/>
         <source> ms</source>
         <translation> 毫秒</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="186"/>
+        <location filename="../qitemsetupdialog.cpp" line="103"/>
         <source>Normal</source>
         <translation>正常</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="187"/>
+        <location filename="../qitemsetupdialog.cpp" line="104"/>
         <source>KeyDown</source>
         <translation>按下</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="188"/>
+        <location filename="../qitemsetupdialog.cpp" line="105"/>
         <source>KeyUp</source>
         <translation>抬起</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="189"/>
+        <location filename="../qitemsetupdialog.cpp" line="106"/>
         <source>KeyDown+KeyUp</source>
         <translation>按下+抬起</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="190"/>
+        <location filename="../qitemsetupdialog.cpp" line="107"/>
         <source>Normal+KeyUp</source>
         <translation>正常+抬起</translation>
     </message>
@@ -891,18 +891,40 @@
 <context>
     <name>QKeyRecord</name>
     <message>
-        <location filename="../qkeyrecord.ui" line="14"/>
-        <source>Dialog</source>
-        <translation type="unfinished"></translation>
+        <location filename="../qkeyrecord.ui" line="23"/>
+        <source>Wait to start key recording, press &quot;F11&quot; to start key recording</source>
+        <translation>等待开始按键录制, 按&quot;F11&quot;键开始按键录制</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="26"/>
-        <source>Wait to start key recording, press &quot;F11&quot; to start key recording.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qkeyrecord.ui" line="61"/>
+        <location filename="../qkeyrecord.ui" line="58"/>
+        <location filename="../qkeyrecord.cpp" line="30"/>
+        <location filename="../qkeyrecord.cpp" line="197"/>
         <source>Start Record</source>
+        <translation>开始录制</translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.cpp" line="178"/>
+        <source>Key recording started, press &quot;%1&quot; to stop key recording</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.cpp" line="181"/>
+        <source>按键录制中, 按&quot;%1&quot;键停止按键录制</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.cpp" line="185"/>
+        <source>Stop Record</source>
+        <translation>停止录制</translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.cpp" line="190"/>
+        <source>Wait to start key recording, press &quot;%1&quot; to start key recording</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.cpp" line="193"/>
+        <source>等待开始按键录制, 按&quot;%1&quot;键开始按键录制</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1007,14 +1029,6 @@
     <message>
         <location filename="../QSimpleUpdater/src/Updater.cpp" line="748"/>
         <source>未找到适合此版本的更新文件。</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>VirtualJoystick</name>
-    <message>
-        <location filename="../QJoysticks/src/QJoysticks/VirtualJoystick.cpp" line="32"/>
-        <source>Virtual Joystick</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
