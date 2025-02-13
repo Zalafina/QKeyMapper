@@ -24,13 +24,17 @@
 #include <QSettings>
 #include <QJoysticks.h>
 #include <QJoysticks/SDL_Joysticks.h>
+#ifdef VIRTUALJOYSTICK
 #include <QJoysticks/VirtualJoystick.h>
+#endif
 
 QJoysticks::QJoysticks()
 {
    /* Initialize input methods */
    m_sdlJoysticks = new SDL_Joysticks(this);
+#ifdef VIRTUALJOYSTICK
    m_virtualJoystick = new VirtualJoystick(this);
+#endif
 
    /* Configure SDL joysticks */
    connect(sdlJoysticks(), &SDL_Joysticks::POVEvent, this, &QJoysticks::POVEvent);
@@ -40,11 +44,13 @@ QJoysticks::QJoysticks()
    connect(sdlJoysticks(), &SDL_Joysticks::joystickAdded, this, &QJoysticks::onJoystickAdded);
    connect(sdlJoysticks(), &SDL_Joysticks::joystickRemoved, this, &QJoysticks::onJoystickRemoved);
 
+#ifdef VIRTUALJOYSTICK
    /* Configure virtual joysticks */
    connect(virtualJoystick(), &VirtualJoystick::povEvent, this, &QJoysticks::POVEvent);
    connect(virtualJoystick(), &VirtualJoystick::axisEvent, this, &QJoysticks::axisEvent);
    connect(virtualJoystick(), &VirtualJoystick::buttonEvent, this, &QJoysticks::buttonEvent);
    connect(virtualJoystick(), &VirtualJoystick::enabledChanged, this, &QJoysticks::updateInterfaces);
+#endif
 
    /* React to own signals to create QML signals */
    connect(this, &QJoysticks::POVEvent, this, &QJoysticks::onPOVEvent);
@@ -61,7 +67,9 @@ QJoysticks::~QJoysticks()
 {
    // delete m_settings;
    delete m_sdlJoysticks;
+#ifdef VIRTUALJOYSTICK
    delete m_virtualJoystick;
+#endif
 }
 
 /**
@@ -222,6 +230,7 @@ SDL_Joysticks *QJoysticks::sdlJoysticks() const
    return m_sdlJoysticks;
 }
 
+#ifdef VIRTUALJOYSTICK
 /**
  * Returns a pointer to the virtual joystick system.
  * This can be used if you need to get more information regarding the virtual
@@ -234,6 +243,7 @@ VirtualJoystick *QJoysticks::virtualJoystick() const
 {
    return m_virtualJoystick;
 }
+#endif
 
 /**
  * Returns a pointer to the device at the given \a index.
@@ -348,6 +358,7 @@ void QJoysticks::updateInterfaces()
             addInputDevice(joystick);
       }
 
+#ifdef VIRTUALJOYSTICK
       /* Register the virtual joystick (if its not blacklisted) */
       if (virtualJoystick()->joystickEnabled())
       {
@@ -372,6 +383,7 @@ void QJoysticks::updateInterfaces()
             virtualJoystick()->setJoystickID(inputDevices().count() - 1);
          }
       }
+#endif
 
       /* Register blacklisted SDL joysticks */
       foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
@@ -393,6 +405,7 @@ void QJoysticks::updateInterfaces()
             addInputDevice(joystick);
       }
 
+#ifdef VIRTUALJOYSTICK
       /* Register the virtual joystick (if its blacklisted) */
       if (virtualJoystick()->joystickEnabled())
       {
@@ -417,6 +430,7 @@ void QJoysticks::updateInterfaces()
             virtualJoystick()->setJoystickID(inputDevices().count() - 1);
          }
       }
+#endif
    }
 
    /* Sort normally */
@@ -441,6 +455,7 @@ void QJoysticks::updateInterfaces()
          }
       }
 
+#ifdef VIRTUALJOYSTICK
       /* Register virtual joystick */
       if (virtualJoystick()->joystickEnabled())
       {
@@ -462,11 +477,13 @@ void QJoysticks::updateInterfaces()
          addInputDevice(joystick);
          virtualJoystick()->setJoystickID(inputDevices().count() - 1);
       }
+#endif
    }
 
    emit countChanged();
 }
 
+#ifdef VIRTUALJOYSTICK
 /**
  * Changes the axis value range of the virtual joystick.
  *
@@ -490,6 +507,7 @@ void QJoysticks::setVirtualJoystickAxisSensibility(qreal sensibility)
 {
    virtualJoystick()->setAxisSensibility(sensibility);
 }
+#endif
 
 /**
  * Removes all the registered joysticks and emits appropriate signals.

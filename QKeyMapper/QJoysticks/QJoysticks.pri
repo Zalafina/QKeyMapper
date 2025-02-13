@@ -25,20 +25,30 @@ QT += gui
 QT += core
 QT += widgets
 
+# DEFINES += VIRTUALJOYSTICK
+
 INCLUDEPATH += $$PWD/src
 
 HEADERS += \
     $$PWD/src/QJoysticks.h \
     $$PWD/src/QJoysticks/JoysticksCommon.h \
     $$PWD/src/QJoysticks/SDL_Joysticks.h \
-    $$PWD/src/QJoysticks/VirtualJoystick.h \
     $$PWD/src/QJoysticks/Android_Joystick.h
 
 SOURCES += \
     $$PWD/src/QJoysticks.cpp \
     $$PWD/src/QJoysticks/SDL_Joysticks.cpp \
-    $$PWD/src/QJoysticks/VirtualJoystick.cpp \
     $$PWD/src/QJoysticks/Android_Joystick.cpp
+
+contains( DEFINES, VIRTUALJOYSTICK ) {
+    message("VIRTUALJOYSTICK Defined!")
+
+    HEADERS += \
+        $$PWD/src/QJoysticks/VirtualJoystick.h
+
+    SOURCES += \
+        $$PWD/src/QJoysticks/VirtualJoystick.cpp
+}
 
 RESOURCES += \
     $$PWD/etc/resources/qjoysticks-res.qrc

@@ -88,7 +88,9 @@ public:
    Q_INVOKABLE QString getName(const int index);
 
    SDL_Joysticks *sdlJoysticks() const;
+#ifdef VIRTUALJOYSTICK
    VirtualJoystick *virtualJoystick() const;
+#endif
    QJoystickDevice *getInputDevice(const int index);
    QList<QJoystickDevice *> inputDevices() const;
 
@@ -96,9 +98,11 @@ public slots:
    void onJoystickAdded(QJoystickDevice *joystick);
    void onJoystickRemoved(const QJoystickDevice joystick);
    void updateInterfaces();
+#ifdef VIRTUALJOYSTICK
    void setVirtualJoystickRange(qreal range);
    void setVirtualJoystickEnabled(bool enabled);
    void setVirtualJoystickAxisSensibility(qreal sensibility);
+#endif
    void setSortJoysticksByBlacklistState(bool sort);
    void setBlacklisted(int index, bool blacklisted);
 
@@ -118,7 +122,9 @@ private:
 
    // QSettings *m_settings;
    SDL_Joysticks *m_sdlJoysticks;
+#ifdef VIRTUALJOYSTICK
    VirtualJoystick *m_virtualJoystick;
+#endif
 
    QList<QJoystickDevice *> m_devices;
 };
