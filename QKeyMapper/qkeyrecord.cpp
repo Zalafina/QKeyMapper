@@ -27,6 +27,7 @@ QKeyRecord::~QKeyRecord()
 
 void QKeyRecord::setUILanguage(int languageindex)
 {
+    Q_UNUSED(languageindex);
     ui->recordStartStopButton->setText(tr("Start Record"));
 }
 
@@ -171,27 +172,14 @@ void QKeyRecord::keyPressEvent(QKeyEvent *event)
 
 void QKeyRecord::setKeyRecordLabel(KeyRecordState record_state)
 {
-    int languageindex = QKeyMapper::getLanguageIndex();
     if (KEYRECORD_STATE_START == record_state) {
-        QString keyrecord_label;
-        if (LANGUAGE_ENGLISH == languageindex) {
-            keyrecord_label = QString(tr("Key recording started, press \"%1\" to stop key recording")).arg(KEY_RECORD_STOP_STR);
-        }
-        else {
-            keyrecord_label = QString(tr("按键录制中, 按\"%1\"键停止按键录制")).arg(KEY_RECORD_STOP_STR);
-        }
+        QString keyrecord_label = QString(tr("Key recording started, press \"%1\" to stop key recording")).arg(KEY_RECORD_STOP_STR);
         ui->keyRecordLabel->setText(keyrecord_label);
 
         ui->recordStartStopButton->setText(tr("Stop Record"));
     }
     else {
-        QString keyrecord_label;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            keyrecord_label = QString(tr("Wait to start key recording, press \"%1\" to start key recording")).arg(KEY_RECORD_START_STR);
-        }
-        else {
-            keyrecord_label = QString(tr("等待开始按键录制, 按\"%1\"键开始按键录制")).arg(KEY_RECORD_START_STR);
-        }
+        QString keyrecord_label = QString(tr("Wait to start key recording, press \"%1\" to start key recording")).arg(KEY_RECORD_START_STR);
         ui->keyRecordLabel->setText(keyrecord_label);
 
         ui->recordStartStopButton->setText(tr("Start Record"));

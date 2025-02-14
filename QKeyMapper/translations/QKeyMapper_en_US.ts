@@ -897,35 +897,25 @@
     </message>
     <message>
         <location filename="../qkeyrecord.ui" line="58"/>
-        <location filename="../qkeyrecord.cpp" line="30"/>
-        <location filename="../qkeyrecord.cpp" line="197"/>
+        <location filename="../qkeyrecord.cpp" line="31"/>
+        <location filename="../qkeyrecord.cpp" line="185"/>
         <source>Start Record</source>
         <translation>Start Record</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="178"/>
+        <location filename="../qkeyrecord.cpp" line="176"/>
         <source>Key recording started, press &quot;%1&quot; to stop key recording</source>
-        <translation type="unfinished"></translation>
+        <translation>Key recording started, press &quot;%1&quot; to stop key recording</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="181"/>
-        <source>按键录制中, 按&quot;%1&quot;键停止按键录制</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qkeyrecord.cpp" line="185"/>
+        <location filename="../qkeyrecord.cpp" line="179"/>
         <source>Stop Record</source>
         <translation>Stop Record</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="190"/>
+        <location filename="../qkeyrecord.cpp" line="182"/>
         <source>Wait to start key recording, press &quot;%1&quot; to start key recording</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qkeyrecord.cpp" line="193"/>
-        <source>等待开始按键录制, 按&quot;%1&quot;键开始按键录制</source>
-        <translation type="unfinished"></translation>
+        <translation>Wait to start key recording, press &quot;%1&quot; to start key recording</translation>
     </message>
 </context>
 <context>
