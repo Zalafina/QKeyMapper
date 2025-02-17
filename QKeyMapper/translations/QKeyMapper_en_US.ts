@@ -381,28 +381,82 @@
     <name>QInputDeviceListWindow</name>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="17"/>
-        <source>DeviceList</source>
-        <translation type="unfinished"></translation>
+        <source>Input Device List</source>
+        <translation>Input Device List</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="32"/>
         <source>OK</source>
-        <translation type="unfinished"></translation>
+        <translation>OK</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="54"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>Cancel</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="90"/>
         <source>Keyboard</source>
-        <translation type="unfinished"></translation>
+        <translation>Keyboard</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="106"/>
         <source>Mouse</source>
-        <translation type="unfinished"></translation>
+        <translation>Mouse</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="34"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="44"/>
+        <source>No.</source>
+        <translation>No.</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="35"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="45"/>
+        <source>Device Description</source>
+        <translation>Device Description</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="36"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="46"/>
+        <source>HardwareID</source>
+        <translation>HardwareID</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="37"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="47"/>
+        <source>VendorID</source>
+        <translation>VendorID</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="38"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="48"/>
+        <source>ProductID</source>
+        <translation>ProductID</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="39"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="49"/>
+        <source>Vendor</source>
+        <translation>Vendor</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="40"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="50"/>
+        <source>Product</source>
+        <translation>Product</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="41"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="51"/>
+        <source>Manufacturer</source>
+        <translation>Manufacturer</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="42"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="52"/>
+        <source>Disable</source>
+        <translation>Disable</translation>
     </message>
 </context>
 <context>
@@ -647,12 +701,12 @@
     <message>
         <location filename="../qkeymapper.ui" line="498"/>
         <source>Keyboard</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Keyboard</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="514"/>
         <source>Mouse</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Mouse</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="569"/>
@@ -923,7 +977,7 @@
     <message>
         <location filename="../qtablesetupdialog.ui" line="32"/>
         <source>Mapping Table Setup</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping Table Setup</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="47"/>
@@ -933,28 +987,28 @@
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="63"/>
-        <source>Hotkey</source>
-        <translation type="unfinished"></translation>
+        <source>TabHotkey</source>
+        <translation>TabHotkey</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="108"/>
         <source>TabName</source>
-        <translation type="unfinished"></translation>
+        <translation>TabName</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="137"/>
         <source>ExportTable</source>
-        <translation type="unfinished"></translation>
+        <translation>ExportTable</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="156"/>
         <source>ImportTable</source>
-        <translation type="unfinished"></translation>
+        <translation>ImportTable</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="175"/>
         <source>RemoveTable</source>
-        <translation type="unfinished"></translation>
+        <translation>RemoveTable</translation>
     </message>
 </context>
 <context>

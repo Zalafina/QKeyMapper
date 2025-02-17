@@ -629,6 +629,9 @@ extern const char* VIRTUAL_GAMEPAD_DS4;
 extern const char* NO_INPUTDEVICE;
 
 /* Translate const Strings */
+/* Common */
+extern const char *UPDATEBUTTON_STR;
+/* QItemSetupDialog */
 extern const char *ITEMSETUPDIALOG_WINDOWTITLE_STR;
 extern const char *BURSTCHECKBOX_STR;
 extern const char *LOCKCHECKBOX_STR;
@@ -648,10 +651,22 @@ extern const char *KEYUPMAPPINGLABEL_STR;
 extern const char *ITEMNOTELABEL_STR;
 extern const char *ORIKEYLISTLABEL_STR;
 extern const char *MAPKEYLISTLABEL_STR;
-extern const char *UPDATEBUTTON_STR;
 extern const char *RECORDKEYSBUTTON_STR;
 extern const char *CROSSHAIRSETUPBUTTON_STR;
 extern const char *SENDTIMINGLABEL_STR;
+/* QInputDeviceListWindow */
+extern const char *DEVICELIST_WINDOWTITLE_STR;
+extern const char *CONFIRMBUTTON_STR;
+extern const char *CANCELBUTTON_STR;
+extern const char *KEYBOARDLABEL_STR;
+extern const char *MOUSELABEL_STR;
+/* QTableSetupDialog */
+extern const char *TABLESETUPDIALOG_WINDOWTITLE_STR;
+extern const char *TABNAMELABEL_STR;
+extern const char *TABHOTKEYLABEL_STR;
+extern const char *EXPORTTABLEBUTTON_STR;
+extern const char *IMPORTTABLEBUTTON_STR;
+extern const char *REMOVETABLEBUTTON_STR;
 
 /* Chinese const Strings */
 extern const char* REFRESHBUTTON_CHINESE;
@@ -755,11 +770,11 @@ extern const char *KEYUPACTIONCHECKBOX_CHINESE;
 // extern const char *REPEATBYKEYCHECKBOX_CHINESE;
 // extern const char *REPEATBYTIMESCHECKBOX_CHINESE;
 // extern const char *UPDATEBUTTON_CHINESE;
-extern const char *TABNAMELABEL_CHINESE;
-extern const char *TABHOTKEYLABEL_CHINESE;
-extern const char *EXPORTTABLEBUTTON_CHINESE;
-extern const char *IMPORTTABLEBUTTON_CHINESE;
-extern const char *REMOVETABLEBUTTON_CHINESE;
+// extern const char *TABNAMELABEL_CHINESE;
+// extern const char *TABHOTKEYLABEL_CHINESE;
+// extern const char *EXPORTTABLEBUTTON_CHINESE;
+// extern const char *IMPORTTABLEBUTTON_CHINESE;
+// extern const char *REMOVETABLEBUTTON_CHINESE;
 extern const char *SETTINGTAB_GENERAL_CHINESE;
 extern const char *SETTINGTAB_MAPPING_CHINESE;
 extern const char *SETTINGTAB_VGAMEPAD_CHINESE;
@@ -881,11 +896,11 @@ extern const char *KEYUPACTIONCHECKBOX_ENGLISH;
 // extern const char *REPEATBYKEYCHECKBOX_ENGLISH;
 // extern const char *REPEATBYTIMESCHECKBOX_ENGLISH;
 // extern const char *UPDATEBUTTON_ENGLISH;
-extern const char *TABNAMELABEL_ENGLISH;
-extern const char *TABHOTKEYLABEL_ENGLISH;
-extern const char *EXPORTTABLEBUTTON_ENGLISH;
-extern const char *IMPORTTABLEBUTTON_ENGLISH;
-extern const char *REMOVETABLEBUTTON_ENGLISH;
+// extern const char *TABNAMELABEL_ENGLISH;
+// extern const char *TABHOTKEYLABEL_ENGLISH;
+// extern const char *EXPORTTABLEBUTTON_ENGLISH;
+// extern const char *IMPORTTABLEBUTTON_ENGLISH;
+// extern const char *REMOVETABLEBUTTON_ENGLISH;
 extern const char *SETTINGTAB_GENERAL_ENGLISH;
 extern const char *SETTINGTAB_MAPPING_ENGLISH;
 extern const char *SETTINGTAB_VGAMEPAD_ENGLISH;
@@ -923,46 +938,46 @@ extern const int DEVICE_TABLE_DISABLE_COLUMN;
 extern const int KEYBOARD_TABLE_COLUMN_COUNT;
 extern const int MOUSE_TABLE_COLUMN_COUNT;
 
-extern const char *DEVICELIST_WINDOWTITLE_ENGLISH;
-extern const char *DEVICELIST_WINDOWTITLE_CHINESE;
+// extern const char *DEVICELIST_WINDOWTITLE_ENGLISH;
+// extern const char *DEVICELIST_WINDOWTITLE_CHINESE;
 
 // extern const char *ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH;
 // extern const char *ITEMSETUPDIALOG_WINDOWTITLE_CHINESE;
 
-extern const char *TABLESETUPDIALOG_WINDOWTITLE_ENGLISH;
-extern const char *TABLESETUPDIALOG_WINDOWTITLE_CHINESE;
+// extern const char *TABLESETUPDIALOG_WINDOWTITLE_ENGLISH;
+// extern const char *TABLESETUPDIALOG_WINDOWTITLE_CHINESE;
 
-extern const char *KEYBOARDLABEL_ENGLISH;
-extern const char *MOUSELABEL_ENGLISH;
+// extern const char *KEYBOARDLABEL_ENGLISH;
+// extern const char *MOUSELABEL_ENGLISH;
 
-extern const char *KEYBOARDLABEL_CHINESE;
-extern const char *MOUSELABEL_CHINESE;
+// extern const char *KEYBOARDLABEL_CHINESE;
+// extern const char *MOUSELABEL_CHINESE;
 
-extern const char *CONFIRMBUTTON_ENGLISH;
-extern const char *CANCELBUTTON_ENGLISH;
+// extern const char *CONFIRMBUTTON_ENGLISH;
+// extern const char *CANCELBUTTON_ENGLISH;
 
-extern const char *CONFIRMBUTTON_CHINESE;
-extern const char *CANCELBUTTON_CHINESE;
+// extern const char *CONFIRMBUTTON_CHINESE;
+// extern const char *CANCELBUTTON_CHINESE;
 
-extern const char *DEVICE_TABLE_COL0_ENGLISH;
-extern const char *DEVICE_TABLE_COL1_ENGLISH;
-extern const char *DEVICE_TABLE_COL2_ENGLISH;
-extern const char *DEVICE_TABLE_COL3_ENGLISH;
-extern const char *DEVICE_TABLE_COL4_ENGLISH;
-extern const char *DEVICE_TABLE_COL5_ENGLISH;
-extern const char *DEVICE_TABLE_COL6_ENGLISH;
-extern const char *DEVICE_TABLE_COL7_ENGLISH;
-extern const char *DEVICE_TABLE_COL8_ENGLISH;
+// extern const char *DEVICE_TABLE_COL0_ENGLISH;
+// extern const char *DEVICE_TABLE_COL1_ENGLISH;
+// extern const char *DEVICE_TABLE_COL2_ENGLISH;
+// extern const char *DEVICE_TABLE_COL3_ENGLISH;
+// extern const char *DEVICE_TABLE_COL4_ENGLISH;
+// extern const char *DEVICE_TABLE_COL5_ENGLISH;
+// extern const char *DEVICE_TABLE_COL6_ENGLISH;
+// extern const char *DEVICE_TABLE_COL7_ENGLISH;
+// extern const char *DEVICE_TABLE_COL8_ENGLISH;
 
-extern const char *DEVICE_TABLE_COL0_CHINESE;
-extern const char *DEVICE_TABLE_COL1_CHINESE;
-extern const char *DEVICE_TABLE_COL2_CHINESE;
-extern const char *DEVICE_TABLE_COL3_CHINESE;
-extern const char *DEVICE_TABLE_COL4_CHINESE;
-extern const char *DEVICE_TABLE_COL5_CHINESE;
-extern const char *DEVICE_TABLE_COL6_CHINESE;
-extern const char *DEVICE_TABLE_COL7_CHINESE;
-extern const char *DEVICE_TABLE_COL8_CHINESE;
+// extern const char *DEVICE_TABLE_COL0_CHINESE;
+// extern const char *DEVICE_TABLE_COL1_CHINESE;
+// extern const char *DEVICE_TABLE_COL2_CHINESE;
+// extern const char *DEVICE_TABLE_COL3_CHINESE;
+// extern const char *DEVICE_TABLE_COL4_CHINESE;
+// extern const char *DEVICE_TABLE_COL5_CHINESE;
+// extern const char *DEVICE_TABLE_COL6_CHINESE;
+// extern const char *DEVICE_TABLE_COL7_CHINESE;
+// extern const char *DEVICE_TABLE_COL8_CHINESE;
 
 void generateVirtualInputRandomValues();
 

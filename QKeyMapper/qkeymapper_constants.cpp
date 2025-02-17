@@ -714,6 +714,9 @@ const char *VIRTUAL_GAMEPAD_DS4  = "DS4";
 const char *NO_INPUTDEVICE  = "No InputDevice";
 
 /* Translate const Strings */
+/* Common */
+const char *UPDATEBUTTON_STR = "Update";
+/* QItemSetupDialog */
 const char *ITEMSETUPDIALOG_WINDOWTITLE_STR = "Mapping Item Setup";
 const char *BURSTCHECKBOX_STR = "Burst";
 const char *LOCKCHECKBOX_STR = "Lock";
@@ -733,10 +736,22 @@ const char *KEYUPMAPPINGLABEL_STR = "KeyUpMapping";
 const char *ITEMNOTELABEL_STR = "Note";
 const char *ORIKEYLISTLABEL_STR = "OriginalKeyList";
 const char *MAPKEYLISTLABEL_STR = "MappingKeyList";
-const char *UPDATEBUTTON_STR = "Update";
 const char *RECORDKEYSBUTTON_STR = "Record Keys";
 const char *CROSSHAIRSETUPBUTTON_STR = "CrosshairSetup";
 const char *SENDTIMINGLABEL_STR = "SendTiming";
+/* QInputDeviceListWindow */
+const char *DEVICELIST_WINDOWTITLE_STR = "Input Device List";
+const char *CONFIRMBUTTON_STR = "OK";
+const char *CANCELBUTTON_STR = "Cancel";
+const char *KEYBOARDLABEL_STR = "Keyboard";
+const char *MOUSELABEL_STR = "Mouse";
+/* QTableSetupDialog */
+const char *TABLESETUPDIALOG_WINDOWTITLE_STR = "Mapping Table Setup";
+const char *TABNAMELABEL_STR = "TabName";
+const char *TABHOTKEYLABEL_STR = "TabHotkey";
+const char *EXPORTTABLEBUTTON_STR = "ExportTable";
+const char *IMPORTTABLEBUTTON_STR = "ImportTable";
+const char *REMOVETABLEBUTTON_STR = "RemoveTable";
 
 /* Chinese const Strings */
 const char *REFRESHBUTTON_CHINESE = "刷新";
@@ -845,11 +860,11 @@ const char *KEYUPACTIONCHECKBOX_CHINESE = "按键抬起时动作";
 // const char *REPEATBYKEYCHECKBOX_CHINESE = "按键按下时循环";
 // const char *REPEATBYTIMESCHECKBOX_CHINESE = "循环次数";
 // const char *UPDATEBUTTON_CHINESE = "更新";
-const char *TABNAMELABEL_CHINESE = "映射表名";
-const char *TABHOTKEYLABEL_CHINESE = "快捷键";
-const char *EXPORTTABLEBUTTON_CHINESE = "导出映射表";
-const char *IMPORTTABLEBUTTON_CHINESE = "导入映射表";
-const char *REMOVETABLEBUTTON_CHINESE = "删除映射表";
+// const char *TABNAMELABEL_CHINESE = "映射表名";
+// const char *TABHOTKEYLABEL_CHINESE = "快捷键";
+// const char *EXPORTTABLEBUTTON_CHINESE = "导出映射表";
+// const char *IMPORTTABLEBUTTON_CHINESE = "导入映射表";
+// const char *REMOVETABLEBUTTON_CHINESE = "删除映射表";
 const char *SETTINGTAB_GENERAL_CHINESE = "通用";
 const char *SETTINGTAB_MAPPING_CHINESE = "映射设定";
 const char *SETTINGTAB_VGAMEPAD_CHINESE = "虚拟游戏手柄";
@@ -976,11 +991,11 @@ const char *KEYUPACTIONCHECKBOX_ENGLISH = "KeyUpAction";
 // const char *REPEATBYKEYCHECKBOX_ENGLISH = "RepeatByKey";
 // const char *REPEATBYTIMESCHECKBOX_ENGLISH = "RepeatTimes";
 // const char *UPDATEBUTTON_ENGLISH = "Update";
-const char *TABNAMELABEL_ENGLISH = "TabName";
-const char *TABHOTKEYLABEL_ENGLISH = "TabHotkey";
-const char *EXPORTTABLEBUTTON_ENGLISH = "ExportTable";
-const char *IMPORTTABLEBUTTON_ENGLISH = "ImportTable";
-const char *REMOVETABLEBUTTON_ENGLISH = "RemoveTable";
+// const char *TABNAMELABEL_ENGLISH = "TabName";
+// const char *TABHOTKEYLABEL_ENGLISH = "TabHotkey";
+// const char *EXPORTTABLEBUTTON_ENGLISH = "ExportTable";
+// const char *IMPORTTABLEBUTTON_ENGLISH = "ImportTable";
+// const char *REMOVETABLEBUTTON_ENGLISH = "RemoveTable";
 const char *SETTINGTAB_GENERAL_ENGLISH = "General";
 const char *SETTINGTAB_MAPPING_ENGLISH = "Mapping";
 const char *SETTINGTAB_VGAMEPAD_ENGLISH = "V-Gamepad";
@@ -1018,46 +1033,46 @@ const int DEVICE_TABLE_DISABLE_COLUMN        = 8;
 const int KEYBOARD_TABLE_COLUMN_COUNT    = 9;
 const int MOUSE_TABLE_COLUMN_COUNT       = 9;
 
-const char *DEVICELIST_WINDOWTITLE_ENGLISH = "Input Device List";
-const char *DEVICELIST_WINDOWTITLE_CHINESE = "输入设备列表";
+// const char *DEVICELIST_WINDOWTITLE_ENGLISH = "Input Device List";
+// const char *DEVICELIST_WINDOWTITLE_CHINESE = "输入设备列表";
 
 // const char *ITEMSETUPDIALOG_WINDOWTITLE_ENGLISH = "Mapping Item Setup";
 // const char *ITEMSETUPDIALOG_WINDOWTITLE_CHINESE = "映射项设定";
 
-const char *TABLESETUPDIALOG_WINDOWTITLE_ENGLISH = "Mapping Table Setup";
-const char *TABLESETUPDIALOG_WINDOWTITLE_CHINESE = "映射表设定";
+// const char *TABLESETUPDIALOG_WINDOWTITLE_ENGLISH = "Mapping Table Setup";
+// const char *TABLESETUPDIALOG_WINDOWTITLE_CHINESE = "映射表设定";
 
-const char *KEYBOARDLABEL_ENGLISH    = "Keyboard";
-const char *MOUSELABEL_ENGLISH       = "Mouse";
+// const char *KEYBOARDLABEL_ENGLISH    = "Keyboard";
+// const char *MOUSELABEL_ENGLISH       = "Mouse";
 
-const char *KEYBOARDLABEL_CHINESE    = "键盘";
-const char *MOUSELABEL_CHINESE       = "鼠标";
+// const char *KEYBOARDLABEL_CHINESE    = "键盘";
+// const char *MOUSELABEL_CHINESE       = "鼠标";
 
-const char *CONFIRMBUTTON_ENGLISH    = "OK";
-const char *CANCELBUTTON_ENGLISH     = "Cancel";
+// const char *CONFIRMBUTTON_ENGLISH    = "OK";
+// const char *CANCELBUTTON_ENGLISH     = "Cancel";
 
-const char *CONFIRMBUTTON_CHINESE    = "确认";
-const char *CANCELBUTTON_CHINESE     = "取消";
+// const char *CONFIRMBUTTON_CHINESE    = "确认";
+// const char *CANCELBUTTON_CHINESE     = "取消";
 
-const char *DEVICE_TABLE_COL0_ENGLISH = "No.";
-const char *DEVICE_TABLE_COL1_ENGLISH = "Device Description";
-const char *DEVICE_TABLE_COL2_ENGLISH = "HardwareID";
-const char *DEVICE_TABLE_COL3_ENGLISH = "VendorID";
-const char *DEVICE_TABLE_COL4_ENGLISH = "ProductID";
-const char *DEVICE_TABLE_COL5_ENGLISH = "Vendor";
-const char *DEVICE_TABLE_COL6_ENGLISH = "Product";
-const char *DEVICE_TABLE_COL7_ENGLISH = "Manufacturer";
-const char *DEVICE_TABLE_COL8_ENGLISH = "Disable";
+// const char *DEVICE_TABLE_COL0_ENGLISH = "No.";
+// const char *DEVICE_TABLE_COL1_ENGLISH = "Device Description";
+// const char *DEVICE_TABLE_COL2_ENGLISH = "HardwareID";
+// const char *DEVICE_TABLE_COL3_ENGLISH = "VendorID";
+// const char *DEVICE_TABLE_COL4_ENGLISH = "ProductID";
+// const char *DEVICE_TABLE_COL5_ENGLISH = "Vendor";
+// const char *DEVICE_TABLE_COL6_ENGLISH = "Product";
+// const char *DEVICE_TABLE_COL7_ENGLISH = "Manufacturer";
+// const char *DEVICE_TABLE_COL8_ENGLISH = "Disable";
 
-const char *DEVICE_TABLE_COL0_CHINESE = "No.";
-const char *DEVICE_TABLE_COL1_CHINESE = "设备描述";
-const char *DEVICE_TABLE_COL2_CHINESE = "硬件ID";
-const char *DEVICE_TABLE_COL3_CHINESE = "VendorID";
-const char *DEVICE_TABLE_COL4_CHINESE = "ProductID";
-const char *DEVICE_TABLE_COL5_CHINESE = "厂商";
-const char *DEVICE_TABLE_COL6_CHINESE = "产品名";
-const char *DEVICE_TABLE_COL7_CHINESE = "制造商";
-const char *DEVICE_TABLE_COL8_CHINESE = "禁用";
+// const char *DEVICE_TABLE_COL0_CHINESE = "No.";
+// const char *DEVICE_TABLE_COL1_CHINESE = "设备描述";
+// const char *DEVICE_TABLE_COL2_CHINESE = "硬件ID";
+// const char *DEVICE_TABLE_COL3_CHINESE = "VendorID";
+// const char *DEVICE_TABLE_COL4_CHINESE = "ProductID";
+// const char *DEVICE_TABLE_COL5_CHINESE = "厂商";
+// const char *DEVICE_TABLE_COL6_CHINESE = "产品名";
+// const char *DEVICE_TABLE_COL7_CHINESE = "制造商";
+// const char *DEVICE_TABLE_COL8_CHINESE = "禁用";
 
 ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues) {
     ULONG_PTR newValue;

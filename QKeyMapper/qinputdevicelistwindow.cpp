@@ -23,64 +23,33 @@ QInputDeviceListWindow::~QInputDeviceListWindow()
 
 void QInputDeviceListWindow::setUILanguage(int languageindex)
 {
-    if (LANGUAGE_ENGLISH == languageindex) {
-        setWindowTitle(DEVICELIST_WINDOWTITLE_ENGLISH);
+    Q_UNUSED(languageindex);
 
-        ui->confirmButton->setText(CONFIRMBUTTON_ENGLISH);
-        ui->cancelButton->setText(CANCELBUTTON_ENGLISH);
+    setWindowTitle(tr(DEVICELIST_WINDOWTITLE_STR));
+    ui->confirmButton->setText(tr(CONFIRMBUTTON_STR));
+    ui->cancelButton->setText(tr(CANCELBUTTON_STR));
+    ui->keyboardLabel->setText(tr(KEYBOARDLABEL_STR));
+    ui->mouseLabel->setText(tr(MOUSELABEL_STR));
 
-        ui->keyboardLabel->setText(KEYBOARDLABEL_ENGLISH);
-        ui->mouseLabel->setText(MOUSELABEL_ENGLISH);
+    ui->keyboardDeviceTable->setHorizontalHeaderLabels(QStringList()    << tr("No.")
+                                                                        << tr("Device Description")
+                                                                        << tr("HardwareID")
+                                                                        << tr("VendorID")
+                                                                        << tr("ProductID")
+                                                                        << tr("Vendor")
+                                                                        << tr("Product")
+                                                                        << tr("Manufacturer")
+                                                                        << tr("Disable") );
 
-        ui->keyboardDeviceTable->setHorizontalHeaderLabels(QStringList() << DEVICE_TABLE_COL0_ENGLISH
-                                                                         << DEVICE_TABLE_COL1_ENGLISH
-                                                                         << DEVICE_TABLE_COL2_ENGLISH
-                                                                         << DEVICE_TABLE_COL3_ENGLISH
-                                                                         << DEVICE_TABLE_COL4_ENGLISH
-                                                                         << DEVICE_TABLE_COL5_ENGLISH
-                                                                         << DEVICE_TABLE_COL6_ENGLISH
-                                                                         << DEVICE_TABLE_COL7_ENGLISH
-                                                                         << DEVICE_TABLE_COL8_ENGLISH );
-
-        ui->mouseDeviceTable->setHorizontalHeaderLabels(QStringList()    << DEVICE_TABLE_COL0_ENGLISH
-                                                                         << DEVICE_TABLE_COL1_ENGLISH
-                                                                         << DEVICE_TABLE_COL2_ENGLISH
-                                                                         << DEVICE_TABLE_COL3_ENGLISH
-                                                                         << DEVICE_TABLE_COL4_ENGLISH
-                                                                         << DEVICE_TABLE_COL5_ENGLISH
-                                                                         << DEVICE_TABLE_COL6_ENGLISH
-                                                                         << DEVICE_TABLE_COL7_ENGLISH
-                                                                         << DEVICE_TABLE_COL8_ENGLISH );
-    }
-    else {
-        setWindowTitle(DEVICELIST_WINDOWTITLE_CHINESE);
-
-        ui->confirmButton->setText(CONFIRMBUTTON_CHINESE);
-        ui->cancelButton->setText(CANCELBUTTON_CHINESE);
-
-        ui->keyboardLabel->setText(KEYBOARDLABEL_CHINESE);
-        ui->mouseLabel->setText(MOUSELABEL_CHINESE);
-
-        ui->keyboardDeviceTable->setHorizontalHeaderLabels(QStringList() << DEVICE_TABLE_COL0_CHINESE
-                                                                         << DEVICE_TABLE_COL1_CHINESE
-                                                                         << DEVICE_TABLE_COL2_CHINESE
-                                                                         << DEVICE_TABLE_COL3_CHINESE
-                                                                         << DEVICE_TABLE_COL4_CHINESE
-                                                                         << DEVICE_TABLE_COL5_CHINESE
-                                                                         << DEVICE_TABLE_COL6_CHINESE
-                                                                         << DEVICE_TABLE_COL7_CHINESE
-                                                                         << DEVICE_TABLE_COL8_CHINESE );
-
-        ui->mouseDeviceTable->setHorizontalHeaderLabels(QStringList()    << DEVICE_TABLE_COL0_CHINESE
-                                                                         << DEVICE_TABLE_COL1_CHINESE
-                                                                         << DEVICE_TABLE_COL2_CHINESE
-                                                                         << DEVICE_TABLE_COL3_CHINESE
-                                                                         << DEVICE_TABLE_COL4_CHINESE
-                                                                         << DEVICE_TABLE_COL5_CHINESE
-                                                                         << DEVICE_TABLE_COL6_CHINESE
-                                                                         << DEVICE_TABLE_COL7_CHINESE
-                                                                         << DEVICE_TABLE_COL8_CHINESE );
-    }
+    ui->mouseDeviceTable->setHorizontalHeaderLabels(QStringList()       << tr("No.")
+                                                                        << tr("Device Description")
+                                                                        << tr("HardwareID")
+                                                                        << tr("VendorID")
+                                                                        << tr("ProductID")
+                                                                        << tr("Vendor")
+                                                                        << tr("Product")
+                                                                        << tr("Manufacturer")
+                                                                        << tr("Disable") );
 }
 
 void QInputDeviceListWindow::resetFontSize()

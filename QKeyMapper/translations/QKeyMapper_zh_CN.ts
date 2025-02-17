@@ -381,28 +381,82 @@
     <name>QInputDeviceListWindow</name>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="17"/>
-        <source>DeviceList</source>
-        <translation type="unfinished"></translation>
+        <source>Input Device List</source>
+        <translation>输入设备列表</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="32"/>
         <source>OK</source>
-        <translation type="unfinished"></translation>
+        <translation>确认</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="54"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>取消</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="90"/>
         <source>Keyboard</source>
-        <translation type="unfinished"></translation>
+        <translation>键盘</translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.ui" line="106"/>
         <source>Mouse</source>
-        <translation type="unfinished"></translation>
+        <translation>鼠标</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="34"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="44"/>
+        <source>No.</source>
+        <translation>No.</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="35"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="45"/>
+        <source>Device Description</source>
+        <translation>设备描述</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="36"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="46"/>
+        <source>HardwareID</source>
+        <translation>硬件ID</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="37"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="47"/>
+        <source>VendorID</source>
+        <translation>VendorID</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="38"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="48"/>
+        <source>ProductID</source>
+        <translation>ProductID</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="39"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="49"/>
+        <source>Vendor</source>
+        <translation>厂商</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="40"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="50"/>
+        <source>Product</source>
+        <translation>产品名</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="41"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="51"/>
+        <source>Manufacturer</source>
+        <translation>制造商</translation>
+    </message>
+    <message>
+        <location filename="../qinputdevicelistwindow.cpp" line="42"/>
+        <location filename="../qinputdevicelistwindow.cpp" line="52"/>
+        <source>Disable</source>
+        <translation>禁用</translation>
     </message>
 </context>
 <context>
@@ -647,12 +701,12 @@
     <message>
         <location filename="../qkeymapper.ui" line="498"/>
         <source>Keyboard</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">键盘</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="514"/>
         <source>Mouse</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">鼠标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="569"/>
@@ -923,7 +977,7 @@
     <message>
         <location filename="../qtablesetupdialog.ui" line="32"/>
         <source>Mapping Table Setup</source>
-        <translation type="unfinished"></translation>
+        <translation>映射表设定</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="47"/>
@@ -933,28 +987,28 @@
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="63"/>
-        <source>Hotkey</source>
-        <translation type="unfinished"></translation>
+        <source>TabHotkey</source>
+        <translation>快捷键</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="108"/>
         <source>TabName</source>
-        <translation type="unfinished"></translation>
+        <translation>映射表名</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="137"/>
         <source>ExportTable</source>
-        <translation type="unfinished"></translation>
+        <translation>导出映射表</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="156"/>
         <source>ImportTable</source>
-        <translation type="unfinished"></translation>
+        <translation>导入映射表</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="175"/>
         <source>RemoveTable</source>
-        <translation type="unfinished"></translation>
+        <translation>删除映射表</translation>
     </message>
 </context>
 <context>

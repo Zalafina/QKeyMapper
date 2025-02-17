@@ -60,7 +60,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Hotkey</string>
+    <string>TabHotkey</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -162,9 +162,9 @@
   <widget class="QPushButton" name="removeTableButton">
    <property name="geometry">
     <rect>
-     <x>410</x>
+     <x>390</x>
      <y>90</y>
-     <width>71</width>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
