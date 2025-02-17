@@ -30,28 +30,7 @@ QTableSetupDialog::~QTableSetupDialog()
 
 void QTableSetupDialog::setUILanguage(int languageindex)
 {
-    if (LANGUAGE_ENGLISH == languageindex) {
-        // setWindowTitle(TABLESETUPDIALOG_WINDOWTITLE_ENGLISH);
-
-        // ui->tabNameLabel->setText(TABNAMELABEL_ENGLISH);
-        // ui->tabHotkeyLabel->setText(TABHOTKEYLABEL_ENGLISH);
-        // ui->tabNameUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        // ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_ENGLISH);
-        // ui->exportTableButton->setText(EXPORTTABLEBUTTON_ENGLISH);
-        // ui->importTableButton->setText(IMPORTTABLEBUTTON_ENGLISH);
-        // ui->removeTableButton->setText(REMOVETABLEBUTTON_ENGLISH);
-    }
-    else {
-        // setWindowTitle(TABLESETUPDIALOG_WINDOWTITLE_CHINESE);
-
-        // ui->tabNameLabel->setText(TABNAMELABEL_CHINESE);
-        // ui->tabHotkeyLabel->setText(TABHOTKEYLABEL_CHINESE);
-        // ui->tabNameUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        // ui->tabHotkeyUpdateButton->setText(UPDATEBUTTON_CHINESE);
-        // ui->exportTableButton->setText(EXPORTTABLEBUTTON_CHINESE);
-        // ui->importTableButton->setText(IMPORTTABLEBUTTON_CHINESE);
-        // ui->removeTableButton->setText(REMOVETABLEBUTTON_CHINESE);
-    }
+    Q_UNUSED(languageindex);
 
     setWindowTitle(tr(TABLESETUPDIALOG_WINDOWTITLE_STR));
     ui->tabNameLabel->setText(tr(TABNAMELABEL_STR));
