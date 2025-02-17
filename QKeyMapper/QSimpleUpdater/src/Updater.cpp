@@ -405,6 +405,7 @@ void Updater::setGeometryWithParentWidget(QWidget *parent)
     }
 }
 
+#if 0
 /**
  * Called when the download of the update definitions file is finished.
  */
@@ -465,6 +466,7 @@ void Updater::onReply(QNetworkReply *reply)
     setUpdateState(update_state);
     emit checkingFinished(url());
 }
+#endif
 
 /* QKeyMapper customize onRely function */
 void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
@@ -479,7 +481,7 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
         qDebug() << "[Updater::onReplyForQKeyMapper] Redirect to :" << redirect.toString();
 #endif
         setUrl(redirect.toString());
-        setUpdateState(QSimpleUpdater::UPDATE_REQUEST_FAILED);
+        setUpdateStateForQKeyMapper(QSimpleUpdater::UPDATE_REQUEST_FAILED);
         reply->deleteLater();
         checkForUpdates();
         return;
@@ -597,75 +599,75 @@ void Updater::onReplyForQKeyMapper(QNetworkReply *reply)
  * Prompts the user based on the value of the \a available parameter and the
  * settings of this instance of the \c Updater class.
  */
-void Updater::setUpdateState(const QSimpleUpdater::UpdateState update_state)
-{
-   m_updateState = update_state;
+// void Updater::setUpdateState(const QSimpleUpdater::UpdateState update_state)
+// {
+//    m_updateState = update_state;
 
-   QMessageBox box;
-   box.setTextFormat(Qt::RichText);
-   box.setIcon(QMessageBox::Information);
+//    QMessageBox box;
+//    box.setTextFormat(Qt::RichText);
+//    box.setIcon(QMessageBox::Information);
 
-   if (updateState() && (notifyOnUpdate() || notifyOnFinish()))
-   {
-      QString text = tr("Would you like to download the update now?");
-      if (m_mandatoryUpdate)
-      {
-         text = tr("Would you like to download the update now?<br />This is a mandatory update, exiting now will close "
-                   "the application.");
-      }
-      text += "<br/><br/>";
-      if (!m_changelog.isEmpty())
-         text += tr("<strong>Change log:</strong><br/>%1").arg(m_changelog);
+//    if (updateState() && (notifyOnUpdate() || notifyOnFinish()))
+//    {
+//       QString text = tr("Would you like to download the update now?");
+//       if (m_mandatoryUpdate)
+//       {
+//          text = tr("Would you like to download the update now?<br />This is a mandatory update, exiting now will close "
+//                    "the application.");
+//       }
+//       text += "<br/><br/>";
+//       if (!m_changelog.isEmpty())
+//          text += tr("<strong>Change log:</strong><br/>%1").arg(m_changelog);
 
-      QString title
-          = "<h3>" + tr("Version %1 of %2 has been released!").arg(latestVersion()).arg(moduleName()) + "</h3>";
+//       QString title
+//           = "<h3>" + tr("Version %1 of %2 has been released!").arg(latestVersion()).arg(moduleName()) + "</h3>";
 
-      box.setText(title);
-      box.setInformativeText(text);
-      box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
-      box.setDefaultButton(QMessageBox::Yes);
+//       box.setText(title);
+//       box.setInformativeText(text);
+//       box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
+//       box.setDefaultButton(QMessageBox::Yes);
 
-      if (box.exec() == QMessageBox::Yes)
-      {
-         if (!openUrl().isEmpty())
-            QDesktopServices::openUrl(QUrl(openUrl()));
+//       if (box.exec() == QMessageBox::Yes)
+//       {
+//          if (!openUrl().isEmpty())
+//             QDesktopServices::openUrl(QUrl(openUrl()));
 
-         else if (downloaderEnabled())
-         {
-            m_downloader.setUrlId(url());
-            m_downloader.setFileName(downloadUrl().split("/").last());
-            m_downloader.setMandatoryUpdate(m_mandatoryUpdate);
-            auto url = QUrl(downloadUrl());
-            url.setUserName(m_downloadUserName);
-            url.setPassword(m_downloadPassword);
-            m_downloader.startDownload(url);
-         }
+//          else if (downloaderEnabled())
+//          {
+//             m_downloader.setUrlId(url());
+//             m_downloader.setFileName(downloadUrl().split("/").last());
+//             m_downloader.setMandatoryUpdate(m_mandatoryUpdate);
+//             auto url = QUrl(downloadUrl());
+//             url.setUserName(m_downloadUserName);
+//             url.setPassword(m_downloadPassword);
+//             m_downloader.startDownload(url);
+//          }
 
-         else
-            QDesktopServices::openUrl(QUrl(downloadUrl()));
-      }
-      else
-      {
-         if (m_mandatoryUpdate)
-         {
-            QApplication::quit();
-         }
-      }
-   }
+//          else
+//             QDesktopServices::openUrl(QUrl(downloadUrl()));
+//       }
+//       else
+//       {
+//          if (m_mandatoryUpdate)
+//          {
+//             QApplication::quit();
+//          }
+//       }
+//    }
 
-   else if (notifyOnFinish())
-   {
-      box.setStandardButtons(QMessageBox::Close);
-      box.setInformativeText(tr("No updates are available for the moment"));
-      box.setText("<h3>"
-                  + tr("Congratulations! You are running the "
-                       "latest version of %1")
-                        .arg(moduleName())
-                  + "</h3>");
+//    else if (notifyOnFinish())
+//    {
+//       box.setStandardButtons(QMessageBox::Close);
+//       box.setInformativeText(tr("No updates are available for the moment"));
+//       box.setText("<h3>"
+//                   + tr("Congratulations! You are running the "
+//                        "latest version of %1")
+//                         .arg(moduleName())
+//                   + "</h3>");
 
-      box.exec();
-   }
-}
+//       box.exec();
+//    }
+// }
 
 void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState update_state)
 {
@@ -678,19 +680,8 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
 
     if (updateState() == QSimpleUpdater::UPDATE_ISAVAILABLE && (notifyOnUpdate() || notifyOnFinish()))
     {
-        QString text;
-        QString title;
-
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            text = tr("Would you like to download the update now?");
-            text += "<br/><br/>";
-            title = "<h3>" + tr("Version %1 of %2 has been released!").arg(latestVersion()).arg(moduleName()) + "</h3>";
-        }
-        else { /* CHINESE */
-            text = tr("您想立即下载更新吗？");
-            text += "<br/><br/>";
-            title = "<h3>" + tr("版本 %1 的 %2 已发布！").arg(latestVersion()).arg(moduleName()) + "</h3>";
-        }
+        QString text = tr("Would you like to download the update now?") + "<br/><br/>";
+        QString title = "<h3>" + tr("Version %1 of %2 has been released!").arg(latestVersion(), moduleName()) + "</h3>";
 
         box.setText(title);
         box.setInformativeText(text);
@@ -732,30 +723,14 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
 
         if (updateState() == QSimpleUpdater::UPDATE_REQUEST_FAILED) {
             box.setIcon(QMessageBox::Warning);
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                box.setText(tr("Failed to check for updates. Please try again later."));
-            }
-            else { /* CHINESE */
-                box.setText(tr("检查更新失败，请稍后再试。"));
-            }
+            box.setText(tr("Failed to check for updates. Please try again later."));
         }
         else if (updateState() == QSimpleUpdater::UPDATE_NO_MATCHED) {
             box.setIcon(QMessageBox::Warning);
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                box.setText(tr("No suitable update files found for this version."));
-            }
-            else { /* CHINESE */
-                box.setText(tr("未找到适合此版本的更新文件。"));
-            }
+            box.setText(tr("No suitable update files found for this version."));
         }
         else {
-            QString message;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                message = QString("<html><head/><body><p align=\"center\">You are running the latest version of %1</p><p align=\"center\">%2 %3</p></body></html>").arg(moduleName(), moduleVersion(), platformKey());
-            }
-            else { /* CHINESE */
-                message = QString("<html><head/><body><p align=\"center\">您当前已正在使用最新版本的 %1</p><p align=\"center\">%2 %3</p></body></html>").arg(moduleName(), moduleVersion(), platformKey());
-            }
+            QString message = tr("<html><head/><body><p align=\"center\">You are running the latest version of %1</p><p align=\"center\">%2 %3</p></body></html>").arg(moduleName(), moduleVersion(), platformKey());
             box.setText(message);
         }
 

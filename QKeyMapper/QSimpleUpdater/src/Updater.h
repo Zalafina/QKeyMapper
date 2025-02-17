@@ -86,9 +86,9 @@ public slots:
    void setGeometryWithParentWidget(QWidget *parent);
 
 private slots:
-   void onReply(QNetworkReply *reply);
+   // void onReply(QNetworkReply *reply);
    void onReplyForQKeyMapper(QNetworkReply *reply);
-   void setUpdateState(const QSimpleUpdater::UpdateState update_state);
+   // void setUpdateState(const QSimpleUpdater::UpdateState update_state);
    void setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState update_state);
 
 private:

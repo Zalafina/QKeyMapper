@@ -1014,66 +1014,29 @@
 <context>
     <name>Updater</name>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="610"/>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="685"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="683"/>
         <source>Would you like to download the update now?</source>
-        <translation type="unfinished"></translation>
+        <translation>Would you like to download the update now?</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="613"/>
-        <source>Would you like to download the update now?&lt;br /&gt;This is a mandatory update, exiting now will close the application.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="618"/>
-        <source>&lt;strong&gt;Change log:&lt;/strong&gt;&lt;br/&gt;%1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="621"/>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="687"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="684"/>
         <source>Version %1 of %2 has been released!</source>
-        <translation type="unfinished"></translation>
+        <translation>Version %1 of %2 has been released!</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="659"/>
-        <source>No updates are available for the moment</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="661"/>
-        <source>Congratulations! You are running the latest version of %1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="690"/>
-        <source>您想立即下载更新吗？</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="692"/>
-        <source>版本 %1 的 %2 已发布！</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="736"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="737"/>
         <source>Failed to check for updates. Please try again later.</source>
-        <translation type="unfinished"></translation>
+        <translation>Failed to check for updates. Please try again later.</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="739"/>
-        <source>检查更新失败，请稍后再试。</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="745"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="747"/>
         <source>No suitable update files found for this version.</source>
-        <translation type="unfinished"></translation>
+        <translation>No suitable update files found for this version.</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="748"/>
-        <source>未找到适合此版本的更新文件。</source>
-        <translation type="unfinished"></translation>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="756"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
 </context>
 </TS>

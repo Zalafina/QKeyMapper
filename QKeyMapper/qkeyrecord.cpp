@@ -173,13 +173,13 @@ void QKeyRecord::keyPressEvent(QKeyEvent *event)
 void QKeyRecord::setKeyRecordLabel(KeyRecordState record_state)
 {
     if (KEYRECORD_STATE_START == record_state) {
-        QString keyrecord_label = QString(tr("Key recording started, press \"%1\" to stop key recording")).arg(KEY_RECORD_STOP_STR);
+        QString keyrecord_label = tr("Key recording started, press \"%1\" to stop key recording").arg(KEY_RECORD_STOP_STR);
         ui->keyRecordLabel->setText(keyrecord_label);
 
         ui->recordStartStopButton->setText(tr("Stop Record"));
     }
     else {
-        QString keyrecord_label = QString(tr("Wait to start key recording, press \"%1\" to start key recording")).arg(KEY_RECORD_START_STR);
+        QString keyrecord_label = tr("Wait to start key recording, press \"%1\" to start key recording").arg(KEY_RECORD_START_STR);
         ui->keyRecordLabel->setText(keyrecord_label);
 
         ui->recordStartStopButton->setText(tr("Start Record"));
