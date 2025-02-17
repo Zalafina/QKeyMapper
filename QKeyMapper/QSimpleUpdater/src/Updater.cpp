@@ -688,15 +688,6 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
         box.setStandardButtons(QMessageBox::No | QMessageBox::Yes);
         box.setDefaultButton(QMessageBox::Yes);
 
-        // if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        //     box.button(QMessageBox::Yes)->setText(tr("Yes"));
-        //     box.button(QMessageBox::No)->setText(tr("No"));
-        // }
-        // else {
-        //     box.button(QMessageBox::Yes)->setText(tr("是"));
-        //     box.button(QMessageBox::No)->setText(tr("否"));
-        // }
-
         if (box.exec() == QMessageBox::Yes)
         {
             if (!openUrl().isEmpty())
@@ -733,13 +724,6 @@ void Updater::setUpdateStateForQKeyMapper(const QSimpleUpdater::UpdateState upda
             QString message = tr("<html><head/><body><p align=\"center\">You are running the latest version of %1</p><p align=\"center\">%2 %3</p></body></html>").arg(moduleName(), moduleVersion(), platformKey());
             box.setText(message);
         }
-
-        // if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        //     box.button(QMessageBox::Close)->setText(tr("Close"));
-        // }
-        // else {
-        //     box.button(QMessageBox::Close)->setText(tr("关闭"));
-        // }
 
         box.exec();
     }

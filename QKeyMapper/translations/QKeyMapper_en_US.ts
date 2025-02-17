@@ -37,249 +37,110 @@
     <name>Downloader</name>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="23"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="339"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="376"/>
         <source>Updater</source>
-        <translation type="unfinished"></translation>
+        <translation>Updater</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="90"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="127"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="464"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="126"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="442"/>
         <source>Downloading updates</source>
-        <translation type="unfinished"></translation>
+        <translation>Downloading updates</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="113"/>
         <source>Time remaining: 0 minutes</source>
-        <translation type="unfinished"></translation>
+        <translation>Time remaining: 0 minutes</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="154"/>
         <source>Open</source>
-        <translation type="unfinished"></translation>
+        <translation>Open</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="161"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="126"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="125"/>
         <source>Stop</source>
-        <translation type="unfinished"></translation>
+        <translation>Stop</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="128"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="601"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="127"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="542"/>
         <source>Time remaining</source>
-        <translation type="unfinished"></translation>
+        <translation>Time remaining</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="128"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="127"/>
         <source>unknown</source>
-        <translation type="unfinished"></translation>
+        <translation>unknown</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="131"/>
-        <source>停止</source>
-        <translation type="unfinished"></translation>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="221"/>
+        <source>Update download failed. Please check your network connection and try again.</source>
+        <translation>Update download failed. Please check your network connection and try again.</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="132"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="468"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="521"/>
-        <source>正在下载更新</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="133"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="522"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="604"/>
-        <source>剩余时间</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="133"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="522"/>
-        <source>未知</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="273"/>
-        <source>Error</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="273"/>
-        <source>Cannot find downloaded update!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="291"/>
-        <source>Close</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="292"/>
-        <source>Download complete!</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="293"/>
-        <source>The installer will open separately</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="300"/>
-        <source>Click &quot;OK&quot; to begin installing the update</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="302"/>
-        <source>In order to install the update, you may need to quit the application.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="306"/>
-        <source>In order to install the update, you may need to quit the application. This is a mandatory update, exiting now will close the application.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="325"/>
-        <source>Click the &quot;Open&quot; button to apply the update</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="343"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="383"/>
-        <source>Are you sure you want to cancel the download?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="346"/>
-        <source>Are you sure you want to cancel the download? This is a mandatory update, exiting now will close the application</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="384"/>
-        <source>Yes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="385"/>
-        <source>No</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="388"/>
-        <source>您确定要取消下载吗？</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="389"/>
-        <source>是</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="390"/>
-        <source>否</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="446"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="455"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="425"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="434"/>
         <source>%1 bytes</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 bytes</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="449"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="458"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="428"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="437"/>
         <source>%1 KB</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 KB</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="452"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="461"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="431"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="440"/>
         <source>%1 MB</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 MB</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="464"/>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="468"/>
-        <source>/</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="517"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="488"/>
         <source>Downloading Updates</source>
-        <translation type="unfinished"></translation>
+        <translation>Downloading Updates</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="518"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="489"/>
         <source>Time Remaining</source>
-        <translation type="unfinished"></translation>
+        <translation>Time Remaining</translation>
+    </message>
+    <message>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="489"/>
+        <source>Unknown</source>
+        <translation>Unknown</translation>
+    </message>
+    <message>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="516"/>
+        <source>about %1 hours</source>
+        <translation>about %1 hours</translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="518"/>
-        <source>Unknown</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="551"/>
-        <source>about %1 hours</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="553"/>
         <source>about one hour</source>
-        <translation type="unfinished"></translation>
+        <translation>about one hour</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="557"/>
-        <source>大约 %1 小时</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="559"/>
-        <source>大约 1 小时</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="570"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="527"/>
         <source>%1 minutes</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 minutes</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="572"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="529"/>
         <source>1 minute</source>
-        <translation type="unfinished"></translation>
+        <translation>1 minute</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="576"/>
-        <source>%1 分钟</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="578"/>
-        <source>1 分钟</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="588"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="537"/>
         <source>%1 seconds</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 seconds</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="590"/>
+        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="539"/>
         <source>1 second</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="594"/>
-        <source>%1 秒</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../QSimpleUpdater/src/Downloader.cpp" line="596"/>
-        <source>1 秒</source>
-        <translation type="unfinished"></translation>
+        <translation>1 second</translation>
     </message>
 </context>
 <context>
@@ -1024,17 +885,17 @@
         <translation>Version %1 of %2 has been released!</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="737"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="717"/>
         <source>Failed to check for updates. Please try again later.</source>
         <translation>Failed to check for updates. Please try again later.</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="747"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="721"/>
         <source>No suitable update files found for this version.</source>
         <translation>No suitable update files found for this version.</translation>
     </message>
     <message>
-        <location filename="../QSimpleUpdater/src/Updater.cpp" line="756"/>
+        <location filename="../QSimpleUpdater/src/Updater.cpp" line="724"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>

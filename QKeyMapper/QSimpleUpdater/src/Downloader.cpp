@@ -72,7 +72,7 @@ Downloader::Downloader(QWidget *parent)
    m_ui->openButton->setVisible(false);
    // connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownload()));
    connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownloadForQKeyMapper()));
-   connect(m_ui->openButton, SIGNAL(clicked()), this, SLOT(installUpdate()));
+   // connect(m_ui->openButton, SIGNAL(clicked()), this, SLOT(installUpdate()));
 
    connect(&m_manager, &QNetworkAccessManager::authenticationRequired, this, &Downloader::authenticate);
 
@@ -122,16 +122,9 @@ void Downloader::startDownload(const QUrl &url)
    /* Reset UI */
    m_ui->progressBar->setValue(0);
 
-   if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-       m_ui->stopButton->setText(tr("Stop"));
-       m_ui->downloadLabel->setText(tr("Downloading updates"));
-       m_ui->timeLabel->setText(tr("Time remaining") + ": " + tr("unknown"));
-   }
-   else {
-       m_ui->stopButton->setText(tr("停止"));
-       m_ui->downloadLabel->setText(tr("正在下载更新"));
-       m_ui->timeLabel->setText(tr("剩余时间") + ": " + tr("未知"));
-   }
+   m_ui->stopButton->setText(tr("Stop"));
+   m_ui->downloadLabel->setText(tr("Downloading updates"));
+   m_ui->timeLabel->setText(tr("Time remaining") + ": " + tr("unknown"));
 
    /* Configure the network request */
    QNetworkRequest request(url);
@@ -225,12 +218,7 @@ void Downloader::finished()
 #endif
         }
         else {
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                QMessageBox::warning(this, "Updater", "Update download failed. Please check your network connection and try again.");
-            }
-            else {
-                QMessageBox::warning(this, "Updater", "更新下载失败，请检查网络连接后重试。");
-            }
+            QMessageBox::warning(this, "Updater", tr("Update download failed. Please check your network connection and try again."));
         }
         hide();
         return;
@@ -263,16 +251,16 @@ void Downloader::finished()
  * \note If the downloaded file is not found, then the function will alert the
  *       user about the error.
  */
-void Downloader::openDownload()
-{
-   if (!m_fileName.isEmpty())
-      QDesktopServices::openUrl(QUrl::fromLocalFile(m_downloadDir.filePath(m_fileName)));
+// void Downloader::openDownload()
+// {
+//    if (!m_fileName.isEmpty())
+//       QDesktopServices::openUrl(QUrl::fromLocalFile(m_downloadDir.filePath(m_fileName)));
 
-   else
-   {
-      QMessageBox::critical(this, tr("Error"), tr("Cannot find downloaded update!"), QMessageBox::Close);
-   }
-}
+//    else
+//    {
+//       QMessageBox::critical(this, tr("Error"), tr("Cannot find downloaded update!"), QMessageBox::Close);
+//    }
+// }
 
 /**
  * Instructs the OS to open the downloaded file.
@@ -282,88 +270,88 @@ void Downloader::openDownload()
  *       signals fired by the \c QSimpleUpdater to install the update with your
  *       own implementations/code.
  */
-void Downloader::installUpdate()
-{
-   if (useCustomInstallProcedures())
-      return;
+// void Downloader::installUpdate()
+// {
+//    if (useCustomInstallProcedures())
+//       return;
 
-   /* Update labels */
-   m_ui->stopButton->setText(tr("Close"));
-   m_ui->downloadLabel->setText(tr("Download complete!"));
-   m_ui->timeLabel->setText(tr("The installer will open separately") + "...");
+//    /* Update labels */
+//    m_ui->stopButton->setText(tr("Close"));
+//    m_ui->downloadLabel->setText(tr("Download complete!"));
+//    m_ui->timeLabel->setText(tr("The installer will open separately") + "...");
 
-   /* Ask the user to install the download */
-   QMessageBox box;
-   box.setIcon(QMessageBox::Question);
-   box.setDefaultButton(QMessageBox::Ok);
-   box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-   box.setInformativeText(tr("Click \"OK\" to begin installing the update"));
+//    /* Ask the user to install the download */
+//    QMessageBox box;
+//    box.setIcon(QMessageBox::Question);
+//    box.setDefaultButton(QMessageBox::Ok);
+//    box.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+//    box.setInformativeText(tr("Click \"OK\" to begin installing the update"));
 
-   QString text = tr("In order to install the update, you may need to "
-                     "quit the application.");
+//    QString text = tr("In order to install the update, you may need to "
+//                      "quit the application.");
 
-   if (m_mandatoryUpdate)
-      text = tr("In order to install the update, you may need to "
-                "quit the application. This is a mandatory update, exiting now will close the application.");
+//    if (m_mandatoryUpdate)
+//       text = tr("In order to install the update, you may need to "
+//                 "quit the application. This is a mandatory update, exiting now will close the application.");
 
-   box.setText("<h3>" + text + "</h3>");
+//    box.setText("<h3>" + text + "</h3>");
 
-   /* User wants to install the download */
-   if (box.exec() == QMessageBox::Ok)
-   {
-      if (!useCustomInstallProcedures())
-         openDownload();
-   }
-   /* Wait */
-   else
-   {
-      if (m_mandatoryUpdate)
-         QApplication::quit();
+//    /* User wants to install the download */
+//    if (box.exec() == QMessageBox::Ok)
+//    {
+//       if (!useCustomInstallProcedures())
+//          openDownload();
+//    }
+//    /* Wait */
+//    else
+//    {
+//       if (m_mandatoryUpdate)
+//          QApplication::quit();
 
-      m_ui->openButton->setEnabled(true);
-      m_ui->openButton->setVisible(true);
-      m_ui->timeLabel->setText(tr("Click the \"Open\" button to "
-                                  "apply the update"));
-   }
-}
+//       m_ui->openButton->setEnabled(true);
+//       m_ui->openButton->setVisible(true);
+//       m_ui->timeLabel->setText(tr("Click the \"Open\" button to "
+//                                   "apply the update"));
+//    }
+// }
 
 /**
  * Prompts the user if he/she wants to cancel the download and cancels the
  * download if the user agrees to do that.
  */
-void Downloader::cancelDownload()
-{
-   if (!m_reply->isFinished())
-   {
-      QMessageBox box(QKeyMapper::getInstance());
-      box.setWindowTitle(tr("Updater"));
-      box.setIcon(QMessageBox::Question);
-      box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+// void Downloader::cancelDownload()
+// {
+//    if (!m_reply->isFinished())
+//    {
+//       QMessageBox box(QKeyMapper::getInstance());
+//       box.setWindowTitle(tr("Updater"));
+//       box.setIcon(QMessageBox::Question);
+//       box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 
-      QString text = tr("Are you sure you want to cancel the download?");
-      if (m_mandatoryUpdate)
-      {
-         text = tr("Are you sure you want to cancel the download? This is a mandatory update, exiting now will close "
-                   "the application");
-      }
-      box.setText(text);
+//       QString text = tr("Are you sure you want to cancel the download?");
+//       if (m_mandatoryUpdate)
+//       {
+//          text = tr("Are you sure you want to cancel the download? This is a mandatory update, exiting now will close "
+//                    "the application");
+//       }
+//       box.setText(text);
 
-      if (box.exec() == QMessageBox::Yes)
-      {
-         hide();
-         m_reply->abort();
-         if (m_mandatoryUpdate)
-            QApplication::quit();
-      }
-   }
-   else
-   {
-      if (m_mandatoryUpdate)
-         QApplication::quit();
+//       if (box.exec() == QMessageBox::Yes)
+//       {
+//          hide();
+//          m_reply->abort();
+//          if (m_mandatoryUpdate)
+//             QApplication::quit();
+//       }
+//    }
+//    else
+//    {
+//       if (m_mandatoryUpdate)
+//          QApplication::quit();
 
-      hide();
-   }
-}
+//       hide();
+//    }
+// }
 
 void Downloader::cancelDownloadForQKeyMapper()
 {
@@ -371,36 +359,27 @@ void Downloader::cancelDownloadForQKeyMapper()
     {
         m_reply->abort();
 
-#if 0
-        QMessageBox box(QKeyMapper::getInstance());
-        box.setWindowTitle(tr("Updater"));
-        box.setIcon(QMessageBox::Question);
-        box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        // QMessageBox box(QKeyMapper::getInstance());
+        // box.setWindowTitle(tr("Updater"));
+        // box.setIcon(QMessageBox::Question);
+        // box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 
-        QString text;
+        // QString text;
 
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            text = tr("Are you sure you want to cancel the download?");
-            box.button(QMessageBox::Yes)->setText(tr("Yes"));
-            box.button(QMessageBox::No)->setText(tr("No"));
-        }
-        else {
-            text = tr("您确定要取消下载吗？");
-            box.button(QMessageBox::Yes)->setText(tr("是"));
-            box.button(QMessageBox::No)->setText(tr("否"));
-        }
+        // text = tr("Are you sure you want to cancel the download?");
+        // box.button(QMessageBox::Yes)->setText(tr("Yes"));
+        // box.button(QMessageBox::No)->setText(tr("No"));
 
-        box.setText(text);
+        // box.setText(text);
 
-        if (box.exec() == QMessageBox::Yes)
-        {
-            hide();
-            if (m_reply != Q_NULLPTR && m_reply->isRunning()) {
-                m_reply->abort();
-                m_manager->clearAccessCache();
-            }
-        }
-#endif
+        // if (box.exec() == QMessageBox::Yes)
+        // {
+        //     hide();
+        //     if (m_reply != Q_NULLPTR && m_reply->isRunning()) {
+        //         m_reply->abort();
+        //         m_manager->clearAccessCache();
+        //     }
+        // }
     }
 
     hide();
@@ -460,14 +439,7 @@ void Downloader::calculateSizes(qint64 received, qint64 total)
    else
       receivedSize = tr("%1 MB").arg(received / 1048576);
 
-   if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-       m_ui->downloadLabel->setText(tr("Downloading updates") + " (" + receivedSize + " " + tr("/") + " " + totalSize
-                                    + ")");
-   }
-   else {
-       m_ui->downloadLabel->setText(tr("正在下载更新") + " (" + receivedSize + " " + tr("/") + " " + totalSize
-                                    + ")");
-   }
+   m_ui->downloadLabel->setText(tr("Downloading updates") + " (" + receivedSize + " / " + totalSize + ")");
 }
 
 /**
@@ -513,14 +485,8 @@ void Downloader::updateProgress(qint64 received, qint64 total)
       m_ui->progressBar->setMinimum(0);
       m_ui->progressBar->setMaximum(0);
       m_ui->progressBar->setValue(-1);
-      if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-          m_ui->downloadLabel->setText(tr("Downloading Updates") + "...");
-          m_ui->timeLabel->setText(QString("%1: %2").arg(tr("Time Remaining")).arg(tr("Unknown")));
-      }
-      else {
-          m_ui->downloadLabel->setText(tr("正在下载更新") + "...");
-          m_ui->timeLabel->setText(QString("%1: %2").arg(tr("剩余时间")).arg(tr("未知")));
-      }
+      m_ui->downloadLabel->setText(tr("Downloading Updates") + "...");
+      m_ui->timeLabel->setText(QString("%1: %2").arg(tr("Time Remaining")).arg(tr("Unknown")));
    }
 }
 
@@ -546,18 +512,10 @@ void Downloader::calculateTimeRemaining(qint64 received, qint64 total)
          timeRemaining /= 3600;
          int hours = int(timeRemaining + 0.5);
 
-         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-             if (hours > 1)
-                timeString = tr("about %1 hours").arg(hours);
-             else
-                timeString = tr("about one hour");
-         }
-         else {
-             if (hours > 1)
-                 timeString = tr("大约 %1 小时").arg(hours);
-             else
-                 timeString = tr("大约 1 小时");
-         }
+         if (hours > 1)
+            timeString = tr("about %1 hours").arg(hours);
+         else
+            timeString = tr("about one hour");
       }
 
       else if (timeRemaining > 60)
@@ -565,44 +523,23 @@ void Downloader::calculateTimeRemaining(qint64 received, qint64 total)
          timeRemaining /= 60;
          int minutes = int(timeRemaining + 0.5);
 
-         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-             if (minutes > 1)
-                timeString = tr("%1 minutes").arg(minutes);
-             else
-                timeString = tr("1 minute");
-         }
-         else {
-             if (minutes > 1)
-                 timeString = tr("%1 分钟").arg(minutes);
-             else
-                 timeString = tr("1 分钟");
-         }
+         if (minutes > 1)
+            timeString = tr("%1 minutes").arg(minutes);
+         else
+            timeString = tr("1 minute");
       }
 
       else if (timeRemaining <= 60)
       {
          int seconds = int(timeRemaining + 0.5);
 
-         if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-             if (seconds > 1)
-                timeString = tr("%1 seconds").arg(seconds);
-             else
-                timeString = tr("1 second");
-         }
-         else {
-             if (seconds > 1)
-                 timeString = tr("%1 秒").arg(seconds);
-             else
-                 timeString = tr("1 秒");
-         }
+         if (seconds > 1)
+            timeString = tr("%1 seconds").arg(seconds);
+         else
+            timeString = tr("1 second");
       }
 
-      if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-         m_ui->timeLabel->setText(tr("Time remaining") + ": " + timeString);
-      }
-      else {
-         m_ui->timeLabel->setText(tr("剩余时间") + ": " + timeString);
-      }
+      m_ui->timeLabel->setText(tr("Time remaining") + ": " + timeString);
    }
 }
 

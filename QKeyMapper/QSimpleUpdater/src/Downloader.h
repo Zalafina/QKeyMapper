@@ -66,9 +66,9 @@ public slots:
 private slots:
    void finished();
    void metaDataChanged();
-   void openDownload();
-   void installUpdate();
-   void cancelDownload();
+   // void openDownload();
+   // void installUpdate();
+   // void cancelDownload();
    void cancelDownloadForQKeyMapper();
    void saveFile(qint64 received, qint64 total);
    void calculateSizes(qint64 received, qint64 total);
