@@ -477,12 +477,7 @@
     <message>
         <location filename="../qkeymapper.ui" line="32"/>
         <source>QKeyMapper</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qkeymapper.ui" line="47"/>
-        <source>KeyMappingStart</source>
-        <translation type="unfinished"></translation>
+        <translation>QKeyMapper</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="69"/>
@@ -527,12 +522,12 @@
     <message>
         <location filename="../qkeymapper.ui" line="278"/>
         <source>▲</source>
-        <translation type="unfinished"></translation>
+        <translation>▲</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="297"/>
         <source>▼</source>
-        <translation type="unfinished"></translation>
+        <translation>▼</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="332"/>
@@ -562,12 +557,12 @@
     <message>
         <location filename="../qkeymapper.ui" line="498"/>
         <source>Keyboard</source>
-        <translation type="unfinished">键盘</translation>
+        <translation>键盘</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="514"/>
         <source>Mouse</source>
-        <translation type="unfinished">鼠标</translation>
+        <translation>鼠标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="569"/>
@@ -642,6 +637,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../qkeymapper.ui" line="47"/>
         <location filename="../qkeymapper.ui" line="820"/>
         <source>MappingStart</source>
         <translation type="unfinished"></translation>

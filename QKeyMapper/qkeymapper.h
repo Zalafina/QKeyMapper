@@ -677,6 +677,7 @@ private:
     void refreshAllKeyMappingTagWidget(void);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
+    void setUILanguage(int languageindex);
     void setUILanguage_Chinese(void);
     void setUILanguage_English(void);
     void resetFontSize(void);

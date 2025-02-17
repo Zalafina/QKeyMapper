@@ -795,7 +795,7 @@ extern const char *POSITION_BOTTOM_RIGHT_STR_CHINESE;
 extern const char *CHECKUPDATEBUTTON_CHINESE;
 
 /* English const Strings */
-extern const char* REFRESHBUTTON_ENGLISH;
+// extern const char* REFRESHBUTTON_ENGLISH;
 extern const char* KEYMAPBUTTON_START_ENGLISH;
 extern const char* KEYMAPBUTTON_STOP_ENGLISH;
 extern const char* SAVEMAPLISTBUTTON_ENGLISH;

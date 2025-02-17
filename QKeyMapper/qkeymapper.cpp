@@ -11170,12 +11170,13 @@ void QKeyMapper::reloadUILanguage()
 
     if (LANGUAGE_ENGLISH == languageIndex) {
         changeLanguage(LANGUAGECODE_ENGLISH);
-        setUILanguage_English();
+        // setUILanguage_English();
     }
     else {
         changeLanguage(LANGUAGECODE_CHINESE);
-        setUILanguage_Chinese();
+        // setUILanguage_Chinese();
     }
+    setUILanguage(languageIndex);
 
     // QRect curGeometry = ui->virtualGamepadTypeComboBox->geometry();
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
@@ -11190,6 +11191,162 @@ void QKeyMapper::reloadUILanguage()
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
 #endif
+}
+
+void QKeyMapper::setUILanguage(int languageindex)
+{
+    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+        setControlFontEnglish();
+    }
+    else {
+        setControlFontChinese();
+    }
+
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        ui->keymapButton->setText(KEYMAPBUTTON_STOP_CHINESE);
+    }
+    else {
+        ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
+    }
+
+    // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
+    ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
+    ui->savemaplistButton->setToolTip("快捷键 : L-Ctrl+S");
+    ui->deleteSelectedButton->setText(DELETEONEBUTTON_CHINESE);
+    ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
+    ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
+    ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
+    ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
+    ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
+    ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
+    ui->descriptionLabel->setText(SETTINGDESCLABEL_CHINESE);
+    if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
+        ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
+    }
+    QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
+    ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
+    ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
+    ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_CHINESE);
+    ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
+    // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
+    // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
+    // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
+    // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
+    ui->waitTimeLabel->setText(WAITTIME_CHINESE);
+    ui->waitTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
+    ui->pressTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
+    ui->pushLevelLabel->setText(PUSHLEVEL_CHINESE);
+    ui->sendTextLabel->setText(SENDTEXTLABEL_CHINESE);
+    ui->keyPressTypeComboBox->clear();
+    ui->keyPressTypeComboBox->addItem(LONGPRESS_CHINESE);
+    ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_CHINESE);
+    ui->pointLabel->setText(POINT_CHINESE);
+    // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
+    ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
+    ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_CHINESE);
+    // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
+    ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
+    // ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
+    ui->dataPortLabel->setText(DATAPORTLABEL_CHINESE);
+    ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_CHINESE);
+    ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
+    ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
+    ui->sendToSameTitleWindowsCheckBox->setText(SENDTOSAMETITLEWINDOWSCHECKBOX_CHINESE);
+    ui->acceptVirtualGamepadInputCheckBox->setText(ACCEPTVIRTUALGAMEPADINPUTCHECKBOX_CHINESE);
+    ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
+    ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
+    ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
+    ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
+    ui->languageLabel->setText(LANGUAGELABEL_CHINESE);
+    ui->updateSiteLabel->setText(UPDATESITELABEL_CHINESE);
+    ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
+    ui->checkUpdateButton->setText(CHECKUPDATEBUTTON_CHINESE);
+    ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_CHINESE);
+    ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_CHINESE);
+
+    int last_notification_position = ui->notificationComboBox->currentIndex();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[setUILanguage_Chinese]" << "last_notification_position" << last_notification_position;
+#endif
+    ui->notificationComboBox->clear();
+    QStringList positoin_list = QStringList() \
+            << POSITION_NONE_STR_CHINESE
+            << POSITION_TOP_LEFT_STR_CHINESE
+            << POSITION_TOP_CENTER_STR_CHINESE
+            << POSITION_TOP_RIGHT_STR_CHINESE
+            << POSITION_BOTTOM_LEFT_STR_CHINESE
+            << POSITION_BOTTOM_CENTER_STR_CHINESE
+            << POSITION_BOTTOM_RIGHT_STR_CHINESE
+            ;
+    ui->notificationComboBox->addItems(positoin_list);
+    ui->notificationComboBox->setCurrentIndex(last_notification_position);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[setUILanguage_Chinese]" << "notificationComboBox->currentIndex()" << ui->notificationComboBox->currentIndex();
+#endif
+
+    QTabWidget *tabWidget = ui->settingTabWidget;
+    tabWidget->setTabText(tabWidget->indexOf(ui->general),          SETTINGTAB_GENERAL_CHINESE      );
+    tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          SETTINGTAB_MAPPING_CHINESE      );
+    tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  SETTINGTAB_VGAMEPAD_CHINESE     );
+    tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      SETTINGTAB_MULTIINPUT_CHINESE   );
+    tabWidget->setTabText(tabWidget->indexOf(ui->forza),            SETTINGTAB_FORZA_CHINESE        );
+
+#ifdef VIGEM_CLIENT_SUPPORT
+    // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
+    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
+    ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
+    ui->directModeCheckBox->setText(DIRECTMODECHECKBOX_CHINESE);
+    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
+    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
+    ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_CHINESE);
+    ui->vJoyRecenterSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
+    ui->vJoyRecenterSpinBox->setSpecialValueText(VJOYRECENTERSPINBOX_UNRECENTER_CHINESE);
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+        ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+    }
+    else {
+        ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
+    }
+    // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+#endif
+    ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
+    ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
+    ui->gamepadSelectLabel->setText(GAMEPADSELECTLABEL_CHINESE);
+    // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
+    ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
+    ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_CHINESE);
+    ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
+    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+        ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
+    }
+    else {
+        ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+    }
+
+    /* KeyMappingTabWidget HorizontalHeader Update for current language */
+    for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count() - 1; ++tabindex) {
+        KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
+        mappingTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_CHINESE
+                                                                << KEYMAPDATATABLE_COL2_CHINESE
+                                                                << KEYMAPDATATABLE_COL3_CHINESE
+                                                                << KEYMAPDATATABLE_COL4_CHINESE);
+    }
+
+    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
+                                                                  << PROCESSINFOTABLE_COL2_CHINESE
+                                                                  << PROCESSINFOTABLE_COL3_CHINESE );
+
+    if (m_deviceListWindow != Q_NULLPTR) {
+        m_deviceListWindow->setUILanguage(languageindex);
+    }
+
+    if (m_TableSetupDialog != Q_NULLPTR) {
+        m_TableSetupDialog->setUILanguage(languageindex);
+    }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->setUILanguage(languageindex);
+    }
 }
 
 void QKeyMapper::setUILanguage_Chinese()

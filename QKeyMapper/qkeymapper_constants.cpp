@@ -885,7 +885,7 @@ const char *POSITION_BOTTOM_RIGHT_STR_CHINESE   = "底部右侧";
 const char *CHECKUPDATEBUTTON_CHINESE = "检查更新";
 
 /* English const Strings */
-const char *REFRESHBUTTON_ENGLISH = "Refresh";
+// const char *REFRESHBUTTON_ENGLISH = "Refresh";
 const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
 const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
 const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
