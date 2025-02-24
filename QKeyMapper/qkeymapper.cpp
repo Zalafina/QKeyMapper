@@ -4680,12 +4680,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
 
         if (true == fileNameCheckOK && true == windowTitleCheckOK){
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
-            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                ui->keymapButton->setText(KEYMAPBUTTON_STOP_ENGLISH);
-            }
-            else {
-                ui->keymapButton->setText(KEYMAPBUTTON_STOP_CHINESE);
-            }
+            ui->keymapButton->setText(tr("MappingStop"));
             m_KeyMapStatus = KEYMAP_CHECKING;
             s_CycleCheckLoopCount = 0;
             updateSystemTrayDisplay();
@@ -4709,12 +4704,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         m_CycleCheckTimer.stop();
         m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
         m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
-        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            ui->keymapButton->setText(KEYMAPBUTTON_START_ENGLISH);
-        }
-        else {
-            ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
-        }
+        ui->keymapButton->setText(tr("MappingStart"));
 
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
             playStopSound();
@@ -11195,7 +11185,7 @@ void QKeyMapper::reloadUILanguage()
 
 void QKeyMapper::setUILanguage(int languageindex)
 {
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
+    if (LANGUAGE_ENGLISH == languageindex) {
         setControlFontEnglish();
     }
     else {
@@ -11203,15 +11193,15 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
 
     if (m_KeyMapStatus != KEYMAP_IDLE) {
-        ui->keymapButton->setText(KEYMAPBUTTON_STOP_CHINESE);
+        ui->keymapButton->setText(tr("MappingStop"));
     }
     else {
-        ui->keymapButton->setText(KEYMAPBUTTON_START_CHINESE);
+        ui->keymapButton->setText(tr("MappingStart"));
     }
 
     // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
-    ui->savemaplistButton->setText(SAVEMAPLISTBUTTON_CHINESE);
-    ui->savemaplistButton->setToolTip("快捷键 : L-Ctrl+S");
+    ui->savemaplistButton->setText(tr("SaveSetting"));
+    ui->savemaplistButton->setToolTip(tr("Hotkey : L-Ctrl+S"));
     ui->deleteSelectedButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
     ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
@@ -11349,6 +11339,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
 }
 
+#if 0
 void QKeyMapper::setUILanguage_Chinese()
 {
     setControlFontChinese();
@@ -11644,6 +11635,7 @@ void QKeyMapper::setUILanguage_English()
         m_ItemSetupDialog->setUILanguage(LANGUAGE_ENGLISH);
     }
 }
+#endif
 
 void QKeyMapper::resetFontSize()
 {

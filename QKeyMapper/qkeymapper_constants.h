@@ -669,10 +669,10 @@ extern const char *IMPORTTABLEBUTTON_STR;
 extern const char *REMOVETABLEBUTTON_STR;
 
 /* Chinese const Strings */
-extern const char* REFRESHBUTTON_CHINESE;
-extern const char* KEYMAPBUTTON_START_CHINESE;
-extern const char* KEYMAPBUTTON_STOP_CHINESE;
-extern const char* SAVEMAPLISTBUTTON_CHINESE;
+// extern const char* REFRESHBUTTON_CHINESE;
+// extern const char* KEYMAPBUTTON_START_CHINESE;
+// extern const char* KEYMAPBUTTON_STOP_CHINESE;
+// extern const char* SAVEMAPLISTBUTTON_CHINESE;
 extern const char* DELETEONEBUTTON_CHINESE;
 extern const char* CLEARALLBUTTON_CHINESE;
 extern const char *PROCESSLISTBUTTON_CHINESE;
@@ -796,9 +796,9 @@ extern const char *CHECKUPDATEBUTTON_CHINESE;
 
 /* English const Strings */
 // extern const char* REFRESHBUTTON_ENGLISH;
-extern const char* KEYMAPBUTTON_START_ENGLISH;
-extern const char* KEYMAPBUTTON_STOP_ENGLISH;
-extern const char* SAVEMAPLISTBUTTON_ENGLISH;
+// extern const char* KEYMAPBUTTON_START_ENGLISH;
+// extern const char* KEYMAPBUTTON_STOP_ENGLISH;
+// extern const char* SAVEMAPLISTBUTTON_ENGLISH;
 extern const char* DELETEONEBUTTON_ENGLISH;
 extern const char* CLEARALLBUTTON_ENGLISH;
 extern const char *PROCESSLISTBUTTON_ENGLISH;

@@ -754,10 +754,10 @@ const char *IMPORTTABLEBUTTON_STR = "ImportTable";
 const char *REMOVETABLEBUTTON_STR = "RemoveTable";
 
 /* Chinese const Strings */
-const char *REFRESHBUTTON_CHINESE = "刷新";
-const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
-const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
-const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
+// const char *REFRESHBUTTON_CHINESE = "刷新";
+// const char *KEYMAPBUTTON_START_CHINESE = "开始映射";
+// const char *KEYMAPBUTTON_STOP_CHINESE = "停止映射";
+// const char *SAVEMAPLISTBUTTON_CHINESE = "保存设定";
 const char *DELETEONEBUTTON_CHINESE = "删除";
 const char *CLEARALLBUTTON_CHINESE = "清空";
 const char *PROCESSLISTBUTTON_CHINESE = "进程列表";
@@ -886,9 +886,9 @@ const char *CHECKUPDATEBUTTON_CHINESE = "检查更新";
 
 /* English const Strings */
 // const char *REFRESHBUTTON_ENGLISH = "Refresh";
-const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
-const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
-const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
+// const char *KEYMAPBUTTON_START_ENGLISH = "MappingStart";
+// const char *KEYMAPBUTTON_STOP_ENGLISH = "MappingStop";
+// const char *SAVEMAPLISTBUTTON_ENGLISH = "SaveSetting";
 const char *DELETEONEBUTTON_ENGLISH = "Delete";
 const char *CLEARALLBUTTON_ENGLISH = "Clear";
 const char *PROCESSLISTBUTTON_ENGLISH = "ProcessList";

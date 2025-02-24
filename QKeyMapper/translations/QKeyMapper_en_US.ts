@@ -481,8 +481,9 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="69"/>
+        <location filename="../qkeymapper.cpp" line="11213"/>
         <source>SaveSetting</source>
-        <translation type="unfinished"></translation>
+        <translation>SaveSetting</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="103"/>
@@ -639,8 +640,9 @@
     <message>
         <location filename="../qkeymapper.ui" line="47"/>
         <location filename="../qkeymapper.ui" line="820"/>
+        <location filename="../qkeymapper.cpp" line="11209"/>
         <source>MappingStart</source>
-        <translation type="unfinished"></translation>
+        <translation>MappingStart</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="839"/>
@@ -664,8 +666,9 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="932"/>
+        <location filename="../qkeymapper.cpp" line="11206"/>
         <source>MappingStop</source>
-        <translation type="unfinished"></translation>
+        <translation>MappingStop</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="961"/>
@@ -797,6 +800,11 @@
         <location filename="../qkeymapper.ui" line="1557"/>
         <source>PushLevel</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="11214"/>
+        <source>Hotkey : L-Ctrl+S</source>
+        <translation>Hotkey : L-Ctrl+S</translation>
     </message>
 </context>
 <context>
