@@ -100,7 +100,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Name</string>
+    <string>Process</string>
    </property>
    <property name="checked">
     <bool>false</bool>
@@ -562,7 +562,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -677,7 +677,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>WindowKey</string>
+      <string>ShowHideKey</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -964,7 +964,7 @@
    </widget>
    <widget class="QWidget" name="virtual_gamepad">
     <attribute name="title">
-     <string>V-Gamepad</string>
+     <string>VirtualGamepad</string>
     </attribute>
     <widget class="QComboBox" name="virtualGamepadListComboBox">
      <property name="geometry">

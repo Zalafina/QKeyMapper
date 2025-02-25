@@ -325,13 +325,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->notificationComboBox->clear();
     QStringList positoin_list = QStringList() \
-            << POSITION_NONE_STR_CHINESE
-            << POSITION_TOP_LEFT_STR_CHINESE
-            << POSITION_TOP_CENTER_STR_CHINESE
-            << POSITION_TOP_RIGHT_STR_CHINESE
-            << POSITION_BOTTOM_LEFT_STR_CHINESE
-            << POSITION_BOTTOM_CENTER_STR_CHINESE
-            << POSITION_BOTTOM_RIGHT_STR_CHINESE
+            << tr("None")
+            << tr("Top Left")
+            << tr("Top Center")
+            << tr("Top Right")
+            << tr("Bottom Left")
+            << tr("Bottom Center")
+            << tr("Bottom Right")
             ;
     ui->notificationComboBox->addItems(positoin_list);
     ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
@@ -1692,11 +1692,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     QRegularExpressionMatch full_key_match = full_key_regex.match(originalkeystr);
     if (!full_key_match.hasMatch()) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = "Invalid original key format.";
-        } else {
-            result.errorMessage = "无效的原始按键格式。";
-        }
+        result.errorMessage = tr("Invalid original key format.");
         return result;
     }
 
@@ -1707,11 +1703,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     QStringList orikeylist = key_without_suffix.split(SEPARATOR_PLUS);
     if (orikeylist.isEmpty()) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = "OriginalKey is empty.";
-        } else {
-            result.errorMessage = "原始按键为空";
-        }
+        result.errorMessage = tr("OriginalKey is empty.");
         return result;
     }
 
@@ -1719,11 +1711,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     int numRemoved = orikeylist.removeDuplicates();
     if (numRemoved > 0) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = "OriginalKey contains duplicate keys.";
-        } else {
-            result.errorMessage = "原始按键中存在重复按键";
-        }
+        result.errorMessage = tr("OriginalKey contains duplicate keys.");
         return result;
     }
 
@@ -1732,11 +1720,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         for (const QString &orikey : orikeylist) {
             if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Oricombinationkey contains specialkey \"%1\"").arg(orikey);
-                } else {
-                    result.errorMessage = QString("原始组合键包含特殊按键 \"%1\"").arg(orikey);
-                }
+                result.errorMessage = tr("Oricombinationkey contains specialkey \"%1\"").arg(orikey);
                 return result;
             }
         }
@@ -1755,11 +1739,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Duplicate original key \"%1\"").arg(originalkeystr);
-                } else {
-                    result.errorMessage = QString("已存在相同的原始按键 \"%1\"").arg(originalkeystr);
-                }
+                result.errorMessage = tr("Duplicate original key \"%1\"").arg(originalkeystr);
             }
         }
     }
@@ -1779,11 +1759,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
                 if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(mapkey_noindex)
                     && mapkey_noindex != orikey_noindex) {
                     result.isValid = false;
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Originalkey \"%1\" does not match special mappingkey \"%2\"").arg(orikey_noindex, mapkey_noindex);
-                    } else {
-                        result.errorMessage = QString("原始按键 \"%1\" 与映射特殊按键 \"%2\" 不匹配").arg(orikey_noindex, mapkey_noindex);
-                    }
+                    result.errorMessage = tr("Originalkey \"%1\" does not match special mappingkey \"%2\"").arg(orikey_noindex, mapkey_noindex);
                     return result;
                 }
             }
@@ -1808,20 +1784,12 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
             if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                } else {
-                    result.errorMessage = QString("无效的按压时间 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                }
+                result.errorMessage = tr("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
                 return result;
             }
         } else {
             result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid time suffix \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-            } else {
-                result.errorMessage = QString("无效的时间后缀 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-            }
+            result.errorMessage = tr("Invalid time suffix \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
             return result;
         }
     }
@@ -5008,18 +4976,10 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setDragEnabled(true);
     KeyMappingTableWidget->setDragDropMode(QAbstractItemView::InternalMove);
 
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << KEYMAPDATATABLE_COL1_ENGLISH
-                                                                        << KEYMAPDATATABLE_COL2_ENGLISH
-                                                                        << KEYMAPDATATABLE_COL3_ENGLISH
-                                                                        << KEYMAPDATATABLE_COL4_ENGLISH);
-    }
-    else {
-        KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << KEYMAPDATATABLE_COL1_CHINESE
-                                                                        << KEYMAPDATATABLE_COL2_CHINESE
-                                                                        << KEYMAPDATATABLE_COL3_CHINESE
-                                                                        << KEYMAPDATATABLE_COL4_CHINESE);
-    }
+    KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
+                                                                    << tr("MappingKey")
+                                                                    << tr("Burst")
+                                                                    << tr("Lock"));
     QFont customFont(FONTNAME_ENGLISH, 9);
     KeyMappingTableWidget->setFont(customFont);
     KeyMappingTableWidget->horizontalHeader()->setFont(customFont);
@@ -6722,12 +6682,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     ui->settingselectComboBox->addItem(QString());
     m_SettingSelectListWithoutDescription.append(QString());
     QString globalSettingNameWithDescStr;
-    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-        globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_ENGLISH);
-    }
-    else {
-        globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
-    }
+    globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, tr("Global keymapping setting"));
     ui->settingselectComboBox->addItem(globalSettingNameWithDescStr);
     m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -7894,12 +7849,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->nameLineEdit->setText(QString());
         ui->titleLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
-        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_ENGLISH);
-        }
-        else {
-            ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
-        }
+        ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
         ui->nameCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
         // ui->disableWinKeyCheckBox->setChecked(false);
@@ -9348,44 +9298,23 @@ void QKeyMapper::updateViGEmBusStatus()
     }
 #endif
 
-    int languageIndex = ui->languageComboBox->currentIndex();
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == connectstate) {
         if (m_KeyMapStatus == KEYMAP_IDLE){
             ui->enableVirtualJoystickCheckBox->setEnabled(true);
         }
         // ui->installViGEmBusButton->setEnabled(false);
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_ENGLISH);
-        }
-        else {
-            ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
-        }
+        ui->installViGEmBusButton->setText(tr("UninstallViGEm"));
 
         ui->ViGEmBusStatusLabel->setStyleSheet("color:green;");
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_ENGLISH);
-        }
-        else {
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_AVAILABLE_CHINESE);
-        }
+        ui->ViGEmBusStatusLabel->setText(tr("ViGEmAvailable"));
     }
     else {
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
         // ui->installViGEmBusButton->setEnabled(true);
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_ENGLISH);
-        }
-        else {
-            ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
-        }
+        ui->installViGEmBusButton->setText(tr("InstallViGEm"));
 
         ui->ViGEmBusStatusLabel->setStyleSheet("color:red;");
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_ENGLISH);
-        }
-        else {
-            ui->ViGEmBusStatusLabel->setText(VIGEMBUSSTATUSLABEL_UNAVAILABLE_CHINESE);
-        }
+        ui->ViGEmBusStatusLabel->setText(tr("ViGEmUnavailable"));
     }
 }
 
@@ -11202,57 +11131,57 @@ void QKeyMapper::setUILanguage(int languageindex)
     // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(tr("SaveSetting"));
     ui->savemaplistButton->setToolTip(tr("Hotkey : L-Ctrl+S"));
-    ui->deleteSelectedButton->setText(DELETEONEBUTTON_CHINESE);
-    ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
-    ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
-    ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
-    ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
-    ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
-    ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
-    ui->descriptionLabel->setText(SETTINGDESCLABEL_CHINESE);
+    ui->deleteSelectedButton->setText(tr("Delete"));
+    ui->clearallButton->setText(tr("Clear"));
+    ui->processListButton->setText(tr("ProcessList"));
+    ui->showNotesButton->setText(tr("ShowNotes"));
+    ui->addmapdataButton->setText(tr("ADD"));
+    ui->nameCheckBox->setText(tr("Process"));
+    ui->titleCheckBox->setText(tr("Title"));
+    ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
-        ui->descriptionLineEdit->setText(GLOBALSETTING_DESC_CHINESE);
+        ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
     }
-    QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
+    QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, tr("Global keymapping setting"));
     ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
-    ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
-    ui->orikeySeqLabel->setText(ORIKEYSEQLABEL_CHINESE);
-    ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
+    ui->orikeyLabel->setText(tr("OriKey"));
+    ui->orikeySeqLabel->setText(tr("OriKeySeq"));
+    ui->mapkeyLabel->setText(tr("MapKey"));
     // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
     // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
     // ui->burstpress_msLabel->setText(BURSTPRESS_MSLABEL_CHINESE);
     // ui->burstrelease_msLabel->setText(BURSTRELEASE_MSLABEL_CHINESE);
-    ui->waitTimeLabel->setText(WAITTIME_CHINESE);
-    ui->waitTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
-    ui->pressTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
-    ui->pushLevelLabel->setText(PUSHLEVEL_CHINESE);
-    ui->sendTextLabel->setText(SENDTEXTLABEL_CHINESE);
+    ui->waitTimeLabel->setText(tr("Delay"));
+    ui->waitTimeSpinBox->setSuffix(tr(" ms"));
+    ui->pressTimeSpinBox->setSuffix(tr(" ms"));
+    ui->pushLevelLabel->setText(tr("PushLevel"));
+    ui->sendTextLabel->setText(tr("Text"));
     ui->keyPressTypeComboBox->clear();
-    ui->keyPressTypeComboBox->addItem(LONGPRESS_CHINESE);
-    ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_CHINESE);
-    ui->pointLabel->setText(POINT_CHINESE);
+    ui->keyPressTypeComboBox->addItem(tr("LongPress"));
+    ui->keyPressTypeComboBox->addItem(tr("DoublePress"));
+    ui->pointLabel->setText(tr("Point"));
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
-    ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
-    ui->mouseYSpeedLabel->setText(MOUSEYSPEEDLABEL_CHINESE);
+    ui->mouseXSpeedLabel->setText(tr("X Speed"));
+    ui->mouseYSpeedLabel->setText(tr("Y Speed"));
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
-    ui->removeSettingButton->setText(REMOVESETTINGBUTTON_CHINESE);
+    ui->removeSettingButton->setText(tr("Remove"));
     // ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
-    ui->dataPortLabel->setText(DATAPORTLABEL_CHINESE);
-    ui->brakeThresholdLabel->setText(BRAKETHRESHOLDLABEL_CHINESE);
-    ui->accelThresholdLabel->setText(ACCELTHRESHOLDLABEL_CHINESE);
-    ui->autoStartMappingCheckBox->setText(AUTOSTARTMAPPINGCHECKBOX_CHINESE);
-    ui->sendToSameTitleWindowsCheckBox->setText(SENDTOSAMETITLEWINDOWSCHECKBOX_CHINESE);
-    ui->acceptVirtualGamepadInputCheckBox->setText(ACCEPTVIRTUALGAMEPADINPUTCHECKBOX_CHINESE);
-    ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
-    ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
-    ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
-    ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
-    ui->languageLabel->setText(LANGUAGELABEL_CHINESE);
-    ui->updateSiteLabel->setText(UPDATESITELABEL_CHINESE);
-    ui->windowswitchkeyLabel->setText(WINDOWSWITCHKEYLABEL_CHINESE);
-    ui->checkUpdateButton->setText(CHECKUPDATEBUTTON_CHINESE);
-    ui->mappingStartKeyLabel->setText(MAPPINGSTARTKEYLABEL_CHINESE);
-    ui->mappingStopKeyLabel->setText(MAPPINGSTOPKEYLABEL_CHINESE);
+    ui->dataPortLabel->setText(tr("DataPort"));
+    ui->brakeThresholdLabel->setText(tr("BrakeValue"));
+    ui->accelThresholdLabel->setText(tr("AccelValue"));
+    ui->autoStartMappingCheckBox->setText(tr("Auto Match Foreground"));
+    ui->sendToSameTitleWindowsCheckBox->setText(tr("Send To Same Windows"));
+    ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
+    ui->autoStartupCheckBox->setText(tr("Auto Startup"));
+    ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
+    ui->soundEffectCheckBox->setText(tr("Sound Effect"));
+    ui->notificationLabel->setText(tr("Notification"));
+    ui->languageLabel->setText(tr("Language"));
+    ui->updateSiteLabel->setText(tr("UpdateSite"));
+    ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
+    ui->checkUpdateButton->setText(tr("Check Updates"));
+    ui->mappingStartKeyLabel->setText(tr("StartKey"));
+    ui->mappingStopKeyLabel->setText(tr("StopKey"));
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
 #ifdef DEBUG_LOGOUT_ON
@@ -11260,13 +11189,13 @@ void QKeyMapper::setUILanguage(int languageindex)
 #endif
     ui->notificationComboBox->clear();
     QStringList positoin_list = QStringList() \
-            << POSITION_NONE_STR_CHINESE
-            << POSITION_TOP_LEFT_STR_CHINESE
-            << POSITION_TOP_CENTER_STR_CHINESE
-            << POSITION_TOP_RIGHT_STR_CHINESE
-            << POSITION_BOTTOM_LEFT_STR_CHINESE
-            << POSITION_BOTTOM_CENTER_STR_CHINESE
-            << POSITION_BOTTOM_RIGHT_STR_CHINESE
+            << tr("None")
+            << tr("Top Left")
+            << tr("Top Center")
+            << tr("Top Right")
+            << tr("Bottom Left")
+            << tr("Bottom Center")
+            << tr("Bottom Right")
             ;
     ui->notificationComboBox->addItems(positoin_list);
     ui->notificationComboBox->setCurrentIndex(last_notification_position);
@@ -11275,56 +11204,56 @@ void QKeyMapper::setUILanguage(int languageindex)
 #endif
 
     QTabWidget *tabWidget = ui->settingTabWidget;
-    tabWidget->setTabText(tabWidget->indexOf(ui->general),          SETTINGTAB_GENERAL_CHINESE      );
-    tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          SETTINGTAB_MAPPING_CHINESE      );
-    tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  SETTINGTAB_VGAMEPAD_CHINESE     );
-    tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      SETTINGTAB_MULTIINPUT_CHINESE   );
-    tabWidget->setTabText(tabWidget->indexOf(ui->forza),            SETTINGTAB_FORZA_CHINESE        );
+    tabWidget->setTabText(tabWidget->indexOf(ui->general),          tr("General")       );
+    tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          tr("Mapping")       );
+    tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  tr("VirtualGamepad"));
+    tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input")   );
+    tabWidget->setTabText(tabWidget->indexOf(ui->forza),            tr("Forza")         );
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
-    ui->enableVirtualJoystickCheckBox->setText(ENABLEVIRTUALJOYSTICKCHECKBOX_CHINESE);
-    ui->lockCursorCheckBox->setText(LOCKCURSORCHECKBOX_CHINESE);
-    ui->directModeCheckBox->setText(DIRECTMODECHECKBOX_CHINESE);
-    ui->vJoyXSensLabel->setText(VJOYXSENSLABEL_CHINESE);
-    ui->vJoyYSensLabel->setText(VJOYYSENSLABEL_CHINESE);
-    ui->vJoyRecenterLabel->setText(VJOYRECENTERLABEL_CHINESE);
-    ui->vJoyRecenterSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
-    ui->vJoyRecenterSpinBox->setSpecialValueText(VJOYRECENTERSPINBOX_UNRECENTER_CHINESE);
+    ui->enableVirtualJoystickCheckBox->setText(tr("VirtualGamepad"));
+    ui->lockCursorCheckBox->setText(tr("Lock Cursor"));
+    ui->directModeCheckBox->setText(tr("Direct Mode"));
+    ui->vJoyXSensLabel->setText(tr("X Sens"));
+    ui->vJoyYSensLabel->setText(tr("Y Sens"));
+    ui->vJoyRecenterLabel->setText(tr("Recenter"));
+    ui->vJoyRecenterSpinBox->setSuffix(tr(" ms"));
+    ui->vJoyRecenterSpinBox->setSpecialValueText(tr("Unrecenter"));
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
-        ui->installViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
+        ui->installViGEmBusButton->setText(tr("UninstallViGEm"));
     }
     else {
-        ui->installViGEmBusButton->setText(INSTALLVIGEMBUSBUTTON_CHINESE);
+        ui->installViGEmBusButton->setText(tr("InstallViGEm"));
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
-    ui->keyboardSelectLabel->setText(KEYBOARDSELECTLABEL_CHINESE);
-    ui->mouseSelectLabel->setText(MOUSESELECTLABEL_CHINESE);
-    ui->gamepadSelectLabel->setText(GAMEPADSELECTLABEL_CHINESE);
+    ui->keyboardSelectLabel->setText(tr("Keyboard"));
+    ui->mouseSelectLabel->setText(tr("Mouse"));
+    ui->gamepadSelectLabel->setText(tr("Gamepad"));
     // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
-    ui->multiInputEnableCheckBox->setText(MULTIINPUTENABLECHECKBOX_CHINESE);
-    ui->filterKeysCheckBox->setText(FILTERKEYSCHECKBOX_CHINESE);
-    ui->multiInputDeviceListButton->setText(MULTIINPUTDEVICELISTBUTTON_CHINESE);
+    ui->multiInputEnableCheckBox->setText(tr("MultiDevice"));
+    ui->filterKeysCheckBox->setText(tr("FilterKeys"));
+    ui->multiInputDeviceListButton->setText(tr("DeviceList"));
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
-        ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
+        ui->installInterceptionButton->setText(tr("Uninstall Driver"));
     }
     else {
-        ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
+        ui->installInterceptionButton->setText(tr("Install Driver"));
     }
 
     /* KeyMappingTabWidget HorizontalHeader Update for current language */
     for (int tabindex = 0; tabindex < m_KeyMappingTabWidget->count() - 1; ++tabindex) {
         KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
-        mappingTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_CHINESE
-                                                                << KEYMAPDATATABLE_COL2_CHINESE
-                                                                << KEYMAPDATATABLE_COL3_CHINESE
-                                                                << KEYMAPDATATABLE_COL4_CHINESE);
+        mappingTable->setHorizontalHeaderLabels(QStringList()       << tr("OriginalKey")
+                                                                    << tr("MappingKey")
+                                                                    << tr("Burst")
+                                                                    << tr("Lock"));
     }
 
-    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
-                                                                  << PROCESSINFOTABLE_COL2_CHINESE
-                                                                  << PROCESSINFOTABLE_COL3_CHINESE );
+    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << tr("Process")
+                                                                    << tr("PID")
+                                                                    << tr("Window Title"));
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguage(languageindex);
