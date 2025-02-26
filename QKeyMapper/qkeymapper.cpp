@@ -1717,7 +1717,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
     if (orikeylist.size() > 1) {
         // Check if any key is a special key
-        for (const QString &orikey : orikeylist) {
+        for (const QString &orikey : std::as_const(orikeylist)) {
             if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)) {
                 result.isValid = false;
                 result.errorMessage = tr("Oricombinationkey contains specialkey \"%1\"").arg(orikey);
@@ -1726,7 +1726,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         }
 
         // Validate each individual key in the combination
-        for (const QString &orikey : orikeylist) {
+        for (const QString &orikey : std::as_const(orikeylist)) {
             result = validateSingleOriginalKeyWithoutTimeSuffix(orikey, -1);
             if (!result.isValid) {
                 return result;
@@ -1800,20 +1800,12 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         if (mappingkeys.size() == 1 && mappingkeys.constFirst() == KEY_BLOCKED_STR) {
             if (originalkeystr.contains(JOY_KEY_PREFIX)) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Game controller keys could not be blocked!");
-                } else {
-                    result.errorMessage = QString("游戏手柄按键无法被屏蔽!");
-                }
+                result.errorMessage = tr("Game controller keys could not be blocked!");
                 return result;
             }
             else if (isLongPress || isDoublePress) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Could not block original key with time suffix!");
-                } else {
-                    result.errorMessage = QString("不能屏蔽带有时间后缀的原始按键!");
-                }
+                result.errorMessage = tr("Could not block original key with time suffix!");
                 return result;
             }
         }
@@ -1834,11 +1826,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
 
     if (!key_match.hasMatch()) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Invalid key format \"%1\"").arg(orikey);
-        } else {
-            result.errorMessage = QString("无效按键格式 \"%1\"").arg(orikey);
-        }
+        result.errorMessage = tr("Invalid key format \"%1\"").arg(orikey);
         return result;
     }
 
@@ -1865,11 +1853,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
 
         if (!validKey) {
             result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid key \"%1\"").arg(original_key);
-            } else {
-                result.errorMessage = QString("无效按键 \"%1\"").arg(original_key);
-            }
+            result.errorMessage = tr("Invalid key \"%1\"").arg(original_key);
         }
     }
 
@@ -1880,11 +1864,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
 
             if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                } else {
-                    result.errorMessage = QString("无效的按压时间 \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
-                }
+                result.errorMessage = tr("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
             }
         }
 
@@ -1892,11 +1872,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Duplicate key \"%1\"").arg(orikey);
-                } else {
-                    result.errorMessage = QString("已存在相同的按键 \"%1\"").arg(orikey);
-                }
+                result.errorMessage = tr("Duplicate key \"%1\"").arg(orikey);
             }
         }
     }
@@ -1916,11 +1892,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
 
     if (!key_match.hasMatch()) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Invalid key format \"%1\"").arg(orikey);
-        } else {
-            result.errorMessage = QString("无效按键格式 \"%1\"").arg(orikey);
-        }
+        result.errorMessage = tr("Invalid key format \"%1\"").arg(orikey);
         return result;
     }
 
@@ -1943,11 +1915,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
 
         if (!validKey) {
             result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Invalid key \"%1\"").arg(original_key);
-            } else {
-                result.errorMessage = QString("无效按键 \"%1\"").arg(original_key);
-            }
+            result.errorMessage = tr("Invalid key \"%1\"").arg(original_key);
         }
     }
 
@@ -1956,11 +1924,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Duplicate key \"%1\"").arg(orikey);
-                } else {
-                    result.errorMessage = QString("已存在相同的按键 \"%1\"").arg(orikey);
-                }
+                result.errorMessage = tr("Duplicate key \"%1\"").arg(orikey);
             }
         }
     }
@@ -1976,22 +1940,12 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
     if (mappingkeyseqlist.isEmpty()) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = "MappingKeys is empty.";
-        }
-        else {
-            result.errorMessage = "映射按键为空";
-        }
+        result.errorMessage = tr("MappingKeys is empty.");
         return result;
     }
     else if (mappingkeyseqlist.size() >= KEY_SEQUENCE_MAX) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = "Mapping key sequence is too long!";
-        }
-        else {
-            result.errorMessage = "映射按键序列过长!";
-        }
+        result.errorMessage = tr("Mapping key sequence exceeds the maximum length!");
         return result;
     }
     else if (mappingkeyseqlist.size() > 1 && mappingkeystr.contains(PREFIX_SEND_EXCLUSION)) {
@@ -12588,13 +12542,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (findindex != -1) {
             MAP_KEYDATA keymapdata = KeyMappingDataList->at(findindex);
             if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
-                QString message;
-                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    message = QString("Key sequence mapping to \"%1\" is too long!").arg(currentOriKeyText);
-                }
-                else {
-                    message = QString("映射到\"%1\"的按键序列太长了!").arg(currentOriKeyText);
-                }
+                QString message = tr("Key sequence mapping to \"%1\" exceeds the maximum length!").arg(currentOriKeyText);
                 showFailurePopup(message);
                 return;
             }
@@ -12627,13 +12575,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
                 QString mousepointstr = ui->pointDisplayLabel->text();
                 if (mousepointstr.isEmpty()) {
-                    QString message;
-                    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                        message = QString("Need to set a screen mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
-                    }
-                    else {
-                        message = QString("需要使用\"%1\"设置一个屏幕坐标点!").arg("L-Ctrl+鼠标左键点击");
-                    }
+                    QString message = tr("Need to set a screen mouse point with \"%1\" click!").arg(tr("L-Ctrl+Mouse-Left Click"));
                     showFailurePopup(message);
                     return;
                 }
@@ -12648,13 +12590,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
                             && !ui->nextarrowCheckBox->isChecked()) {
-                            QString message;
-                            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                                message = QString("Already set a same screen mouse point!");
-                            }
-                            else {
-                                message = QString("已经保存了一个相同的屏幕坐标点!");
-                            }
+                            QString message = tr("Already set a same screen mouse point!");
                             showFailurePopup(message);
                             return;
                         }
@@ -12664,13 +12600,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
                 QString mousepointstr = ui->pointDisplayLabel->text();
                 if (mousepointstr.isEmpty()) {
-                    QString message;
-                    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                        message = QString("Need to set a window mouse point with \"%1\" click!").arg("L-Alt+Mouse-Left Click");
-                    }
-                    else {
-                        message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
-                    }
+                    QString message = tr("Need to set a window mouse point with \"%1\" click!").arg(tr("L-Alt+Mouse-Left Click"));
+                    // if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
+                    //     message = QString("Need to set a window mouse point with \"%1\" click!").arg("L-Alt+Mouse-Left Click");
+                    // }
+                    // else {
+                    //     message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
+                    // }
                     showFailurePopup(message);
                     return;
                 }
