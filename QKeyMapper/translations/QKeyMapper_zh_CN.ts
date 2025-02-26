@@ -477,7 +477,7 @@
     <message>
         <location filename="../qkeymapper.ui" line="32"/>
         <source>QKeyMapper</source>
-        <translation>QKeyMapper</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="69"/>
@@ -524,12 +524,12 @@
     <message>
         <location filename="../qkeymapper.ui" line="278"/>
         <source>▲</source>
-        <translation>▲</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="297"/>
         <source>▼</source>
-        <translation>▼</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="332"/>
@@ -540,7 +540,7 @@
     <message>
         <location filename="../qkeymapper.ui" line="351"/>
         <source> » </source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="380"/>
@@ -606,12 +606,12 @@
         <location filename="../qkeymapper.ui" line="699"/>
         <location filename="../qkeymapper.ui" line="706"/>
         <source>中文</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="711"/>
         <source>English</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="725"/>
@@ -635,12 +635,12 @@
         <location filename="../qkeymapper.ui" line="779"/>
         <location filename="../qkeymapper.ui" line="786"/>
         <source>Github</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="791"/>
         <source>Gitee</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="798"/>
@@ -724,12 +724,12 @@
         <location filename="../qkeymapper.ui" line="1049"/>
         <location filename="../qkeymapper.ui" line="1056"/>
         <source>X360</source>
-        <translation type="unfinished"></translation>
+        <translation>X360</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1061"/>
         <source>DS4</source>
-        <translation type="unfinished"></translation>
+        <translation>DS4</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1078"/>
