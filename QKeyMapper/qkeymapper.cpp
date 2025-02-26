@@ -1950,12 +1950,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     }
     else if (mappingkeyseqlist.size() > 1 && mappingkeystr.contains(PREFIX_SEND_EXCLUSION)) {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("After override prefix \"%1\" could not be used in keysequence").arg(PREFIX_SEND_EXCLUSION);
-        }
-        else {
-            result.errorMessage = QString("后覆盖前缀\"%1\"不能使用在按键序列中").arg(PREFIX_SEND_EXCLUSION);
-        }
+        result.errorMessage = tr("After override prefix \"%1\" could not be used in keysequence").arg(PREFIX_SEND_EXCLUSION);
         return result;
     }
 
@@ -1968,11 +1963,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         int duplicatesRemoved = Mapping_Keys.removeDuplicates();
         if (duplicatesRemoved > 0) {
             result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("MappingKeys contains duplicate key \"%1\"").arg(mappingkeys);
-            } else {
-                result.errorMessage = QString("映射按键中包含重复按键 \"%1\"").arg(mappingkeys);
-            }
+            result.errorMessage = tr("MappingKeys contains duplicate key \"%1\"").arg(mappingkeys);
             return result;
         }
 
@@ -1980,11 +1971,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         int pure_duplicatesRemoved = pure_Mapping_Keys.removeDuplicates();
         if (pure_duplicatesRemoved > 0) {
             result.isValid = false;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("MappingKeys contains duplicate key \"%1\"").arg(mappingkeys);
-            } else {
-                result.errorMessage = QString("映射按键中包含重复按键 \"%1\"").arg(mappingkeys);
-            }
+            result.errorMessage = tr("MappingKeys contains duplicate key \"%1\"").arg(mappingkeys);
             return result;
         }
 
@@ -2006,20 +1993,12 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
             }
             if (!foundSpecialMappingKey.isEmpty()) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("MappingKeys contains specialkey \"%1\"").arg(foundSpecialMappingKey);
-                } else {
-                    result.errorMessage = QString("映射按键中包含特殊按键 \"%1\"").arg(foundSpecialMappingKey);
-                }
+                result.errorMessage = tr("MappingKeys contains specialkey \"%1\"").arg(foundSpecialMappingKey);
                 return result;
             }
             if (!foundSpecialOriginalKey.isEmpty()) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("MappingCombinationKeys contains specialkey \"%1\"").arg(foundSpecialOriginalKey);
-                } else {
-                    result.errorMessage = QString("映射组合按键中包含特殊按键 \"%1\"").arg(foundSpecialOriginalKey);
-                }
+                result.errorMessage = tr("MappingCombinationKeys contains specialkey \"%1\"").arg(foundSpecialOriginalKey);
                 return result;
             }
 
@@ -2045,11 +2024,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey_noindex)
                         && mapkey_noindex != orikey_noindex) {
                         result.isValid = false;
-                        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                            result.errorMessage = QString("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex, orikey_noindex);
-                        } else {
-                            result.errorMessage = QString("映射按键 \"%1\" 与原始特殊按键 \"%2\" 不匹配").arg(mapkey_noindex, orikey_noindex);
-                        }
+                        result.errorMessage = tr("Mappingkey \"%1\" does not match special originalkey \"%2\"").arg(mapkey_noindex, orikey_noindex);
                         return result;
                     }
                 }
@@ -2068,20 +2043,12 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         if (mappingkeystr == KEY_BLOCKED_STR) {
             if (originalkeystr.contains(JOY_KEY_PREFIX)) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Game controller keys could not be blocked!");
-                } else {
-                    result.errorMessage = QString("游戏手柄按键无法被屏蔽!");
-                }
+                result.errorMessage = tr("Game controller keys could not be blocked!");
                 return result;
             }
             else if (originalkeystr.contains(SEPARATOR_LONGPRESS) || originalkeystr.contains(SEPARATOR_DOUBLEPRESS)) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Could not block original key with time suffix!");
-                } else {
-                    result.errorMessage = QString("不能屏蔽带有时间后缀的原始按键!");
-                }
+                result.errorMessage = tr("Could not block original key with time suffix!");
                 return result;
             }
         }
@@ -2145,21 +2112,13 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                         pushlevel = pushlevelString.toInt(&ok);
                         if (!ok || pushlevelString == "0" || pushlevelString.startsWith('0') || pushlevel <= VJOY_PUSHLEVEL_MIN || pushlevel >= VJOY_PUSHLEVEL_MAX) {
                             result.isValid = false;
-                            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                                result.errorMessage = QString("Invalid pushlevel[%1] of vJoy-Key \"%2\", valid range 1~254").arg(pushlevelString, mapping_key);
-                            } else {
-                                result.errorMessage = QString("虚拟游戏手柄按键 \"%1\" 的轻推值 [%2] 无效, 有效范围 1~254").arg(mapping_key, pushlevelString);
-                            }
+                            result.errorMessage = tr("Invalid pushlevel[%1] of vJoy-Key \"%2\", valid range 1~254").arg(pushlevelString, mapping_key);
                         }
                     }
                 }
                 else if (!vJoyKeyList.contains(vjoy_key)) {
                     result.isValid = false;
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        result.errorMessage = QString("Invalid vJoy-Key \"%1\"").arg(mapping_key);
-                    } else {
-                        result.errorMessage = QString("无效虚拟游戏手柄按键 \"%1\"").arg(mapping_key);
-                    }
+                    result.errorMessage = tr("Invalid vJoy-Key \"%1\"").arg(mapping_key);
                 }
             }
             else if (joy2vjoy_mapkey_match.hasMatch()) {
@@ -2170,32 +2129,20 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             }
             else {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid key \"%1\"").arg(mapping_key);
-                } else {
-                    result.errorMessage = QString("无效按键 \"%1\"").arg(mapping_key);
-                }
+                result.errorMessage = tr("Invalid key \"%1\"").arg(mapping_key);
             }
         }
 
         if (result.isValid && !waitTimeString.isEmpty()) {
             if (!ok || waitTimeString == "0" || waitTimeString.startsWith('0') || waittime <= MAPPING_WAITTIME_MIN || waittime > MAPPING_WAITTIME_MAX) {
                 result.isValid = false;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Invalid waittime \"%1\"").arg(waitTimeString);
-                } else {
-                    result.errorMessage = QString("无效延时时间 \"%1\"").arg(waitTimeString);
-                }
+                result.errorMessage = tr("Invalid waittime \"%1\"").arg(waitTimeString);
             }
         }
     }
     else {
         result.isValid = false;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Invalid format \"%1\"").arg(mapkey);
-        } else {
-            result.errorMessage = QString("无效格式 \"%1\"").arg(mapkey);
-        }
+        result.errorMessage = tr("Invalid format \"%1\"").arg(mapkey);
     }
 
     return result;
@@ -4218,11 +4165,7 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     }
 
     if (!missingFile.isEmpty()) {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("ZipUpdater program file %1 does not exist!").arg(missingFile);
-        } else {
-            result.errorMessage = QString("ZipUpdater程序文件 %1 不存在！").arg(missingFile);
-        }
+        result.errorMessage = tr("ZipUpdater program file %1 does not exist!").arg(missingFile);
         result.isValid = false;
         return result;
     }
@@ -4231,12 +4174,7 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     if (update_dirInfo.exists() && update_dirInfo.isDir()) {
     }
     else {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Update directory %1 does not exist!").arg(update_dirname);
-        }
-        else {
-            result.errorMessage = QString("升级目录 %1 不存在！").arg(update_dirname);
-        }
+        result.errorMessage = tr("Update directory %1 does not exist!").arg(update_dirname);
         result.isValid = false;
         return result;
     }
@@ -4252,24 +4190,14 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
             qDebug().noquote().nospace() << debugmessage;
 #endif
             if (!QFile::remove(targetFilePath)) {
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    result.errorMessage = QString("Failed to remove existing update program file %1").arg(file);
-                }
-                else {
-                    result.errorMessage = QString("删除旧的升级程序文件 %1 失败！").arg(file);
-                }
+                result.errorMessage = tr("Failed to remove existing update program file %1!").arg(file);
                 result.isValid = false;
                 return result;
             }
         }
 
         if (!QFile::copy(sourceFilePath, targetFilePath)) {
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                result.errorMessage = QString("Failed to copy update program file %1 to %2!").arg(file).arg(update_dirname);
-            }
-            else {
-                result.errorMessage = QString("复制升级程序文件 %1 到 %2 失败！").arg(file).arg(update_dirname);
-            }
+            result.errorMessage = tr("Failed to copy update program file %1 to %2!").arg(file, update_dirname);
             result.isValid = false;
             return result;
         }
@@ -4286,12 +4214,7 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
         copyFromFolder = QString("%1_%2").arg(PROGRAM_NAME, platformString);
     }
     else {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("The update file name %1 does not match the platform string %2 !").arg(update_filename, platformString);
-        }
-        else {
-            result.errorMessage = QString("升级文件 %1 与当前版本平台标识 %2 不匹配！").arg(update_filename, platformString);
-        }
+        result.errorMessage = tr("The update file name %1 does not match the platform string %2 !").arg(update_filename, platformString);
         result.isValid = false;
         return result;
     }
@@ -4316,12 +4239,7 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     bool started = process.startDetached(zipupdater_exe_path, arguments);
 
     if (!started) {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            result.errorMessage = QString("Failed to start update program %1 !").arg(ZIPUPDATER_EXE);
-        }
-        else {
-            result.errorMessage = QString("启动升级程序 %1 失败！").arg(ZIPUPDATER_EXE);
-        }
+        result.errorMessage = tr("Failed to start update program %1!").arg(ZIPUPDATER_EXE);
         result.isValid = false;
         return result;
     }
@@ -4614,12 +4532,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
 #endif
         }
         else{
-            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                showFailurePopup("Please doubleclick process info table to select valid processinfo for key mapping.");
-            }
-            else {
-                showFailurePopup("请双击进程列表为按键映射选择有效的进程信息");
-            }
+            showFailurePopup(tr("Please doubleclick process info table to select valid processinfo for key mapping."));
         }
     }
     else{
@@ -5138,30 +5051,15 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_WindowSwitchKeyString);
-                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showFailurePopup("Invalid input format for WindowSwitchKey!");
-                }
-                else {
-                    showFailurePopup("显示切换键输入格式错误！");
-                }
+                showFailurePopup(tr("Invalid input format for WindowSwitchKey!"));
             }
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_MappingStartKeyString);
-                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showFailurePopup("Invalid input format for MappingStartKey!");
-                }
-                else {
-                    showFailurePopup("映射开启键输入格式错误！");
-                }
+                showFailurePopup(tr("Invalid input format for MappingStartKey!"));
             }
             else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_MappingStopKeyString);
-                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    showFailurePopup("Invalid input format for MappingStopKey!");
-                }
-                else {
-                    showFailurePopup("映射关闭键输入格式错误！");
-                }
+                showFailurePopup(tr("Invalid input format for MappingStopKey!"));
             }
         }
     }
@@ -12601,12 +12499,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 QString mousepointstr = ui->pointDisplayLabel->text();
                 if (mousepointstr.isEmpty()) {
                     QString message = tr("Need to set a window mouse point with \"%1\" click!").arg(tr("L-Alt+Mouse-Left Click"));
-                    // if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    //     message = QString("Need to set a window mouse point with \"%1\" click!").arg("L-Alt+Mouse-Left Click");
-                    // }
-                    // else {
-                    //     message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
-                    // }
                     showFailurePopup(message);
                     return;
                 }
@@ -12621,13 +12513,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         if (keymapdata.Mapping_Keys.size() == 1
                             && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
                             && !ui->nextarrowCheckBox->isChecked()) {
-                            QString message;
-                            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                                message = QString("Already set a same window mouse point!");
-                            }
-                            else {
-                                message = QString("已经保存了一个相同的窗口坐标点!");
-                            }
+                            QString message = tr("Already set a same window mouse point!");
                             showFailurePopup(message);
                             return;
                         }
@@ -12637,13 +12523,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else if (currentMapKeyText == SENDTEXT_STR) {
                 QString sendtext = ui->sendTextLineEdit->text();
                 if (sendtext.isEmpty()) {
-                    QString message;
-                    if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                        message = QString("Please input the text to send!");
-                    }
-                    else {
-                        message = QString("请输入要发送的文本!");
-                    }
+                    QString message = tr("Please input the text to send!");
                     showFailurePopup(message);
                     return;
                 }
@@ -12652,13 +12532,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
-                QString message;
-                if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                    message = QString("KeySequenceBreak key can not be set duplicated!");
-                }
-                else {
-                    message = QString("按键映射序列打断键不能重复设置!");
-                }
+                QString message = tr("KeySequenceBreak key can not be set duplicated!");
                 showFailurePopup(message);
                 return;
             }
@@ -12766,13 +12640,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
                     QString mousepointstr = ui->pointDisplayLabel->text();
                     if (mousepointstr.isEmpty()) {
-                        QString message;
-                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                            message = QString("Need to set a screen mouse point with \"%1\" click!").arg("L-Ctrl+Mouse-Left Click");
-                        }
-                        else {
-                            message = QString("需要使用\"%1\"设置一个屏幕坐标点!").arg("L-Ctrl+鼠标左键点击");
-                        }
+                        QString message = tr("Need to set a screen mouse point with \"%1\" click!").arg(tr("L-Ctrl+Mouse-Left Click"));
                         showFailurePopup(message);
                         return;
                     }
@@ -12789,13 +12657,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
                     QString mousepointstr = ui->pointDisplayLabel->text();
                     if (mousepointstr.isEmpty()) {
-                        QString message;
-                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                            message = QString("Need to set a window mouse point with \"%1\" click!").arg("L-Alt+Mouse-Left Click");
-                        }
-                        else {
-                            message = QString("需要使用\"%1\"设置一个窗口坐标点!").arg("L-Alt+鼠标左键点击");
-                        }
+                        QString message = tr("Need to set a window mouse point with \"%1\" click!").arg(tr("L-Alt+Mouse-Left Click"));
                         showFailurePopup(message);
                         return;
                     }
@@ -12812,13 +12674,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else if (currentMapKeyText == SENDTEXT_STR) {
                     QString sendtext = ui->sendTextLineEdit->text();
                     if (sendtext.isEmpty()) {
-                        QString message;
-                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                            message = QString("Please input the text to send!");
-                        }
-                        else {
-                            message = QString("请输入要发送的文本!");
-                        }
+                        QString message = tr("Please input the text to send!");
                         showFailurePopup(message);
                         return;
                     }
@@ -12828,13 +12684,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
                 else if (currentMapKeyText == KEY_BLOCKED_STR) {
                     if (currentOriKeyText.contains(JOY_KEY_PREFIX)) {
-                        QString message;
-                        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                            message = QString("Game controller keys could not be blocked!");
-                        }
-                        else {
-                            message = QString("游戏手柄按键无法被屏蔽!");
-                        }
+                        QString message = tr("Game controller keys could not be blocked!");
                         showFailurePopup(message);
                         return;
                     }
@@ -12917,12 +12767,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
     }
     else {
-        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            showFailurePopup("Conflict with exist Keys!");
-        }
-        else {
-            showFailurePopup("与已存在的按键映射冲突！");
-        }
+        showFailurePopup(tr("Conflict with exist Keys!"));
     }
 }
 
@@ -13069,22 +12914,9 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
 
 void QKeyMapper::on_clearallButton_clicked()
 {
-    int language_index = ui->languageComboBox->currentIndex();
-    QString message;
-    if (LANGUAGE_ENGLISH == language_index) {
-        message = "Are you sure you want to clear all data in the mapping table?";
-    }
-    else {
-        message = "请确认是否要清除映射表中全部数据？";
-    }
+    QString message = tr("Are you sure you want to clear all data in the mapping table?");
 
-    QMessageBox::StandardButton reply;
-    if (LANGUAGE_ENGLISH == language_index) {
-        reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-    }
-    else {
-        reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-    }
+    QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
         m_KeyMappingDataTable->clearContents();
