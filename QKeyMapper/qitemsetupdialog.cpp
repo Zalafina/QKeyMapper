@@ -1262,12 +1262,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "OriginalKey update success.";
-        }
-        else {
-            popupMessage = "原始按键更新成功";
-        }
+        popupMessage = tr("OriginalKey update success");
 
         if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
@@ -1311,12 +1306,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "MappingKey update success.";
-        }
-        else {
-            popupMessage = "映射按键更新成功";
-        }
+        popupMessage = tr("MappingKey update success");
 
         QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
 
@@ -1364,12 +1354,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "KeyUp MappingKey update success.";
-        }
-        else {
-            popupMessage = "抬起映射更新成功";
-        }
+        popupMessage = tr("KeyUp MappingKey update success");
 
         if (mappingKey.isEmpty()) {
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
@@ -1498,12 +1483,7 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
     int popupMessageDisplayTime = 3000;
 
     popupMessageColor = SUCCESS_COLOR;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        popupMessage = "Mapping item note update success.";
-    }
-    else {
-        popupMessage = "映射项备注更新成功";
-    }
+    popupMessage = tr("Mapping item note update success");
 
     if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note != note_str) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;

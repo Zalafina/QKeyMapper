@@ -6223,12 +6223,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (true == loadresult) {
-        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            popupMessage = "Save success : " + savedSettingName;
-        }
-        else {
-            popupMessage = "保存成功 : " + savedSettingName;
-        }
+        popupMessage = tr("Save success : ") + savedSettingName;
         popupMessageColor = SUCCESS_COLOR;
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
         if (backupRet) {
@@ -6238,12 +6233,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
     }
     else {
-        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            popupMessage = "Save failure : " + savedSettingName;
-        }
-        else {
-            popupMessage = "映射数据错误 : " + savedSettingName;
-        }
+        popupMessage = tr("Save failure : ") + savedSettingName;
         popupMessageColor = FAILURE_COLOR;
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[saveKeyMapSetting]" << "Mapping data error, Save setting failure!!! ->" << savedSettingName;
@@ -8094,18 +8084,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
 
     if (false == datavalidflag){
-        // if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-        //     QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">Load invalid keymapdata from INI file.</p><p align=\"center\">Reset to default values.</p></body></html>");
-        // }
-        // else {
-        //     QMessageBox::warning(this, PROGRAM_NAME, "<html><head/><body><p align=\"center\">从INI文件加载了无效的设定数据。</p><p align=\"center\">显示默认设定。</p></body></html>");
-        // }
-        if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-            showFailurePopup("Invalid mapping data : " + settingtext);
-        }
-        else {
-            showFailurePopup("无效的映射数据 : " + settingtext);
-        }
+        showFailurePopup(tr("Invalid mapping data : ") + settingtext);
         return false;
     }
     else {
@@ -8702,14 +8681,9 @@ void QKeyMapper::mappingStartNotification()
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QString color = "#d6a2e8";
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        popupNotification = "StartMapping [" + currentSelectedSetting + "]" + "->" + tabName;
-    }
-    else {
-        popupNotification = "开始映射 [" + currentSelectedSetting + "]" + "->" + tabName;
-        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-            color = "#26de81";
-        }
+    popupNotification = tr("StartMapping [") + currentSelectedSetting + "]" + "->" + tabName;
+    if (GLOBALSETTING_INDEX == currentSelectedIndex) {
+        color = "#26de81";
     }
     showNotificationPopup(popupNotification, color, position);
 }
@@ -8723,20 +8697,10 @@ void QKeyMapper::mappingStopNotification()
     }
     QString mappingStatusString;
     if (KEYMAP_IDLE == m_KeyMapStatus) {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            mappingStatusString = "Idle";
-        }
-        else {
-            mappingStatusString = "空闲";
-        }
+        mappingStatusString = tr("Idle");
     }
     else if (KEYMAP_CHECKING == m_KeyMapStatus) {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            mappingStatusString = "Checking";
-        }
-        else {
-            mappingStatusString = "监测中";
-        }
+        mappingStatusString = tr("Checking");
     }
 
     if (mappingStatusString.isEmpty()) {
@@ -8744,12 +8708,7 @@ void QKeyMapper::mappingStopNotification()
     }
 
     QString color = "#d6a2e8";
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        popupNotification = "StopMapping [" + mappingStatusString + "]";
-    }
-    else {
-        popupNotification = "停止映射 [" + mappingStatusString + "]";
-    }
+    popupNotification = tr("StopMapping [") + mappingStatusString + "]";
     showNotificationPopup(popupNotification, color, position);
 }
 
@@ -8764,14 +8723,9 @@ void QKeyMapper::mappingTabSwitchNotification()
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QString color = "#d6a2e8";
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        popupNotification = "MappingTabSwitch [" + currentSelectedSetting + "]" + "->" + tabName;
-    }
-    else {
-        popupNotification = "切换映射表 [" + currentSelectedSetting + "]" + "->" + tabName;
-        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-            color = "#26de81";
-        }
+    popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + "->" + tabName;
+    if (GLOBALSETTING_INDEX == currentSelectedIndex) {
+        color = "#26de81";
     }
     showNotificationPopup(popupNotification, color, position);
 }
@@ -9238,7 +9192,6 @@ void QKeyMapper::updateMultiInputStatus()
     }
 #endif
 
-    int languageIndex = ui->languageComboBox->currentIndex();
     if (Interception_Worker::INTERCEPTION_AVAILABLE == interception_state) {
         if (m_KeyMapStatus == KEYMAP_IDLE){
             ui->multiInputEnableCheckBox->setEnabled(true);
@@ -9255,20 +9208,10 @@ void QKeyMapper::updateMultiInputStatus()
             }
         }
 
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_ENGLISH);
-        }
-        else {
-            ui->installInterceptionButton->setText(UNINSTALLINTERCEPTIONBUTTON_CHINESE);
-        }
+        ui->installInterceptionButton->setText(tr("Uninstall Driver"));
 
         ui->multiInputStatusLabel->setStyleSheet("color:green;");
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_AVAILABLE_ENGLISH);
-        }
-        else {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_AVAILABLE_CHINESE);
-        }
+        ui->multiInputStatusLabel->setText(tr("Available"));
     }
     else if (Interception_Worker::INTERCEPTION_REBOOTREQUIRED == interception_state) {
         ui->multiInputEnableCheckBox->setChecked(false);
@@ -9282,20 +9225,10 @@ void QKeyMapper::updateMultiInputStatus()
         ui->keyboardSelectComboBox->setEnabled(false);
         ui->mouseSelectComboBox->setEnabled(false);
 
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
-        }
-        else {
-            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
-        }
+        ui->installInterceptionButton->setText(tr("Install Driver"));
 
         ui->multiInputStatusLabel->setStyleSheet("color: orange;");
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_ENGLISH);
-        }
-        else {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_REBOOTREQUIRED_CHINESE);
-        }
+        ui->multiInputStatusLabel->setText(tr("RebootRequired"));
     }
     else {
         ui->multiInputEnableCheckBox->setChecked(false);
@@ -9309,20 +9242,10 @@ void QKeyMapper::updateMultiInputStatus()
         ui->keyboardSelectComboBox->setEnabled(false);
         ui->mouseSelectComboBox->setEnabled(false);
 
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_ENGLISH);
-        }
-        else {
-            ui->installInterceptionButton->setText(INSTALLINTERCEPTIONBUTTON_CHINESE);
-        }
+        ui->installInterceptionButton->setText(tr("Install Driver"));
 
         ui->multiInputStatusLabel->setStyleSheet("color: red;");
-        if (LANGUAGE_ENGLISH == languageIndex) {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_UNAVAILABLE_ENGLISH);
-        }
-        else {
-            ui->multiInputStatusLabel->setText(MULTIINPUTSTATUSLABEL_UNAVAILABLE_CHINESE);
-        }
+        ui->multiInputStatusLabel->setText(tr("Unavailable"));
     }
 }
 
@@ -9528,17 +9451,9 @@ void QKeyMapper::updateSysTrayIconMenuText()
     QString hideActionText;
     QString quitActionText;
 
-    int languageIndex = ui->languageComboBox->currentIndex();
-    if (LANGUAGE_ENGLISH == languageIndex) {
-        showActionText = TRAYMENU_SHOWACTION_ENGLISH;
-        hideActionText = TRAYMENU_HIDEACTION_ENGLISH;
-        quitActionText = TRAYMENU_QUITACTION_ENGLISH;
-    }
-    else {
-        showActionText = TRAYMENU_SHOWACTION_CHINESE;
-        hideActionText = TRAYMENU_HIDEACTION_CHINESE;
-        quitActionText = TRAYMENU_QUITACTION_CHINESE;
-    }
+    showActionText = tr("Show");
+    hideActionText = tr("Hide");
+    quitActionText = tr("Quit");
 
     if (false == isHidden()) {
         m_TrayIconMenu_ShowHideAction->setText(hideActionText);
@@ -10849,12 +10764,7 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
 
     QString tooltip_str;
     if (false == tab_hotkey.isEmpty()) {
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            tooltip_str = QString("Hotkey : %1").arg(tab_hotkey);
-        }
-        else {
-            tooltip_str = QString("快捷键 : %1").arg(tab_hotkey);
-        }
+        tooltip_str = tr("Hotkey : %1").arg(tab_hotkey);
     }
     m_KeyMappingTabWidget->tabBar()->setTabToolTip(tabindex, tooltip_str);
 }
@@ -10941,11 +10851,11 @@ void QKeyMapper::reloadUILanguage()
 
     if (LANGUAGE_ENGLISH == languageIndex) {
         changeLanguage(LANGUAGECODE_ENGLISH);
-        // setUILanguage_English();
+        setControlFontEnglish();
     }
     else {
         changeLanguage(LANGUAGECODE_CHINESE);
-        // setUILanguage_Chinese();
+        setControlFontChinese();
     }
     setUILanguage(languageIndex);
 
@@ -10966,13 +10876,6 @@ void QKeyMapper::reloadUILanguage()
 
 void QKeyMapper::setUILanguage(int languageindex)
 {
-    if (LANGUAGE_ENGLISH == languageindex) {
-        setControlFontEnglish();
-    }
-    else {
-        setControlFontChinese();
-    }
-
     if (m_KeyMapStatus != KEYMAP_IDLE) {
         ui->keymapButton->setText(tr("MappingStop"));
     }
@@ -11666,15 +11569,6 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageLabel->setStyleSheet(styleSheet);
     m_PopupMessageLabel->setWindowFlag(Qt::WindowStaysOnTopHint);
 
-    // QFont customFont;
-    // if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-    //     customFont.setFamily(FONTNAME_ENGLISH);
-    // }
-    // else {
-    //     customFont.setFamily(FONTNAME_CHINESE);
-    // }
-    // customFont.setPointSize(16);
-    // customFont.setBold(true);
     QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(20);
@@ -11920,28 +11814,14 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
 
     // Check if the file exists
     if (!fileinfo.exists()) {
-        QString errorMessage;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            errorMessage = QString("The upgrade package %1 does not exist in the directory %2. Download failed!").arg(filename, dirname);
-        }
-        else {
-            errorMessage = QString("升级包 %1 在目录 %2 中不存在。下载失败！").arg(filename, dirname);
-        }
+        QString errorMessage = tr("The upgrade package %1 does not exist in the directory %2. Download failed!").arg(filename, dirname);
         showFailurePopup(errorMessage);
         return;
     }
 
-    QString message;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        message = QString("<html><head/><body><p align=\"center\">The upgrade package <b>%1</b> has been successfully downloaded to the directory <b>%2</b>.</p>")
-                      .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
-        message += QString("<p align=\"center\"><b>Click [Yes] to automatically close the program and upgrade</b>, otherwise handle it manually.</p></body></html>");
-    }
-    else {
-        message = QString("<html><head/><body><p align=\"center\">升级包 <b>%1</b> 已成功下载至 <b>%2</b> 目录</p>")
-                      .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
-        message += QString("<p align=\"center\"><b>点击 [Yes] 按钮自动关闭程序并升级替换</b>，否则请自行解压替换</p></body></html>");
-    }
+    QString message = tr("<html><head/><body><p align=\"center\">The upgrade package <b>%1</b> has been successfully downloaded to the directory <b>%2</b>.</p>")
+            .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
+    message += tr("<p align=\"center\"><b>Click [Yes] to automatically close the program and upgrade</b>, otherwise handle it manually.</p></body></html>");
 
     QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message);
 
@@ -12339,12 +12219,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             currentOriKeyText = currentOriCombinationKeyText;
         }
         else {
-            if (LANGUAGE_ENGLISH == ui->languageComboBox->currentIndex()) {
-                showFailurePopup("Invalid input format for the original key combination!");
-            }
-            else {
-                showFailurePopup("原始组合键输入格式错误！");
-            }
+            showFailurePopup(tr("Invalid input format for the original key combination!"));
             return;
         }
     }
@@ -13723,7 +13598,6 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
 void QKeyMapper::on_installInterceptionButton_clicked()
 {
     Interception_Worker::Interception_State currentInterceptionState = Interception_Worker::getInterceptionState();
-    int languageIndex = ui->languageComboBox->currentIndex();
 
     if (Interception_Worker::INTERCEPTION_AVAILABLE == currentInterceptionState) {
 #ifdef DEBUG_LOGOUT_ON
@@ -13748,12 +13622,8 @@ void QKeyMapper::on_installInterceptionButton_clicked()
             qDebug() << "[on_installViGEmBusButton_clicked]" << "Reboot required after uninstall Interception Driver, InterceptionState ->" << newInterceptionState;
 #endif
             /* Show Reboot Required MessageBox after Uninstall Interception Driver */
-            if (LANGUAGE_ENGLISH == languageIndex) {
-                QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
-            }
-            else {
-                QMessageBox::warning(this, PROGRAM_NAME, "卸载多输入设备驱动后需要重新启动操作系统生效。");
-            }
+            QString message = tr("System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
+            QMessageBox::warning(this, PROGRAM_NAME, message);
         }
     }
     else {
@@ -13788,12 +13658,8 @@ void QKeyMapper::on_installInterceptionButton_clicked()
             qDebug() << "[on_installViGEmBusButton_clicked]" << "Reboot required after install Interception Driver, InterceptionState ->" << newInterceptionState;
 #endif
             /* Show Reboot Required MessageBox after Install Interception Driver */
-            if (LANGUAGE_ENGLISH == languageIndex) {
-                QMessageBox::warning(this, PROGRAM_NAME, "System reboot is required for the changes to take effect after installing the multi-input device driver.");
-            }
-            else {
-                QMessageBox::warning(this, PROGRAM_NAME, "安装多输入设备驱动后需要重新启动操作系统生效。");
-            }
+            QString message = tr("System reboot is required for the changes to take effect after installing the multi-input device driver.");
+            QMessageBox::warning(this, PROGRAM_NAME, message);
         }
     }
 }
@@ -13952,13 +13818,7 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
         }
         else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
             int copied_count = QKeyMapper::getInstance()->copySelectedKeyMappingDataToCopiedList();
-            QString message;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                message = QString("%1 selected mapping data copied.").arg(copied_count);
-            }
-            else {
-                message = QString("复制 %1 条当前选中映射表内容。").arg(copied_count);
-            }
+            QString message = tr("%1 selected mapping data copied.").arg(copied_count);
             QKeyMapper::getInstance()->showInformationPopup(message);
             return;
         }
@@ -13966,37 +13826,19 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList();
             int copied_count = QKeyMapper::s_CopiedMappingData.size();
             if (inserted_count == 0) {
-                QString message;
-                if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                    message = QString("All %1 copied mapping data are duplicated and could not be inserted.").arg(copied_count);
-
-                }
-                else {
-                    message = QString("全部 %1 条复制内容与当前映射表已有原始按键重复，未能插入！").arg(copied_count);
-                }
+                QString message = tr("%1 copied mapping data are completely duplicated and could not be inserted!").arg(copied_count);
                 QKeyMapper::getInstance()->showFailurePopup(message);
             }
             else if (inserted_count > 0) {
                 QString message;
                 if (inserted_count != copied_count) {
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        message = QString("Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.")
-                                      .arg(inserted_count)
-                                      .arg(copied_count - inserted_count);
-                    } else {
-                        message = QString("插入 %1 条复制内容到当前映射表中，其余 %2 条由于原始按键重复未能插入。")
-                                      .arg(inserted_count)
-                                      .arg(copied_count - inserted_count);
-                    }
+                    message = tr("Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.")
+                                  .arg(inserted_count)
+                                  .arg(copied_count - inserted_count);
                     QKeyMapper::getInstance()->showWarningPopup(message);
                 } else {
-                    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                        message = QString("Inserted %1 copied mapping data into current mapping table.")
-                                      .arg(inserted_count);
-                    } else {
-                        message = QString("插入 %1 条复制的映射表内容到当前映射表中。")
-                                      .arg(inserted_count);
-                    }
+                    message = tr("Inserted %1 copied mapping data into current mapping table.")
+                                  .arg(inserted_count);
                     QKeyMapper::getInstance()->showInformationPopup(message);
                 }
             }

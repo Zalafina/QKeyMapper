@@ -71,12 +71,7 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
             QString popupMessage;
             QString popupMessageColor = SUCCESS_COLOR;
             int popupMessageDisplayTime = 2000;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                popupMessage = "Recorded keys have been copied to the clipboard";
-            }
-            else {
-                popupMessage = "按键记录已复制到剪贴板";
-            }
+            popupMessage = tr("Recorded keys have been copied to the clipboard");
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
     }

@@ -435,22 +435,8 @@ void QInputDeviceListWindow::onKeyboardListCellChanged(int row, int col)
             // Temporarily block the signal emit
             ui->keyboardDeviceTable->blockSignals(true);
             ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
-            QString message;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                message = "Please use the disable function with caution. Disabling the input device that is currently in use will prevent any further operations!";
-            }
-            else {
-                message = "请谨慎使用禁用功能，禁用正在使用的输入设备会导致无法继续进行任何操作！";
-            }
-
-            QMessageBox::StandardButton reply;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-            }
-            else {
-                reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-            }
-
+            QString message = tr("Please use the disable function with caution. Disabling the input device that is currently in use will prevent any further operations!");
+            QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
             if (reply == QMessageBox::No) {
                 ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
 #ifdef DEBUG_LOGOUT_ON
@@ -489,22 +475,8 @@ void QInputDeviceListWindow::onMouseListCellChanged(int row, int col)
             // Temporarily block the signal emit
             ui->mouseDeviceTable->blockSignals(true);
             ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
-            QString message;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                message = "Please use the disable function with caution. Disabling the input device that is currently in use will prevent any further operations!";
-            }
-            else {
-                message = "请谨慎使用禁用功能，禁用正在使用的输入设备会导致无法继续进行任何操作！";
-            }
-
-            QMessageBox::StandardButton reply;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-            }
-            else {
-                reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-            }
-
+            QString message = tr("Please use the disable function with caution. Disabling the input device that is currently in use will prevent any further operations!");
+            QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
             if (reply == QMessageBox::No) {
                 ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
 #ifdef DEBUG_LOGOUT_ON

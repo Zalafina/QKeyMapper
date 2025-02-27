@@ -146,12 +146,7 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
 
     if (tabNameString.isEmpty()) {
         popupMessageColor = FAILURE_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "TabName is empty!";
-        }
-        else {
-            popupMessage = "未填写映射表名！";
-        }
+        popupMessage = tr("TabName is empty!");
     }
     else if (tabNameString == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName) {
 #ifdef DEBUG_LOGOUT_ON
@@ -160,21 +155,11 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
     }
     else if (isduplicate) {
         popupMessageColor = FAILURE_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "TabName is duplicate: " + tabNameString;
-        }
-        else {
-            popupMessage = "存在相同的映射表名: " + tabNameString;
-        }
+        popupMessage = tr("TabName is duplicate: ") + tabNameString;
     }
     else {
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "TabName update success: " + tabNameString;
-        }
-        else {
-            popupMessage = "映射表名更新成功: " + tabNameString;
-        }
+        popupMessage = tr("TabName update success: ") + tabNameString;
 
         if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName != tabNameString) {
             QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabName(m_TabIndex, tabNameString);
@@ -208,12 +193,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
         }
         else {
             popupMessageColor = SUCCESS_COLOR;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                popupMessage = "TabHotkey clear success";
-            }
-            else {
-                popupMessage = "映射表快捷键清除成功";
-            }
+            popupMessage = tr("TabHotkey clear success");
 
             QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
         }
@@ -221,12 +201,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
     else if (QKeyMapper::validateCombinationKey(tabhotkeystring))
     {
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "TabHotkey update success: " + ori_tabhotkeystring;
-        }
-        else {
-            popupMessage = "映射表快捷键更新成功: " + ori_tabhotkeystring;
-        }
+        popupMessage = tr("TabHotkey update success: ") + ori_tabhotkeystring;
 
         QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
     }
@@ -235,12 +210,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
         ui->tabHotkeyLineEdit->setText(QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey);
 
         popupMessageColor = FAILURE_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = "Invalid input format for TabHotkey!";
-        }
-        else {
-            popupMessage = "映射表快捷键输入格式错误: " + ori_tabhotkeystring;
-        }
+        popupMessage = tr("Invalid input format for TabHotkey: %1").arg(ori_tabhotkeystring);
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
@@ -255,13 +225,7 @@ void QTableSetupDialog::on_exportTableButton_clicked()
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
     QString default_filename = "mapdatatable.ini";
     QString filter = "INI files (*.ini)";
-    QString caption_string;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        caption_string = "Export mapping data table : " +TabName;
-    }
-    else {
-        caption_string = "导出映射表 : " +TabName;
-    }
+    QString caption_string = tr("Export mapping data table : ") +TabName;
 
     QString export_filename = QFileDialog::getSaveFileName(parentWidget(),
                                                            caption_string,
@@ -280,12 +244,7 @@ void QTableSetupDialog::on_exportTableButton_clicked()
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = QString("Mapping data of table \"%1\" export successfully").arg(TabName);;
-        }
-        else {
-            popupMessage = QString("映射表\"%1\"数据导出成功").arg(TabName);
-        }
+        popupMessage = tr("Mapping data of table \"%1\" export successfully").arg(TabName);;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
@@ -301,12 +260,7 @@ void QTableSetupDialog::on_importTableButton_clicked()
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
     QString filter = "INI files (*.ini)";
     QString caption_string;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        caption_string = "Import mapping data table : " +TabName;
-    }
-    else {
-        caption_string = "导入映射表 : " +TabName;
-    }
+    caption_string = tr("Import mapping data table : ") +TabName;
 
     QString import_filename = QFileDialog::getOpenFileName(parentWidget(),
                                                            caption_string,
@@ -327,12 +281,7 @@ void QTableSetupDialog::on_importTableButton_clicked()
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
         popupMessageColor = SUCCESS_COLOR;
-        if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-            popupMessage = QString("Import mapping data to table \"%1\" successfully").arg(TabName);;
-        }
-        else {
-            popupMessage = QString("映射表\"%1\"导入映射数据成功").arg(TabName);
-        }
+        popupMessage = tr("Import mapping data to table \"%1\" successfully").arg(TabName);
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
@@ -347,13 +296,7 @@ void QTableSetupDialog::on_removeTableButton_clicked()
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
     QString message;
     QMessageBox::StandardButton reply;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        message = QString("Are you sure you want to remove the mapping table \"%1\"?").arg(TabName);
-    }
-    else {
-        message = QString("请确认是否要删除映射表\"%1\"？").arg(TabName);
-    }
-
+    message = tr("Are you sure you want to remove the mapping table \"%1\"?").arg(TabName);
     reply = QMessageBox::warning(parentWidget(), PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
@@ -364,22 +307,12 @@ void QTableSetupDialog::on_removeTableButton_clicked()
         int popupMessageDisplayTime = 3000;
         if (REMOVE_MAPPINGTAB_SUCCESS == remove_result) {
             popupMessageColor = SUCCESS_COLOR;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                popupMessage = QString("Mapping table \"%1\" removed successfully").arg(TabName);;
-            }
-            else {
-                popupMessage = QString("映射表\"%1\"删除成功").arg(TabName);
-            }
+            popupMessage = tr("Mapping table \"%1\" removed successfully").arg(TabName);;
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
         else if (REMOVE_MAPPINGTAB_LASTONE == remove_result) {
             popupMessageColor = FAILURE_COLOR;
-            if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-                popupMessage = QString("Cannot remove the last mapping table!");
-            }
-            else {
-                popupMessage = QString("无法删除最后一个映射表！");
-            }
+            popupMessage = tr("Cannot remove the last mapping table!");
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
     }
