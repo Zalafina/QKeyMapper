@@ -146,22 +146,22 @@
 <context>
     <name>KeyMappingTabWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="13822"/>
+        <location filename="../qkeymapper.cpp" line="13821"/>
         <source>%1 selected mapping data copied.</source>
         <translation>%1 selected mapping data copied.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13830"/>
+        <location filename="../qkeymapper.cpp" line="13829"/>
         <source>%1 copied mapping data are completely duplicated and could not be inserted!</source>
         <translation>%1 copied mapping data are completely duplicated and could not be inserted!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13836"/>
+        <location filename="../qkeymapper.cpp" line="13835"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</source>
         <translation>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13841"/>
+        <location filename="../qkeymapper.cpp" line="13840"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>Inserted %1 copied mapping data into current mapping table.</translation>
     </message>
@@ -1325,12 +1325,12 @@
         <translation>Are you sure you want to clear all data in the mapping table?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13626"/>
+        <location filename="../qkeymapper.cpp" line="13625"/>
         <source>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</source>
         <translation>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13662"/>
+        <location filename="../qkeymapper.cpp" line="13661"/>
         <source>System reboot is required for the changes to take effect after installing the multi-input device driver.</source>
         <translation>System reboot is required for the changes to take effect after installing the multi-input device driver.</translation>
     </message>
