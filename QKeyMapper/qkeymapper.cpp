@@ -849,6 +849,9 @@ void QKeyMapper::changeLanguage(const QString &langCode)
     if (LANGUAGECODE_ENGLISH == langCode || LANGUAGECODE_ENGLISH_US == langCode) {
         custom_translations_path = ":/QKeyMapper_en_US.qm";
     }
+    else if (LANGUAGECODE_JAPANESE == langCode) {
+        custom_translations_path = ":/QKeyMapper_ja_JP.qm";
+    }
     else {
         custom_translations_path = ":/QKeyMapper_zh_CN.qm";
     }
@@ -5544,6 +5547,9 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     if (LANGUAGE_ENGLISH == languageIndex) {
         settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_ENGLISH);
+    }
+    else if (LANGUAGE_JAPANESE == languageIndex) {
+        settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_JAPANESE);
     }
     else {
         settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
@@ -10853,6 +10859,10 @@ void QKeyMapper::reloadUILanguage()
         changeLanguage(LANGUAGECODE_ENGLISH);
         setControlFontEnglish();
     }
+    else if (LANGUAGE_JAPANESE == languageIndex) {
+        changeLanguage(LANGUAGECODE_JAPANESE);
+        setControlFontChinese();
+    }
     else {
         changeLanguage(LANGUAGECODE_CHINESE);
         setControlFontChinese();
@@ -13405,6 +13415,9 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
     QString languageStr;
     if (LANGUAGE_ENGLISH == index) {
         languageStr = "English";
+    }
+    else if (LANGUAGE_JAPANESE == index) {
+        languageStr = "Japanese";
     }
     else {
         languageStr = "Chinese";

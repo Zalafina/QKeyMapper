@@ -60,6 +60,7 @@ const Qt::Key KEY_RECORD_STOP       = Qt::Key_F12;
 
 const int LANGUAGE_CHINESE = 0;
 const int LANGUAGE_ENGLISH = 1;
+const int LANGUAGE_JAPANESE = 2;
 
 const int UPDATE_SITE_GITHUB = 0;
 const int UPDATE_SITE_GITEE = 1;
@@ -449,6 +450,7 @@ const char *ZIPUPDATER_DLL_VCRUNTIME = "vcruntime140.dll";
 const char *LANGUAGECODE_CHINESE = "zh_CN";
 const char *LANGUAGECODE_ENGLISH = "en";
 const char *LANGUAGECODE_ENGLISH_US = "en_US";
+const char *LANGUAGECODE_JAPANESE = "ja_JP";
 
 const char *PREFIX_SHORTCUT = "★";
 const char *OLD_PREFIX_SHORTCUT = "★";

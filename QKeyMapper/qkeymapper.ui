@@ -562,7 +562,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -709,6 +709,11 @@
      <item>
       <property name="text">
        <string>English</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>日本語</string>
       </property>
      </item>
     </widget>
