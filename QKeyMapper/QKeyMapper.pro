@@ -225,5 +225,6 @@ DISTFILES   += \
 contains( DEFINES, USE_QTRANSLATOR ) {
 TRANSLATIONS += \
     translations/QKeyMapper_en_US.ts \
-    translations/QKeyMapper_zh_CN.ts
+    translations/QKeyMapper_zh_CN.ts \
+    translations/QKeyMapper_ja_JP.ts
 }

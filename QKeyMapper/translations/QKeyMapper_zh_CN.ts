@@ -38,7 +38,7 @@
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="23"/>
         <source>Updater</source>
-        <translation>Updater</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.ui" line="90"/>
@@ -83,19 +83,19 @@
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="425"/>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="434"/>
         <source>%1 bytes</source>
-        <translation>%1 bytes</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="428"/>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="437"/>
         <source>%1 KB</source>
-        <translation>%1 KB</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="431"/>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="440"/>
         <source>%1 MB</source>
-        <translation>%1 MB</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../QSimpleUpdater/src/Downloader.cpp" line="488"/>
@@ -292,7 +292,7 @@
         <location filename="../qinputdevicelistwindow.cpp" line="34"/>
         <location filename="../qinputdevicelistwindow.cpp" line="44"/>
         <source>No.</source>
-        <translation>No.</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.cpp" line="35"/>
@@ -310,13 +310,13 @@
         <location filename="../qinputdevicelistwindow.cpp" line="37"/>
         <location filename="../qinputdevicelistwindow.cpp" line="47"/>
         <source>VendorID</source>
-        <translation>VendorID</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.cpp" line="38"/>
         <location filename="../qinputdevicelistwindow.cpp" line="48"/>
         <source>ProductID</source>
-        <translation>ProductID</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../qinputdevicelistwindow.cpp" line="39"/>
