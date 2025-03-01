@@ -46,6 +46,93 @@
 ## If you have any questions during use, you can also join the Q group for consultation (Group number: 906963961)
 
 ### New features list (sorted in descending order of update time)
+* v1.3.7(Build 20250226)
+    * Added two mapping keys **Crosshair-Normal** and **Crosshair-TypeA** to display crosshair reticles on the game screen when pressed. In the mapping item setting window, the **Crosshair Settings** button pops up a setting window where you can adjust the color, line length, line width, offset, and transparency.
+    * Updated **PS4-Dualshock Controller** key detect table in the README file.
+    * Increased the number of physical gamepad key detections to **Joy-Key30**.
+    * Changed the translation text switching mechanism when switching languages.
+
+* v1.3.7(Build 20250118)
+    * Increased the adjustment range of **X-axis sensitivity** and **Y-axis sensitivity** on the "Virtual Gamepad" tab from **1~1000** to **1~50000**, with the default value changed from 80 to 4000. After the update, if the virtual gamepad joystick moves too slowly, you can multiply the original sensitivity setting by 50 times to achieve the same effect as before.
+    * Fixed memory leak issue caused by the update module.
+
+* v1.3.7(Build 20250115)
+    * Added a **Post Method Sending** checkbox in the mapping item setting window. When checked, if the mapping key supports using the PostMessage method (ordinary keyboard and mouse keys), the mapping key will be sent using the Post method.
+    * Fixed issue where the original key was not released correctly when setting a long press time.
+    * Fixed issue where setting long press/double-click for the original key and enabling "Key Sequence Loop" did not loop the key sequence after completion if the original key was still pressed.
+
+* v1.3.7(Build 20250110)
+    * In the "Virtual Gamepad" tab, setting the "Recenter Delay" value to 0 will display "No Recenter." In this case, the recenter delay timer for the mouse-controlled virtual gamepad joystick will not be activated.
+    * Removed **Mouse2vJoy-Direct** mapping key and added a "Direct Control Mode" checkbox in the "Virtual Gamepad" tab to replace this mapping key. When this setting is checked, the mouse control virtual gamepad joystick function of **vJoy-Mouse2LS/vJoy-Mouse2RS** will use "Direct Control Mode" for joystick movement.
+    * The "Recenter Delay" value setting also applies to the mouse-controlled virtual gamepad joystick in "Direct Control Mode."
+    * Changed the adjustment effect of **X-axis sensitivity** and **Y-axis sensitivity** in the "Virtual Gamepad" tab from the smaller the value, the higher the sensitivity, to the larger the value, the higher the sensitivity. The adjustment range remains unchanged at 1~1000, with the default value changed from 12 to 80.
+    * Fixed the "ZIP file not found" error when updating from the **Gitee** website.
+
+* v1.3.7(Build 20250108)
+    * Added "Recenter Delay" value adjustment box in the "Virtual Gamepad" tab, which can be set to a recenter delay time between 1~1000 milliseconds. The default recenter delay is 200 milliseconds.
+
+* v1.3.7(Build 20241230)
+    * When selecting the [Yes] button to automatically upgrade and overwrite the current version files, if the upgrade files are successfully decompressed and copied, the QKeyMapper program will automatically restart.
+    * Mapping table supports simultaneous selection of multiple rows. The method is to left-click to select one row, then press the **Shift** or **Ctrl** key on the keyboard while left-clicking to select another row to simultaneously select multiple rows of the mapping table content. The following operations support multi-row selection:
+      - Press the **Delete** button or the keyboard **Delete** key to delete the currently selected multiple rows simultaneously.
+      - Press the **▲** / **▼** buttons or the keyboard **↑** / **↓** keys to move the currently selected multiple rows up or down.
+      - Drag the currently selected multiple rows to the specified position through mouse dragging.
+    * After selecting the current mapping table content, press **Ctrl + C** to copy the selected content, then switch to another mapping table and press **Ctrl + V** to insert the copied content:
+      - If there are no duplicate entries with the original keys in the current mapping table, all copied content will be inserted, and the number of inserted entries will be displayed in the prompt information.
+      - If some original keys in the copied content are duplicated with the current mapping table, the non-duplicated copied content will be inserted, and the number of inserted entries and the number of entries that could not be inserted due to duplication will be displayed in the prompt information.
+      - If all the copied content duplicates the original keys in the current mapping table, no content will be inserted, and a failure prompt will be displayed.
+      - During the insertion operation, the copied content will be inserted in front of the currently selected item in the current mapping table. If there are no selected items, the copied content will be inserted at the end of the mapping table.
+
+* v1.3.7(Build 20241228)
+    * Added zipupdater.exe upgrade program. After downloading the upgrade files by clicking the "Check for Updates" button, you can select [Yes] in the dialog box to automatically decompress and overwrite the current program files. Before overwriting the current version files, the **keymapdata_latest.ini** setting file will be backed up to the **settings_backup** directory.
+    * Added "milliseconds" unit display suffix to all time-related value adjustment boxes, including: "long press" and "double click" time value adjustment boxes, "delay" time value adjustment boxes, "rapid fire press" and "rapid fire release" time value adjustment boxes.
+    * When the mapping is stopped, after left-clicking to highlight an item in the mapping table, you can use the "↑" and "↓" keys on the keyboard to move the currently selected item up and down, and use the "Del" key on the keyboard to delete the currently selected item.
+    * If a combination key is set for the shortcut keys "Mapping On," "Mapping Off," "Display Switch," "Mapping Table Switch," the key order will be checked, and the shortcut key will be triggered only when the key order is consistent.
+
+* v1.3.7(Build 20241222)
+    * Added "UpdateSite" dropdown list before the "Check Updates" button. You can choose "Github" or "Gitee" to check for updates on different version release websites. After switching, click "SaveSetting" to save the selected website in the settings. **Note: Some network environments require a proxy or VPN to connect to Github servers without obstacles. If you cannot update through Github or the download speed is too slow, please try selecting the Gitee website for updates.**
+
+* v1.3.7(Build 20241220)
+    * Added "Check Updates" button in the "General" tab. If the latest version on Github is newer than the currently running version, it will prompt the user whether to download the latest version. Clicking "Yes" will download the zip upgrade package to the "update_files" directory in the software path, and a prompt dialog box will be displayed when the download is complete. **Note: This is available for normal access to the Github network environment. If you cannot access Github normally, please use other methods to update.**
+    * Fixed the issue where the original key pass-through did not work when both "Burst" and "PassThrough" were enabled.
+
+* v1.3.7(Build 20241216)
+    * Fixed the issue of multi-directional simultaneous light push for virtual gamepad joysticks.
+
+* v1.3.7(Build 20241210)
+    * Add **PushLevel** value slider for specific virtual gamepad buttons:
+        - **PushLevel value range**: 1~254
+        - **Default Value**: 255 (slider at the maximum position)
+
+        When the slider value is **255**, the button will not add a `[xxx]` suffix number, achieving the same effect as pressing the button fully in previous versions.
+
+        ##### Example of PushLevel Virtual Gamepad Button Format:
+            vJoy-LS-Up[150]
+            vJoy-Key12(RT)[100]
+
+        ##### Supported Button List:
+            vJoy-Key11(LT)
+            vJoy-Key12(RT)
+            vJoy-LS-Up
+            vJoy-LS-Down
+            vJoy-LS-Left
+            vJoy-LS-Right
+            vJoy-RS-Up
+            vJoy-RS-Down
+            vJoy-RS-Left
+            vJoy-RS-Right
+
+* v1.3.7(Build 20241206)
+    * Added "Accept Virtual Gamepad Input" checkbox in the "Mapping" tab. When this setting is checked, if the sent virtual gamepad button matches the original key in the mapping table, the corresponding mapped key will also be triggered and sent. By default, QKeyMapper does not detect or trigger any original keys for any virtual gamepad operations it sends.
+    * Fixed several mapping key sending issues when "Multi-Input Devices" is enabled.
+
+* v1.3.7(Build 20241130)
+    * Added "Unbreakable" checkbox in the mapping item setting window. When checked, pressing the same original key again before the mapped keys are fully sent will not perform any action. When unchecked, repeatedly pressing the same original key will interrupt the currently sending mapped keys and restart sending the mapped keys.
+    * Increased the duplicate mapping key check rule when editing mapping keys in the mapping item setting window. Adding the same mapping key with different prefixes and suffixes will also be checked as a duplicate key. For example, "A+!A" and "A+A⏱200" will be checked as existing duplicate keys.
+
+* v1.3.7(Build 20241126)
+    * Fixed the crash issue when importing older version mapdata INI files into the November new version program.
+
 * v1.3.7(Build 20241120)
     * Added the "CheckCombinationKeyOrder" checkbox in the mapping settings window. When enabled, if the original key is a combination, the order in which the keys are pressed must match the sequence of the original key combination for it to trigger. For example, for the original key combination "A+B" with "CheckCombKeyOrder" enabled, pressing A first and then B will trigger the combination. The default value for "CheckCombKeyOrder" is enabled. If you do not want to check the order, uncheck this option.
 
@@ -78,20 +165,20 @@
     * **Extended "！" Prefix Functionality**:  
         * Enhanced the **"！" prefix** in the mapping configuration to support **Input after override(SOCD - Last Input Priority) for both physical and virtual keys**.
         * Input after override(SOCD - Last Input Priority) is now available for both keyboard keys and mouse buttons, ensuring seamless key remapping across physical and virtual devices.
-* v1.3.7 (Build 20241030)
 
+* v1.3.7 (Build 20241030)
   * **Crash Fix for Burst Key Presses**:
     * Resolved a potential crash issue when holding burst keys.
   * **Save Settings Hotkey**:
     * While mapping is inactive, pressing **L-Ctrl+S** with the main window in focus now executes the **"Save Settings"** action.
   * **Miscellaneous Fixes**:
     * Addressed other issues affecting user experience.
-* v1.3.7 (Build 20241024)
 
+* v1.3.7 (Build 20241024)
   * **Key Sequence Holddown Issue Fix**:
     * Fixed a bug in the **"Key Sequence Holddown"** feature to ensure consistent behavior.
-* v1.3.7 (Build 20241022)
 
+* v1.3.7 (Build 20241022)
   * **New Key Mapping: KeySequenceBreak**:
     * Added a new mapping key **"KeySequenceBreak"** to interrupt ongoing key sequences connected by "»".
     * Example: If the original key **Q** is mapped to **"KeySequenceBreak"**, pressing **Q** immediately halts all ongoing key sequences in the active mapping table.
@@ -103,13 +190,13 @@
     * Added the `--scale=` launch parameter to enforce a specific UI scaling factor.
     * Example: Setting the shortcut as `QKeyMapper.exe --scale=1.0` will start the program at a 1.0 scaling factor.
     * If no `--scale=` parameter is passed and the system scaling is set to 1.0, the program defaults to a 1.25 scaling factor.
-* v1.3.7 (Build 20241012)
 
+* v1.3.7 (Build 20241012)
   * **Gamepad Detection Update**:
     * Updated the SDL2 library for gamepad detection to **SDL2-2.30.8** (released on 2024-10-02).
     * Updated the gamepad detection database to support more devices.
-* v1.3.7 (Build 20241006)
 
+* v1.3.7 (Build 20241006)
   * **Mapping Item Description**:
     * Added a **"Mapping Item Description"** text box to the "Mapping Table Settings" dialog.
     * You can add remarks or notes for a specific key mapping. When hovering over the "OriginalKey" field in the mapping list, the description is displayed as a tooltip at the mouse pointer location.
@@ -120,8 +207,8 @@
       `Original Key【Mapping Item Note】`.
   * **Optimized Concurrent Key Processing**:
     * Improved the handling of simultaneous key mapping sends for better performance and stability during high-frequency input scenarios.
-* v1.3.7 (Build 20240928)
 
+* v1.3.7 (Build 20240928)
   * Added "RepeatByKey" and "RepeatTimes" checkboxes in the mapping settings window. Only one of these checkboxes can be selected at a time:
     - **RepeatByKey**: Sends the key sequence repeatedly while the original key remains pressed.
     - **RepeatTimes**: Specifies how many times the key sequence will be repeated for a single press of the original key.
@@ -132,29 +219,29 @@
   * Added a "Mapping Description" text box below the "Save Settings" button in the main window. This allows users to add descriptive notes for the saved settings corresponding to processes and titles. The description is displayed in the settings selection list as `process.exe|TitleX【Mapping Description】`.
   * Moved the language selection dropdown to the "General" settings tab.
   * Added a "Process List" toggle button in the top-right corner of the main window. By default, the "Process List" button is in the checked state, displaying the process list on the left side of the main window. Clicking the button toggles it to the unchecked state, hiding the process list and expanding the mapping table on the right to occupy the space previously used by the process list.
-* v1.3.7 (Build 20240916)
 
+* v1.3.7 (Build 20240916)
   * Support for adding multiple mapping tables under a single configuration option (process name + title). The default mapping table tab name is "Tab1." Double-click the "+" tab button with the left mouse button to add a blank mapping table. Tab names are automatically numbered sequentially as "Tab2," "Tab3," and so on.
   * Double-click an existing mapping table tab name with the left mouse button to open the "Mapping Table Settings" dialog. Here, you can modify the "Mapping Table Name" and "Mapping Table Hotkey." Changes take effect after clicking the "Update" button. To save the updated "Mapping Table Name" and "Mapping Table Hotkey" to the configuration file, you must click the "Save Settings" button.
   * "Mapping Table Hotkey" allows you to switch the currently active mapping table while the mapping is enabled in the game, enabling you to switch between multiple key mappings during gameplay. If the hotkey is prefixed with the `$` character, the hotkey will not be intercepted and will still be sent to the application.
   * The "Mapping Table Settings" dialog now includes an "Export Mapping Table" button, which can export all key mapping data from a specific mapping table to an INI file. The default file name for export is "mapdatatable.ini," but you can set a custom file name in the save file dialog.
   * The "Mapping Table Settings" dialog now includes an "Import Mapping Table" button, allowing you to import previously exported mapping table data from an INI file. The imported data is appended to the end of the selected mapping table. Since duplicate mappings with the same original key are not allowed in a single table, imported data with original keys already existing in the table will be filtered out.
   * Physical gamepad key input detection now supports detecting virtual gamepad input. This allows you to combine virtual gamepad key mappings with physical gamepad key mappings. For example, you can map `vJoy-Mouse2RS` along with `Joy-RS-Up`, `Joy-RS-Down`, `Joy-RS-Left`, and `Joy-RS-Right` to keyboard keys, enabling functionality where mouse movements trigger keyboard keys.
-* v1.3.7 (Build 20240812)
 
+* v1.3.7 (Build 20240812)
   * In the "Original Keys List," physical gamepad keys prefixed with `Joy-` can now include `@` followed by a numeric player index (`0` to `9`) to distinguish mappings based on the gamepad's player number. A total of 10 player indices are supported. If no `@` + numeric player index is added, the mapping will apply to inputs from all physical gamepads.
   * Added a "Gamepad" dropdown combo box to assist with selecting the player index (PlayerIndex) for mapping original keys. When selecting a gamepad player index, the `@` + numeric index (`0~9`) is automatically appended to the `Joy-` prefixed original key mapping. For example, `"Joy-Key1(A/×)@0"` represents the `A/×` key of gamepad player `0`.
   * Removed the feature allowing deletion of the last `»` or `+` connected mapping key by pressing the `Backspace` key after selecting a mapping item via mouse click. Instead, mapping keys can be modified through the "Mapped Keys" editor in the mapping settings window.
-* v1.3.7 (Build 20240711)
 
+* v1.3.7 (Build 20240711)
   * Added `SendText` mapping to the "Mapped Keys List." When `SendText` is selected, you can input text in the "Text" single-line editor to send the string inside `SendText()` to the current foreground window or a specified window when the original key is pressed.
   * You can now prepend the `$` character to the "Display Toggle Key" and "Mapping Toggle Key" settings. This indicates that these keys will not be intercepted and will still be sent to the application after being triggered.
   * Added a "Notification" combo box in the "General" tab. You can choose whether to display notifications on the screen for mapping state changes. Notification display positions include "Top Left," "Top Center," "Top Right," "Bottom Left," "Bottom Center," and "Bottom Right."
   * Updated to allow multiple instances of the QKeyMapper program to run simultaneously on the same system. By copying the unzipped QKeyMapper directory, each instance can maintain its own independent configuration files.
   * Split the "Mapping Toggle Key" into separate "MappingStart" and "MappingStop" keys, allowing different shortcut keys for start and stop the mapping.
   * Added `↓`, `↑`, and `⇵` prefixes to the "MappingKeyList" in the mapping settings window. These prefixes can be added before normal mapped keys to specify that the mapping sends only the key press, key release, or both key press and release simultaneously.
-* v1.3.7 (Build 20240622)
 
+* v1.3.7 (Build 20240622)
   * Added "WindowPoint" mapping to the mapping list. Use `L-Alt + Left Mouse Button` to mark relative coordinates within the corresponding window for the current mapping configuration. Selecting `Mouse-L|R|M|X1|X2_WindowPoint` allows sending mouse clicks to the relative coordinates within the window. Pressing the `F8` key displays the WindowPoint coordinates for the currently mapped window. The display rules, including color, are consistent with the previously added `F9` key, which shows fullscreen coordinate points.
   * Added a "Send To Same Windows" checkbox in the "Mapping" tab. When enabled, mapped keys will be sent to all windows with the same title as the current "Title" display name, even if the windows are minimized to the taskbar and not shown in the foreground.
 
@@ -290,10 +377,47 @@
 25. v1.3.6(Build 20231223) -> Added the feature to control the virtual gamepad's left/right stick via the mouse (Mouse2Joystick). This can be used by adding "vJoy-Mouse2LS" or "vJoy-Mouse2RS" to the mapping table. The sensitivity of the X and Y axes of the joystick controlled by the mouse ranges from "1 to 1000". The smaller the value, the more sensitive it is.
 26. v1.3.6(Build 20231223) -> The "AutoMappingMinimize" button has been changed to a tri-state checkbox. When set to the middle state, the software only minimizes to the tray on startup and does not automatically start key mapping.
 
+---------------
+## PS4-Dualshock Controller Button List
+| DS4 Button            | QKeyMapper OriginalKey |
+|-----------------------|------------------------|
+| Left Stick Up         | Joy-LS-Up              |
+| Left Stick Down       | Joy-LS-Down            |
+| Left Stick Left       | Joy-LS-Left            |
+| Left Stick Right      | Joy-LS-Right           |
+| Right Stick Up        | Joy-RS-Up              |
+| Right Stick Down      | Joy-RS-Down            |
+| Right Stick Left      | Joy-RS-Left            |
+| Right Stick Right     | Joy-RS-Right           |
+| Left Stick Press(L3)  | Joy-Key8(Start)        |
+| Right Stick Press(L3) | Joy-Key9(LS-Click)     |
+| Directional Up        | Joy-Key14              |
+| Directional Down      | Joy-Key15              |
+| Directional Left      | Joy-Key16              |
+| Directional Right     | Joy-Key17              |
+| × Button              | Joy-Key1(A/×)          |
+| ○ Button              | Joy-Key2(B/○)          |
+| □ Button              | Joy-Key3(X/□)          |
+| △ Button              | Joy-Key4(Y/△)          |
+| Left Shoulder(L1)     | Joy-Key10(RS-Click)    |
+| Left Shoulder(R1)     | Joy-Key13(Guide)       |
+| Left Trigger(L2)      | Joy-Key11(LT)          |
+| Right Trigger(R2)     | Joy-Key12(RT)          |
+| SHARE Button          | Joy-Key5(LB)           |
+| OPTIONS Button        | Joy-Key7(Back)         |
+| Touchpad Button       | Joy-Key18              |
+| PS Button             | Joy-Key6(RB)           |
+
 ---
-
 ## Screenshot
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_04.png" width="auto" height="auto"/></div>
 
+---------------
+## XBox Gamepad Layout
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_en.png" width="700" height="auto"/></div>
+
+---------------
 ## VirScan result
-
 ![Screenshot](https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_VirScan.png)
