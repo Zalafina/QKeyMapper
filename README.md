@@ -45,6 +45,7 @@
 ### 新添加功能列表(根据更新时间降序排列)
 * v1.3.7(Build 20250226)
     * 添加了两个映射按键 **Crosshair-Normal** 和 **Crosshair-TypeA** ，用于按下后在游戏中的画面上显示十字线准星。按下映射项设定窗口中 **十字准星设定** 按钮弹出的设定窗口可以调整颜色、线长、线宽、偏移量、透明度。
+    * README文件中更新 **PS4-Dualshock手柄** 按键对照表
     * 物理游戏手柄按键检测数量增加到 **Joy-Key30**
     * 语言切换时的翻译文本切换机制变更。
 * v1.3.7(Build 20250118)
@@ -301,6 +302,37 @@
 11. 加入了"Auto Start Mapping"功能可以让程序启动后自动根据加载的配置文件开始按键映射，并且最小化到系统托盘, 。
 12. 增加了SelectSetting下拉列表，可以保存最多10组不同的设定，并且通过下拉列表随时切换。
 13. 增加了支持将鼠标左键&右键&中键映射到各种按键。
+
+---------------
+## PS4-Dualshock手柄按键对照表
+| PS4手柄物理按键 | QKeyMapper原始按键名称|
+|---------------|---------------------|
+| 左摇杆上       | Joy-LS-Up           |
+| 左摇杆下       | Joy-LS-Down         |
+| 左摇杆左       | Joy-LS-Left         |
+| 左摇杆右       | Joy-LS-Right        |
+| 右摇杆上       | Joy-RS-Up           |
+| 右摇杆下       | Joy-RS-Down         |
+| 右摇杆左       | Joy-RS-Left         |
+| 右摇杆右       | Joy-RS-Right        |
+| 左摇杆按下     | Joy-Key8(Start)     |
+| 右摇杆按下     | Joy-Key9(LS-Click)  |
+| 十字方向键上    | Joy-Key14           |
+| 十字方向键下    | Joy-Key15           |
+| 十字方向键左    | Joy-Key16           |
+| 十字方向键右    | Joy-Key17           |
+| ×键           | Joy-Key1(A/×)       |
+| ○键           | Joy-Key2(B/○)       |
+| □键           | Joy-Key3(X/□)       |
+| △键           | Joy-Key4(Y/△)       |
+| 左侧肩键       | Joy-Key10(RS-Click) |
+| 右侧肩键       | Joy-Key13(Guide)    |
+| 左侧扳机键     | Joy-Key11(LT)       |
+| 右侧扳机键     | Joy-Key12(RT)       |
+| SHARE键       | Joy-Key5(LB)        |
+| OPTIONS键     | Joy-Key7(Back)      |
+| 触摸板键       | Joy-Key18           |
+| PS键          | Joy-Key6(RB)        |
 
 ---------------
 ## 软件截图
