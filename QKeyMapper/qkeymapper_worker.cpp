@@ -11489,6 +11489,17 @@ void QKeyMapper_Worker::initCombinationKeysList()
             << "Joy-Key17"
             << "Joy-Key18"
             << "Joy-Key19"
+            << "Joy-Key20"
+            << "Joy-Key21"
+            << "Joy-Key22"
+            << "Joy-Key23"
+            << "Joy-Key24"
+            << "Joy-Key25"
+            << "Joy-Key26"
+            << "Joy-Key27"
+            << "Joy-Key28"
+            << "Joy-Key29"
+            << "Joy-Key30"
             ;
 }
 void QKeyMapper_Worker::initJoystickKeyMap()
@@ -11525,6 +11536,17 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-Key17"                   ,   (int)JOYSTICK_BUTTON_14         );
     JoyStickKeyMap.insert("Joy-Key18"                   ,   (int)JOYSTICK_BUTTON_15         );
     JoyStickKeyMap.insert("Joy-Key19"                   ,   (int)JOYSTICK_BUTTON_16         );
+    JoyStickKeyMap.insert("Joy-Key20"                   ,   (int)JOYSTICK_BUTTON_17         );
+    JoyStickKeyMap.insert("Joy-Key21"                   ,   (int)JOYSTICK_BUTTON_18         );
+    JoyStickKeyMap.insert("Joy-Key22"                   ,   (int)JOYSTICK_BUTTON_19         );
+    JoyStickKeyMap.insert("Joy-Key23"                   ,   (int)JOYSTICK_BUTTON_20         );
+    JoyStickKeyMap.insert("Joy-Key24"                   ,   (int)JOYSTICK_BUTTON_21         );
+    JoyStickKeyMap.insert("Joy-Key25"                   ,   (int)JOYSTICK_BUTTON_22         );
+    JoyStickKeyMap.insert("Joy-Key26"                   ,   (int)JOYSTICK_BUTTON_23         );
+    JoyStickKeyMap.insert("Joy-Key27"                   ,   (int)JOYSTICK_BUTTON_24         );
+    JoyStickKeyMap.insert("Joy-Key28"                   ,   (int)JOYSTICK_BUTTON_25         );
+    JoyStickKeyMap.insert("Joy-Key29"                   ,   (int)JOYSTICK_BUTTON_26         );
+    JoyStickKeyMap.insert("Joy-Key30"                   ,   (int)JOYSTICK_BUTTON_27         );
 
     /* Joystick DPad Direction */
     JoyStickKeyMap.insert("Joy-DPad-Up"                 ,   (int)JOYSTICK_DPAD_UP           );
@@ -11562,6 +11584,17 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_14,      "Joy-Key17"                     );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_15,      "Joy-Key18"                     );
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_16,      "Joy-Key19"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_17,      "Joy-Key20"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_18,      "Joy-Key21"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_19,      "Joy-Key22"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_20,      "Joy-Key23"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_21,      "Joy-Key24"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_22,      "Joy-Key25"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_23,      "Joy-Key26"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_24,      "Joy-Key27"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_25,      "Joy-Key28"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_26,      "Joy-Key29"                     );
+    m_JoystickButtonMap.insert(JOYSTICK_BUTTON_27,      "Joy-Key30"                     );
 
     /* Joystick DPad Direction Map */
     m_JoystickDPadMap.insert(JOYSTICK_DPAD_UP,          "Joy-DPad-Up"                   );

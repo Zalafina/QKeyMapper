@@ -10278,6 +10278,17 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "Joy-Key17"
             << "Joy-Key18"
             << "Joy-Key19"
+            << "Joy-Key20"
+            << "Joy-Key21"
+            << "Joy-Key22"
+            << "Joy-Key23"
+            << "Joy-Key24"
+            << "Joy-Key25"
+            << "Joy-Key26"
+            << "Joy-Key27"
+            << "Joy-Key28"
+            << "Joy-Key29"
+            << "Joy-Key30"
             ;
 
     int left = ui->orikeyLabel->x() + ui->orikeyLabel->width() + 5;
