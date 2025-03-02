@@ -1228,7 +1228,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9339"/>
         <source>Available</source>
-        <translation>多入力使用可能</translation>
+        <translation>使用可能</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9356"/>
@@ -1238,22 +1238,22 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9373"/>
         <source>Unavailable</source>
-        <translation type="unfinished"></translation>
+        <translation>使用不可能</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9579"/>
         <source>Show</source>
-        <translation type="unfinished"></translation>
+        <translation>表示</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9580"/>
         <source>Hide</source>
-        <translation type="unfinished"></translation>
+        <translation>非表示</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9581"/>
         <source>Quit</source>
-        <translation type="unfinished"></translation>
+        <translation>終了</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="10903"/>
