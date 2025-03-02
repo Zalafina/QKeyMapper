@@ -184,7 +184,7 @@
         <location filename="../qcrosshairsetupdialog.ui" line="76"/>
         <location filename="../qcrosshairsetupdialog.cpp" line="79"/>
         <source>Show Center</source>
-        <translation>中央点表示</translation>
+        <translation>中心点表示</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="92"/>
@@ -240,7 +240,7 @@
         <location filename="../qcrosshairsetupdialog.ui" line="317"/>
         <location filename="../qcrosshairsetupdialog.cpp" line="69"/>
         <source>Center</source>
-        <translation>十字線中央点</translation>
+        <translation>十字線中心点</translation>
     </message>
     <message>
         <location filename="../qcrosshairsetupdialog.ui" line="333"/>
