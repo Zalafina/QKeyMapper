@@ -33,22 +33,29 @@ void QKeyRecord::setUILanguage(int languageindex)
 
 void QKeyRecord::resetFontSize()
 {
-    int scale = QKeyMapper::getInstance()->m_UI_Scale;
+    // int scale = QKeyMapper::getInstance()->m_UI_Scale;
     QFont customFont;
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         customFont.setFamily(FONTNAME_ENGLISH);
         customFont.setPointSize(9);
     }
+    else if (LANGUAGE_JAPANESE == QKeyMapper::getLanguageIndex()) {
+        customFont.setFamily(FONTNAME_ENGLISH);
+        customFont.setPointSize(9);
+    }
     else {
-        customFont.setFamily(FONTNAME_CHINESE);
-        customFont.setBold(true);
+        customFont.setFamily(FONTNAME_ENGLISH);
+        customFont.setPointSize(9);
 
-        if (UI_SCALE_4K_PERCENT_150 == scale) {
-            customFont.setPointSize(11);
-        }
-        else {
-            customFont.setPointSize(9);
-        }
+        // customFont.setFamily(FONTNAME_CHINESE);
+        // customFont.setBold(true);
+
+        // if (UI_SCALE_4K_PERCENT_150 == scale) {
+        //     customFont.setPointSize(11);
+        // }
+        // else {
+        //     customFont.setPointSize(9);
+        // }
     }
 
     ui->keyRecordLabel->setFont(customFont);

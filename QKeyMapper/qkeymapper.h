@@ -701,6 +701,7 @@ private:
 #endif
     void setControlFontEnglish(void);
     void setControlFontChinese(void);
+    void setControlFontJapanese(void);
 
     void changeControlEnableStatus(bool status);
 

@@ -8299,7 +8299,7 @@ void QKeyMapper::setControlFontEnglish()
 
 void QKeyMapper::setControlFontChinese()
 {
-    QFont customFont(FONTNAME_CHINESE, 18, QFont::Bold);
+    QFont customFont(FONTNAME_ENGLISH);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(18);
@@ -8319,12 +8319,16 @@ void QKeyMapper::setControlFontChinese()
     ui->savemaplistButton->setFont(customFont);
     ui->addmapdataButton->setFont(customFont);
 
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(11);
-    }
-    else {
-        customFont.setPointSize(9);
-    }
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     customFont.setPointSize(11);
+    // }
+    // else {
+    //     customFont.setPointSize(9);
+    // }
+    // ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(9);
     ui->deleteSelectedButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
@@ -8355,11 +8359,8 @@ void QKeyMapper::setControlFontChinese()
     ui->mouseSelectLabel->setFont(customFont);
     ui->gamepadSelectLabel->setFont(customFont);
 
-    // ui->processinfoTable->horizontalHeader()->setFont(customFont);
-    // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
-
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-    //     customFont.setPointSize(11);
+    //     customFont.setPointSize(10);
     // }
     // else {
     //     customFont.setPointSize(8);
@@ -8387,7 +8388,7 @@ void QKeyMapper::setControlFontChinese()
     ui->filterKeysCheckBox->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(11);
+        customFont.setPointSize(9);
     }
     else {
         customFont.setPointSize(9);
@@ -8403,7 +8404,125 @@ void QKeyMapper::setControlFontChinese()
     ui->updateSiteLabel->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(11);
+        customFont.setPointSize(9);
+    }
+    else {
+        customFont.setPointSize(9);
+    }
+    // ui->disableWinKeyCheckBox->setFont(customFont);
+    ui->dataPortLabel->setFont(customFont);
+    ui->brakeThresholdLabel->setFont(customFont);
+    ui->accelThresholdLabel->setFont(customFont);
+}
+
+void QKeyMapper::setControlFontJapanese()
+{
+    QFont customFont(FONTNAME_ENGLISH);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(18);
+    }
+    else {
+        customFont.setPointSize(14);
+    }
+    // ui->refreshButton->setFont(customFont);
+    ui->keymapButton->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(14);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
+    ui->savemaplistButton->setFont(customFont);
+    ui->addmapdataButton->setFont(customFont);
+
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     customFont.setPointSize(11);
+    // }
+    // else {
+    //     customFont.setPointSize(9);
+    // }
+    // ui->processinfoTable->horizontalHeader()->setFont(customFont);
+    // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
+
+    customFont.setPointSize(9);
+    ui->deleteSelectedButton->setFont(customFont);
+    ui->clearallButton->setFont(customFont);
+    ui->processListButton->setFont(customFont);
+    ui->showNotesButton->setFont(customFont);
+    ui->nameCheckBox->setFont(customFont);
+    ui->titleCheckBox->setFont(customFont);
+    ui->descriptionLabel->setFont(customFont);
+    ui->orikeyLabel->setFont(customFont);
+    ui->orikeySeqLabel->setFont(customFont);
+    ui->mapkeyLabel->setFont(customFont);
+    // ui->burstpressLabel->setFont(customFont);
+    // ui->burstpress_msLabel->setFont(customFont);
+    // ui->burstreleaseLabel->setFont(customFont);
+    // ui->burstrelease_msLabel->setFont(customFont);
+    // ui->settingselectLabel->setFont(customFont);
+    ui->removeSettingButton->setFont(customFont);
+    ui->nextarrowCheckBox->setFont(customFont);
+    ui->waitTimeLabel->setFont(customFont);
+    ui->pushLevelLabel->setFont(customFont);
+    ui->sendTextLabel->setFont(customFont);
+    ui->keyPressTypeComboBox->setFont(customFont);
+    ui->pointLabel->setFont(customFont);
+    // ui->pointDisplayLabel->setFont(customFont);
+    // ui->waitTime_msLabel->setFont(customFont);
+    ui->mouseXSpeedLabel->setFont(customFont);
+    ui->mouseYSpeedLabel->setFont(customFont);
+    ui->keyboardSelectLabel->setFont(customFont);
+    ui->mouseSelectLabel->setFont(customFont);
+    ui->gamepadSelectLabel->setFont(customFont);
+
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     customFont.setPointSize(10);
+    // }
+    // else {
+    //     customFont.setPointSize(8);
+    // }
+    ui->settingTabWidget->tabBar()->setFont(customFont);
+    ui->windowswitchkeyLabel->setFont(customFont);
+    ui->checkUpdateButton->setFont(customFont);
+    ui->mappingStartKeyLabel->setFont(customFont);
+    ui->mappingStopKeyLabel->setFont(customFont);
+    ui->installViGEmBusButton->setFont(customFont);
+    // ui->uninstallViGEmBusButton->setFont(customFont);
+    ui->enableVirtualJoystickCheckBox->setFont(customFont);
+    ui->lockCursorCheckBox->setFont(customFont);
+    ui->directModeCheckBox->setFont(customFont);
+    ui->ViGEmBusStatusLabel->setFont(customFont);
+    ui->vJoyXSensLabel->setFont(customFont);
+    ui->vJoyYSensLabel->setFont(customFont);
+    ui->vJoyRecenterLabel->setFont(customFont);
+    // ui->virtualgamepadGroupBox->setFont(customFont);
+    // ui->multiInputGroupBox->setFont(customFont);
+    ui->installInterceptionButton->setFont(customFont);
+    ui->multiInputDeviceListButton->setFont(customFont);
+    ui->multiInputStatusLabel->setFont(customFont);
+    ui->multiInputEnableCheckBox->setFont(customFont);
+    ui->filterKeysCheckBox->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(9);
+    }
+    else {
+        customFont.setPointSize(9);
+    }
+    ui->autoStartMappingCheckBox->setFont(customFont);
+    ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
+    ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
+    ui->autoStartupCheckBox->setFont(customFont);
+    ui->startupMinimizedCheckBox->setFont(customFont);
+    ui->soundEffectCheckBox->setFont(customFont);
+    ui->notificationLabel->setFont(customFont);
+    ui->languageLabel->setFont(customFont);
+    ui->updateSiteLabel->setFont(customFont);
+
+    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+        customFont.setPointSize(9);
     }
     else {
         customFont.setPointSize(9);
@@ -10872,7 +10991,7 @@ void QKeyMapper::reloadUILanguage()
     }
     else if (LANGUAGE_JAPANESE == languageIndex) {
         changeLanguage(LANGUAGECODE_JAPANESE);
-        setControlFontChinese();
+        setControlFontJapanese();
     }
     else {
         changeLanguage(LANGUAGECODE_CHINESE);
@@ -10956,8 +11075,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
     ui->checkUpdateButton->setText(tr("Check Updates"));
-    ui->mappingStartKeyLabel->setText(tr("StartKey"));
-    ui->mappingStopKeyLabel->setText(tr("StopKey"));
+    ui->mappingStartKeyLabel->setText(tr("MappingStart"));
+    ui->mappingStopKeyLabel->setText(tr("MappingStop"));
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
 #ifdef DEBUG_LOGOUT_ON

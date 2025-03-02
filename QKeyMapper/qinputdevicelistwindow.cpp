@@ -58,8 +58,12 @@ void QInputDeviceListWindow::resetFontSize()
     if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
         customFont = QFont(FONTNAME_ENGLISH, 9);
     }
+    else if (LANGUAGE_JAPANESE == QKeyMapper::getLanguageIndex()) {
+        customFont = QFont(FONTNAME_ENGLISH, 9);
+    }
     else {
-        customFont = QFont(FONTNAME_CHINESE, 9, QFont::Bold);
+        customFont = QFont(FONTNAME_ENGLISH, 9);
+        // customFont = QFont(FONTNAME_CHINESE, 9, QFont::Bold);
     }
 
     int scale = QKeyMapper::getInstance()->m_UI_Scale;
@@ -72,13 +76,27 @@ void QInputDeviceListWindow::resetFontSize()
             customFont.setPointSize(9);
         }
     }
-    else {
+    else if (LANGUAGE_JAPANESE == QKeyMapper::getLanguageIndex()) {
         if (UI_SCALE_4K_PERCENT_150 == scale) {
-            customFont.setPointSize(13);
-        }
-        else {
             customFont.setPointSize(11);
         }
+        else {
+            customFont.setPointSize(9);
+        }
+    }
+    else {
+        if (UI_SCALE_4K_PERCENT_150 == scale) {
+            customFont.setPointSize(11);
+        }
+        else {
+            customFont.setPointSize(9);
+        }
+        // if (UI_SCALE_4K_PERCENT_150 == scale) {
+        //     customFont.setPointSize(13);
+        // }
+        // else {
+        //     customFont.setPointSize(11);
+        // }
     }
 
     ui->keyboardLabel->setFont(customFont);
