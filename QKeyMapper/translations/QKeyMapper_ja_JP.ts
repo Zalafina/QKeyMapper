@@ -617,7 +617,7 @@
         <location filename="../qkeymapper.ui" line="396"/>
         <location filename="../qkeymapper.cpp" line="11043"/>
         <source>OriKeySeq</source>
-        <translation>原始コンビキー</translation>
+        <translation>原始組合キー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="422"/>
