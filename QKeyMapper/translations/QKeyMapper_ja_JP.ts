@@ -810,7 +810,7 @@
         <location filename="../qkeymapper.ui" line="1192"/>
         <location filename="../qkeymapper.cpp" line="11115"/>
         <source>Recenter</source>
-        <translation>再中心遅延</translation>
+        <translation>中心戻す遅延</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1211"/>
@@ -1094,7 +1094,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="4196"/>
         <source>Failed to remove existing update program file %1!</source>
-        <translation type="unfinished"></translation>
+        <translation>古いアップグレードファイル %1 の削除に失敗しました！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="4203"/>
@@ -1109,7 +1109,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="4245"/>
         <source>Failed to start update program %1!</source>
-        <translation type="unfinished"></translation>
+        <translation>アップグレードプログラム %1 の起動に失敗しました！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="4538"/>
@@ -1207,7 +1207,7 @@
         <location filename="../qkeymapper.cpp" line="9237"/>
         <location filename="../qkeymapper.cpp" line="11119"/>
         <source>UninstallViGEm</source>
-        <translation type="unfinished"></translation>
+        <translation>アンインストール</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9240"/>
@@ -1223,7 +1223,7 @@
         <location filename="../qkeymapper.cpp" line="9336"/>
         <location filename="../qkeymapper.cpp" line="11134"/>
         <source>Uninstall Driver</source>
-        <translation type="unfinished"></translation>
+        <translation>アンインストール</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9339"/>
@@ -1258,12 +1258,12 @@
     <message>
         <location filename="../qkeymapper.cpp" line="10903"/>
         <source>Hotkey : %1</source>
-        <translation type="unfinished"></translation>
+        <translation>ホットキー : %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11028"/>
         <source>Hotkey : L-Ctrl+S</source>
-        <translation>ショートカットキー : L-Ctrl+S</translation>
+        <translation>ホットキー : L-Ctrl+S</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11050"/>
@@ -1285,7 +1285,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11117"/>
         <source>Unrecenter</source>
-        <translation type="unfinished"></translation>
+        <translation>中心戻さない</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11150"/>
@@ -1300,92 +1300,92 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11957"/>
         <source>The upgrade package %1 does not exist in the directory %2. Download failed!</source>
-        <translation type="unfinished"></translation>
+        <translation>ディレクトリ %2 にアップグレードパッケージ %1 が存在しません。ダウンロードに失敗しました！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11962"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;The upgrade package &lt;b&gt;%1&lt;/b&gt; has been successfully downloaded to the directory &lt;b&gt;%2&lt;/b&gt;.&lt;/p&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;アップグレードパッケージ &lt;b&gt;%1&lt;/b&gt; はディレクトリ &lt;b&gt;%2&lt;/b&gt; に正常にダウンロードされました&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11964"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Click [Yes] to automatically close the program and upgrade&lt;/b&gt;, otherwise handle it manually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;[Yes] ボタンをクリックすると、プログラムが自動的に閉じてアップグレードが行われます。&lt;/b&gt;そうでない場合は、手動で解凍して置き換えてください。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12362"/>
         <source>Invalid input format for the original key combination!</source>
-        <translation type="unfinished"></translation>
+        <translation>原始組合キー入力形式が間違っています！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12458"/>
         <source>Key sequence mapping to &quot;%1&quot; exceeds the maximum length!</source>
-        <translation type="unfinished"></translation>
+        <translation>「%1」にマッピングされたキーシーケンスが最大長を超えています！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12491"/>
         <location filename="../qkeymapper.cpp" line="12658"/>
         <source>Need to set a screen mouse point with &quot;%1&quot; click!</source>
-        <translation type="unfinished"></translation>
+        <translation>「%1」を使用してスクリーン座標点を設定する必要があります！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12491"/>
         <location filename="../qkeymapper.cpp" line="12658"/>
         <source>L-Ctrl+Mouse-Left Click</source>
-        <translation type="unfinished"></translation>
+        <translation>L-Ctrl+左クリック</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12506"/>
         <source>Already set a same screen mouse point!</source>
-        <translation type="unfinished"></translation>
+        <translation>同じスクリーン座標点が既に保存されています！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12516"/>
         <location filename="../qkeymapper.cpp" line="12675"/>
         <source>Need to set a window mouse point with &quot;%1&quot; click!</source>
-        <translation type="unfinished"></translation>
+        <translation>「%1」を使用してウィンドウ座標点を設定する必要があります！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12516"/>
         <location filename="../qkeymapper.cpp" line="12675"/>
         <source>L-Alt+Mouse-Left Click</source>
-        <translation type="unfinished"></translation>
+        <translation>L-Alt+左クリック</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12531"/>
         <source>Already set a same window mouse point!</source>
-        <translation type="unfinished"></translation>
+        <translation>同じウィンドウ座標点が既に保存されています！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12541"/>
         <location filename="../qkeymapper.cpp" line="12692"/>
         <source>Please input the text to send!</source>
-        <translation type="unfinished"></translation>
+        <translation>送信するテキストを入力してください！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12550"/>
         <source>KeySequenceBreak key can not be set duplicated!</source>
-        <translation type="unfinished"></translation>
+        <translation>キーシーケンスの中断キーは重複して設定することはできません！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12785"/>
         <source>Conflict with exist Keys!</source>
-        <translation type="unfinished"></translation>
+        <translation>既存のキーマッピングと競合しています！</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12932"/>
         <source>Are you sure you want to clear all data in the mapping table?</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングテーブル内全てのデータを消去するか確認してください？</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="13768"/>
         <source>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</source>
-        <translation type="unfinished"></translation>
+        <translation>マルチ入力デバイスのドライバをアンインストールした後、システムを再起動する必要があります。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="13804"/>
         <source>System reboot is required for the changes to take effect after installing the multi-input device driver.</source>
-        <translation type="unfinished"></translation>
+        <translation>マルチ入力デバイスのドライバをインストールした後、システムを再起動する必要があります。</translation>
     </message>
 </context>
 <context>
@@ -1439,7 +1439,7 @@
     <message>
         <location filename="../qtablesetupdialog.ui" line="63"/>
         <source>TabHotkey</source>
-        <translation>ショートカットキー</translation>
+        <translation>ホットキー</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="108"/>
@@ -1479,17 +1479,17 @@
     <message>
         <location filename="../qtablesetupdialog.cpp" line="203"/>
         <source>TabHotkey clear success</source>
-        <translation>テーブルのショートカットキーが正常にクリアされました</translation>
+        <translation>テーブルのホットキーが正常にクリアされました</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.cpp" line="211"/>
         <source>TabHotkey update success: </source>
-        <translation>テーブルのショートカットキーが更新されました: </translation>
+        <translation>テーブルのホットキーが更新されました: </translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.cpp" line="220"/>
         <source>Invalid input format for TabHotkey: %1</source>
-        <translation>テーブルのショートカットキー入力フォーマットが誤っています: %1</translation>
+        <translation>テーブルのホットキー入力フォーマットが誤っています: %1</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.cpp" line="235"/>
