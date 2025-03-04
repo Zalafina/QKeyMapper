@@ -4224,6 +4224,9 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     if (LANGUAGE_CHINESE == QKeyMapper::getLanguageIndex()) {
         language = "--chinese";
     }
+    else if (LANGUAGE_JAPANESE == QKeyMapper::getLanguageIndex()) {
+        language = "--japanese";
+    }
     arguments << update_filename << copyFromFolder << copyToPath << restartExePath << language;
 
 #ifdef DEBUG_LOGOUT_ON
