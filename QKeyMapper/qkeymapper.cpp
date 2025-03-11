@@ -11598,7 +11598,7 @@ void QKeyMapper::checkOSVersionMatched()
     if (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10
         && QSysInfo::currentCpuArchitecture() == "x86_64") {
         QString platformString = getPlatformString();
-        if (platformString.startsWith("Qt6")) {
+        if (platformString.startsWith("Qt5")) {
             QString message = tr("For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.");
             QMessageBox::warning(this, PROGRAM_NAME, message);
         }
