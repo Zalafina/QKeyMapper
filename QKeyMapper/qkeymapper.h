@@ -259,6 +259,38 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 };
 
+class CustomMessageBox : public QDialog {
+    Q_OBJECT
+
+public:
+    CustomMessageBox(QWidget *parent = nullptr, QString message = QString()) : QDialog(parent) {
+        setWindowTitle(PROGRAM_NAME);
+
+        QVBoxLayout *layout = new QVBoxLayout(this);
+
+        QLabel *label = new QLabel(message, this);
+        layout->addWidget(label);
+
+        checkBox = new QCheckBox(tr("Do not show this message again"), this);
+        layout->addWidget(checkBox);
+
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        QPushButton *okButton = new QPushButton(tr("OK"), this);
+        buttonLayout->addStretch();
+        buttonLayout->addWidget(okButton);
+        layout->addLayout(buttonLayout);
+
+        connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
+    }
+
+    bool isCheckBoxChecked() const {
+        return checkBox->isChecked();
+    }
+
+private:
+    QCheckBox *checkBox;
+};
+
 #if 0
 class KeySequenceEditOnlyOne : public QKeySequenceEdit
 {
@@ -644,6 +676,7 @@ public:
     void showFailurePopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
     void initSelectColorDialog(void);
+    void showWarningWithCheckbox(QWidget *parent, QString message);
 
 private:
     void initKeyMappingTabWidget(void);

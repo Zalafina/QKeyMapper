@@ -9947,6 +9947,18 @@ void QKeyMapper::initSelectColorDialog()
     }
 }
 
+void QKeyMapper::showWarningWithCheckbox(QWidget *parent, QString message)
+{
+    CustomMessageBox msgBox(parent, message);
+    if (msgBox.exec() == QDialog::Accepted) {
+        if (msgBox.isCheckBoxChecked()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[showWarningWithCheckbox]" << "Checkbox is checked.";
+#endif
+        }
+    }
+}
+
 void QKeyMapper::initKeyMappingTabWidget(void)
 {
     m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
@@ -11598,9 +11610,9 @@ void QKeyMapper::checkOSVersionMatched()
     if (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10
         && QSysInfo::currentCpuArchitecture() == "x86_64") {
         QString platformString = getPlatformString();
-        if (platformString.startsWith("Qt5")) {
+        if (platformString.startsWith("Qt6")) {
             QString message = tr("For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.");
-            QMessageBox::warning(this, PROGRAM_NAME, message);
+            showWarningWithCheckbox(this, message);
         }
     }
 }
