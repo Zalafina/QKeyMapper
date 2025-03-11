@@ -1214,7 +1214,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                    for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                         postMouseButton(hwnd, key, send_keyupdown);
                     }
 #ifdef DEBUG_LOGOUT_ON
@@ -1315,7 +1315,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 if (QKeyMapper::getSendToSameTitleWindowsStatus()
                     && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
-                    for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                    for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                         postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
                     }
 #ifdef DEBUG_LOGOUT_ON
@@ -1669,7 +1669,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                        for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                             postMouseWheel(hwnd, key);
                         }
 #ifdef DEBUG_LOGOUT_ON
@@ -1730,7 +1730,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                        for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                             postMouseButton(hwnd, key, send_keyupdown);
                         }
 #ifdef DEBUG_LOGOUT_ON
@@ -1761,7 +1761,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
 
                         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                            for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                                 postMouseButton(hwnd, key, send_keyupdown);
                             }
 #ifdef DEBUG_LOGOUT_ON
@@ -1872,7 +1872,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()
                         && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
-                        for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                        for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                             postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
                         }
 #ifdef DEBUG_LOGOUT_ON
@@ -1904,7 +1904,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                         if (QKeyMapper::getSendToSameTitleWindowsStatus()
                             && false == SpecialVirtualKeyCodeList.contains(vkeycode.KeyCode)) {
-                            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                            for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                                 postVirtualKeyCode(hwnd, vkeycode.KeyCode, send_keyupdown);
                             }
 #ifdef DEBUG_LOGOUT_ON
@@ -2034,7 +2034,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             }
 
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                     if (QKeyMapper::s_CurrentMappingHWND == hwnd) {
                         continue;
                     }
@@ -2084,7 +2084,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
                 QPoint mousepoint(x, y);
-                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                     postMouseButton(hwnd, mousebutton, keyupdown, mousepoint);
                 }
 #ifdef DEBUG_LOGOUT_ON
@@ -2129,7 +2129,7 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postm
             }
 
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                     postMouseMoveToPoint(hwnd, mousepoint);
                 }
 #ifdef DEBUG_LOGOUT_ON
@@ -2152,7 +2152,7 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postm
             }
 
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-                for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+                for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                     postMouseMoveToPoint(hwnd, mousepoint);
                 }
 #ifdef DEBUG_LOGOUT_ON
@@ -3275,7 +3275,7 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
 
     // Update thumb values based on pressed keys
     QStringList pressedLStickKeysList = pressedvJoyLStickKeys_ref.keys();
-    for (const QString &key : pressedLStickKeysList) {
+    for (const QString &key : std::as_const(pressedLStickKeysList)) {
         int pushlevel = pressedvJoyLStickKeys_ref.value(key);
         // Convert BYTE pushlevel (0~255) to SHORT (-32768~32767)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
@@ -3292,7 +3292,7 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     }
 
     QStringList pressedRStickKeysList = pressedvJoyRStickKeys_ref.keys();
-    for (const QString &key : pressedRStickKeysList) {
+    for (const QString &key : std::as_const(pressedRStickKeysList)) {
         int pushlevel = pressedvJoyRStickKeys_ref.value(key);
         // Convert BYTE pushlevel (0~255) to SHORT (-32768~32767)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
@@ -5616,7 +5616,7 @@ void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keyst
         return;
     }
     QList<int> mouse_index_list = s_Mouse2vJoy_EnableStateMap.keys();
-    for (const int& mouse_index : mouse_index_list) {
+    for (const int& mouse_index : std::as_const(mouse_index_list)) {
         m_Mouse2vJoyResetTimerMap.value(mouse_index)->start(recenter_timeout);
 #ifdef DEBUG_LOGOUT_ON
         QString debugmessage = QString("[startMouse2vJoyResetTimer] %1 -> Start Mouse2vJoyRecenterTimer(%2), MouseIndex = %3").arg(mouse2joy_keystr).arg(recenter_timeout).arg(mouse_index);
@@ -5631,7 +5631,7 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr
     Q_UNUSED(mouse2joy_keystr);
 
     QList<int> mouse_index_list = s_Mouse2vJoy_EnableStateMap.keys();
-    for (const int& mouse_index : mouse_index_list) {
+    for (const int& mouse_index : std::as_const(mouse_index_list)) {
         m_Mouse2vJoyResetTimerMap.value(mouse_index)->stop();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[stopMouse2vJoyResetTimer]" << mouse2joy_keystr << "-> Stop Mouse2vJoyResetTimer, MouseIndex =" << mouse_index;
@@ -6408,7 +6408,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index)
         sendMouseMove(delta_x, delta_y);
 
         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+            for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                 postMouseMove(hwnd, delta_x, delta_y);
             }
 #ifdef MOUSE_VERBOSE_LOG
@@ -6463,7 +6463,7 @@ void QKeyMapper_Worker::key2MouseMoveProc()
         sendMouseMove(delta_x, delta_y);
 
         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
-            for (const HWND &hwnd : QKeyMapper::s_last_HWNDList) {
+            for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
                 postMouseMove(hwnd, delta_x, delta_y);
             }
 #ifdef MOUSE_VERBOSE_LOG
@@ -8792,7 +8792,7 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
     }
     else {  /* KEY_UP == keyupdown */
         QList<int> pressedLockedRowIndexList = pressedLockKeysMap.values();
-        for (const int rowindex : pressedLockedRowIndexList) {
+        for (const int rowindex : std::as_const(pressedLockedRowIndexList)) {
             bool mappingkeys_unlock = (*QKeyMapper::KeyMappingDataList)[rowindex].MappingKeyUnlock;
             if (mappingkeys_unlock) {
                 QStringList pure_mappingkeys = (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys;
@@ -9144,7 +9144,7 @@ bool QKeyMapper_Worker::detectDisplaySwitchKey(const QString &keycodeString, int
     bool combinationKey = (keys.size() > 1) ? true : false;
     QList<int> pressedCombinationRealKeysOrder;
 
-    for (const QString &key : keys)
+    for (const QString &key : std::as_const(keys))
     {
         int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
         if (index < 0)
@@ -9209,7 +9209,7 @@ bool QKeyMapper_Worker::detectMappingStartKey(const QString &keycodeString, int 
     bool combinationKey = (keys.size() > 1) ? true : false;
     QList<int> pressedCombinationRealKeysOrder;
 
-    for (const QString &key : keys)
+    for (const QString &key : std::as_const(keys))
     {
         int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
         if (index < 0)
@@ -9260,7 +9260,7 @@ bool QKeyMapper_Worker::detectMappingStopKey(const QString &keycodeString, int k
     bool combinationKey = (keys.size() > 1) ? true : false;
     QList<int> pressedCombinationRealKeysOrder;
 
-    for (const QString &key : keys)
+    for (const QString &key : std::as_const(keys))
     {
         int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
         if (index < 0)
@@ -9310,7 +9310,7 @@ bool QKeyMapper_Worker::detectMappingTableTabHotkeys(const QString &keycodeStrin
         bool combinationKey = (keys.size() > 1) ? true : false;
         QList<int> pressedCombinationRealKeysOrder;
 
-        for (const QString &key : keys)
+        for (const QString &key : std::as_const(keys))
         {
             int index = pressedRealKeysListRemoveMultiInput.indexOf(key);
             if (index < 0)
@@ -9366,7 +9366,7 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
         bool allKeysPressed = true;
         QList<int> pressedCombinationRealKeysOrder;
 
-        for (const QString &key : keys)
+        for (const QString &key : std::as_const(keys))
         {
             if (key.contains('@')) {
                 int index = pressedRealKeysList.indexOf(key);
@@ -9878,7 +9878,7 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
         }
 
         QStringList currentBlockedKeysList = collectCertainMappingDataListBlockedKeysList(KeyMappingDataList_ToCheck);
-        for (const QString &blockedKey : currentBlockedKeysList) {
+        for (const QString &blockedKey : std::as_const(currentBlockedKeysList)) {
             pressedRealKeysListToCheck.removeAll(blockedKey);
         }
 
@@ -9931,7 +9931,7 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
         return;
     }
 
-    for (const QString &keycodeString : keyListToCheck) {
+    for (const QString &keycodeString : std::as_const(keyListToCheck)) {
         if (pressedRealKeysListToCheck.contains(keycodeString)) {
 #ifdef DEBUG_LOGOUT_ON
             QString debugmessage = QString("[resendRealKeyCodeOnStop] RealKey \"%1\" is still pressed down on BurstKey stop, resend \"%2\" KEY_DOWN.").arg(keycodeString, keycodeString);
@@ -10027,7 +10027,7 @@ void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
     if (longPressOriginalKeysMap.contains(keycodeString)) {
         QList<int> timeoutValueList = longPressOriginalKeysMap.value(keycodeString);
 
-        for (int timeout : timeoutValueList) {
+        for (int timeout : std::as_const(timeoutValueList)) {
             QString keycodeStringWithPressTime = keycodeString + QString(SEPARATOR_LONGPRESS) + QString::number(timeout);
             if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
                 s_longPressTimerMap[keycodeStringWithPressTime]->start(timeout);
@@ -10048,7 +10048,7 @@ void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
     else if (longPressOriginalKeysMap.contains(keycodeString_RemoveMultiInput)) {
         QList<int> timeoutValueList = longPressOriginalKeysMap.value(keycodeString_RemoveMultiInput);
 
-        for (int timeout : timeoutValueList) {
+        for (int timeout : std::as_const(timeoutValueList)) {
             QString keycodeStringWithPressTime = keycodeString_RemoveMultiInput + QString(SEPARATOR_LONGPRESS) + QString::number(timeout);
             if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
                 s_longPressTimerMap[keycodeStringWithPressTime]->start(timeout);
@@ -10077,7 +10077,7 @@ void QKeyMapper_Worker::clearLongPressTimer(const QString &keycodeString)
     QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
     QStringList removeKeys;
     QStringList longpressKeys = s_longPressTimerMap.keys();
-    for (const QString &key : longpressKeys) {
+    for (const QString &key : std::as_const(longpressKeys)) {
         QString keyWithoutTime = key.split(SEPARATOR_LONGPRESS).first();
         if (keyWithoutTime == keycodeString
             || keyWithoutTime == keycodeString_RemoveMultiInput) {
@@ -10177,7 +10177,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
 
         QStringList releaseKeys;
         QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
-        for (const QString &key : pressedLongPressKeysList) {
+        for (const QString &key : std::as_const(pressedLongPressKeysList)) {
             if (key.startsWith(keycodeString)
                 || key.startsWith(keycodeString_RemoveMultiInput)) {
                 int keyproc = hookBurstAndLockProc(key, keyupdown);
@@ -10375,7 +10375,7 @@ void QKeyMapper_Worker::clearDoublePressTimer(const QString &keycodeString)
 
     QStringList removeKeys;
     QStringList doublepressKeys = s_doublePressTimerMap.keys();
-    for (const QString &key : doublepressKeys) {
+    for (const QString &key : std::as_const(doublepressKeys)) {
         if (key.contains(keycodeString)) {
             QTimer *timer = s_doublePressTimerMap.value(key);
             timer->stop();
@@ -10473,7 +10473,7 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
 
         QStringList releaseKeys;
         QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
-        for (const QString &doublepress_key : pressedDoublePressKeysList) {
+        for (const QString &doublepress_key : std::as_const(pressedDoublePressKeysList)) {
             QString key = doublepress_key;
             key.chop(1);
             if (key == keycodeString
@@ -10558,7 +10558,7 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
     qDebug().nospace().noquote() << "[breakAllRunningKeySequence] Current Running KeySequence, s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
 
-    for (const QString &keyseq_orikey : s_runningKeySequenceOrikeyList) {
+    for (const QString &keyseq_orikey : std::as_const(s_runningKeySequenceOrikeyList)) {
         SendInputTaskController *keyseq_break_controller = Q_NULLPTR;
 
         if (SendInputTask::s_SendInputTaskControllerMap.contains(keyseq_orikey)) {
@@ -11896,7 +11896,7 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
 
     QList<int> clearedRowIndexList;
     QStringList pressedOriginalKeys = pressedMappingKeysMapCopy.keys();
-    for (const QString& original_key : pressedOriginalKeys) {
+    for (const QString& original_key : std::as_const(pressedOriginalKeys)) {
         bool cleared = false;
         QString real_originalkey = getRealOriginalKey(original_key);
         SendInputTaskController *controller = Q_NULLPTR;
@@ -12607,7 +12607,7 @@ QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys
     if (pure_keys) {
         QStringList pure_orikeylist;
         static QRegularExpression orikey_regex(R"(^(.+?)(?:@([0-9]))?$)");
-        for (const QString &orikey : orikeylist) {
+        for (const QString &orikey : std::as_const(orikeylist)) {
             QRegularExpressionMatch orikey_match = orikey_regex.match(orikey);
             if (orikey_match.hasMatch()) {
                 pure_orikeylist.append(orikey_match.captured(1));
