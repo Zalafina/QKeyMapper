@@ -147,9 +147,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initPushLevelSlider();
 
     QString fileDescription = getExeFileDescription();
-    setWindowTitle(fileDescription);
+    QString platformString = getPlatformString();
+    QString title = QString("%1 %2").arg(fileDescription, platformString);
+    setWindowTitle(title);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "QKeyMapper() -> Set WindowTitle to FileDescription :" << fileDescription;
+    qDebug() << "QKeyMapper() -> Set WindowTitle :" << title;
     qDebug() << "QKeyMapper() -> ProductVersion :" << getExeProductVersion();
 #endif
 
@@ -391,6 +393,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::HotKeyMappingStop_Signal, this, &QKeyMapper::HotKeyMappingStop, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::HotKeyMappingTableSwitchTab_Signal, this, &QKeyMapper::HotKeyMappingTableSwitchTab, Qt::QueuedConnection);
 
+    QObject::connect(this, &QKeyMapper::checkOSVersionMatched_Signal, this, &QKeyMapper::checkOSVersionMatched, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
@@ -11588,6 +11591,18 @@ void QKeyMapper::resetFontSize()
 void QKeyMapper::sessionLockStateChanged(bool locked)
 {
     emit QKeyMapper_Worker::getInstance()->sessionLockStateChanged_Signal(locked);
+}
+
+void QKeyMapper::checkOSVersionMatched()
+{
+    if (QOperatingSystemVersion::current() >= QOperatingSystemVersion::Windows10
+        && QSysInfo::currentCpuArchitecture() == "x86_64") {
+        QString platformString = getPlatformString();
+        if (platformString.startsWith("Qt6")) {
+            QString message = tr("For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.");
+            QMessageBox::warning(this, PROGRAM_NAME, message);
+        }
+    }
 }
 
 void QKeyMapper::updateLockStatusDisplay()

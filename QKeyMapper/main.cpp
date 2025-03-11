@@ -245,6 +245,7 @@ int main(int argc, char *argv[])
     workerThread->start();
 
     QKeyMapper w;
+    emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
 
 #ifdef SINGLE_APPLICATION
     QObject::connect(&app, &SingleApplication::showUp, &w, &QKeyMapper::otherInstancesStarted);
