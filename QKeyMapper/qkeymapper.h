@@ -263,23 +263,60 @@ class CustomMessageBox : public QDialog {
     Q_OBJECT
 
 public:
-    CustomMessageBox(QWidget *parent = nullptr, QString message = QString()) : QDialog(parent) {
+    enum IconType {
+        Information,
+        Warning,
+        Critical,
+        Question
+    };
+
+    CustomMessageBox(QWidget *parent = nullptr, QString message = QString(), IconType iconType = Warning)
+        : QDialog(parent) {
         setWindowTitle(PROGRAM_NAME);
 
-        QVBoxLayout *layout = new QVBoxLayout(this);
+        QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-        QLabel *label = new QLabel(message, this);
-        layout->addWidget(label);
+        // Top Section: Icon and Message
+        QHBoxLayout *topLayout = new QHBoxLayout();
+        QLabel *iconLabel = new QLabel(this);
+        QPixmap iconPixmap;
+        switch (iconType) {
+        case Information:
+            iconPixmap = style()->standardPixmap(QStyle::SP_MessageBoxInformation);
+            break;
+        case Warning:
+            iconPixmap = style()->standardPixmap(QStyle::SP_MessageBoxWarning);
+            break;
+        case Critical:
+            iconPixmap = style()->standardPixmap(QStyle::SP_MessageBoxCritical);
+            break;
+        case Question:
+            iconPixmap = style()->standardPixmap(QStyle::SP_MessageBoxQuestion);
+            break;
+        }
+        iconLabel->setPixmap(iconPixmap.scaled(48, 48, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        topLayout->addWidget(iconLabel);
 
+        // Add a vertical layout for messageLabel and bottom elements
+        QVBoxLayout *messageAndControlsLayout = new QVBoxLayout();
+
+        QLabel *messageLabel = new QLabel(message, this);
+        messageAndControlsLayout->addWidget(messageLabel);
+
+        // Horizontal layout for CheckBox and OK button
+        QHBoxLayout *controlsLayout = new QHBoxLayout();
         checkBox = new QCheckBox(tr("Do not show this message again"), this);
-        layout->addWidget(checkBox);
-
-        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        controlsLayout->addWidget(checkBox);
+        controlsLayout->addStretch(); // Spacer between CheckBox and OK button
         QPushButton *okButton = new QPushButton(tr("OK"), this);
-        buttonLayout->addStretch();
-        buttonLayout->addWidget(okButton);
-        layout->addLayout(buttonLayout);
+        controlsLayout->addWidget(okButton);
 
+        messageAndControlsLayout->addLayout(controlsLayout);
+
+        topLayout->addLayout(messageAndControlsLayout);
+        mainLayout->addLayout(topLayout);
+
+        // Connect the button
         connect(okButton, &QPushButton::clicked, this, &QDialog::accept);
     }
 
@@ -676,7 +713,7 @@ public:
     void showFailurePopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
     void initSelectColorDialog(void);
-    void showWarningWithCheckbox(QWidget *parent, QString message);
+    void showMessageBoxWithCheckbox(QWidget *parent, QString message, CustomMessageBox::IconType icontype);
 
 private:
     void initKeyMappingTabWidget(void);
