@@ -294,7 +294,7 @@ public:
             iconPixmap = style()->standardPixmap(QStyle::SP_MessageBoxQuestion);
             break;
         }
-        iconLabel->setPixmap(iconPixmap.scaled(48, 48, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+        iconLabel->setPixmap(iconPixmap.scaled(36, 36, Qt::KeepAspectRatio, Qt::SmoothTransformation));
         topLayout->addWidget(iconLabel);
 
         // Add a vertical layout for messageLabel and bottom elements
@@ -713,7 +713,7 @@ public:
     void showFailurePopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
     void initSelectColorDialog(void);
-    void showMessageBoxWithCheckbox(QWidget *parent, QString message, CustomMessageBox::IconType icontype);
+    bool showMessageBoxWithCheckbox(QWidget *parent, QString message, CustomMessageBox::IconType icontype);
 
 private:
     void initKeyMappingTabWidget(void);

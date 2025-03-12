@@ -441,6 +441,7 @@ extern const char* LAST_WINDOWPOSITION;
 extern const char* LANGUAGE_INDEX;
 extern const char *SHOW_PROCESSLIST;
 extern const char *SHOW_NOTES;
+extern const char *NOTSHOW_VERSION_UNMATCHED;
 extern const char *NOTIFICATION_POSITION;
 extern const char *UPDATE_SITE;
 extern const char* SETTINGSELECT;
