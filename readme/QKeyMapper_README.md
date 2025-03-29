@@ -84,6 +84,17 @@
 | Start(开始)键  | Joy-Key8(Start)     |
 | Guide(西瓜)键  | Joy-Key13(Guide)    |
 
+## Xbox360虚拟手柄按键对照表
+参考Xbox手柄按键对照表中的原始按键名称前面加上小写字母 **v** 就是对应的Xbox360虚拟手柄按键。
+示例如下：
+
+| Xbox虚拟手柄按键 | QKeyMapper映射按键名称|
+|----------------|---------------------|
+| 左摇杆上        | vJoy-LS-Up          |
+| 十字键下        | vJoy-DPad-Down      |
+| A键            | vJoy-Key1(A/×)      |
+| 右侧扳机键      | vJoy-Key12(RT)      |
+
 ---------------
 ## PS4-Dualshock手柄按键对照表
 | PS4手柄物理按键 | QKeyMapper原始按键名称|
@@ -114,17 +125,6 @@
 | OPTIONS键     | Joy-Key7(Back)      |
 | 触摸板键       | Joy-Key18           |
 | PS键          | Joy-Key6(RB)        |
-
-## Xbox360虚拟手柄按键对照表
-参考Xbox手柄按键对照表中的原始按键名称前面加上小写字母 **v** 就是对应的Xbox360虚拟手柄按键。
-示例如下：
-
-| Xbox虚拟手柄按键 | QKeyMapper映射按键名称|
-|----------------|---------------------|
-| 左摇杆上        | vJoy-LS-Up          |
-| 十字键下        | vJoy-DPad-Down      |
-| A键            | vJoy-Key1(A/×)      |
-| 右侧扳机键      | vJoy-Key12(RT)      |
 
 ---------------
 ### 新添加功能列表(根据更新时间降序排列)

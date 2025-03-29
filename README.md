@@ -306,6 +306,47 @@
 13. 增加了支持将鼠标左键&右键&中键映射到各种按键。
 
 ---------------
+## Xbox手柄按键对照表
+| Xbox手柄物理按键 | QKeyMapper原始按键名称|
+|----------------|---------------------|
+| 左摇杆上        | Joy-LS-Up           |
+| 左摇杆下        | Joy-LS-Down         |
+| 左摇杆左        | Joy-LS-Left         |
+| 左摇杆右        | Joy-LS-Right        |
+| 右摇杆上        | Joy-RS-Up           |
+| 右摇杆下        | Joy-RS-Down         |
+| 右摇杆左        | Joy-RS-Left         |
+| 右摇杆右        | Joy-RS-Right        |
+| 左摇杆按下      | Joy-Key9(LS-Click)  |
+| 右摇杆按下      | Joy-Key10(RS-Click) |
+| 十字键上        | Joy-DPad-Up         |
+| 十字键下        | Joy-DPad-Down       |
+| 十字键左        | Joy-DPad-Left       |
+| 十字键右        | Joy-DPad-Right      |
+| A键            | Joy-Key1(A/×)       |
+| B键            | Joy-Key2(B/○)       |
+| X键            | Joy-Key3(X/□)       |
+| Y键            | Joy-Key4(Y/△)       |
+| 左侧肩键        | Joy-Key5(LB)        |
+| 右侧肩键        | Joy-Key6(RB)        |
+| 左侧扳机键      | Joy-Key11(LT)       |
+| 右侧扳机键      | Joy-Key12(RT)       |
+| Back(后退)键   | Joy-Key7(Back)      |
+| Start(开始)键  | Joy-Key8(Start)     |
+| Guide(西瓜)键  | Joy-Key13(Guide)    |
+
+## Xbox360虚拟手柄按键对照表
+参考Xbox手柄按键对照表中的原始按键名称前面加上小写字母 **v** 就是对应的Xbox360虚拟手柄按键。
+示例如下：
+
+| Xbox虚拟手柄按键 | QKeyMapper映射按键名称|
+|----------------|---------------------|
+| 左摇杆上        | vJoy-LS-Up          |
+| 十字键下        | vJoy-DPad-Down      |
+| A键            | vJoy-Key1(A/×)      |
+| 右侧扳机键      | vJoy-Key12(RT)      |
+
+---------------
 ## PS4-Dualshock手柄按键对照表
 | PS4手柄物理按键 | QKeyMapper原始按键名称|
 |---------------|---------------------|
