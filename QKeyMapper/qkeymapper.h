@@ -428,6 +428,7 @@ public:
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);
     static QString getPlatformString(void);
+    static bool IsFilterKeysEnabled(void);
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
@@ -523,6 +524,7 @@ signals:
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab_Signal(const QString &hotkey_string);
     void checkOSVersionMatched_Signal(void);
+    void checkFilterKeysEnabled_Signal(void);
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
@@ -556,6 +558,8 @@ public slots:
     void MappingSwitch(MappingStartMode startmode);
 
     void checkOSVersionMatched(void);
+
+    void checkFilterKeysEnabled(void);
 
     void updateLockStatusDisplay(void);
 

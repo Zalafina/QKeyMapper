@@ -492,6 +492,7 @@ const char *LANGUAGE_INDEX = "LanguageIndex";
 const char *SHOW_PROCESSLIST = "ShowProcessList";
 const char *SHOW_NOTES = "ShowNotes";
 const char *NOTSHOW_VERSION_UNMATCHED = "NotShow_VersionUnmatched";
+const char *NOTSHOW_FILTERKEYS_DISABLED = "NotShow_FilterKeysDisabled";
 const char *NOTIFICATION_POSITION = "NotificationPosition";
 const char *UPDATE_SITE = "UpdateSite";
 const char *SETTINGSELECT = "SettingSelect";

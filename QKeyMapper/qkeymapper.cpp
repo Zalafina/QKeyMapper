@@ -394,6 +394,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::HotKeyMappingTableSwitchTab_Signal, this, &QKeyMapper::HotKeyMappingTableSwitchTab, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::checkOSVersionMatched_Signal, this, &QKeyMapper::checkOSVersionMatched, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::checkFilterKeysEnabled_Signal, this, &QKeyMapper::checkFilterKeysEnabled, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
@@ -1005,6 +1006,16 @@ QString QKeyMapper::getPlatformString()
     }
 
     return platform_string;
+}
+
+bool QKeyMapper::IsFilterKeysEnabled()
+{
+    FILTERKEYS filterKeys = { sizeof(FILTERKEYS) };
+    if (SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0)) {
+        // Check if the dwFlags in the FILTERKEYS structure contains the FKF_FILTERKEYSON flag
+        return (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
+    }
+    return false;
 }
 
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
@@ -11627,6 +11638,33 @@ void QKeyMapper::checkOSVersionMatched()
                 if (ischecked) {
                     settingFile.setValue(NOTSHOW_VERSION_UNMATCHED, true);
                 }
+            }
+        }
+    }
+}
+
+void QKeyMapper::checkFilterKeysEnabled()
+{
+    if (IsFilterKeysEnabled()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "\033[1;34m[checkFilterKeysEnabled]" << "FilterKeys -> Enabled\033[0m";
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "\033[1;34m[checkFilterKeysEnabled]" << "FilterKeys -> Disabled\033[0m";
+#endif
+        QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+        bool notshow_filterkeys_disabled = false;
+        if (true == settingFile.contains(NOTSHOW_FILTERKEYS_DISABLED)){
+            notshow_filterkeys_disabled = settingFile.value(NOTSHOW_FILTERKEYS_DISABLED).toBool();
+        }
+
+        if (notshow_filterkeys_disabled != true) {
+            QString message = tr("Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.");
+            bool ischecked = showMessageBoxWithCheckbox(this, message, CustomMessageBox::Warning);
+            if (ischecked) {
+                settingFile.setValue(NOTSHOW_FILTERKEYS_DISABLED, true);
             }
         }
     }
