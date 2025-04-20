@@ -12554,7 +12554,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression plusandnext_split_regex(R"((SendText\([^)]+\)[^+»]*)|([^+»]+))");
     static QRegularExpression next_split_regex(R"((SendText\([^)]+\)[^»]*)|([^»]+))");
     static QRegularExpression plus_split_regex(R"((SendText\([^)]+\)[^+]*)|([^+]+))");
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
     QStringList splitted_mappingkeys;
     QString remainingString = mappingkeystr;
