@@ -393,36 +393,36 @@
 
 ---------------
 ## 特殊映射按键对照表
-| QKeyMapper按键名称        |  映射按键 | 按键说明                           |
-|--------------------------|---------|-----------------------------------|
-| BLOCKED                  |    ✔    | 屏蔽原始按键(原始按键按下后无响应)     |
-| NONE                     |    ✔    | 空按键(按键序列中延时占位等特殊作用)   |
-| SendText                 |    ✔    | 直接发送文本字符串的特殊映射键         |
-| KeySequenceBreak         |    ✔    | 打断所有当前正在执行的按键序列发送      |
-| Key2Mouse-Up             |    ✔    | 原始按键按下后鼠标指针持续向上移动      |
-| Key2Mouse-Down           |    ✔    | 原始按键按下后鼠标指针持续向下移动      |
-| Key2Mouse-Left           |    ✔    | 原始按键按下后鼠标指针持续向左移动      |
-| Key2Mouse-Right          |    ✔    | 原始按键按下后鼠标指针持续向右移动      |
-| Mouse-L_WindowPoint      |    ✔    | 鼠标左键点击窗口内指定坐标点           |
-| Mouse-R_WindowPoint      |    ✔    | 鼠标右键点击窗口内指定坐标点           |
-| Mouse-M_WindowPoint      |    ✔    | 鼠标中键键点击窗口内指定坐标点         |
-| Mouse-X1_WindowPoint     |    ✔    | 鼠标1号侧键点击窗口内指定坐标点        |
-| Mouse-X2_WindowPoint     |    ✔    | 鼠标2号侧键点击窗口内指定坐标点        |
-| Mouse-Move_WindowPoint   |    ✔    | 鼠标指针移动到窗口内指定坐标点         |
-| Mouse-L_ScreenPoint      |    ✔    | 鼠标左键点击屏幕范围内内指定坐标点      |
-| Mouse-R_ScreenPoint      |    ✔    | 鼠标右键点击屏幕范围内指定坐标点        |
-| Mouse-M_ScreenPoint      |    ✔    | 鼠标中键键点击屏幕范围内指定坐标点      |
-| Mouse-X1_ScreenPoint     |    ✔    | 鼠标1号侧键点击屏幕范围内指定坐标点     |
-| Mouse-X2_ScreenPoint     |    ✔    | 鼠标2号侧键点击屏幕范围内指定坐标点     |
-| Crosshair-Normal         |    ✔    | 原始按键按下后在屏幕上显示普通十字准星    |
-| Crosshair-TypeA          |    ✔    | 原始按键按下后在屏幕上显示A类型十字准星   |
-| Func-Refresh             |    ✔    | 触发Windows系统刷新功能               |
-| Func-LockScreen          |    ✔    | 触发Windows系统锁屏功能                  |
-| Func-Shutdown            |    ✔    | 触发Windows系统关机功能                  |
-| Func-Reboot              |    ✔    | 触发Windows系统重启功能                          |
-| Func-Logoff              |    ✔    | 触发Windows系统注销功能                           |
-| Func-Sleep               |    ✔    | 触发Windows系统睡眠功能(节能模式)                    |
-| Func-Hibernate           |    ✔    | 触发Windows系统休眠功能(当前状态保存到硬盘，几乎不耗电)  |
+| QKeyMapper映射按键名称     | 按键说明                                 |
+|--------------------------|----------------------------------------|
+| BLOCKED                  |  屏蔽原始按键(原始按键按下后无响应)         |
+| NONE                     |  空按键(按键序列中延时占位等特殊作用)       |
+| SendText                 |  直接发送文本字符串的特殊映射键            |
+| KeySequenceBreak         |  打断所有当前正在执行的按键序列发送         |
+| Key2Mouse-Up             |  原始按键按下后鼠标指针持续向上移动         |
+| Key2Mouse-Down           |  原始按键按下后鼠标指针持续向下移动         |
+| Key2Mouse-Left           |  原始按键按下后鼠标指针持续向左移动         |
+| Key2Mouse-Right          |  原始按键按下后鼠标指针持续向右移动         |
+| Mouse-L_WindowPoint      |  鼠标左键点击窗口内指定坐标点              |
+| Mouse-R_WindowPoint      |  鼠标右键点击窗口内指定坐标点              |
+| Mouse-M_WindowPoint      |  鼠标中键键点击窗口内指定坐标点            |
+| Mouse-X1_WindowPoint     |  鼠标1号侧键点击窗口内指定坐标点           |
+| Mouse-X2_WindowPoint     |  鼠标2号侧键点击窗口内指定坐标点           |
+| Mouse-Move_WindowPoint   |  鼠标指针移动到窗口内指定坐标点            |
+| Mouse-L_ScreenPoint      |  鼠标左键点击屏幕范围内内指定坐标点         |
+| Mouse-R_ScreenPoint      |  鼠标右键点击屏幕范围内指定坐标点           |
+| Mouse-M_ScreenPoint      |  鼠标中键键点击屏幕范围内指定坐标点         |
+| Mouse-X1_ScreenPoint     |  鼠标1号侧键点击屏幕范围内指定坐标点        |
+| Mouse-X2_ScreenPoint     |  鼠标2号侧键点击屏幕范围内指定坐标点        |
+| Crosshair-Normal         |  原始按键按下后在屏幕上显示普通十字准星     |
+| Crosshair-TypeA          |  原始按键按下后在屏幕上显示A类型十字准星    |
+| Func-Refresh             |  触发Windows系统刷新功能                |
+| Func-LockScreen          |  触发Windows系统锁屏功能                 |
+| Func-Shutdown            |  触发Windows系统关机功能                 |
+| Func-Reboot              |  触发Windows系统重启功能                   |
+| Func-Logoff              |  触发Windows系统注销功能                           |
+| Func-Sleep               |  触发Windows系统睡眠功能(节能模式)                    |
+| Func-Hibernate           |  触发Windows系统休眠功能(当前状态保存到硬盘，几乎不耗电)  |
 ##### "Key2Mouse-" 开头的按键控制鼠标指针四方向移动，可通过"映射设定"中"X轴速度"和"Y轴速度"可进一步分别调整水平和垂直方向移动速度快慢，数值越大移动越快。
 ##### WindowPoint映射键需要配合 "左Alt键+鼠标左键" 在当前选定好的窗口标题对应窗口内选取坐标点来使用。
 ##### ScreenPoint映射键需要配合 "左Ctrl键+鼠标左键" 在屏幕范围内选取全屏坐标点来使用。
