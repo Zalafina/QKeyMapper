@@ -2304,6 +2304,36 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
             }
         }
     }
+    else if (keyupdown == KEY_UP) {
+        if (findindex >= 0) {
+            int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+
+            if (sendmode == SENDMODE_NORMAL
+                && repeat_mode == REPEAT_MODE_BYKEY) {
+                bool isKeySequence = false;
+                bool isKeySequenceRunning = false;
+                if (key_sequence_count > 1) {
+                    isKeySequence = true;
+                    if (s_runningKeySequenceOrikeyList.contains(original_key)) {
+                        isKeySequenceRunning = true;
+                    }
+                }
+
+                if (sendmode == SENDMODE_NORMAL) {
+                    if (isKeySequence && isKeySequenceRunning && controller != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] Original KeyUp break repeat by key sequence, task_stop_flag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
+#endif
+                        // controller->task_stop_mutex->lock();
+                        controller->task_threadpool->clear();
+                        *controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+                        controller->task_stop_condition->wakeAll();
+                        // controller->task_stop_mutex->unlock();
+                    }
+                }
+            }
+        }
+    }
 
     if (false == skip_emitsignal) {
         emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
