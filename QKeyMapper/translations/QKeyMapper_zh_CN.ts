@@ -159,22 +159,22 @@
 <context>
     <name>KeyMappingTabWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="14047"/>
+        <location filename="../qkeymapper.cpp" line="14057"/>
         <source>%1 selected mapping data copied.</source>
         <translation>复制 %1 条当前选中映射表内容。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14055"/>
+        <location filename="../qkeymapper.cpp" line="14065"/>
         <source>%1 copied mapping data are completely duplicated and could not be inserted!</source>
         <translation>%1 条复制内容全部与当前映射表已有原始按键重复，未能插入！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14061"/>
+        <location filename="../qkeymapper.cpp" line="14071"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</source>
         <translation>插入 %1 条复制内容到当前映射表中，其余 %2 条由于原始按键重复未能插入。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14066"/>
+        <location filename="../qkeymapper.cpp" line="14076"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>插入 %1 条复制的映射表内容到当前映射表中。</translation>
     </message>
@@ -1345,12 +1345,21 @@
         <translation>请确认是否要清除映射表中全部数据？</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="13857"/>
+        <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
+
+Do you confirm to continue installing the multi-input device driver?</source>
+        <translation>使用多设备驱动时，在多次反复拔插输入设备或者反复多次休眠唤醒系统等特殊场景下会发生鼠标或键盘等输入设备失效的问题，请提前阅读多输入设备相关的软件说明后谨慎使用。
+
+是否确认继续安装多设备驱动？</translation>
+    </message>
+    <message>
         <location filename="../qkeymapper.cpp" line="13851"/>
         <source>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</source>
         <translation>卸载多输入设备驱动后需要重新启动操作系统生效。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13887"/>
+        <location filename="../qkeymapper.cpp" line="13897"/>
         <source>System reboot is required for the changes to take effect after installing the multi-input device driver.</source>
         <translation>安装多输入设备驱动后需要重新启动操作系统生效。</translation>
     </message>

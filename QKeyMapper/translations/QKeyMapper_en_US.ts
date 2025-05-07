@@ -159,22 +159,22 @@
 <context>
     <name>KeyMappingTabWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="14047"/>
+        <location filename="../qkeymapper.cpp" line="14057"/>
         <source>%1 selected mapping data copied.</source>
         <translation>%1 selected mapping data copied.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14055"/>
+        <location filename="../qkeymapper.cpp" line="14065"/>
         <source>%1 copied mapping data are completely duplicated and could not be inserted!</source>
         <translation>%1 copied mapping data are completely duplicated and could not be inserted!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14061"/>
+        <location filename="../qkeymapper.cpp" line="14071"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</source>
         <translation>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14066"/>
+        <location filename="../qkeymapper.cpp" line="14076"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>Inserted %1 copied mapping data into current mapping table.</translation>
     </message>
@@ -1345,12 +1345,21 @@
         <translation>Are you sure you want to clear all data in the mapping table?</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="13857"/>
+        <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
+
+Do you confirm to continue installing the multi-input device driver?</source>
+        <translation>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
+
+Do you confirm to continue installing the multi-input device driver?</translation>
+    </message>
+    <message>
         <location filename="../qkeymapper.cpp" line="13851"/>
         <source>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</source>
         <translation>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13887"/>
+        <location filename="../qkeymapper.cpp" line="13897"/>
         <source>System reboot is required for the changes to take effect after installing the multi-input device driver.</source>
         <translation>System reboot is required for the changes to take effect after installing the multi-input device driver.</translation>
     </message>
