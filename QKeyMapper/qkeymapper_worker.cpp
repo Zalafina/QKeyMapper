@@ -6378,22 +6378,32 @@ int QKeyMapper_Worker::joystickCalculateDelta(qreal axis_value, int Speed_Factor
     int delta = 0;
     if (checkJoystick) {
         if (axis_value > JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD) {
-            qreal range = 1.0 - JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD;
-            qreal step = range / Speed_Factor;
-            for (int i = 1; i <= Speed_Factor; i++) {
-                if (axis_value <= JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD + i * step) {
-                    delta += i;
-                    break;
+            if (axis_value >= 1.0) {
+                delta += Speed_Factor;
+            }
+            else {
+                qreal range = 1.0 - JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD;
+                qreal step = range / Speed_Factor;
+                for (int i = 1; i <= Speed_Factor; i++) {
+                    if (axis_value <= JOYSTICK2MOUSE_AXIS_PLUS_LOW_THRESHOLD + i * step) {
+                        delta += i;
+                        break;
+                    }
                 }
             }
         }
         else if (axis_value < JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD) {
-            qreal range = 1.0 - JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD;
-            qreal step = range / Speed_Factor;
-            for (int i = 1; i <= Speed_Factor; i++) {
-                if (axis_value >= JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD - i * step) {
-                    delta -= i;
-                    break;
+            if (axis_value <= -1.0) {
+                delta -= Speed_Factor;
+            }
+            else {
+                qreal range = 1.0 + JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD;
+                qreal step = range / Speed_Factor;
+                for (int i = 1; i <= Speed_Factor; i++) {
+                    if (axis_value >= JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD - i * step) {
+                        delta -= i;
+                        break;
+                    }
                 }
             }
         }
