@@ -1345,23 +1345,23 @@
         <translation>Are you sure you want to clear all data in the mapping table?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13857"/>
-        <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
-
-Do you confirm to continue installing the multi-input device driver?</source>
-        <translation>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
-
-Do you confirm to continue installing the multi-input device driver?</translation>
-    </message>
-    <message>
         <location filename="../qkeymapper.cpp" line="13851"/>
-        <source>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</source>
-        <translation>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</translation>
+        <source>System reboot is required for the changes to take effect after uninstalling Interception driver.</source>
+        <translation>System reboot is required for the changes to take effect after uninstalling Interception driver.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="13897"/>
-        <source>System reboot is required for the changes to take effect after installing the multi-input device driver.</source>
-        <translation>System reboot is required for the changes to take effect after installing the multi-input device driver.</translation>
+        <source>System reboot is required for the changes to take effect after installing Interception driver.</source>
+        <translation>System reboot is required for the changes to take effect after installing Interception driver.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="13857"/>
+        <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
+
+Do you confirm to continue installing Interception driver?</source>
+        <translation>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
+
+Do you confirm to continue installing Interception driver?</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9254"/>

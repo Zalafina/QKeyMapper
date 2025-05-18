@@ -835,7 +835,7 @@
         <location filename="../qkeymapper.ui" line="1220"/>
         <location filename="../qkeymapper.cpp" line="11138"/>
         <source>Multi-Input</source>
-        <translation>多入力</translation>
+        <translation>複数キーボード</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1254"/>
@@ -855,7 +855,7 @@
         <location filename="../qkeymapper.ui" line="1292"/>
         <location filename="../qkeymapper.cpp" line="11163"/>
         <source>MultiDevice</source>
-        <translation>多入力</translation>
+        <translation>複数キーボード</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1308"/>
@@ -1401,23 +1401,23 @@
         <translation>マッピングテーブル内全てのデータを消去するか確認してください？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13857"/>
-        <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
-
-Do you confirm to continue installing the multi-input device driver?</source>
-        <translation>マルチ入力デバイスドライバを使用する際、入力デバイスの抜き差しを繰り返したり、システムを何度もスリープと復帰させたりする特殊な状況下で、マウスやキーボードなどの入力デバイスが機能しなくなる問題が発生する可能性があります。マルチ入力デバイスに関するソフトウェアの説明を事前に注意深くお読みいただき、慎重にご使用ください。
-
-マルチ入力デバイスドライバのインストールを続行してもよろしいですか？</translation>
-    </message>
-    <message>
         <location filename="../qkeymapper.cpp" line="13851"/>
-        <source>System reboot is required for the changes to take effect after uninstalling the multi-input device driver.</source>
-        <translation>マルチ入力デバイスのドライバをアンインストールした後、システムを再起動する必要があります。</translation>
+        <source>System reboot is required for the changes to take effect after uninstalling Interception driver.</source>
+        <translation>Interceptionドライバをアンインストールした後、システムを再起動する必要があります。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="13897"/>
-        <source>System reboot is required for the changes to take effect after installing the multi-input device driver.</source>
-        <translation>マルチ入力デバイスのドライバをインストールした後、システムを再起動する必要があります。</translation>
+        <source>System reboot is required for the changes to take effect after installing Interception driver.</source>
+        <translation>Interceptionドライバをインストールした後、システムを再起動する必要があります。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="13857"/>
+        <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
+
+Do you confirm to continue installing Interception driver?</source>
+        <translation>Interceptionライバを使用する際、入力デバイスの抜き差しを繰り返したり、システムを何度もスリープと復帰させたりする特殊な状況下で、マウスやキーボードなどの入力デバイスが機能しなくなる問題が発生する可能性があります。マルチ入力デバイスに関するソフトウェアの説明を事前に注意深くお読みいただき、慎重にご使用ください。
+
+Interceptionドライバのインストールを続行してもよろしいですか？</translation>
     </message>
 </context>
 <context>

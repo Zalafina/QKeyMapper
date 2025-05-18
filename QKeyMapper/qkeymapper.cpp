@@ -13848,13 +13848,13 @@ void QKeyMapper::on_installInterceptionButton_clicked()
             qDebug() << "[on_installInterceptionButton_clicked]" << "Reboot required after uninstall Interception Driver, InterceptionState ->" << newInterceptionState;
 #endif
             /* Show Reboot Required MessageBox after Uninstall Interception Driver */
-            QString message = tr("System reboot is required for the changes to take effect after uninstalling the multi-input device driver.");
+            QString message = tr("System reboot is required for the changes to take effect after uninstalling Interception driver.");
             QMessageBox::warning(this, PROGRAM_NAME, message);
         }
     }
     else {
         /* Show a confirmation dialog before installing the driver */
-        QString message = tr("Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using the multi-input device driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.\n\nDo you confirm to continue installing the multi-input device driver?");
+        QString message = tr("Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.\n\nDo you confirm to continue installing Interception driver?");
         QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (reply != QMessageBox::Yes) {
 #ifdef DEBUG_LOGOUT_ON
@@ -13894,7 +13894,7 @@ void QKeyMapper::on_installInterceptionButton_clicked()
             qDebug() << "[on_installInterceptionButton_clicked]" << "Reboot required after install Interception Driver, InterceptionState ->" << newInterceptionState;
 #endif
             /* Show Reboot Required MessageBox after Install Interception Driver */
-            QString message = tr("System reboot is required for the changes to take effect after installing the multi-input device driver.");
+            QString message = tr("System reboot is required for the changes to take effect after installing Interception driver.");
             QMessageBox::warning(this, PROGRAM_NAME, message);
         }
     }
