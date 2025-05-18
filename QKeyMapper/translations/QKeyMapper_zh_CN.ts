@@ -1217,7 +1217,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9356"/>
         <source>Available</source>
-        <translation>多输入可用</translation>
+        <translation>多键鼠可用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9373"/>
@@ -1227,7 +1227,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9390"/>
         <source>Unavailable</source>
-        <translation>多输入不可用</translation>
+        <translation>多键鼠不可用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9596"/>
@@ -1359,7 +1359,7 @@
         <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
 
 Do you confirm to continue installing Interception driver?</source>
-        <translation>使用多键鼠输入支持驱动时，在多次反复拔插输入设备或者反复多次休眠唤醒系统等特殊场景下会发生鼠标或键盘等输入设备失效的问题，请提前阅读多输入设备相关的软件说明后谨慎使用。
+        <translation>使用多键鼠输入支持驱动时，在多次反复拔插输入设备或者反复多次休眠唤醒系统等特殊场景下会发生鼠标或键盘等输入设备失效的问题，请提前阅读多键鼠输入支持相关的软件说明后谨慎使用。
 
 是否确认继续安装多键鼠输入支持驱动？</translation>
     </message>
