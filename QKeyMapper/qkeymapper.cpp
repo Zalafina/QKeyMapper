@@ -11138,6 +11138,12 @@ void QKeyMapper::setUILanguage(int languageindex)
     tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input")   );
     tabWidget->setTabText(tabWidget->indexOf(ui->forza),            tr("Forza")         );
 
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->general),          tr("General setting tab tooltip.")        );
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->mapping),          tr("Mapping setting tab tooltip.")        );
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->virtual_gamepad),  tr("VirtualGamepad setting tab tooltip.") );
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input setting tab tooltip.")    );
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->forza),            tr("Forza setting tab tooltip.")          );
+
 #ifdef VIGEM_CLIENT_SUPPORT
     // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
     ui->enableVirtualJoystickCheckBox->setText(tr("VirtualGamepad"));
