@@ -1275,12 +1275,15 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11143"/>
         <source>VirtualGamepad setting tab tooltip.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qkeymapper.cpp" line="11144"/>
-        <source>Multi-Input setting tab tooltip.</source>
-        <translation type="unfinished"></translation>
+        <translation>「虚拟手柄」设定页包含由QKeyMapper创建的虚拟手柄的映射功能相关设定：
+1. 可以安装和卸载虚拟手柄ViGEm Bus驱动。
+2. 可以虚拟手柄驱动安装成功后选择是否启用虚拟手柄。
+3. 可以调整创建虚拟手柄的数量，数量范围1~4。
+4. 可以选择创建虚拟手柄类型，有Xbox360和DUALSHOCK4两种选择。
+5. 可以选择&quot;锁定光标&quot;在鼠标控制虚拟手柄摇杆时鼠标指针隐藏并且位置不发生变化。
+6. 可以选择&quot;直控模式&quot;，调整为摇杆偏移度与鼠标移动完全一致的模式来控制虚拟手柄摇杆。
+7. 可以设置鼠标控制虚拟手柄摇杆的水平和垂直方向的灵敏度。
+8. 可以设置鼠标控制虚拟手柄摇杆的&quot;回中延时&quot;，设置为0时不进行回中。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11145"/>
@@ -1449,6 +1452,20 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qkeymapper.cpp" line="11185"/>
         <source>Lock</source>
         <translation>锁定</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="11144"/>
+        <source>Multi-Input setting tab tooltip</source>
+        <translation>&lt;html&gt;
+&lt;body&gt;
+「多键鼠支持」设定页包含对多个键盘和鼠标设备的输入区分检测并分别映射的功能设定：&lt;br&gt;
+1. 可以安装和卸载用于&quot;多键鼠支持&quot;功能的Interception驱动(安装或卸载后需要重新启动系统)。&lt;br&gt;
+2. 可以在Interception驱动安装成功后选择是否启用&quot;多键鼠支持&quot;功能。&lt;br&gt;
+3. 点击&quot;设备列表&quot;按钮可现实当前系统内连接的键盘和鼠标设备列表及编号(显示前10个设备)。&lt;br&gt;
+4. 可以启用支持多个键盘同时使用的&quot;筛选键&quot;功能。&lt;br&gt;
+&lt;span style=&quot;color:red;&quot;&gt;注意：反复拔插、断开再连接键鼠设备，或者反复系统休眠再恢复会导致系统设备ID不断增加超过Interception驱动支持上限。可能出现键盘鼠标无法操作现象，完全重启系统可恢复。卸载驱动后重启可完全复原。&lt;/span&gt;
+&lt;/body&gt;
+&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11189"/>

@@ -1321,12 +1321,29 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11143"/>
         <source>VirtualGamepad setting tab tooltip.</source>
-        <translation type="unfinished"></translation>
+        <translation>「仮想ゲームパッド」設定タブには、QKeyMapperで作成された仮想ゲームパッドのマッピング機能に関する設定があります：
+1. 仮想ゲームパッド用のViGEm Busドライバーをインストールおよびアンインストールできます。
+2. ViGEmドライバーのインストールが成功した後、仮想ゲームパッドを有効にするかどうかを選択できます。
+3. 作成する仮想ゲームパッドの数を1～4の範囲で調整できます。
+4. 作成する仮想ゲームパッドのタイプを選択できます（Xbox360またはDUALSHOCK4）。
+5. 「カーソルロック」を有効にすると、マウスで仮想ゲームパッドのスティックを操作する際にマウスポインターが非表示になり、位置も変わりません。
+6. 「直接制御モード」を有効にすると、マウス移動とスティックの傾きが完全に一致するモードで仮想ゲームパッドのスティックを操作できます。
+7. マウスで仮想ゲームパッドのスティックを操作する際の、水平・垂直方向の感度を設定できます。
+8. マウスで仮想ゲームパッドのスティックを操作する際の「中心戻す遅延」を設定できます。0に設定すると中心に戻りません。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11144"/>
-        <source>Multi-Input setting tab tooltip.</source>
-        <translation type="unfinished"></translation>
+        <source>Multi-Input setting tab tooltip</source>
+        <translation>&lt;html&gt;
+&lt;body&gt;
+「複数キーボード」設定タブには、複数のキーボードやマウスデバイスの入力を区別して個別にマッピングする機能に関する設定があります：&lt;br&gt;
+1. 「複数キーボード」機能に必要なInterceptionドライバーをインストールまたはアンインストールできます（インストールやアンインストール後はシステムの再起動が必要です）。&lt;br&gt;
+2. Interceptionドライバーのインストールが成功した後、「複数キーボード」機能を有効にするかどうかを選択できます。&lt;br&gt;
+3. 「デバイスリスト」ボタンをクリックすると、現在システムに接続されているキーボードとマウスのデバイスリストと番号（最大10台まで）を表示できます。&lt;br&gt;
+4. 複数のキーボードを同時に使用できる「フィルターキー」機能を有効にできます。&lt;br&gt;
+&lt;span style=&quot;color:red;&quot;&gt;注意：キーボードやマウスの抜き差しや、システムのスリープと復帰を繰り返すと、デバイスIDが増加し、Interceptionドライバーの上限を超える場合があります。その場合、キーボードやマウスが操作できなくなることがあります。システムを完全に再起動すると復旧します。ドライバーをアンインストールして再起動すれば完全に元に戻ります。&lt;/span&gt;
+&lt;/body&gt;
+&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11145"/>

@@ -1275,12 +1275,15 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11143"/>
         <source>VirtualGamepad setting tab tooltip.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../qkeymapper.cpp" line="11144"/>
-        <source>Multi-Input setting tab tooltip.</source>
-        <translation type="unfinished"></translation>
+        <translation>The &quot;VirtualGamepad&quot; setting tab contains options related to the mapping functions of virtual gamepads created by QKeyMapper:
+1. You can install and uninstall the ViGEm Bus driver for virtual gamepads.
+2. After the ViGEm driver is successfully installed, you can choose whether to enable the virtual gamepad.
+3. You can adjust the number of virtual gamepads to create, with a range of 1 to 4.
+4. You can select the type of virtual gamepad to create: Xbox360 or DUALSHOCK4.
+5. You can enable &quot;Lock Cursor&quot; to hide the mouse pointer and keep its position unchanged when controlling the virtual 6. gamepad stick with the mouse.
+7. You can enable &quot;Direct Mode&quot; to make the stick offset exactly match the mouse movement when controlling the virtual gamepad stick.
+8. You can set the sensitivity for horizontal and vertical movement when controlling the virtual gamepad stick with the mouse.
+9. You can set the &quot;Recenter&quot; delay when controlling the virtual gamepad stick with the mouse. If set to 0, recentering is disabled.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11145"/>
@@ -1449,6 +1452,20 @@ Do you confirm to continue installing Interception driver?</translation>
         <location filename="../qkeymapper.cpp" line="11185"/>
         <source>Lock</source>
         <translation>Lock</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="11144"/>
+        <source>Multi-Input setting tab tooltip</source>
+        <translation>&lt;html&gt;
+&lt;body&gt;
+The &quot;Multi-Input&quot; setting tab contains options for distinguishing and mapping inputs from multiple keyboard and mouse devices:&lt;br&gt;
+1. You can install or uninstall the Interception driver required for the &quot;Multi-Input&quot; feature (a system restart is required after installation or uninstallation).&lt;br&gt;
+2. After the Interception driver is successfully installed, you can choose whether to enable the &quot;Multi-Input&quot; feature.&lt;br&gt;
+3. Click the &quot;DeviceList&quot; button to display the list and IDs of currently connected keyboard and mouse devices (up to 10 devices shown).&lt;br&gt;
+4. You can enable the &quot;FilterKeys&quot; feature to support using multiple keyboards simultaneously.&lt;br&gt;
+&lt;span style=&quot;color:red;&quot;&gt;Note: Repeatedly unplugging and reconnecting keyboard/mouse devices, or repeated system sleep and resume, may cause device IDs to increase beyond the Interception driver&apos;s supported limit. This may result in keyboards or mice becoming unresponsive. A full system restart can restore normal operation. Uninstalling the driver and restarting will fully revert all changes.&lt;/span&gt;
+&lt;/body&gt;
+&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11189"/>
