@@ -5355,7 +5355,16 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 #ifdef DEBUG_LOGOUT_ON
     QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
     QString productIdStr = QString("0x%1").arg(QString::number(joystick_added->productid, 16).toUpper(), 4, '0');
-    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7").arg(joystick_added->name).arg(joystick_added->playerindex).arg(joystick_added->id).arg(vendorIdStr, productIdStr).arg(joystick_added->numbuttons).arg(joystick_added->serial);
+    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9")
+        .arg(joystick_added->name)
+        .arg(joystick_added->playerindex)
+        .arg(joystick_added->id)
+        .arg(vendorIdStr)
+        .arg(productIdStr)
+        .arg(joystick_added->numbuttons)
+        .arg(joystick_added->serial)
+        .arg(joystick_added->has_gyro ? "true" : "false")
+        .arg(joystick_added->has_accel ? "true" : "false");
     qDebug().nospace().noquote() << debugmessage;
 #endif
 

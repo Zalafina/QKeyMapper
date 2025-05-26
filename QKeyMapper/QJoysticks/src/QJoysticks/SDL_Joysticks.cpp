@@ -177,16 +177,22 @@ void SDL_Joysticks::update()
             }
             break;
          case SDL_JOYAXISMOTION:
-            if (!SDL_IsGameController(event.cdevice.which))
+         {
+            int device_index = m_joysticks[event.cdevice.which]->id;
+            if (!SDL_IsGameController(device_index))
             {
                emit axisEvent(getAxisEvent(&event));
             }
+         }
             break;
          case SDL_CONTROLLERAXISMOTION:
-            if (SDL_IsGameController(event.cdevice.which))
+         {
+            int device_index = m_joysticks[event.cdevice.which]->id;
+            if (SDL_IsGameController(device_index))
             {
                emit axisEvent(getAxisEvent(&event));
             }
+        }
             break;
          case SDL_JOYBUTTONUP:
             emit buttonEvent(getButtonEvent(&event));
@@ -214,21 +220,39 @@ void SDL_Joysticks::configureJoystick(const SDL_Event *event)
 #ifdef SDL_SUPPORTED
    QJoystickDevice *joystick = getJoystick(event->jdevice.which);
 
-   if (!SDL_IsGameController(event->cdevice.which) && joystick != nullptr)
-   {
-      SDL_Joystick *js = SDL_JoystickFromInstanceID(joystick->instanceID);
-      if (js)
+   if (joystick != nullptr) {
+      if (!SDL_IsGameController(event->cdevice.which))
       {
-         char guid[1024];
-         SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(js), guid, sizeof(guid));
+         SDL_Joystick *js = SDL_JoystickFromInstanceID(joystick->instanceID);
+         if (js)
+         {
+               char guid[1024];
+               SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(js), guid, sizeof(guid));
 
-         QString mapping = QString("%1,%2,%3").arg(guid).arg(SDL_JoystickName(js)).arg(GENERIC_MAPPINGS);
+               QString mapping = QString("%1,%2,%3").arg(guid).arg(SDL_JoystickName(js)).arg(GENERIC_MAPPINGS);
 
-         SDL_GameControllerAddMapping(mapping.toStdString().c_str());
+               SDL_GameControllerAddMapping(mapping.toStdString().c_str());
+         }
+      }
+      else {
+         SDL_GameController *gc = SDL_GameControllerOpen(event->cdevice.which);
+         if (gc != nullptr) {
+               bool has_gyro = SDL_GameControllerHasSensor(gc, SDL_SENSOR_GYRO);
+               bool has_accel = SDL_GameControllerHasSensor(gc, SDL_SENSOR_ACCEL);
+
+               if (has_gyro)
+               {
+                  SDL_GameControllerSetSensorEnabled(gc, SDL_SENSOR_GYRO, SDL_TRUE);
+                  joystick->has_gyro = true;
+               }
+               if (has_accel)
+               {
+                  SDL_GameControllerSetSensorEnabled(gc, SDL_SENSOR_ACCEL, SDL_TRUE);
+                  joystick->has_accel = true;
+               }
+         }
       }
    }
-
-   SDL_GameControllerOpen(event->cdevice.which);
 
    emit countChanged();
 #else
@@ -252,6 +276,8 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
       joystick->id = id;
       joystick->instanceID = SDL_JoystickInstanceID(sdl_joystick);
       joystick->playerindex = SDL_JoystickGetPlayerIndex(sdl_joystick);
+      joystick->has_gyro = false;
+      joystick->has_accel = false;
       joystick->blacklisted = false;
       joystick->name = SDL_JoystickName(sdl_joystick);
       joystick->serial = SDL_JoystickGetSerial(sdl_joystick);
