@@ -203,6 +203,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
+    QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
 
     initGlobalSendInputTaskController();
 
@@ -5462,6 +5463,27 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
     checkJoystickButtons(e);
 }
 
+void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
+{
+#ifdef JOYSTICK_VERBOSE_LOG
+    qDebug().nospace() << "[onJoystickSensorEvent]"
+                       << "P[" << e.joystick->playerindex << "] "
+                       << "GyroX ->" << e.gyroX  << ", "
+                       << "GyroY ->" << e.gyroY  << ", "
+                       << "GyroZ ->" << e.gyroZ  << ", "
+                       << "AccelX ->" << e.accelX  << ", "
+                       << "AccelY ->" << e.accelY  << ", "
+                       << "AccelZ ->" << e.accelZ;
+#endif
+
+    if (e.joystick->blacklisted
+        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
+        return;
+    }
+
+    checkJoystickSensor(e);
+}
+
 void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
 {
     if (e.joystick == Q_NULLPTR)
@@ -5643,6 +5665,12 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
             joystickRSVerticalProc(e);
         }
     }
+}
+
+void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
+{
+    if (e.joystick == Q_NULLPTR)
+        return;
 }
 
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)

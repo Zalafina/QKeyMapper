@@ -192,8 +192,17 @@ void SDL_Joysticks::update()
             {
                emit axisEvent(getAxisEvent(&event));
             }
-        }
+         }
             break;
+         case SDL_CONTROLLERSENSORUPDATE:
+         {
+             SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.cdevice.which);
+             if (gc != nullptr)
+             {
+                 emit sensorEvent(getSensorEvent(&event));
+             }
+         }
+             break;
          case SDL_JOYBUTTONUP:
             emit buttonEvent(getButtonEvent(&event));
             break;
@@ -438,4 +447,42 @@ QJoystickButtonEvent SDL_Joysticks::getButtonEvent(const SDL_Event *sdl_event)
 #endif
 
    return event;
+}
+
+QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)
+{
+    SDL_GameController *gc = SDL_GameControllerFromInstanceID(sdl_event->cdevice.which);
+    QJoystickSensorEvent event;
+    event.gyroX = 0;
+    event.gyroY = 0;
+    event.gyroZ = 0;
+    event.accelX = 0;
+    event.accelY = 0;
+    event.accelZ = 0;
+    event.joystick = Q_NULLPTR;
+    bool has_gyro = SDL_GameControllerHasSensor(gc, SDL_SENSOR_GYRO);
+    bool has_accel = SDL_GameControllerHasSensor(gc, SDL_SENSOR_ACCEL);
+
+    if (has_gyro)
+    {
+        std::array<float, 3> gyro;
+        SDL_GameControllerGetSensorData(gc, SDL_SENSOR_GYRO, &gyro[0], 3);
+        static constexpr float toDegPerSec = float(180. / M_PI);
+        event.gyroX = gyro[0] * toDegPerSec;
+        event.gyroY = gyro[1] * toDegPerSec;
+        event.gyroZ = gyro[2] * toDegPerSec;
+    }
+    if (has_accel)
+    {
+        std::array<float, 3> accel;
+        SDL_GameControllerGetSensorData(gc, SDL_SENSOR_ACCEL, &accel[0], 3);
+        static constexpr float toGs = 1.f / 9.8f;
+        event.accelX = accel[0] * toGs;
+        event.accelY = accel[1] * toGs;
+        event.accelZ = accel[2] * toGs;
+    }
+
+    event.joystick = m_joysticks[sdl_event->cdevice.which];
+
+    return event;
 }

@@ -40,6 +40,7 @@ QJoysticks::QJoysticks()
    connect(sdlJoysticks(), &SDL_Joysticks::POVEvent, this, &QJoysticks::POVEvent);
    connect(sdlJoysticks(), &SDL_Joysticks::axisEvent, this, &QJoysticks::axisEvent);
    connect(sdlJoysticks(), &SDL_Joysticks::buttonEvent, this, &QJoysticks::buttonEvent);
+   connect(sdlJoysticks(), &SDL_Joysticks::sensorEvent, this, &QJoysticks::sensorEvent);
    connect(sdlJoysticks(), &SDL_Joysticks::countChanged, this, &QJoysticks::updateInterfaces);
    connect(sdlJoysticks(), &SDL_Joysticks::joystickAdded, this, &QJoysticks::onJoystickAdded);
    connect(sdlJoysticks(), &SDL_Joysticks::joystickRemoved, this, &QJoysticks::onJoystickRemoved);

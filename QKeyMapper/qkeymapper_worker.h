@@ -854,10 +854,12 @@ public slots:
     void onJoystickPOVEvent(const QJoystickPOVEvent &e);
     void onJoystickAxisEvent(const QJoystickAxisEvent &e);
     void onJoystickButtonEvent(const QJoystickButtonEvent &e);
+    void onJoystickSensorEvent(const QJoystickSensorEvent &e);
 
     void checkJoystickButtons(const QJoystickButtonEvent &e);
     void checkJoystickPOV(const QJoystickPOVEvent &e);
     void checkJoystickAxis(const QJoystickAxisEvent &e);
+    void checkJoystickSensor(const QJoystickSensorEvent &e);
 
     void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);

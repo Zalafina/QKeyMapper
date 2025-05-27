@@ -118,4 +118,15 @@ struct QJoystickButtonEvent
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 
+struct QJoystickSensorEvent
+{
+   float gyroX;
+   float gyroY;
+   float gyroZ;
+   float accelX;
+   float accelY;
+   float accelZ;
+   QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
+};
+
 #endif
