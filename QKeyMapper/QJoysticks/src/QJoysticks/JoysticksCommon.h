@@ -126,6 +126,7 @@ struct QJoystickSensorEvent
    float accelX;
    float accelY;
    float accelZ;
+   int sensorType; /**< Type of sensor (gyro or accel) */
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 

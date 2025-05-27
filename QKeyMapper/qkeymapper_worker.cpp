@@ -5465,7 +5465,7 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 
 void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 {
-#ifdef JOYSTICK_VERBOSE_LOG
+// #ifdef JOYSTICK_VERBOSE_LOG
     qDebug().nospace() << "[onJoystickSensorEvent]"
                        << "P[" << e.joystick->playerindex << "] "
                        << "GyroX ->" << e.gyroX  << ", "
@@ -5474,7 +5474,7 @@ void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
                        << "AccelX ->" << e.accelX  << ", "
                        << "AccelY ->" << e.accelY  << ", "
                        << "AccelZ ->" << e.accelZ;
-#endif
+// #endif
 
     if (e.joystick->blacklisted
         && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
