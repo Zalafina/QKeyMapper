@@ -240,7 +240,7 @@ void SDL_Joysticks::configureJoystick(const SDL_Event *event)
                char guid[1024];
                SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(js), guid, sizeof(guid));
 
-               QString mapping = QString("%1,%2,%3").arg(guid).arg(SDL_JoystickName(js)).arg(GENERIC_MAPPINGS);
+               QString mapping = QString("%1,%2,%3").arg(guid, SDL_JoystickName(js), GENERIC_MAPPINGS);
 
                SDL_GameControllerAddMapping(mapping.toStdString().c_str());
          }
@@ -253,12 +253,10 @@ void SDL_Joysticks::configureJoystick(const SDL_Event *event)
 
                if (has_gyro)
                {
-                  SDL_GameControllerSetSensorEnabled(gc, SDL_SENSOR_GYRO, SDL_TRUE);
                   joystick->has_gyro = true;
                }
                if (has_accel)
                {
-                  SDL_GameControllerSetSensorEnabled(gc, SDL_SENSOR_ACCEL, SDL_TRUE);
                   joystick->has_accel = true;
                }
          }

@@ -866,6 +866,7 @@ public slots:
     // Joy2MouseStates checkJoystick2MouseEnableState(void);
     QHash<int, Joy2MouseStates> checkJoy2MouseEnableStateMap(void);
     bool checkKey2MouseEnableState(void);
+    bool checkGameControllerSensorEnableState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
 private:
@@ -1068,6 +1069,7 @@ public:
 #endif
 
     static bool s_Key2Mouse_EnableState;
+    static bool s_GameControllerSensor_EnableState;
     // static Joy2MouseStates s_Joy2Mouse_EnableState;
     static QHash<int, Joy2MouseStates> s_Joy2Mouse_EnableStateMap;
     // static Joystick_AxisState s_JoyAxisState;

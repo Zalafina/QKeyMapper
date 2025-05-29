@@ -69,6 +69,7 @@ signals:
    void povChanged(const int js, const int pov, const int angle);
    void axisChanged(const int js, const int axis, const qreal value);
    void buttonChanged(const int js, const int button, const bool pressed);
+   void setGameControllersSensorEnabled_signal(bool enabled);
 
 public:
    static QJoysticks *getInstance();
@@ -106,6 +107,7 @@ public slots:
 #endif
    void setSortJoysticksByBlacklistState(bool sort);
    void setBlacklisted(int index, bool blacklisted);
+   void setGameControllersSensorEnabled(bool enabled);
 
 protected:
    explicit QJoysticks();

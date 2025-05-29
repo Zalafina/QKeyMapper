@@ -97,6 +97,7 @@ QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::s_Mouse2vJoy_En
 // QMutex QKeyMapper_Worker::s_MouseMove_delta_List_Mutex;
 #endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
+bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
 // QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap;
 // Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
@@ -4159,6 +4160,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 #endif
 
     s_Key2Mouse_EnableState = checkKey2MouseEnableState();
+    s_GameControllerSensor_EnableState = checkGameControllerSensorEnableState();
     // s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
 
@@ -4219,6 +4221,10 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     startDataPortListener();
 //    setWorkerDInputKeyHook(hWnd);
+
+    if (s_GameControllerSensor_EnableState) {
+        emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
+    }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
 #ifdef DEBUG_LOGOUT_ON
@@ -4293,6 +4299,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     stopDataPortListener();
     //    setWorkerDInputKeyUnHook();
+    emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
@@ -4425,6 +4432,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_JoyAxisStateMap.clear();
 
     stopDataPortListener();
+    emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
         setMouseToPoint(m_LastMouseCursorPoint);
@@ -4546,6 +4554,10 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
     startDataPortListener();
+
+    if (s_GameControllerSensor_EnableState) {
+        emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
+    }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
 
@@ -5360,8 +5372,7 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
         .arg(joystick_added->name)
         .arg(joystick_added->playerindex)
         .arg(joystick_added->id)
-        .arg(vendorIdStr)
-        .arg(productIdStr)
+        .arg(vendorIdStr, productIdStr)
         .arg(joystick_added->numbuttons)
         .arg(joystick_added->serial)
         .arg(joystick_added->has_gyro ? "true" : "false")
@@ -5465,7 +5476,12 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 
 void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 {
-// #ifdef JOYSTICK_VERBOSE_LOG
+    if (e.joystick->blacklisted
+        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
+        return;
+    }
+
+#ifdef GAMECONTROLLER_SENSOR_VERBOSE_LOG
     qDebug().nospace() << "[onJoystickSensorEvent]"
                        << "P[" << e.joystick->playerindex << "] "
                        << "GyroX ->" << e.gyroX  << ", "
@@ -5474,12 +5490,7 @@ void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
                        << "AccelX ->" << e.accelX  << ", "
                        << "AccelY ->" << e.accelY  << ", "
                        << "AccelZ ->" << e.accelZ;
-// #endif
-
-    if (e.joystick->blacklisted
-        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
-        return;
-    }
+#endif
 
     checkJoystickSensor(e);
 }
@@ -5811,6 +5822,13 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState()
     }
 
     return key2mouse_enablestate;
+}
+
+bool QKeyMapper_Worker::checkGameControllerSensorEnableState()
+{
+    bool gamecontrollersensor_enablestate = true;
+
+    return gamecontrollersensor_enablestate;
 }
 
 void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)

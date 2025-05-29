@@ -58,6 +58,8 @@ QJoysticks::QJoysticks()
    connect(this, &QJoysticks::axisEvent, this, &QJoysticks::onAxisEvent);
    connect(this, &QJoysticks::buttonEvent, this, &QJoysticks::onButtonEvent);
 
+   connect(this, &QJoysticks::setGameControllersSensorEnabled_signal, this, &QJoysticks::setGameControllersSensorEnabled);
+
    /* Configure the settings */
    m_sortJoyticks = 0;
    // m_settings = new QSettings(qApp->organizationName(), qApp->applicationName());
@@ -314,6 +316,37 @@ void QJoysticks::setBlacklisted(const int index, bool blacklisted)
    // if (changed)
    //    updateInterfaces();
    Q_UNUSED(changed);
+}
+
+void QJoysticks::setGameControllersSensorEnabled(bool enabled)
+{
+    foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
+    {
+        SDL_bool sdl_enabled = SDL_FALSE;
+        if (enabled) {
+            sdl_enabled = SDL_TRUE;
+        }
+        else {
+            sdl_enabled = SDL_FALSE;
+        }
+        SDL_GameController *gc = SDL_GameControllerFromInstanceID(joystick->instanceID);
+
+        if (gc != nullptr) {
+            if (joystick->has_gyro) {
+                SDL_GameControllerSetSensorEnabled(gc, SDL_SENSOR_GYRO, sdl_enabled);
+            }
+            if (joystick->has_accel) {
+                SDL_GameControllerSetSensorEnabled(gc, SDL_SENSOR_ACCEL, sdl_enabled);
+            }
+
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[QJoysticks::setGameControllersSensorEnabled] P[%1], ControllerName[%2], Enabled[%3]")
+                                       .arg(joystick->playerindex)
+                                       .arg(joystick->name, enabled ? "True" : "False");
+            qDebug().nospace().noquote() << debugmessage;
+#endif
+        }
+    }
 }
 
 void QJoysticks::onJoystickAdded(QJoystickDevice *joystick)
