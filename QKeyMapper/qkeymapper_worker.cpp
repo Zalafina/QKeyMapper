@@ -180,6 +180,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     // QObject::connect(this, &QKeyMapper_Worker::send_WINplusD_Signal, this, &QKeyMapper_Worker::send_WINplusD, Qt::QueuedConnection);
     // QObject::connect(this, &QKeyMapper_Worker::HotKeyTrigger_Signal, this, &QKeyMapper_Worker::HotKeyHookProc, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::doFunctionMappingProc_Signal, this, &QKeyMapper_Worker::doFunctionMappingProc, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper_Worker::gameControllerGyroEnabledSwitch_Signal, this, &QKeyMapper_Worker::onGameControllerGyroEnabledSwitch, Qt::QueuedConnection);
 #if 0
     QObject::connect(this, &QKeyMapper_Worker::sendSpecialVirtualKey_Signal, this, &QKeyMapper_Worker::sendSpecialVirtualKey, Qt::QueuedConnection);
     QObject::connect(this, SIGNAL(onMouseWheel_Signal(int)), this, SLOT(onMouseWheel(int)), Qt::QueuedConnection);
@@ -5365,6 +5366,10 @@ void QKeyMapper_Worker::onJoystickcountChanged()
 
 void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 {
+    if (joystick_added == Q_NULLPTR) {
+        return;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
     QString productIdStr = QString("0x%1").arg(QString::number(joystick_added->productid, 16).toUpper(), 4, '0');
@@ -5374,15 +5379,11 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
         .arg(joystick_added->id)
         .arg(vendorIdStr, productIdStr)
         .arg(joystick_added->numbuttons)
-        .arg(joystick_added->serial)
-        .arg(joystick_added->has_gyro ? "true" : "false")
-        .arg(joystick_added->has_accel ? "true" : "false");
+        .arg(joystick_added->serial,
+             joystick_added->has_gyro ? "true" : "false",
+             joystick_added->has_accel ? "true" : "false");
     qDebug().nospace().noquote() << debugmessage;
 #endif
-
-    if (joystick_added == Q_NULLPTR) {
-        return;
-    }
 
     bool virtualgamepad = false;
     USHORT vendorid = joystick_added->vendorid;
@@ -5493,6 +5494,15 @@ void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 #endif
 
     checkJoystickSensor(e);
+}
+
+void QKeyMapper_Worker::onGameControllerGyroEnabledSwitch(int gamepadinfo_index)
+{
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("[onGameControllerGyroEnabledSwitch] Index(%1) game controller gyro enabled state switch").arg(gamepadinfo_index);
+    qDebug().noquote().nospace() << debugmessage;
+#endif
+
 }
 
 void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)

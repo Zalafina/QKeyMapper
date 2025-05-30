@@ -55,6 +55,7 @@ struct QJoystickDevice
    QList<bool> buttons; /**< Holds the values for each button */
    bool has_gyro;
    bool has_accel;
+   bool sensor_disabled;
    bool blacklisted; /**< Holds \c true if the joystick is disabled */
 };
 

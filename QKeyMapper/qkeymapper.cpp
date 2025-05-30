@@ -113,6 +113,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
+    ui->gamepadSelectComboBox->view()->installEventFilter(this);
+
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
 #endif
@@ -4510,6 +4512,34 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
     }
 
     QDialog::keyPressEvent(event);
+}
+
+bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_F2) {
+            QPoint globalPos = QCursor::pos();
+            QWidget *viewWidget = qobject_cast<QWidget*>(object);
+            if (viewWidget) {
+                QPoint viewPos = viewWidget->mapFromGlobal(globalPos);
+                QModelIndex index = static_cast<QAbstractItemView*>(viewWidget)->indexAt(viewPos);
+                if (index.isValid()) {
+                    int row = index.row();
+
+                    if (row >= 1) {
+#ifdef DEBUG_LOGOUT_ON
+                        QString debugmessage = QString("[GamepadSelectComboBox] F2 Key pressed on item(%1) selected.").arg(row);
+                        qDebug().noquote() << debugmessage;
+#endif
+
+                        emit QKeyMapper_Worker::getInstance()->gameControllerGyroEnabledSwitch_Signal(row-1);
+                    }
+                }
+            }
+        }
+    }
+    return QDialog::eventFilter(object, event);
 }
 
 void QKeyMapper::on_keymapButton_clicked()
@@ -9406,16 +9436,28 @@ void QKeyMapper::updateGamepadSelectComboBox()
         int player_index = joystick->playerindex;
         if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
             Gamepad_Info gamepadinfo;
+            gamepadinfo.instance_id = joystick->instanceID;
             gamepadinfo.name = joystick->name;
             gamepadinfo.vendorid = joystick->vendorid;
             gamepadinfo.productid = joystick->productid;
             gamepadinfo.serial = joystick->serial;
             gamepadinfo.isvirtual = joystick->blacklisted;
+            gamepadinfo.gyro_enabled = GAMEPADINFO_GYRO_NONE;
             gamepadinfo.info_string = QString("[%1] %2 [VID=0x%3][PID=0x%4]")
                 .arg(player_index)
                 .arg(joystick->name,
                      QString::number(joystick->vendorid, 16).toUpper().rightJustified(4, '0'),
                      QString::number(joystick->productid, 16).toUpper().rightJustified(4, '0'));
+            if (joystick->has_gyro) {
+                if (joystick->sensor_disabled) {
+                    gamepadinfo.gyro_enabled = GAMEPADINFO_GYRO_DISABLED;
+                    gamepadinfo.info_string.append("[GyroDisabled]");
+                }
+                else {
+                    gamepadinfo.gyro_enabled = GAMEPADINFO_GYRO_ENABLED;
+                    gamepadinfo.info_string.append("[GyroEnabled]");
+                }
+            }
             if (gamepadinfo.isvirtual) {
                 gamepadinfo.info_string.append("[ViGEM]");
             }
@@ -9431,7 +9473,7 @@ void QKeyMapper::updateGamepadSelectComboBox()
     gamepadInfoList.append(QString());
 
     QList<int> playerindexlist = GamepadInfoMap.keys();
-    for (const int& playerindex : playerindexlist) {
+    for (const int& playerindex : std::as_const(playerindexlist)) {
         const Gamepad_Info& gamepadinfo = m_GamepadInfoMap.value(playerindex);
         gamepadInfoList.append(gamepadinfo.info_string);
 #ifdef DEBUG_LOGOUT_ON

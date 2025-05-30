@@ -136,21 +136,24 @@ struct ValidationResult
 
 struct Gamepad_Info
 {
+    int instance_id;
     QString name;
     ushort vendorid;
     ushort productid;
     QString serial;
     bool isvirtual;
+    bool gyro_enabled;
     QString info_string;
 
-    Gamepad_Info() : name(), vendorid(0), productid(0), serial(), isvirtual(false) {}
+    Gamepad_Info() : instance_id(-1), name(), vendorid(0), productid(0), serial(), isvirtual(false) {}
 
 #ifdef DEBUG_LOGOUT_ON
     friend QDebug operator<<(QDebug debug, const Gamepad_Info& info)
     {
         QDebugStateSaver saver(debug);
         debug.nospace() << "\nGamepad_Info["
-                        << "Name:" << info.name
+                        << "InstanceID:" << info.instance_id
+                        << ", Name:" << info.name
                         << ", VendorID:" << info.vendorid
                         << ", ProductID:" << info.productid
                         << ", Serial:" << info.serial
@@ -551,6 +554,7 @@ protected:
     void showEvent(QShowEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    bool eventFilter(QObject *object, QEvent *event);
 
 public slots:
     void on_keymapButton_clicked();

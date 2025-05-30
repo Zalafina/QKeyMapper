@@ -288,6 +288,7 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
       joystick->playerindex = SDL_JoystickGetPlayerIndex(sdl_joystick);
       joystick->has_gyro = false;
       joystick->has_accel = false;
+      joystick->sensor_disabled = false;
       joystick->blacklisted = false;
       joystick->name = SDL_JoystickName(sdl_joystick);
       joystick->serial = SDL_JoystickGetSerial(sdl_joystick);

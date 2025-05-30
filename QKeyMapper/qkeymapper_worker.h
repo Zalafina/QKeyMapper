@@ -823,6 +823,8 @@ signals:
     void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
     void doFunctionMappingProc_Signal(const QString &func_keystring);
 
+    void gameControllerGyroEnabledSwitch_Signal(int gamepadinfo_index);
+
 // protected:
 //     void timerEvent(QTimerEvent *event) override;
 
@@ -855,6 +857,8 @@ public slots:
     void onJoystickAxisEvent(const QJoystickAxisEvent &e);
     void onJoystickButtonEvent(const QJoystickButtonEvent &e);
     void onJoystickSensorEvent(const QJoystickSensorEvent &e);
+
+    void onGameControllerGyroEnabledSwitch(int gamepadinfo_index);
 
     void checkJoystickButtons(const QJoystickButtonEvent &e);
     void checkJoystickPOV(const QJoystickPOVEvent &e);
