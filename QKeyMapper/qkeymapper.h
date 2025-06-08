@@ -552,6 +552,7 @@ protected:
     bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 #endif
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
     bool eventFilter(QObject *object, QEvent *event);

@@ -471,12 +471,12 @@ void QKeyMapper::WindowStateChangedProc(void)
 {
     if (true == isMinimized()){
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized: setHidden!";
+        qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized!";
 #endif
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
-        hide();
+        // hide();
     }
 }
 
@@ -4333,6 +4333,29 @@ void QKeyMapper::showEvent(QShowEvent *event)
     }
 
     QDialog::showEvent(event);
+}
+
+void QKeyMapper::closeEvent(QCloseEvent *event)
+{
+    if (m_deviceListWindow->isVisible()) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[QKeyMapper::closeEvent]" << "DeviceList Windows isVisible!";
+#endif
+        return;
+    }
+
+    if (false == isHidden()) {
+        m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeTableSetupDialog();
+        closeItemSetupDialog();
+        closeCrosshairSetupDialog();
+        hide();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+    }
+
+    event->ignore();
 }
 
 void QKeyMapper::changeEvent(QEvent *event)
