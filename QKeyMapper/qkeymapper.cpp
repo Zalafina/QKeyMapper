@@ -4553,21 +4553,19 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
         && event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_F2) {
-            QPoint globalPos = QCursor::pos();
-            QWidget *viewWidget = qobject_cast<QWidget*>(object);
-            if (viewWidget) {
-                QPoint viewPos = viewWidget->mapFromGlobal(globalPos);
-                QModelIndex index = static_cast<QAbstractItemView*>(viewWidget)->indexAt(viewPos);
-                if (index.isValid()) {
-                    int row = index.row();
+            int highlightedRow = -1;
+            QAbstractItemView *view = ui->gamepadSelectComboBox->view();
+            if (view->isVisible()) {
+                QModelIndex highlightedIndex = view->currentIndex();
+                if (highlightedIndex.isValid()) {
+                    highlightedRow = highlightedIndex.row();
 
-                    if (row >= 1) {
-#ifdef DEBUG_LOGOUT_ON
-                        QString debugmessage = QString("[GamepadSelectComboBox] F2 Key pressed on item(%1) selected.").arg(row);
-                        qDebug().noquote() << debugmessage;
-#endif
-
-                        emit QKeyMapper_Worker::getInstance()->gameControllerGyroEnabledSwitch_Signal(row-1);
+                    if (highlightedRow >= 1) {
+// #ifdef DEBUG_LOGOUT_ON
+//                         QString debugmessage = QString("[GamepadSelectComboBox] F2 Key pressed on item(%1) selected.").arg(highlightedRow);
+//                         qDebug().noquote() << debugmessage;
+// #endif
+                        emit QKeyMapper_Worker::getInstance()->gameControllerGyroEnabledSwitch_Signal(highlightedRow-1);
                     }
                 }
             }
@@ -9502,6 +9500,17 @@ void QKeyMapper::updateGamepadSelectComboBox()
 
     m_GamepadInfoMap = GamepadInfoMap;
 
+    /* Save current hight row if combobox list is showing */
+    int highlightedRow = -1;
+    QAbstractItemView *view = ui->gamepadSelectComboBox->view();
+    if (view->isVisible()) {
+        QModelIndex highlightedIndex = view->currentIndex();
+        highlightedRow = highlightedIndex.row();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[updateGamepadSelectComboBox] Current highlight row =" << highlightedRow;
+#endif
+    }
+
     ui->gamepadSelectComboBox->clear();
     QStringList gamepadInfoList;
     gamepadInfoList.append(QString());
@@ -9534,6 +9543,17 @@ void QKeyMapper::updateGamepadSelectComboBox()
         }
     }
 #endif
+
+    /* Restore current hight row */
+    if (view->isVisible() && highlightedRow >= 0) {
+        QStandardItemModel *model = qobject_cast<QStandardItemModel*>(ui->gamepadSelectComboBox->model());
+        if (model && highlightedRow < model->rowCount()) {
+            view->setCurrentIndex(model->index(highlightedRow, 0));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateGamepadSelectComboBox] Restore highlight row =" << highlightedRow;
+#endif
+        }
+    }
 }
 
 void QKeyMapper::updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname)

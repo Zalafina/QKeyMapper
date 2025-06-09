@@ -53,10 +53,10 @@ struct QJoystickDevice
    QList<int> povs; /**< Holds the values for each POV */
    QList<double> axes; /**< Holds the values for each axis */
    QList<bool> buttons; /**< Holds the values for each button */
-   bool has_gyro;
-   bool has_accel;
-   bool sensor_disabled;
-   bool blacklisted; /**< Holds \c true if the joystick is disabled */
+   QAtomicInteger<bool> has_gyro;
+   QAtomicInteger<bool> has_accel;
+   QAtomicInteger<bool> sensor_disabled;
+   QAtomicInteger<bool> blacklisted; /**< Holds \c true if the joystick is disabled */
 };
 
 /**

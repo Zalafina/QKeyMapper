@@ -359,6 +359,20 @@ void QJoysticks::setGameControllersSensorEnabled(bool enabled)
     }
 }
 
+void QJoysticks::switchSensorDisabled(int index)
+{
+    Q_ASSERT(joystickExists(index));
+
+    /* Switch sensor disabled value */
+    bool sensordisabled = m_devices.at(index)->sensor_disabled;
+    if (sensordisabled) {
+        m_devices.at(index)->sensor_disabled = false;
+    }
+    else {
+        m_devices.at(index)->sensor_disabled = true;
+    }
+}
+
 void QJoysticks::onJoystickAdded(QJoystickDevice *joystick)
 {
     emit joystickAdded(joystick);

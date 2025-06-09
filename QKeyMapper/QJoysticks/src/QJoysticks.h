@@ -108,6 +108,7 @@ public slots:
    void setSortJoysticksByBlacklistState(bool sort);
    void setBlacklisted(int index, bool blacklisted);
    void setGameControllersSensorEnabled(bool enabled);
+   void switchSensorDisabled(int index);
 
 protected:
    explicit QJoysticks();
