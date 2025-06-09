@@ -292,6 +292,10 @@ void QJoysticks::setBlacklisted(const int index, bool blacklisted)
 {
    Q_ASSERT(joystickExists(index));
 
+    if (!joystickExists(index)) {
+        return;
+    }
+
    /* Netrualize the joystick */
    if (blacklisted)
    {
@@ -363,6 +367,10 @@ void QJoysticks::setGameControllersSensorEnabled(bool enabled)
 void QJoysticks::switchSensorDisabled(int index)
 {
     Q_ASSERT(joystickExists(index));
+
+    if (!joystickExists(index)) {
+        return;
+    }
 
     /* Switch sensor disabled value */
     bool sensordisabled = m_devices.at(index)->sensor_disabled;
