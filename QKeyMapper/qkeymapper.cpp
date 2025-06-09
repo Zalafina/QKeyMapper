@@ -9480,7 +9480,7 @@ void QKeyMapper::updateGamepadSelectComboBox()
                 .arg(joystick->name,
                      QString::number(joystick->vendorid, 16).toUpper().rightJustified(4, '0'),
                      QString::number(joystick->productid, 16).toUpper().rightJustified(4, '0'));
-            if (joystick->has_gyro) {
+            if (joystick->has_gyro && joystick->blacklisted != true) {
                 if (joystick->sensor_disabled) {
                     gamepadinfo.gyro_enabled = GAMEPADINFO_GYRO_DISABLED;
                     gamepadinfo.info_string.append("[GyroDisabled]");

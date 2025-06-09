@@ -5504,10 +5504,13 @@ void QKeyMapper_Worker::onGameControllerGyroEnabledSwitch(int gamepadinfo_index)
 #endif
 
     if (QKeyMapper::getInstance()->m_GamepadInfoMap.contains(gamepadinfo_index)) {
-        int instance_id = QKeyMapper::getInstance()->m_GamepadInfoMap.value(gamepadinfo_index).instance_id;
-        QJoysticks::getInstance()->switchSensorDisabled(instance_id);
+        bool isvirtual = QKeyMapper::getInstance()->m_GamepadInfoMap.value(gamepadinfo_index).isvirtual;
+        if (isvirtual != true) {
+            int instance_id = QKeyMapper::getInstance()->m_GamepadInfoMap.value(gamepadinfo_index).instance_id;
+            QJoysticks::getInstance()->switchSensorDisabled(instance_id);
 
-        emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
+            emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
+        }
     }
 }
 

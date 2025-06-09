@@ -322,18 +322,19 @@ void QJoysticks::setGameControllersSensorEnabled(bool enabled)
 {
     foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
     {
+        bool sensor_enabled = enabled;
         /* Set all virtual gamepad sensor disabled */
-        // if (joystick->blacklisted) {
-        //     enabled = false;
-        // }
+        if (joystick->blacklisted) {
+            sensor_enabled = false;
+        }
 
         /* Check sensor disabled flag */
         if (enabled && joystick->sensor_disabled) {
-            enabled = false;
+            sensor_enabled = false;
         }
 
         SDL_bool sdl_enabled = SDL_FALSE;
-        if (enabled) {
+        if (sensor_enabled) {
             sdl_enabled = SDL_TRUE;
         }
         else {
@@ -352,7 +353,7 @@ void QJoysticks::setGameControllersSensorEnabled(bool enabled)
 #ifdef DEBUG_LOGOUT_ON
             QString debugmessage = QString("[QJoysticks::setGameControllersSensorEnabled] P[%1], ControllerName[%2], Enabled[%3]")
                                        .arg(joystick->playerindex)
-                                       .arg(joystick->name, enabled ? "True" : "False");
+                                       .arg(joystick->name, sensor_enabled ? "True" : "False");
             qDebug().nospace().noquote() << debugmessage;
 #endif
         }
