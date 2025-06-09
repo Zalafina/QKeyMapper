@@ -322,6 +322,16 @@ void QJoysticks::setGameControllersSensorEnabled(bool enabled)
 {
     foreach (QJoystickDevice *joystick, sdlJoysticks()->joysticks())
     {
+        /* Set all virtual gamepad sensor disabled */
+        // if (joystick->blacklisted) {
+        //     enabled = false;
+        // }
+
+        /* Check sensor disabled flag */
+        if (enabled && joystick->sensor_disabled) {
+            enabled = false;
+        }
+
         SDL_bool sdl_enabled = SDL_FALSE;
         if (enabled) {
             sdl_enabled = SDL_TRUE;

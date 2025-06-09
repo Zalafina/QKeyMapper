@@ -4337,9 +4337,19 @@ void QKeyMapper::showEvent(QShowEvent *event)
 
 void QKeyMapper::closeEvent(QCloseEvent *event)
 {
+    if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+        if ((GetAsyncKeyState(VK_F4) & 0x8000) != 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::closeEvent] Alt + F4 pressed, quit application!";
+#endif
+            event->accept();
+            return;
+        }
+    }
+
     if (m_deviceListWindow->isVisible()) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning() << "[QKeyMapper::closeEvent]" << "DeviceList Windows isVisible!";
+        qDebug() << "[QKeyMapper::closeEvent]" << "DeviceList Windows isVisible!";
 #endif
         return;
     }
@@ -4539,7 +4549,8 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
-    if (event->type() == QEvent::KeyPress) {
+    if (m_KeyMapStatus == KEYMAP_IDLE
+        && event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
         if (keyEvent->key() == Qt::Key_F2) {
             QPoint globalPos = QCursor::pos();
