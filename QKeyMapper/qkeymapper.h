@@ -255,11 +255,16 @@ class SystrayMenu : public QMenu
     Q_OBJECT
 
 public:
-    explicit SystrayMenu(QWidget *parent = Q_NULLPTR) : QMenu(parent) {}
+    explicit SystrayMenu(QWidget *parent = Q_NULLPTR) : QMenu(parent)
+    , m_MenuItem_Pressed(SYSTRAY_MENU_ITEM_PRESSED_NONE)
+    {}
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+
+private:
+    int m_MenuItem_Pressed;
 };
 
 class CustomMessageBox : public QDialog {
@@ -858,11 +863,11 @@ private:
     QTimer m_ProcessInfoTableRefreshTimer;
 public:
     MAP_PROCESSINFO m_MapProcessInfo;
-private:
     QSystemTrayIcon *m_SysTrayIcon;
     SystrayMenu *m_SysTrayIconMenu;
     QAction *m_TrayIconMenu_ShowHideAction;
     QAction *m_TrayIconMenu_QuitAction;
+private:
     QLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
     QTimer m_PopupMessageTimer;

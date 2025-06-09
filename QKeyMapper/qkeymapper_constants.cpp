@@ -51,6 +51,10 @@ const int MOUSEWHEEL_SCROLL_NONE = 0;
 const int MOUSEWHEEL_SCROLL_UP = 1;
 const int MOUSEWHEEL_SCROLL_DOWN = 2;
 
+const int SYSTRAY_MENU_ITEM_PRESSED_NONE        = 0;
+const int SYSTRAY_MENU_ITEM_PRESSED_SHOWHIDE    = 1;
+const int SYSTRAY_MENU_ITEM_PRESSED_QUIT        = 2;
+
 const Qt::Key KEY_REFRESH           = Qt::Key_F5;
 const Qt::Key KEY_RECORD_START      = Qt::Key_F11;
 const Qt::Key KEY_RECORD_STOP       = Qt::Key_F12;
