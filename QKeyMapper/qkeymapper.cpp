@@ -14286,26 +14286,23 @@ void SystrayMenu::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         bool menu_visible = isVisible();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Press on menu visible =" << menu_visible;
-#endif
         if (menu_visible) {
             QAction *action = this->actionAt(event->pos());
             if (action == QKeyMapper::getInstance()->m_TrayIconMenu_ShowHideAction) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[SystrayMenu::mousePressEvent] Clicked on action ShowHide";
+                qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed on action ShowHide";
 #endif
                 m_MenuItem_Pressed = SYSTRAY_MENU_ITEM_PRESSED_SHOWHIDE;
             }
             else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_QuitAction) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[SystrayMenu::mousePressEvent] Clicked on action Quit";
+                qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed on action Quit";
 #endif
                 m_MenuItem_Pressed = SYSTRAY_MENU_ITEM_PRESSED_QUIT;
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[SystrayMenu::mousePressEvent] Clicked on empty area of menu";
+                qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed outside the menu";
 #endif
                 m_MenuItem_Pressed = SYSTRAY_MENU_ITEM_PRESSED_NONE;
             }
@@ -14322,14 +14319,11 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         bool click_matched = false;
         bool menu_visible = isVisible();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Release on menu visible =" << menu_visible;
-#endif
         if (menu_visible) {
             QAction *action = this->actionAt(event->pos());
             if (action == QKeyMapper::getInstance()->m_TrayIconMenu_ShowHideAction) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[SystrayMenu::mouseReleaseEvent] Clicked on action ShowHide";
+                qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released on action ShowHide.";
 #endif
                 if (m_MenuItem_Pressed == SYSTRAY_MENU_ITEM_PRESSED_SHOWHIDE) {
                     click_matched = true;
@@ -14337,7 +14331,7 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
             }
             else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_QuitAction) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[SystrayMenu::mouseReleaseEvent] Clicked on action Quit";
+                qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released on action Quit.";
 #endif
                 if (m_MenuItem_Pressed == SYSTRAY_MENU_ITEM_PRESSED_QUIT) {
                     click_matched = true;
@@ -14345,7 +14339,7 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[SystrayMenu::mouseReleaseEvent] Clicked on empty area of menu";
+                qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released outside the menu.";
 #endif
             }
         }
