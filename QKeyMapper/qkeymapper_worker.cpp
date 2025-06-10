@@ -5494,17 +5494,17 @@ void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
         return;
     }
 
-#ifdef GAMECONTROLLER_SENSOR_VERBOSE_LOG
-    qDebug().nospace() << "[onJoystickSensorEvent] "
-                       << "P[" << e.joystick->playerindex << "] "
-                       << "GyroX ->" << e.gyroX  << ", "
-                       << "GyroY ->" << e.gyroY  << ", "
-                       << "GyroZ ->" << e.gyroZ  << ", "
-                       << "AccelX ->" << e.accelX  << ", "
-                       << "AccelY ->" << e.accelY  << ", "
-                       << "AccelZ ->" << e.accelZ  << ", "
-                       << "Timestamp ->" << e.timestamp;
-#endif
+// #ifdef GAMECONTROLLER_SENSOR_VERBOSE_LOG
+//     qDebug().nospace() << "[onJoystickSensorEvent] "
+//                        << "P[" << e.joystick->playerindex << "] "
+//                        << "GyroX ->" << e.gyroX  << ", "
+//                        << "GyroY ->" << e.gyroY  << ", "
+//                        << "GyroZ ->" << e.gyroZ  << ", "
+//                        << "AccelX ->" << e.accelX  << ", "
+//                        << "AccelY ->" << e.accelY  << ", "
+//                        << "AccelZ ->" << e.accelZ  << ", "
+//                        << "Timestamp ->" << e.timestamp;
+// #endif
 
     checkJoystickSensor(e);
 }
@@ -5715,57 +5715,16 @@ void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
     if (e.joystick == Q_NULLPTR)
         return;
 
-    static uint64_t lastTimestamp = 0;
-    uint64_t currentTimestamp = e.timestamp;
+    GameControllerSensorData sensor_data;
+    sensor_data.gyroX = e.gyroX;
+    sensor_data.gyroY = e.gyroY;
+    sensor_data.gyroZ = e.gyroZ;
+    sensor_data.accelX = e.accelX;
+    sensor_data.accelY = e.accelY;
+    sensor_data.accelZ = e.accelZ;
+    sensor_data.timestamp = e.timestamp;
 
-    /* Skip invalid timestamp sensor data */
-    if (currentTimestamp == 0) {
-        return;
-    }
-
-    float deltaTime = 0.0f;
-    if (lastTimestamp != 0) {
-        // Convert microseconds to seconds
-        deltaTime = (currentTimestamp - lastTimestamp) / 1000000.0f;
-    }
-
-    m_GamdpadMotion.ProcessMotion(
-        e.gyroX, e.gyroY, e.gyroZ,
-        e.accelX, e.accelY, e.accelZ,
-        deltaTime
-    );
-
-    float inGyroX, inGyroY, inGyroZ;
-    m_GamdpadMotion.GetCalibratedGyro(inGyroX, inGyroY, inGyroZ);
-
-    float gyroX = 0.0f, gyroY = 0.0f;
-    gyroX = -inGyroY;
-    gyroY = -inGyroX;
-
-    std::pair<float, float> lowSensXY = { GYRO2MOUSE_MIN_GYRO_SENS, GYRO2MOUSE_MIN_GYRO_SENS };
-    std::pair<float, float> hiSensXY = { GYRO2MOUSE_MAX_GYRO_SENS, GYRO2MOUSE_MAX_GYRO_SENS };
-    float minThreshold = GYRO2MOUSE_MIN_GYRO_THRESHOLD;
-    float maxThreshold = GYRO2MOUSE_MAX_GYRO_THRESHOLD;
-    float magnitude = sqrt(gyroX * gyroX + gyroY * gyroY);
-    magnitude -= minThreshold;
-    if (magnitude < 0.0f) magnitude = 0.0f;
-    float denom = maxThreshold - minThreshold;
-    float newSensitivity = denom <= 0.0f ? (magnitude > 0.0f ? 1.0f : 0.0f) : (magnitude / denom);
-    if (newSensitivity > 1.0f) newSensitivity = 1.0f;
-    float sensX = lowSensXY.first * (1.0f - newSensitivity) + hiSensXY.first * newSensitivity;
-    float sensY = lowSensXY.second * (1.0f - newSensitivity) + hiSensXY.second * newSensitivity;
-
-    float mouseX = gyroX * sensX;
-    float mouseY = gyroY * sensY;
-
-    float gyro2mouse_x_sensitivity = 1.0;
-    float gyro2mouse_y_sensitivity = 1.0;
-    float moveX = mouseX * gyro2mouse_x_sensitivity * deltaTime;
-    float moveY = mouseY * gyro2mouse_y_sensitivity * deltaTime;
-
-    if (currentTimestamp != lastTimestamp) {
-        lastTimestamp = currentTimestamp;
-    }
+    gyro2MouseMoveProc(sensor_data);
 }
 
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)
@@ -6647,6 +6606,88 @@ void QKeyMapper_Worker::key2MouseMoveProc()
             }
 #ifdef MOUSE_VERBOSE_LOG
             qDebug().nospace().noquote() << "[key2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
+#endif
+        }
+    }
+}
+
+void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &sensor_data)
+{
+    static uint64_t lastTimestamp = 0;
+    uint64_t currentTimestamp = sensor_data.timestamp;
+
+    /* Skip invalid timestamp sensor data */
+    if (currentTimestamp == 0) {
+        return;
+    }
+
+    float deltaTime = 0.0f;
+    if (lastTimestamp != 0) {
+        // Convert microseconds to seconds
+        deltaTime = (currentTimestamp - lastTimestamp) / 1000000.0f;
+    }
+
+    if (currentTimestamp != lastTimestamp) {
+        lastTimestamp = currentTimestamp;
+    }
+
+    m_GamdpadMotion.ProcessMotion(
+        sensor_data.gyroX, sensor_data.gyroY, sensor_data.gyroZ,
+        sensor_data.accelX, sensor_data.accelY, sensor_data.accelZ,
+        deltaTime
+    );
+
+    float inGyroX, inGyroY, inGyroZ;
+    m_GamdpadMotion.GetCalibratedGyro(inGyroX, inGyroY, inGyroZ);
+
+    float gyroX = 0.0f, gyroY = 0.0f;
+    // gyroX += inGyroX;   //GyroAxisMask::X for GYRO-X
+    // gyroX -= inGyroY;   //GyroAxisMask::Y for GYRO-X
+
+    gyroX -= inGyroZ;   //GyroAxisMask::Z for GYRO-X
+
+    gyroY -= inGyroX;   //GyroAxisMask::X for GYRO-Y
+
+    // gyroY += inGyroY;   //GyroAxisMask::Y for GYRO-Y
+    // gyroY += inGyroZ;   //GyroAxisMask::Z for GYRO-Y
+
+    std::pair<float, float> lowSensXY = { GYRO2MOUSE_MIN_GYRO_SENS, GYRO2MOUSE_MIN_GYRO_SENS };
+    std::pair<float, float> hiSensXY = { GYRO2MOUSE_MAX_GYRO_SENS, GYRO2MOUSE_MAX_GYRO_SENS };
+    float minThreshold = GYRO2MOUSE_MIN_GYRO_THRESHOLD;
+    float maxThreshold = GYRO2MOUSE_MAX_GYRO_THRESHOLD;
+    float magnitude = sqrt(gyroX * gyroX + gyroY * gyroY);
+    magnitude -= minThreshold;
+    if (magnitude < 0.0f) magnitude = 0.0f;
+    float denom = maxThreshold - minThreshold;
+    float newSensitivity = denom <= 0.0f ? (magnitude > 0.0f ? 1.0f : 0.0f) : (magnitude / denom);
+    if (newSensitivity > 1.0f) newSensitivity = 1.0f;
+    float sensX = lowSensXY.first * (1.0f - newSensitivity) + hiSensXY.first * newSensitivity;
+    float sensY = lowSensXY.second * (1.0f - newSensitivity) + hiSensXY.second * newSensitivity;
+
+    float mouseX = gyroX * sensX;
+    float mouseY = gyroY * sensY;
+
+    float gyro2mouse_x_sensitivity = 2.0;
+    float gyro2mouse_y_sensitivity = 2.0;
+    float moveX = mouseX * gyro2mouse_x_sensitivity * deltaTime;
+    float moveY = mouseY * gyro2mouse_y_sensitivity * deltaTime;
+    int delta_x = static_cast<int>(moveX);
+    int delta_y = static_cast<int>(moveY);
+
+    if (delta_x != 0 || delta_y != 0) {
+#ifdef GAMECONTROLLER_SENSOR_VERBOSE_LOG
+        qDebug().nospace() << "[gyro2MouseMoveProc] "
+                           << "Delta X ->" << delta_x  << ", "
+                           << "Delta Y ->" << delta_y;
+#endif
+        sendMouseMove(delta_x, delta_y);
+
+        if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+            for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
+                postMouseMove(hwnd, delta_x, delta_y);
+            }
+#ifdef MOUSE_VERBOSE_LOG
+            qDebug().nospace().noquote() << "[gyro2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
 #endif
         }
     }

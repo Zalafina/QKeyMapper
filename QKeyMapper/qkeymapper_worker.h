@@ -365,6 +365,17 @@ struct RecordKeyData {
 #endif
 };
 
+struct GameControllerSensorData
+{
+    float gyroX;
+    float gyroY;
+    float gyroZ;
+    float accelX;
+    float accelY;
+    float accelZ;
+    uint64_t timestamp;
+};
+
 struct SendInputTaskController {
     QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag;
@@ -885,6 +896,7 @@ private:
     int  joystickCalculateDelta(qreal axis_value, int Speed_Factor, bool checkJoystick);
     void joystick2MouseMoveProc(int player_index);
     void key2MouseMoveProc(void);
+    void gyro2MouseMoveProc(const GameControllerSensorData &sensor_data);
 
 public:
     static int InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index);
