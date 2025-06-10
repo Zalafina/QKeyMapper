@@ -19,6 +19,7 @@
 #include <QMutex>
 #include <QJoysticks.h>
 #include <orderedmap.h>
+#include <GamepadMotion.hpp>
 #ifdef VIGEM_CLIENT_SUPPORT
 #include <ViGEm/Client.h>
 #include <ViGEm/Util.h>
@@ -757,6 +758,8 @@ public:
     void startDataPortListener(void);
     void stopDataPortListener(void);
 
+    void initGamepadMotion(void);
+
 #ifdef VIGEM_CLIENT_SUPPORT
 public:
     static int ViGEmClient_Alloc(void);
@@ -1107,6 +1110,7 @@ private:
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
     QHash<JoystickRStickCode, QString> m_JoystickRStickMap;
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
+    GamepadMotion m_GamdpadMotion;
 };
 
 class QKeyMapper_Hook_Proc : public QObject

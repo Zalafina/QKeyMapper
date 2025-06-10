@@ -136,7 +136,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_JoystickDPadMap(),
     m_JoystickLStickMap(),
     m_JoystickRStickMap(),
-    m_JoystickPOVMap()
+    m_JoystickPOVMap(),
+    m_GamdpadMotion()
 {
     qRegisterMetaType<HWND>("HWND");
     qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
@@ -2494,6 +2495,15 @@ void QKeyMapper_Worker::stopDataPortListener()
     m_UdpSocket->close();
 }
 
+void QKeyMapper_Worker::initGamepadMotion()
+{
+    m_GamdpadMotion.Reset();
+
+    m_GamdpadMotion.SetCalibrationMode(GamepadMotionHelpers::CalibrationMode::Stillness | GamepadMotionHelpers::CalibrationMode::SensorFusion);
+    m_GamdpadMotion.Settings.StillnessGyroDelta = 1.2f;
+    m_GamdpadMotion.Settings.StillnessAccelDelta = 0.015f;
+}
+
 void QKeyMapper_Worker::sendSpecialVirtualKey(const QString &keycodeString, int keyupdown)
 {
     if (KEY_DOWN == keyupdown){
@@ -4223,6 +4233,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     startDataPortListener();
 //    setWorkerDInputKeyHook(hWnd);
 
+    initGamepadMotion();
     if (s_GameControllerSensor_EnableState) {
         emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
     }
@@ -4300,6 +4311,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     stopDataPortListener();
     //    setWorkerDInputKeyUnHook();
+    initGamepadMotion();
     emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -4555,7 +4567,6 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
     startDataPortListener();
-
     if (s_GameControllerSensor_EnableState) {
         emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
     }
@@ -5477,20 +5488,22 @@ void QKeyMapper_Worker::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 
 void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 {
+    /* Virtual gamecontroller do not set sensor enabled */
     if (e.joystick->blacklisted
         && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
         return;
     }
 
 #ifdef GAMECONTROLLER_SENSOR_VERBOSE_LOG
-    qDebug().nospace() << "[onJoystickSensorEvent]"
+    qDebug().nospace() << "[onJoystickSensorEvent] "
                        << "P[" << e.joystick->playerindex << "] "
                        << "GyroX ->" << e.gyroX  << ", "
                        << "GyroY ->" << e.gyroY  << ", "
                        << "GyroZ ->" << e.gyroZ  << ", "
                        << "AccelX ->" << e.accelX  << ", "
                        << "AccelY ->" << e.accelY  << ", "
-                       << "AccelZ ->" << e.accelZ;
+                       << "AccelZ ->" << e.accelZ  << ", "
+                       << "Timestamp ->" << e.timestamp;
 #endif
 
     checkJoystickSensor(e);
@@ -5701,6 +5714,58 @@ void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
 {
     if (e.joystick == Q_NULLPTR)
         return;
+
+    static uint64_t lastTimestamp = 0;
+    uint64_t currentTimestamp = e.timestamp;
+
+    /* Skip invalid timestamp sensor data */
+    if (currentTimestamp == 0) {
+        return;
+    }
+
+    float deltaTime = 0.0f;
+    if (lastTimestamp != 0) {
+        // Convert microseconds to seconds
+        deltaTime = (currentTimestamp - lastTimestamp) / 1000000.0f;
+    }
+
+    m_GamdpadMotion.ProcessMotion(
+        e.gyroX, e.gyroY, e.gyroZ,
+        e.accelX, e.accelY, e.accelZ,
+        deltaTime
+    );
+
+    float inGyroX, inGyroY, inGyroZ;
+    m_GamdpadMotion.GetCalibratedGyro(inGyroX, inGyroY, inGyroZ);
+
+    float gyroX = 0.0f, gyroY = 0.0f;
+    gyroX = -inGyroY;
+    gyroY = -inGyroX;
+
+    std::pair<float, float> lowSensXY = { GYRO2MOUSE_MIN_GYRO_SENS, GYRO2MOUSE_MIN_GYRO_SENS };
+    std::pair<float, float> hiSensXY = { GYRO2MOUSE_MAX_GYRO_SENS, GYRO2MOUSE_MAX_GYRO_SENS };
+    float minThreshold = GYRO2MOUSE_MIN_GYRO_THRESHOLD;
+    float maxThreshold = GYRO2MOUSE_MAX_GYRO_THRESHOLD;
+    float magnitude = sqrt(gyroX * gyroX + gyroY * gyroY);
+    magnitude -= minThreshold;
+    if (magnitude < 0.0f) magnitude = 0.0f;
+    float denom = maxThreshold - minThreshold;
+    float newSensitivity = denom <= 0.0f ? (magnitude > 0.0f ? 1.0f : 0.0f) : (magnitude / denom);
+    if (newSensitivity > 1.0f) newSensitivity = 1.0f;
+    float sensX = lowSensXY.first * (1.0f - newSensitivity) + hiSensXY.first * newSensitivity;
+    float sensY = lowSensXY.second * (1.0f - newSensitivity) + hiSensXY.second * newSensitivity;
+
+    float mouseX = gyroX * sensX;
+    float mouseY = gyroY * sensY;
+
+    float gyro2mouse_x_sensitivity = 1.0;
+    float gyro2mouse_y_sensitivity = 1.0;
+    float moveX = mouseX * gyro2mouse_x_sensitivity * deltaTime;
+    float moveY = mouseY * gyro2mouse_y_sensitivity * deltaTime;
+
+    if (currentTimestamp != lastTimestamp) {
+        lastTimestamp = currentTimestamp;
+    }
 }
 
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)

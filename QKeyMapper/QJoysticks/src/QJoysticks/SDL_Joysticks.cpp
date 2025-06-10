@@ -460,6 +460,7 @@ QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)
     event.accelX = 0;
     event.accelY = 0;
     event.accelZ = 0;
+    event.timestamp = 0;
     event.joystick = Q_NULLPTR;
     event.sensorType = sdl_event->csensor.sensor;
     bool has_gyro = SDL_GameControllerHasSensor(gc, SDL_SENSOR_GYRO);
@@ -468,7 +469,7 @@ QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)
     if (has_gyro)
     {
         std::array<float, 3> gyro;
-        SDL_GameControllerGetSensorData(gc, SDL_SENSOR_GYRO, &gyro[0], 3);
+        SDL_GameControllerGetSensorDataWithTimestamp(gc, SDL_SENSOR_GYRO, &event.timestamp, &gyro[0], 3);
         static constexpr float toDegPerSec = float(180. / M_PI);
         event.gyroX = gyro[0] * toDegPerSec;
         event.gyroY = gyro[1] * toDegPerSec;
@@ -477,7 +478,7 @@ QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)
     if (has_accel)
     {
         std::array<float, 3> accel;
-        SDL_GameControllerGetSensorData(gc, SDL_SENSOR_ACCEL, &accel[0], 3);
+        SDL_GameControllerGetSensorDataWithTimestamp(gc, SDL_SENSOR_ACCEL, &event.timestamp, &accel[0], 3);
         static constexpr float toGs = 1.f / 9.8f;
         event.accelX = accel[0] * toGs;
         event.accelY = accel[1] * toGs;

@@ -149,8 +149,10 @@ INCLUDEPATH += $$PWD/Interception/include
 INCLUDEPATH += $$PWD/libusb/include
 INCLUDEPATH += $$PWD/QSimpleUpdater/include
 INCLUDEPATH += $$PWD/orderedmap
+INCLUDEPATH += $$PWD/GamepadMotion
 
 HEADERS     += \
+    GamepadMotion/GamepadMotion.hpp \
     Interception/include/interception.h \
     colorpickerwidget.h \
     libusb/include/libusb.h \
