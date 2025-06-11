@@ -4171,9 +4171,9 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 #endif
 
     s_Key2Mouse_EnableState = checkKey2MouseEnableState();
-    s_GameControllerSensor_EnableState = checkGameControllerSensorEnableState();
     // s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
+    s_GameControllerSensor_EnableState = checkGyro2MouseEnableState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getvJoyLockCursorStatus()) {
@@ -4298,6 +4298,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Key2Mouse_EnableState = false;
     // s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     s_Joy2Mouse_EnableStateMap.clear();
+    s_GameControllerSensor_EnableState = false;
     setWorkerJoystickCaptureStop();
 
     if (m_Key2MouseCycleTimer.isActive()) {
@@ -4435,6 +4436,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableStateMap.clear();
+    s_GameControllerSensor_EnableState = false;
 
     if (m_Key2MouseCycleTimer.isActive()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -4519,6 +4521,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_Mouse2vJoy_EnableStateMap = ViGEmClient_checkMouse2JoystickEnableStateMap();
     s_Key2Mouse_EnableState = checkKey2MouseEnableState();
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
+    s_GameControllerSensor_EnableState = checkGyro2MouseEnableState();
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getvJoyLockCursorStatus()) {
         POINT pt;
@@ -5867,11 +5870,22 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState()
     return key2mouse_enablestate;
 }
 
-bool QKeyMapper_Worker::checkGameControllerSensorEnableState()
+bool QKeyMapper_Worker::checkGyro2MouseEnableState()
 {
-    bool gamecontrollersensor_enablestate = true;
+    bool gyro2mouse_enablestate = false;
 
-    return gamecontrollersensor_enablestate;
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
+        if (keymapdata.Original_Key.contains(JOY_GYRO2MOUSE_STR)) {
+            gyro2mouse_enablestate = true;
+            break;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[checkGyro2MouseEnableState]" << "JoyGyro2Mouse_EnableState ->" << gyro2mouse_enablestate;
+#endif
+
+    return gyro2mouse_enablestate;
 }
 
 void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)

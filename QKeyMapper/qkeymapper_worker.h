@@ -884,7 +884,7 @@ public slots:
     // Joy2MouseStates checkJoystick2MouseEnableState(void);
     QHash<int, Joy2MouseStates> checkJoy2MouseEnableStateMap(void);
     bool checkKey2MouseEnableState(void);
-    bool checkGameControllerSensorEnableState(void);
+    bool checkGyro2MouseEnableState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
 private:
