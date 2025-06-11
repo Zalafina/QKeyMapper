@@ -11727,11 +11727,12 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     /* Joystick 2Mouse */
     JoyStickKeyMap.insert(JOY_LS2MOUSE_STR              ,   (int)JOYSTICK_LS_MOUSE          );
     JoyStickKeyMap.insert(JOY_RS2MOUSE_STR              ,   (int)JOYSTICK_RS_MOUSE          );
+    JoyStickKeyMap.insert(JOY_GYRO2MOUSE_STR            ,   (int)0                          );
     /* Joystick Buttons */
-    JoyStickKeyMap.insert("Joy-Key1(A/×)"               ,   (int)JOYSTICK_BUTTON_0          );
-    JoyStickKeyMap.insert("Joy-Key2(B/○)"               ,   (int)JOYSTICK_BUTTON_1          );
-    JoyStickKeyMap.insert("Joy-Key3(X/□)"               ,   (int)JOYSTICK_BUTTON_2          );
-    JoyStickKeyMap.insert("Joy-Key4(Y/△)"               ,   (int)JOYSTICK_BUTTON_3          );
+    JoyStickKeyMap.insert("Joy-Key1(A/×)"              ,   (int)JOYSTICK_BUTTON_0          );
+    JoyStickKeyMap.insert("Joy-Key2(B/○)"              ,   (int)JOYSTICK_BUTTON_1          );
+    JoyStickKeyMap.insert("Joy-Key3(X/□)"              ,   (int)JOYSTICK_BUTTON_2          );
+    JoyStickKeyMap.insert("Joy-Key4(Y/△)"              ,   (int)JOYSTICK_BUTTON_3          );
     JoyStickKeyMap.insert("Joy-Key5(LB)"                ,   (int)JOYSTICK_BUTTON_4          );
     JoyStickKeyMap.insert("Joy-Key6(RB)"                ,   (int)JOYSTICK_BUTTON_5          );
     JoyStickKeyMap.insert("Joy-Key7(Back)"              ,   (int)JOYSTICK_BUTTON_6          );
@@ -11857,6 +11858,7 @@ void QKeyMapper_Worker::initSpecialOriginalKeysList()
             << VJOY_MOUSE2RS_STR
             << JOY_LS2MOUSE_STR
             << JOY_RS2MOUSE_STR
+            << JOY_GYRO2MOUSE_STR
             << JOY_LS2VJOYLS_STR
             << JOY_RS2VJOYRS_STR
             << JOY_LS2VJOYRS_STR

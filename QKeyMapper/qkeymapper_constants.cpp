@@ -709,6 +709,8 @@ const char *JOY_RT2VJOYRT_STR = "Joy-Key12(RT)_2vJoyRT";
 const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
+const char *JOY_GYRO2MOUSE_STR = "Joy-Gyro2Mouse";
+
 const char *KEY2MOUSE_PREFIX     = "Key2Mouse-";
 const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";
 const char *KEY2MOUSE_DOWN_STR   = "Key2Mouse-Down";

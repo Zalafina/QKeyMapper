@@ -1939,6 +1939,14 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     }
 
     if (validKey) {
+        if (original_key == JOY_GYRO2MOUSE_STR && !indexString.isEmpty()) {
+            result.isValid = false;
+            result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to Joy-Gyro2Mouse.").arg(orikey);
+            return result;
+        }
+    }
+
+    if (validKey) {
         if (result.isValid && update_rowindex >= 0) {
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
@@ -4122,7 +4130,9 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         disable_sendtiming = true;
     }
 
-    if (keymapdata.Original_Key == JOY_LS2MOUSE_STR || keymapdata.Original_Key == JOY_RS2MOUSE_STR) {
+    if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
+        || keymapdata.Original_Key == JOY_RS2MOUSE_STR
+        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR) {
         disable_sendtiming = true;
     }
 
@@ -5374,6 +5384,7 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
         || VJOY_MOUSE2RS_STR == text
         || JOY_LS2MOUSE_STR == text
         || JOY_RS2MOUSE_STR == text
+        || JOY_GYRO2MOUSE_STR == text
         || JOY_LS2VJOYLS_STR == text
         || JOY_RS2VJOYRS_STR == text
         || JOY_LS2VJOYRS_STR == text
@@ -8695,6 +8706,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
             || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
             || m_orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
             || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
+            || m_orikeyComboBox->currentText() == JOY_GYRO2MOUSE_STR
             || m_orikeyComboBox->currentText() == JOY_LS2VJOYLS_STR
             || m_orikeyComboBox->currentText() == JOY_RS2VJOYRS_STR
             || m_orikeyComboBox->currentText() == JOY_LS2VJOYRS_STR
@@ -10520,6 +10532,7 @@ void QKeyMapper::initAddKeyComboBoxes(void)
 #endif
             << JOY_LS2MOUSE_STR
             << JOY_RS2MOUSE_STR
+            << JOY_GYRO2MOUSE_STR
             << "Joy-Key14"
             << "Joy-Key15"
             << "Joy-Key16"
@@ -10878,7 +10891,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_lock = true;
             }
 #endif
-            if (keymapdata.Original_Key == JOY_LS2MOUSE_STR || keymapdata.Original_Key == JOY_RS2MOUSE_STR) {
+            if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
+                || keymapdata.Original_Key == JOY_RS2MOUSE_STR
+                || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR) {
                 disable_burst = true;
                 disable_lock = true;
             }

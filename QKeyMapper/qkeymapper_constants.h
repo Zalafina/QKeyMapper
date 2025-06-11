@@ -626,6 +626,7 @@ extern const char* JOY_LT2VJOYLT_STR;
 extern const char* JOY_RT2VJOYRT_STR;
 extern const char* JOY_LS2MOUSE_STR;
 extern const char* JOY_RS2MOUSE_STR;
+extern const char *JOY_GYRO2MOUSE_STR;
 extern const char* KEY2MOUSE_PREFIX;
 extern const char* KEY2MOUSE_UP_STR;
 extern const char* KEY2MOUSE_DOWN_STR;
