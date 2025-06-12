@@ -3067,6 +3067,16 @@ int QKeyMapper::getJoystick2MouseSpeedY()
     return getInstance()->ui->mouseYSpeedSpinBox->value();
 }
 
+double QKeyMapper::getGyro2MouseXSensitivity()
+{
+    return getInstance()->ui->Gyro2MouseXSensSpinBox->value();
+}
+
+double QKeyMapper::getGyro2MouseYSensitivity()
+{
+    return getInstance()->ui->Gyro2MouseYSensSpinBox->value();
+}
+
 int QKeyMapper::getvJoyXSensitivity()
 {
     return getInstance()->ui->vJoyXSensSpinBox->value();

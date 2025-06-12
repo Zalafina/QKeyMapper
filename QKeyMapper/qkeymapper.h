@@ -501,6 +501,8 @@ public:
     // static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
     static int getJoystick2MouseSpeedY(void);
+    static double getGyro2MouseXSensitivity(void);
+    static double getGyro2MouseYSensitivity(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
     static int getvJoyRecenterTimeout(void);

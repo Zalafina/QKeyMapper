@@ -6681,8 +6681,8 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
     float mouseX = gyroX * sensX;
     float mouseY = gyroY * sensY;
 
-    float gyro2mouse_x_sensitivity = 2.0;
-    float gyro2mouse_y_sensitivity = 2.0;
+    float gyro2mouse_x_sensitivity = static_cast<float>(QKeyMapper::getGyro2MouseXSensitivity());
+    float gyro2mouse_y_sensitivity = static_cast<float>(QKeyMapper::getGyro2MouseYSensitivity());
     float moveX = mouseX * gyro2mouse_x_sensitivity * deltaTime;
     float moveY = mouseY * gyro2mouse_y_sensitivity * deltaTime;
     int delta_x = static_cast<int>(moveX);
