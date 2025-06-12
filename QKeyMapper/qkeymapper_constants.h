@@ -294,6 +294,11 @@ extern const int GAMEPADINFO_GYRO_NONE;
 extern const int GAMEPADINFO_GYRO_ENABLED;
 extern const int GAMEPADINFO_GYRO_DISABLED;
 
+extern const double GYRO2MOUSE_SENSITIVITY_MIN;
+extern const double GYRO2MOUSE_SENSITIVITY_MAX;
+extern const double GYRO2MOUSE_SENSITIVITY_SINGLESTEP;
+extern const double GYRO2MOUSE_SENSITIVITY_DEFAULT;
+
 extern const float GYRO2MOUSE_MIN_GYRO_SENS;
 extern const float GYRO2MOUSE_MAX_GYRO_SENS;
 extern const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY;

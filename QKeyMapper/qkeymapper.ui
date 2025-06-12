@@ -562,7 +562,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>4</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -1212,6 +1212,63 @@
      </property>
      <property name="checked">
       <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="gyro2mouse">
+    <attribute name="title">
+     <string>Gyro2Mouse</string>
+    </attribute>
+    <widget class="QLabel" name="Gyro2MouseXSensLabel">
+     <property name="geometry">
+      <rect>
+       <x>5</x>
+       <y>10</y>
+       <width>61</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>X Sens</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="Gyro2MouseYSensLabel">
+     <property name="geometry">
+      <rect>
+       <x>5</x>
+       <y>40</y>
+       <width>61</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Y Sens</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>10</y>
+       <width>66</width>
+       <height>21</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="Gyro2MouseYSensSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>40</y>
+       <width>66</width>
+       <height>21</height>
+      </rect>
      </property>
     </widget>
    </widget>

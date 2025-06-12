@@ -253,6 +253,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
+    ui->Gyro2MouseXSensSpinBox->setRange(GYRO2MOUSE_SENSITIVITY_MIN, GYRO2MOUSE_SENSITIVITY_MAX);
+    ui->Gyro2MouseYSensSpinBox->setRange(GYRO2MOUSE_SENSITIVITY_MIN, GYRO2MOUSE_SENSITIVITY_MAX);
+    ui->Gyro2MouseXSensSpinBox->setSingleStep(GYRO2MOUSE_SENSITIVITY_SINGLESTEP);
+    ui->Gyro2MouseYSensSpinBox->setSingleStep(GYRO2MOUSE_SENSITIVITY_SINGLESTEP);
+    ui->Gyro2MouseXSensSpinBox->setValue(GYRO2MOUSE_SENSITIVITY_DEFAULT);
+    ui->Gyro2MouseYSensSpinBox->setValue(GYRO2MOUSE_SENSITIVITY_DEFAULT);
+
     ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
     ui->brakeThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
     ui->brakeThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
@@ -11156,6 +11163,7 @@ void QKeyMapper::reloadUILanguage()
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
 #endif
+    emit updateMultiInputStatus_Signal();
 }
 
 void QKeyMapper::setUILanguage(int languageindex)
@@ -11221,6 +11229,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->checkUpdateButton->setText(tr("Check Updates"));
     ui->mappingStartKeyLabel->setText(tr("MappingStart"));
     ui->mappingStopKeyLabel->setText(tr("MappingStop"));
+    ui->Gyro2MouseXSensLabel->setText(tr("Gyro2Mouse X Sens"));
+    ui->Gyro2MouseYSensLabel->setText(tr("Gyro2Mouse Y Sens"));
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
 #ifdef DEBUG_LOGOUT_ON
@@ -11246,12 +11256,14 @@ void QKeyMapper::setUILanguage(int languageindex)
     tabWidget->setTabText(tabWidget->indexOf(ui->general),          tr("General")       );
     tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          tr("Mapping")       );
     tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  tr("VirtualGamepad"));
+    tabWidget->setTabText(tabWidget->indexOf(ui->gyro2mouse),       tr("Gyro2Mouse"));
     tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input")   );
     tabWidget->setTabText(tabWidget->indexOf(ui->forza),            tr("Forza")         );
 
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->general),          tr("General setting tab tooltip.")       );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->mapping),          tr("Mapping setting tab tooltip.")       );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->virtual_gamepad),  tr("VirtualGamepad setting tab tooltip."));
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->gyro2mouse),       tr("Gyro2Mouse setting tab tooltip."));
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input setting tab tooltip")    );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->forza),            tr("Forza setting tab tooltip.")         );
 
