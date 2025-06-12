@@ -1265,12 +1265,12 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11225"/>
         <source>Gyro2Mouse X Sens</source>
-        <translation>垂直灵敏度</translation>
+        <translation>水平灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11226"/>
         <source>Gyro2Mouse Y Sens</source>
-        <translation>水平灵敏度</translation>
+        <translation>垂直灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11256"/>
@@ -1672,8 +1672,5 @@ Do you confirm to continue installing Interception driver?</source>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;您当前已正在使用最新版本的 %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
-</context>
-</TS>
-ge>
 </context>
 </TS>

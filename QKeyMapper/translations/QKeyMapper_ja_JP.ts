@@ -1311,12 +1311,12 @@
     <message>
         <location filename="../qkeymapper.cpp" line="11225"/>
         <source>Gyro2Mouse X Sens</source>
-        <translation>垂直感度</translation>
+        <translation>水平感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11226"/>
         <source>Gyro2Mouse Y Sens</source>
-        <translation>水平感度</translation>
+        <translation>垂直感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="11256"/>
@@ -1673,6 +1673,4 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;現在お使いの %1 はすでに最新バージョンです&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
 </context>
-</TS>
-text>
 </TS>
