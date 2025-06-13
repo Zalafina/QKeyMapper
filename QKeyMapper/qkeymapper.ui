@@ -1287,7 +1287,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox_2">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseLowXSensSpinBox">
      <property name="geometry">
       <rect>
        <x>235</x>
@@ -1313,7 +1313,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox_3">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseLowYSensSpinBox">
      <property name="geometry">
       <rect>
        <x>235</x>
@@ -1339,7 +1339,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox_4">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseMinThresholdSpinBox">
      <property name="geometry">
       <rect>
        <x>235</x>
@@ -1365,7 +1365,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox_5">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseHighYSensSpinBox">
      <property name="geometry">
       <rect>
        <x>390</x>
@@ -1391,7 +1391,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox_6">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseMaxThresholdSpinBox">
      <property name="geometry">
       <rect>
        <x>390</x>
@@ -1417,7 +1417,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseXSensSpinBox_7">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseHighXSensSpinBox">
      <property name="geometry">
       <rect>
        <x>390</x>

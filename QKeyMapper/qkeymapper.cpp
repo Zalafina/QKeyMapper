@@ -3077,6 +3077,36 @@ double QKeyMapper::getGyro2MouseYSpeed()
     return getInstance()->ui->Gyro2MouseYSpeedSpinBox->value();
 }
 
+double QKeyMapper::getGyro2MouseMinThreshold()
+{
+    return getInstance()->ui->Gyro2MouseMinThresholdSpinBox->value();
+}
+
+double QKeyMapper::getGyro2MouseMaxThreshold()
+{
+    return getInstance()->ui->Gyro2MouseMaxThresholdSpinBox->value();
+}
+
+double QKeyMapper::getGyro2MouseLowXSensitivity()
+{
+    return getInstance()->ui->Gyro2MouseLowXSensSpinBox->value();
+}
+
+double QKeyMapper::getGyro2MouseLowYSensitivity()
+{
+    return getInstance()->ui->Gyro2MouseLowYSensSpinBox->value();
+}
+
+double QKeyMapper::getGyro2MouseHighXSensitivity()
+{
+    return getInstance()->ui->Gyro2MouseHighXSensSpinBox->value();
+}
+
+double QKeyMapper::getGyro2MouseHighYSensitivity()
+{
+    return getInstance()->ui->Gyro2MouseHighYSensSpinBox->value();
+}
+
 int QKeyMapper::getvJoyXSensitivity()
 {
     return getInstance()->ui->vJoyXSensSpinBox->value();

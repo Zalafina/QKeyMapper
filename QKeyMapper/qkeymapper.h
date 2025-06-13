@@ -503,6 +503,12 @@ public:
     static int getJoystick2MouseSpeedY(void);
     static double getGyro2MouseXSpeed(void);
     static double getGyro2MouseYSpeed(void);
+    static double getGyro2MouseMinThreshold(void);
+    static double getGyro2MouseMaxThreshold(void);
+    static double getGyro2MouseLowXSensitivity(void);
+    static double getGyro2MouseLowYSensitivity(void);
+    static double getGyro2MouseHighXSensitivity(void);
+    static double getGyro2MouseHighYSensitivity(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
     static int getvJoyRecenterTimeout(void);
