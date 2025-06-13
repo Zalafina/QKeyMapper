@@ -253,12 +253,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
-    ui->Gyro2MouseXSensSpinBox->setRange(GYRO2MOUSE_SENSITIVITY_MIN, GYRO2MOUSE_SENSITIVITY_MAX);
-    ui->Gyro2MouseYSensSpinBox->setRange(GYRO2MOUSE_SENSITIVITY_MIN, GYRO2MOUSE_SENSITIVITY_MAX);
-    ui->Gyro2MouseXSensSpinBox->setSingleStep(GYRO2MOUSE_SENSITIVITY_SINGLESTEP);
-    ui->Gyro2MouseYSensSpinBox->setSingleStep(GYRO2MOUSE_SENSITIVITY_SINGLESTEP);
-    ui->Gyro2MouseXSensSpinBox->setValue(GYRO2MOUSE_SENSITIVITY_DEFAULT);
-    ui->Gyro2MouseYSensSpinBox->setValue(GYRO2MOUSE_SENSITIVITY_DEFAULT);
+    ui->Gyro2MouseXSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
+    ui->Gyro2MouseYSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
+    ui->Gyro2MouseXSpeedSpinBox->setSingleStep(GYRO2MOUSE_SPEED_SINGLESTEP);
+    ui->Gyro2MouseYSpeedSpinBox->setSingleStep(GYRO2MOUSE_SPEED_SINGLESTEP);
+    ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
+    ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
 
     ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
     ui->brakeThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
@@ -3067,14 +3067,14 @@ int QKeyMapper::getJoystick2MouseSpeedY()
     return getInstance()->ui->mouseYSpeedSpinBox->value();
 }
 
-double QKeyMapper::getGyro2MouseXSensitivity()
+double QKeyMapper::getGyro2MouseXSpeed()
 {
-    return getInstance()->ui->Gyro2MouseXSensSpinBox->value();
+    return getInstance()->ui->Gyro2MouseXSpeedSpinBox->value();
 }
 
-double QKeyMapper::getGyro2MouseYSensitivity()
+double QKeyMapper::getGyro2MouseYSpeed()
 {
-    return getInstance()->ui->Gyro2MouseYSensSpinBox->value();
+    return getInstance()->ui->Gyro2MouseYSpeedSpinBox->value();
 }
 
 int QKeyMapper::getvJoyXSensitivity()
@@ -5628,6 +5628,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     // int burstreleaseTime = ui->burstreleaseSpinBox->value();
     int key2mouse_XSpeed = ui->mouseXSpeedSpinBox->value();
     int key2mouse_YSpeed = ui->mouseYSpeedSpinBox->value();
+    double gyro2mouse_X_Sensitivity = ui->Gyro2MouseXSpeedSpinBox->value();
+    double gyro2mouse_Y_Sensitivity = ui->Gyro2MouseYSpeedSpinBox->value();
 #ifdef VIGEM_CLIENT_SUPPORT
     int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
     int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
@@ -6228,6 +6230,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed);
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed);
+
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, gyro2mouse_X_Sensitivity);
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, gyro2mouse_Y_Sensitivity);
+
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity);
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity);
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT, vJoy_Recenter_Timeout);
@@ -7976,6 +7982,28 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     else {
         ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_X_SPEED)){
+        double gyro2mouseXSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_X_SPEED).toDouble();
+        ui->Gyro2MouseXSpeedSpinBox->setValue(gyro2mouseXSensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse X Sensitivity =" << gyro2mouseXSensitivity;
+#endif
+    }
+    else {
+        ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_Y_SPEED)){
+        double gyro2mouseYSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_Y_SPEED).toDouble();
+        ui->Gyro2MouseYSpeedSpinBox->setValue(gyro2mouseYSensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Y Sensitivity =" << gyro2mouseYSensitivity;
+#endif
+    }
+    else {
+        ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
     }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -11239,8 +11267,15 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->checkUpdateButton->setText(tr("Check Updates"));
     ui->mappingStartKeyLabel->setText(tr("MappingStart"));
     ui->mappingStopKeyLabel->setText(tr("MappingStop"));
-    ui->Gyro2MouseXSensLabel->setText(tr("Gyro2Mouse X Sens"));
-    ui->Gyro2MouseYSensLabel->setText(tr("Gyro2Mouse Y Sens"));
+    ui->Gyro2MouseXSpeedLabel->setText(tr("Gyro2Mouse X Speed"));
+    ui->Gyro2MouseYSpeedLabel->setText(tr("Gyro2Mouse Y Speed"));
+    ui->Gyro2MouseLowXSensLabel->setText(tr("LowXSens"));
+    ui->Gyro2MouseLowYSensLabel->setText(tr("LowYSens"));
+    ui->Gyro2MouseHighXSensLabel->setText(tr("HighXSens"));
+    ui->Gyro2MouseHighYSensLabel->setText(tr("HighYSens"));
+    ui->Gyro2MouseMinThresholdLabel->setText(tr("MinThres"));
+    ui->Gyro2MouseMaxThresholdLabel->setText(tr("MaxThres"));
+    ui->Gyro2MouseAdvancedSettingButton->setText(tr("Advanced"));
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
 #ifdef DEBUG_LOGOUT_ON

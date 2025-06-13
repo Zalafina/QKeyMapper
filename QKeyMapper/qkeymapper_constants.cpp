@@ -327,18 +327,18 @@ const int GAMEPADINFO_GYRO_NONE       = 0;
 const int GAMEPADINFO_GYRO_ENABLED    = 1;
 const int GAMEPADINFO_GYRO_DISABLED   = 2;
 
-const double GYRO2MOUSE_SENSITIVITY_MIN = 0.01;
-const double GYRO2MOUSE_SENSITIVITY_MAX = 99.99;
-const double GYRO2MOUSE_SENSITIVITY_SINGLESTEP = 0.1;
-const double GYRO2MOUSE_SENSITIVITY_DEFAULT = 3.0;
+const double GYRO2MOUSE_SPEED_MIN = 0.01;
+const double GYRO2MOUSE_SPEED_MAX = 99.99;
+const double GYRO2MOUSE_SPEED_SINGLESTEP = 0.1;
+const double GYRO2MOUSE_SPEED_DEFAULT = 3.0;
 
 // Gyro2Mouse setup
 const float GYRO2MOUSE_MIN_GYRO_SENS = 8;
 const float GYRO2MOUSE_MAX_GYRO_SENS = 16;
-const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY = 5;
 const float GYRO2MOUSE_MIN_GYRO_THRESHOLD = 5;
 const float GYRO2MOUSE_MAX_GYRO_THRESHOLD = 75;
 const float GYRO2MOUSE_GYRO_SMOOTH_THRESHOLD = 5;
+const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY = 5;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 const USHORT VIRTUALGAMPAD_VENDORID_X360     = 0x045E;
@@ -573,6 +573,10 @@ const char *KEYMAPDATA_CROSSHAIR_X_OFFSET = "KeyMapData_Crosshair_X_Offset";
 const char *KEYMAPDATA_CROSSHAIR_Y_OFFSET = "KeyMapData_Crosshair_Y_Offset";
 const char *KEY2MOUSE_X_SPEED = "Key2Mouse_XSpeed";
 const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
+
+const char *GYRO2MOUSE_X_SPEED = "Gyro2Mouse_XSpeed";
+const char *GYRO2MOUSE_Y_SPEED = "Gyro2Mouse_YSpeed";
+
 #ifdef VIGEM_CLIENT_SUPPORT
 const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";
 const char *MOUSE2VJOY_Y_SENSITIVITY = "Mouse2vJoy_YSensitivity";

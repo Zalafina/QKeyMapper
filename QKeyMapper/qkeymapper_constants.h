@@ -294,17 +294,17 @@ extern const int GAMEPADINFO_GYRO_NONE;
 extern const int GAMEPADINFO_GYRO_ENABLED;
 extern const int GAMEPADINFO_GYRO_DISABLED;
 
-extern const double GYRO2MOUSE_SENSITIVITY_MIN;
-extern const double GYRO2MOUSE_SENSITIVITY_MAX;
-extern const double GYRO2MOUSE_SENSITIVITY_SINGLESTEP;
-extern const double GYRO2MOUSE_SENSITIVITY_DEFAULT;
+extern const double GYRO2MOUSE_SPEED_MIN;
+extern const double GYRO2MOUSE_SPEED_MAX;
+extern const double GYRO2MOUSE_SPEED_SINGLESTEP;
+extern const double GYRO2MOUSE_SPEED_DEFAULT;
 
 extern const float GYRO2MOUSE_MIN_GYRO_SENS;
 extern const float GYRO2MOUSE_MAX_GYRO_SENS;
-extern const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY;
 extern const float GYRO2MOUSE_MIN_GYRO_THRESHOLD;
 extern const float GYRO2MOUSE_MAX_GYRO_THRESHOLD;
 extern const float GYRO2MOUSE_GYRO_SMOOTH_THRESHOLD;
+extern const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY;
 
 #ifdef VIGEM_CLIENT_SUPPORT
 extern const USHORT VIRTUALGAMPAD_VENDORID_X360;
@@ -518,6 +518,8 @@ extern const char *KEYMAPDATA_CROSSHAIR_X_OFFSET;
 extern const char *KEYMAPDATA_CROSSHAIR_Y_OFFSET;
 extern const char* KEY2MOUSE_X_SPEED;
 extern const char* KEY2MOUSE_Y_SPEED;
+extern const char *GYRO2MOUSE_X_SPEED;
+extern const char *GYRO2MOUSE_Y_SPEED;
 #ifdef VIGEM_CLIENT_SUPPORT
 extern const char* MOUSE2VJOY_X_SENSITIVITY;
 extern const char* MOUSE2VJOY_Y_SENSITIVITY;
