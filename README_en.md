@@ -33,6 +33,15 @@
 
 * [https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 
+---------------
+#### ※It is strongly recommended to enable Windows Filter Keys when using QKeyMapper. This prevents Windows from repeatedly sending the same key when a keyboard key is held down, which can cause unpredictable issues with key mapping functions.
+  - #### How to enable Filter Keys on Windows 10
+    Windows Settings -> Ease of Access -> Keyboard -> Filter Keys  
+    <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win10_FilterKey.png" width="1839" height="auto"/></div>
+  - #### How to enable Filter Keys on Windows 11
+    Settings -> Accessibility -> Keyboard -> Filter Keys  
+    <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win11_FilterKey.png" width="1182" height="auto"/></div>
+
 ---
 
 ## For tips on using the key mapping tool, refer to the Wiki page:
@@ -46,6 +55,27 @@
 ## If you have any questions during use, you can also join the Q group for consultation (Group number: 906963961)
 
 ### New features list (sorted in descending order of update time)
+* v1.3.7 (Build 20250616)
+    * Added "Gyro2Mouse" feature. If your game controller supports the standard gyro protocol (DS4, DS5, etc.), you can select "Joy-Gyro2Mouse" in the original key list to use gyro2mouse mapping.
+      - Added a "Gyro2Mouse" settings tab, where "Horizontal Speed" and "Vertical Speed" can be adjusted to control the horizontal and vertical movement speed of the gyro-to-mouse function. Value range: 0.00~99.99.
+      - When a game controller with gyro support is connected to the PC, "[GyroEnabled]" will be displayed after the controller name in the controller list. When a controller is highlighted in the list, pressing the "F2" key will toggle gyro enable/disable. Gyro is enabled by default when the controller is connected.
+      - The "Gyro2Mouse" settings tab contains other advanced options. The default values are usually sufficient. If you need to modify them, please make sure you understand their functions first.
+
+* v1.3.7 (Build 20250608)
+    * The close button in the upper right corner of the window now hides the window to the system tray. The minimize button minimizes the window to the taskbar. You can exit the program by right-clicking the system tray icon and selecting "Exit", or by pressing Alt+F4 when the window is visible.
+    * Fixed calculation errors when moving the mouse pointer using controller sticks or keyboard keys.
+    * Added tooltip information to the "General Settings", "Mapping Settings", "Virtual Gamepad", "Multi-Input", and "Forza Motorsport" tabs. Hovering the mouse pointer over the tab name will display the tooltip.
+    * Updated the SDL2 library for game controller detection to SDL2-2.32.6 (released 2025-05-05), and the SDL_GameControllerDB database to 20250523.
+
+* v1.3.7 (Build 20250508)
+    * Before installing the "Interception Driver", a confirmation dialog will prompt the user to carefully read the instructions for using the "Interception Driver" to avoid issues such as keyboard/mouse device failure caused by repeatedly plugging/unplugging devices or repeated sleep/wake cycles.
+    * For key sequences with "Repeat on Key Down" enabled, releasing the original key will immediately interrupt the currently sending key sequence.
+    * Fixed an issue where pressing the original key repeatedly in a key sequence mapping did not properly interrupt the previous key sequence.
+
+* v1.3.7 (Build 20250412)
+    * If Windows Filter Keys are not enabled, a prompt will appear at startup: "It is strongly recommended to enable Windows Filter Keys when using QKeyMapper to avoid various abnormal issues."
+    * On Windows 10 or later 64-bit systems, running the Qt5 version will prompt: "Qt6_x64 version is recommended for Windows 10 or later 64-bit systems. The Qt5 version is for compatibility with Windows 7 only."
+
 * v1.3.7(Build 20250226)
     * Added two mapping keys **Crosshair-Normal** and **Crosshair-TypeA** to display crosshair reticles on the game screen when pressed. In the mapping item setting window, the **Crosshair Settings** button pops up a setting window where you can adjust the color, line length, line width, offset, and transparency.
     * Updated **PS4-Dualshock Controller** key detect table in the README file.
@@ -378,37 +408,228 @@
 26. v1.3.6(Build 20231223) -> The "AutoMappingMinimize" button has been changed to a tri-state checkbox. When set to the middle state, the software only minimizes to the tray on startup and does not automatically start key mapping.
 
 ---------------
-## PS4-Dualshock Controller Button List
-| DS4 Button            | QKeyMapper OriginalKey |
-|-----------------------|------------------------|
-| Left Stick Up         | Joy-LS-Up              |
-| Left Stick Down       | Joy-LS-Down            |
-| Left Stick Left       | Joy-LS-Left            |
-| Left Stick Right      | Joy-LS-Right           |
-| Right Stick Up        | Joy-RS-Up              |
-| Right Stick Down      | Joy-RS-Down            |
-| Right Stick Left      | Joy-RS-Left            |
-| Right Stick Right     | Joy-RS-Right           |
-| Left Stick Press(L3)  | Joy-Key8(Start)        |
-| Right Stick Press(L3) | Joy-Key9(LS-Click)     |
-| Directional Up        | Joy-Key14              |
-| Directional Down      | Joy-Key15              |
-| Directional Left      | Joy-Key16              |
-| Directional Right     | Joy-Key17              |
-| × Button              | Joy-Key1(A/×)          |
-| ○ Button              | Joy-Key2(B/○)          |
-| □ Button              | Joy-Key3(X/□)          |
-| △ Button              | Joy-Key4(Y/△)          |
-| Left Shoulder(L1)     | Joy-Key10(RS-Click)    |
-| Left Shoulder(R1)     | Joy-Key13(Guide)       |
-| Left Trigger(L2)      | Joy-Key11(LT)          |
-| Right Trigger(R2)     | Joy-Key12(RT)          |
-| SHARE Button          | Joy-Key5(LB)           |
-| OPTIONS Button        | Joy-Key7(Back)         |
-| Touchpad Button       | Joy-Key18              |
-| PS Button             | Joy-Key6(RB)           |
+## Standard Keyboard and Mouse Key Mapping Table
+| QKeyMapper Key Name | Original Key | Mapped Key | Description                        |
+|---------------------|--------------|------------|------------------------------------|
+| Mouse-L             |   ✔          |   ✔        | Mouse Left Button                  |
+| Mouse-R             |   ✔          |   ✔        | Mouse Right Button                 |
+| Mouse-M             |   ✔          |   ✔        | Mouse Middle Button                |
+| Mouse-X1            |   ✔          |   ✔        | Mouse Side Button 1                |
+| Mouse-X2            |   ✔          |   ✔        | Mouse Side Button 2                |
+| Mouse-WheelUp       |   ✔          |   ✔        | Mouse Wheel Up                     |
+| Mouse-WheelDown     |   ✔          |   ✔        | Mouse Wheel Down                   |
+| Mouse-WheelLeft     |   ✔          |   ✔        | Mouse Wheel Left                   |
+| Mouse-WheelRight    |   ✔          |   ✔        | Mouse Wheel Right                  |
+| A~Z                 |   ✔          |   ✔        | Keyboard letter keys A~Z           |
+| 0~9                 |   ✔          |   ✔        | Number keys above the letter area  |
+| Up                  |   ✔          |   ✔        | Arrow Up (↑)                       |
+| Down                |   ✔          |   ✔        | Arrow Down (↓)                     |
+| Left                |   ✔          |   ✔        | Arrow Left (←)                     |
+| Right               |   ✔          |   ✔        | Arrow Right (→)                    |
+| Insert              |   ✔          |   ✔        | Insert key                         |
+| Delete              |   ✔          |   ✔        | Delete key                         |
+| Home                |   ✔          |   ✔        | Home key                           |
+| End                 |   ✔          |   ✔        | End key                            |
+| PageUp              |   ✔          |   ✔        | Page Up key                        |
+| PageDown            |   ✔          |   ✔        | Page Down key                      |
+| Space               |   ✔          |   ✔        | Spacebar                           |
+| Tab                 |   ✔          |   ✔        | Tab key                            |
+| Enter               |   ✔          |   ✔        | Enter key                          |
+| L-Shift             |   ✔          |   ✔        | Left Shift key                     |
+| R-Shift             |   ✔          |   ✔        | Right Shift key                    |
+| L-Ctrl              |   ✔          |   ✔        | Left Ctrl key                      |
+| R-Ctrl              |   ✔          |   ✔        | Right Ctrl key                     |
+| L-Alt               |   ✔          |   ✔        | Left Alt key                       |
+| R-Alt               |   ✔          |   ✔        | Right Alt key                      |
+| L-Win               |   ✔          |   ✔        | Left Windows key                   |
+| R-Win               |   ✔          |   ✔        | Right Windows key                  |
+| Backspace           |   ✔          |   ✔        | Backspace key                      |
+| `                   |   ✔          |   ✔        | Tilde key (top left, left of 1)    |
+| -                   |   ✔          |   ✔        | Minus key (right of 0)             |
+| =                   |   ✔          |   ✔        | Equals key (right of 0)            |
+| [                   |   ✔          |   ✔        | Left bracket key                   |
+| ]                   |   ✔          |   ✔        | Right bracket key                  |
+| \                   |   ✔          |   ✔        | Backslash key                      |
+| ;                   |   ✔          |   ✔        | Semicolon key                      |
+| '                   |   ✔          |   ✔        | Apostrophe key                     |
+| ,                   |   ✔          |   ✔        | Comma key                          |
+| .                   |   ✔          |   ✔        | Period key                         |
+| /                   |   ✔          |   ✔        | Slash key                          |
+| Esc                 |   ✔          |   ✔        | Escape key                         |
+| F1~F24              |   ✔          |   ✔        | Function keys F1~F24               |
+| CapsLock            |   ✔          |   ✔        | Caps Lock key                      |
+| Application         |   ✔          |   ✔        | Menu key (right of right Ctrl)     |
+| PrintScrn           |   ✔          |   ✔        | Print Screen key                   |
+| ScrollLock          |   ✔          |   ✔        | Scroll Lock key                    |
+| Pause               |   ✔          |   ✔        | Pause key                          |
+| NumLock             |   ✔          |   ✔        | Num Lock key (numpad)              |
+| Num/                |   ✔          |   ✔        | Numpad Divide key                  |
+| Num*                |   ✔          |   ✔        | Numpad Multiply key                |
+| Num-                |   ✔          |   ✔        | Numpad Minus key                   |
+| Num＋               |   ✔          |   ✔        | Numpad Plus key                    |
+| Num.                |   ✔          |   ✔        | Numpad Decimal key                 |
+| Num0~9              |   ✔          |   ✔        | Numpad 0~9 keys                    |
+| NumEnter            |   ✔          |   ✔        | Numpad Enter key                   |
+| Num.(NumOFF)        |   ✔          |   ✔        | Numpad Decimal (NumLock off)       |
+| Num0~9(NumOFF)      |   ✔          |   ✔        | Numpad 0~9 (NumLock off)           |
+| VolumeMute          |   ✔          |   ✔        | Mute key                           |
+| VolumeDown          |   ✔          |   ✔        | Volume Down key                    |
+| VolumeUp            |   ✔          |   ✔        | Volume Up key                      |
+| MediaNext           |   ✔          |   ✔        | Next Track key                     |
+| MediaPrev           |   ✔          |   ✔        | Previous Track key                 |
+| MediaStop           |   ✔          |   ✔        | Stop Media key                     |
+| MediaPlayPause      |   ✔          |   ✔        | Play/Pause Media key               |
+| LaunchMail          |   ✔          |   ✔        | Launch Mail Client key             |
+| SelectMedia         |   ✔          |   ✔        | Select Media key                   |
+| LaunchApp1          |   ✔          |   ✔        | Launch Application 1 key           |
+| LaunchApp2          |   ✔          |   ✔        | Launch Application 2 key           |
+| BrowserBack         |   ✔          |   ✔        | Browser Back key                   |
+| BrowserForward      |   ✔          |   ✔        | Browser Forward key                |
+| BrowserRefresh      |   ✔          |   ✔        | Browser Refresh key                |
+| BrowserStop         |   ✔          |   ✔        | Browser Stop key                   |
+| BrowserSearch       |   ✔          |   ✔        | Browser Search key                 |
+| BrowserFavorites    |   ✔          |   ✔        | Browser Favorites key              |
+| BrowserHome         |   ✔          |   ✔        | Browser Home key                   |
+##### The above covers almost all standard keyboard and mouse keys, but most common keyboards and mice only include a subset.
 
----
+---------------
+## Special Mapping Key Table
+| QKeyMapper Mapping Key Name | Description                                                        |
+|----------------------------|--------------------------------------------------------------------|
+| ⏱                         | Key delay suffix, add a number to indicate hold duration (ms)      |
+| ↓                          | Key down prefix (must be paired with up mapping, or key won't release) |
+| ↑                          | Key up prefix                                                      |
+| BLOCKED                    | Block original key (no response on press)                          |
+| NONE                       | Empty key (used as delay placeholder, etc.)                        |
+| SendText                   | Send text string directly                                          |
+| KeySequenceBreak           | Interrupt all currently executing key sequences                    |
+| Key2Mouse-Up               | Move mouse pointer up while key is held                            |
+| Key2Mouse-Down             | Move mouse pointer down while key is held                          |
+| Key2Mouse-Left             | Move mouse pointer left while key is held                          |
+| Key2Mouse-Right            | Move mouse pointer right while key is held                         |
+| Mouse-L_WindowPoint        | Left click at specified window coordinate                          |
+| Mouse-R_WindowPoint        | Right click at specified window coordinate                         |
+| Mouse-M_WindowPoint        | Middle click at specified window coordinate                        |
+| Mouse-X1_WindowPoint       | Side button 1 click at specified window coordinate                 |
+| Mouse-X2_WindowPoint       | Side button 2 click at specified window coordinate                 |
+| Mouse-Move_WindowPoint     | Move mouse pointer to specified window coordinate                  |
+| Mouse-L_ScreenPoint        | Left click at specified screen coordinate                          |
+| Mouse-R_ScreenPoint        | Right click at specified screen coordinate                         |
+| Mouse-M_ScreenPoint        | Middle click at specified screen coordinate                        |
+| Mouse-X1_ScreenPoint       | Side button 1 click at specified screen coordinate                 |
+| Mouse-X2_ScreenPoint       | Side button 2 click at specified screen coordinate                 |
+| Crosshair-Normal           | Show normal crosshair on screen while key is held                  |
+| Crosshair-TypeA            | Show Type A crosshair on screen while key is held                  |
+| Func-Refresh               | Trigger Windows refresh                                            |
+| Func-LockScreen            | Trigger Windows lock screen                                        |
+| Func-Shutdown              | Trigger Windows shutdown                                           |
+| Func-Reboot                | Trigger Windows reboot                                             |
+| Func-Logoff                | Trigger Windows logoff                                             |
+| Func-Sleep                 | Trigger Windows sleep (power saving)                               |
+| Func-Hibernate             | Trigger Windows hibernate (save state to disk, almost no power)    |
+##### Keys starting with "Key2Mouse-" control mouse pointer movement in four directions. You can further adjust X and Y axis speed in the mapping settings; higher values move faster.
+##### WindowPoint mapping keys require using "Left Alt + Mouse Left Button" to pick a coordinate in the selected window.
+##### ScreenPoint mapping keys require using "Left Ctrl + Mouse Left Button" to pick a coordinate on the screen.
+
+---------------
+## Xbox Controller Button Table
+| Xbox Controller Button | QKeyMapper Original Key Name |
+|-----------------------|------------------------------|
+| Left Stick Up         | Joy-LS-Up                    |
+| Left Stick Down       | Joy-LS-Down                  |
+| Left Stick Left       | Joy-LS-Left                  |
+| Left Stick Right      | Joy-LS-Right                 |
+| Right Stick Up        | Joy-RS-Up                    |
+| Right Stick Down      | Joy-RS-Down                  |
+| Right Stick Left      | Joy-RS-Left                  |
+| Right Stick Right     | Joy-RS-Right                 |
+| Left Stick Press      | Joy-Key9(LS-Click)           |
+| Right Stick Press     | Joy-Key10(RS-Click)          |
+| D-Pad Up              | Joy-DPad-Up                  |
+| D-Pad Down            | Joy-DPad-Down                |
+| D-Pad Left            | Joy-DPad-Left                |
+| D-Pad Right           | Joy-DPad-Right               |
+| A Button              | Joy-Key1(A/×)                |
+| B Button              | Joy-Key2(B/○)                |
+| X Button              | Joy-Key3(X/□)                |
+| Y Button              | Joy-Key4(Y/△)                |
+| Left Shoulder         | Joy-Key5(LB)                 |
+| Right Shoulder        | Joy-Key6(RB)                 |
+| Left Trigger          | Joy-Key11(LT)                |
+| Right Trigger         | Joy-Key12(RT)                |
+| Back Button           | Joy-Key7(Back)               |
+| Start Button          | Joy-Key8(Start)              |
+| Guide Button          | Joy-Key13(Guide)             |
+
+## Special Physical Controller Keys
+| QKeyMapper Original Key Name | Function                                                        |
+|-----------------------------|-----------------------------------------------------------------|
+| Joy-LS2Mouse                | Move mouse pointer with left stick (light push = slow, hard push = fast) |
+| Joy-RS2Mouse                | Move mouse pointer with right stick (light push = slow, hard push = fast) |
+##### Mouse pointer speed controlled by stick can be further adjusted for X and Y axes in mapping settings; higher values move faster.
+
+## Extended Controller Keys
+| QKeyMapper Original Key Name | Function                                                        |
+|-----------------------------|-----------------------------------------------------------------|
+| Joy-Key19~30                | Reserved for extended controller buttons; rarely used, but some special controllers may support more buttons |
+
+---------------
+## PS4-Dualshock Controller Button Table
+| PS4 Controller Button | QKeyMapper Original Key Name |
+|----------------------|-----------------------------|
+| Left Stick Up        | Joy-LS-Up                   |
+| Left Stick Down      | Joy-LS-Down                 |
+| Left Stick Left      | Joy-LS-Left                 |
+| Left Stick Right     | Joy-LS-Right                |
+| Right Stick Up       | Joy-RS-Up                   |
+| Right Stick Down     | Joy-RS-Down                 |
+| Right Stick Left     | Joy-RS-Left                 |
+| Right Stick Right    | Joy-RS-Right                |
+| Left Stick Press     | Joy-Key8(Start)             |
+| Right Stick Press    | Joy-Key9(LS-Click)          |
+| D-Pad Up             | Joy-Key14                   |
+| D-Pad Down           | Joy-Key15                   |
+| D-Pad Left           | Joy-Key16                   |
+| D-Pad Right          | Joy-Key17                   |
+| × Button             | Joy-Key1(A/×)               |
+| ○ Button             | Joy-Key2(B/○)               |
+| □ Button             | Joy-Key3(X/□)               |
+| △ Button             | Joy-Key4(Y/△)               |
+| Left Shoulder        | Joy-Key10(RS-Click)         |
+| Right Shoulder       | Joy-Key13(Guide)            |
+| Left Trigger         | Joy-Key11(LT)               |
+| Right Trigger        | Joy-Key12(RT)               |
+| SHARE Button         | Joy-Key5(LB)                |
+| OPTIONS Button       | Joy-Key7(Back)              |
+| Touchpad Button      | Joy-Key18                   |
+| PS Button            | Joy-Key6(RB)                |
+
+---------------
+## Xbox360 Virtual Controller Button Table
+Refer to the Xbox Controller Button Table above, but add a lowercase **v** prefix to the original key name for the corresponding Xbox360 virtual controller key.
+Example:
+
+| Xbox Virtual Controller Button | QKeyMapper Mapping Key Name |
+|-------------------------------|-----------------------------|
+| Left Stick Up                 | vJoy-LS-Up                  |
+| D-Pad Down                    | vJoy-DPad-Down              |
+| A Button                      | vJoy-Key1(A/×)              |
+| Right Trigger                 | vJoy-Key12(RT)              |
+
+## Special Virtual Controller Keys
+| QKeyMapper Original Key Name | Function                                                        |
+|-----------------------------|-----------------------------------------------------------------|
+| vJoy-Mouse2LS               | Control virtual left stick with mouse                           |
+| vJoy-Mouse2RS               | Control virtual right stick with mouse                          |
+##### Mouse control of virtual controller can be used for games like Zelda in emulators to control the camera. The default recenter delay is 20ms, adjustable in the "Virtual Gamepad" tab. Set to 0 to disable auto recentering.
+##### The "X Axis Sensitivity" and "Y Axis Sensitivity" in the "Virtual Gamepad" tab adjust the sensitivity of mouse control for the virtual stick; range is 1~50000.
+##### Mouse control of the virtual stick can enable "Direct Control Mode" for 1:1 mapping between mouse movement and stick offset.
+
+| QKeyMapper Mapping Key Name | Function                                                        |
+|----------------------------|-----------------------------------------------------------------|
+| Mouse2vJoy-Hold            | Hold to keep the virtual stick at the current offset; release to continue moving |
+
+---------------
 ## Screenshot
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
