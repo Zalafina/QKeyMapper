@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT  += core gui network
+CONFIG += c++17
 lessThan(QT_MAJOR_VERSION, 6): QT += winextras
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
