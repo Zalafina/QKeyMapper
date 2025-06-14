@@ -850,7 +850,7 @@
        <x>260</x>
        <y>40</y>
        <width>35</width>
-       <height>22</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
@@ -882,7 +882,7 @@
        <x>260</x>
        <y>10</y>
        <width>35</width>
-       <height>22</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
@@ -977,7 +977,7 @@
        <x>220</x>
        <y>70</y>
        <width>71</width>
-       <height>22</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
@@ -1028,7 +1028,7 @@
        <x>180</x>
        <y>70</y>
        <width>35</width>
-       <height>22</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
@@ -1172,7 +1172,7 @@
        <x>220</x>
        <y>10</y>
        <width>71</width>
-       <height>22</height>
+       <height>21</height>
       </rect>
      </property>
      <property name="focusPolicy">
@@ -1271,7 +1271,36 @@
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="Gyro2MouseLowXSensLabel">
+    <widget class="QLabel" name="Gyro2MouseMinXSensLabel">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>10</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>MinXSens</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="Gyro2MouseMinXSensSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>235</x>
+       <y>10</y>
+       <width>66</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="decimals">
+      <number>1</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="Gyro2MouseMinYSensLabel">
      <property name="geometry">
       <rect>
        <x>150</x>
@@ -1281,13 +1310,13 @@
       </rect>
      </property>
      <property name="text">
-      <string>LowXSens</string>
+      <string>MinYSens</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseLowXSensSpinBox">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseMinYSensSpinBox">
      <property name="geometry">
       <rect>
        <x>235</x>
@@ -1296,38 +1325,15 @@
        <height>21</height>
       </rect>
      </property>
-    </widget>
-    <widget class="QLabel" name="Gyro2MouseLowYSensLabel">
-     <property name="geometry">
-      <rect>
-       <x>150</x>
-       <y>70</y>
-       <width>81</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>LowYSens</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-     </property>
-    </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseLowYSensSpinBox">
-     <property name="geometry">
-      <rect>
-       <x>235</x>
-       <y>70</y>
-       <width>66</width>
-       <height>21</height>
-      </rect>
+     <property name="decimals">
+      <number>1</number>
      </property>
     </widget>
     <widget class="QLabel" name="Gyro2MouseMinThresholdLabel">
      <property name="geometry">
       <rect>
        <x>150</x>
-       <y>10</y>
+       <y>70</y>
        <width>81</width>
        <height>21</height>
       </rect>
@@ -1343,17 +1349,20 @@
      <property name="geometry">
       <rect>
        <x>235</x>
-       <y>10</y>
+       <y>70</y>
        <width>66</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="decimals">
+      <number>1</number>
      </property>
     </widget>
     <widget class="QLabel" name="Gyro2MouseMaxThresholdLabel">
      <property name="geometry">
       <rect>
        <x>305</x>
-       <y>10</y>
+       <y>70</y>
        <width>81</width>
        <height>21</height>
       </rect>
@@ -1365,27 +1374,30 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseHighYSensSpinBox">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseMaxYSensSpinBox">
      <property name="geometry">
       <rect>
        <x>390</x>
-       <y>70</y>
+       <y>40</y>
        <width>66</width>
        <height>21</height>
       </rect>
      </property>
+     <property name="decimals">
+      <number>1</number>
+     </property>
     </widget>
-    <widget class="QLabel" name="Gyro2MouseHighYSensLabel">
+    <widget class="QLabel" name="Gyro2MouseMaxYSensLabel">
      <property name="geometry">
       <rect>
        <x>305</x>
-       <y>70</y>
+       <y>40</y>
        <width>81</width>
        <height>21</height>
       </rect>
      </property>
      <property name="text">
-      <string>HighYSens</string>
+      <string>MaxYSens</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -1395,36 +1407,42 @@
      <property name="geometry">
       <rect>
        <x>390</x>
-       <y>10</y>
+       <y>70</y>
        <width>66</width>
        <height>21</height>
       </rect>
      </property>
+     <property name="decimals">
+      <number>1</number>
+     </property>
     </widget>
-    <widget class="QLabel" name="Gyro2MouseHighXSensLabel">
+    <widget class="QLabel" name="Gyro2MouseMaxXSensLabel">
      <property name="geometry">
       <rect>
        <x>305</x>
-       <y>40</y>
+       <y>10</y>
        <width>81</width>
        <height>21</height>
       </rect>
      </property>
      <property name="text">
-      <string>HighXSens</string>
+      <string>MaxXSens</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="Gyro2MouseHighXSensSpinBox">
+    <widget class="QDoubleSpinBox" name="Gyro2MouseMaxXSensSpinBox">
      <property name="geometry">
       <rect>
        <x>390</x>
-       <y>40</y>
+       <y>10</y>
        <width>66</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="decimals">
+      <number>1</number>
      </property>
     </widget>
     <widget class="QPushButton" name="Gyro2MouseAdvancedSettingButton">

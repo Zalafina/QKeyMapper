@@ -238,6 +238,8 @@ extern const int SETMOUSEPOSITION_WAITTIME_MAX;
 
 extern const WORD XBUTTON_NONE;
 
+extern const int JOYSTICK_INVALID_INSTANCE_ID;
+
 extern const int JOYSTICK_PLAYER_INDEX_MIN;
 extern const int JOYSTICK_PLAYER_INDEX_MAX;
 

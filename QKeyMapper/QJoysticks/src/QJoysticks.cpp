@@ -213,6 +213,23 @@ bool QJoysticks::joystickExists(const int index)
 }
 
 /**
+ * Returns the index of the joystick with the given \a instance_id if it exists,
+ * otherwise returns -1.
+ *
+ * \param instance_id The SDL instance ID of the joystick to search for.
+ * \return The index of the joystick in the device list if found, otherwise -1.
+ */
+int QJoysticks::instanceIDExists(const int instance_id)
+{
+    QList<QJoystickDevice *> devices = inputDevices();
+    for (int i = 0; i < devices.size(); ++i) {
+        if (devices.at(i)->instanceID == instance_id)
+            return i;
+    }
+    return -1;
+}
+
+/**
  * Returns the name of the given joystick
  */
 QString QJoysticks::getName(const int index)
@@ -266,7 +283,7 @@ QJoystickDevice *QJoysticks::getInputDevice(const int index)
  */
 QList<QJoystickDevice *> QJoysticks::inputDevices() const
 {
-    return m_devices;
+   return m_devices;
 }
 
 /**
@@ -364,22 +381,17 @@ void QJoysticks::setGameControllersSensorEnabled(bool enabled)
     }
 }
 
-void QJoysticks::switchSensorDisabled(int index)
+void QJoysticks::switchSensorDisabled(int instance_id)
 {
-    Q_ASSERT(joystickExists(index));
+    int index = instanceIDExists(instance_id);
+    Q_ASSERT(index >= 0);
 
-    if (!joystickExists(index)) {
+    if (index < 0) {
         return;
     }
 
     /* Switch sensor disabled value */
-    bool sensordisabled = m_devices.at(index)->sensor_disabled;
-    if (sensordisabled) {
-        m_devices.at(index)->sensor_disabled = false;
-    }
-    else {
-        m_devices.at(index)->sensor_disabled = true;
-    }
+    m_devices.at(index)->sensor_disabled = !m_devices.at(index)->sensor_disabled;
 }
 
 void QJoysticks::onJoystickAdded(QJoystickDevice *joystick)

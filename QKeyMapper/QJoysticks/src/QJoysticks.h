@@ -87,6 +87,7 @@ public:
    Q_INVOKABLE int getNumButtons(const int index);
    Q_INVOKABLE bool isBlacklisted(const int index);
    Q_INVOKABLE bool joystickExists(const int index);
+   Q_INVOKABLE int instanceIDExists(const int instance_id);
    Q_INVOKABLE QString getName(const int index);
 
    SDL_Joysticks *sdlJoysticks() const;
@@ -108,7 +109,7 @@ public slots:
    void setSortJoysticksByBlacklistState(bool sort);
    void setBlacklisted(int index, bool blacklisted);
    void setGameControllersSensorEnabled(bool enabled);
-   void switchSensorDisabled(int index);
+   void switchSensorDisabled(int instance_id);
 
 protected:
    explicit QJoysticks();

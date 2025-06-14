@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     workerThread->start();
 
     QKeyMapper w;
-    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(JOYSTICK_INVALID_INSTANCE_ID);
     emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
     emit QKeyMapper::getInstance()->checkFilterKeysEnabled_Signal();
 

@@ -3087,24 +3087,24 @@ double QKeyMapper::getGyro2MouseMaxThreshold()
     return getInstance()->ui->Gyro2MouseMaxThresholdSpinBox->value();
 }
 
-double QKeyMapper::getGyro2MouseLowXSensitivity()
+double QKeyMapper::getGyro2MouseMinXSensitivity()
 {
-    return getInstance()->ui->Gyro2MouseLowXSensSpinBox->value();
+    return getInstance()->ui->Gyro2MouseMinXSensSpinBox->value();
 }
 
-double QKeyMapper::getGyro2MouseLowYSensitivity()
+double QKeyMapper::getGyro2MouseMinYSensitivity()
 {
-    return getInstance()->ui->Gyro2MouseLowYSensSpinBox->value();
+    return getInstance()->ui->Gyro2MouseMinYSensSpinBox->value();
 }
 
-double QKeyMapper::getGyro2MouseHighXSensitivity()
+double QKeyMapper::getGyro2MouseMaxXSensitivity()
 {
-    return getInstance()->ui->Gyro2MouseHighXSensSpinBox->value();
+    return getInstance()->ui->Gyro2MouseMaxXSensSpinBox->value();
 }
 
-double QKeyMapper::getGyro2MouseHighYSensitivity()
+double QKeyMapper::getGyro2MouseMaxYSensitivity()
 {
-    return getInstance()->ui->Gyro2MouseHighYSensSpinBox->value();
+    return getInstance()->ui->Gyro2MouseMaxYSensSpinBox->value();
 }
 
 int QKeyMapper::getvJoyXSensitivity()
@@ -9545,9 +9545,10 @@ void QKeyMapper::updateInputDeviceSelectComboBoxes()
     initInputDeviceSelectComboBoxes();
 }
 
-void QKeyMapper::updateGamepadSelectComboBox()
+void QKeyMapper::updateGamepadSelectComboBox(int instance_id)
 {
     QMap<int, Gamepad_Info> GamepadInfoMap;
+    QString changed_gamepad_string;
 
     QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
 
@@ -9568,6 +9569,16 @@ void QKeyMapper::updateGamepadSelectComboBox()
                      QString::number(joystick->vendorid, 16).toUpper().rightJustified(4, '0'),
                      QString::number(joystick->productid, 16).toUpper().rightJustified(4, '0'));
             if (joystick->has_gyro && joystick->blacklisted != true) {
+                if (instance_id != JOYSTICK_INVALID_INSTANCE_ID) {
+                    if (joystick->instanceID == instance_id) {
+                        if (joystick->sensor_disabled) {
+                            changed_gamepad_string = gamepadinfo.info_string + tr(" GyroDisabled");
+                        }
+                        else {
+                            changed_gamepad_string = gamepadinfo.info_string + tr(" GyroEnabled");
+                        }
+                    }
+                }
                 if (joystick->sensor_disabled) {
                     gamepadinfo.gyro_enabled = GAMEPADINFO_GYRO_DISABLED;
                     gamepadinfo.info_string.append("[GyroDisabled]");
@@ -9640,6 +9651,10 @@ void QKeyMapper::updateGamepadSelectComboBox()
             qDebug().nospace() << "[updateGamepadSelectComboBox] Restore highlight row =" << highlightedRow;
 #endif
         }
+    }
+
+    if (changed_gamepad_string.isEmpty() == false) {
+        showInformationPopup(changed_gamepad_string);
     }
 }
 
@@ -11299,10 +11314,10 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->mappingStopKeyLabel->setText(tr("MappingStop"));
     ui->Gyro2MouseXSpeedLabel->setText(tr("Gyro2Mouse X Speed"));
     ui->Gyro2MouseYSpeedLabel->setText(tr("Gyro2Mouse Y Speed"));
-    ui->Gyro2MouseLowXSensLabel->setText(tr("LowXSens"));
-    ui->Gyro2MouseLowYSensLabel->setText(tr("LowYSens"));
-    ui->Gyro2MouseHighXSensLabel->setText(tr("HighXSens"));
-    ui->Gyro2MouseHighYSensLabel->setText(tr("HighYSens"));
+    ui->Gyro2MouseMinXSensLabel->setText(tr("MinXSens"));
+    ui->Gyro2MouseMinYSensLabel->setText(tr("MinYSens"));
+    ui->Gyro2MouseMaxXSensLabel->setText(tr("MaxXSens"));
+    ui->Gyro2MouseMaxYSensLabel->setText(tr("MaxYSens"));
     ui->Gyro2MouseMinThresholdLabel->setText(tr("MinThres"));
     ui->Gyro2MouseMaxThresholdLabel->setText(tr("MaxThres"));
     ui->Gyro2MouseAdvancedSettingButton->setText(tr("Advanced"));

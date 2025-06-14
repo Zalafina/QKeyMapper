@@ -5421,7 +5421,7 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 #endif
     }
 
-    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(JOYSTICK_INVALID_INSTANCE_ID);
 }
 
 void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed)
@@ -5434,7 +5434,7 @@ void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed
     qDebug().nospace().noquote() << debugmessage;
 #endif
 
-    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(JOYSTICK_INVALID_INSTANCE_ID);
 }
 
 void QKeyMapper_Worker::onJoystickPOVEvent(const QJoystickPOVEvent &e)
@@ -5525,7 +5525,7 @@ void QKeyMapper_Worker::onGameControllerGyroEnabledSwitch(int gamepadinfo_index)
             int instance_id = QKeyMapper::getInstance()->m_GamepadInfoMap.value(gamepadinfo_index).instance_id;
             QJoysticks::getInstance()->switchSensorDisabled(instance_id);
 
-            emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal();
+            emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(instance_id);
         }
     }
 }

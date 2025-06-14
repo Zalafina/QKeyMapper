@@ -505,10 +505,10 @@ public:
     static double getGyro2MouseYSpeed(void);
     static double getGyro2MouseMinThreshold(void);
     static double getGyro2MouseMaxThreshold(void);
-    static double getGyro2MouseLowXSensitivity(void);
-    static double getGyro2MouseLowYSensitivity(void);
-    static double getGyro2MouseHighXSensitivity(void);
-    static double getGyro2MouseHighYSensitivity(void);
+    static double getGyro2MouseMinXSensitivity(void);
+    static double getGyro2MouseMinYSensitivity(void);
+    static double getGyro2MouseMaxXSensitivity(void);
+    static double getGyro2MouseMaxYSensitivity(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
     static int getvJoyRecenterTimeout(void);
@@ -553,7 +553,7 @@ signals:
 #endif
     void updateMultiInputStatus_Signal(void);
     void updateInputDeviceSelectComboBoxes_Signal(void);
-    void updateGamepadSelectComboBox_Signal(void);
+    void updateGamepadSelectComboBox_Signal(int instance_id);
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayTime);
@@ -831,7 +831,7 @@ public slots:
 public slots:
     void updateMultiInputStatus(void);
     void updateInputDeviceSelectComboBoxes(void);
-    void updateGamepadSelectComboBox(void);
+    void updateGamepadSelectComboBox(int instance_id);
     void updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname);
     void updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabhotkey);
 
