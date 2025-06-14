@@ -350,6 +350,13 @@ const double GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT = 15.0;
 const float GYRO2MOUSE_GYRO_SMOOTH_THRESHOLD = 5;
 const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY = 5;
 
+const int GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X = 0;
+const int GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Y = 1;
+const int GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z = 2;
+
+const int GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT = 1;
+const int GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT = 0;
+
 #ifdef VIGEM_CLIENT_SUPPORT
 const USHORT VIRTUALGAMPAD_VENDORID_X360     = 0x045E;
 const USHORT VIRTUALGAMPAD_PRODUCTID_X360    = 0xABCD;
@@ -586,6 +593,17 @@ const char *KEY2MOUSE_Y_SPEED = "Key2Mouse_YSpeed";
 
 const char *GYRO2MOUSE_X_SPEED = "Gyro2Mouse_XSpeed";
 const char *GYRO2MOUSE_Y_SPEED = "Gyro2Mouse_YSpeed";
+const char *GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY = "Gyro2Mouse_Min_Gyro_X_Sensitivity";
+const char *GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY = "Gyro2Mouse_Min_Gyro_Y_Sensitivity";
+const char *GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY = "Gyro2Mouse_Max_Gyro_X_Sensitivity";
+const char *GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY = "Gyro2Mouse_Max_Gyro_Y_Sensitivity";
+const char *GYRO2MOUSE_MIN_GYRO_THRESHOLD     = "Gyro2Mouse_Min_Gyro_Threshold";
+const char *GYRO2MOUSE_MAX_GYRO_THRESHOLD     = "Gyro2Mouse_Max_Gyro_Threshold";
+
+const char *GYRO2MOUSE_MOUSE_X_SOURCE   = "Gyro2Mouse_Mouse_X_Source";
+const char *GYRO2MOUSE_MOUSE_Y_SOURCE   = "Gyro2Mouse_Mouse_Y_Source";
+const char *GYRO2MOUSE_MOUSE_X_REVERT   = "Gyro2Mouse_Mouse_X_Revert";
+const char *GYRO2MOUSE_MOUSE_Y_REVERT   = "Gyro2Mouse_Mouse_Y_Revert";
 
 #ifdef VIGEM_CLIENT_SUPPORT
 const char *MOUSE2VJOY_X_SENSITIVITY = "Mouse2vJoy_XSensitivity";

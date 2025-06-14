@@ -158,6 +158,7 @@ HEADERS     += \
     libusb/include/libusb.h \
     orderedmap/orderedmap.h \
     qcrosshairsetupdialog.h \
+    qgyro2mouseoptiondialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
     qtablesetupdialog.h
@@ -172,6 +173,7 @@ SOURCES     += \
     interception_worker.cpp \
     main.cpp \
     qcrosshairsetupdialog.cpp \
+    qgyro2mouseoptiondialog.cpp \
     qinputdevicelistwindow.cpp \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
@@ -199,6 +201,7 @@ contains( DEFINES, SINGLE_APPLICATION ) {
 
 FORMS       += \
     qcrosshairsetupdialog.ui \
+    qgyro2mouseoptiondialog.ui \
     qinputdevicelistwindow.ui \
     qitemsetupdialog.ui \
     qkeymapper.ui \

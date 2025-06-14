@@ -2499,9 +2499,20 @@ void QKeyMapper_Worker::initGamepadMotion()
 {
     m_GamdpadMotion.Reset();
 
-    m_GamdpadMotion.SetCalibrationMode(GamepadMotionHelpers::CalibrationMode::Stillness | GamepadMotionHelpers::CalibrationMode::SensorFusion);
-    m_GamdpadMotion.Settings.StillnessGyroDelta = 1.2f;
-    m_GamdpadMotion.Settings.StillnessAccelDelta = 0.015f;
+    setGamepadMotionAutoCalibration(true, 0.36f, 0.015f);
+    // setGamepadMotionAutoCalibration(false, 0.f, 0.f);
+}
+
+void QKeyMapper_Worker::setGamepadMotionAutoCalibration(bool enabled, float gyroThreshold, float accelThreshold)
+{
+    if (enabled) {
+        m_GamdpadMotion.SetCalibrationMode(GamepadMotionHelpers::CalibrationMode::Stillness | GamepadMotionHelpers::CalibrationMode::SensorFusion);
+        m_GamdpadMotion.Settings.StillnessGyroDelta = gyroThreshold;
+        m_GamdpadMotion.Settings.StillnessAccelDelta = accelThreshold;
+    }
+    else {
+        m_GamdpadMotion.SetCalibrationMode(GamepadMotionHelpers::CalibrationMode::Manual);
+    }
 }
 
 void QKeyMapper_Worker::sendSpecialVirtualKey(const QString &keycodeString, int keyupdown)
@@ -6654,12 +6665,39 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
     float inGyroX, inGyroY, inGyroZ;
     m_GamdpadMotion.GetCalibratedGyro(inGyroX, inGyroY, inGyroZ);
 
-    float gyroX = 0.0f, gyroY = 0.0f;
-    // gyroX += inGyroX;   //GyroAxisMask::X for GYRO-X
-    gyroX -= inGyroY;   //GyroAxisMask::Y for GYRO-X
-    // gyroX -= inGyroZ;   //GyroAxisMask::Z for GYRO-X
+    int mouse_x_source = QGyro2MouseOptionDialog::getGyro2Mouse_MouseXSource();
+    int mouse_y_source = QGyro2MouseOptionDialog::getGyro2Mouse_MouseYSource();
+    bool mouse_x_revert = QGyro2MouseOptionDialog::getGyro2Mouse_MouseXRevert();
+    bool mouse_y_revert = QGyro2MouseOptionDialog::getGyro2Mouse_MouseYRevert();
 
-    gyroY -= inGyroX;   //GyroAxisMask::X for GYRO-Y
+    float gyroX = 0.0f, gyroY = 0.0f;
+
+    // Handle X axis input source and inversion
+    if (mouse_x_source == GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X) {
+        gyroX += mouse_x_revert ? -inGyroX : inGyroX;
+    }
+    else if (mouse_x_source == GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+        gyroX += mouse_x_revert ? inGyroZ : -inGyroZ;
+    }
+    else { // Default mouse_x_source == GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Y
+        gyroX += mouse_x_revert ? inGyroY : -inGyroY;
+    }
+
+    // Handle Y axis input source and inversion
+    if (mouse_y_source == GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Y) {
+        gyroY += mouse_y_revert ? -inGyroY : inGyroY;
+    }
+    else if (mouse_y_source == GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+        gyroY += mouse_y_revert ? -inGyroZ : inGyroZ;
+    }
+    else { // Default mouse_y_source == GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X
+        gyroY += mouse_y_revert ? inGyroX : -inGyroX;
+    }
+
+    // gyroX += inGyroX;   //GyroAxisMask::X for GYRO-X
+    // gyroX -= inGyroY;   //GyroAxisMask::Y for GYRO-X
+    // gyroX -= inGyroZ;   //GyroAxisMask::Z for GYRO-X
+    // gyroY -= inGyroX;   //GyroAxisMask::X for GYRO-Y
     // gyroY += inGyroY;   //GyroAxisMask::Y for GYRO-Y
     // gyroY += inGyroZ;   //GyroAxisMask::Z for GYRO-Y
 

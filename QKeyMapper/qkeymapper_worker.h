@@ -770,6 +770,7 @@ public:
     void stopDataPortListener(void);
 
     void initGamepadMotion(void);
+    void setGamepadMotionAutoCalibration(bool enabled, float gyroThreshold, float accelThreshold);
 
 #ifdef VIGEM_CLIENT_SUPPORT
 public:

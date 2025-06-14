@@ -83,6 +83,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CrosshairWindowInitialHeight(0),
     m_GdiplusToken(NULL),
     m_deviceListWindow(Q_NULLPTR),
+    m_Gyro2MouseOptionDialog(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR),
     m_TableSetupDialog(Q_NULLPTR),
     m_PopupNotification(Q_NULLPTR)
@@ -376,10 +377,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initKeyMappingTabWidget();
     m_ItemSetupDialog = new QItemSetupDialog(this);
     m_TableSetupDialog = new QTableSetupDialog(this);
+    m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+
+    initGyro2MouseSpinBoxes();
 
     m_PopupNotification = new QPopupNotification(Q_NULLPTR);
     m_deviceListWindow = new QInputDeviceListWindow(this);
@@ -438,8 +442,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
-
-    initGyro2MouseSpinBoxes();
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     updateHWNDListProc();
@@ -505,6 +507,7 @@ void QKeyMapper::WindowStateChangedProc(void)
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
         // hide();
     }
 }
@@ -4438,6 +4441,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
@@ -4720,6 +4724,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
         changeControlEnableStatus(false);
     }
     else{
@@ -5678,10 +5683,6 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
     // int burstpressTime = ui->burstpressSpinBox->value();
     // int burstreleaseTime = ui->burstreleaseSpinBox->value();
-    int key2mouse_XSpeed = ui->mouseXSpeedSpinBox->value();
-    int key2mouse_YSpeed = ui->mouseYSpeedSpinBox->value();
-    double gyro2mouse_X_Sensitivity = ui->Gyro2MouseXSpeedSpinBox->value();
-    double gyro2mouse_Y_Sensitivity = ui->Gyro2MouseYSpeedSpinBox->value();
 #ifdef VIGEM_CLIENT_SUPPORT
     int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
     int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
@@ -6280,11 +6281,22 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_X_OFFSET, crosshair_x_offsetList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_Y_OFFSET, crosshair_y_offsetList_forsave);
 
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , key2mouse_XSpeed);
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , key2mouse_YSpeed);
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , ui->mouseXSpeedSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , ui->mouseYSpeedSpinBox->value());
 
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, gyro2mouse_X_Sensitivity);
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, gyro2mouse_Y_Sensitivity);
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, ui->Gyro2MouseXSpeedSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, ui->Gyro2MouseYSpeedSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY, ui->Gyro2MouseMinXSensSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY, ui->Gyro2MouseMinYSensSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY, ui->Gyro2MouseMaxXSensSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY, ui->Gyro2MouseMaxYSensSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MIN_GYRO_THRESHOLD, ui->Gyro2MouseMinThresholdSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MAX_GYRO_THRESHOLD, ui->Gyro2MouseMaxThresholdSpinBox->value());
+
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_X_SOURCE, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_Y_SOURCE, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYSource());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_X_REVERT, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert());
+    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_Y_REVERT, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert());
 
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity);
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity);
@@ -8037,10 +8049,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
     if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_X_SPEED)){
-        double gyro2mouseXSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_X_SPEED).toDouble();
-        ui->Gyro2MouseXSpeedSpinBox->setValue(gyro2mouseXSensitivity);
+        double gyro2mouseXSpeed = settingFile.value(settingSelectStr+GYRO2MOUSE_X_SPEED).toDouble();
+        ui->Gyro2MouseXSpeedSpinBox->setValue(gyro2mouseXSpeed);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse X Sensitivity =" << gyro2mouseXSensitivity;
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse X Speed =" << gyro2mouseXSpeed;
 #endif
     }
     else {
@@ -8048,14 +8060,134 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
     if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_Y_SPEED)){
-        double gyro2mouseYSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_Y_SPEED).toDouble();
-        ui->Gyro2MouseYSpeedSpinBox->setValue(gyro2mouseYSensitivity);
+        double gyro2mouseYSpeed = settingFile.value(settingSelectStr+GYRO2MOUSE_Y_SPEED).toDouble();
+        ui->Gyro2MouseYSpeedSpinBox->setValue(gyro2mouseYSpeed);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Y Sensitivity =" << gyro2mouseYSensitivity;
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Y Speed =" << gyro2mouseYSpeed;
 #endif
     }
     else {
         ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY)){
+        double gyro2mouseMinXSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY).toDouble();
+        ui->Gyro2MouseMinXSensSpinBox->setValue(gyro2mouseMinXSensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Min Gyro X Sensitivity =" << gyro2mouseMinXSensitivity;
+#endif
+    }
+    else {
+        ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY)){
+        double gyro2mouseMinYSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY).toDouble();
+        ui->Gyro2MouseMinYSensSpinBox->setValue(gyro2mouseMinYSensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Min Gyro Y Sensitivity =" << gyro2mouseMinYSensitivity;
+#endif
+    }
+    else {
+        ui->Gyro2MouseMinYSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY)){
+        double gyro2mouseMaxXSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY).toDouble();
+        ui->Gyro2MouseMaxXSensSpinBox->setValue(gyro2mouseMaxXSensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Max Gyro X Sensitivity =" << gyro2mouseMaxXSensitivity;
+#endif
+    }
+    else {
+        ui->Gyro2MouseMaxXSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY)){
+        double gyro2mouseMaxYSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY).toDouble();
+        ui->Gyro2MouseMaxYSensSpinBox->setValue(gyro2mouseMaxYSensitivity);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Max Gyro Y Sensitivity =" << gyro2mouseMaxYSensitivity;
+#endif
+    }
+    else {
+        ui->Gyro2MouseMaxYSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MIN_GYRO_THRESHOLD)){
+        double gyro2mouseMinThreshold = settingFile.value(settingSelectStr+GYRO2MOUSE_MIN_GYRO_THRESHOLD).toDouble();
+        ui->Gyro2MouseMinThresholdSpinBox->setValue(gyro2mouseMinThreshold);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Min Gyro Threshold =" << gyro2mouseMinThreshold;
+#endif
+    }
+    else {
+        ui->Gyro2MouseMinThresholdSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MAX_GYRO_THRESHOLD)){
+        double gyro2mouseMaxThreshold = settingFile.value(settingSelectStr+GYRO2MOUSE_MAX_GYRO_THRESHOLD).toDouble();
+        ui->Gyro2MouseMaxThresholdSpinBox->setValue(gyro2mouseMaxThreshold);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Max Gyro Threshold =" << gyro2mouseMaxThreshold;
+#endif
+    }
+    else {
+        ui->Gyro2MouseMaxThresholdSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MOUSE_X_SOURCE)){
+        int gyro2mouseXSourceIndex = settingFile.value(settingSelectStr+GYRO2MOUSE_MOUSE_X_SOURCE).toInt();
+        if (GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X <= gyro2mouseXSourceIndex && gyro2mouseXSourceIndex <= GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+            m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXSource(gyro2mouseXSourceIndex);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse X Source =" << gyro2mouseXSourceIndex;
+#endif
+        }
+        else {
+            m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXSource(GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT);
+        }
+    }
+    else {
+        m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXSource(GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MOUSE_Y_SOURCE)){
+        int gyro2mouseYSourceIndex = settingFile.value(settingSelectStr+GYRO2MOUSE_MOUSE_Y_SOURCE).toInt();
+        if (GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X <= gyro2mouseYSourceIndex && gyro2mouseYSourceIndex <= GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+            m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYSource(gyro2mouseYSourceIndex);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Y Source =" << gyro2mouseYSourceIndex;
+#endif
+        }
+        else {
+            m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYSource(GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT);
+        }
+    }
+    else {
+        m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYSource(GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MOUSE_X_REVERT)){
+        bool gyro2mouseXRevert = settingFile.value(settingSelectStr+GYRO2MOUSE_MOUSE_X_REVERT).toBool();
+        m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXRevert(gyro2mouseXRevert);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse X Revert =" << gyro2mouseXRevert;
+#endif
+    }
+    else {
+        m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXRevert(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MOUSE_Y_REVERT)){
+        bool gyro2mouseYRevert = settingFile.value(settingSelectStr+GYRO2MOUSE_MOUSE_Y_REVERT).toBool();
+        m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYRevert(gyro2mouseYRevert);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Y Revert =" << gyro2mouseYRevert;
+#endif
+    }
+    else {
+        m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYRevert(false);
     }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -9061,6 +9193,24 @@ void QKeyMapper::closeInputDeviceListWindow()
     }
 }
 
+void QKeyMapper::showGyro2MouseAdvancedSettingWindow()
+{
+    if (!m_Gyro2MouseOptionDialog->isVisible()) {
+        m_Gyro2MouseOptionDialog->show();
+    }
+}
+
+void QKeyMapper::closeGyro2MouseAdvancedSettingDialog()
+{
+    if (Q_NULLPTR == m_Gyro2MouseOptionDialog) {
+        return;
+    }
+
+    if (m_Gyro2MouseOptionDialog->isVisible()) {
+        m_Gyro2MouseOptionDialog->close();
+    }
+}
+
 void QKeyMapper::showItemSetupDialog(int tabindex, int row)
 {
     if (Q_NULLPTR == m_ItemSetupDialog) {
@@ -10043,6 +10193,7 @@ void QKeyMapper::switchShowHide()
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -10075,6 +10226,7 @@ void QKeyMapper::forceHide()
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -10897,12 +11049,10 @@ void QKeyMapper::initGyro2MouseSpinBoxes()
     });
 
     // Connect MinThreshold & MaxThreshold SpinBox
-    QObject::connect(ui->Gyro2MouseMinThresholdSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this, [=](double minValue){
+    QObject::connect(ui->Gyro2MouseMinThresholdSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double minValue){
         ui->Gyro2MouseMaxThresholdSpinBox->setMinimum(minValue);
     });
-    QObject::connect(ui->Gyro2MouseMaxThresholdSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-            this, [=](double maxValue){
+    QObject::connect(ui->Gyro2MouseMaxThresholdSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double maxValue){
         ui->Gyro2MouseMinThresholdSpinBox->setMaximum(maxValue);
     });
 }
@@ -11465,6 +11615,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguage(languageindex);
+    }
+
+    if (m_Gyro2MouseOptionDialog != Q_NULLPTR) {
+        m_Gyro2MouseOptionDialog->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
@@ -14529,4 +14683,9 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
     }
 
     // QMenu::mouseReleaseEvent(event);
+}
+
+void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()
+{
+    showGyro2MouseAdvancedSettingWindow();
 }

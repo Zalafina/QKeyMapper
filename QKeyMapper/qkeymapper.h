@@ -66,6 +66,7 @@
 
 #include "qkeymapper_worker.h"
 #include "qinputdevicelistwindow.h"
+#include "qgyro2mouseoptiondialog.h"
 #include "qitemsetupdialog.h"
 #include "qtablesetupdialog.h"
 
@@ -710,6 +711,8 @@ private slots:
 
     void on_checkUpdateButton_clicked();
 
+    void on_Gyro2MouseAdvancedSettingButton_clicked();
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -810,6 +813,8 @@ private:
 
     void showInputDeviceListWindow(void);
     void closeInputDeviceListWindow(void);
+    void showGyro2MouseAdvancedSettingWindow(void);
+    void closeGyro2MouseAdvancedSettingDialog(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
@@ -918,6 +923,7 @@ private:
     int m_CrosshairWindowInitialHeight;
     ULONG_PTR m_GdiplusToken;
     QInputDeviceListWindow *m_deviceListWindow;
+    QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;
