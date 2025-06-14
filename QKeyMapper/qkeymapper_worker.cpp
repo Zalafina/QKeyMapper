@@ -6656,19 +6656,21 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
 
     float gyroX = 0.0f, gyroY = 0.0f;
     // gyroX += inGyroX;   //GyroAxisMask::X for GYRO-X
-    // gyroX -= inGyroY;   //GyroAxisMask::Y for GYRO-X
-
-    gyroX -= inGyroZ;   //GyroAxisMask::Z for GYRO-X
+    gyroX -= inGyroY;   //GyroAxisMask::Y for GYRO-X
+    // gyroX -= inGyroZ;   //GyroAxisMask::Z for GYRO-X
 
     gyroY -= inGyroX;   //GyroAxisMask::X for GYRO-Y
-
     // gyroY += inGyroY;   //GyroAxisMask::Y for GYRO-Y
     // gyroY += inGyroZ;   //GyroAxisMask::Z for GYRO-Y
 
-    std::pair<float, float> lowSensXY = { GYRO2MOUSE_MIN_GYRO_SENS, GYRO2MOUSE_MIN_GYRO_SENS };
-    std::pair<float, float> hiSensXY = { GYRO2MOUSE_MAX_GYRO_SENS, GYRO2MOUSE_MAX_GYRO_SENS };
-    float minThreshold = GYRO2MOUSE_MIN_GYRO_THRESHOLD;
-    float maxThreshold = GYRO2MOUSE_MAX_GYRO_THRESHOLD;
+    float min_x_sensitivity = static_cast<float>(QKeyMapper::getGyro2MouseMinXSensitivity());
+    float min_y_sensitivity = static_cast<float>(QKeyMapper::getGyro2MouseMinYSensitivity());
+    float max_x_sensitivity = static_cast<float>(QKeyMapper::getGyro2MouseMaxXSensitivity());
+    float max_y_sensitivity = static_cast<float>(QKeyMapper::getGyro2MouseMaxYSensitivity());
+    std::pair<float, float> lowSensXY = { min_x_sensitivity, min_y_sensitivity };
+    std::pair<float, float> hiSensXY = { max_x_sensitivity, max_y_sensitivity };
+    float minThreshold = static_cast<float>(QKeyMapper::getGyro2MouseMinThreshold());
+    float maxThreshold = static_cast<float>(QKeyMapper::getGyro2MouseMaxThreshold());
     float magnitude = sqrt(gyroX * gyroX + gyroY * gyroY);
     magnitude -= minThreshold;
     if (magnitude < 0.0f) magnitude = 0.0f;
@@ -6690,9 +6692,9 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
 
     if (delta_x != 0 || delta_y != 0) {
 #ifdef GAMECONTROLLER_SENSOR_VERBOSE_LOG
-        qDebug().nospace() << "[gyro2MouseMoveProc] "
-                           << "Delta X ->" << delta_x  << ", "
-                           << "Delta Y ->" << delta_y;
+        qDebug().nospace()  << "[gyro2MouseMoveProc] "
+                            << "Delta X ->" << delta_x << ", "
+                            << "Delta Y ->" << delta_y;
 #endif
         sendMouseMove(delta_x, delta_y);
 

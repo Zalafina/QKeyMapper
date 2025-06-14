@@ -260,6 +260,26 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
     ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
 
+    ui->Gyro2MouseMinXSensSpinBox->setRange(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMinYSensSpinBox->setRange(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMaxXSensSpinBox->setRange(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT, GYRO2MOUSE_GYRO_SENS_MAX);
+    ui->Gyro2MouseMaxYSensSpinBox->setRange(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT, GYRO2MOUSE_GYRO_SENS_MAX);
+    ui->Gyro2MouseMinXSensSpinBox->setSingleStep(GYRO2MOUSE_GYRO_SENS_SINGLESTEP);
+    ui->Gyro2MouseMinYSensSpinBox->setSingleStep(GYRO2MOUSE_GYRO_SENS_SINGLESTEP);
+    ui->Gyro2MouseMaxXSensSpinBox->setSingleStep(GYRO2MOUSE_GYRO_SENS_SINGLESTEP);
+    ui->Gyro2MouseMaxYSensSpinBox->setSingleStep(GYRO2MOUSE_GYRO_SENS_SINGLESTEP);
+    ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMinYSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMaxXSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMaxYSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+
+    ui->Gyro2MouseMinThresholdSpinBox->setRange(GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
+    ui->Gyro2MouseMaxThresholdSpinBox->setRange(GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT, GYRO2MOUSE_GYRO_THRESHOLD_MAX);
+    ui->Gyro2MouseMinThresholdSpinBox->setSingleStep(GYRO2MOUSE_GYRO_THRESHOLD_SINGLESTEP);
+    ui->Gyro2MouseMaxThresholdSpinBox->setSingleStep(GYRO2MOUSE_GYRO_THRESHOLD_SINGLESTEP);
+    ui->Gyro2MouseMinThresholdSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT);
+    ui->Gyro2MouseMaxThresholdSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
+
     ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
     ui->brakeThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
     ui->brakeThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
@@ -418,6 +438,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
+
+    initGyro2MouseSpinBoxes();
 
     //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     updateHWNDListProc();
@@ -10844,6 +10866,45 @@ void QKeyMapper::initMappingSwitchKeyLineEdit()
         lineEdit->setToolTip(lineEdit->text());
     });
     QObject::connect(lineEdit, &QLineEdit::editingFinished, this, &QKeyMapper::onHotKeyLineEditEditingFinished);
+}
+
+void QKeyMapper::initGyro2MouseSpinBoxes()
+{
+    // Set MinXSensitivity & MaxXSensitivity SpinBox range with current value
+    ui->Gyro2MouseMaxXSensSpinBox->setMinimum(ui->Gyro2MouseMinXSensSpinBox->value());
+    ui->Gyro2MouseMinXSensSpinBox->setMaximum(ui->Gyro2MouseMaxXSensSpinBox->value());
+    // Set MinYSensitivity & MaxYSensitivity SpinBox range with current value
+    ui->Gyro2MouseMaxYSensSpinBox->setMinimum(ui->Gyro2MouseMinYSensSpinBox->value());
+    ui->Gyro2MouseMinYSensSpinBox->setMaximum(ui->Gyro2MouseMaxYSensSpinBox->value());
+    // Set MinThreshold & MaxThreshold SpinBox range with current value
+    ui->Gyro2MouseMaxThresholdSpinBox->setMinimum(ui->Gyro2MouseMinThresholdSpinBox->value());
+    ui->Gyro2MouseMinThresholdSpinBox->setMaximum(ui->Gyro2MouseMaxThresholdSpinBox->value());
+
+    // Connect MinXSensitivity & MaxXSensitivity SpinBox
+    QObject::connect(ui->Gyro2MouseMinXSensSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double minValue){
+        ui->Gyro2MouseMaxXSensSpinBox->setMinimum(minValue);
+    });
+    QObject::connect(ui->Gyro2MouseMaxXSensSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double maxValue){
+        ui->Gyro2MouseMinXSensSpinBox->setMaximum(maxValue);
+    });
+
+    // Connect MinYSensitivity & MaxYSensitivity SpinBox
+    QObject::connect(ui->Gyro2MouseMinYSensSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double minValue){
+        ui->Gyro2MouseMaxYSensSpinBox->setMinimum(minValue);
+    });
+    QObject::connect(ui->Gyro2MouseMaxYSensSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=](double maxValue){
+        ui->Gyro2MouseMinYSensSpinBox->setMaximum(maxValue);
+    });
+
+    // Connect MinThreshold & MaxThreshold SpinBox
+    QObject::connect(ui->Gyro2MouseMinThresholdSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [=](double minValue){
+        ui->Gyro2MouseMaxThresholdSpinBox->setMinimum(minValue);
+    });
+    QObject::connect(ui->Gyro2MouseMaxThresholdSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, [=](double maxValue){
+        ui->Gyro2MouseMinThresholdSpinBox->setMaximum(maxValue);
+    });
 }
 
 #if 0

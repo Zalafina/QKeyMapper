@@ -301,10 +301,18 @@ extern const double GYRO2MOUSE_SPEED_MAX;
 extern const double GYRO2MOUSE_SPEED_SINGLESTEP;
 extern const double GYRO2MOUSE_SPEED_DEFAULT;
 
-extern const float GYRO2MOUSE_MIN_GYRO_SENS;
-extern const float GYRO2MOUSE_MAX_GYRO_SENS;
-extern const float GYRO2MOUSE_MIN_GYRO_THRESHOLD;
-extern const float GYRO2MOUSE_MAX_GYRO_THRESHOLD;
+extern const double GYRO2MOUSE_GYRO_SENS_MIN;
+extern const double GYRO2MOUSE_GYRO_SENS_MAX;
+extern const double GYRO2MOUSE_GYRO_SENS_SINGLESTEP;
+extern const double GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT;
+extern const double GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT;
+
+extern const double GYRO2MOUSE_GYRO_THRESHOLD_MIN;
+extern const double GYRO2MOUSE_GYRO_THRESHOLD_MAX;
+extern const double GYRO2MOUSE_GYRO_THRESHOLD_SINGLESTEP;
+extern const double GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT;
+extern const double GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT;
+
 extern const float GYRO2MOUSE_GYRO_SMOOTH_THRESHOLD;
 extern const float GYRO2MOUSE_GYRO_CUTOFF_RECOVERY;
 

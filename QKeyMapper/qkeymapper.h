@@ -755,6 +755,7 @@ private:
     void initMouseSelectComboBox(void);
     void initWindowSwitchKeyLineEdit(void);
     void initMappingSwitchKeyLineEdit(void);
+    void initGyro2MouseSpinBoxes(void);
     // void updateWindowSwitchKeySeq(const QKeySequence &keysequence);
     // void updateMappingSwitchKeySeq(const QKeySequence &keysequence);
     void updateWindowSwitchKeyString(const QString &keystring);
