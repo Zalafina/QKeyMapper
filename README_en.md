@@ -60,6 +60,12 @@
       - Added a "Gyro2Mouse" settings tab, where "Horizontal Speed" and "Vertical Speed" can be adjusted to control the horizontal and vertical movement speed of the gyro-to-mouse function. Value range: 0.00~99.99.
       - When a game controller with gyro support is connected to the PC, "[GyroEnabled]" will be displayed after the controller name in the controller list. When a controller is highlighted in the list, pressing the "F2" key will toggle gyro enable/disable. Gyro is enabled by default when the controller is connected.
       - The "Gyro2Mouse" settings tab contains other advanced options. The default values are usually sufficient. If you need to modify them, please make sure you understand their functions first.
+* v1.3.7 (Build 20250616)
+    * Added the "Gyro2Mouse" feature. If your physical game controller supports the standard gyro protocol (DS4, DS5, etc.), you can select "Joy-Gyro2Mouse" in the original key list to use gyro-to-mouse mapping, allowing you to control the mouse pointer's horizontal and vertical movement by rotating the controller along a specific axis.
+      - Added a "Gyro2Mouse" settings tab, where "Horizontal Speed" and "Vertical Speed" can be adjusted to control the horizontal and vertical movement speed of the gyro-to-mouse function. Value range: 0.00~99.99.
+      - When a game controller with gyro support is connected to the PC, "[GyroEnabled]" will be displayed after the controller name in the controller list. When a controller is highlighted in the list, pressing the "F2" key will toggle gyro enabled/disabled state. Gyro is enabled by default when the controller is connected.
+      - Added "Gyro2Mouse-Hold" and "Gyro2Mouse-Move" mapping keys to the mapping keys list. When "Gyro2Mouse-Hold" is pressed, gyro mouse pointer movement is suppressed; when released, gyro mouse pointer movement is allowed. When "Gyro2Mouse-Move" is pressed, gyro mouse pointer movement is allowed; when released, gyro mouse pointer movement is suppressed.
+      - The "Gyro2Mouse" settings tab contains other advanced options. The default values are usually sufficient. If you need to modify them, please make sure you fully understand their functions before making changes.
 
 * v1.3.7 (Build 20250608)
     * The close button in the upper right corner of the window now hides the window to the system tray. The minimize button minimizes the window to the taskbar. You can exit the program by right-clicking the system tray icon and selecting "Exit", or by pressing Alt+F4 when the window is visible.
