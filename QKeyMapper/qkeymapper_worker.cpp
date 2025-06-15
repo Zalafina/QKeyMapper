@@ -9,6 +9,7 @@ SendInputTaskController SendInputTask::s_GlobalSendInputTaskController;
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold = QAtomicBool();
+QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_TypeA;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up = QAtomicBool();
@@ -4185,6 +4186,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     // s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
     s_GameControllerSensor_EnableState = checkGyro2MouseEnableState();
+    s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getvJoyLockCursorStatus()) {
@@ -4533,6 +4535,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_Key2Mouse_EnableState = checkKey2MouseEnableState();
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
     s_GameControllerSensor_EnableState = checkGyro2MouseEnableState();
+    s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getvJoyLockCursorStatus()) {
         POINT pt;
@@ -4581,6 +4584,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
     startDataPortListener();
+
+    initGamepadMotion();
     if (s_GameControllerSensor_EnableState) {
         emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
     }
@@ -5899,6 +5904,30 @@ bool QKeyMapper_Worker::checkGyro2MouseEnableState()
     return gyro2mouse_enablestate;
 }
 
+bool QKeyMapper_Worker::checkGyro2MouseMoveActiveState()
+{
+    bool gyro2mouse_moveactivestate = true;
+
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
+        if (keymapdata.Mapping_Keys.constFirst().contains(GYRO2MOUSE_MOVE_KEY_STR)
+            || keymapdata.MappingKeys_KeyUp.constFirst().contains(GYRO2MOUSE_MOVE_KEY_STR)) {
+            gyro2mouse_moveactivestate = false;
+            break;
+        }
+        else if (keymapdata.Mapping_Keys.constFirst().contains(GYRO2MOUSE_HOLD_KEY_STR)
+            || keymapdata.MappingKeys_KeyUp.constFirst().contains(GYRO2MOUSE_HOLD_KEY_STR)) {
+            gyro2mouse_moveactivestate = true;
+            break;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[checkGyro2MouseMoveActiveState]" << "JoyGyro2Mouse_MoveActiveState ->" << gyro2mouse_moveactivestate;
+#endif
+
+    return gyro2mouse_moveactivestate;
+}
+
 void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -6664,6 +6693,10 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
 
     float inGyroX, inGyroY, inGyroZ;
     m_GamdpadMotion.GetCalibratedGyro(inGyroX, inGyroY, inGyroZ);
+
+    if (false == s_Gyro2Mouse_MoveActive) {
+        return;
+    }
 
     int mouse_x_source = QGyro2MouseOptionDialog::getGyro2Mouse_MouseXSource();
     int mouse_y_source = QGyro2MouseOptionDialog::getGyro2Mouse_MouseYSource();
@@ -8123,6 +8156,12 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         s_Mouse2vJoy_Hold = true;
                     }
+                    else if (keycodeString == GYRO2MOUSE_MOVE_KEY_STR) {
+                        s_Gyro2Mouse_MoveActive = true;
+                    }
+                    else if (keycodeString == GYRO2MOUSE_HOLD_KEY_STR) {
+                        s_Gyro2Mouse_MoveActive = false;
+                    }
                     else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                         s_Crosshair_TypeA = true;
                     }
@@ -8176,6 +8215,12 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
                 else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                     s_Mouse2vJoy_Hold = false;
+                }
+                else if (keycodeString == GYRO2MOUSE_MOVE_KEY_STR) {
+                    s_Gyro2Mouse_MoveActive = false;
+                }
+                else if (keycodeString == GYRO2MOUSE_HOLD_KEY_STR) {
+                    s_Gyro2Mouse_MoveActive = true;
                 }
                 else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                     s_Crosshair_TypeA = false;
@@ -8329,6 +8374,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                             s_Mouse2vJoy_Hold = true;
                         }
+                        else if (keycodeString == GYRO2MOUSE_MOVE_KEY_STR) {
+                            s_Gyro2Mouse_MoveActive = true;
+                        }
+                        else if (keycodeString == GYRO2MOUSE_HOLD_KEY_STR) {
+                            s_Gyro2Mouse_MoveActive = false;
+                        }
                         else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                             s_Crosshair_TypeA = true;
                         }
@@ -8381,6 +8432,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                     else if (keycodeString == MOUSE2VJOY_HOLD_KEY_STR) {
                         s_Mouse2vJoy_Hold = false;
+                    }
+                    else if (keycodeString == GYRO2MOUSE_MOVE_KEY_STR) {
+                        s_Gyro2Mouse_MoveActive = false;
+                    }
+                    else if (keycodeString == GYRO2MOUSE_HOLD_KEY_STR) {
+                        s_Gyro2Mouse_MoveActive = true;
                     }
                     else if (keycodeString == CROSSHAIR_TYPEA_STR) {
                         s_Crosshair_TypeA = false;
@@ -11186,6 +11243,8 @@ void QKeyMapper_Worker::initVirtualKeyCodeMap()
     VirtualKeyCodeMap.insert        (GAMEPAD_HOME_STR,          V_KEYCODE(VK_GAMEPAD_HOME,      EXTENED_FLAG_FALSE));  // 0x07 (GamepadHome)
     VirtualKeyCodeMap.insert        (CROSSHAIR_NORMAL_STR,      V_KEYCODE(VK_CROSSHAIR_NORMAL,  EXTENED_FLAG_TRUE));   // 0x0A (Crosshair-Normal)
     VirtualKeyCodeMap.insert        (CROSSHAIR_TYPEA_STR,       V_KEYCODE(VK_CROSSHAIR_TYPEA,   EXTENED_FLAG_TRUE));   // 0x0B (Crosshair-TypeA)
+    VirtualKeyCodeMap.insert        (GYRO2MOUSE_HOLD_KEY_STR,   V_KEYCODE(VK_GYRO2MOUSE_HOLD,   EXTENED_FLAG_TRUE));   // 0x0E (Gyro2Mouse-Hold)
+    VirtualKeyCodeMap.insert        (GYRO2MOUSE_MOVE_KEY_STR,   V_KEYCODE(VK_GYRO2MOUSE_MOVE,   EXTENED_FLAG_TRUE));   // 0x0F (Gyro2Mouse-Move)
 
     // US 104 Keyboard Main Area
     // Row 1
@@ -11939,6 +11998,8 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << FUNC_SLEEP
             << FUNC_HIBERNATE
             << MOUSE2VJOY_HOLD_KEY_STR
+            << GYRO2MOUSE_HOLD_KEY_STR
+            << GYRO2MOUSE_MOVE_KEY_STR
             << CROSSHAIR_NORMAL_STR
             << CROSSHAIR_TYPEA_STR
             << VJOY_LT_BRAKE_STR
@@ -12254,6 +12315,7 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
 void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
 {
     s_Mouse2vJoy_Hold = false;
+    s_Gyro2Mouse_MoveActive = false;
     s_Key2Mouse_Up = false;
     s_Key2Mouse_Down = false;
     s_Key2Mouse_Left = false;

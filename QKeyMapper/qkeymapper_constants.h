@@ -393,6 +393,8 @@ extern const quint8 VK_KEY2MOUSE_RIGHT;
 extern const quint8 VK_GAMEPAD_HOME;
 extern const quint8 VK_CROSSHAIR_NORMAL;
 extern const quint8 VK_CROSSHAIR_TYPEA;
+extern const quint8 VK_GYRO2MOUSE_HOLD;
+extern const quint8 VK_GYRO2MOUSE_MOVE;
 
 extern const int INTERCEPTION_RETURN_NORMALSEND;
 extern const int INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
@@ -661,6 +663,9 @@ extern const char* JOY_RT2VJOYRT_STR;
 extern const char* JOY_LS2MOUSE_STR;
 extern const char* JOY_RS2MOUSE_STR;
 extern const char *JOY_GYRO2MOUSE_STR;
+extern const char *GYRO2MOUSE_PREFIX;
+extern const char *GYRO2MOUSE_HOLD_KEY_STR;
+extern const char *GYRO2MOUSE_MOVE_KEY_STR;
 extern const char* KEY2MOUSE_PREFIX;
 extern const char* KEY2MOUSE_UP_STR;
 extern const char* KEY2MOUSE_DOWN_STR;

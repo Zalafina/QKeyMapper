@@ -4224,6 +4224,10 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         || keymapdata.MappingKeys_KeyUp.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
         disable_sendtiming = true;
     }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(GYRO2MOUSE_PREFIX)
+        || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
+        disable_sendtiming = true;
+    }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)
         || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(CROSSHAIR_PREFIX)) {
         disable_sendtiming = true;
@@ -10725,6 +10729,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << KEY2MOUSE_DOWN_STR
             << KEY2MOUSE_LEFT_STR
             << KEY2MOUSE_RIGHT_STR
+            << GYRO2MOUSE_HOLD_KEY_STR
+            << GYRO2MOUSE_MOVE_KEY_STR
             << CROSSHAIR_NORMAL_STR
             << CROSSHAIR_TYPEA_STR
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -10846,6 +10852,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
     orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
     orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
+    orikeycodelist.removeOne(GYRO2MOUSE_HOLD_KEY_STR);
+    orikeycodelist.removeOne(GYRO2MOUSE_MOVE_KEY_STR);
     orikeycodelist.removeOne(CROSSHAIR_NORMAL_STR);
     orikeycodelist.removeOne(CROSSHAIR_TYPEA_STR);
     orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
@@ -11229,6 +11237,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
+                disable_burst = true;
+                // disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
                 disable_burst = true;
                 // disable_lock = true;
             }
@@ -12927,6 +12939,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                 || currentMapKeyText.startsWith(CROSSHAIR_PREFIX)
                 || currentMapKeyText.startsWith(FUNC_PREFIX)
+                || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
                 || currentMapKeyText == VJOY_RT_BRAKE_STR
@@ -12942,6 +12955,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     || keymapdata.Mapping_Keys.contains(CROSSHAIR_PREFIX)
                     || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
+                    || keymapdata.Mapping_Keys.contains(GYRO2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
@@ -12957,6 +12971,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                     || currentMapKeyText.startsWith(CROSSHAIR_PREFIX)
                     || currentMapKeyText.startsWith(FUNC_PREFIX)
+                    || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
                     || currentMapKeyText == VJOY_RT_BRAKE_STR
@@ -13240,6 +13255,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
+                    && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
                     && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
                     && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
                     && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR

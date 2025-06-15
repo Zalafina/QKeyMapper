@@ -431,6 +431,8 @@ const quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
 const quint8 VK_GAMEPAD_HOME    = 0x07;
 const quint8 VK_CROSSHAIR_NORMAL= 0x0A;
 const quint8 VK_CROSSHAIR_TYPEA = 0x0B;
+const quint8 VK_GYRO2MOUSE_HOLD = 0x0E;
+const quint8 VK_GYRO2MOUSE_MOVE = 0x0F;
 
 const int INTERCEPTION_RETURN_NORMALSEND = 0;
 const int INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION = 1;
@@ -747,6 +749,10 @@ const char *JOY_LS2MOUSE_STR = "Joy-LS2Mouse";
 const char *JOY_RS2MOUSE_STR = "Joy-RS2Mouse";
 
 const char *JOY_GYRO2MOUSE_STR = "Joy-Gyro2Mouse";
+
+const char *GYRO2MOUSE_PREFIX = "Gyro2Mouse-";
+const char *GYRO2MOUSE_HOLD_KEY_STR = "Gyro2Mouse-Hold";
+const char *GYRO2MOUSE_MOVE_KEY_STR = "Gyro2Mouse-Move";
 
 const char *KEY2MOUSE_PREFIX     = "Key2Mouse-";
 const char *KEY2MOUSE_UP_STR     = "Key2Mouse-Up";

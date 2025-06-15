@@ -886,6 +886,7 @@ public slots:
     QHash<int, Joy2MouseStates> checkJoy2MouseEnableStateMap(void);
     bool checkKey2MouseEnableState(void);
     bool checkGyro2MouseEnableState(void);
+    bool checkGyro2MouseMoveActiveState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
 private:
@@ -1000,6 +1001,7 @@ public:
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
     static QAtomicBool s_Mouse2vJoy_Hold;
+    static QAtomicBool s_Gyro2Mouse_MoveActive;
     static QAtomicBool s_Crosshair_Normal;
     static QAtomicBool s_Crosshair_TypeA;
     static QAtomicBool s_Key2Mouse_Up;
