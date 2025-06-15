@@ -568,16 +568,19 @@
 | Guide Button          | Joy-Key13(Guide)             |
 
 ## Special Physical Controller Keys
-| QKeyMapper Original Key Name | Function                                                        |
-|-----------------------------|-----------------------------------------------------------------|
-| Joy-LS2Mouse                | Move mouse pointer with left stick (light push = slow, hard push = fast) |
-| Joy-RS2Mouse                | Move mouse pointer with right stick (light push = slow, hard push = fast) |
-##### Mouse pointer speed controlled by stick can be further adjusted for X and Y axes in mapping settings; higher values move faster.
+| QKeyMapper Original Key Name | Function                                                                                  |
+|-----------------------------|-------------------------------------------------------------------------------------------|
+| Joy-LS2Mouse                | Move mouse pointer with left stick (light push = slow, hard push = fast)                  |
+| Joy-RS2Mouse                | Move mouse pointer with right stick (light push = slow, hard push = fast)                 |
+| Joy-Gyro2Mouse              | Control mouse pointer movement horizontally and vertically by detecting controller gyro rotation |
 
-## Extended Controller Keys
-| QKeyMapper Original Key Name | Function                                                        |
-|-----------------------------|-----------------------------------------------------------------|
-| Joy-Key19~30                | Reserved for extended controller buttons; rarely used, but some special controllers may support more buttons |
+##### Mouse pointer speed controlled by stick can be further adjusted for X and Y axes in the mapping settings; higher values move faster.
+##### Mouse pointer speed controlled by the controller gyro can be adjusted separately for horizontal and vertical directions in the "Gyro2Mouse" settings; higher values move faster.
+
+| QKeyMapper Mapping Key Name | Function                                                                                   |
+|----------------------------|--------------------------------------------------------------------------------------------|
+| Gyro2Mouse-Hold            | Suppress gyro mouse pointer movement while held, allow movement when released              |
+| Gyro2Mouse-Move            | Allow gyro mouse pointer movement while held, suppress movement when released              |
 
 ---------------
 ## PS4-Dualshock Controller Button Table
