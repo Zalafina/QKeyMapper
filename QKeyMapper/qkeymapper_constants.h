@@ -657,6 +657,8 @@ extern const char* VJOY_LT_BRAKE_STR;
 extern const char* VJOY_RT_BRAKE_STR;
 extern const char* VJOY_LT_ACCEL_STR;
 extern const char* VJOY_RT_ACCEL_STR;
+extern const char *VJOY_LS_RADIUS_STR;
+extern const char *VJOY_RS_RADIUS_STR;
 extern const char* JOY_LS2VJOYLS_STR;
 extern const char* JOY_RS2VJOYRS_STR;
 extern const char* JOY_LS2VJOYRS_STR;

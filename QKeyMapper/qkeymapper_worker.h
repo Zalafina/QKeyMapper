@@ -1013,7 +1013,6 @@ public:
 public:
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
-    static QAtomicInteger<uint> s_vJoy_Custom_Radius;
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Gyro2Mouse_MoveActive;
     static QAtomicBool s_Crosshair_Normal;

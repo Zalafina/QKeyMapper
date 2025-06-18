@@ -2158,7 +2158,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
                 // static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LS-(Up|Down|Left|Right)|RS-(Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
-                static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
+                static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))(?:\[(\d{1,3})\])?$)");
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
                 QString vjoy_key = vjoy_match.captured(1);
                 QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(vjoy_key);
@@ -4230,6 +4230,10 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
     }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)
         || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(CROSSHAIR_PREFIX)) {
+        disable_sendtiming = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
+        || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
         disable_sendtiming = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
@@ -10762,6 +10766,8 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << "vJoy-Key11(LT)"
             << "vJoy-Key12(RT)"
             << "vJoy-Key13(Guide)"
+            << VJOY_LS_RADIUS_STR
+            << VJOY_RS_RADIUS_STR
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
@@ -11241,6 +11247,11 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 // disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
+                disable_burst = true;
+                // disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
+                || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
                 disable_burst = true;
                 // disable_lock = true;
             }
@@ -12908,7 +12919,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         isDoublePress = true;
     }
 
-    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))$)");
+    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)");
     bool already_exist = false;
     int findindex = -1;
     // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
@@ -12941,6 +12952,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 || currentMapKeyText.startsWith(FUNC_PREFIX)
                 || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
+                || currentMapKeyText == VJOY_LS_RADIUS_STR
+                || currentMapKeyText == VJOY_RS_RADIUS_STR
                 || currentMapKeyText == VJOY_LT_BRAKE_STR
                 || currentMapKeyText == VJOY_RT_BRAKE_STR
                 || currentMapKeyText == VJOY_LT_ACCEL_STR
@@ -12956,6 +12969,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(GYRO2MOUSE_PREFIX)
+                    || keymapdata.Mapping_Keys.contains(VJOY_LS_RADIUS_STR)
+                    || keymapdata.Mapping_Keys.contains(VJOY_RS_RADIUS_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
                     || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
@@ -12973,6 +12988,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     || currentMapKeyText.startsWith(FUNC_PREFIX)
                     || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
+                    || currentMapKeyText == VJOY_LS_RADIUS_STR
+                    || currentMapKeyText == VJOY_RS_RADIUS_STR
                     || currentMapKeyText == VJOY_LT_BRAKE_STR
                     || currentMapKeyText == VJOY_RT_BRAKE_STR
                     || currentMapKeyText == VJOY_LT_ACCEL_STR
@@ -13257,6 +13274,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
                     && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
+                    && currentMapKeyComboBoxText != VJOY_LS_RADIUS_STR
+                    && currentMapKeyComboBoxText != VJOY_RS_RADIUS_STR
                     && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
                     && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
                     && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR

@@ -740,6 +740,9 @@ const char *VJOY_RT_BRAKE_STR = "vJoy-Key12(RT)_BRAKE";
 const char *VJOY_LT_ACCEL_STR = "vJoy-Key11(LT)_ACCEL";
 const char *VJOY_RT_ACCEL_STR = "vJoy-Key12(RT)_ACCEL";
 
+const char *VJOY_LS_RADIUS_STR = "vJoy-LS-Radius";
+const char *VJOY_RS_RADIUS_STR = "vJoy-RS-Radius";
+
 const char *JOY_LS2VJOYLS_STR = "Joy-LS_2vJoyLS";
 const char *JOY_RS2VJOYRS_STR = "Joy-RS_2vJoyRS";
 const char *JOY_LS2VJOYRS_STR = "Joy-LS_2vJoyRS";
