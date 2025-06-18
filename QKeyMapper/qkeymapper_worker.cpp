@@ -8,6 +8,7 @@ SendInputTaskController SendInputTask::s_GlobalSendInputTaskController;
 
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
+QAtomicInteger<uint> QKeyMapper_Worker::s_vJoy_Custom_Radius = VJOY_STICK_RADIUS_MAX;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive = QAtomicBool();
 QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
@@ -32,7 +33,7 @@ QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
 QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
-QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
+// QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 // QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
 #ifdef VIGEM_CLIENT_SUPPORT
 QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, XUSB_BUTTON>();
@@ -78,7 +79,7 @@ PVIGEM_CLIENT QKeyMapper_Worker::s_ViGEmClient = Q_NULLPTR;
 // PVIGEM_TARGET QKeyMapper_Worker::s_ViGEmTarget = Q_NULLPTR;
 QList<PVIGEM_TARGET> QKeyMapper_Worker::s_ViGEmTargetList;
 // XUSB_REPORT QKeyMapper_Worker::s_ViGEmTarget_Report = XUSB_REPORT();
-QList<XUSB_REPORT> QKeyMapper_Worker::s_ViGEmTarget_ReportList;
+QList<ViGEm_ReportData> QKeyMapper_Worker::s_ViGEmTarget_ReportList;
 QStringList QKeyMapper_Worker::s_VirtualGamepadList = QStringList() << VIRTUAL_GAMEPAD_X360;
 BYTE QKeyMapper_Worker::s_Auto_Brake = AUTO_BRAKE_DEFAULT;
 BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
@@ -218,7 +219,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     initMultiKeyboardInputList();
     initMultiMouseInputList();
     initMultiVirtualGamepadInputList();
-    initJoystickKeyMap();
+    // initJoystickKeyMap();
     initSpecialOriginalKeysList();
     initSpecialMappingKeysList();
     initSpecialVirtualKeyCodeList();
@@ -1607,7 +1608,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                     if (gamepadIndexString.isEmpty()) {
                         if (send_keyupdown == KEY_DOWN) {
-                            ViGEmClient_PressButton(key, false, 0, INITIAL_PLAYER_INDEX);
+                            ViGEmClient_PressButton(key, AUTO_ADJUST_NONE, 0, INITIAL_PLAYER_INDEX);
                         }
                         else {
                             ViGEmClient_ReleaseButton(key, 0);
@@ -1616,7 +1617,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         int gamepad_index = gamepadIndexString.toInt();
                         if (send_keyupdown == KEY_DOWN) {
-                            ViGEmClient_PressButton(joystickButton, false, gamepad_index, INITIAL_PLAYER_INDEX);
+                            ViGEmClient_PressButton(joystickButton, AUTO_ADJUST_NONE, gamepad_index, INITIAL_PLAYER_INDEX);
                         }
                         else {
                             ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
@@ -2989,7 +2990,8 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
     static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
     OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
     OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
@@ -3192,7 +3194,8 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
     static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
     OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
     OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
@@ -3315,7 +3318,8 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
 {
     OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
     OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[ViGEmClient_CheckJoysticksReportData](" << gamepad_index << ") vJoyLSPressedKeys ->" << pressedvJoyLStickKeys_ref;
@@ -3375,7 +3379,7 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
 
 }
 
-void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT *ori_ThumbY)
+void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT *ori_ThumbY, uint custom_radius)
 {
     SHORT ThumbX = *ori_ThumbX;
     SHORT ThumbY = *ori_ThumbY;
@@ -3405,6 +3409,17 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 #endif
     }
 
+    // Only scale when custom_radius is valid
+    if (VJOY_STICK_RADIUS_MIN < custom_radius && custom_radius < VJOY_STICK_RADIUS_MAX) {
+        qreal ratio = static_cast<qreal>(custom_radius) / VJOY_STICK_RADIUS_MAX;
+        qreal max_radius = THUMB_DISTANCE_MAX * ratio;
+        if (distance > max_radius) {
+            distance = max_radius;
+        } else {
+            distance = distance * ratio;
+        }
+    }
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     SHORT newThumbX = static_cast<SHORT>(qRound(distance * qCos(direction)));
     SHORT newThumbY = static_cast<SHORT>(qRound(distance * qSin(direction)));
@@ -3414,7 +3429,7 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 #endif
 
 #ifdef JOYSTICK_VERBOSE_LOG
-    qDebug("[ViGEmClient_CalculateThumbValue] ori_ThumbX[%d], ori_ThumbY[%d] -> Calculated ThumbX[%d], ThumbY[%d]", *ori_ThumbX, *ori_ThumbY, newThumbX, newThumbY);
+    qDebug("[ViGEmClient_CalculateThumbValue] ori_ThumbX[%d], ori_ThumbY[%d], custom_radius[%d] -> Calculated ThumbX[%d], ThumbY[%d]", *ori_ThumbX, *ori_ThumbY, custom_radius, newThumbX, newThumbY);
 #endif
 
     *ori_ThumbX = newThumbX;
@@ -3558,7 +3573,8 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     }
 
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
 
     if (ViGEmTarget == Q_NULLPTR || vigem_target_is_attached(ViGEmTarget) != TRUE) {
         return;
@@ -3702,7 +3718,8 @@ void QKeyMapper_Worker::ViGEmClient_Joy2vJoystickUpdate(const Joy2vJoyState &joy
     }
 
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
 
     if (ViGEmTarget == Q_NULLPTR || vigem_target_is_attached(ViGEmTarget) != TRUE) {
         return;
@@ -3907,9 +3924,12 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(int gamepad_index)
         return;
     }
 
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
     XUSB_REPORT_INIT(&ViGEmTarget_Report);
     ViGEmTarget_Report.sThumbLY = 1;
+    reportData.custom_radius_ls = VJOY_STICK_RADIUS_MAX;
+    reportData.custom_radius_rs = VJOY_STICK_RADIUS_MAX;
     VIGEM_ERROR error;
     if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
         DS4_REPORT ds4_report;
@@ -3965,7 +3985,8 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
         return;
     }
 
-    XUSB_REPORT& ViGEmTarget_Report = s_ViGEmTarget_ReportList[gamepad_index];
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
     Mouse2vJoyStates Mouse2vJoy_EnableState = s_Mouse2vJoy_EnableStateMap.value(mouse_index).states;
     if (MOUSE2VJOY_LEFT == Mouse2vJoy_EnableState) {
         ViGEmTarget_Report.sThumbLX = 0;
@@ -11835,6 +11856,8 @@ void QKeyMapper_Worker::initCombinationKeysList()
             << "Joy-Key30"
             ;
 }
+
+#if 0
 void QKeyMapper_Worker::initJoystickKeyMap()
 {
     /* Joystick 2Mouse */
@@ -11963,6 +11986,7 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_UP,    JOYSTICK_DPAD_R_UP              );
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_R_DOWN,  JOYSTICK_DPAD_R_DOWN            );
 }
+#endif
 
 void QKeyMapper_Worker::initSpecialOriginalKeysList()
 {
@@ -12037,6 +12061,7 @@ void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::initViGEmKeyMap()
 {
+#if 0
     /* Virtual Joystick Buttons */
     JoyStickKeyMap.insert(VJOY_MOUSE2LS_STR             ,   (int)JOYSTICK_LS_MOUSE      );
     JoyStickKeyMap.insert(VJOY_MOUSE2RS_STR             ,   (int)JOYSTICK_RS_MOUSE      );
@@ -12075,6 +12100,7 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     JoyStickKeyMap.insert("vJoy-RS-Down"                ,   (int)JOYSTICK_RS_DOWN       );
     JoyStickKeyMap.insert("vJoy-RS-Left"                ,   (int)JOYSTICK_RS_LEFT       );
     JoyStickKeyMap.insert("vJoy-RS-Right"               ,   (int)JOYSTICK_RS_RIGHT      );
+#endif
 
     /* ViGEm Virtual Joystick Buttons */
     ViGEmButtonMap.insert("vJoy-Key1(A/×)"              ,   XUSB_GAMEPAD_A              );

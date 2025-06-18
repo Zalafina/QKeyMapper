@@ -341,6 +341,9 @@ extern const SHORT XINPUT_THUMB_MIN;
 extern const SHORT XINPUT_THUMB_RELEASE;
 extern const SHORT XINPUT_THUMB_MAX;
 
+extern const uint VJOY_STICK_RADIUS_MIN;
+extern const uint VJOY_STICK_RADIUS_MAX;
+
 extern const qreal THUMB_DISTANCE_MAX;
 
 extern const BYTE AUTO_BRAKE_ADJUST_VALUE;

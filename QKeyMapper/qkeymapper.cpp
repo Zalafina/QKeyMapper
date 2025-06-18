@@ -14115,7 +14115,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
             for (const QString &gamepad_type : std::as_const(QKeyMapper_Worker::s_VirtualGamepadList)){
                 PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
                 if (added_target != Q_NULLPTR) {
-                    QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
+                    QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(ViGEm_ReportData());
                     QKeyMapper_Worker::s_ViGEmTargetList.append(added_target);
                     QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_index);
                     gamepad_index++;
@@ -14402,7 +14402,7 @@ void QKeyMapper::on_virtualGamepadNumberSpinBox_valueChanged(int number)
         QString gamepad_type = getVirtualGamepadType();
         PVIGEM_TARGET added_target = QKeyMapper_Worker::ViGEmClient_AddTarget_byType(gamepad_type);
         if (added_target != Q_NULLPTR) {
-            QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(XUSB_REPORT());
+            QKeyMapper_Worker::s_ViGEmTarget_ReportList.append(ViGEm_ReportData());
             QKeyMapper_Worker::s_VirtualGamepadList.append(gamepad_type);
             QKeyMapper_Worker::s_ViGEmTargetList.append(added_target);
             QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(gamepad_number);

@@ -376,6 +376,19 @@ struct GameControllerSensorData
     uint64_t timestamp;
 };
 
+struct ViGEm_ReportData
+{
+    XUSB_REPORT xusb_report;
+    QAtomicInteger<uint> custom_radius_ls;
+    QAtomicInteger<uint> custom_radius_rs;
+
+    ViGEm_ReportData()
+        : xusb_report()
+        , custom_radius_ls(VJOY_STICK_RADIUS_MAX)
+        , custom_radius_rs(VJOY_STICK_RADIUS_MAX)
+    {}
+};
+
 struct SendInputTaskController {
     QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag;
@@ -796,7 +809,7 @@ public:
     static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
-    static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY);
+    static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY, uint custom_radius = 255);
 
     // static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
     static QHash<int, Mouse2vJoyData> ViGEmClient_checkMouse2JoystickEnableStateMap(void);
@@ -968,7 +981,7 @@ private:
     void initMultiMouseInputList(void);
     void initMultiVirtualGamepadInputList(void);
     void initCombinationKeysList(void);
-    void initJoystickKeyMap(void);
+    // void initJoystickKeyMap(void);
     void initSpecialOriginalKeysList(void);
     void initSpecialMappingKeysList(void);
     void initSpecialVirtualKeyCodeList(void);
@@ -1000,6 +1013,7 @@ public:
 public:
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
+    static QAtomicInteger<uint> s_vJoy_Custom_Radius;
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Gyro2Mouse_MoveActive;
     static QAtomicBool s_Crosshair_Normal;
@@ -1024,7 +1038,7 @@ public:
     static QStringList SpecialMappingKeysList;
     static QList<quint8> SpecialVirtualKeyCodeList;
     // static QStringList skipReleaseModifiersKeysList;
-    static QHash<QString, int> JoyStickKeyMap;
+    // static QHash<QString, int> JoyStickKeyMap;
     // static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
@@ -1071,7 +1085,7 @@ public:
     static QList<PVIGEM_TARGET> s_ViGEmTargetList;
     static ViGEmClient_ConnectState s_ViGEmClient_ConnectState;
     // static XUSB_REPORT s_ViGEmTarget_Report;
-    static QList<XUSB_REPORT> s_ViGEmTarget_ReportList;
+    static QList<ViGEm_ReportData> s_ViGEmTarget_ReportList;
     static QStringList s_VirtualGamepadList;
     static BYTE s_Auto_Brake;
     static BYTE s_Auto_Accel;
