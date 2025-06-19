@@ -3959,17 +3959,19 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(int gamepad_index)
     ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
     XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
     XUSB_REPORT_INIT(&ViGEmTarget_Report);
-    ViGEmTarget_Report.sThumbLY = 1;
     reportData.custom_radius_ls = VJOY_STICK_RADIUS_MAX;
     reportData.custom_radius_rs = VJOY_STICK_RADIUS_MAX;
     VIGEM_ERROR error;
     if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
         DS4_REPORT ds4_report;
         DS4_REPORT_INIT(&ds4_report);
-        XUSB_TO_DS4_REPORT(&ViGEmTarget_Report, &ds4_report);
         error = vigem_target_ds4_update(s_ViGEmClient, ViGEmTarget, ds4_report);
     }
     else {
+        ViGEmTarget_Report.sThumbLY = 1;
+        error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
+        Q_UNUSED(error);
+        ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_RELEASE;
         error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
     }
     Q_UNUSED(error);

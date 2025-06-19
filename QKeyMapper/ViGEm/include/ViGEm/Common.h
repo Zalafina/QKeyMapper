@@ -282,4 +282,37 @@ typedef struct _DS4_OUTPUT_BUFFER
 	
 } DS4_OUTPUT_BUFFER, *PDS4_OUTPUT_BUFFER;
 
+VOID FORCEINLINE DS4_SET_DPAD_EX(
+    _Out_ PDS4_REPORT_EX Report,
+    _In_ DS4_DPAD_DIRECTIONS Dpad
+)
+{
+    Report->Report.wButtons &= ~0xF;
+    Report->Report.wButtons |= (USHORT)Dpad;
+}
+
+VOID FORCEINLINE DS4_REPORT_INIT_EX(
+    _Out_ PDS4_REPORT_EX Report
+)
+{
+    RtlZeroMemory(Report, sizeof(DS4_REPORT_EX));
+
+    Report->Report.bThumbLX = 0x80;
+    Report->Report.bThumbLY = 0x80;
+    Report->Report.bThumbRX = 0x80;
+    Report->Report.bThumbRY = 0x80;
+    Report->Report.bBatteryLvl = 0xFF;
+    Report->Report.bBatteryLvlSpecial = 0x1A;
+    Report->Report.bTouchPacketsN = 1;
+
+    Report->Report.sCurrentTouch.bIsUpTrackingNum1 = 0x80;
+    Report->Report.sCurrentTouch.bIsUpTrackingNum2 = 0x80;
+    Report->Report.sPreviousTouch[0].bIsUpTrackingNum1 = 0x80;
+    Report->Report.sPreviousTouch[0].bIsUpTrackingNum2 = 0x80;
+    Report->Report.sPreviousTouch[1].bIsUpTrackingNum1 = 0x80;
+    Report->Report.sPreviousTouch[1].bIsUpTrackingNum2 = 0x80;
+
+    DS4_SET_DPAD_EX(Report, DS4_BUTTON_DPAD_NONE);
+}
+
 #include <poppack.h>
