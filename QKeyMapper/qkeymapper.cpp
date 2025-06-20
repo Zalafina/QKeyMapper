@@ -3267,14 +3267,18 @@ bool QKeyMapper::validateCombinationKey(QString &input)
     return isvalid;
 }
 
-int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string)
+int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame)
 {
     int tabindex_toswitch = -1;
+    if (isSame) *isSame = false;
     QList<int> tabindex_list = s_MappingTableTabHotkeyMap.value(hotkey_string);
     if (!tabindex_list.isEmpty()) {
         if (tabindex_list.size() == 1){
             if (tabindex_list.at(0) != s_KeyMappingTabWidgetCurrentIndex) {
                 tabindex_toswitch = tabindex_list.at(0);
+            }
+            else {
+                if (isSame) *isSame = true;
             }
         }
         else {
@@ -4927,7 +4931,8 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
     qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey:" << hotkey_string << "->" << s_MappingTableTabHotkeyMap.value(hotkey_string) << ", LastTabIndex:" << s_KeyMappingTabWidgetCurrentIndex;
 #endif
 
-    int tabindex_toswitch = tabIndexToSwitchByTabHotkey(hotkey_string);
+    bool isSame = false;
+    int tabindex_toswitch = tabIndexToSwitchByTabHotkey(hotkey_string, &isSame);
 
     if (tabindex_toswitch >= 0) {
 #ifdef DEBUG_LOGOUT_ON
@@ -4940,7 +4945,15 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
             /* Key Mapping Restart */
             setKeyMappingRestart();
-            mappingTabSwitchNotification();
+            mappingTabSwitchNotification(false);
+        }
+    }
+    else {
+        if (isSame) {
+            if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
+                || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
+                mappingTabSwitchNotification(true);
+            }
         }
     }
 }
@@ -9133,10 +9146,18 @@ void QKeyMapper::mappingStartNotification()
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
-    QString color = "#d6a2e8";
-    popupNotification = tr("StartMapping [") + currentSelectedSetting + "]" + "->" + tabName;
+    QString description = ui->descriptionLineEdit->text();
+    QString notificationSetting;
+    if (description.isEmpty()) {
+        notificationSetting = currentSelectedSetting;
+    }
+    else {
+        notificationSetting = description;
+    }
+    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    popupNotification = tr("StartMapping [") + notificationSetting + "]" + " - " + tabName;
     if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-        color = "#26de81";
+        color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
     }
     showNotificationPopup(popupNotification, color, position);
 }
@@ -9160,25 +9181,31 @@ void QKeyMapper::mappingStopNotification()
         return;
     }
 
-    QString color = "#d6a2e8";
+    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
     showNotificationPopup(popupNotification, color, position);
 }
 
-void QKeyMapper::mappingTabSwitchNotification()
+void QKeyMapper::mappingTabSwitchNotification(bool isSame)
 {
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
     if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
-    QString currentSelectedSetting = ui->settingselectComboBox->currentText();
+    // QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
-    QString color = "#d6a2e8";
-    popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + "->" + tabName;
+    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    // popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + " - " + tabName;
+    if (isSame) {
+        popupNotification = tr("TabisAlready") + " - " + tabName;
+    }
+    else {
+        popupNotification = tr("MappingTabSwitch") + " - " + tabName;
+    }
     if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-        color = "#26de81";
+        color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
     }
     showNotificationPopup(popupNotification, color, position);
 }
@@ -11540,6 +11567,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
     ui->soundEffectCheckBox->setText(tr("Sound Effect"));
     ui->notificationLabel->setText(tr("Notification"));
+    ui->notificationSizeLabel->setText(tr("Size"));
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));

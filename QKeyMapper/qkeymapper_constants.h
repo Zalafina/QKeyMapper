@@ -71,6 +71,8 @@ extern const int REPEAT_MODE_BYTIMES;
 extern const int REPEAT_TIMES_MIN;
 extern const int REPEAT_TIMES_MAX;
 extern const int REPEAT_TIMES_DEFAULT;
+extern const char *NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+extern const char *NOTIFICATION_COLOR_NORMAL_DEFAULT;
 extern const char *CROSSHAIR_CENTERCOLOR_DEFAULT;
 extern const char *CROSSHAIR_CROSSHAIRCOLOR_DEFAULT;
 extern const int CROSSHAIR_OPACITY_MIN;
