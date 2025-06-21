@@ -239,7 +239,7 @@ public:
     explicit QPopupNotification(QWidget *parent = Q_NULLPTR);
 
 public slots:
-    void showPopupNotification(const QString &message, const QString &color, int displayTime, int position);
+    void showPopupNotification(const QString &message, const QString &color, int displayTime, int position, int size = NOTIFICATION_SIZE_DEFAULT);
 
     void hideNotification();
 
@@ -737,7 +737,7 @@ public:
     void showInformationPopup(const QString &message);
     void showWarningPopup(const QString &message);
     void showFailurePopup(const QString &message);
-    void showNotificationPopup(const QString &message, const QString &color, int position);
+    void showNotificationPopup(const QString &message, const QString &color, int position, int size = NOTIFICATION_SIZE_DEFAULT);
     void initSelectColorDialog(void);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
 

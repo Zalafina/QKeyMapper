@@ -254,6 +254,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
+    ui->notificationSizeSpinBox->setRange(NOTIFICATION_SIZE_MIN, NOTIFICATION_SIZE_MAX);
+    ui->notificationSizeSpinBox->setValue(NOTIFICATION_SIZE_DEFAULT);
+
     ui->Gyro2MouseXSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
     ui->Gyro2MouseYSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
     ui->Gyro2MouseXSpeedSpinBox->setSingleStep(GYRO2MOUSE_SPEED_SINGLESTEP);
@@ -5765,6 +5768,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
+    settingFile.setValue(NOTIFICATION_SIZE , ui->notificationSizeSpinBox->value());
     if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {
         settingFile.setValue(UPDATE_SITE, UPDATE_SITE_GITEE);
     }
@@ -6623,6 +6627,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_SIZE)){
+            int notification_size = settingFile.value(NOTIFICATION_SIZE).toInt();
+            if (NOTIFICATION_SIZE_MIN <= notification_size && notification_size <= NOTIFICATION_SIZE_MAX) {
+                ui->notificationSizeSpinBox->setValue(notification_size);
+            }
+            else {
+                ui->notificationSizeSpinBox->setValue(NOTIFICATION_SIZE_DEFAULT);
+            }
+        }
+        else {
+            ui->notificationSizeSpinBox->setValue(NOTIFICATION_SIZE_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Size ->" << ui->notificationSizeSpinBox->value();
 #endif
 
         if (true == settingFile.contains(UPDATE_SITE)){
@@ -9171,7 +9191,7 @@ void QKeyMapper::mappingStartNotification()
     if (GLOBALSETTING_INDEX == currentSelectedIndex) {
         color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
     }
-    showNotificationPopup(popupNotification, color, position);
+    showNotificationPopup(popupNotification, color, position, ui->notificationSizeSpinBox->value());
 }
 
 void QKeyMapper::mappingStopNotification()
@@ -9195,7 +9215,7 @@ void QKeyMapper::mappingStopNotification()
 
     QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
-    showNotificationPopup(popupNotification, color, position);
+    showNotificationPopup(popupNotification, color, position, ui->notificationSizeSpinBox->value());
 }
 
 void QKeyMapper::mappingTabSwitchNotification(bool isSame)
@@ -9219,7 +9239,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     if (GLOBALSETTING_INDEX == currentSelectedIndex) {
         color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
     }
-    showNotificationPopup(popupNotification, color, position);
+    showNotificationPopup(popupNotification, color, position, ui->notificationSizeSpinBox->value());
 }
 
 void QKeyMapper::showInputDeviceListWindow()
@@ -10399,12 +10419,12 @@ void QKeyMapper::showFailurePopup(const QString &message)
     showPopupMessage(message, FAILURE_COLOR, 3000);
 }
 
-void QKeyMapper::showNotificationPopup(const QString &message, const QString &color, int position)
+void QKeyMapper::showNotificationPopup(const QString &message, const QString &color, int position, int size)
 {
     if (Q_NULLPTR == m_PopupNotification) {
         return;
     }
-    m_PopupNotification->showPopupNotification(message, color, 3000, position);
+    m_PopupNotification->showPopupNotification(message, color, 3000, position, size);
 }
 
 void QKeyMapper::initSelectColorDialog()
@@ -13844,7 +13864,7 @@ QPopupNotification::QPopupNotification(QWidget *parent) :
     m_Timer.setSingleShot(true);
 }
 
-void QPopupNotification::showPopupNotification(const QString &message, const QString &color, int displayTime, int position)
+void QPopupNotification::showPopupNotification(const QString &message, const QString &color, int displayTime, int position, int size)
 {
     m_StartAnimation->stop();
     m_StopAnimation->stop();
@@ -13852,13 +13872,13 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
 
     m_DisplayTime = displayTime;
 
-    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
+    QString styleSheet = QString("background-color: rgba(0, 0, 0, 120); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
     m_Label->setStyleSheet(styleSheet);
 
-    QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
-    if (UI_SCALE_4K_PERCENT_150 == QKeyMapper::getInstance()->m_UI_Scale) {
-        customFont.setPointSize(16);
-    }
+    QFont customFont(FONTNAME_ENGLISH, size, QFont::Bold);
+    // if (UI_SCALE_4K_PERCENT_150 == QKeyMapper::getInstance()->m_UI_Scale) {
+    //     customFont.setPointSize(16);
+    // }
     m_Label->setFont(customFont);
     m_Label->setText(message);
     m_Label->adjustSize();

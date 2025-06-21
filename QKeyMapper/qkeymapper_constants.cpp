@@ -103,6 +103,10 @@ const int REPEAT_TIMES_DEFAULT = 1;
 const char *NOTIFICATION_COLOR_GLOBAL_DEFAULT = "#26de81";
 const char *NOTIFICATION_COLOR_NORMAL_DEFAULT = "#d6a2e8";
 
+const int NOTIFICATION_SIZE_MIN = 1;
+const int NOTIFICATION_SIZE_MAX = 72;
+const int NOTIFICATION_SIZE_DEFAULT = 16;
+
 const char *CROSSHAIR_CENTERCOLOR_DEFAULT = "70a1ff";
 const char *CROSSHAIR_CROSSHAIRCOLOR_DEFAULT = "70a1ff";
 const int CROSSHAIR_OPACITY_MIN = 0;
@@ -541,6 +545,7 @@ const char *NOTSHOW_VERSION_UNMATCHED = "NotShow_VersionUnmatched";
 const char *NOTSHOW_FILTERKEYS_DISABLED = "NotShow_FilterKeysDisabled";
 const char *CLOSETO_SYSTEMTRAY = "CloseToSystemtray";
 const char *NOTIFICATION_POSITION = "NotificationPosition";
+const char *NOTIFICATION_SIZE = "NotificationSize";
 const char *UPDATE_SITE = "UpdateSite";
 const char *SETTINGSELECT = "SettingSelect";
 const char *AUTO_STARTUP = "AutoStartup";
