@@ -224,8 +224,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // set QTableWidget selected background-color
     setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
 
-    ui->iconLabel->setStyle(QStyleFactory::create("windows"));
-    ui->pointDisplayLabel->setStyle(QStyleFactory::create("windows"));
+    ui->iconLabel->setStyle(windowsStyle);
+    ui->pointDisplayLabel->setStyle(windowsStyle);
     setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
     ui->nameCheckBox->setChecked(true);
     ui->titleCheckBox->setChecked(true);
@@ -3019,6 +3019,11 @@ bool QKeyMapper::getStartupMinimizedStatus()
 int QKeyMapper::getLanguageIndex()
 {
     return getInstance()->ui->languageComboBox->currentIndex();
+}
+
+int QKeyMapper::getCurrentSettingSelectIndex()
+{
+    return getInstance()->ui->settingselectComboBox->currentIndex();
 }
 
 bool QKeyMapper::getKeyMappingDataTableItemBurstStatus(int rowindex)
@@ -10928,10 +10933,12 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     int top = ui->orikeyLabel->y();
     m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_NAME);
     m_orikeyComboBox->setGeometry(QRect(left, top, 142, 22));
+    // m_orikeyComboBox->setEditable(true);
     left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
     top = ui->mapkeyLabel->y();
     m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_NAME);
     m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
+    // m_mapkeyComboBox->setEditable(true);
 
     QStringList orikeycodelist = keycodelist;
     orikeycodelist.removeOne(KEY_NONE_STR);

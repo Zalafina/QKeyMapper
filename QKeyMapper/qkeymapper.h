@@ -197,6 +197,7 @@ struct KeyMappingTab_Info
 {
     QString TabName;
     QString TabHotkey;
+    QColor TabFontColor;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };
@@ -492,6 +493,7 @@ public:
     static bool getStartupMinimizedStatus(void);
     // static bool getDisableWinKeyStatus(void);
     static int getLanguageIndex(void);
+    static int getCurrentSettingSelectIndex(void);
     static bool getKeyMappingDataTableItemBurstStatus(int rowindex);
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);
     static QString getCurrentOriKeyText(void);

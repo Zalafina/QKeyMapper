@@ -2,6 +2,7 @@
 #define QTABLESETUPDIALOG_H
 
 #include <QDialog>
+#include "colorpickerwidget.h"
 
 namespace Ui {
 class QTableSetupDialog;
@@ -30,6 +31,9 @@ protected:
     void showEvent(QShowEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
 
+public slots:
+    void onTabFontColorChanged(QColor &color);
+
 private slots:
     void on_tabNameUpdateButton_clicked();
 
@@ -45,6 +49,7 @@ private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
     int m_TabIndex;
+    ColorPickerWidget *m_NotificationFontColorPicker;
 };
 
 #endif // QTABLESETUPDIALOG_H

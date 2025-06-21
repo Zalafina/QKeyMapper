@@ -9,6 +9,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QTableSetupDialog)
     , m_TabIndex(-1)
+    , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", 81))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -19,8 +20,21 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->tabNameLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->tabHotkeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
 
+    int x_offset = 0;
+    int y_offset = 30;
+    QRect exportTableButtonGeometry = ui->exportTableButton->geometry();
+    int tabfont_color_x = exportTableButtonGeometry.x();
+    int tabfont_color_y = exportTableButtonGeometry.y();
+    tabfont_color_x += x_offset;
+    tabfont_color_y += y_offset;
+    // Set position for the tabfont color picker
+    m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
+
+    m_NotificationFontColorPicker->raise();
+
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
+    QObject::connect(m_NotificationFontColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabFontColorChanged);
 }
 
 QTableSetupDialog::~QTableSetupDialog()
@@ -32,6 +46,7 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
 
+    m_NotificationFontColorPicker->setUILanguage(languageindex);
     setWindowTitle(tr(TABLESETUPDIALOG_WINDOWTITLE_STR));
     ui->tabNameLabel->setText(tr(TABNAMELABEL_STR));
     ui->tabHotkeyLabel->setText(tr(TABHOTKEYLABEL_STR));
@@ -91,7 +106,11 @@ bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            close();
+            if (ColorPickerWidget::s_isColorSelecting) {
+            }
+            else {
+                close();
+            }
         }
     }
     return QWidget::event(event);
@@ -112,8 +131,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
     if (0 <= m_TabIndex && m_TabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
         QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
         QString TabHotkey = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey;
+        QColor TabFontColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[QTableSetupDialog::showEvent]" << "TabIndex[" << m_TabIndex << "] -> TabName(" << TabName << "), Hotkey(" << TabHotkey << ")";
+        qDebug().nospace().noquote() << "[QTableSetupDialog::showEvent]" << "TabIndex[" << m_TabIndex << "] -> TabName(" << TabName << "), Hotkey(" << TabHotkey << "), TabFontColor(" << TabFontColor.name() << ")";
 #endif
 
         /* Load TabNamc String */
@@ -121,6 +141,8 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         /* Load TabHotkey String */
         ui->tabHotkeyLineEdit->setText(TabHotkey);
+
+        m_NotificationFontColorPicker->setColor(TabFontColor);
     }
 
     QDialog::showEvent(event);
@@ -136,6 +158,20 @@ void QTableSetupDialog::keyPressEvent(QKeyEvent *event)
     }
 
     QDialog::keyPressEvent(event);
+}
+
+void QTableSetupDialog::onTabFontColorChanged(QColor &color)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor) {
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabFontColor = color;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[QTableSetupDialog::onTabFontColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Font Color -> " << color.name();
+#endif
+    }
 }
 
 void QTableSetupDialog::on_tabNameUpdateButton_clicked()

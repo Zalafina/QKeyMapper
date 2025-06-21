@@ -3,14 +3,22 @@
 
 bool ColorPickerWidget::s_isColorSelecting = false;
 
-ColorPickerWidget::ColorPickerWidget(QWidget *parent)
+ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int buttonWidth)
     : QWidget(parent)
     , m_color()
     , colorButton(Q_NULLPTR)
     , colorLabel(Q_NULLPTR)
+    , m_buttonText(buttonText)
 {
     colorLabel = new QLabel(this);
-    colorButton = new QPushButton(tr("Color"), this);
+    QString translated_ButtonText;
+    if (m_buttonText == "TabFontColor") {
+        translated_ButtonText = tr("TabFontColor");
+    }
+    else { /* m_buttonText == "Color" */
+        translated_ButtonText = tr("Color");
+    }
+    colorButton = new QPushButton(translated_ButtonText, this);
 
     colorButton->setFocusPolicy(Qt::NoFocus);
     colorButton->setAutoDefault(false);
@@ -20,7 +28,7 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent)
 
     // Set default size for colorLabel and colorButton
     colorLabel->setFixedSize(31, 21);  // Set fixed size for the label
-    colorButton->setFixedSize(51, 21); // Set fixed size for the button
+    colorButton->setFixedSize(buttonWidth, 21); // Set fixed size for the button
 
     // Setup layout and add the button and label to it
     QHBoxLayout *layout = new QHBoxLayout(this);
@@ -39,7 +47,14 @@ ColorPickerWidget::~ColorPickerWidget()
 void ColorPickerWidget::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
-    colorButton->setText(tr("Color"));
+    QString translated_ButtonText;
+    if (m_buttonText == "TabFontColor") {
+        translated_ButtonText = tr("TabFontColor");
+    }
+    else { /* m_buttonText == "Color" */
+        translated_ButtonText = tr("Color");
+    }
+    colorButton->setText(translated_ButtonText);
 }
 
 void ColorPickerWidget::setColor(QColor &color)

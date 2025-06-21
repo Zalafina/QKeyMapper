@@ -8,8 +8,8 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QCrosshairSetupDialog)
     , m_ItemRow(-1)
-    , m_CenterColorPicker(new ColorPickerWidget(this))
-    , m_CrosshairColorPicker(new ColorPickerWidget(this))
+    , m_CenterColorPicker(new ColorPickerWidget(this, "Color", 51))
+    , m_CrosshairColorPicker(new ColorPickerWidget(this, "Color", 51))
 {
     m_instance = this;
     ui->setupUi(this);

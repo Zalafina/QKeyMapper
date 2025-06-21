@@ -277,6 +277,27 @@ bool QItemSetupDialog::event(QEvent *event)
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)
 {
+    QWidget *focusedWidget = this->focusWidget();
+
+    if (focusedWidget == ui->burstpressSpinBox) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::closeEvent]" << "burstpressSpinBox focused, call editingFinished()";
+#endif
+        on_burstpressSpinBox_editingFinished();
+    }
+    else if (focusedWidget == ui->burstreleaseSpinBox) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::closeEvent]" << "burstreleaseSpinBox focused, call editingFinished()";
+#endif
+        on_burstreleaseSpinBox_editingFinished();
+    }
+    else if (focusedWidget == ui->repeatTimesSpinBox) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::closeEvent]" << "repeatTimesSpinBox focused, call editingFinished()";
+#endif
+        on_repeatTimesSpinBox_editingFinished();
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QItemSetupDialog::closeEvent]" << "Item Row initialize to -1, Tab Index initialize to -1";
 #endif
