@@ -4441,26 +4441,38 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
         }
     }
 
-    if (m_deviceListWindow->isVisible()) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::closeEvent]" << "DeviceList Windows isVisible!";
-#endif
-        return;
+    bool force_showdialog = false;
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        force_showdialog = true;
     }
 
-    if (false == isHidden()) {
-        m_LastWindowPosition = pos(); // Save the current position before hiding
-        closeTableSetupDialog();
-        closeItemSetupDialog();
-        closeCrosshairSetupDialog();
-        closeGyro2MouseAdvancedSettingDialog();
-        hide();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-    }
+    bool closeto_systemtray = isCloseToSystemtray(force_showdialog);
 
-    event->ignore();
+    if (closeto_systemtray) {
+        if (m_deviceListWindow->isVisible()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::closeEvent]" << "DeviceList Windows isVisible!";
+#endif
+            return;
+        }
+
+        if (false == isHidden()) {
+            m_LastWindowPosition = pos(); // Save the current position before hiding
+            closeTableSetupDialog();
+            closeItemSetupDialog();
+            closeCrosshairSetupDialog();
+            closeGyro2MouseAdvancedSettingDialog();
+            hide();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
+#endif
+        }
+
+        event->ignore();
+    }
+    else {
+        event->accept();
+    }
 }
 
 void QKeyMapper::changeEvent(QEvent *event)
@@ -10335,6 +10347,43 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
     }
 }
 
+bool QKeyMapper::isCloseToSystemtray(bool force_showdialog)
+{
+    bool closeto_systemtray = false;
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("\033[1;34m[isCloseToSystemtray] Check setting to show close to systemtray dialog. ForceShowDialog = %1\033[0m").arg(force_showdialog?"true":"false");
+    qDebug().noquote() << debugmessage;
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    bool setting_contains = false;
+    if (true == settingFile.contains(CLOSETO_SYSTEMTRAY)){
+        setting_contains = true;
+        closeto_systemtray = settingFile.value(CLOSETO_SYSTEMTRAY).toBool();
+    }
+
+    if (force_showdialog || setting_contains != true) {
+        QString message = tr(
+            "If you want the program to be hidden to the system tray when you click the close button, please check the option below.\n"
+            "If you do not check it and click \"OK\", the program will close directly when you click the close button in the future.\n"
+            "Hold the \"L-Ctrl\" key and click the close button to show this dialog again."
+        );
+        QString checkbox_message = tr("Hide the program to the system tray when clicking the close button");
+        bool ischecked = showMessageBoxWithCheckbox(this, message, checkbox_message, CustomMessageBox::Question);
+        if (ischecked) {
+            settingFile.setValue(CLOSETO_SYSTEMTRAY, true);
+            closeto_systemtray = true;
+        }
+        else {
+            settingFile.setValue(CLOSETO_SYSTEMTRAY, false);
+            closeto_systemtray = false;
+        }
+    }
+
+    return closeto_systemtray;
+}
+
 void QKeyMapper::showInformationPopup(const QString &message)
 {
     showPopupMessage(message, SUCCESS_COLOR, 3000);
@@ -10365,9 +10414,9 @@ void QKeyMapper::initSelectColorDialog()
     }
 }
 
-bool QKeyMapper::showMessageBoxWithCheckbox(QWidget *parent, QString message, CustomMessageBox::IconType icontype)
+bool QKeyMapper::showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype)
 {
-    CustomMessageBox msgBox(parent, message, icontype);
+    CustomMessageBox msgBox(parent, message, checkbox_message, icontype);
     bool ischecked = false;
     if (msgBox.exec() == QDialog::Accepted) {
         if (msgBox.isCheckBoxChecked()) {
@@ -12119,7 +12168,8 @@ void QKeyMapper::checkOSVersionMatched()
 
             if (notshow_versionunmatched != true) {
                 QString message = tr("For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.");
-                bool ischecked = showMessageBoxWithCheckbox(this, message, CustomMessageBox::Warning);
+                QString checkbox_message = tr("Do not show this message again");
+                bool ischecked = showMessageBoxWithCheckbox(this, message, checkbox_message, CustomMessageBox::Warning);
                 if (ischecked) {
                     settingFile.setValue(NOTSHOW_VERSION_UNMATCHED, true);
                 }
@@ -12147,7 +12197,8 @@ void QKeyMapper::checkFilterKeysEnabled()
 
         if (notshow_filterkeys_disabled != true) {
             QString message = tr("Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.");
-            bool ischecked = showMessageBoxWithCheckbox(this, message, CustomMessageBox::Warning);
+            QString checkbox_message = tr("Do not show this message again");
+            bool ischecked = showMessageBoxWithCheckbox(this, message, checkbox_message, CustomMessageBox::Warning);
             if (ischecked) {
                 settingFile.setValue(NOTSHOW_FILTERKEYS_DISABLED, true);
             }

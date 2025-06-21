@@ -279,7 +279,7 @@ public:
         Question
     };
 
-    CustomMessageBox(QWidget *parent = nullptr, QString message = QString(), IconType iconType = Warning)
+    CustomMessageBox(QWidget *parent = nullptr, QString message = QString(), QString checkbox_message = QString(), IconType iconType = Warning)
         : QDialog(parent) {
         setWindowTitle(PROGRAM_NAME);
 
@@ -314,7 +314,7 @@ public:
 
         // Horizontal layout for CheckBox and OK button
         QHBoxLayout *controlsLayout = new QHBoxLayout();
-        checkBox = new QCheckBox(tr("Do not show this message again"), this);
+        checkBox = new QCheckBox(checkbox_message, this);
         controlsLayout->addWidget(checkBox);
         controlsLayout->addStretch(); // Spacer between CheckBox and OK button
         QPushButton *okButton = new QPushButton(tr("OK"), this);
@@ -731,6 +731,7 @@ private:
     void showProcessList(void);
     void setKeyMappingTabWidgetWideMode(void);
     void setKeyMappingTabWidgetNarrowMode(void);
+    bool isCloseToSystemtray(bool force_showdialog);
 
 public:
     void showInformationPopup(const QString &message);
@@ -738,7 +739,7 @@ public:
     void showFailurePopup(const QString &message);
     void showNotificationPopup(const QString &message, const QString &color, int position);
     void initSelectColorDialog(void);
-    bool showMessageBoxWithCheckbox(QWidget *parent, QString message, CustomMessageBox::IconType icontype);
+    bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
 
 private:
     void initKeyMappingTabWidget(void);

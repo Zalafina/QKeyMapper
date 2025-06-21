@@ -486,6 +486,7 @@ extern const char *SHOW_PROCESSLIST;
 extern const char *SHOW_NOTES;
 extern const char *NOTSHOW_VERSION_UNMATCHED;
 extern const char *NOTSHOW_FILTERKEYS_DISABLED;
+extern const char *CLOSETO_SYSTEMTRAY;
 extern const char *NOTIFICATION_POSITION;
 extern const char *UPDATE_SITE;
 extern const char* SETTINGSELECT;
