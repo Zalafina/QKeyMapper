@@ -7952,6 +7952,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+        ui->ProcessIconAsTrayIconCheckBox->setEnabled(false);
 
         ui->iconLabel->clear();
         m_MapProcessInfo = MAP_PROCESSINFO();
@@ -7964,6 +7965,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
+        ui->ProcessIconAsTrayIconCheckBox->setEnabled(true);
 
         if ((true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME))
                 && (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE))){
@@ -8981,6 +8983,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+        ui->ProcessIconAsTrayIconCheckBox->setEnabled(false);
     }
     else {
         ui->nameCheckBox->setEnabled(status);
@@ -8993,6 +8996,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         else {
             ui->sendToSameTitleWindowsCheckBox->setEnabled(status);
         }
+        ui->ProcessIconAsTrayIconCheckBox->setEnabled(status);
     }
 
     //ui->nameLineEdit->setEnabled(status);
