@@ -3222,6 +3222,11 @@ bool QKeyMapper::getAcceptVirtualGamepadInputStatus()
     }
 }
 
+bool QKeyMapper::getProcessIconAsTrayIconStatus()
+{
+    return getInstance()->ui->ProcessIconAsTrayIconCheckBox->isChecked();
+}
+
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
 {
     // Iterate through tabinfolist to check if there is a duplicate tabname
@@ -6384,6 +6389,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
     settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, ui->acceptVirtualGamepadInputCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, ui->ProcessIconAsTrayIconCheckBox->isChecked());
 #ifdef VIGEM_CLIENT_SUPPORT
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_DIRECTMODE, ui->directModeCheckBox->isChecked());
@@ -7937,6 +7943,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->titleCheckBox->setChecked(false);
         // ui->disableWinKeyCheckBox->setChecked(false);
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
+        ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
 
         ui->nameLineEdit->setEnabled(false);
         ui->titleLineEdit->setEnabled(false);
@@ -7995,6 +8002,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->nameCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
+            ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
         }
 
@@ -8416,6 +8424,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
     else {
         ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED)){
+        bool processIconAsTrayIconChecked = settingFile.value(settingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED).toBool();
+        if (true == processIconAsTrayIconChecked) {
+            ui->ProcessIconAsTrayIconCheckBox->setChecked(true);
+        }
+        else {
+            ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "ProcessIconAsTrayIconChecked =" << processIconAsTrayIconChecked;
+#endif
+    }
+    else {
+        ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
     }
 
 //     QString loadedmappingswitchKeySeqStr;
@@ -10276,7 +10300,16 @@ void QKeyMapper::updateSystemTrayDisplay()
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
     }
     else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
-        m_SysTrayIcon->setIcon(QIcon(":/Purple.ico"));
+        bool processicon_as_trayicon = getProcessIconAsTrayIconStatus();
+        QIcon trayicon;
+        if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
+            trayicon = m_MapProcessInfo.WindowIcon;
+        }
+        else {
+            trayicon = QIcon(":/Purple.ico");
+        }
+
+        m_SysTrayIcon->setIcon(trayicon);
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {

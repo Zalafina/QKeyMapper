@@ -525,6 +525,7 @@ public:
     static double getAccelThreshold(void);
     static bool getSendToSameTitleWindowsStatus(void);
     static bool getAcceptVirtualGamepadInputStatus(void);
+    static bool getProcessIconAsTrayIconStatus(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static bool validateCombinationKey(QString &input);

@@ -645,6 +645,7 @@ const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
 const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 const char *SENDTOSAMEWINDOWS_CHECKED = "SendToSameWindowsChecked";
 const char *ACCEPTVIRTUALGAMEPADINPUT_CHECKED = "AcceptVirtualGamdpadInputChecked";
+const char *PROCESSICON_AS_TRAYICON_CHECKED = "ProcessIconAsTrayIconChecked";
 const char *MAPPINGSTART_KEY = "MappingStartKey";
 const char *MAPPINGSTOP_KEY = "MappingStopKey";
 

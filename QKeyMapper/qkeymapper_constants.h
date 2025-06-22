@@ -582,6 +582,7 @@ extern const char* GRIP_THRESHOLD_ACCEL;
 extern const char* AUTOSTARTMAPPING_CHECKED;
 extern const char *SENDTOSAMEWINDOWS_CHECKED;
 extern const char *ACCEPTVIRTUALGAMEPADINPUT_CHECKED;
+extern const char *PROCESSICON_AS_TRAYICON_CHECKED;
 extern const char* MAPPINGSTART_KEY;
 extern const char *MAPPINGSTOP_KEY;
 extern const char* SAO_FONTFILENAME;
