@@ -11021,11 +11021,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     int top = ui->orikeyLabel->y();
     m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_NAME);
     m_orikeyComboBox->setGeometry(QRect(left, top, 142, 22));
+    m_orikeyComboBox->setFocusPolicy(Qt::WheelFocus);
     // m_orikeyComboBox->setEditable(true);
     left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
     top = ui->mapkeyLabel->y();
     m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_NAME);
     m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
+    m_mapkeyComboBox->setFocusPolicy(Qt::WheelFocus);
     // m_mapkeyComboBox->setEditable(true);
 
     QStringList orikeycodelist = keycodelist;

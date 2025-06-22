@@ -155,7 +155,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::TabFocus</enum>
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>ADD</string>
@@ -1858,6 +1858,9 @@
      <width>141</width>
      <height>16</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="orientation">
     <enum>Qt::Orientation::Horizontal</enum>
