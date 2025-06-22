@@ -162,7 +162,8 @@ HEADERS     += \
     qgyro2mouseoptiondialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
-    qtablesetupdialog.h
+    qtablesetupdialog.h \
+    qtrayiconselectdialog.h
 # Interception Driver Support <<<
 
 
@@ -181,7 +182,8 @@ SOURCES     += \
     qkeymapper_constants.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
-    qtablesetupdialog.cpp
+    qtablesetupdialog.cpp \
+    qtrayiconselectdialog.cpp
 
 HEADERS     += \
     interception_worker.h \
@@ -207,7 +209,8 @@ FORMS       += \
     qitemsetupdialog.ui \
     qkeymapper.ui \
     qkeyrecord.ui \
-    qtablesetupdialog.ui
+    qtablesetupdialog.ui \
+    qtrayiconselectdialog.ui
 
 RESOURCES   += \
     image.qrc \

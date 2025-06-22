@@ -1,9 +1,17 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="DefaultIcon.ico">image/ForzaHorizon4.ico</file>
-        <file alias="QKeyMapper.ico">image/QKeyMapper.ico</file>
-        <file alias="QKeyMapper_checking.ico">image/QKeyMapper_checking.ico</file>
-        <file alias="QKeyMapper_mapping_global.ico">image/QKeyMapper_mapping_global.ico</file>
-        <file alias="QKeyMapper_mapping_matched.ico">image/QKeyMapper_mapping_matched.ico</file>
+        <file alias="Black.ico">image\systrayicon_16px\Black_16px.ico</file>
+        <file alias="Blue1.ico">image\systrayicon_16px\Blue1_16px.ico</file>
+        <file alias="Blue2.ico">image\systrayicon_16px\Blue2_16px.ico</file>
+        <file alias="Gray1.ico">image\systrayicon_16px\Gray1_16px.ico</file>
+        <file alias="Gray2.ico">image\systrayicon_16px\Gray2_16px.ico</file>
+        <file alias="Green1.ico">image\systrayicon_16px\Green1_16px.ico</file>
+        <file alias="Green2.ico">image\systrayicon_16px\Green2_16px.ico</file>
+        <file alias="Orange.ico">image\systrayicon_16px\Orange_16px.ico</file>
+        <file alias="Pink.ico">image\systrayicon_16px\Pink_16px.ico</file>
+        <file alias="Purple.ico">image\systrayicon_16px\Purple_16px.ico</file>
+        <file alias="Red.ico">image\systrayicon_16px\Red_16px.ico</file>
+        <file alias="White.ico">image\systrayicon_16px\White_16px.ico</file>
+        <file alias="Yellow.ico">image\systrayicon_16px\Yellow_16px.ico</file>
     </qresource>
 </RCC>

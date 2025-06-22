@@ -226,9 +226,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->iconLabel->setStyle(windowsStyle);
     ui->pointDisplayLabel->setStyle(windowsStyle);
-    setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
-    ui->nameCheckBox->setChecked(true);
-    ui->titleCheckBox->setChecked(true);
+    // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
+    // ui->nameCheckBox->setChecked(true);
+    // ui->titleCheckBox->setChecked(true);
 
     ui->moveupButton->setFont(QFont("SimSun", 14));
     ui->movedownButton->setFont(QFont("SimSun", 16));
@@ -4734,8 +4734,8 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
     }
     else{
         m_CycleCheckTimer.stop();
-        m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
-        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
+        m_SysTrayIcon->setIcon(QIcon(":/Blue2.ico"));
         ui->keymapButton->setText(tr("MappingStart"));
 
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
@@ -8624,7 +8624,8 @@ void QKeyMapper::setControlFontEnglish()
     // else {
     //     customFont.setPointSize(8);
     // }
-    ui->settingTabWidget->tabBar()->setFont(customFont);
+    ui->settingTabWidget->setFont(customFont);
+    // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
@@ -8661,6 +8662,18 @@ void QKeyMapper::setControlFontEnglish()
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
+    ui->selectTrayIconButton->setFont(customFont);
+    ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
+
+    ui->Gyro2MouseXSpeedLabel->setFont(customFont);
+    ui->Gyro2MouseYSpeedLabel->setFont(customFont);
+    ui->Gyro2MouseMinXSensLabel->setFont(customFont);
+    ui->Gyro2MouseMinYSensLabel->setFont(customFont);
+    ui->Gyro2MouseMaxXSensLabel->setFont(customFont);
+    ui->Gyro2MouseMaxYSensLabel->setFont(customFont);
+    ui->Gyro2MouseMinThresholdLabel->setFont(customFont);
+    ui->Gyro2MouseMaxThresholdLabel->setFont(customFont);
+    ui->Gyro2MouseAdvancedSettingButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -8742,7 +8755,8 @@ void QKeyMapper::setControlFontChinese()
     // else {
     //     customFont.setPointSize(8);
     // }
-    ui->settingTabWidget->tabBar()->setFont(customFont);
+    ui->settingTabWidget->setFont(customFont);
+    // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
@@ -8779,6 +8793,18 @@ void QKeyMapper::setControlFontChinese()
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
+    ui->selectTrayIconButton->setFont(customFont);
+    ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
+
+    ui->Gyro2MouseXSpeedLabel->setFont(customFont);
+    ui->Gyro2MouseYSpeedLabel->setFont(customFont);
+    ui->Gyro2MouseMinXSensLabel->setFont(customFont);
+    ui->Gyro2MouseMinYSensLabel->setFont(customFont);
+    ui->Gyro2MouseMaxXSensLabel->setFont(customFont);
+    ui->Gyro2MouseMaxYSensLabel->setFont(customFont);
+    ui->Gyro2MouseMinThresholdLabel->setFont(customFont);
+    ui->Gyro2MouseMaxThresholdLabel->setFont(customFont);
+    ui->Gyro2MouseAdvancedSettingButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -8860,7 +8886,8 @@ void QKeyMapper::setControlFontJapanese()
     // else {
     //     customFont.setPointSize(8);
     // }
-    ui->settingTabWidget->tabBar()->setFont(customFont);
+    ui->settingTabWidget->setFont(customFont);
+    // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
@@ -8897,6 +8924,18 @@ void QKeyMapper::setControlFontJapanese()
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
+    ui->selectTrayIconButton->setFont(customFont);
+    ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
+
+    ui->Gyro2MouseXSpeedLabel->setFont(customFont);
+    ui->Gyro2MouseYSpeedLabel->setFont(customFont);
+    ui->Gyro2MouseMinXSensLabel->setFont(customFont);
+    ui->Gyro2MouseMinYSensLabel->setFont(customFont);
+    ui->Gyro2MouseMaxXSensLabel->setFont(customFont);
+    ui->Gyro2MouseMaxYSensLabel->setFont(customFont);
+    ui->Gyro2MouseMinThresholdLabel->setFont(customFont);
+    ui->Gyro2MouseMaxThresholdLabel->setFont(customFont);
+    ui->Gyro2MouseAdvancedSettingButton->setFont(customFont);
 
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
         customFont.setPointSize(9);
@@ -9211,7 +9250,7 @@ void QKeyMapper::mappingStopNotification()
         mappingStatusString = tr("Idle");
     }
     else if (KEYMAP_CHECKING == m_KeyMapStatus) {
-        mappingStatusString = tr("Checking");
+        mappingStatusString = tr("Monitoring");
     }
 
     if (mappingStatusString.isEmpty()) {
@@ -9980,8 +10019,8 @@ void QKeyMapper::initProcessInfoTable(void)
 void QKeyMapper::initSysTrayIcon()
 {
     m_SysTrayIcon = new QSystemTrayIcon(this);
-    m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper.ico"));
-    m_SysTrayIcon->setToolTip("QKeyMapper(Idle)");
+    m_SysTrayIcon->setIcon(QIcon(":/Blue2.ico"));
+    m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
 
     m_SysTrayIconMenu = new SystrayMenu(this);
     m_TrayIconMenu_ShowHideAction = new QAction(this);
@@ -10220,18 +10259,30 @@ void QKeyMapper::updateProcessInfoDisplay()
 
 void QKeyMapper::updateSystemTrayDisplay()
 {
+    QString TrayInfo;
+    QString description = ui->descriptionLineEdit->text();
+    if (!description.isEmpty()) {
+        TrayInfo = description;
+    }
+    else if (!m_MapProcessInfo.WindowTitle.isEmpty()) {
+        TrayInfo = m_MapProcessInfo.WindowTitle;
+    }
+    else {
+        TrayInfo = m_MapProcessInfo.FileName;
+    }
+
     if (KEYMAP_CHECKING == m_KeyMapStatus) {
-        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_checking.ico"));
-        m_SysTrayIcon->setToolTip("QKeyMapper(Checking : " + m_MapProcessInfo.FileName + ")");
+        m_SysTrayIcon->setIcon(QIcon(":/Red.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
     }
     else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
-        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping_matched.ico"));
-        m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : " + m_MapProcessInfo.FileName + ")");
+        m_SysTrayIcon->setIcon(QIcon(":/Purple.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         /* Need to make a new global mapping status ICO */
-        m_SysTrayIcon->setIcon(QIcon(":/QKeyMapper_mapping_global.ico"));
-        m_SysTrayIcon->setToolTip("QKeyMapper(Mapping : Global)");
+        m_SysTrayIcon->setIcon(QIcon(":/Green1.ico"));
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : Global") + ")");
     }
 }
 
@@ -11641,9 +11692,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
-    ui->soundEffectCheckBox->setText(tr("Sound Effect"));
+    ui->soundEffectCheckBox->setText(tr("Sound"));
     ui->notificationLabel->setText(tr("Notification"));
-    ui->notificationSizeLabel->setText(tr("Size"));
+    ui->notificationSizeLabel->setText(tr("NotifySize"));
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
@@ -11659,6 +11710,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->Gyro2MouseMinThresholdLabel->setText(tr("MinThres"));
     ui->Gyro2MouseMaxThresholdLabel->setText(tr("MaxThres"));
     ui->Gyro2MouseAdvancedSettingButton->setText(tr("Advanced"));
+    ui->selectTrayIconButton->setText(tr("Select Tray Icon"));
+    ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
 #ifdef DEBUG_LOGOUT_ON
@@ -14829,4 +14882,9 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
 void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()
 {
     showGyro2MouseAdvancedSettingWindow();
+}
+
+void QKeyMapper::on_selectTrayIconButton_clicked()
+{
+
 }

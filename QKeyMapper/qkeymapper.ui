@@ -562,7 +562,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -587,9 +587,9 @@
     <widget class="QCheckBox" name="soundEffectCheckBox">
      <property name="geometry">
       <rect>
-       <x>360</x>
-       <y>10</y>
-       <width>121</width>
+       <x>130</x>
+       <y>40</y>
+       <width>61</width>
        <height>21</height>
       </rect>
      </property>
@@ -597,7 +597,7 @@
       <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
-      <string>Sound Effect</string>
+      <string>Sound</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -736,9 +736,9 @@
     <widget class="QPushButton" name="checkUpdateButton">
      <property name="geometry">
       <rect>
-       <x>350</x>
+       <x>360</x>
        <y>70</y>
-       <width>91</width>
+       <width>111</width>
        <height>21</height>
       </rect>
      </property>
@@ -800,14 +800,14 @@
     <widget class="QLabel" name="notificationSizeLabel">
      <property name="geometry">
       <rect>
-       <x>350</x>
+       <x>365</x>
        <y>40</y>
-       <width>41</width>
+       <width>61</width>
        <height>21</height>
       </rect>
      </property>
      <property name="text">
-      <string>Size</string>
+      <string>NotifySize</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -816,7 +816,7 @@
     <widget class="QSpinBox" name="notificationSizeSpinBox">
      <property name="geometry">
       <rect>
-       <x>395</x>
+       <x>430</x>
        <y>40</y>
        <width>41</width>
        <height>21</height>
@@ -824,6 +824,25 @@
      </property>
      <property name="focusPolicy">
       <enum>Qt::FocusPolicy::ClickFocus</enum>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="selectTrayIconButton">
+     <property name="geometry">
+      <rect>
+       <x>360</x>
+       <y>10</y>
+       <width>111</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Select Tray Icon</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
      </property>
     </widget>
    </widget>
@@ -940,8 +959,8 @@
     <widget class="QCheckBox" name="sendToSameTitleWindowsCheckBox">
      <property name="geometry">
       <rect>
-       <x>190</x>
-       <y>70</y>
+       <x>310</x>
+       <y>40</y>
        <width>181</width>
        <height>21</height>
       </rect>
@@ -993,6 +1012,22 @@
      </property>
      <property name="text">
       <string>Accept Virtual Gamepad Input</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="ProcessIconAsTrayIconCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>200</x>
+       <y>70</y>
+       <width>181</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>ProcessIcon as TrayIcon</string>
      </property>
     </widget>
    </widget>

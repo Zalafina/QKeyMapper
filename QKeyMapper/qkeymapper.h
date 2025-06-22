@@ -715,6 +715,8 @@ private slots:
 
     void on_Gyro2MouseAdvancedSettingButton_clicked();
 
+    void on_selectTrayIconButton_clicked();
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
