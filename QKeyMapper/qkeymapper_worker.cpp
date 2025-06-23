@@ -32,7 +32,7 @@ QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
 QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
-QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
+// QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
 // QHash<QString, QHotkey*> QKeyMapper_Worker::ShortcutsMap = QHash<QString, QHotkey*>();
 #ifdef VIGEM_CLIENT_SUPPORT
 QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, XUSB_BUTTON>();
@@ -11893,6 +11893,7 @@ void QKeyMapper_Worker::initCombinationKeysList()
 
 void QKeyMapper_Worker::initJoystickKeyMap()
 {
+#if 0
     /* Joystick 2Mouse */
     JoyStickKeyMap.insert(JOY_LS2MOUSE_STR              ,   (int)JOYSTICK_LS_MOUSE          );
     JoyStickKeyMap.insert(JOY_RS2MOUSE_STR              ,   (int)JOYSTICK_RS_MOUSE          );
@@ -11953,6 +11954,7 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-RS-Down"                 ,   (int)JOYSTICK_RS_DOWN           );
     JoyStickKeyMap.insert("Joy-RS-Left"                 ,   (int)JOYSTICK_RS_LEFT           );
     JoyStickKeyMap.insert("Joy-RS-Right"                ,   (int)JOYSTICK_RS_RIGHT          );
+#endif
 
     /* Joystick Buttons Map */
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A/×)"                 );
@@ -12093,6 +12095,7 @@ void QKeyMapper_Worker::initSkipReleaseModifiersKeysList()
 #ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::initViGEmKeyMap()
 {
+#if 0
     /* Virtual Joystick Buttons */
     JoyStickKeyMap.insert(VJOY_MOUSE2LS_STR             ,   (int)JOYSTICK_LS_MOUSE      );
     JoyStickKeyMap.insert(VJOY_MOUSE2RS_STR             ,   (int)JOYSTICK_RS_MOUSE      );
@@ -12131,6 +12134,7 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     JoyStickKeyMap.insert("vJoy-RS-Down"                ,   (int)JOYSTICK_RS_DOWN       );
     JoyStickKeyMap.insert("vJoy-RS-Left"                ,   (int)JOYSTICK_RS_LEFT       );
     JoyStickKeyMap.insert("vJoy-RS-Right"               ,   (int)JOYSTICK_RS_RIGHT      );
+#endif
 
     /* ViGEm Virtual Joystick Buttons */
     ViGEmButtonMap.insert("vJoy-Key1(A/×)"              ,   XUSB_GAMEPAD_A              );

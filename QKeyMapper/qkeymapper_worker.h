@@ -1037,7 +1037,7 @@ public:
     static QStringList SpecialMappingKeysList;
     static QList<quint8> SpecialVirtualKeyCodeList;
     // static QStringList skipReleaseModifiersKeysList;
-    static QHash<QString, int> JoyStickKeyMap;
+    // static QHash<QString, int> JoyStickKeyMap;
     // static QHash<QString, QHotkey*> ShortcutsMap;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QHash<QString, XUSB_BUTTON> ViGEmButtonMap;
