@@ -20,6 +20,7 @@ public:
         return m_instance;
     }
 
+    void initTrayIconComboBoxes(void);
     void setUILanguage(int languageindex);
 
     static int getTrayIcon_IdleStateIcon(void);

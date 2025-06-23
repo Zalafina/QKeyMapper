@@ -1,5 +1,6 @@
 #include "qtrayiconselectdialog.h"
 #include "ui_qtrayiconselectdialog.h"
+#include "qkeymapper_constants.h"
 
 QTrayIconSelectDialog *QTrayIconSelectDialog::m_instance = Q_NULLPTR;
 
@@ -8,6 +9,12 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     , ui(new Ui::QTrayIconSelectDialog)
 {
     ui->setupUi(this);
+
+    initTrayIconComboBoxes();
+    ui->idleStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_IDLE_DEFAULT);
+    ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_MONITORING_DEFAULT);
+    ui->globalStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_GLOBAL_DEFAULT);
+    ui->matchedStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_MATCHED_DEFAULT);
 }
 
 QTrayIconSelectDialog::~QTrayIconSelectDialog()
@@ -15,20 +22,8 @@ QTrayIconSelectDialog::~QTrayIconSelectDialog()
     delete ui;
 }
 
-void QTrayIconSelectDialog::setUILanguage(int languageindex)
+void QTrayIconSelectDialog::initTrayIconComboBoxes()
 {
-    Q_UNUSED(languageindex);
-    setWindowTitle(tr("Select Systemtray Icon"));
-
-    ui->idleStateTrayIconSelectLabel->setText(tr("Idle"));
-    ui->monitoringStateTrayIconSelectLabel->setText(tr("Monitoring"));
-    ui->globalStateTrayIconSelectLabel->setText(tr("Global"));
-    ui->matchedStateTrayIconSelectLabel->setText(tr("Matched"));
-
-    int idle_icon_index = ui->idleStateTrayIconSelectComboBox->currentIndex();
-    int monitoring_icon_index = ui->monitoringStateTrayIconSelectComboBox->currentIndex();
-    int global_icon_index = ui->globalStateTrayIconSelectComboBox->currentIndex();
-    int matched_icon_index = ui->matchedStateTrayIconSelectComboBox->currentIndex();
     ui->idleStateTrayIconSelectComboBox->clear();
     ui->monitoringStateTrayIconSelectComboBox->clear();
     ui->globalStateTrayIconSelectComboBox->clear();
@@ -53,7 +48,26 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
     ui->monitoringStateTrayIconSelectComboBox->addItems(systrayIconList);
     ui->globalStateTrayIconSelectComboBox->addItems(systrayIconList);
     ui->matchedStateTrayIconSelectComboBox->addItems(systrayIconList);
+}
 
+void QTrayIconSelectDialog::setUILanguage(int languageindex)
+{
+    Q_UNUSED(languageindex);
+    setWindowTitle(tr("Select Systemtray Icon"));
+
+    ui->idleStateTrayIconSelectLabel->setText(tr("Idle"));
+    ui->monitoringStateTrayIconSelectLabel->setText(tr("Monitoring"));
+    ui->globalStateTrayIconSelectLabel->setText(tr("Global"));
+    ui->matchedStateTrayIconSelectLabel->setText(tr("Matched"));
+
+    // Backup current selections
+    int idle_icon_index = ui->idleStateTrayIconSelectComboBox->currentIndex();
+    int monitoring_icon_index = ui->monitoringStateTrayIconSelectComboBox->currentIndex();
+    int global_icon_index = ui->globalStateTrayIconSelectComboBox->currentIndex();
+    int matched_icon_index = ui->matchedStateTrayIconSelectComboBox->currentIndex();
+
+    initTrayIconComboBoxes();
+    // Restore the previous selections
     ui->idleStateTrayIconSelectComboBox->setCurrentIndex(idle_icon_index);
     ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(monitoring_icon_index);
     ui->globalStateTrayIconSelectComboBox->setCurrentIndex(global_icon_index);

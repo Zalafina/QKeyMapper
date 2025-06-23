@@ -1605,6 +1605,7 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
 void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
 {
     Q_UNUSED(hWinEventHook);
+    Q_UNUSED(hwnd);
     Q_UNUSED(idObject);
     Q_UNUSED(idChild);
     Q_UNUSED(dwEventThread);
@@ -6734,21 +6735,69 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Notification Size ->" << ui->notificationSizeSpinBox->value();
 #endif
 
-//         if (true == settingFile.contains(TRAYICON_IDLE)){
-//             int trayicon_idle = settingFile.value(NOTIFICATION_POSITION).toInt();
-//             if (notification_position >= 0 && notification_position <= NOTIFICATION_POSITION_BOTTOM_RIGHT) {
-//                 ui->notificationComboBox->setCurrentIndex(notification_position);
-//             }
-//             else {
-//                 ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
-//             }
-//         }
-//         else {
-//             ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
-//         }
-// #ifdef DEBUG_LOGOUT_ON
-//         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
-// #endif
+        if (true == settingFile.contains(TRAYICON_IDLE)){
+            int trayicon_idle = settingFile.value(TRAYICON_IDLE).toInt();
+            if (TRAYICON_INDEX_MIN <= trayicon_idle && trayicon_idle <= TRAYICON_INDEX_MAX) {
+                m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(trayicon_idle);
+            }
+            else {
+                m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(TRAYICON_IDLE_DEFAULT);
+            }
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(TRAYICON_IDLE_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "TrayIcon Idle ->" << m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon();
+#endif
+
+        if (true == settingFile.contains(TRAYICON_MONITORING)){
+            int trayicon_monitoring = settingFile.value(TRAYICON_MONITORING).toInt();
+            if (TRAYICON_INDEX_MIN <= trayicon_monitoring && trayicon_monitoring <= TRAYICON_INDEX_MAX) {
+                m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(trayicon_monitoring);
+            }
+            else {
+                m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(TRAYICON_MONITORING_DEFAULT);
+            }
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(TRAYICON_MONITORING_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "TrayIcon Monitoring ->" << m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon();
+#endif
+
+        if (true == settingFile.contains(TRAYICON_GLOBAL)){
+            int trayicon_global = settingFile.value(TRAYICON_GLOBAL).toInt();
+            if (TRAYICON_INDEX_MIN <= trayicon_global && trayicon_global <= TRAYICON_INDEX_MAX) {
+                m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(trayicon_global);
+            }
+            else {
+                m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(TRAYICON_GLOBAL_DEFAULT);
+            }
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(TRAYICON_GLOBAL_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "TrayIcon Global ->" << m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon();
+#endif
+
+        if (true == settingFile.contains(TRAYICON_MATCHED)){
+            int trayicon_matched = settingFile.value(TRAYICON_MATCHED).toInt();
+            if (TRAYICON_INDEX_MIN <= trayicon_matched && trayicon_matched <= TRAYICON_INDEX_MAX) {
+                m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(trayicon_matched);
+            }
+            else {
+                m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(TRAYICON_MATCHED_DEFAULT);
+            }
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(TRAYICON_MATCHED_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "TrayIcon Matched ->" << m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon();
+#endif
 
         if (true == settingFile.contains(UPDATE_SITE)){
             int update_site = settingFile.value(UPDATE_SITE).toInt();
