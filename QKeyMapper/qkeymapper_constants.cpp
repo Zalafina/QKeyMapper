@@ -107,6 +107,28 @@ const int NOTIFICATION_SIZE_MIN = 1;
 const int NOTIFICATION_SIZE_MAX = 72;
 const int NOTIFICATION_SIZE_DEFAULT = 16;
 
+const int TRAYICON_INDEX_BLACK = 0;
+const int TRAYICON_INDEX_BLUE1 = 1;
+const int TRAYICON_INDEX_BLUE2 = 2;
+const int TRAYICON_INDEX_GRAY1 = 3;
+const int TRAYICON_INDEX_GRAY2 = 4;
+const int TRAYICON_INDEX_GREEN1 = 5;
+const int TRAYICON_INDEX_GREEN2 = 6;
+const int TRAYICON_INDEX_ORANGE = 7;
+const int TRAYICON_INDEX_PINK = 8;
+const int TRAYICON_INDEX_PURPLE = 9;
+const int TRAYICON_INDEX_RED = 10;
+const int TRAYICON_INDEX_WHITE = 11;
+const int TRAYICON_INDEX_YELLOW = 12;
+
+const int TRAYICON_INDEX_MIN = TRAYICON_INDEX_BLACK;
+const int TRAYICON_INDEX_MAX = TRAYICON_INDEX_YELLOW;
+
+const int TRAYICON_IDLE_DEFAULT = TRAYICON_INDEX_BLUE2;
+const int TRAYICON_MONITORING_DEFAULT = TRAYICON_INDEX_RED;
+const int TRAYICON_GLOBAL_DEFAULT = TRAYICON_INDEX_GREEN1;
+const int TRAYICON_MATCHED_DEFAULT = TRAYICON_INDEX_PURPLE;
+
 const char *CROSSHAIR_CENTERCOLOR_DEFAULT = "70a1ff";
 const char *CROSSHAIR_CROSSHAIRCOLOR_DEFAULT = "70a1ff";
 const int CROSSHAIR_OPACITY_MIN = 0;
@@ -546,6 +568,10 @@ const char *NOTSHOW_FILTERKEYS_DISABLED = "NotShow_FilterKeysDisabled";
 const char *CLOSETO_SYSTEMTRAY = "CloseToSystemtray";
 const char *NOTIFICATION_POSITION = "NotificationPosition";
 const char *NOTIFICATION_SIZE = "NotificationSize";
+const char *TRAYICON_IDLE = "TrayIcon_Idle";
+const char *TRAYICON_MONITORING = "TrayIcon_Monitoring";
+const char *TRAYICON_GLOBAL = "TrayIcon_Global";
+const char *TRAYICON_MATCHED = "TrayIcon_Matched";
 const char *UPDATE_SITE = "UpdateSite";
 const char *SETTINGSELECT = "SettingSelect";
 const char *AUTO_STARTUP = "AutoStartup";

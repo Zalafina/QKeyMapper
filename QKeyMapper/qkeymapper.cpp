@@ -5853,6 +5853,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(NOTIFICATION_SIZE , ui->notificationSizeSpinBox->value());
+    settingFile.setValue(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
+    settingFile.setValue(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
+    settingFile.setValue(TRAYICON_GLOBAL , m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon());
+    settingFile.setValue(TRAYICON_MATCHED , m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon());
     if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {
         settingFile.setValue(UPDATE_SITE, UPDATE_SITE_GITEE);
     }
@@ -6729,6 +6733,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Notification Size ->" << ui->notificationSizeSpinBox->value();
 #endif
+
+//         if (true == settingFile.contains(TRAYICON_IDLE)){
+//             int trayicon_idle = settingFile.value(NOTIFICATION_POSITION).toInt();
+//             if (notification_position >= 0 && notification_position <= NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+//                 ui->notificationComboBox->setCurrentIndex(notification_position);
+//             }
+//             else {
+//                 ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+//             }
+//         }
+//         else {
+//             ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+//         }
+// #ifdef DEBUG_LOGOUT_ON
+//         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
+// #endif
 
         if (true == settingFile.contains(UPDATE_SITE)){
             int update_site = settingFile.value(UPDATE_SITE).toInt();
