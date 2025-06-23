@@ -48,7 +48,7 @@
     <number>-1</number>
    </property>
   </widget>
-  <widget class="QLabel" name="monitingStateTrayIconSelectLabel">
+  <widget class="QLabel" name="monitoringStateTrayIconSelectLabel">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -64,7 +64,7 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QComboBox" name="monitingStateTrayIconSelectComboBox">
+  <widget class="QComboBox" name="monitoringStateTrayIconSelectComboBox">
    <property name="geometry">
     <rect>
      <x>95</x>

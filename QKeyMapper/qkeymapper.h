@@ -69,6 +69,7 @@
 #include "qgyro2mouseoptiondialog.h"
 #include "qitemsetupdialog.h"
 #include "qtablesetupdialog.h"
+#include "qtrayiconselectdialog.h"
 
 extern void updateQtDisplayEnvironment(void);
 
@@ -432,6 +433,8 @@ public:
     void setKeyHook(HWND hWnd);
     void setKeyUnHook(void);
     void setKeyMappingRestart(void);
+    void startWinEventHook(void);
+    void stopWinEventHook(void);
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
@@ -450,6 +453,7 @@ public:
     static BOOL DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath);
     static BOOL CALLBACK EnumWindowsBgProc(HWND hWnd, LPARAM lParam);
     static void collectWindowsHWND(const QString& WindowText, HWND hWnd);
+    static void CALLBACK WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime);
     static int findOriKeyInKeyMappingDataList(const QString &keyname);
     static int findOriKeyInKeyMappingDataList_RemoveMultiInput(const QString &keyname);
     static int findOriKeyInCertainKeyMappingDataList(const QString &keyname, QList<MAP_KEYDATA> *keyMappingDataListToCheck);
@@ -849,6 +853,7 @@ public slots:
 
 public:
     static bool s_isDestructing;
+    static HWINEVENTHOOK s_WinEventHook;
     static int s_GlobalSettingAutoStart;
     static uint s_CycleCheckLoopCount;
     static HWND s_CurrentMappingHWND;
@@ -879,7 +884,9 @@ private:
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
     QPoint m_LastWindowPosition;
+#ifdef USE_CYCLECHECKTIMER
     QTimer m_CycleCheckTimer;
+#endif
     QTimer m_ProcessInfoTableRefreshTimer;
 public:
     MAP_PROCESSINFO m_MapProcessInfo;
@@ -930,6 +937,7 @@ private:
     ULONG_PTR m_GdiplusToken;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
+    QTrayIconSelectDialog *m_TrayIconSelectDialog;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;

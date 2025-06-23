@@ -8,6 +8,7 @@ QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 
 bool QKeyMapper::s_isDestructing = false;
+HWINEVENTHOOK QKeyMapper::s_WinEventHook = Q_NULLPTR;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
 uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 HWND QKeyMapper::s_CurrentMappingHWND = NULL;
@@ -37,7 +38,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMapStatus(KEYMAP_IDLE),
     ui(new Ui::QKeyMapper),
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
+#ifdef USE_CYCLECHECKTIMER
     m_CycleCheckTimer(this),
+#endif
     m_ProcessInfoTableRefreshTimer(this),
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
@@ -84,6 +87,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_GdiplusToken(NULL),
     m_deviceListWindow(Q_NULLPTR),
     m_Gyro2MouseOptionDialog(Q_NULLPTR),
+    m_TrayIconSelectDialog(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR),
     m_TableSetupDialog(Q_NULLPTR),
     m_PopupNotification(Q_NULLPTR)
@@ -381,6 +385,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_ItemSetupDialog = new QItemSetupDialog(this);
     m_TableSetupDialog = new QTableSetupDialog(this);
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
+    m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
@@ -406,7 +411,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
+#ifdef USE_CYCLECHECKTIMER
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
+#endif
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
 
     QObject::connect(m_KeyMappingTabWidget, &QTabWidget::currentChanged, this, &QKeyMapper::keyMappingTabWidgetCurrentChanged);
@@ -446,7 +453,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
 
-    //m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
     updateHWNDListProc();
     refreshProcessInfoTable();
     if (!ui->processListButton->isChecked()) {
@@ -473,6 +479,7 @@ QKeyMapper::~QKeyMapper()
 #endif
     s_isDestructing = true;
 
+    stopWinEventHook();
     // Unregister WTS session notifications
     WTSUnRegisterSessionNotification(reinterpret_cast<HWND>(winId()));
 
@@ -935,6 +942,42 @@ void QKeyMapper::setKeyMappingRestart()
 {
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal();
     emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal();
+}
+
+void QKeyMapper::startWinEventHook()
+{
+    if (s_WinEventHook == Q_NULLPTR) {
+        s_WinEventHook = SetWinEventHook(
+            EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
+            NULL,
+            WinEventProc,
+            0, 0,
+            WINEVENT_OUTOFCONTEXT
+        );
+#ifdef DEBUG_LOGOUT_ON
+        if (s_WinEventHook != Q_NULLPTR) {
+            qDebug("[SetHookProc] QKeyMapper::setKeyHook() SetWinEventHook Success. -> 0x%08X", (void*)s_WinEventHook);
+        }
+#endif
+    }
+}
+
+void QKeyMapper::stopWinEventHook()
+{
+    bool unhook_ret = 0;
+    if (s_WinEventHook != Q_NULLPTR){
+        unhook_ret = UnhookWinEvent(s_WinEventHook);
+        s_WinEventHook = Q_NULLPTR;
+
+#ifdef DEBUG_LOGOUT_ON
+        if (0 == unhook_ret) {
+            qDebug() << "[SetHookProc]" << "QKeyMapper::setKeyUnHook() UnhookWinEvent Failure! LastError:" << GetLastError();
+        }
+        else {
+            qDebug("[SetHookProc] QKeyMapper::setKeyUnHook() UnhookWinEvent Success. -> 0x%08X", (void*)s_WinEventHook);
+        }
+#endif
+    }
 }
 
 void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon)
@@ -1556,6 +1599,31 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
                 s_hWndList.append(hWnd);
             }
         }
+    }
+}
+
+void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
+{
+    Q_UNUSED(hWinEventHook);
+    Q_UNUSED(idObject);
+    Q_UNUSED(idChild);
+    Q_UNUSED(dwEventThread);
+    Q_UNUSED(dwmsEventTime);
+
+    if (event == EVENT_SYSTEM_FOREGROUND) {
+#ifdef DEBUG_LOGOUT_ON
+        QString windowTitle;
+        TCHAR titleBuffer[MAX_PATH];
+        memset(titleBuffer, 0x00, sizeof(titleBuffer));
+
+        int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
+        if (resultLength){
+            windowTitle = QString::fromWCharArray(titleBuffer);
+            qDebug().nospace() << "[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle;
+        }
+#endif
+
+        getInstance()->cycleCheckProcessProc();
     }
 }
 
@@ -4721,9 +4789,12 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         }
 
         if (true == fileNameCheckOK && true == windowTitleCheckOK){
+#ifdef USE_CYCLECHECKTIMER
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
+#endif
             ui->keymapButton->setText(tr("MappingStop"));
             m_KeyMapStatus = KEYMAP_CHECKING;
+            startWinEventHook();
             s_CycleCheckLoopCount = 0;
             updateSystemTrayDisplay();
             emit updateLockStatus_Signal();
@@ -4738,7 +4809,9 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         }
     }
     else{
+#ifdef USE_CYCLECHECKTIMER
         m_CycleCheckTimer.stop();
+#endif
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
         m_SysTrayIcon->setIcon(QIcon(":/Blue2.ico"));
         ui->keymapButton->setText(tr("MappingStart"));
@@ -4746,6 +4819,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
             playStopSound();
         }
+        stopWinEventHook();
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
         mappingStopNotification();
@@ -13971,7 +14045,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const QSt
 
     m_DisplayTime = displayTime;
 
-    QString styleSheet = QString("background-color: rgba(0, 0, 0, 120); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
+    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
     m_Label->setStyleSheet(styleSheet);
 
     QFont customFont(FONTNAME_ENGLISH, size, QFont::Bold);
