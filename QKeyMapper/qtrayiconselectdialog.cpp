@@ -8,6 +8,7 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QTrayIconSelectDialog)
 {
+    m_instance = this;
     ui->setupUi(this);
 
     initTrayIconComboBoxes();

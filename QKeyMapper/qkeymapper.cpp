@@ -4814,7 +4814,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         m_CycleCheckTimer.stop();
 #endif
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
-        m_SysTrayIcon->setIcon(QIcon(":/Blue2.ico"));
+        m_SysTrayIcon->setIcon(QIcon(":/Blue1.ico"));
         ui->keymapButton->setText(tr("MappingStart"));
 
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
@@ -10190,7 +10190,7 @@ void QKeyMapper::initProcessInfoTable(void)
 void QKeyMapper::initSysTrayIcon()
 {
     m_SysTrayIcon = new QSystemTrayIcon(this);
-    m_SysTrayIcon->setIcon(QIcon(":/Blue2.ico"));
+    m_SysTrayIcon->setIcon(QIcon(":/Blue1.ico"));
     m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
 
     m_SysTrayIconMenu = new SystrayMenu(this);
