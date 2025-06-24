@@ -825,6 +825,8 @@ private:
     void closeInputDeviceListWindow(void);
     void showGyro2MouseAdvancedSettingWindow(void);
     void closeGyro2MouseAdvancedSettingDialog(void);
+    void showTrayIconSelectDialog(void);
+    void closeTrayIconSelectDialog(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);

@@ -3,6 +3,7 @@
         <file alias="Black.ico">image\systrayicon_16px\Black_16px.ico</file>
         <file alias="Blue1.ico">image\systrayicon_16px\Blue1_16px.ico</file>
         <file alias="Blue2.ico">image\systrayicon_16px\Blue2_16px.ico</file>
+        <file alias="Cyan.ico">image\systrayicon_16px\Cyan_16px.ico</file>
         <file alias="Gray1.ico">image\systrayicon_16px\Gray1_16px.ico</file>
         <file alias="Gray2.ico">image\systrayicon_16px\Gray2_16px.ico</file>
         <file alias="Green1.ico">image\systrayicon_16px\Green1_16px.ico</file>

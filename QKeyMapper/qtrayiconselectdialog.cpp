@@ -2,6 +2,7 @@
 #include "ui_qtrayiconselectdialog.h"
 #include "qkeymapper_constants.h"
 
+OrderedMap<int, QString> QTrayIconSelectDialog::s_TrayIconColorMap;
 QTrayIconSelectDialog *QTrayIconSelectDialog::m_instance = Q_NULLPTR;
 
 QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
@@ -11,6 +12,7 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    initTrayIconColorMap();
     initTrayIconComboBoxes();
     ui->idleStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_IDLE_DEFAULT);
     ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_MONITORING_DEFAULT);
@@ -23,6 +25,26 @@ QTrayIconSelectDialog::~QTrayIconSelectDialog()
     delete ui;
 }
 
+void QTrayIconSelectDialog::initTrayIconColorMap()
+{
+    s_TrayIconColorMap.clear();
+
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_BLACK,     "Black.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_BLUE1,     "Blue1.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_BLUE2,     "Blue2.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_CYAN,      "Cyan.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_GRAY1,     "Gray1.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_GRAY2,     "Gray2.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_GREEN1,    "Green1.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_GREEN2,    "Green2.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_ORANGE,    "Orange.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_PINK,      "Pink.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_PURPLE,    "Purple.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_RED,       "Red.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_WHITE,     "White.ico");
+    s_TrayIconColorMap.insert(TRAYICON_INDEX_YELLOW,    "Yellow.ico");
+}
+
 void QTrayIconSelectDialog::initTrayIconComboBoxes()
 {
     ui->idleStateTrayIconSelectComboBox->clear();
@@ -30,25 +52,35 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
     ui->globalStateTrayIconSelectComboBox->clear();
     ui->matchedStateTrayIconSelectComboBox->clear();
 
-    QStringList systrayIconList;
-    systrayIconList.append(tr("Black.ico"));
-    systrayIconList.append(tr("Blue1.ico"));
-    systrayIconList.append(tr("Blue2.ico"));
-    systrayIconList.append(tr("Gray1.ico"));
-    systrayIconList.append(tr("Gray2.ico"));
-    systrayIconList.append(tr("Green1.ico"));
-    systrayIconList.append(tr("Green2.ico"));
-    systrayIconList.append(tr("Orange.ico"));
-    systrayIconList.append(tr("Pink.ico"));
-    systrayIconList.append(tr("Purple.ico"));
-    systrayIconList.append(tr("Red.ico"));
-    systrayIconList.append(tr("White.ico"));
-    systrayIconList.append(tr("Yellow.ico"));
+    struct IconInfo {
+        QString filename;
+        QString displayName;
+    };
 
-    ui->idleStateTrayIconSelectComboBox->addItems(systrayIconList);
-    ui->monitoringStateTrayIconSelectComboBox->addItems(systrayIconList);
-    ui->globalStateTrayIconSelectComboBox->addItems(systrayIconList);
-    ui->matchedStateTrayIconSelectComboBox->addItems(systrayIconList);
+    QList<IconInfo> systrayIconList = {
+        {"Black.ico",   tr("Black.ico")},
+        {"Blue1.ico",   tr("Blue1.ico")},
+        {"Blue2.ico",   tr("Blue2.ico")},
+        {"Cyan.ico",    tr("Cyan.ico")},
+        {"Gray1.ico",   tr("Gray1.ico")},
+        {"Gray2.ico",   tr("Gray2.ico")},
+        {"Green1.ico",  tr("Green1.ico")},
+        {"Green2.ico",  tr("Green2.ico")},
+        {"Orange.ico",  tr("Orange.ico")},
+        {"Pink.ico",    tr("Pink.ico")},
+        {"Purple.ico",  tr("Purple.ico")},
+        {"Red.ico",     tr("Red.ico")},
+        {"White.ico",   tr("White.ico")},
+        {"Yellow.ico",  tr("Yellow.ico")}
+    };
+
+    for (const IconInfo &iconInfo : systrayIconList) {
+        QIcon icon(QString(":/") + iconInfo.filename);
+        ui->idleStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
+        ui->monitoringStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
+        ui->globalStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
+        ui->matchedStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
+    }
 }
 
 void QTrayIconSelectDialog::setUILanguage(int languageindex)
@@ -77,22 +109,22 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
 
 int QTrayIconSelectDialog::getTrayIcon_IdleStateIcon()
 {
-    return getInstance()->ui->idleStateTrayIconSelectComboBox->currentIndex();
+    return ui->idleStateTrayIconSelectComboBox->currentIndex();
 }
 
 int QTrayIconSelectDialog::getTrayIcon_MonitoringStateIcon()
 {
-    return getInstance()->ui->monitoringStateTrayIconSelectComboBox->currentIndex();
+    return ui->monitoringStateTrayIconSelectComboBox->currentIndex();
 }
 
 int QTrayIconSelectDialog::getTrayIcon_GlobalStateIcon()
 {
-    return getInstance()->ui->globalStateTrayIconSelectComboBox->currentIndex();
+    return ui->globalStateTrayIconSelectComboBox->currentIndex();
 }
 
 int QTrayIconSelectDialog::getTrayIcon_MatchedStateIcon()
 {
-    return getInstance()->ui->matchedStateTrayIconSelectComboBox->currentIndex();
+    return ui->matchedStateTrayIconSelectComboBox->currentIndex();
 }
 
 void QTrayIconSelectDialog::setTrayIcon_IdleStateIcon(int trayicon_index)
@@ -113,6 +145,26 @@ void QTrayIconSelectDialog::setTrayIcon_GlobalStateIcon(int trayicon_index)
 void QTrayIconSelectDialog::setTrayIcon_MatchedStateIcon(int trayicon_index)
 {
     ui->matchedStateTrayIconSelectComboBox->setCurrentIndex(trayicon_index);
+}
+
+QIcon QTrayIconSelectDialog::getIdleStateQIcon()
+{
+    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_IdleStateIcon())));
+}
+
+QIcon QTrayIconSelectDialog::getMonitoringStateQIcon()
+{
+    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_MonitoringStateIcon())));
+}
+
+QIcon QTrayIconSelectDialog::getGlobalStateQIcon()
+{
+    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_GlobalStateIcon())));
+}
+
+QIcon QTrayIconSelectDialog::getMatchedStateQIcon()
+{
+    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_MatchedStateIcon())));
 }
 
 bool QTrayIconSelectDialog::event(QEvent *event)

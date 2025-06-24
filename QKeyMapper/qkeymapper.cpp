@@ -391,6 +391,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
+    updateSystemTrayDisplay();
+    m_SysTrayIcon->show();
     initGyro2MouseSpinBoxes();
 
     m_PopupNotification = new QPopupNotification(Q_NULLPTR);
@@ -518,6 +520,7 @@ void QKeyMapper::WindowStateChangedProc(void)
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
+        closeTrayIconSelectDialog();
         // hide();
     }
 }
@@ -4544,6 +4547,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeItemSetupDialog();
             closeCrosshairSetupDialog();
             closeGyro2MouseAdvancedSettingDialog();
+            closeTrayIconSelectDialog();
             hide();
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
@@ -4814,7 +4818,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         m_CycleCheckTimer.stop();
 #endif
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
-        m_SysTrayIcon->setIcon(QIcon(":/Blue1.ico"));
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
         ui->keymapButton->setText(tr("MappingStart"));
 
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
@@ -4837,6 +4841,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
+        closeTrayIconSelectDialog();
         changeControlEnableStatus(false);
     }
     else{
@@ -9493,6 +9498,24 @@ void QKeyMapper::closeGyro2MouseAdvancedSettingDialog()
     }
 }
 
+void QKeyMapper::showTrayIconSelectDialog()
+{
+    if (!m_TrayIconSelectDialog->isVisible()) {
+        m_TrayIconSelectDialog->show();
+    }
+}
+
+void QKeyMapper::closeTrayIconSelectDialog()
+{
+    if (Q_NULLPTR == m_TrayIconSelectDialog) {
+        return;
+    }
+
+    if (m_TrayIconSelectDialog->isVisible()) {
+        m_TrayIconSelectDialog->close();
+    }
+}
+
 void QKeyMapper::showItemSetupDialog(int tabindex, int row)
 {
     if (Q_NULLPTR == m_ItemSetupDialog) {
@@ -10190,8 +10213,8 @@ void QKeyMapper::initProcessInfoTable(void)
 void QKeyMapper::initSysTrayIcon()
 {
     m_SysTrayIcon = new QSystemTrayIcon(this);
-    m_SysTrayIcon->setIcon(QIcon(":/Blue1.ico"));
-    m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
+    // m_SysTrayIcon->setIcon(QIcon(":/Blue1.ico"));
+    // m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
 
     m_SysTrayIconMenu = new SystrayMenu(this);
     m_TrayIconMenu_ShowHideAction = new QAction(this);
@@ -10211,7 +10234,7 @@ void QKeyMapper::initSysTrayIcon()
     // Add the created menu to the system tray icon
     m_SysTrayIcon->setContextMenu(m_SysTrayIconMenu);
 
-    m_SysTrayIcon->show();
+    // m_SysTrayIcon->show();
 }
 
 void QKeyMapper::initPopupMessage()
@@ -10443,7 +10466,7 @@ void QKeyMapper::updateSystemTrayDisplay()
     }
 
     if (KEYMAP_CHECKING == m_KeyMapStatus) {
-        m_SysTrayIcon->setIcon(QIcon(":/Red.ico"));
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getMonitoringStateQIcon());
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
     }
     else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
@@ -10453,7 +10476,7 @@ void QKeyMapper::updateSystemTrayDisplay()
             trayicon = m_MapProcessInfo.WindowIcon;
         }
         else {
-            trayicon = QIcon(":/Purple.ico");
+            trayicon = m_TrayIconSelectDialog->getMatchedStateQIcon();
         }
 
         m_SysTrayIcon->setIcon(trayicon);
@@ -10461,8 +10484,12 @@ void QKeyMapper::updateSystemTrayDisplay()
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         /* Need to make a new global mapping status ICO */
-        m_SysTrayIcon->setIcon(QIcon(":/Green1.ico"));
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getGlobalStateQIcon());
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : Global") + ")");
+    }
+    else {
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
     }
 }
 
@@ -10497,6 +10524,7 @@ void QKeyMapper::switchShowHide()
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
+        closeTrayIconSelectDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -10530,6 +10558,7 @@ void QKeyMapper::forceHide()
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
+        closeTrayIconSelectDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -11981,6 +12010,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_Gyro2MouseOptionDialog != Q_NULLPTR) {
         m_Gyro2MouseOptionDialog->setUILanguage(languageindex);
+    }
+
+    if (m_TrayIconSelectDialog != Q_NULLPTR) {
+        m_TrayIconSelectDialog->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
@@ -15068,5 +15101,5 @@ void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()
 
 void QKeyMapper::on_selectTrayIconButton_clicked()
 {
-
+    showTrayIconSelectDialog();
 }

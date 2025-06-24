@@ -79,6 +79,7 @@ extern const int NOTIFICATION_SIZE_DEFAULT;
 extern const int TRAYICON_INDEX_BLACK;
 extern const int TRAYICON_INDEX_BLUE1;
 extern const int TRAYICON_INDEX_BLUE2;
+extern const int TRAYICON_INDEX_CYAN;
 extern const int TRAYICON_INDEX_GRAY1;
 extern const int TRAYICON_INDEX_GRAY2;
 extern const int TRAYICON_INDEX_GREEN1;
