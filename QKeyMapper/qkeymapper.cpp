@@ -10,7 +10,9 @@ QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 bool QKeyMapper::s_isDestructing = false;
 HWINEVENTHOOK QKeyMapper::s_WinEventHook = Q_NULLPTR;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
+#ifdef USE_CYCLECHECKTIMER
 uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+#endif
 HWND QKeyMapper::s_CurrentMappingHWND = NULL;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<HWND> QKeyMapper::s_hWndList;
@@ -40,6 +42,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
 #ifdef USE_CYCLECHECKTIMER
     m_CycleCheckTimer(this),
+#else
+    m_CheckGlobalSettingSwitchTimer(this),
 #endif
     m_ProcessInfoTableRefreshTimer(this),
     m_MapProcessInfo(),
@@ -223,6 +227,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             && (false == m_SAO_FontName.isEmpty())){
         setControlCustomFont(m_SAO_FontName);
     }
+#endif
+
+#ifndef USE_CYCLECHECKTIMER
+    m_CheckGlobalSettingSwitchTimer.setInterval(CHECK_GLOBALSETTING_SWITCH_TIMEOUT);
+    m_CheckGlobalSettingSwitchTimer.setSingleShot(true);
 #endif
 
     // set QTableWidget selected background-color
@@ -415,6 +424,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
 #ifdef USE_CYCLECHECKTIMER
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
+#else
+    QObject::connect(&m_CheckGlobalSettingSwitchTimer, &QTimer::timeout, this, &QKeyMapper::checkGlobalSettingSwitchTimeout);
 #endif
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
 
@@ -729,7 +740,11 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         setKeyHook(NULL);
                         m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
                         mappingStartNotification();
+#ifdef USE_CYCLECHECKTIMER
                         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+#else
+                        m_CheckGlobalSettingSwitchTimer.stop();
+#endif
                         updateSystemTrayDisplay();
                         emit updateLockStatus_Signal();
                     }
@@ -771,7 +786,11 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     }
                     m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
                     mappingStartNotification();
+#ifdef USE_CYCLECHECKTIMER
                     s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+#else
+                    m_CheckGlobalSettingSwitchTimer.stop();
+#endif
                     updateSystemTrayDisplay();
                     emit updateLockStatus_Signal();
                 }
@@ -810,7 +829,11 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 mappingStopNotification();
+#ifdef USE_CYCLECHECKTIMER
                 s_CycleCheckLoopCount = 0;
+#else
+                m_CheckGlobalSettingSwitchTimer.start();
+#endif
                 updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
             }
@@ -820,6 +843,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         //EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
     }
 
+#ifdef USE_CYCLECHECKTIMER
     if (m_KeyMapStatus == KEYMAP_CHECKING && GLOBAL_MAPPING_START_WAIT == s_CycleCheckLoopCount) {
         if (checkGlobalSettingAutoStart()) {
             loadSetting_flag = true;
@@ -833,7 +857,31 @@ void QKeyMapper::cycleCheckProcessProc(void)
     if (s_CycleCheckLoopCount > CYCLE_CHECK_LOOPCOUNT_MAX) {
         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
     }
+#else
+    if (m_KeyMapStatus == KEYMAP_CHECKING) {
+        m_CheckGlobalSettingSwitchTimer.start();
+    }
+#endif
 }
+
+#ifndef USE_CYCLECHECKTIMER
+void QKeyMapper::checkGlobalSettingSwitchTimeout()
+{
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("[checkGlobalSettingSwitchTimeout] %1ms Timer timeout, m_KeyMapStatus = %2").arg(CHECK_GLOBALSETTING_SWITCH_TIMEOUT).arg(QMetaEnum::fromType<QKeyMapper::KeyMapStatus>().valueToKey(m_KeyMapStatus));
+    qDebug().nospace().noquote() << debugmessage;
+#endif
+    if (m_KeyMapStatus == KEYMAP_CHECKING) {
+        if (checkGlobalSettingAutoStart()) {
+            loadSetting_flag = true;
+            bool loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
+            Q_UNUSED(loadresult);
+            loadSetting_flag = false;
+            cycleCheckProcessProc();
+        }
+    }
+}
+#endif
 
 void QKeyMapper::cycleRefreshProcessInfoTableProc()
 {
@@ -4800,7 +4848,11 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
             ui->keymapButton->setText(tr("MappingStop"));
             m_KeyMapStatus = KEYMAP_CHECKING;
             startWinEventHook();
+#ifdef USE_CYCLECHECKTIMER
             s_CycleCheckLoopCount = 0;
+#else
+            m_CheckGlobalSettingSwitchTimer.start();
+#endif
             updateSystemTrayDisplay();
             emit updateLockStatus_Signal();
             startKeyMap = true;
@@ -4828,7 +4880,11 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
         mappingStopNotification();
+#ifdef USE_CYCLECHECKTIMER
         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
+#else
+        m_CheckGlobalSettingSwitchTimer.stop();
+#endif
         emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -10451,48 +10507,6 @@ void QKeyMapper::updateProcessInfoDisplay()
     }
 }
 
-void QKeyMapper::updateSystemTrayDisplay()
-{
-    QString TrayInfo;
-    QString description = ui->descriptionLineEdit->text();
-    if (!description.isEmpty()) {
-        TrayInfo = description;
-    }
-    else if (!m_MapProcessInfo.WindowTitle.isEmpty()) {
-        TrayInfo = m_MapProcessInfo.WindowTitle;
-    }
-    else {
-        TrayInfo = m_MapProcessInfo.FileName;
-    }
-
-    if (KEYMAP_CHECKING == m_KeyMapStatus) {
-        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getMonitoringStateQIcon());
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
-    }
-    else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
-        bool processicon_as_trayicon = getProcessIconAsTrayIconStatus();
-        QIcon trayicon;
-        if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
-            trayicon = m_MapProcessInfo.WindowIcon;
-        }
-        else {
-            trayicon = m_TrayIconSelectDialog->getMatchedStateQIcon();
-        }
-
-        m_SysTrayIcon->setIcon(trayicon);
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
-    }
-    else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
-        /* Need to make a new global mapping status ICO */
-        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getGlobalStateQIcon());
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : Global") + ")");
-    }
-    else {
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
-        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
-    }
-}
-
 void QKeyMapper::showQKeyMapperWindowToTop()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -10667,6 +10681,48 @@ bool QKeyMapper::isCloseToSystemtray(bool force_showdialog)
     }
 
     return closeto_systemtray;
+}
+
+void QKeyMapper::updateSystemTrayDisplay()
+{
+    QString TrayInfo;
+    QString description = ui->descriptionLineEdit->text();
+    if (!description.isEmpty()) {
+        TrayInfo = description;
+    }
+    else if (!m_MapProcessInfo.WindowTitle.isEmpty()) {
+        TrayInfo = m_MapProcessInfo.WindowTitle;
+    }
+    else {
+        TrayInfo = m_MapProcessInfo.FileName;
+    }
+
+    if (KEYMAP_CHECKING == m_KeyMapStatus) {
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getMonitoringStateQIcon());
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
+    }
+    else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+        bool processicon_as_trayicon = getProcessIconAsTrayIconStatus();
+        QIcon trayicon;
+        if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
+            trayicon = m_MapProcessInfo.WindowIcon;
+        }
+        else {
+            trayicon = m_TrayIconSelectDialog->getMatchedStateQIcon();
+        }
+
+        m_SysTrayIcon->setIcon(trayicon);
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
+    }
+    else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
+        /* Need to make a new global mapping status ICO */
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getGlobalStateQIcon());
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : Global") + ")");
+    }
+    else {
+        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
+        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
+    }
 }
 
 void QKeyMapper::showInformationPopup(const QString &message)

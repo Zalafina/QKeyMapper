@@ -42,6 +42,7 @@ public:
 
 protected:
     bool event(QEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 public:
     static OrderedMap<int, QString> s_TrayIconColorMap;

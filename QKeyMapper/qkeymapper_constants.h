@@ -4,11 +4,14 @@
 #include <windows.h>
 
 /* constant values for QKeyMapper */
+#ifdef USE_CYCLECHECKTIMER
 extern const unsigned int CYCLE_CHECK_TIMEOUT;
 extern const unsigned int CYCLE_CHECK_LOOPCOUNT_MAX;
 extern const unsigned int CYCLE_CHECK_LOOPCOUNT_RESET;
-extern const unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT;
 extern const unsigned int GLOBAL_MAPPING_START_WAIT;
+#endif
+extern const unsigned int CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+extern const unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT;
 extern const int VIRTUALGAMEPADTYPECOMBOBOX_X;
 extern const int PROCESSINFO_TABLE_COLUMN_COUNT;
 extern const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT;

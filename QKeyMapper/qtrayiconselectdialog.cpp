@@ -1,5 +1,6 @@
 #include "qtrayiconselectdialog.h"
 #include "ui_qtrayiconselectdialog.h"
+#include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 
 OrderedMap<int, QString> QTrayIconSelectDialog::s_TrayIconColorMap;
@@ -175,4 +176,11 @@ bool QTrayIconSelectDialog::event(QEvent *event)
         }
     }
     return QDialog::event(event);
+}
+
+void QTrayIconSelectDialog::closeEvent(QCloseEvent *event)
+{
+    QKeyMapper::getInstance()->updateSystemTrayDisplay();
+
+    QDialog::closeEvent(event);
 }

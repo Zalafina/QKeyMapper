@@ -425,6 +425,9 @@ public:
 public slots:
     void WindowStateChangedProc(void);
     void cycleCheckProcessProc(void);
+#ifndef USE_CYCLECHECKTIMER
+    void checkGlobalSettingSwitchTimeout(void);
+#endif
     void cycleRefreshProcessInfoTableProc(void);
     void updateHWNDListProc(void);
 
@@ -732,7 +735,6 @@ private:
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
-    void updateSystemTrayDisplay(void);
     void showQKeyMapperWindowToTop(void);
     void switchShowHide(void);
     void forceHide(void);
@@ -743,6 +745,7 @@ private:
     bool isCloseToSystemtray(bool force_showdialog);
 
 public:
+    void updateSystemTrayDisplay(void);
     void showInformationPopup(const QString &message);
     void showWarningPopup(const QString &message);
     void showFailurePopup(const QString &message);
@@ -857,7 +860,9 @@ public:
     static bool s_isDestructing;
     static HWINEVENTHOOK s_WinEventHook;
     static int s_GlobalSettingAutoStart;
+#ifdef USE_CYCLECHECKTIMER
     static uint s_CycleCheckLoopCount;
+#endif
     static HWND s_CurrentMappingHWND;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<HWND> s_hWndList;
@@ -888,6 +893,8 @@ private:
     QPoint m_LastWindowPosition;
 #ifdef USE_CYCLECHECKTIMER
     QTimer m_CycleCheckTimer;
+#else
+    QTimer m_CheckGlobalSettingSwitchTimer;
 #endif
     QTimer m_ProcessInfoTableRefreshTimer;
 public:
