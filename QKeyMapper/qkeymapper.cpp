@@ -3585,7 +3585,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
         }
         if (keymapdata.Crosshair_CenterColor.isValid()) {
-            crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb).remove("#"));
+            crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name().remove("#"));
         }
         else {
             crosshair_centercolorList.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
@@ -3603,7 +3603,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             crosshair_centeropacityList.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
         }
         if (keymapdata.Crosshair_CrosshairColor.isValid()) {
-            crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb).remove("#"));
+            crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name().remove("#"));
         }
         else {
             crosshair_crosshaircolorList.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
@@ -6065,6 +6065,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     QStringList tabnamelist;
     QStringList tabhotkeylist;
+    QStringList tabfontcolorlist;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
@@ -6100,14 +6101,19 @@ void QKeyMapper::saveKeyMapSetting(void)
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
+        QString tabFontColor;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName = QString();
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[saveKeyMapSetting] TabName:" << tabName << " is already exists, set a empty tabname!";
 #endif
         }
+        if (s_KeyMappingTabInfoList.at(index).TabFontColor.isValid()) {
+            tabFontColor = s_KeyMappingTabInfoList.at(index).TabFontColor.name();
+        }
         tabnamelist.append(tabName);
         tabhotkeylist.append(tabHotkey);
+        tabfontcolorlist.append(tabFontColor);
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -6281,7 +6287,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     repeattimesList.append(QString::number(REPEAT_TIMES_DEFAULT));
                 }
                 if (keymapdata.Crosshair_CenterColor.isValid()) {
-                    crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name(QColor::HexRgb).remove("#"));
+                    crosshair_centercolorList.append(keymapdata.Crosshair_CenterColor.name().remove("#"));
                 }
                 else {
                     crosshair_centercolorList.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
@@ -6299,7 +6305,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     crosshair_centeropacityList.append(QString::number(CROSSHAIR_CENTEROPACITY_DEFAULT));
                 }
                 if (keymapdata.Crosshair_CrosshairColor.isValid()) {
-                    crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name(QColor::HexRgb).remove("#"));
+                    crosshair_crosshaircolorList.append(keymapdata.Crosshair_CrosshairColor.name().remove("#"));
                 }
                 else {
                     crosshair_crosshaircolorList.append(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT);
@@ -6435,6 +6441,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -7237,6 +7244,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     }
 
     QStringList tabhotkeylist_loaded;
+    QStringList tabfontcolorlist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -7316,6 +7324,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
+        tabfontcolorlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
 
         if (original_keys_loaded.isEmpty() || mapping_keys_loaded.isEmpty()) {
             initKeyMappingTable = true;
@@ -8105,6 +8114,22 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             s_KeyMappingTabInfoList[index].TabHotkey.clear();
         }
         updateKeyMappingTabWidgetTabDisplay(index);
+    }
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (index < tabfontcolorlist_loaded.size()) {
+            QString tabfontcolor_str = tabfontcolorlist_loaded.at(index);
+            QColor TabFontColor = QColor(tabfontcolor_str);
+            if (TabFontColor.isValid()) {
+                s_KeyMappingTabInfoList[index].TabFontColor = TabFontColor;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+            }
+        }
+        else {
+            s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+        }
     }
 
     collectMappingTableTabHotkeys();

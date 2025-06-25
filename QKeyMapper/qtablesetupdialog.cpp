@@ -9,7 +9,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QTableSetupDialog)
     , m_TabIndex(-1)
-    , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", 81))
+    , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -142,6 +142,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         /* Load TabHotkey String */
         ui->tabHotkeyLineEdit->setText(TabHotkey);
 
+        /* Load TabFontColor */
         m_NotificationFontColorPicker->setColor(TabFontColor);
     }
 

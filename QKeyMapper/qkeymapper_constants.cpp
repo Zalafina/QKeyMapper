@@ -103,6 +103,8 @@ const int REPEAT_TIMES_MIN = 1;
 const int REPEAT_TIMES_MAX = 99999999;
 const int REPEAT_TIMES_DEFAULT = 1;
 
+const int COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR = 101;
+
 const char *NOTIFICATION_COLOR_GLOBAL_DEFAULT = "#26de81";
 const char *NOTIFICATION_COLOR_NORMAL_DEFAULT = "#d6a2e8";
 
@@ -659,6 +661,7 @@ const char *MOUSE2VJOY_RECENTER_TIMEOUT = "Mouse2vJoy_Recenter_Timeout";
 const char *MAPPINGTABLE_LASTTABINDEX = "MappingTable_LastTabIndex";
 const char *MAPPINGTABLE_TABNAMELIST = "MappingTable_TabNameList";
 const char *MAPPINGTABLE_TABHOTKEYLIST = "MappingTable_TabHotkeyList";
+const char *MAPPINGTABLE_TABFONTCOLORLIST = "MappingTable_TabFontColorList";
 const char *CLEARALL = "KeyMapData_ClearAll";
 
 const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
