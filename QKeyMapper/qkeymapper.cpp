@@ -5215,6 +5215,13 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTab_Info tab_info;
     QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
     tab_info.TabName = tabName;
+    int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
+    if (GLOBALSETTING_INDEX == currentSelectedIndex) {
+        tab_info.TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
+    }
+    else {
+        tab_info.TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+    }
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
@@ -8124,11 +8131,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 s_KeyMappingTabInfoList[index].TabFontColor = TabFontColor;
             }
             else {
-                s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+                if (loadGlobalSetting) {
+                    s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
+                }
+                else {
+                    s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+                }
             }
         }
         else {
-            s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+            if (loadGlobalSetting) {
+                s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+            }
         }
     }
 
@@ -9488,13 +9505,18 @@ void QKeyMapper::mappingStartNotification()
     else {
         notificationSetting = description;
     }
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    QString color;
     popupNotification = tr("StartMapping [") + notificationSetting + "]" + " - " + tabName;
-    if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-        color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
-    }
     if (tabFontColor.isValid()) {
         color = tabFontColor.name();
+    }
+    else {
+        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
+            color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+        }
+        else {
+            color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+        }
     }
     showNotificationPopup(popupNotification, color, position, ui->notificationSizeSpinBox->value());
 }
@@ -9534,7 +9556,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    QString color;
     // popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + " - " + tabName;
     if (isSame) {
         popupNotification = tr("TabisAlready") + " - " + tabName;
@@ -9542,11 +9564,16 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     else {
         popupNotification = tr("MappingTabSwitch") + " - " + tabName;
     }
-    if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-        color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
-    }
     if (tabFontColor.isValid()) {
         color = tabFontColor.name();
+    }
+    else {
+        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
+            color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+        }
+        else {
+            color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+        }
     }
     showNotificationPopup(popupNotification, color, position, ui->notificationSizeSpinBox->value());
 }
