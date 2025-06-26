@@ -200,10 +200,10 @@ void QItemSetupDialog::updateOriginalKeyListComboBox()
 
     m_OriginalKeyListComboBox->clear();
 
-    QIcon send_icon = QIcon(":/send.png");
+    QIcon common_icon = QIcon(":/common.png");
     m_OriginalKeyListComboBox->addItem(QString());
-    m_OriginalKeyListComboBox->addItem(send_icon, SEPARATOR_LONGPRESS);
-    m_OriginalKeyListComboBox->addItem(send_icon, SEPARATOR_DOUBLEPRESS);
+    m_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_LONGPRESS);
+    m_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_DOUBLEPRESS);
     for(int i = 1; i < orikeyComboBox->count(); i++) {
         QIcon icon = orikeyComboBox->itemIcon(i);
         QString text = orikeyComboBox->itemText(i);
@@ -217,13 +217,13 @@ void QItemSetupDialog::updateMappingKeyListComboBox()
 
     m_MappingKeyListComboBox->clear();
 
-    QIcon send_icon = QIcon(":/send.png");
+    QIcon common_icon = QIcon(":/common.png");
     m_MappingKeyListComboBox->addItem(QString());
-    m_MappingKeyListComboBox->addItem(send_icon, SEPARATOR_WAITTIME);
-    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_DOWN);
-    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_UP);
-    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_BOTH);
-    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_EXCLUSION);
+    m_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_WAITTIME);
+    m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_DOWN);
+    m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_UP);
+    m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_BOTH);
+    m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_EXCLUSION);
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QIcon icon = mapkeyComboBox->itemIcon(i);
         QString text = mapkeyComboBox->itemText(i);

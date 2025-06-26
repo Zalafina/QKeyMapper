@@ -485,11 +485,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCrosshairStart_Signal, this, &QKeyMapper::showCrosshairStart, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCrosshairStop_Signal, this, &QKeyMapper::showCrosshairStop, Qt::QueuedConnection);
-#ifdef VIGEM_CLIENT_SUPPORT
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateVirtualGamepadListDisplay_Signal, this, &QKeyMapper::updateVirtualGamepadListDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
-#endif
+    QObject::connect(m_mapkeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::MapkeyComboBox_currentTextChangedSlot);
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
@@ -5668,7 +5667,6 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     }
 }
 
-#ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 {
     if (VJOY_MOUSE2LS_STR == text
@@ -5691,8 +5689,18 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
     else {
         m_mapkeyComboBox->setEnabled(true);
     }
+
+    if (text.isEmpty() != true) {
+        m_orikeyComboBox->setToolTip(text);
+    }
 }
-#endif
+
+void QKeyMapper::MapkeyComboBox_currentTextChangedSlot(const QString &text)
+{
+    if (text.isEmpty() != true) {
+        m_mapkeyComboBox->setToolTip(text);
+    }
+}
 
 #ifdef SETTINGSFILE_CONVERT
 bool QKeyMapper::checkSettingsFileNeedtoConvert()
@@ -11397,370 +11405,24 @@ void QKeyMapper::initKeysCategoryMap()
         << FUNC_HIBERNATE
         ;
 }
+
 void QKeyMapper::initAddKeyComboBoxes(void)
 {
-    QStringList keycodelist = QStringList() \
-            << ""
-            << KEY_BLOCKED_STR
-            << KEY_NONE_STR
-            << SENDTEXT_STR
-            << KEYSEQUENCEBREAK_STR
-            << MOUSE_L_STR
-            << MOUSE_R_STR
-            << MOUSE_M_STR
-            << MOUSE_X1_STR
-            << MOUSE_X2_STR
-            << MOUSE_L_WINDOWPOINT_STR
-            << MOUSE_R_WINDOWPOINT_STR
-            << MOUSE_M_WINDOWPOINT_STR
-            << MOUSE_X1_WINDOWPOINT_STR
-            << MOUSE_X2_WINDOWPOINT_STR
-            << MOUSE_MOVE_WINDOWPOINT_STR
-            << MOUSE_L_SCREENPOINT_STR
-            << MOUSE_R_SCREENPOINT_STR
-            << MOUSE_M_SCREENPOINT_STR
-            << MOUSE_X1_SCREENPOINT_STR
-            << MOUSE_X2_SCREENPOINT_STR
-            << MOUSE_MOVE_SCREENPOINT_STR
-            << MOUSE_WHEEL_UP_STR
-            << MOUSE_WHEEL_DOWN_STR
-            << MOUSE_WHEEL_LEFT_STR
-            << MOUSE_WHEEL_RIGHT_STR
-            << KEY2MOUSE_UP_STR
-            << KEY2MOUSE_DOWN_STR
-            << KEY2MOUSE_LEFT_STR
-            << KEY2MOUSE_RIGHT_STR
-            << "A"
-            << "B"
-            << "C"
-            << "D"
-            << "E"
-            << "F"
-            << "G"
-            << "H"
-            << "I"
-            << "J"
-            << "K"
-            << "L"
-            << "M"
-            << "N"
-            << "O"
-            << "P"
-            << "Q"
-            << "R"
-            << "S"
-            << "T"
-            << "U"
-            << "V"
-            << "W"
-            << "X"
-            << "Y"
-            << "Z"
-            << "1"
-            << "2"
-            << "3"
-            << "4"
-            << "5"
-            << "6"
-            << "7"
-            << "8"
-            << "9"
-            << "0"
-            << "Up"
-            << "Down"
-            << "Left"
-            << "Right"
-            << "Insert"
-            << "Delete"
-            << "Home"
-            << "End"
-            << "PageUp"
-            << "PageDown"
-            << "Space"
-            << "Tab"
-            << "Enter"
-            << "L-Shift"
-            << "R-Shift"
-            << "L-Ctrl"
-            << "R-Ctrl"
-            << "L-Alt"
-            << "R-Alt"
-            << "L-Win"
-            << "R-Win"
-            << "Backspace"
-            << "`"
-            << "-"
-            << "="
-            << "["
-            << "]"
-            << "\\"
-            << ";"
-            << "'"
-            << ","
-            << "."
-            << "/"
-            << "Esc"
-            << "F1"
-            << "F2"
-            << "F3"
-            << "F4"
-            << "F5"
-            << "F6"
-            << "F7"
-            << "F8"
-            << "F9"
-            << "F10"
-            << "F11"
-            << "F12"
-            << "F13"
-            << "F14"
-            << "F15"
-            << "F16"
-            << "F17"
-            << "F18"
-            << "F19"
-            << "F20"
-            << "F21"
-            << "F22"
-            << "F23"
-            << "F24"
-            << "CapsLock"
-            << "Application"
-            << "PrintScrn"
-            << "ScrollLock"
-            << "Pause"
-            << "NumLock"
-            << "Num/"
-            << "Num*"
-            << "Num-"
-            << "Num＋"
-            << "Num."
-            << "Num0"
-            << "Num1"
-            << "Num2"
-            << "Num3"
-            << "Num4"
-            << "Num5"
-            << "Num6"
-            << "Num7"
-            << "Num8"
-            << "Num9"
-            << "NumEnter"
-            << "Num.(NumOFF)"
-            << "Num0(NumOFF)"
-            << "Num1(NumOFF)"
-            << "Num2(NumOFF)"
-            << "Num3(NumOFF)"
-            << "Num4(NumOFF)"
-            << "Num5(NumOFF)"
-            << "Num6(NumOFF)"
-            << "Num7(NumOFF)"
-            << "Num8(NumOFF)"
-            << "Num9(NumOFF)"
-            << "VolumeMute"
-            << "VolumeDown"
-            << "VolumeUp"
-            << "MediaNext"
-            << "MediaPrev"
-            << "MediaStop"
-            << "MediaPlayPause"
-            << "LaunchMail"
-            << "SelectMedia"
-            << "LaunchApp1"
-            << "LaunchApp2"
-            << "BrowserBack"
-            << "BrowserForward"
-            << "BrowserRefresh"
-            << "BrowserStop"
-            << "BrowserSearch"
-            << "BrowserFavorites"
-            << "BrowserHome"
-            << FUNC_REFRESH
-            << FUNC_LOCKSCREEN
-            << FUNC_SHUTDOWN
-            << FUNC_REBOOT
-            << FUNC_LOGOFF
-            << FUNC_SLEEP
-            << FUNC_HIBERNATE
-            << CROSSHAIR_NORMAL_STR
-            << CROSSHAIR_TYPEA_STR
-            << GYRO2MOUSE_HOLD_KEY_STR
-            << GYRO2MOUSE_MOVE_KEY_STR
-#ifdef VIGEM_CLIENT_SUPPORT
-            << VJOY_MOUSE2LS_STR
-            << VJOY_MOUSE2RS_STR
-            << MOUSE2VJOY_HOLD_KEY_STR
-            << "vJoy-LS-Up"
-            << "vJoy-LS-Down"
-            << "vJoy-LS-Left"
-            << "vJoy-LS-Right"
-            << "vJoy-RS-Up"
-            << "vJoy-RS-Down"
-            << "vJoy-RS-Left"
-            << "vJoy-RS-Right"
-            << "vJoy-DPad-Up"
-            << "vJoy-DPad-Down"
-            << "vJoy-DPad-Left"
-            << "vJoy-DPad-Right"
-            << "vJoy-Key1(A/×)"
-            << "vJoy-Key2(B/○)"
-            << "vJoy-Key3(X/□)"
-            << "vJoy-Key4(Y/△)"
-            << "vJoy-Key5(LB)"
-            << "vJoy-Key6(RB)"
-            << "vJoy-Key7(Back)"
-            << "vJoy-Key8(Start)"
-            << "vJoy-Key9(LS-Click)"
-            << "vJoy-Key10(RS-Click)"
-            << "vJoy-Key11(LT)"
-            << "vJoy-Key12(RT)"
-            << "vJoy-Key13(Guide)"
-            << VJOY_LS_RADIUS_STR
-            << VJOY_RS_RADIUS_STR
-            << VJOY_LT_BRAKE_STR
-            << VJOY_RT_BRAKE_STR
-            << VJOY_LT_ACCEL_STR
-            << VJOY_RT_ACCEL_STR
-#endif
-            << "Joy-LS-Up"
-            << "Joy-LS-Down"
-            << "Joy-LS-Left"
-            << "Joy-LS-Right"
-            << "Joy-RS-Up"
-            << "Joy-RS-Down"
-            << "Joy-RS-Left"
-            << "Joy-RS-Right"
-            << "Joy-DPad-Up"
-            << "Joy-DPad-Down"
-            << "Joy-DPad-Left"
-            << "Joy-DPad-Right"
-            << "Joy-Key1(A/×)"
-            << "Joy-Key2(B/○)"
-            << "Joy-Key3(X/□)"
-            << "Joy-Key4(Y/△)"
-            << "Joy-Key5(LB)"
-            << "Joy-Key6(RB)"
-            << "Joy-Key7(Back)"
-            << "Joy-Key8(Start)"
-            << "Joy-Key9(LS-Click)"
-            << "Joy-Key10(RS-Click)"
-            << "Joy-Key11(LT)"
-            << "Joy-Key12(RT)"
-            << "Joy-Key13(Guide)"
-#ifdef VIGEM_CLIENT_SUPPORT
-            << JOY_LS2VJOYLS_STR
-            << JOY_RS2VJOYRS_STR
-            << JOY_LS2VJOYRS_STR
-            << JOY_RS2VJOYLS_STR
-            << JOY_LT2VJOYLT_STR
-            << JOY_RT2VJOYRT_STR
-#endif
-            << JOY_LS2MOUSE_STR
-            << JOY_RS2MOUSE_STR
-            << JOY_GYRO2MOUSE_STR
-            << "Joy-Key14"
-            << "Joy-Key15"
-            << "Joy-Key16"
-            << "Joy-Key17"
-            << "Joy-Key18"
-            << "Joy-Key19"
-            << "Joy-Key20"
-            << "Joy-Key21"
-            << "Joy-Key22"
-            << "Joy-Key23"
-            << "Joy-Key24"
-            << "Joy-Key25"
-            << "Joy-Key26"
-            << "Joy-Key27"
-            << "Joy-Key28"
-            << "Joy-Key29"
-            << "Joy-Key30"
-            ;
-
     int left = ui->orikeyLabel->x() + ui->orikeyLabel->width() + 5;
     int top = ui->orikeyLabel->y();
     m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_NAME);
-    m_orikeyComboBox->setGeometry(QRect(left, top, 142, 22));
+    m_orikeyComboBox->setGeometry(QRect(left, top, 161, 22));
     m_orikeyComboBox->setFocusPolicy(Qt::WheelFocus);
     // m_orikeyComboBox->setEditable(true);
     left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
     top = ui->mapkeyLabel->y();
     m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_NAME);
-    m_mapkeyComboBox->setGeometry(QRect(left, top, 122, 22));
+    m_mapkeyComboBox->setGeometry(QRect(left, top, 151, 22));
     m_mapkeyComboBox->setFocusPolicy(Qt::WheelFocus);
     // m_mapkeyComboBox->setEditable(true);
 
-    QStringList orikeycodelist = keycodelist;
-    orikeycodelist.removeOne(KEY_NONE_STR);
-    orikeycodelist.removeOne(KEY_BLOCKED_STR);
-    orikeycodelist.removeOne(MOUSE_L_WINDOWPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_R_WINDOWPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_M_WINDOWPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_X1_WINDOWPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_X2_WINDOWPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_L_SCREENPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_R_SCREENPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_M_SCREENPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_X1_SCREENPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_X2_SCREENPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_MOVE_WINDOWPOINT_STR);
-    orikeycodelist.removeOne(MOUSE_MOVE_SCREENPOINT_STR);
-    orikeycodelist.removeOne(SENDTEXT_STR);
-    orikeycodelist.removeOne(KEYSEQUENCEBREAK_STR);
-    orikeycodelist.removeOne(KEY2MOUSE_UP_STR);
-    orikeycodelist.removeOne(KEY2MOUSE_DOWN_STR);
-    orikeycodelist.removeOne(KEY2MOUSE_LEFT_STR);
-    orikeycodelist.removeOne(KEY2MOUSE_RIGHT_STR);
-    orikeycodelist.removeOne(GYRO2MOUSE_HOLD_KEY_STR);
-    orikeycodelist.removeOne(GYRO2MOUSE_MOVE_KEY_STR);
-    orikeycodelist.removeOne(CROSSHAIR_NORMAL_STR);
-    orikeycodelist.removeOne(CROSSHAIR_TYPEA_STR);
-    orikeycodelist.removeOne(MOUSE2VJOY_HOLD_KEY_STR);
-
-    /* Remove Joy Keys from MappingKey ComboBox >>> */
-#ifdef VIGEM_CLIENT_SUPPORT
-    QRegularExpression re_vjoy("^vJoy-");
-    QStringList vJoyStrlist = orikeycodelist.filter(re_vjoy);
-    vJoyStrlist.removeOne(VJOY_MOUSE2LS_STR);
-    vJoyStrlist.removeOne(VJOY_MOUSE2RS_STR);
-
-    // Remove Strings start with "vJoy-" from orikeyComboBox
-    for (const QString &joystr : std::as_const(vJoyStrlist)){
-        orikeycodelist.removeOne(joystr);
-    }
-    keycodelist.removeOne(VJOY_MOUSE2LS_STR);
-    keycodelist.removeOne(VJOY_MOUSE2RS_STR);
-#endif
-
-    QRegularExpression re_Joy("^Joy-");
-    QStringList JoyStrlist = orikeycodelist.filter(re_Joy);
-
-    // Remove Strings start with "Joy-" from mapkeyComboBox
-    for (const QString &joystr : std::as_const(JoyStrlist)){
-        keycodelist.removeOne(joystr);
-    }
-    /* Remove Joy Keys from MappingKey ComboBox <<< */
-
-    QRegularExpression re_Func("^Func-");
-    QStringList FuncStrlist = orikeycodelist.filter(re_Func);
-    // Remove Strings start with "Func-" from orikeyComboBox
-    for (const QString &funcstr : std::as_const(FuncStrlist)){
-        orikeycodelist.removeOne(funcstr);
-    }
-
-    m_orikeyComboBox->addItems(orikeycodelist);
-    m_mapkeyComboBox->addItems(keycodelist);
-
-// #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-//     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_mapkeyComboBox->model());
-//     QStandardItem* item = model->item(1);
-//     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
-//     item = model->item(2);
-//     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
-// #else
-//     QBrush colorBrush(Qt::darkMagenta);
-//     m_mapkeyComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
-// #endif
+    updateOriginalKeyListComboBox();
+    updateMappingKeyListComboBox();
 }
 
 void QKeyMapper::initInputDeviceSelectComboBoxes()
@@ -11997,12 +11659,101 @@ void QKeyMapper::initCombinationKeyLineEdit()
 
 void QKeyMapper::updateOriginalKeyListComboBox()
 {
+    bool isMouseKeys_Selected = ui->oriList_SelectMouseButton->isChecked();
+    bool isKeyboardKeys_Selected = ui->oriList_SelectKeyboardButton->isChecked();
+    bool isGamepadKeys_Selected = ui->oriList_SelectGamepadButton->isChecked();
+    bool isFunctionKeys_Selected = ui->oriList_SelectFunctionButton->isChecked();
 
+    m_orikeyComboBox->clear();
+    m_orikeyComboBox->addItem(QString());
+    if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
+        m_orikeyComboBox->clear();
+        m_orikeyComboBox->addItem(QString());
+        if (isMouseKeys_Selected) {
+            QIcon icon = QIcon(":/mouse.png");
+            const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_MOUSE);
+            for (const QString &key : keyList) {
+                m_orikeyComboBox->addItem(icon, key);
+            }
+        }
+        if (isKeyboardKeys_Selected) {
+            QIcon icon = QIcon(":/keyboard.png");
+            const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
+            for (const QString &key : keyList) {
+                m_orikeyComboBox->addItem(icon, key);
+            }
+        }
+        if (isGamepadKeys_Selected) {
+            QIcon icon = QIcon(":/gamepad.png");
+            const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
+            for (const QString &key : keyList) {
+                m_orikeyComboBox->addItem(icon, key);
+            }
+        }
+        if (isFunctionKeys_Selected) {
+            QIcon icon = QIcon(":/function.png");
+            const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_FUNCTION);
+            for (const QString &key : keyList) {
+                m_orikeyComboBox->addItem(icon, key);
+            }
+        }
+    }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->updateOriginalKeyListComboBox();
+    }
 }
 
 void QKeyMapper::updateMappingKeyListComboBox()
 {
+    bool isMouseKeys_Selected = ui->mapList_SelectMouseButton->isChecked();
+    bool isKeyboardKeys_Selected = ui->mapList_SelectKeyboardButton->isChecked();
+    bool isGamepadKeys_Selected = ui->mapList_SelectGamepadButton->isChecked();
+    bool isFunctionKeys_Selected = ui->mapList_SelectFunctionButton->isChecked();
 
+    m_mapkeyComboBox->clear();
+    m_mapkeyComboBox->addItem(QString());
+
+    QIcon common_icon = QIcon(":/common.png");
+    const QStringList common_keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_COMMON);
+    for (const QString &key : common_keyList) {
+        m_mapkeyComboBox->addItem(common_icon, key);
+    }
+
+    if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
+        if (isMouseKeys_Selected) {
+            QIcon icon = QIcon(":/mouse.png");
+            const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_MOUSE);
+            for (const QString &key : keyList) {
+                m_mapkeyComboBox->addItem(icon, key);
+            }
+        }
+        if (isKeyboardKeys_Selected) {
+            QIcon icon = QIcon(":/keyboard.png");
+            const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
+            for (const QString &key : keyList) {
+                m_mapkeyComboBox->addItem(icon, key);
+            }
+        }
+        if (isGamepadKeys_Selected) {
+            QIcon icon = QIcon(":/gamepad.png");
+            const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
+            for (const QString &key : keyList) {
+                m_mapkeyComboBox->addItem(icon, key);
+            }
+        }
+        if (isFunctionKeys_Selected) {
+            QIcon icon = QIcon(":/function.png");
+            const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_FUNCTION);
+            for (const QString &key : keyList) {
+                m_mapkeyComboBox->addItem(icon, key);
+            }
+        }
+    }
+
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->updateMappingKeyListComboBox();
+    }
 }
 
 void QKeyMapper::setKeyMappingTabWidgetCurrentIndex(int index)
@@ -12371,6 +12122,14 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
     QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, tr("Global keymapping setting"));
     ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
+    ui->oriList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
+    ui->oriList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
+    ui->oriList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
+    ui->oriList_SelectFunctionButton->setToolTip(tr("Function Keys"));
+    ui->mapList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
+    ui->mapList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
+    ui->mapList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
+    ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
     ui->orikeyLabel->setText(tr("OriKey"));
     ui->orikeySeqLabel->setText(tr("OriKeySeq"));
     ui->mapkeyLabel->setText(tr("MapKey"));
