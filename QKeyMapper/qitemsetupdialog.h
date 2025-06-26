@@ -31,6 +31,8 @@ public:
     void resetFontSize(void);
     void setTabIndex(int tabindex);
     void setItemRow(int row);
+    void updateOriginalKeyListComboBox(void);
+    void updateMappingKeyListComboBox(void);
 
 public:
     static QString getOriginalKeyText(void);

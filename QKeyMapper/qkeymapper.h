@@ -228,6 +228,7 @@ public:
 protected:
     void keyPressEvent(QKeyEvent *keyevent) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void showPopup(void) override;
 
 private:
     QWidget *m_KeyMapper_ptr;
@@ -725,6 +726,22 @@ private slots:
 
     void on_selectTrayIconButton_clicked();
 
+    void on_oriList_SelectKeyboardButton_toggled(bool checked);
+
+    void on_oriList_SelectMouseButton_toggled(bool checked);
+
+    void on_oriList_SelectGamepadButton_toggled(bool checked);
+
+    void on_oriList_SelectFunctionButton_toggled(bool checked);
+
+    void on_mapList_SelectKeyboardButton_toggled(bool checked);
+
+    void on_mapList_SelectMouseButton_toggled(bool checked);
+
+    void on_mapList_SelectGamepadButton_toggled(bool checked);
+
+    void on_mapList_SelectFunctionButton_toggled(bool checked);
+
 private:
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
@@ -765,6 +782,7 @@ public:
 private:
     void clearLockStatusDisplay(void);
     void initQSimpleUpdater(void);
+    void initKeysCategoryMap(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initKeyboardSelectComboBox(void);
@@ -779,6 +797,8 @@ private:
     void updateMappingStopKeyString(const QString &keystring);
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
+    void updateOriginalKeyListComboBox(void);
+    void updateMappingKeyListComboBox(void);
     void setKeyMappingTabWidgetCurrentIndex(int index);
     void forceSwitchKeyMappingTabWidgetIndex(int index);
 public:
@@ -883,6 +903,8 @@ public:
     static QHash<QString, QList<int>> s_MappingTableTabHotkeyMap;
     static qreal s_UI_scale_value;
     static QList<MAP_KEYDATA> s_CopiedMappingData;
+    static QHash<int, QStringList> s_OriginalKeysCategoryMap;
+    static QHash<int, QStringList> s_MappingKeysCategoryMap;
     int m_UI_Scale;
     KeyMapStatus m_KeyMapStatus;
 

@@ -34,6 +34,12 @@ const int MAPPING_KEY_COLUMN = 1;
 const int BURST_MODE_COLUMN = 2;
 const int LOCK_COLUMN = 3;
 
+const int KEY_TYPE_COMMON       = 0;
+const int KEY_TYPE_KEYBOARD     = 1;
+const int KEY_TYPE_MOUSE        = 2;
+const int KEY_TYPE_GAMEPAD      = 3;
+const int KEY_TYPE_FUNCTION     = 4;
+
 const int KEYMAPPINGTABWIDGET_NARROW_LEFT   = 526;
 const int KEYMAPPINGTABWIDGET_NARROW_WIDTH  = 458;
 const int KEYMAPPINGTABWIDGET_WIDE_LEFT     = 26;

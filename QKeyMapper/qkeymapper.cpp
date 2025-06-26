@@ -33,6 +33,8 @@ QString QKeyMapper::s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
 QHash<QString, QList<int>> QKeyMapper::s_MappingTableTabHotkeyMap;
 qreal QKeyMapper::s_UI_scale_value = 1.0;
 QList<MAP_KEYDATA> QKeyMapper::s_CopiedMappingData;
+QHash<int, QStringList> QKeyMapper::s_OriginalKeysCategoryMap;
+QHash<int, QStringList> QKeyMapper::s_MappingKeysCategoryMap;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -146,6 +148,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 #endif
 
+    initKeysCategoryMap();
     initQSimpleUpdater();
     extractSoundFiles();
     initAddKeyComboBoxes();
@@ -245,6 +248,31 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->moveupButton->setFont(QFont("SimSun", 14));
     ui->movedownButton->setFont(QFont("SimSun", 16));
+
+    ui->oriList_SelectKeyboardButton->setStyle(windowsStyle);
+    ui->oriList_SelectMouseButton->setStyle(windowsStyle);
+    ui->oriList_SelectGamepadButton->setStyle(windowsStyle);
+    ui->oriList_SelectFunctionButton->setStyle(windowsStyle);
+    ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
+    ui->mapList_SelectMouseButton->setStyle(windowsStyle);
+    ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
+    ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
+    ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.png"));
+    ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.png"));
+    ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.png"));
+    ui->oriList_SelectFunctionButton->setIcon(QIcon(":/function.png"));
+    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.png"));
+    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.png"));
+    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.png"));
+    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.png"));
+    ui->oriList_SelectKeyboardButton->setChecked(true);
+    ui->oriList_SelectMouseButton->setChecked(true);
+    ui->oriList_SelectGamepadButton->setChecked(true);
+    ui->oriList_SelectFunctionButton->setChecked(true);
+    ui->mapList_SelectKeyboardButton->setChecked(true);
+    ui->mapList_SelectMouseButton->setChecked(true);
+    ui->mapList_SelectGamepadButton->setChecked(true);
+    ui->mapList_SelectFunctionButton->setChecked(true);
 
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
@@ -9292,6 +9320,14 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->accelThresholdLabel->setEnabled(status);
     ui->accelThresholdDoubleSpinBox->setEnabled(status);
 
+    ui->oriList_SelectKeyboardButton->setEnabled(status);
+    ui->oriList_SelectMouseButton->setEnabled(status);
+    ui->oriList_SelectGamepadButton->setEnabled(status);
+    ui->oriList_SelectFunctionButton->setEnabled(status);
+    ui->mapList_SelectKeyboardButton->setEnabled(status);
+    ui->mapList_SelectMouseButton->setEnabled(status);
+    ui->mapList_SelectGamepadButton->setEnabled(status);
+    ui->mapList_SelectFunctionButton->setEnabled(status);
     ui->orikeyLabel->setEnabled(status);
     ui->orikeySeqLabel->setEnabled(status);
     // m_originalKeySeqEdit->setEnabled(status);
@@ -11025,12 +11061,350 @@ void QKeyMapper::initQSimpleUpdater()
     qDebug().noquote().nospace() << "[initQSimpleUpdater] setUserAgentString: " << user_agent;
 #endif
 }
+
+void QKeyMapper::initKeysCategoryMap()
+{
+    /* Original keylists */
+    QStringList& original_mouse_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_MOUSE];
+    QStringList& original_keyboard_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_KEYBOARD];
+    QStringList& original_gamepad_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_GAMEPAD];
+    QStringList& original_function_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_FUNCTION];
+
+    /* Mapping keylists */
+    QStringList& mapping_common_keylist = s_MappingKeysCategoryMap[KEY_TYPE_COMMON];
+    QStringList& mapping_mouse_keylist = s_MappingKeysCategoryMap[KEY_TYPE_MOUSE];
+    QStringList& mapping_keyboard_keylist = s_MappingKeysCategoryMap[KEY_TYPE_KEYBOARD];
+    QStringList& mapping_gamepad_keylist = s_MappingKeysCategoryMap[KEY_TYPE_GAMEPAD];
+    QStringList& mapping_function_keylist = s_MappingKeysCategoryMap[KEY_TYPE_FUNCTION];
+
+    /* Mapping Common Keys */
+    mapping_common_keylist = QStringList() \
+        << KEY_BLOCKED_STR
+        << KEY_NONE_STR
+        << SENDTEXT_STR
+        << KEYSEQUENCEBREAK_STR
+        ;
+
+    /* Original Keyboard Keys */
+    original_keyboard_keylist = QStringList() \
+        << "A"
+        << "B"
+        << "C"
+        << "D"
+        << "E"
+        << "F"
+        << "G"
+        << "H"
+        << "I"
+        << "J"
+        << "K"
+        << "L"
+        << "M"
+        << "N"
+        << "O"
+        << "P"
+        << "Q"
+        << "R"
+        << "S"
+        << "T"
+        << "U"
+        << "V"
+        << "W"
+        << "X"
+        << "Y"
+        << "Z"
+        << "1"
+        << "2"
+        << "3"
+        << "4"
+        << "5"
+        << "6"
+        << "7"
+        << "8"
+        << "9"
+        << "0"
+        << "Up"
+        << "Down"
+        << "Left"
+        << "Right"
+        << "Insert"
+        << "Delete"
+        << "Home"
+        << "End"
+        << "PageUp"
+        << "PageDown"
+        << "Space"
+        << "Tab"
+        << "Enter"
+        << "L-Shift"
+        << "R-Shift"
+        << "L-Ctrl"
+        << "R-Ctrl"
+        << "L-Alt"
+        << "R-Alt"
+        << "L-Win"
+        << "R-Win"
+        << "Backspace"
+        << "`"
+        << "-"
+        << "="
+        << "["
+        << "]"
+        << "\\"
+        << ";"
+        << "'"
+        << ","
+        << "."
+        << "/"
+        << "Esc"
+        << "F1"
+        << "F2"
+        << "F3"
+        << "F4"
+        << "F5"
+        << "F6"
+        << "F7"
+        << "F8"
+        << "F9"
+        << "F10"
+        << "F11"
+        << "F12"
+        << "F13"
+        << "F14"
+        << "F15"
+        << "F16"
+        << "F17"
+        << "F18"
+        << "F19"
+        << "F20"
+        << "F21"
+        << "F22"
+        << "F23"
+        << "F24"
+        << "CapsLock"
+        << "Application"
+        << "PrintScrn"
+        << "ScrollLock"
+        << "Pause"
+        << "NumLock"
+        << "Num/"
+        << "Num*"
+        << "Num-"
+        << "Num＋"
+        << "Num."
+        << "Num0"
+        << "Num1"
+        << "Num2"
+        << "Num3"
+        << "Num4"
+        << "Num5"
+        << "Num6"
+        << "Num7"
+        << "Num8"
+        << "Num9"
+        << "NumEnter"
+        << "Num.(NumOFF)"
+        << "Num0(NumOFF)"
+        << "Num1(NumOFF)"
+        << "Num2(NumOFF)"
+        << "Num3(NumOFF)"
+        << "Num4(NumOFF)"
+        << "Num5(NumOFF)"
+        << "Num6(NumOFF)"
+        << "Num7(NumOFF)"
+        << "Num8(NumOFF)"
+        << "Num9(NumOFF)"
+        ;
+
+    /* Mapping Keyboard Keys */
+    mapping_keyboard_keylist = original_keyboard_keylist;
+
+    /* Original Mouse Keys */
+    original_mouse_keylist = QStringList() \
+        << MOUSE_L_STR
+        << MOUSE_R_STR
+        << MOUSE_M_STR
+        << MOUSE_X1_STR
+        << MOUSE_X2_STR
+        << MOUSE_WHEEL_UP_STR
+        << MOUSE_WHEEL_DOWN_STR
+        << MOUSE_WHEEL_LEFT_STR
+        << MOUSE_WHEEL_RIGHT_STR
+        ;
+
+    /* Mapping Mouse Keys */
+    mapping_mouse_keylist = original_mouse_keylist;
+    mapping_mouse_keylist << QStringList() \
+        << MOUSE_L_WINDOWPOINT_STR
+        << MOUSE_R_WINDOWPOINT_STR
+        << MOUSE_M_WINDOWPOINT_STR
+        << MOUSE_X1_WINDOWPOINT_STR
+        << MOUSE_X2_WINDOWPOINT_STR
+        << MOUSE_MOVE_WINDOWPOINT_STR
+        << MOUSE_L_SCREENPOINT_STR
+        << MOUSE_R_SCREENPOINT_STR
+        << MOUSE_M_SCREENPOINT_STR
+        << MOUSE_X1_SCREENPOINT_STR
+        << MOUSE_X2_SCREENPOINT_STR
+        << MOUSE_MOVE_SCREENPOINT_STR
+        ;
+
+    /* Original Gamdpad Keys */
+    original_gamepad_keylist = QStringList() \
+        << VJOY_MOUSE2LS_STR
+        << VJOY_MOUSE2RS_STR
+        << JOY_LS2MOUSE_STR
+        << JOY_RS2MOUSE_STR
+        << JOY_GYRO2MOUSE_STR
+        << "Joy-LS-Up"
+        << "Joy-LS-Down"
+        << "Joy-LS-Left"
+        << "Joy-LS-Right"
+        << "Joy-RS-Up"
+        << "Joy-RS-Down"
+        << "Joy-RS-Left"
+        << "Joy-RS-Right"
+        << "Joy-DPad-Up"
+        << "Joy-DPad-Down"
+        << "Joy-DPad-Left"
+        << "Joy-DPad-Right"
+        << "Joy-Key1(A/×)"
+        << "Joy-Key2(B/○)"
+        << "Joy-Key3(X/□)"
+        << "Joy-Key4(Y/△)"
+        << "Joy-Key5(LB)"
+        << "Joy-Key6(RB)"
+        << "Joy-Key7(Back)"
+        << "Joy-Key8(Start)"
+        << "Joy-Key9(LS-Click)"
+        << "Joy-Key10(RS-Click)"
+        << "Joy-Key11(LT)"
+        << "Joy-Key12(RT)"
+        << "Joy-Key13(Guide)"
+        << "Joy-Key14"
+        << "Joy-Key15"
+        << "Joy-Key16"
+        << "Joy-Key17"
+        << "Joy-Key18"
+        << "Joy-Key19"
+        << "Joy-Key20"
+        << "Joy-Key21"
+        << "Joy-Key22"
+        << "Joy-Key23"
+        << "Joy-Key24"
+        << "Joy-Key25"
+        << "Joy-Key26"
+        << "Joy-Key27"
+        << "Joy-Key28"
+        << "Joy-Key29"
+        << "Joy-Key30"
+        << JOY_LS2VJOYLS_STR
+        << JOY_RS2VJOYRS_STR
+        << JOY_LS2VJOYRS_STR
+        << JOY_RS2VJOYLS_STR
+        << JOY_LT2VJOYLT_STR
+        << JOY_RT2VJOYRT_STR
+        ;
+
+    /* Mapping Gamdpad Keys */
+    mapping_gamepad_keylist = QStringList() \
+        << GYRO2MOUSE_HOLD_KEY_STR
+        << GYRO2MOUSE_MOVE_KEY_STR
+        << MOUSE2VJOY_HOLD_KEY_STR
+        << VJOY_LS_RADIUS_STR
+        << VJOY_RS_RADIUS_STR
+        << "vJoy-LS-Up"
+        << "vJoy-LS-Down"
+        << "vJoy-LS-Left"
+        << "vJoy-LS-Right"
+        << "vJoy-RS-Up"
+        << "vJoy-RS-Down"
+        << "vJoy-RS-Left"
+        << "vJoy-RS-Right"
+        << "vJoy-DPad-Up"
+        << "vJoy-DPad-Down"
+        << "vJoy-DPad-Left"
+        << "vJoy-DPad-Right"
+        << "vJoy-Key1(A/×)"
+        << "vJoy-Key2(B/○)"
+        << "vJoy-Key3(X/□)"
+        << "vJoy-Key4(Y/△)"
+        << "vJoy-Key5(LB)"
+        << "vJoy-Key6(RB)"
+        << "vJoy-Key7(Back)"
+        << "vJoy-Key8(Start)"
+        << "vJoy-Key9(LS-Click)"
+        << "vJoy-Key10(RS-Click)"
+        << "vJoy-Key11(LT)"
+        << "vJoy-Key12(RT)"
+        << "vJoy-Key13(Guide)"
+        << VJOY_LT_BRAKE_STR
+        << VJOY_RT_BRAKE_STR
+        << VJOY_LT_ACCEL_STR
+        << VJOY_RT_ACCEL_STR
+        ;
+
+    /* Original Function Keys */
+    original_function_keylist = QStringList() \
+        << "VolumeMute"
+        << "VolumeDown"
+        << "VolumeUp"
+        << "MediaNext"
+        << "MediaPrev"
+        << "MediaStop"
+        << "MediaPlayPause"
+        << "LaunchMail"
+        << "SelectMedia"
+        << "LaunchApp1"
+        << "LaunchApp2"
+        << "BrowserBack"
+        << "BrowserForward"
+        << "BrowserRefresh"
+        << "BrowserStop"
+        << "BrowserSearch"
+        << "BrowserFavorites"
+        << "BrowserHome"
+        ;
+
+    /* Mapping Function Keys */
+    mapping_function_keylist = QStringList() \
+        << "VolumeMute"
+        << "VolumeDown"
+        << "VolumeUp"
+        << "MediaNext"
+        << "MediaPrev"
+        << "MediaStop"
+        << "MediaPlayPause"
+        << "LaunchMail"
+        << "SelectMedia"
+        << "LaunchApp1"
+        << "LaunchApp2"
+        << "BrowserBack"
+        << "BrowserForward"
+        << "BrowserRefresh"
+        << "BrowserStop"
+        << "BrowserSearch"
+        << "BrowserFavorites"
+        << "BrowserHome"
+        << CROSSHAIR_NORMAL_STR
+        << CROSSHAIR_TYPEA_STR
+        << FUNC_REFRESH
+        << FUNC_LOCKSCREEN
+        << FUNC_SHUTDOWN
+        << FUNC_REBOOT
+        << FUNC_LOGOFF
+        << FUNC_SLEEP
+        << FUNC_HIBERNATE
+        ;
+}
 void QKeyMapper::initAddKeyComboBoxes(void)
 {
     QStringList keycodelist = QStringList() \
             << ""
             << KEY_BLOCKED_STR
             << KEY_NONE_STR
+            << SENDTEXT_STR
+            << KEYSEQUENCEBREAK_STR
             << MOUSE_L_STR
             << MOUSE_R_STR
             << MOUSE_M_STR
@@ -11052,8 +11426,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << MOUSE_WHEEL_DOWN_STR
             << MOUSE_WHEEL_LEFT_STR
             << MOUSE_WHEEL_RIGHT_STR
-            << SENDTEXT_STR
-            << KEYSEQUENCEBREAK_STR
+            << KEY2MOUSE_UP_STR
+            << KEY2MOUSE_DOWN_STR
+            << KEY2MOUSE_LEFT_STR
+            << KEY2MOUSE_RIGHT_STR
             << "A"
             << "B"
             << "C"
@@ -11206,14 +11582,10 @@ void QKeyMapper::initAddKeyComboBoxes(void)
             << FUNC_LOGOFF
             << FUNC_SLEEP
             << FUNC_HIBERNATE
-            << KEY2MOUSE_UP_STR
-            << KEY2MOUSE_DOWN_STR
-            << KEY2MOUSE_LEFT_STR
-            << KEY2MOUSE_RIGHT_STR
-            << GYRO2MOUSE_HOLD_KEY_STR
-            << GYRO2MOUSE_MOVE_KEY_STR
             << CROSSHAIR_NORMAL_STR
             << CROSSHAIR_TYPEA_STR
+            << GYRO2MOUSE_HOLD_KEY_STR
+            << GYRO2MOUSE_MOVE_KEY_STR
 #ifdef VIGEM_CLIENT_SUPPORT
             << VJOY_MOUSE2LS_STR
             << VJOY_MOUSE2RS_STR
@@ -11379,16 +11751,16 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     m_orikeyComboBox->addItems(orikeycodelist);
     m_mapkeyComboBox->addItems(keycodelist);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_mapkeyComboBox->model());
-    QStandardItem* item = model->item(1);
-    item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
-    item = model->item(2);
-    item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
-#else
-    QBrush colorBrush(Qt::darkMagenta);
-    m_mapkeyComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
-#endif
+// #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+//     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(m_mapkeyComboBox->model());
+//     QStandardItem* item = model->item(1);
+//     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+//     item = model->item(2);
+//     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+// #else
+//     QBrush colorBrush(Qt::darkMagenta);
+//     m_mapkeyComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
+// #endif
 }
 
 void QKeyMapper::initInputDeviceSelectComboBoxes()
@@ -11621,6 +11993,16 @@ void QKeyMapper::initCombinationKeyLineEdit()
     QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
         lineEdit->setToolTip(lineEdit->text());
     });
+}
+
+void QKeyMapper::updateOriginalKeyListComboBox()
+{
+
+}
+
+void QKeyMapper::updateMappingKeyListComboBox()
+{
+
 }
 
 void QKeyMapper::setKeyMappingTabWidgetCurrentIndex(int index)
@@ -14225,6 +14607,18 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
     QComboBox::mousePressEvent(event);
 }
 
+void KeyListComboBox::showPopup()
+{
+    QComboBox::showPopup();
+
+    QAbstractItemView *view = this->view();
+    if (view) {
+        QModelIndex idx = model()->index(currentIndex(), 0);
+        view->setCurrentIndex(idx);
+        // view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+    }
+}
+
 QPopupNotification::QPopupNotification(QWidget *parent) :
     QWidget(parent),
     m_DisplayTime(3000)
@@ -15218,4 +15612,83 @@ void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()
 void QKeyMapper::on_selectTrayIconButton_clicked()
 {
     showTrayIconSelectDialog();
+}
+
+void QKeyMapper::on_oriList_SelectKeyboardButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Original KeyList Select Keyboard Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateOriginalKeyListComboBox();
+}
+
+
+void QKeyMapper::on_oriList_SelectMouseButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Original KeyList Select Mouse Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateOriginalKeyListComboBox();
+}
+
+
+void QKeyMapper::on_oriList_SelectGamepadButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Original KeyList Select Gamepad Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateOriginalKeyListComboBox();
+}
+
+
+void QKeyMapper::on_oriList_SelectFunctionButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Original KeyList Select Function Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateOriginalKeyListComboBox();
+}
+
+
+void QKeyMapper::on_mapList_SelectKeyboardButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Mapping KeyList Select Keyboard Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateMappingKeyListComboBox();
+}
+
+
+void QKeyMapper::on_mapList_SelectMouseButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Mapping KeyList Select Mouse Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateMappingKeyListComboBox();
+}
+
+
+void QKeyMapper::on_mapList_SelectGamepadButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Mapping KeyList Select Gamepad Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateMappingKeyListComboBox();
+}
+
+
+void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListButtonToggled] Mapping KeyList Select Function Button toggled ->" << checked;
+#endif
+    Q_UNUSED(checked);
+    updateMappingKeyListComboBox();
 }

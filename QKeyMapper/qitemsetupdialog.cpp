@@ -194,6 +194,43 @@ void QItemSetupDialog::setItemRow(int row)
     m_ItemRow = row;
 }
 
+void QItemSetupDialog::updateOriginalKeyListComboBox()
+{
+    KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
+
+    m_OriginalKeyListComboBox->clear();
+
+    QIcon send_icon = QIcon(":/send.png");
+    m_OriginalKeyListComboBox->addItem(QString());
+    m_OriginalKeyListComboBox->addItem(send_icon, SEPARATOR_LONGPRESS);
+    m_OriginalKeyListComboBox->addItem(send_icon, SEPARATOR_DOUBLEPRESS);
+    for(int i = 1; i < orikeyComboBox->count(); i++) {
+        QIcon icon = orikeyComboBox->itemIcon(i);
+        QString text = orikeyComboBox->itemText(i);
+        m_OriginalKeyListComboBox->addItem(icon, text);
+    }
+}
+
+void QItemSetupDialog::updateMappingKeyListComboBox()
+{
+    KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
+
+    m_MappingKeyListComboBox->clear();
+
+    QIcon send_icon = QIcon(":/send.png");
+    m_MappingKeyListComboBox->addItem(QString());
+    m_MappingKeyListComboBox->addItem(send_icon, SEPARATOR_WAITTIME);
+    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_DOWN);
+    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_UP);
+    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_BOTH);
+    m_MappingKeyListComboBox->addItem(send_icon, PREFIX_SEND_EXCLUSION);
+    for(int i = 1; i < mapkeyComboBox->count(); i++) {
+        QIcon icon = mapkeyComboBox->itemIcon(i);
+        QString text = mapkeyComboBox->itemText(i);
+        m_MappingKeyListComboBox->addItem(icon, text);
+    }
+}
+
 QString QItemSetupDialog::getOriginalKeyText()
 {
     return getInstance()->ui->originalKeyLineEdit->text();
@@ -571,27 +608,19 @@ void QItemSetupDialog::keyPressEvent(QKeyEvent *event)
 
 void QItemSetupDialog::initKeyListComboBoxes()
 {
+    updateOriginalKeyListComboBox();
+    updateMappingKeyListComboBox();
+
     KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
     KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
 
-    m_OriginalKeyListComboBox->addItem(QString());
-    m_OriginalKeyListComboBox->addItem(SEPARATOR_LONGPRESS);
-    m_OriginalKeyListComboBox->addItem(SEPARATOR_DOUBLEPRESS);
     for(int i = 1; i < orikeyComboBox->count(); i++) {
         QString text = orikeyComboBox->itemText(i);
-        m_OriginalKeyListComboBox->addItem(text);
         s_valiedOriginalKeyList.append(text);
     }
 
-    m_MappingKeyListComboBox->addItem(QString());
-    m_MappingKeyListComboBox->addItem(SEPARATOR_WAITTIME);
-    m_MappingKeyListComboBox->addItem(PREFIX_SEND_DOWN);
-    m_MappingKeyListComboBox->addItem(PREFIX_SEND_UP);
-    m_MappingKeyListComboBox->addItem(PREFIX_SEND_BOTH);
-    m_MappingKeyListComboBox->addItem(PREFIX_SEND_EXCLUSION);
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QString text = mapkeyComboBox->itemText(i);
-        m_MappingKeyListComboBox->addItem(text);
         s_valiedMappingKeyList.append(text);
     }
     s_valiedMappingKeyList.append(QKeyMapper_Worker::SpecialOriginalKeysList);

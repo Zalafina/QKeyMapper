@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+<!--    System Tray Icons -->
         <file alias="Black.ico">image\systrayicon_16px\Black_16px.ico</file>
         <file alias="Blue1.ico">image\systrayicon_16px\Blue1_16px.ico</file>
         <file alias="Blue2.ico">image\systrayicon_16px\Blue2_16px.ico</file>
@@ -14,5 +15,11 @@
         <file alias="Red.ico">image\systrayicon_16px\Red_16px.ico</file>
         <file alias="White.ico">image\systrayicon_16px\White_16px.ico</file>
         <file alias="Yellow.ico">image\systrayicon_16px\Yellow_16px.ico</file>
+<!--    Button Images -->
+        <file alias="keyboard.png">image\button_image\keyboard_32px.png</file>
+        <file alias="mouse.png">image\button_image\mouse_32px.png</file>
+        <file alias="gamepad.png">image\button_image\gamepad_32px.png</file>
+        <file alias="function.png">image\button_image\computer_32px.png</file>
+        <file alias="send.png">image\button_image\send_32px.png</file>
     </qresource>
 </RCC>
