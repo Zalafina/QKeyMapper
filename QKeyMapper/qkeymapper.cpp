@@ -11291,6 +11291,10 @@ void QKeyMapper::initKeysCategoryMap()
     /* Mapping Mouse Keys */
     mapping_mouse_keylist = original_mouse_keylist;
     mapping_mouse_keylist << QStringList() \
+        << KEY2MOUSE_UP_STR
+        << KEY2MOUSE_DOWN_STR
+        << KEY2MOUSE_LEFT_STR
+        << KEY2MOUSE_RIGHT_STR
         << MOUSE_L_WINDOWPOINT_STR
         << MOUSE_R_WINDOWPOINT_STR
         << MOUSE_M_WINDOWPOINT_STR
