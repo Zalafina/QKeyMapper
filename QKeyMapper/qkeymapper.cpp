@@ -1077,6 +1077,46 @@ void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windo
     }
 }
 
+QPushButton *QKeyMapper::getOriListSelectKeyboardButton() const
+{
+    return ui->oriList_SelectKeyboardButton;
+}
+
+QPushButton *QKeyMapper::getOriListSelectMouseButton() const
+{
+    return ui->oriList_SelectMouseButton;
+}
+
+QPushButton *QKeyMapper::getOriListSelectGamepadButton() const
+{
+    return ui->oriList_SelectGamepadButton;
+}
+
+QPushButton *QKeyMapper::getOriListSelectFunctionButton() const
+{
+    return ui->oriList_SelectFunctionButton;
+}
+
+QPushButton *QKeyMapper::getMapListSelectKeyboardButton() const
+{
+    return ui->mapList_SelectKeyboardButton;
+}
+
+QPushButton *QKeyMapper::getMapListSelectMouseButton() const
+{
+    return ui->mapList_SelectMouseButton;
+}
+
+QPushButton *QKeyMapper::getMapListSelectGamepadButton() const
+{
+    return ui->mapList_SelectGamepadButton;
+}
+
+QPushButton *QKeyMapper::getMapListSelectFunctionButton() const
+{
+    return ui->mapList_SelectFunctionButton;
+}
+
 QString QKeyMapper::getExeFileDescription()
 {
     QString exeFilePath = QCoreApplication::applicationFilePath();
@@ -11428,6 +11468,8 @@ void QKeyMapper::initKeysCategoryMap()
 
     /* Mapping Function Keys */
     mapping_function_keylist = QStringList() \
+        << CROSSHAIR_NORMAL_STR
+        << CROSSHAIR_TYPEA_STR
         << "VolumeMute"
         << "VolumeDown"
         << "VolumeUp"
@@ -11446,8 +11488,6 @@ void QKeyMapper::initKeysCategoryMap()
         << "BrowserSearch"
         << "BrowserFavorites"
         << "BrowserHome"
-        << CROSSHAIR_NORMAL_STR
-        << CROSSHAIR_TYPEA_STR
         << FUNC_REFRESH
         << FUNC_LOCKSCREEN
         << FUNC_SHUTDOWN

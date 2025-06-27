@@ -1900,8 +1900,8 @@
     <rect>
      <x>586</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1909,6 +1909,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -1922,8 +1928,8 @@
     <rect>
      <x>616</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1931,6 +1937,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -1944,8 +1956,8 @@
     <rect>
      <x>646</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1953,6 +1965,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -1966,8 +1984,8 @@
     <rect>
      <x>676</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1975,6 +1993,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -1988,8 +2012,8 @@
     <rect>
      <x>870</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -1997,6 +2021,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -2010,8 +2040,8 @@
     <rect>
      <x>810</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -2019,6 +2049,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -2032,8 +2068,8 @@
     <rect>
      <x>900</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -2041,6 +2077,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -2054,8 +2096,8 @@
     <rect>
      <x>840</x>
      <y>370</y>
-     <width>21</width>
-     <height>21</height>
+     <width>22</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -2063,6 +2105,12 @@
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
    </property>
    <property name="checkable">
     <bool>true</bool>

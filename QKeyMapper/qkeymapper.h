@@ -460,6 +460,15 @@ public:
 
     void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
+    QPushButton* getOriListSelectKeyboardButton(void) const;
+    QPushButton* getOriListSelectMouseButton(void) const;
+    QPushButton* getOriListSelectGamepadButton(void) const;
+    QPushButton* getOriListSelectFunctionButton(void) const;
+    QPushButton* getMapListSelectKeyboardButton(void) const;
+    QPushButton* getMapListSelectMouseButton(void) const;
+    QPushButton* getMapListSelectGamepadButton(void) const;
+    QPushButton* getMapListSelectFunctionButton(void) const;
+
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);
     static QString getPlatformString(void);

@@ -31,6 +31,32 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     initKeyListComboBoxes();
     initKeyStringLineEdit();
 
+    QStyle* windowsStyle = QStyleFactory::create("windows");
+    ui->oriList_SelectKeyboardButton->setStyle(windowsStyle);
+    ui->oriList_SelectMouseButton->setStyle(windowsStyle);
+    ui->oriList_SelectGamepadButton->setStyle(windowsStyle);
+    ui->oriList_SelectFunctionButton->setStyle(windowsStyle);
+    ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
+    ui->mapList_SelectMouseButton->setStyle(windowsStyle);
+    ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
+    ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
+    ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.png"));
+    ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.png"));
+    ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.png"));
+    ui->oriList_SelectFunctionButton->setIcon(QIcon(":/function.png"));
+    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.png"));
+    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.png"));
+    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.png"));
+    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.png"));
+    ui->oriList_SelectKeyboardButton->setChecked(true);
+    ui->oriList_SelectMouseButton->setChecked(true);
+    ui->oriList_SelectGamepadButton->setChecked(true);
+    ui->oriList_SelectFunctionButton->setChecked(true);
+    ui->mapList_SelectKeyboardButton->setChecked(true);
+    ui->mapList_SelectMouseButton->setChecked(true);
+    ui->mapList_SelectGamepadButton->setChecked(true);
+    ui->mapList_SelectFunctionButton->setChecked(true);
+
     ui->originalKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
     m_MappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
     m_MappingKey_KeyUpLineEdit->setFocusPolicy(Qt::ClickFocus);
@@ -59,6 +85,37 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
     QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked);
     QObject::connect(ui->itemNoteLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemNoteUpdateButton_clicked);
+
+    // Synchronize button states between main window and sub window:
+    // Use bidirectional connect to ensure the four category buttons (Keyboard, Mouse, Gamepad, Function) in both windows always have the same checked state.
+    // Any change in one window will be immediately reflected in the other, achieving full linkage.
+    /* OriginalKeys List Category Buttons */
+    QPushButton* oriSelectKeyboardButton    = QKeyMapper::getInstance()->getOriListSelectKeyboardButton();
+    QPushButton* oriSelectMouseButton       = QKeyMapper::getInstance()->getOriListSelectMouseButton();
+    QPushButton* oriSelectGamepadButton     = QKeyMapper::getInstance()->getOriListSelectGamepadButton();
+    QPushButton* oriSelectFunctionButton    = QKeyMapper::getInstance()->getOriListSelectFunctionButton();
+    QObject::connect(oriSelectKeyboardButton,           &QPushButton::toggled, ui->oriList_SelectKeyboardButton,    &QPushButton::setChecked);
+    QObject::connect(ui->oriList_SelectKeyboardButton,  &QPushButton::toggled, oriSelectKeyboardButton,             &QPushButton::setChecked);
+    QObject::connect(oriSelectMouseButton,              &QPushButton::toggled, ui->oriList_SelectMouseButton,       &QPushButton::setChecked);
+    QObject::connect(ui->oriList_SelectMouseButton,     &QPushButton::toggled, oriSelectMouseButton,                &QPushButton::setChecked);
+    QObject::connect(oriSelectGamepadButton,            &QPushButton::toggled, ui->oriList_SelectGamepadButton,     &QPushButton::setChecked);
+    QObject::connect(ui->oriList_SelectGamepadButton,   &QPushButton::toggled, oriSelectGamepadButton,              &QPushButton::setChecked);
+    QObject::connect(oriSelectFunctionButton,           &QPushButton::toggled, ui->oriList_SelectFunctionButton,    &QPushButton::setChecked);
+    QObject::connect(ui->oriList_SelectFunctionButton,  &QPushButton::toggled, oriSelectFunctionButton,             &QPushButton::setChecked);
+
+    /* MappingKeys List Category Buttons */
+    QPushButton* mapSelectKeyboardButton    = QKeyMapper::getInstance()->getMapListSelectKeyboardButton();
+    QPushButton* mapSelectMouseButton       = QKeyMapper::getInstance()->getMapListSelectMouseButton();
+    QPushButton* mapSelectGamepadButton     = QKeyMapper::getInstance()->getMapListSelectGamepadButton();
+    QPushButton* mapSelectFunctionButton    = QKeyMapper::getInstance()->getMapListSelectFunctionButton();
+    QObject::connect(mapSelectKeyboardButton,           &QPushButton::toggled, ui->mapList_SelectKeyboardButton,    &QPushButton::setChecked);
+    QObject::connect(ui->mapList_SelectKeyboardButton,  &QPushButton::toggled, mapSelectKeyboardButton,             &QPushButton::setChecked);
+    QObject::connect(mapSelectMouseButton,              &QPushButton::toggled, ui->mapList_SelectMouseButton,       &QPushButton::setChecked);
+    QObject::connect(ui->mapList_SelectMouseButton,     &QPushButton::toggled, mapSelectMouseButton,                &QPushButton::setChecked);
+    QObject::connect(mapSelectGamepadButton,            &QPushButton::toggled, ui->mapList_SelectGamepadButton,     &QPushButton::setChecked);
+    QObject::connect(ui->mapList_SelectGamepadButton,   &QPushButton::toggled, mapSelectGamepadButton,              &QPushButton::setChecked);
+    QObject::connect(mapSelectFunctionButton,           &QPushButton::toggled, ui->mapList_SelectFunctionButton,    &QPushButton::setChecked);
+    QObject::connect(ui->mapList_SelectFunctionButton,  &QPushButton::toggled, mapSelectFunctionButton,             &QPushButton::setChecked);
 }
 
 QItemSetupDialog::~QItemSetupDialog()
@@ -87,6 +144,14 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->itemNoteLabel->setText(tr(ITEMNOTELABEL_STR));
     ui->orikeyListLabel->setText(tr(ORIKEYLISTLABEL_STR));
     ui->mapkeyListLabel->setText(tr(MAPKEYLISTLABEL_STR));
+    ui->oriList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
+    ui->oriList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
+    ui->oriList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
+    ui->oriList_SelectFunctionButton->setToolTip(tr("Function Keys"));
+    ui->mapList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
+    ui->mapList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
+    ui->mapList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
+    ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
     ui->originalKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
