@@ -168,10 +168,11 @@ void QTableSetupDialog::onTabFontColorChanged(QColor &color)
     }
 
     if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabFontColor = color;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[QTableSetupDialog::onTabFontColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Font Color -> " << color.name();
 #endif
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabFontColor = color;
+        QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(m_TabIndex);
     }
 }
 

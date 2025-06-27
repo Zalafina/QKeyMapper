@@ -8196,7 +8196,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             s_KeyMappingTabInfoList[index].TabHotkey.clear();
         }
-        updateKeyMappingTabWidgetTabDisplay(index);
+        // updateKeyMappingTabWidgetTabDisplay(index);
     }
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
@@ -8223,6 +8223,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
             }
         }
+        updateKeyMappingTabWidgetTabDisplay(index);
     }
 
     collectMappingTableTabHotkeys();
@@ -12050,27 +12051,35 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
 {
     if ((tabindex < 0) || (tabindex > m_KeyMappingTabWidget->count() - 2) || (tabindex > s_KeyMappingTabInfoList.size() - 1)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[setKeyMappingTabWidgetTabBGColor] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << m_KeyMappingTabWidget->count() - 1 << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
 #endif
         return;
     }
 
     const QString tab_hotkey = s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
+    const QString tab_name = s_KeyMappingTabInfoList.at(tabindex).TabName;
+    const QColor tab_color = s_KeyMappingTabInfoList.at(tabindex).TabFontColor;
     if (false == tab_hotkey.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Set Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
 #endif
 
-        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, QColor(Qt::darkMagenta));
+        // m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, QColor(Qt::darkMagenta));
+        QString tabText = QString(PREFIX_SHORTCUT) + tab_name;
+        m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tabText);
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Clear Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
 #endif
 
-        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, Qt::black);
+        // m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, Qt::black);
+        m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tab_name);
     }
 
+    if (tab_color.isValid()) {
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
+    }
 
     QString tooltip_str;
     if (false == tab_hotkey.isEmpty()) {
