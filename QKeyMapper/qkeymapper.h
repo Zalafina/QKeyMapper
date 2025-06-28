@@ -70,6 +70,7 @@
 #include "qitemsetupdialog.h"
 #include "qtablesetupdialog.h"
 #include "qtrayiconselectdialog.h"
+#include "qnotificationsetupdialog.h"
 
 extern void updateQtDisplayEnvironment(void);
 
@@ -444,7 +445,7 @@ public:
 public slots:
     void WindowStateChangedProc(void);
     void cycleCheckProcessProc(void);
-#ifndef USE_CYCLECHECKTIMER
+#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     void checkGlobalSettingSwitchTimeout(void);
 #endif
     void cycleRefreshProcessInfoTableProc(void);
@@ -753,6 +754,8 @@ private slots:
 
     void on_selectTrayIconButton_clicked();
 
+    void on_notificationAdvancedSettingButton_clicked();
+
     void on_oriList_SelectKeyboardButton_toggled(bool checked);
 
     void on_oriList_SelectMouseButton_toggled(bool checked);
@@ -877,6 +880,8 @@ private:
     void closeGyro2MouseAdvancedSettingDialog(void);
     void showTrayIconSelectDialog(void);
     void closeTrayIconSelectDialog(void);
+    void showNotificationSetupDialog(void);
+    void closeNotificationSetupDialog(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
@@ -907,7 +912,7 @@ public:
     static bool s_isDestructing;
     static HWINEVENTHOOK s_WinEventHook;
     static int s_GlobalSettingAutoStart;
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     static uint s_CycleCheckLoopCount;
 #endif
     static HWND s_CurrentMappingHWND;
@@ -940,9 +945,10 @@ private:
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
     QPoint m_LastWindowPosition;
-#ifdef USE_CYCLECHECKTIMER
+#ifdef CYCLECHECKTIMER_ENABLED
     QTimer m_CycleCheckTimer;
-#else
+#endif
+#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     QTimer m_CheckGlobalSettingSwitchTimer;
 #endif
     QTimer m_ProcessInfoTableRefreshTimer;
@@ -996,6 +1002,7 @@ private:
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
+    QNotificationSetupDialog *m_NotificationSetupDialog = Q_NULLPTR;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;

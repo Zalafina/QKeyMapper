@@ -10,7 +10,7 @@ QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 bool QKeyMapper::s_isDestructing = false;
 HWINEVENTHOOK QKeyMapper::s_WinEventHook = Q_NULLPTR;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
 uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 #endif
 HWND QKeyMapper::s_CurrentMappingHWND = NULL;
@@ -42,9 +42,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMapStatus(KEYMAP_IDLE),
     ui(new Ui::QKeyMapper),
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
-#ifdef USE_CYCLECHECKTIMER
+#ifdef CYCLECHECKTIMER_ENABLED
     m_CycleCheckTimer(this),
-#else
+#endif
+#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     m_CheckGlobalSettingSwitchTimer(this),
 #endif
     m_ProcessInfoTableRefreshTimer(this),
@@ -232,7 +233,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
 #endif
 
-#ifndef USE_CYCLECHECKTIMER
+#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     m_CheckGlobalSettingSwitchTimer.setInterval(CHECK_GLOBALSETTING_SWITCH_TIMEOUT);
     m_CheckGlobalSettingSwitchTimer.setSingleShot(true);
 #endif
@@ -423,6 +424,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TableSetupDialog = new QTableSetupDialog(this);
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
+    m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     loadSetting_flag = true;
     bool loadresult = loadKeyMapSetting(QString());
     Q_UNUSED(loadresult);
@@ -450,9 +452,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 
     QObject::connect(m_SysTrayIcon, &QSystemTrayIcon::activated, this, &QKeyMapper::SystrayIconActivated);
-#ifdef USE_CYCLECHECKTIMER
+#ifdef CYCLECHECKTIMER_ENABLED
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::cycleCheckProcessProc);
-#else
+#endif
+#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     QObject::connect(&m_CheckGlobalSettingSwitchTimer, &QTimer::timeout, this, &QKeyMapper::checkGlobalSettingSwitchTimeout);
 #endif
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
@@ -559,6 +562,7 @@ void QKeyMapper::WindowStateChangedProc(void)
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
+        closeNotificationSetupDialog();
         // hide();
     }
 }
@@ -767,7 +771,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         setKeyHook(NULL);
                         m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
                         mappingStartNotification();
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
                         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 #else
                         m_CheckGlobalSettingSwitchTimer.stop();
@@ -813,7 +817,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     }
                     m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
                     mappingStartNotification();
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
                     s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 #else
                     m_CheckGlobalSettingSwitchTimer.stop();
@@ -856,7 +860,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 mappingStopNotification();
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
                 s_CycleCheckLoopCount = 0;
 #else
                 m_CheckGlobalSettingSwitchTimer.start();
@@ -870,7 +874,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         //EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
     }
 
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     if (m_KeyMapStatus == KEYMAP_CHECKING && GLOBAL_MAPPING_START_WAIT == s_CycleCheckLoopCount) {
         if (checkGlobalSettingAutoStart()) {
             loadSetting_flag = true;
@@ -891,7 +895,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #endif
 }
 
-#ifndef USE_CYCLECHECKTIMER
+#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
 void QKeyMapper::checkGlobalSettingSwitchTimeout()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -1738,7 +1742,7 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
         if (resultLength){
             windowTitle = QString::fromWCharArray(titleBuffer);
-            qDebug().nospace() << "[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle;
+            qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << "\033[0m";
         }
 #endif
 
@@ -4663,6 +4667,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeCrosshairSetupDialog();
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
+            closeNotificationSetupDialog();
             hide();
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
@@ -4909,13 +4914,13 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         }
 
         if (true == fileNameCheckOK && true == windowTitleCheckOK){
-#ifdef USE_CYCLECHECKTIMER
+#ifdef CYCLECHECKTIMER_ENABLED
             m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
 #endif
             ui->keymapButton->setText(tr("MappingStop"));
             m_KeyMapStatus = KEYMAP_CHECKING;
             startWinEventHook();
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
             s_CycleCheckLoopCount = 0;
 #else
             m_CheckGlobalSettingSwitchTimer.start();
@@ -4933,7 +4938,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         }
     }
     else{
-#ifdef USE_CYCLECHECKTIMER
+#ifdef CYCLECHECKTIMER_ENABLED
         m_CycleCheckTimer.stop();
 #endif
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
@@ -4947,7 +4952,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
         mappingStopNotification();
-#ifdef USE_CYCLECHECKTIMER
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
 #else
         m_CheckGlobalSettingSwitchTimer.stop();
@@ -4965,6 +4970,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
+        closeNotificationSetupDialog();
         changeControlEnableStatus(false);
     }
     else{
@@ -9742,6 +9748,24 @@ void QKeyMapper::closeTrayIconSelectDialog()
     }
 }
 
+void QKeyMapper::showNotificationSetupDialog()
+{
+    if (!m_NotificationSetupDialog->isVisible()) {
+        m_NotificationSetupDialog->show();
+    }
+}
+
+void QKeyMapper::closeNotificationSetupDialog()
+{
+    if (Q_NULLPTR == m_NotificationSetupDialog) {
+        return;
+    }
+
+    if (m_NotificationSetupDialog->isVisible()) {
+        m_NotificationSetupDialog->close();
+    }
+}
+
 void QKeyMapper::showItemSetupDialog(int tabindex, int row)
 {
     if (Q_NULLPTR == m_ItemSetupDialog) {
@@ -10710,6 +10734,7 @@ void QKeyMapper::switchShowHide()
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
+        closeNotificationSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -10744,6 +10769,7 @@ void QKeyMapper::forceHide()
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
+        closeNotificationSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << m_LastWindowPosition;
@@ -15468,6 +15494,11 @@ void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()
 void QKeyMapper::on_selectTrayIconButton_clicked()
 {
     showTrayIconSelectDialog();
+}
+
+void QKeyMapper::on_notificationAdvancedSettingButton_clicked()
+{
+    showNotificationSetupDialog();
 }
 
 void QKeyMapper::on_oriList_SelectKeyboardButton_toggled(bool checked)

@@ -5,8 +5,10 @@
 
 /* constant values for QKeyMapper */
 //const unsigned int WIN_TITLESTR_MAX = 200U;
-#ifdef USE_CYCLECHECKTIMER
+#ifdef CYCLECHECKTIMER_ENABLED
 const unsigned int CYCLE_CHECK_TIMEOUT = 300U;
+#endif
+#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
 const unsigned int CYCLE_CHECK_LOOPCOUNT_MAX = 100000U;
 const unsigned int CYCLE_CHECK_LOOPCOUNT_RESET = 500U;
 const unsigned int GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;

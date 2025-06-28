@@ -31,7 +31,8 @@ DEFINES += SETTINGSFILE_CONVERT
 DEFINES += SEPARATOR_CONVERT
 DEFINES += VIGEM_CLIENT_SUPPORT
 DEFINES += HOOKSTART_ONSTARTUP
-# DEFINES += USE_CYCLECHECKTIMER
+DEFINES += CYCLECHECKTIMER_ENABLED
+DEFINES += USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
 # DEFINES += SDL_VIRTUALGAMEPAD_IGNORE
 # DEFINES += INTERCEPTION_VERBOSE_LOG
 
@@ -163,6 +164,7 @@ HEADERS     += \
     qgyro2mouseoptiondialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
+    qnotificationsetupdialog.h \
     qtablesetupdialog.h \
     qtrayiconselectdialog.h
 # Interception Driver Support <<<
@@ -183,6 +185,7 @@ SOURCES     += \
     qkeymapper_constants.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
+    qnotificationsetupdialog.cpp \
     qtablesetupdialog.cpp \
     qtrayiconselectdialog.cpp
 
@@ -210,6 +213,7 @@ FORMS       += \
     qitemsetupdialog.ui \
     qkeymapper.ui \
     qkeyrecord.ui \
+    qnotificationsetupdialog.ui \
     qtablesetupdialog.ui \
     qtrayiconselectdialog.ui
 
