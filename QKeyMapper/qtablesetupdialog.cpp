@@ -32,6 +32,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
 
     m_NotificationFontColorPicker->raise();
+    // m_NotificationFontColorPicker->setShowAlphaChannel(true);
 
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
@@ -47,7 +48,8 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
 
-    m_NotificationFontColorPicker->setUILanguage(languageindex);
+    m_NotificationFontColorPicker->setButtonText(tr("TabFontColor"));
+    m_NotificationFontColorPicker->setWindowTitle(tr("Select Notification Font Color"));
     setWindowTitle(tr(TABLESETUPDIALOG_WINDOWTITLE_STR));
     ui->tabNameLabel->setText(tr(TABNAMELABEL_STR));
     ui->tabHotkeyLabel->setText(tr(TABHOTKEYLABEL_STR));

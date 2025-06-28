@@ -62,8 +62,11 @@ QCrosshairSetupDialog::~QCrosshairSetupDialog()
 
 void QCrosshairSetupDialog::setUILanguage(int languageindex)
 {
-    m_CenterColorPicker->setUILanguage(languageindex);
-    m_CrosshairColorPicker->setUILanguage(languageindex);
+    Q_UNUSED(languageindex);
+    m_CenterColorPicker->setButtonText(tr("Color"));
+    m_CrosshairColorPicker->setButtonText(tr("Color"));
+    m_CenterColorPicker->setWindowTitle(tr("Select Crosshair Center Color"));
+    m_CrosshairColorPicker->setWindowTitle(tr("Select Crosshair Color"));
 
     setWindowTitle(tr("Crosshair Setup"));
     ui->centerGroupBox->setTitle(tr("Center"));

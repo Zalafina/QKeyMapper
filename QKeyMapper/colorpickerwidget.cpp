@@ -11,14 +11,7 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int bu
     , m_buttonText(buttonText)
 {
     colorLabel = new QLabel(this);
-    QString translated_ButtonText;
-    if (m_buttonText == "TabFontColor") {
-        translated_ButtonText = tr("TabFontColor");
-    }
-    else { /* m_buttonText == "Color" */
-        translated_ButtonText = tr("Color");
-    }
-    colorButton = new QPushButton(translated_ButtonText, this);
+    colorButton = new QPushButton(buttonText, this);
 
     colorButton->setFocusPolicy(Qt::NoFocus);
     colorButton->setAutoDefault(false);
@@ -44,6 +37,7 @@ ColorPickerWidget::~ColorPickerWidget()
     // Automatic cleanup of dynamically allocated objects
 }
 
+#if 0
 void ColorPickerWidget::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
@@ -56,6 +50,7 @@ void ColorPickerWidget::setUILanguage(int languageindex)
     }
     colorButton->setText(translated_ButtonText);
 }
+#endif
 
 void ColorPickerWidget::setColor(QColor &color)
 {
@@ -67,6 +62,24 @@ void ColorPickerWidget::setColor(QColor &color)
         palette.setColor(colorLabel->backgroundRole(), color);
         colorLabel->setAutoFillBackground(true);
         colorLabel->setPalette(palette);
+    }
+}
+
+void ColorPickerWidget::setShowAlphaChannel(bool show)
+{
+    m_showAlphaChannel = show;
+}
+
+void ColorPickerWidget::setWindowTitle(QString title)
+{
+    m_windowTitle = title;
+}
+
+void ColorPickerWidget::setButtonText(QString text)
+{
+    if (text.isEmpty() != true) {
+        m_buttonText = text;
+        colorButton->setText(text);
     }
 }
 
@@ -82,7 +95,18 @@ void ColorPickerWidget::onPickColor()
     s_isColorSelecting = true;
 
     // Open the color picker dialog and allow the user to choose a color
-    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this);
+    QString title;
+    QColorDialog::ColorDialogOptions options;
+    if (m_windowTitle.isEmpty()) {
+        title = tr("Select Color");
+    }
+    else {
+        title = m_windowTitle;
+    }
+    if (m_showAlphaChannel) {
+        options |= QColorDialog::ShowAlphaChannel;
+    }
+    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this, title, options);
 
     if (color.isValid()) {
         m_color = color;
