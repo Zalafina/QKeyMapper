@@ -5282,13 +5282,6 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTab_Info tab_info;
     QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
     tab_info.TabName = tabName;
-    int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
-    if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-        tab_info.TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
-    }
-    else {
-        tab_info.TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
-    }
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
@@ -8206,22 +8199,6 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (TabFontColor.isValid()) {
                 s_KeyMappingTabInfoList[index].TabFontColor = TabFontColor;
             }
-            else {
-                if (loadGlobalSetting) {
-                    s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
-                }
-                else {
-                    s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
-                }
-            }
-        }
-        else {
-            if (loadGlobalSetting) {
-                s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
-            }
-            else {
-                s_KeyMappingTabInfoList[index].TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
-            }
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }
@@ -9836,6 +9813,7 @@ void QKeyMapper::showTableSetupDialog(int tabindex)
         m_TableSetupDialog->move(x, y);
 
         m_TableSetupDialog->setTabIndex(tabindex);
+        m_TableSetupDialog->setSettingSelectIndex(ui->settingselectComboBox->currentIndex());
         m_TableSetupDialog->show();
     }
 }

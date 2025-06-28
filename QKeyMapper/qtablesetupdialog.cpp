@@ -9,6 +9,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QTableSetupDialog)
     , m_TabIndex(-1)
+    , m_SettingSelectIndex(-1)
     , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR))
 {
     m_instance = this;
@@ -102,6 +103,14 @@ void QTableSetupDialog::setTabIndex(int tabindex)
     m_TabIndex = tabindex;
 }
 
+void QTableSetupDialog::setSettingSelectIndex(int index)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QTableSetupDialog::setSettingSelectIndex]" << "Setting Select Index =" << index;
+#endif
+    m_SettingSelectIndex = index;
+}
+
 bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -122,6 +131,7 @@ void QTableSetupDialog::closeEvent(QCloseEvent *event)
     qDebug() << "[QTableSetupDialog::closeEvent]" << "Tab Index initialize to -1";
 #endif
     m_TabIndex = -1;
+    m_SettingSelectIndex = -1;
 
     QDialog::closeEvent(event);
 }
@@ -143,6 +153,14 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         ui->tabHotkeyLineEdit->setText(TabHotkey);
 
         /* Load TabFontColor */
+        if (TabFontColor.isValid() != true) {
+            if (GLOBALSETTING_INDEX == m_SettingSelectIndex) {
+                TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
+            }
+            else {
+                TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+            }
+        }
         m_NotificationFontColorPicker->setColor(TabFontColor);
     }
 
@@ -156,6 +174,7 @@ void QTableSetupDialog::keyPressEvent(QKeyEvent *event)
         qDebug() << "[QTableSetupDialog::keyPressEvent]" << "ESC Key Pressed, Tab Index initialize to -1 and close TableSetupDialog.";
 #endif
         m_TabIndex = -1;
+        m_SettingSelectIndex = -1;
     }
 
     QDialog::keyPressEvent(event);

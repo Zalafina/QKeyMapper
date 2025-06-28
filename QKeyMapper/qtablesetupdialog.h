@@ -24,6 +24,7 @@ public:
     void setUILanguage(int languageindex);
     void resetFontSize(void);
     void setTabIndex(int tabindex);
+    void setSettingSelectIndex(int index);
 
 protected:
     bool event(QEvent *event) override;
@@ -49,6 +50,7 @@ private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
     int m_TabIndex;
+    int m_SettingSelectIndex;
     ColorPickerWidget *m_NotificationFontColorPicker;
 };
 
