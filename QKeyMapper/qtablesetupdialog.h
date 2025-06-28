@@ -26,6 +26,8 @@ public:
     void setTabIndex(int tabindex);
     void setSettingSelectIndex(int index);
 
+    int getSettingSelectIndex(void);
+
 protected:
     bool event(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;

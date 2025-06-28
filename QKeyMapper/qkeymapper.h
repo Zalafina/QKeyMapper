@@ -138,7 +138,7 @@ struct ValidationResult
 
 struct PopupNotificationOptions {
     QString message;                                    // Notification message text
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;  // Text color
+    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;  // Text color
     int displayTime = 3000;                             // Display duration (ms)
     int position = NOTIFICATION_POSITION_TOP_RIGHT;     // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
     int size = 16;                                      // Font size

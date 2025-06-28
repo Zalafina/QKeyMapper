@@ -113,6 +113,11 @@ void QTableSetupDialog::setSettingSelectIndex(int index)
     m_SettingSelectIndex = index;
 }
 
+int QTableSetupDialog::getSettingSelectIndex()
+{
+    return m_SettingSelectIndex;
+}
+
 bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -157,10 +162,10 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         /* Load TabFontColor */
         if (TabFontColor.isValid() != true) {
             if (GLOBALSETTING_INDEX == m_SettingSelectIndex) {
-                TabFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT);
+                TabFontColor = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
             }
             else {
-                TabFontColor = QColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+                TabFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
             }
         }
         m_NotificationFontColorPicker->setColor(TabFontColor);

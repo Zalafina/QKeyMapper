@@ -78,7 +78,6 @@ void ColorPickerWidget::setWindowTitle(QString title)
 void ColorPickerWidget::setButtonText(QString text)
 {
     if (text.isEmpty() != true) {
-        m_buttonText = text;
         colorButton->setText(text);
     }
 }
@@ -87,26 +86,45 @@ void ColorPickerWidget::onPickColor()
 {
     QKeyMapper::getInstance()->initSelectColorDialog();
 
-    QColor defaultColor = QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT));
-    if (m_color.isValid()) {
-        defaultColor = m_color;
+    bool clear_to_default = false;
+    if ("TabFontColor" == m_buttonText && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        clear_to_default = true;
     }
 
-    s_isColorSelecting = true;
-
-    // Open the color picker dialog and allow the user to choose a color
-    QString title;
-    QColorDialog::ColorDialogOptions options;
-    if (m_windowTitle.isEmpty()) {
-        title = tr("Select Color");
+    QColor color;
+    if (clear_to_default) {
+        int setting_select_index = QTableSetupDialog::getInstance()->getSettingSelectIndex();
+        if (setting_select_index < 0) {
+            return;
+        }
+        else if (GLOBALSETTING_INDEX == setting_select_index) {
+            color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+        }
+        else {
+            color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+        }
     }
     else {
-        title = m_windowTitle;
+        QColor defaultColor = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
+        if (m_color.isValid()) {
+            defaultColor = m_color;
+        }
+        s_isColorSelecting = true;
+        // Open the color picker dialog and allow the user to choose a color
+        QString title;
+        QColorDialog::ColorDialogOptions options;
+        if (m_windowTitle.isEmpty()) {
+            title = tr("Select Color");
+        }
+        else {
+            title = m_windowTitle;
+        }
+        if (m_showAlphaChannel) {
+            options |= QColorDialog::ShowAlphaChannel;
+        }
+        color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this, title, options);
+        s_isColorSelecting = false;
     }
-    if (m_showAlphaChannel) {
-        options |= QColorDialog::ShowAlphaChannel;
-    }
-    QColor color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this, title, options);
 
     if (color.isValid()) {
         m_color = color;
@@ -120,7 +138,11 @@ void ColorPickerWidget::onPickColor()
     colorLabel->setAutoFillBackground(true);
     colorLabel->setPalette(palette);
 
-    emit colorChanged(color);
-
-    s_isColorSelecting = false;
+    if (clear_to_default) {
+        QColor emptyColor;
+        emit colorChanged(emptyColor);
+    }
+    else {
+        emit colorChanged(color);
+    }
 }

@@ -4146,7 +4146,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 QColor crosshair_centercolor = QColor(QString("%1%2").arg("#", crosshair_centercolorStr));
                 bool isvalid = crosshair_centercolor.isValid();
                 if (!isvalid) {
-                    crosshair_centercolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CENTERCOLOR_DEFAULT));
+                    crosshair_centercolor = CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
                 }
                 crosshair_centercolorList.append(crosshair_centercolor);
             }
@@ -4176,7 +4176,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 QColor crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", crosshair_crosshaircolorStr));
                 bool isvalid = crosshair_crosshaircolor.isValid();
                 if (!isvalid) {
-                    crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT));
+                    crosshair_crosshaircolor = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
                 }
                 crosshair_crosshaircolorList.append(crosshair_crosshaircolor);
             }
@@ -7922,7 +7922,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             QColor crosshair_centercolor = QColor(QString("%1%2").arg("#", crosshair_centercolorStr));
                             bool isvalid = crosshair_centercolor.isValid();
                             if (!isvalid) {
-                                crosshair_centercolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CENTERCOLOR_DEFAULT));
+                                crosshair_centercolor = CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
                             }
                             crosshair_centercolorList.append(crosshair_centercolor);
                         }
@@ -7952,7 +7952,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             QColor crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", crosshair_crosshaircolorStr));
                             bool isvalid = crosshair_crosshaircolor.isValid();
                             if (!isvalid) {
-                                crosshair_crosshaircolor = QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT));
+                                crosshair_crosshaircolor = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
                             }
                             crosshair_crosshaircolorList.append(crosshair_crosshaircolor);
                         }
@@ -9567,23 +9567,23 @@ void QKeyMapper::mappingStartNotification()
     else {
         notificationSetting = description;
     }
-    QString color;
+    QString color_str;
     popupNotification = tr("StartMapping [") + notificationSetting + "]" + " - " + tabName;
     if (tabFontColor.isValid()) {
-        color = tabFontColor.name();
+        color_str = tabFontColor.name();
     }
     else {
         if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-            color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+            color_str = NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR;
         }
         else {
-            color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+            color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
         }
     }
 
     PopupNotificationOptions opts;
     opts.message = popupNotification;
-    opts.color = color;
+    opts.color = color_str;
     opts.position = position;
     opts.size = ui->notificationSizeSpinBox->value();
     // opts.displayTime = 3000;
@@ -9618,7 +9618,7 @@ void QKeyMapper::mappingStopNotification()
         return;
     }
 
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
 
     PopupNotificationOptions opts;
@@ -9650,7 +9650,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
-    QString color;
+    QString color_str;
     // popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + " - " + tabName;
     if (isSame) {
         popupNotification = tr("TabisAlready") + " - " + tabName;
@@ -9659,20 +9659,20 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
         popupNotification = tr("MappingTabSwitch") + " - " + tabName;
     }
     if (tabFontColor.isValid()) {
-        color = tabFontColor.name();
+        color_str = tabFontColor.name();
     }
     else {
         if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-            color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+            color_str = NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR;
         }
         else {
-            color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+            color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
         }
     }
 
     PopupNotificationOptions opts;
     opts.message = popupNotification;
-    opts.color = color;
+    opts.color = color_str;
     opts.position = position;
     opts.size = ui->notificationSizeSpinBox->value();
     // opts.displayTime = 3000;
@@ -12048,16 +12048,14 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Clear Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
+        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Clear Tabbar prefix & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
 #endif
 
         // m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, Qt::black);
         m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tab_name);
     }
 
-    if (tab_color.isValid()) {
-        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
-    }
+    m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
 
     QString tooltip_str;
     if (false == tab_hotkey.isEmpty()) {
@@ -14018,10 +14016,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    false,                                   /* keyseqholddown bool */
                                                    REPEAT_MODE_NONE,                        /* repeat_mode int */
                                                    REPEAT_TIMES_DEFAULT,                    /* repeat_times int */
-                                                   QColor(QString("%1%2").arg("#", CROSSHAIR_CENTERCOLOR_DEFAULT)),   /* crosshair_centercolor QColor */
+                                                   CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR,    /* crosshair_centercolor QColor */
                                                    CROSSHAIR_CENTERSIZE_DEFAULT,            /* crosshair_centersize int */
                                                    CROSSHAIR_CENTEROPACITY_DEFAULT,         /* crosshair_centeropacity int */
-                                                   QColor(QString("%1%2").arg("#", CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)),/* crosshair_crosshaircolor QColor */
+                                                   CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR, /* crosshair_crosshaircolor QColor */
                                                    CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,        /* crosshair_crosshairwidth int */
                                                    CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,       /* crosshair_crosshairlength int */
                                                    CROSSHAIR_CROSSHAIROPACITY_DEFAULT,      /* crosshair_crosshairopacity int */
