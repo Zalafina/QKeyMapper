@@ -12305,6 +12305,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->Gyro2MouseMaxThresholdLabel->setText(tr("MaxThres"));
     ui->Gyro2MouseAdvancedSettingButton->setText(tr("Advanced"));
     ui->selectTrayIconButton->setText(tr("Select Tray Icon"));
+    ui->notificationAdvancedSettingButton->setText(tr("Noti Advanced"));
     ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
 
     int last_notification_position = ui->notificationComboBox->currentIndex();
@@ -12397,6 +12398,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_TrayIconSelectDialog != Q_NULLPTR) {
         m_TrayIconSelectDialog->setUILanguage(languageindex);
+    }
+
+    if (m_NotificationSetupDialog != Q_NULLPTR) {
+        m_NotificationSetupDialog->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {

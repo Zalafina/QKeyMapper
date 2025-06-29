@@ -6,18 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>320</width>
-    <height>240</height>
+    <width>595</width>
+    <height>165</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Notification Advanced Setting</string>
   </property>
-  <widget class="QSpinBox" name="notificationFontSizeSpinBox">
+  <widget class="QSpinBox" name="fontSizeSpinBox">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>20</y>
+     <x>65</x>
+     <y>60</y>
      <width>41</width>
      <height>21</height>
     </rect>
@@ -35,17 +35,17 @@
     <number>16</number>
    </property>
   </widget>
-  <widget class="QLabel" name="notificationFontSizeLabel">
+  <widget class="QLabel" name="fontSizeLabel">
    <property name="geometry">
     <rect>
-     <x>5</x>
-     <y>20</y>
-     <width>71</width>
+     <x>20</x>
+     <y>60</y>
+     <width>41</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>Font Size</string>
+    <string>Size</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -54,9 +54,9 @@
   <widget class="QSpinBox" name="displayTimeSpinBox">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>50</y>
-     <width>71</width>
+     <x>220</x>
+     <y>30</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -73,28 +73,28 @@
     <number>3000</number>
    </property>
   </widget>
-  <widget class="QLabel" name="displayTimeLabel">
+  <widget class="QLabel" name="durationLabel">
    <property name="geometry">
     <rect>
-     <x>5</x>
-     <y>50</y>
-     <width>71</width>
+     <x>155</x>
+     <y>30</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
    <property name="text">
-    <string>DisplayTime</string>
+    <string>Duration</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="Gyro2MouseXSpeedSpinBox">
+  <widget class="QDoubleSpinBox" name="opacitySpinBox">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>80</y>
-     <width>71</width>
+     <x>360</x>
+     <y>120</y>
+     <width>55</width>
      <height>21</height>
     </rect>
    </property>
@@ -111,12 +111,12 @@
     <double>1.000000000000000</double>
    </property>
   </widget>
-  <widget class="QLabel" name="Gyro2MouseXSpeedLabel">
+  <widget class="QLabel" name="opacityLabel">
    <property name="geometry">
     <rect>
-     <x>5</x>
-     <y>80</y>
-     <width>71</width>
+     <x>305</x>
+     <y>120</y>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -127,6 +127,377 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QLabel" name="fontWeightLabel">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>90</y>
+     <width>41</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Weight</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="fontItalicCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>120</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Italic</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="displayTimeSpinBox_2">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>60</y>
+     <width>55</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="minimum">
+    <number>0</number>
+   </property>
+   <property name="maximum">
+    <number>1000</number>
+   </property>
+   <property name="value">
+    <number>5</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="borderRadiusLabel">
+   <property name="geometry">
+    <rect>
+     <x>305</x>
+     <y>60</y>
+     <width>51</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Radius</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="paddingLabel">
+   <property name="geometry">
+    <rect>
+     <x>305</x>
+     <y>90</y>
+     <width>51</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Padding</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="paddingSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>90</y>
+     <width>55</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="minimum">
+    <number>0</number>
+   </property>
+   <property name="maximum">
+    <number>1000</number>
+   </property>
+   <property name="value">
+    <number>15</number>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="fontWeightComboBox">
+   <property name="geometry">
+    <rect>
+     <x>65</x>
+     <y>90</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string/>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="fontGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>121</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Font</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="y_offsetSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>506</x>
+     <y>60</y>
+     <width>60</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="buttonSymbols">
+    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
+   </property>
+   <property name="minimum">
+    <number>-5000</number>
+   </property>
+   <property name="maximum">
+    <number>5000</number>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="x_offsetSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>506</x>
+     <y>30</y>
+     <width>60</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="buttonSymbols">
+    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
+   </property>
+   <property name="minimum">
+    <number>-5000</number>
+   </property>
+   <property name="maximum">
+    <number>5000</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="x_offsetLabel">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>30</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X-Offset</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="offsetGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>436</x>
+     <y>10</y>
+     <width>141</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Offset</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="y_offsetLabel">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>60</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Y-Offset</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="fadeinDurationLabel">
+   <property name="geometry">
+    <rect>
+     <x>155</x>
+     <y>60</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>FadeIn</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="fadeinTimeSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>60</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="minimum">
+    <number>0</number>
+   </property>
+   <property name="maximum">
+    <number>99999</number>
+   </property>
+   <property name="value">
+    <number>500</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="fadeoutDurationLabel">
+   <property name="geometry">
+    <rect>
+     <x>155</x>
+     <y>90</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>FadeOut</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="fadeoutTimeSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>90</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="minimum">
+    <number>0</number>
+   </property>
+   <property name="maximum">
+    <number>99999</number>
+   </property>
+   <property name="value">
+    <number>500</number>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="durationGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>10</y>
+     <width>141</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Duration</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="borderGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>300</x>
+     <y>10</y>
+     <width>126</width>
+     <height>141</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Border</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <zorder>borderGroupBox</zorder>
+  <zorder>durationGroupBox</zorder>
+  <zorder>offsetGroupBox</zorder>
+  <zorder>fontGroupBox</zorder>
+  <zorder>fontSizeSpinBox</zorder>
+  <zorder>fontSizeLabel</zorder>
+  <zorder>displayTimeSpinBox</zorder>
+  <zorder>durationLabel</zorder>
+  <zorder>opacitySpinBox</zorder>
+  <zorder>opacityLabel</zorder>
+  <zorder>fontWeightLabel</zorder>
+  <zorder>fontItalicCheckBox</zorder>
+  <zorder>displayTimeSpinBox_2</zorder>
+  <zorder>borderRadiusLabel</zorder>
+  <zorder>paddingLabel</zorder>
+  <zorder>paddingSpinBox</zorder>
+  <zorder>fontWeightComboBox</zorder>
+  <zorder>y_offsetSpinBox</zorder>
+  <zorder>x_offsetSpinBox</zorder>
+  <zorder>x_offsetLabel</zorder>
+  <zorder>y_offsetLabel</zorder>
+  <zorder>fadeinDurationLabel</zorder>
+  <zorder>fadeinTimeSpinBox</zorder>
+  <zorder>fadeoutDurationLabel</zorder>
+  <zorder>fadeoutTimeSpinBox</zorder>
  </widget>
  <resources/>
  <connections/>
