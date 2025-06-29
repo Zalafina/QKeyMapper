@@ -11,8 +11,9 @@ extern const unsigned int CYCLE_CHECK_TIMEOUT;
 extern const unsigned int CYCLE_CHECK_LOOPCOUNT_MAX;
 extern const unsigned int CYCLE_CHECK_LOOPCOUNT_RESET;
 extern const unsigned int GLOBAL_MAPPING_START_WAIT;
-#endif
+#else
 extern const unsigned int CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+#endif
 extern const unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT;
 extern const int VIRTUALGAMEPADTYPECOMBOBOX_X;
 extern const int PROCESSINFO_TABLE_COLUMN_COUNT;

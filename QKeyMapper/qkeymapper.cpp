@@ -578,6 +578,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
         TCHAR titleBuffer[MAX_PATH];
         memset(titleBuffer, 0x00, sizeof(titleBuffer));
         QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
+        Q_UNUSED(keymapstatusEnum);
 
         if ((false == ui->nameCheckBox->isChecked())
             && (false == ui->titleCheckBox->isChecked())){
@@ -751,6 +752,12 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 && true == isExToolWindow) {
                 isToolbarWindow = true;
             }
+            else if (true == filename.isEmpty()
+                && true == windowTitle.isEmpty()
+                && false == isVisibleWindow
+                && true == isExToolWindow) {
+                isToolbarWindow = true;
+            }
             /* Skip inVisibleWidow & ToolbarWindow <<< */
         }
 
@@ -800,6 +807,16 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #endif
                         }
                         /* Add for "explorer.exe -> Program Manager" Bug Fix <<< */
+                        /* Add for "PixPin.exe -> PixPin" Bug Fix >>> */
+                        else if (filename == "PixPin.exe"
+                            && windowTitle == "PixPin"
+                            && isVisibleWindow == true
+                            && isExToolWindow == true) {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Do not skip ToolbarWindow \"PixPin.exe -> PixPin\" of KeyMapStatus(KEYMAP_MAPPING_MATCHED)";
+#endif
+                        }
+                        /* Add for "PixPin.exe -> PixPin" Bug Fix <<< */
                         else {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_MAPPING_MATCHED)";
@@ -849,6 +866,16 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #endif
                     }
                     /* Add for "explorer.exe -> Program Manager" Bug Fix <<< */
+                    /* Add for "PixPin.exe -> PixPin" Bug Fix >>> */
+                    else if (filename == "PixPin.exe"
+                        && windowTitle == "PixPin"
+                        && isVisibleWindow == true
+                        && isExToolWindow == true) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[cycleCheckProcessProc]" << "[BugFix] Do not skip ToolbarWindow \"PixPin.exe -> PixPin\" of KeyMapStatus(KEYMAP_CHECKING)";
+#endif
+                    }
+                    /* Add for "PixPin.exe -> PixPin" Bug Fix <<< */
                     else {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace() << "[cycleCheckProcessProc]" << " Skip ToolbarWindow of KeyMapStatus(KEYMAP_CHECKING)";
@@ -887,10 +914,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
     s_CycleCheckLoopCount += 1;
     if (s_CycleCheckLoopCount > CYCLE_CHECK_LOOPCOUNT_MAX) {
         s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
-    }
-#else
-    if (m_KeyMapStatus == KEYMAP_CHECKING) {
-        m_CheckGlobalSettingSwitchTimer.start();
     }
 #endif
 }

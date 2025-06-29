@@ -16,7 +16,7 @@
   <widget class="QSpinBox" name="notificationFontSizeSpinBox">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>80</x>
      <y>20</y>
      <width>41</width>
      <height>21</height>
@@ -25,18 +25,103 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>72</number>
+   </property>
+   <property name="value">
+    <number>16</number>
+   </property>
   </widget>
   <widget class="QLabel" name="notificationFontSizeLabel">
    <property name="geometry">
     <rect>
      <x>5</x>
      <y>20</y>
-     <width>61</width>
+     <width>71</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
     <string>Font Size</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="displayTimeSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>50</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="minimum">
+    <number>1</number>
+   </property>
+   <property name="maximum">
+    <number>99999</number>
+   </property>
+   <property name="value">
+    <number>3000</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="displayTimeLabel">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>50</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>DisplayTime</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="Gyro2MouseXSpeedSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>80</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="decimals">
+    <number>3</number>
+   </property>
+   <property name="maximum">
+    <double>1.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.010000000000000</double>
+   </property>
+   <property name="value">
+    <double>1.000000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="Gyro2MouseXSpeedLabel">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>80</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Opacity</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
