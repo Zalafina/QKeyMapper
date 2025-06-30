@@ -12,6 +12,15 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    // Temp Added >>>
+    QStringList fontWeightList;
+    fontWeightList.append(tr("Light"));
+    fontWeightList.append(tr("Normal"));
+    fontWeightList.append(tr("Bold"));
+    ui->fontWeightComboBox->addItems(fontWeightList);
+    ui->fontWeightComboBox->setCurrentIndex(NOTIFICATION_FONT_WEIGHT_DEFAULT);
+    // Temp Added <<<
+
     QStyle* windowsStyle = QStyleFactory::create("windows");
     ui->fontGroupBox->setStyle(windowsStyle);
     ui->durationGroupBox->setStyle(windowsStyle);
@@ -144,6 +153,87 @@ int QNotificationSetupDialog::getNotification_Padding()
 double QNotificationSetupDialog::getNotification_Opacity()
 {
     return ui->opacitySpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_X_Offset()
+{
+    return ui->x_offsetSpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_Y_Offset()
+{
+    return ui->y_offsetSpinBox->value();
+}
+
+void QNotificationSetupDialog::setNotification_FontColor(const QColor &color)
+{
+    if (color.isValid()) {
+        m_NotificationFontColor = color;
+        m_FontColorPicker->setColor(m_NotificationFontColor);
+    }
+}
+
+void QNotificationSetupDialog::setNotification_BackgroundColor(const QColor &color)
+{
+    if (color.isValid()) {
+        m_NotificationBackgroundColor = color;
+        m_BackgroundColorPicker->setColor(m_NotificationBackgroundColor);
+    }
+}
+
+void QNotificationSetupDialog::setNotification_FontSize(int size)
+{
+    ui->fontSizeSpinBox->setValue(size);
+}
+
+void QNotificationSetupDialog::setNotification_FontWeight(int weight)
+{
+    ui->fontWeightComboBox->setCurrentIndex(weight);
+}
+
+void QNotificationSetupDialog::setNotification_FontIsItalic(bool italic)
+{
+    ui->fontItalicCheckBox->setChecked(italic);
+}
+
+void QNotificationSetupDialog::setNotification_Duration(int duration)
+{
+    ui->durationSpinBox->setValue(duration);
+}
+
+void QNotificationSetupDialog::setNotification_FadeInDuration(int fadein_duration)
+{
+    ui->fadeinDurationSpinBox->setValue(fadein_duration);
+}
+
+void QNotificationSetupDialog::setNotification_FadeOutDuration(int fadeout_duration)
+{
+    ui->fadeoutDurationSpinBox->setValue(fadeout_duration);
+}
+
+void QNotificationSetupDialog::setNotification_BorderRadius(int radius)
+{
+    ui->borderRadiusSpinBox->setValue(radius);
+}
+
+void QNotificationSetupDialog::setNotification_Padding(int padding)
+{
+    ui->paddingSpinBox->setValue(padding);
+}
+
+void QNotificationSetupDialog::setNotification_Opacity(double opacity)
+{
+    ui->opacitySpinBox->setValue(opacity);
+}
+
+void QNotificationSetupDialog::setNotification_X_Offset(int offset)
+{
+    ui->x_offsetSpinBox->setValue(offset);
+}
+
+void QNotificationSetupDialog::setNotification_Y_Offset(int offset)
+{
+    ui->y_offsetSpinBox->setValue(offset);
 }
 
 bool QNotificationSetupDialog::event(QEvent *event)

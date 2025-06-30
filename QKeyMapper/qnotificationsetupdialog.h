@@ -44,6 +44,33 @@ public:
     int getNotification_Padding(void);
     double getNotification_Opacity(void);
 
+    // Get Notification Offset Data
+    int getNotification_X_Offset(void);
+    int getNotification_Y_Offset(void);
+
+    // Set Notification Color
+    void setNotification_FontColor(const QColor &color);
+    void setNotification_BackgroundColor(const QColor &color);
+
+    // Set Notification Font Data
+    void setNotification_FontSize(int size);
+    void setNotification_FontWeight(int weight);
+    void setNotification_FontIsItalic(bool italic);
+
+    // Set Notification Duration Data
+    void setNotification_Duration(int duration);
+    void setNotification_FadeInDuration(int fadein_duration);
+    void setNotification_FadeOutDuration(int fadeout_duration);
+
+    // Set Notification Border Data
+    void setNotification_BorderRadius(int radius);
+    void setNotification_Padding(int padding);
+    void setNotification_Opacity(double opacity);
+
+    // Set Notification Offset Data
+    void setNotification_X_Offset(int offset);
+    void setNotification_Y_Offset(int offset);
+
 protected:
     bool event(QEvent *event) override;
 

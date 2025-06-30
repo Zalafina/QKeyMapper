@@ -139,7 +139,7 @@ struct ValidationResult
 
 struct PopupNotificationOptions {
     QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;  // Text color
-    int displayTime = 3000;                                 // Display duration (ms)
+    int displayDuration = 3000;                             // Display duration (ms)
     int position = NOTIFICATION_POSITION_TOP_RIGHT;         // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
     int size = 16;                                          // Font size
     QColor backgroundColor = QColor(0,0,0,180);             // Background color
@@ -148,7 +148,7 @@ struct PopupNotificationOptions {
     int borderRadius = 5;                                   // Border radius
     int fontWeight = QFont::Bold;                           // Font weight
     bool fontItalic = false;                                // Italic font
-    int fadeInDuration = 0;                               // Fade-in animation duration (ms)
+    int fadeInDuration = 0;                                 // Fade-in animation duration (ms)
     int fadeOutDuration = 500;                              // Fade-out animation duration (ms)
     int xOffset = 0;                                        // X offset
     int yOffset = 0;                                        // Y offset
@@ -595,7 +595,7 @@ signals:
     void updateGamepadSelectComboBox_Signal(int instance_id);
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
-    void showPopupMessage_Signal(const QString &message, const QString &color, int displayTime);
+    void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
 
 protected:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -624,7 +624,7 @@ public slots:
 
     void showMousePoints(int showpoints_trigger);
 
-    void showPopupMessage(const QString &message, const QString &color, int displayTime);
+    void showPopupMessage(const QString &message, const QString &color, int displayDuration);
 
     void showCarOrdinal(qint32 car_ordinal);
 
