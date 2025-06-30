@@ -9611,30 +9611,26 @@ void QKeyMapper::mappingStartNotification()
     }
 
     PopupNotificationOptions opts;
-    opts.message = popupNotification;
     opts.color = color_str;
     opts.position = position;
     opts.size = ui->notificationSizeSpinBox->value();
     // opts.displayTime = 3000;
     // opts.backgroundColor = QColor(0,0,0,180);
-    // opts.windowOpacity = 1.0;
+    // opts.windowOpacity = 0.5;
     // opts.padding = 15;
     // opts.borderRadius = 5;
     // opts.fontWeight = QFont::Bold;
     // opts.fontItalic = false;
-    // opts.fadeInDuration = 500;
+    // opts.fadeInDuration = 0;
+    // opts.fadeOutDuration = 0;
     // opts.xOffset = 0;
     // opts.yOffset = 0;
-    showNotificationPopup(opts);
+    showNotificationPopup(popupNotification, opts);
 }
 
 void QKeyMapper::mappingStopNotification()
 {
     QString popupNotification;
-    int position = ui->notificationComboBox->currentIndex();
-    if (NOTIFICATION_POSITION_NONE == position) {
-        return;
-    }
     QString mappingStatusString;
     if (KEYMAP_IDLE == m_KeyMapStatus) {
         mappingStatusString = tr("Idle");
@@ -9647,25 +9643,9 @@ void QKeyMapper::mappingStopNotification()
         return;
     }
 
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
 
-    PopupNotificationOptions opts;
-    opts.message = popupNotification;
-    opts.color = color;
-    opts.position = position;
-    opts.size = ui->notificationSizeSpinBox->value();
-    // opts.displayTime = 3000;
-    // opts.backgroundColor = QColor(0,0,0,180);
-    // opts.windowOpacity = 1.0;
-    // opts.padding = 15;
-    // opts.borderRadius = 5;
-    // opts.fontWeight = QFont::Bold;
-    // opts.fontItalic = false;
-    // opts.fadeInDuration = 500;
-    // opts.xOffset = 0;
-    // opts.yOffset = 0;
-    showNotificationPopup(opts);
+    showNotificationPopup(popupNotification);
 }
 
 void QKeyMapper::mappingTabSwitchNotification(bool isSame)
@@ -9700,7 +9680,6 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     }
 
     PopupNotificationOptions opts;
-    opts.message = popupNotification;
     opts.color = color_str;
     opts.position = position;
     opts.size = ui->notificationSizeSpinBox->value();
@@ -9714,7 +9693,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     // opts.fadeInDuration = 500;
     // opts.xOffset = 0;
     // opts.yOffset = 0;
-    showNotificationPopup(opts);
+    showNotificationPopup(popupNotification, opts);
 }
 
 void QKeyMapper::showInputDeviceListWindow()
@@ -10960,12 +10939,36 @@ void QKeyMapper::showFailurePopup(const QString &message)
     showPopupMessage(message, FAILURE_COLOR, 3000);
 }
 
-void QKeyMapper::showNotificationPopup(const PopupNotificationOptions &options)
+void QKeyMapper::showNotificationPopup(const QString &message, const PopupNotificationOptions &options)
 {
     if (Q_NULLPTR == m_PopupNotification) {
         return;
     }
-    m_PopupNotification->showPopupNotification(options);
+    m_PopupNotification->showPopupNotification(message, options);
+}
+
+void QKeyMapper::showNotificationPopup(const QString &message)
+{
+    if (Q_NULLPTR == m_PopupNotification) {
+        return;
+    }
+
+    PopupNotificationOptions opts;
+    opts.color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+    opts.position = ui->notificationComboBox->currentIndex();
+    opts.size = ui->notificationSizeSpinBox->value();
+    // opts.displayTime = 3000;
+    // opts.backgroundColor = QColor(0,0,0,180);
+    // opts.windowOpacity = 1.0;
+    // opts.padding = 15;
+    // opts.borderRadius = 5;
+    // opts.fontWeight = QFont::Bold;
+    // opts.fontItalic = false;
+    // opts.fadeInDuration = 500;
+    // opts.xOffset = 0;
+    // opts.yOffset = 0;
+
+    m_PopupNotification->showPopupNotification(message, opts);
 }
 
 void QKeyMapper::initSelectColorDialog()
@@ -14509,38 +14512,36 @@ void KeyListComboBox::showPopup()
     }
 }
 
-QPopupNotification::QPopupNotification(QWidget *parent) :
-    QWidget(parent),
-    m_DisplayTime(3000)
+QPopupNotification::QPopupNotification(QWidget *parent)
+    : QWidget(parent)
+    , m_Timer(this)
+    , m_Label(new QLabel(this))
+    , m_StartAnimation(new QPropertyAnimation(this, "windowOpacity", this))
+    , m_StopAnimation(new QPropertyAnimation(this, "windowOpacity", this))
+    , m_CurrentPopupOptions()
 {
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
-    m_Label = new QLabel(this);
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_Label);
     setLayout(layout);
 
-    // Setup the animation for showing the notification
-    m_StartAnimation = new QPropertyAnimation(this, "windowOpacity", this);
-
-    m_StopAnimation = new QPropertyAnimation(this, "windowOpacity", this);
-
-    QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, &QWidget::close);
+    QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, &QWidget::hide);
 
     // Setup the timer for hiding the notification
     QObject::connect(&m_Timer, &QTimer::timeout, this, &QPopupNotification::hideNotification);
     m_Timer.setSingleShot(true);
 }
 
-void QPopupNotification::showPopupNotification(const PopupNotificationOptions &options)
+void QPopupNotification::showPopupNotification(const QString &message, const PopupNotificationOptions &options)
 {
     m_StartAnimation->stop();
     m_StopAnimation->stop();
     hide(); // Hide the window before updating content
 
-    if (options.displayTime <= 0) {
+    if (options.displayTime <= 0 || options.position == NOTIFICATION_POSITION_NONE) {
         return;
     }
 
@@ -14568,7 +14569,7 @@ void QPopupNotification::showPopupNotification(const PopupNotificationOptions &o
     QFont customFont(FONTNAME_ENGLISH, options.size, options.fontWeight, options.fontItalic);
     m_Label->setFont(customFont);
 
-    m_Label->setText(options.message);
+    m_Label->setText(message);
     m_Label->adjustSize();
 
     // Position the notification based on the position parameter
@@ -14620,15 +14621,24 @@ void QPopupNotification::showPopupNotification(const PopupNotificationOptions &o
     show();
     // Start the timer for hiding the notification
     m_Timer.start(options.displayTime);
+
+    // Save options to current options member
+    m_CurrentPopupOptions = options;
 }
 
 void QPopupNotification::hideNotification()
 {
     m_StopAnimation->stop();
-    m_StopAnimation->setDuration(500); // 0.5 seconds
-    m_StopAnimation->setStartValue(1.0);
-    m_StopAnimation->setEndValue(0.0);
-    m_StopAnimation->start(QAbstractAnimation::KeepWhenStopped);
+
+    if (m_CurrentPopupOptions.fadeOutDuration > 0) {
+        m_StopAnimation->setDuration(m_CurrentPopupOptions.fadeOutDuration);
+        m_StopAnimation->setStartValue(windowOpacity());
+        m_StopAnimation->setEndValue(0.0);
+        m_StopAnimation->start(QAbstractAnimation::KeepWhenStopped);
+    }
+    else {
+        hide();
+    }
 }
 
 #if 0

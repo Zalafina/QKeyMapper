@@ -91,6 +91,61 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     ui->y_offsetLabel->setText(tr("Y-Offset"));
 }
 
+QColor QNotificationSetupDialog::getNotification_FontColor()
+{
+    return m_NotificationFontColor;
+}
+
+QColor QNotificationSetupDialog::getNotification_BackgroundColor()
+{
+    return m_NotificationBackgroundColor;
+}
+
+int QNotificationSetupDialog::getNotification_FontSize()
+{
+    return ui->fontSizeSpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_FontWeight()
+{
+    return ui->fontWeightComboBox->currentIndex();
+}
+
+bool QNotificationSetupDialog::getNotification_FontIsItalic()
+{
+    return ui->fontItalicCheckBox->isChecked();
+}
+
+int QNotificationSetupDialog::getNotification_Duration()
+{
+    return ui->durationSpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_FadeInDuration()
+{
+    return ui->fadeinDurationSpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_FadeOutDuration()
+{
+    return ui->fadeoutDurationSpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_BorderRadius()
+{
+    return ui->borderRadiusSpinBox->value();
+}
+
+int QNotificationSetupDialog::getNotification_Padding()
+{
+    return ui->paddingSpinBox->value();
+}
+
+double QNotificationSetupDialog::getNotification_Opacity()
+{
+    return ui->opacitySpinBox->value();
+}
+
 bool QNotificationSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -103,10 +158,32 @@ bool QNotificationSetupDialog::event(QEvent *event)
 
 void QNotificationSetupDialog::onFontColorChanged(QColor &color)
 {
-
+    if (color != m_NotificationFontColor) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[QNotificationSetupDialog::onFontColorChanged] Notification Font Color -> " << color.name();
+#endif
+        if (color.isValid()) {
+            m_NotificationFontColor = color;
+        }
+        else {
+            m_NotificationFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+        }
+    }
 }
 
 void QNotificationSetupDialog::onBackgroundColorChanged(QColor &color)
 {
-
+    if (color != m_NotificationBackgroundColor) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote()
+            << "[QNotificationSetupDialog::onBackgroundColorChanged] Notification Background Color -> " << color.name()
+            << ", Alpha: " << color.alpha();
+#endif
+        if (color.isValid()) {
+            m_NotificationBackgroundColor = color;
+        }
+        else {
+            m_NotificationBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+        }
+    }
 }

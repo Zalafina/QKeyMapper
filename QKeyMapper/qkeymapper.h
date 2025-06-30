@@ -138,7 +138,6 @@ struct ValidationResult
 };
 
 struct PopupNotificationOptions {
-    QString message;                                        // Notification message text
     QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;  // Text color
     int displayTime = 3000;                                 // Display duration (ms)
     int position = NOTIFICATION_POSITION_TOP_RIGHT;         // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
@@ -149,7 +148,7 @@ struct PopupNotificationOptions {
     int borderRadius = 5;                                   // Border radius
     int fontWeight = QFont::Bold;                           // Font weight
     bool fontItalic = false;                                // Italic font
-    int fadeInDuration = 500;                               // Fade-in animation duration (ms)
+    int fadeInDuration = 0;                               // Fade-in animation duration (ms)
     int fadeOutDuration = 500;                              // Fade-out animation duration (ms)
     int xOffset = 0;                                        // X offset
     int yOffset = 0;                                        // Y offset
@@ -261,7 +260,7 @@ public:
     explicit QPopupNotification(QWidget *parent = Q_NULLPTR);
 
 public slots:
-    void showPopupNotification(const PopupNotificationOptions &options);
+    void showPopupNotification(const QString &message, const PopupNotificationOptions &options);
 
     void hideNotification();
 
@@ -270,7 +269,7 @@ private:
     QTimer m_Timer;
     QPropertyAnimation *m_StartAnimation;
     QPropertyAnimation *m_StopAnimation;
-    int m_DisplayTime;
+    PopupNotificationOptions m_CurrentPopupOptions;
 };
 
 class SystrayMenu : public QMenu
@@ -796,7 +795,8 @@ public:
     void showInformationPopup(const QString &message);
     void showWarningPopup(const QString &message);
     void showFailurePopup(const QString &message);
-    void showNotificationPopup(const PopupNotificationOptions &options);
+    void showNotificationPopup(const QString &message, const PopupNotificationOptions &options);
+    void showNotificationPopup(const QString &message);
     void initSelectColorDialog(void);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
 

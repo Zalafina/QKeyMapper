@@ -87,8 +87,12 @@ void ColorPickerWidget::onPickColor()
     QKeyMapper::getInstance()->initSelectColorDialog();
 
     bool clear_to_default = false;
-    if ("TabFontColor" == m_buttonText && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-        clear_to_default = true;
+    if ("TabFontColor" == m_buttonText
+        || "FontColor" == m_buttonText
+        || "BGColor" == m_buttonText) {
+        if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+            clear_to_default = true;
+        }
     }
 
     QColor color;

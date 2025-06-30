@@ -51,7 +51,7 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QSpinBox" name="displayTimeSpinBox">
+  <widget class="QSpinBox" name="durationSpinBox">
    <property name="geometry">
     <rect>
      <x>220</x>
@@ -162,7 +162,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QSpinBox" name="displayTimeSpinBox_2">
+  <widget class="QSpinBox" name="borderRadiusSpinBox">
    <property name="geometry">
     <rect>
      <x>360</x>
@@ -381,7 +381,7 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QSpinBox" name="fadeinTimeSpinBox">
+  <widget class="QSpinBox" name="fadeinDurationSpinBox">
    <property name="geometry">
     <rect>
      <x>220</x>
@@ -419,7 +419,7 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QSpinBox" name="fadeoutTimeSpinBox">
+  <widget class="QSpinBox" name="fadeoutDurationSpinBox">
    <property name="geometry">
     <rect>
      <x>220</x>
@@ -479,13 +479,13 @@
   <zorder>fontGroupBox</zorder>
   <zorder>fontSizeSpinBox</zorder>
   <zorder>fontSizeLabel</zorder>
-  <zorder>displayTimeSpinBox</zorder>
+  <zorder>durationSpinBox</zorder>
   <zorder>durationLabel</zorder>
   <zorder>opacitySpinBox</zorder>
   <zorder>opacityLabel</zorder>
   <zorder>fontWeightLabel</zorder>
   <zorder>fontItalicCheckBox</zorder>
-  <zorder>displayTimeSpinBox_2</zorder>
+  <zorder>borderRadiusSpinBox</zorder>
   <zorder>borderRadiusLabel</zorder>
   <zorder>paddingLabel</zorder>
   <zorder>paddingSpinBox</zorder>
@@ -495,9 +495,9 @@
   <zorder>x_offsetLabel</zorder>
   <zorder>y_offsetLabel</zorder>
   <zorder>fadeinDurationLabel</zorder>
-  <zorder>fadeinTimeSpinBox</zorder>
+  <zorder>fadeinDurationSpinBox</zorder>
   <zorder>fadeoutDurationLabel</zorder>
-  <zorder>fadeoutTimeSpinBox</zorder>
+  <zorder>fadeoutDurationSpinBox</zorder>
  </widget>
  <resources/>
  <connections/>
