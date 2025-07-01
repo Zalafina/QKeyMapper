@@ -296,9 +296,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
-    ui->notificationSizeSpinBox->setRange(NOTIFICATION_SIZE_MIN, NOTIFICATION_SIZE_MAX);
-    ui->notificationSizeSpinBox->setValue(NOTIFICATION_SIZE_DEFAULT);
-
     ui->Gyro2MouseXSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
     ui->Gyro2MouseYSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
     ui->Gyro2MouseXSpeedSpinBox->setSingleStep(GYRO2MOUSE_SPEED_SINGLESTEP);
@@ -6019,7 +6016,33 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
-    settingFile.setValue(NOTIFICATION_SIZE , ui->notificationSizeSpinBox->value());
+
+    QColor notification_fontcolor;
+    QString notification_fontcolor_name;
+    notification_fontcolor = m_NotificationSetupDialog->getNotification_FontColor();
+    if (notification_fontcolor.isValid()) {
+        notification_fontcolor_name = notification_fontcolor.name();
+    }
+    QColor notification_bgcolor;
+    QString notification_bgcolor_name;
+    notification_bgcolor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    if (notification_bgcolor.isValid()) {
+        notification_bgcolor_name = notification_bgcolor.name();
+    }
+    settingFile.setValue(NOTIFICATION_FONTCOLOR,        notification_fontcolor_name);
+    settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  notification_bgcolor_name);
+    settingFile.setValue(NOTIFICATION_FONTSIZE,         m_NotificationSetupDialog->getNotification_FontSize());
+    settingFile.setValue(NOTIFICATION_FONTWEIGHT,       m_NotificationSetupDialog->getNotification_FontWeight());
+    settingFile.setValue(NOTIFICATION_FONTITALIC,       m_NotificationSetupDialog->getNotification_FontIsItalic());
+    settingFile.setValue(NOTIFICATION_DISPLAYDURATION,  m_NotificationSetupDialog->getNotification_DisplayDuration());
+    settingFile.setValue(NOTIFICATION_FADEINDURATION,   m_NotificationSetupDialog->getNotification_FadeInDuration());
+    settingFile.setValue(NOTIFICATION_FADEOUTDURATION,  m_NotificationSetupDialog->getNotification_FadeOutDuration());
+    settingFile.setValue(NOTIFICATION_BORDERRADIUS,     m_NotificationSetupDialog->getNotification_BorderRadius());
+    settingFile.setValue(NOTIFICATION_PADDING,          m_NotificationSetupDialog->getNotification_Padding());
+    settingFile.setValue(NOTIFICATION_OPACITY,          m_NotificationSetupDialog->getNotification_Opacity());
+    settingFile.setValue(NOTIFICATION_X_OFFSET,         m_NotificationSetupDialog->getNotification_X_Offset());
+    settingFile.setValue(NOTIFICATION_Y_OFFSET,         m_NotificationSetupDialog->getNotification_Y_Offset());
+
     settingFile.setValue(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
     settingFile.setValue(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
     settingFile.setValue(TRAYICON_GLOBAL , m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon());
@@ -6892,20 +6915,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
 #endif
 
-        if (true == settingFile.contains(NOTIFICATION_SIZE)){
-            int notification_size = settingFile.value(NOTIFICATION_SIZE).toInt();
-            if (NOTIFICATION_SIZE_MIN <= notification_size && notification_size <= NOTIFICATION_SIZE_MAX) {
-                ui->notificationSizeSpinBox->setValue(notification_size);
+        if (true == settingFile.contains(NOTIFICATION_FONTSIZE)){
+            int notification_fontsize = settingFile.value(NOTIFICATION_FONTSIZE).toInt();
+            if (NOTIFICATION_FONT_SIZE_MIN <= notification_fontsize && notification_fontsize <= NOTIFICATION_FONT_SIZE_MAX) {
+                m_NotificationSetupDialog->setNotification_FontSize(notification_fontsize);
             }
             else {
-                ui->notificationSizeSpinBox->setValue(NOTIFICATION_SIZE_DEFAULT);
+                m_NotificationSetupDialog->setNotification_FontSize(NOTIFICATION_FONT_SIZE_DEFAULT);
             }
         }
         else {
-            ui->notificationSizeSpinBox->setValue(NOTIFICATION_SIZE_DEFAULT);
+            m_NotificationSetupDialog->setNotification_FontSize(NOTIFICATION_FONT_SIZE_DEFAULT);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Notification Size ->" << ui->notificationSizeSpinBox->value();
+        qDebug() << "[loadKeyMapSetting]" << "Notification Font Size ->" << m_NotificationSetupDialog->getNotification_FontSize();
 #endif
 
         if (true == settingFile.contains(TRAYICON_IDLE)){
@@ -9621,7 +9644,7 @@ void QKeyMapper::mappingStartNotification()
     opts.color = color_str;
     opts.position = position;
     opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_Duration();
+    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
     opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
     opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
     opts.padding = m_NotificationSetupDialog->getNotification_Padding();
@@ -9708,7 +9731,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     opts.color = color_str;
     opts.position = position;
     opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_Duration();
+    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
     opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
     opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
     opts.padding = m_NotificationSetupDialog->getNotification_Padding();
@@ -11003,7 +11026,7 @@ void QKeyMapper::showNotificationPopup(const QString &message)
     opts.color = color_str;
     opts.position = ui->notificationComboBox->currentIndex();
     opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_Duration();
+    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
     opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
     opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
     opts.padding = m_NotificationSetupDialog->getNotification_Padding();
@@ -12347,7 +12370,6 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
     ui->soundEffectCheckBox->setText(tr("Sound"));
     ui->notificationLabel->setText(tr("Notification"));
-    ui->notificationSizeLabel->setText(tr("NotifySize"));
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));

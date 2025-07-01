@@ -35,7 +35,7 @@ public:
     bool getNotification_FontIsItalic(void);
 
     // Get Notification Duration Data
-    int getNotification_Duration(void);
+    int getNotification_DisplayDuration(void);
     int getNotification_FadeInDuration(void);
     int getNotification_FadeOutDuration(void);
 
@@ -73,6 +73,7 @@ public:
 
 protected:
     bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
 
 public slots:
     void onFontColorChanged(QColor &color);

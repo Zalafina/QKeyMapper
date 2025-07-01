@@ -374,7 +374,7 @@ bool QItemSetupDialog::event(QEvent *event)
             close();
         }
     }
-    return QWidget::event(event);
+    return QDialog::event(event);
 }
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)

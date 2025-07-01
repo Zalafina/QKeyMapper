@@ -605,7 +605,21 @@ const char *NOTSHOW_VERSION_UNMATCHED = "NotShow_VersionUnmatched";
 const char *NOTSHOW_FILTERKEYS_DISABLED = "NotShow_FilterKeysDisabled";
 const char *CLOSETO_SYSTEMTRAY = "CloseToSystemtray";
 const char *NOTIFICATION_POSITION = "NotificationPosition";
-const char *NOTIFICATION_SIZE = "NotificationSize";
+
+const char *NOTIFICATION_FONTCOLOR = "Notification_FontColor";
+const char *NOTIFICATION_FONTSIZE = "Notification_FontSize";
+const char *NOTIFICATION_FONTWEIGHT = "Notification_FontWeight";
+const char *NOTIFICATION_FONTITALIC = "Notification_FontItalic";
+const char *NOTIFICATION_DISPLAYDURATION = "Notification_DisplayDuration";
+const char *NOTIFICATION_FADEINDURATION = "Notification_FadeInDuration";
+const char *NOTIFICATION_FADEOUTDURATION = "Notification_FadeOutDuration";
+const char *NOTIFICATION_BACKGROUNDCOLOR = "Notification_BackgroundColor";
+const char *NOTIFICATION_BORDERRADIUS = "Notification_BorderRadius";
+const char *NOTIFICATION_PADDING = "Notification_Padding";
+const char *NOTIFICATION_OPACITY = "Notification_Opacity";
+const char *NOTIFICATION_X_OFFSET = "Notification_X_Offset";
+const char *NOTIFICATION_Y_OFFSET = "Notification_Y_Offset";
+
 const char *TRAYICON_IDLE = "TrayIcon_Idle";
 const char *TRAYICON_MONITORING = "TrayIcon_Monitoring";
 const char *TRAYICON_GLOBAL = "TrayIcon_Global";

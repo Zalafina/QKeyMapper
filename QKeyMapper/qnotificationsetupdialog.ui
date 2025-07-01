@@ -98,6 +98,9 @@
      <height>21</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
    <property name="decimals">
     <number>3</number>
    </property>

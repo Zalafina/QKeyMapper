@@ -12,15 +12,6 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    // Temp Added >>>
-    QStringList fontWeightList;
-    fontWeightList.append(tr("Light"));
-    fontWeightList.append(tr("Normal"));
-    fontWeightList.append(tr("Bold"));
-    ui->fontWeightComboBox->addItems(fontWeightList);
-    ui->fontWeightComboBox->setCurrentIndex(NOTIFICATION_FONT_WEIGHT_DEFAULT);
-    // Temp Added <<<
-
     QStyle* windowsStyle = QStyleFactory::create("windows");
     ui->fontGroupBox->setStyle(windowsStyle);
     ui->durationGroupBox->setStyle(windowsStyle);
@@ -49,6 +40,7 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
 
     m_FontColorPicker->raise();
     m_BackgroundColorPicker->raise();
+    m_BackgroundColorPicker->setShowAlphaChannel(true);
 
     QObject::connect(m_FontColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onFontColorChanged);
     QObject::connect(m_BackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onBackgroundColorChanged);
@@ -72,6 +64,9 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     ui->fontWeightLabel->setText(tr("Weight"));
     ui->fontItalicCheckBox->setText(tr("Italic"));
     int font_weight_index = ui->fontWeightComboBox->currentIndex();
+    if (font_weight_index < 0) {
+        font_weight_index = NOTIFICATION_FONT_WEIGHT_DEFAULT;
+    }
     ui->fontWeightComboBox->clear();
     QStringList fontWeightList;
     fontWeightList.append(tr("Light"));
@@ -82,7 +77,7 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
 
     /* Duration Group */
     ui->durationGroupBox->setTitle(tr("Duration"));
-    ui->durationLabel->setText(tr("Duration"));
+    ui->durationLabel->setText(tr("DisplayDuration"));
     ui->fadeinDurationLabel->setText(tr("FadeIn"));
     ui->fadeoutDurationLabel->setText(tr("FadeOut"));
 
@@ -125,7 +120,7 @@ bool QNotificationSetupDialog::getNotification_FontIsItalic()
     return ui->fontItalicCheckBox->isChecked();
 }
 
-int QNotificationSetupDialog::getNotification_Duration()
+int QNotificationSetupDialog::getNotification_DisplayDuration()
 {
     return ui->durationSpinBox->value();
 }
@@ -240,10 +235,31 @@ bool QNotificationSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            close();
+            if (ColorPickerWidget::s_isColorSelecting) {
+            }
+            else {
+                close();
+            }
         }
     }
     return QDialog::event(event);
+}
+
+void QNotificationSetupDialog::showEvent(QShowEvent *event)
+{
+    // Load Notification Font Color
+    if (m_NotificationFontColor.isValid() != true) {
+        m_NotificationFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    }
+    m_FontColorPicker->setColor(m_NotificationFontColor);
+
+    // Load Notification Background Color
+    if (m_NotificationBackgroundColor.isValid() != true) {
+        m_NotificationBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+    }
+    m_BackgroundColorPicker->setColor(m_NotificationBackgroundColor);
+
+    QDialog::showEvent(event);
 }
 
 void QNotificationSetupDialog::onFontColorChanged(QColor &color)

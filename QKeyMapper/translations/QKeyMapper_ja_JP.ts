@@ -37,7 +37,7 @@
         <translation>カラー設定</translation>
     </message>
     <message>
-        <location filename="../colorpickerwidget.cpp" line="117"/>
+        <location filename="../colorpickerwidget.cpp" line="121"/>
         <source>Select Color</source>
         <translation>色を選択</translation>
     </message>
@@ -49,7 +49,7 @@
         <translation type="vanished">このメッセージを再表示しない</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="342"/>
+        <location filename="../qkeymapper.h" line="341"/>
         <source>OK</source>
         <translation>確認</translation>
     </message>
@@ -167,22 +167,22 @@
 <context>
     <name>KeyMappingTabWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="15316"/>
+        <location filename="../qkeymapper.cpp" line="15386"/>
         <source>%1 selected mapping data copied.</source>
         <translation>選択されているマッピングテーブルの %1 エントリをコピーします。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15324"/>
+        <location filename="../qkeymapper.cpp" line="15394"/>
         <source>%1 copied mapping data are completely duplicated and could not be inserted!</source>
         <translation>%1 件のコピー内容が既存のマッピングテーブルの原始キーとすべて重複しているため、挿入できませんでした！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15330"/>
+        <location filename="../qkeymapper.cpp" line="15400"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</source>
         <translation>選択されたマッピングテーブルに %1 件のコピー内容を挿入しました。元のキーが重複しているため、残りの %2 件は挿入できませんでした。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15335"/>
+        <location filename="../qkeymapper.cpp" line="15405"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>現在のマッピングテーブルに %1 件のコピーされたエントリを挿入します。</translation>
     </message>
@@ -649,57 +649,57 @@
         <location filename="../qkeymapper.ui" line="47"/>
         <location filename="../qkeymapper.ui" line="863"/>
         <location filename="../qkeymapper.cpp" line="4969"/>
-        <location filename="../qkeymapper.cpp" line="12232"/>
-        <location filename="../qkeymapper.cpp" line="12296"/>
+        <location filename="../qkeymapper.cpp" line="12291"/>
+        <location filename="../qkeymapper.cpp" line="12355"/>
         <source>MappingStart</source>
         <translation>マッピング開始</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="69"/>
-        <location filename="../qkeymapper.cpp" line="12236"/>
+        <location filename="../qkeymapper.cpp" line="12295"/>
         <source>SaveSetting</source>
         <translation>設定保存</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="103"/>
-        <location filename="../qkeymapper.cpp" line="12243"/>
-        <location filename="../qkeymapper.cpp" line="12387"/>
+        <location filename="../qkeymapper.cpp" line="12302"/>
+        <location filename="../qkeymapper.cpp" line="12446"/>
         <source>Process</source>
         <translation>プロセス</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="119"/>
-        <location filename="../qkeymapper.cpp" line="12244"/>
+        <location filename="../qkeymapper.cpp" line="12303"/>
         <source>Title</source>
         <translation>タイトル</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="161"/>
-        <location filename="../qkeymapper.cpp" line="12242"/>
+        <location filename="../qkeymapper.cpp" line="12301"/>
         <source>ADD</source>
         <translation>追加</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="177"/>
-        <location filename="../qkeymapper.cpp" line="12259"/>
+        <location filename="../qkeymapper.cpp" line="12318"/>
         <source>OriKey</source>
         <translation>原始キー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="193"/>
-        <location filename="../qkeymapper.cpp" line="12261"/>
+        <location filename="../qkeymapper.cpp" line="12320"/>
         <source>MapKey</source>
         <translation>マップキー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="212"/>
-        <location filename="../qkeymapper.cpp" line="12238"/>
+        <location filename="../qkeymapper.cpp" line="12297"/>
         <source>Delete</source>
         <translation>削除</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="231"/>
-        <location filename="../qkeymapper.cpp" line="12239"/>
+        <location filename="../qkeymapper.cpp" line="12298"/>
         <source>Clear</source>
         <translation>クリア</translation>
     </message>
@@ -715,7 +715,7 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="332"/>
-        <location filename="../qkeymapper.cpp" line="12279"/>
+        <location filename="../qkeymapper.cpp" line="12338"/>
         <source>Remove</source>
         <translation>リムーブ</translation>
     </message>
@@ -726,61 +726,61 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="380"/>
-        <location filename="../qkeymapper.cpp" line="12266"/>
+        <location filename="../qkeymapper.cpp" line="12325"/>
         <source>Delay</source>
         <translation>遅延</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="396"/>
-        <location filename="../qkeymapper.cpp" line="12260"/>
+        <location filename="../qkeymapper.cpp" line="12319"/>
         <source>OriKeySeq</source>
         <translation>原始組合キー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="422"/>
-        <location filename="../qkeymapper.cpp" line="12274"/>
+        <location filename="../qkeymapper.cpp" line="12333"/>
         <source>Point</source>
         <translation>座標</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="498"/>
-        <location filename="../qkeymapper.cpp" line="12364"/>
+        <location filename="../qkeymapper.cpp" line="12423"/>
         <source>Keyboard</source>
         <translation>キーボード</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="514"/>
-        <location filename="../qkeymapper.cpp" line="12365"/>
+        <location filename="../qkeymapper.cpp" line="12424"/>
         <source>Mouse</source>
         <translation>マウス</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="569"/>
-        <location filename="../qkeymapper.cpp" line="12332"/>
+        <location filename="../qkeymapper.cpp" line="12391"/>
         <source>General</source>
         <translation>一般設定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="584"/>
-        <location filename="../qkeymapper.cpp" line="12288"/>
+        <location filename="../qkeymapper.cpp" line="12347"/>
         <source>Startup Minimized</source>
         <translation>起動時最小化</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="619"/>
-        <location filename="../qkeymapper.cpp" line="12287"/>
+        <location filename="../qkeymapper.cpp" line="12346"/>
         <source>Auto Startup</source>
         <translation>起動時自動起動</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="635"/>
-        <location filename="../qkeymapper.cpp" line="12290"/>
+        <location filename="../qkeymapper.cpp" line="12349"/>
         <source>Notification</source>
         <translation>通知</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="680"/>
-        <location filename="../qkeymapper.cpp" line="12294"/>
+        <location filename="../qkeymapper.cpp" line="12353"/>
         <source>ShowHideKey</source>
         <translation>表示切替キー</translation>
     </message>
@@ -802,19 +802,19 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="730"/>
-        <location filename="../qkeymapper.cpp" line="12292"/>
+        <location filename="../qkeymapper.cpp" line="12351"/>
         <source>Language</source>
         <translation>言語</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="749"/>
-        <location filename="../qkeymapper.cpp" line="12295"/>
+        <location filename="../qkeymapper.cpp" line="12354"/>
         <source>Check Updates</source>
         <translation>更新確認</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="765"/>
-        <location filename="../qkeymapper.cpp" line="12293"/>
+        <location filename="../qkeymapper.cpp" line="12352"/>
         <source>UpdateSite</source>
         <translation>更新サイト</translation>
     </message>
@@ -831,79 +831,79 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="813"/>
-        <location filename="../qkeymapper.cpp" line="12307"/>
+        <location filename="../qkeymapper.cpp" line="12366"/>
         <source>Select Tray Icon</source>
         <translation>トレイアイコン選択</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="832"/>
-        <location filename="../qkeymapper.cpp" line="12308"/>
+        <location filename="../qkeymapper.cpp" line="12367"/>
         <source>Noti Advanced</source>
         <translation>通知高度な設定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="841"/>
-        <location filename="../qkeymapper.cpp" line="12333"/>
+        <location filename="../qkeymapper.cpp" line="12392"/>
         <source>Mapping</source>
         <translation>マッピング設定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="882"/>
-        <location filename="../qkeymapper.cpp" line="12284"/>
+        <location filename="../qkeymapper.cpp" line="12343"/>
         <source>Auto Match Foreground</source>
         <translation>前景ウィンドウ監視</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="911"/>
         <location filename="../qkeymapper.ui" line="1286"/>
-        <location filename="../qkeymapper.cpp" line="12276"/>
+        <location filename="../qkeymapper.cpp" line="12335"/>
         <source>X Speed</source>
         <translation>X軸速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="943"/>
         <location filename="../qkeymapper.ui" line="1302"/>
-        <location filename="../qkeymapper.cpp" line="12277"/>
+        <location filename="../qkeymapper.cpp" line="12336"/>
         <source>Y Speed</source>
         <translation>Y軸速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="962"/>
-        <location filename="../qkeymapper.cpp" line="12285"/>
+        <location filename="../qkeymapper.cpp" line="12344"/>
         <source>Send To Same Windows</source>
         <translation>同名ウィンドウへ送信</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="975"/>
         <location filename="../qkeymapper.cpp" line="4943"/>
-        <location filename="../qkeymapper.cpp" line="12229"/>
-        <location filename="../qkeymapper.cpp" line="12297"/>
+        <location filename="../qkeymapper.cpp" line="12288"/>
+        <location filename="../qkeymapper.cpp" line="12356"/>
         <source>MappingStop</source>
         <translation>マッピング停止</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1004"/>
-        <location filename="../qkeymapper.cpp" line="12286"/>
+        <location filename="../qkeymapper.cpp" line="12345"/>
         <source>Accept Virtual Gamepad Input</source>
         <translation>仮想ゲームパッド入力受付</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1020"/>
-        <location filename="../qkeymapper.cpp" line="12309"/>
+        <location filename="../qkeymapper.cpp" line="12368"/>
         <source>ProcessIcon as TrayIcon</source>
         <translation>プロセスアイコンをトレイに使用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1026"/>
         <location filename="../qkeymapper.ui" line="1073"/>
-        <location filename="../qkeymapper.cpp" line="12334"/>
-        <location filename="../qkeymapper.cpp" line="12348"/>
+        <location filename="../qkeymapper.cpp" line="12393"/>
+        <location filename="../qkeymapper.cpp" line="12407"/>
         <source>VirtualGamepad</source>
         <translation>仮想ゲームパッド</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1054"/>
-        <location filename="../qkeymapper.cpp" line="12349"/>
+        <location filename="../qkeymapper.cpp" line="12408"/>
         <source>Lock Cursor</source>
         <translation>カーソルロック</translation>
     </message>
@@ -920,226 +920,226 @@
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1137"/>
-        <location filename="../qkeymapper.cpp" line="10162"/>
-        <location filename="../qkeymapper.cpp" line="12360"/>
+        <location filename="../qkeymapper.cpp" line="10178"/>
+        <location filename="../qkeymapper.cpp" line="12419"/>
         <source>InstallViGEm</source>
         <translation>インストール</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1201"/>
-        <location filename="../qkeymapper.cpp" line="12352"/>
+        <location filename="../qkeymapper.cpp" line="12411"/>
         <source>Y Sens</source>
         <translation>Y軸感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1217"/>
-        <location filename="../qkeymapper.cpp" line="12351"/>
+        <location filename="../qkeymapper.cpp" line="12410"/>
         <source>X Sens</source>
         <translation>X軸感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1246"/>
-        <location filename="../qkeymapper.cpp" line="12353"/>
+        <location filename="../qkeymapper.cpp" line="12412"/>
         <source>Recenter</source>
         <translation>中心戻す遅延</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1265"/>
-        <location filename="../qkeymapper.cpp" line="12350"/>
+        <location filename="../qkeymapper.cpp" line="12409"/>
         <source>Direct Mode</source>
         <translation>直接制御モード</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1274"/>
-        <location filename="../qkeymapper.cpp" line="12335"/>
+        <location filename="../qkeymapper.cpp" line="12394"/>
         <source>Gyro2Mouse</source>
         <translation>ジャイロマウス</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1338"/>
-        <location filename="../qkeymapper.cpp" line="12300"/>
+        <location filename="../qkeymapper.cpp" line="12359"/>
         <source>MinXSens</source>
         <translation>低速X感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1367"/>
-        <location filename="../qkeymapper.cpp" line="12301"/>
+        <location filename="../qkeymapper.cpp" line="12360"/>
         <source>MinYSens</source>
         <translation>低速Y感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1454"/>
-        <location filename="../qkeymapper.cpp" line="12303"/>
+        <location filename="../qkeymapper.cpp" line="12362"/>
         <source>MaxYSens</source>
         <translation>高速Y感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1483"/>
-        <location filename="../qkeymapper.cpp" line="12302"/>
+        <location filename="../qkeymapper.cpp" line="12361"/>
         <source>MaxXSens</source>
         <translation>高速X感度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1396"/>
-        <location filename="../qkeymapper.cpp" line="12304"/>
+        <location filename="../qkeymapper.cpp" line="12363"/>
         <source>MinThres</source>
         <translation>低速閾値</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="600"/>
-        <location filename="../qkeymapper.cpp" line="12289"/>
+        <location filename="../qkeymapper.cpp" line="12348"/>
         <source>Sound</source>
         <translation>通知音</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="2135"/>
-        <location filename="../qkeymapper.cpp" line="12291"/>
+        <location filename="../qkeymapper.ui" line="1733"/>
+        <location filename="../qkeymapper.cpp" line="12350"/>
         <source>NotifySize</source>
         <translation>通知サイズ</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1425"/>
-        <location filename="../qkeymapper.cpp" line="12305"/>
+        <location filename="../qkeymapper.cpp" line="12364"/>
         <source>MaxThres</source>
         <translation>高速閾値</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1515"/>
-        <location filename="../qkeymapper.cpp" line="12306"/>
+        <location filename="../qkeymapper.cpp" line="12365"/>
         <source>Advanced</source>
         <translation>高度な設定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1524"/>
-        <location filename="../qkeymapper.cpp" line="12336"/>
+        <location filename="../qkeymapper.cpp" line="12395"/>
         <source>Multi-Input</source>
         <translation>複数キーボード</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1558"/>
-        <location filename="../qkeymapper.cpp" line="10270"/>
-        <location filename="../qkeymapper.cpp" line="10287"/>
-        <location filename="../qkeymapper.cpp" line="12375"/>
+        <location filename="../qkeymapper.cpp" line="10286"/>
+        <location filename="../qkeymapper.cpp" line="10303"/>
+        <location filename="../qkeymapper.cpp" line="12434"/>
         <source>Install Driver</source>
         <translation>インストール</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1577"/>
-        <location filename="../qkeymapper.cpp" line="12369"/>
+        <location filename="../qkeymapper.cpp" line="12428"/>
         <source>FilterKeys</source>
         <translation>フィルターキー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1596"/>
-        <location filename="../qkeymapper.cpp" line="12368"/>
+        <location filename="../qkeymapper.cpp" line="12427"/>
         <source>MultiDevice</source>
         <translation>複数キーボード</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1612"/>
-        <location filename="../qkeymapper.cpp" line="12370"/>
+        <location filename="../qkeymapper.cpp" line="12429"/>
         <source>DeviceList</source>
         <translation>デバイスリスト</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1621"/>
-        <location filename="../qkeymapper.cpp" line="12337"/>
+        <location filename="../qkeymapper.cpp" line="12396"/>
         <source>Forza</source>
         <translation>Forza</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1672"/>
-        <location filename="../qkeymapper.cpp" line="12281"/>
+        <location filename="../qkeymapper.cpp" line="12340"/>
         <source>DataPort</source>
         <translation>データポート</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1688"/>
-        <location filename="../qkeymapper.cpp" line="12283"/>
+        <location filename="../qkeymapper.cpp" line="12342"/>
         <source>AccelValue</source>
         <translation>加速閾値</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1704"/>
-        <location filename="../qkeymapper.cpp" line="12282"/>
+        <location filename="../qkeymapper.cpp" line="12341"/>
         <source>BrakeValue</source>
         <translation>ブレーキ閾値</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="1732"/>
-        <location filename="../qkeymapper.cpp" line="12270"/>
+        <location filename="../qkeymapper.ui" line="1761"/>
+        <location filename="../qkeymapper.cpp" line="12329"/>
         <source>Text</source>
         <translation>テキスト</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="1748"/>
-        <location filename="../qkeymapper.cpp" line="12366"/>
+        <location filename="../qkeymapper.ui" line="1777"/>
+        <location filename="../qkeymapper.cpp" line="12425"/>
         <source>Gamepad</source>
         <translation>ゲームパッド</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="1790"/>
-        <location filename="../qkeymapper.cpp" line="12245"/>
+        <location filename="../qkeymapper.ui" line="1819"/>
+        <location filename="../qkeymapper.cpp" line="12304"/>
         <source>Description</source>
         <translation>設定説明</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="1809"/>
-        <location filename="../qkeymapper.cpp" line="12240"/>
+        <location filename="../qkeymapper.ui" line="1838"/>
+        <location filename="../qkeymapper.cpp" line="12299"/>
         <source>ProcessList</source>
         <translation>プロセスリスト</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="1834"/>
-        <location filename="../qkeymapper.cpp" line="12241"/>
+        <location filename="../qkeymapper.ui" line="1863"/>
+        <location filename="../qkeymapper.cpp" line="12300"/>
         <source>ShowNotes</source>
         <translation>メモ表示</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.ui" line="1869"/>
-        <location filename="../qkeymapper.cpp" line="12269"/>
+        <location filename="../qkeymapper.ui" line="1898"/>
+        <location filename="../qkeymapper.cpp" line="12328"/>
         <source>PushLevel</source>
         <translation>押す度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="405"/>
-        <location filename="../qkeymapper.cpp" line="12317"/>
+        <location filename="../qkeymapper.cpp" line="12376"/>
         <source>None</source>
         <translation>非表示</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="406"/>
-        <location filename="../qkeymapper.cpp" line="12318"/>
+        <location filename="../qkeymapper.cpp" line="12377"/>
         <source>Top Left</source>
         <translation>左上</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="407"/>
-        <location filename="../qkeymapper.cpp" line="12319"/>
+        <location filename="../qkeymapper.cpp" line="12378"/>
         <source>Top Center</source>
         <translation>上部中央</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="408"/>
-        <location filename="../qkeymapper.cpp" line="12320"/>
+        <location filename="../qkeymapper.cpp" line="12379"/>
         <source>Top Right</source>
         <translation>右上</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="409"/>
-        <location filename="../qkeymapper.cpp" line="12321"/>
+        <location filename="../qkeymapper.cpp" line="12380"/>
         <source>Bottom Left</source>
         <translation>左下</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="410"/>
-        <location filename="../qkeymapper.cpp" line="12322"/>
+        <location filename="../qkeymapper.cpp" line="12381"/>
         <source>Bottom Center</source>
         <translation>下部中央</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="411"/>
-        <location filename="../qkeymapper.cpp" line="12323"/>
+        <location filename="../qkeymapper.cpp" line="12382"/>
         <source>Bottom Right</source>
         <translation>右下</translation>
     </message>
@@ -1187,7 +1187,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="2071"/>
         <location filename="../qkeymapper.cpp" line="2322"/>
-        <location filename="../qkeymapper.cpp" line="14009"/>
+        <location filename="../qkeymapper.cpp" line="14072"/>
         <source>Game controller keys could not be blocked!</source>
         <translation>ゲームパッドのボタンは無効にできません！</translation>
     </message>
@@ -1314,25 +1314,25 @@
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="5290"/>
-        <location filename="../qkeymapper.cpp" line="12381"/>
+        <location filename="../qkeymapper.cpp" line="12440"/>
         <source>OriginalKey</source>
         <translation>原始キー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="5291"/>
-        <location filename="../qkeymapper.cpp" line="12382"/>
+        <location filename="../qkeymapper.cpp" line="12441"/>
         <source>MappingKey</source>
         <translation>マッピングキー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="5292"/>
-        <location filename="../qkeymapper.cpp" line="12383"/>
+        <location filename="../qkeymapper.cpp" line="12442"/>
         <source>Burst</source>
         <translation>連発</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="5293"/>
-        <location filename="../qkeymapper.cpp" line="12384"/>
+        <location filename="../qkeymapper.cpp" line="12443"/>
         <source>Lock</source>
         <translation>ロック</translation>
     </message>
@@ -1364,8 +1364,8 @@
     <message>
         <location filename="../qkeymapper.cpp" line="7090"/>
         <location filename="../qkeymapper.cpp" line="8270"/>
-        <location filename="../qkeymapper.cpp" line="12247"/>
-        <location filename="../qkeymapper.cpp" line="12249"/>
+        <location filename="../qkeymapper.cpp" line="12306"/>
+        <location filename="../qkeymapper.cpp" line="12308"/>
         <source>Global keymapping setting</source>
         <translation>グローバルマッピング設定</translation>
     </message>
@@ -1380,14 +1380,14 @@
         <translation>マッピング開始 [</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9643"/>
+        <location filename="../qkeymapper.cpp" line="9657"/>
         <source>Monitoring</source>
         <translation>監視中</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="4967"/>
-        <location filename="../qkeymapper.cpp" line="9640"/>
-        <location filename="../qkeymapper.cpp" line="10943"/>
+        <location filename="../qkeymapper.cpp" line="9654"/>
+        <location filename="../qkeymapper.cpp" line="10959"/>
         <source>Idle</source>
         <translation>待機</translation>
     </message>
@@ -1396,99 +1396,99 @@
         <translation type="vanished">監視中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9651"/>
+        <location filename="../qkeymapper.cpp" line="9664"/>
         <source>StopMapping [</source>
         <translation>マッピング停止 [</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9685"/>
+        <location filename="../qkeymapper.cpp" line="9683"/>
         <source>TabisAlready</source>
         <translation>すでに</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9688"/>
+        <location filename="../qkeymapper.cpp" line="9686"/>
         <source>MappingTabSwitch</source>
         <translation>テーブル切替</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10154"/>
-        <location filename="../qkeymapper.cpp" line="12357"/>
+        <location filename="../qkeymapper.cpp" line="10170"/>
+        <location filename="../qkeymapper.cpp" line="12416"/>
         <source>UninstallViGEm</source>
         <translation>アンインストール</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10157"/>
+        <location filename="../qkeymapper.cpp" line="10173"/>
         <source>ViGEmAvailable</source>
         <translation>ViGEm使用可能</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10165"/>
+        <location filename="../qkeymapper.cpp" line="10181"/>
         <source>ViGEmUnavailable</source>
         <translation>ViGEm使用不可</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10253"/>
-        <location filename="../qkeymapper.cpp" line="12372"/>
+        <location filename="../qkeymapper.cpp" line="10269"/>
+        <location filename="../qkeymapper.cpp" line="12431"/>
         <source>Uninstall Driver</source>
         <translation>アンインストール</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10256"/>
+        <location filename="../qkeymapper.cpp" line="10272"/>
         <source>Available</source>
         <translation>使用可能</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10273"/>
+        <location filename="../qkeymapper.cpp" line="10289"/>
         <source>RebootRequired</source>
         <translation>再起動必要</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10290"/>
+        <location filename="../qkeymapper.cpp" line="10306"/>
         <source>Unavailable</source>
         <translation>使用不可能</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10326"/>
+        <location filename="../qkeymapper.cpp" line="10342"/>
         <source> GyroDisabled</source>
         <translation> ジャイロが無効</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10329"/>
+        <location filename="../qkeymapper.cpp" line="10345"/>
         <source> GyroEnabled</source>
         <translation> ジャイロが有効</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10545"/>
+        <location filename="../qkeymapper.cpp" line="10561"/>
         <source>Show</source>
         <translation>表示</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10546"/>
+        <location filename="../qkeymapper.cpp" line="10562"/>
         <source>Hide</source>
         <translation>非表示</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10547"/>
+        <location filename="../qkeymapper.cpp" line="10563"/>
         <source>Quit</source>
         <translation>終了</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10922"/>
+        <location filename="../qkeymapper.cpp" line="10938"/>
         <source>Monitoring : </source>
         <translation>監視中 : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10935"/>
+        <location filename="../qkeymapper.cpp" line="10951"/>
         <source>Mapping : </source>
         <translation>マッピング中 : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10940"/>
+        <location filename="../qkeymapper.cpp" line="10956"/>
         <source>Mapping : Global</source>
         <translation>マッピング中 : グローバルマッピング</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10886"/>
+        <location filename="../qkeymapper.cpp" line="10902"/>
         <source>If you want the program to be hidden to the system tray when you click the close button, please check the option below.
 If you do not check it and click &quot;OK&quot;, the program will close directly when you click the close button in the future.
 Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog again.</source>
@@ -1497,73 +1497,73 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 「L-Ctrl」キーを押しながら閉じるボタンをクリックすると、この選択ダイアログが再度表示されます。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10891"/>
+        <location filename="../qkeymapper.cpp" line="10907"/>
         <source>Hide the program to the system tray when clicking the close button</source>
         <translation>閉じるボタンをクリックしたときにプログラムをシステムトレイに表示する</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12111"/>
+        <location filename="../qkeymapper.cpp" line="12170"/>
         <source>Hotkey : %1</source>
         <translation>ホットキー : %1</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12237"/>
+        <location filename="../qkeymapper.cpp" line="12296"/>
         <source>Hotkey : L-Ctrl+S</source>
         <translation>ホットキー : L-Ctrl+S</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12251"/>
-        <location filename="../qkeymapper.cpp" line="12255"/>
+        <location filename="../qkeymapper.cpp" line="12310"/>
+        <location filename="../qkeymapper.cpp" line="12314"/>
         <source>Keyboard Keys</source>
         <translation>キーボードキー</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12252"/>
-        <location filename="../qkeymapper.cpp" line="12256"/>
+        <location filename="../qkeymapper.cpp" line="12311"/>
+        <location filename="../qkeymapper.cpp" line="12315"/>
         <source>Mouse Keys</source>
         <translation>マウスキー</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12253"/>
-        <location filename="../qkeymapper.cpp" line="12257"/>
+        <location filename="../qkeymapper.cpp" line="12312"/>
+        <location filename="../qkeymapper.cpp" line="12316"/>
         <source>Gamepad Keys</source>
         <translation>ゲームパッドキー</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12254"/>
-        <location filename="../qkeymapper.cpp" line="12258"/>
+        <location filename="../qkeymapper.cpp" line="12313"/>
+        <location filename="../qkeymapper.cpp" line="12317"/>
         <source>Function Keys</source>
         <translation>ファンクションキー</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12267"/>
-        <location filename="../qkeymapper.cpp" line="12268"/>
-        <location filename="../qkeymapper.cpp" line="12354"/>
+        <location filename="../qkeymapper.cpp" line="12326"/>
+        <location filename="../qkeymapper.cpp" line="12327"/>
+        <location filename="../qkeymapper.cpp" line="12413"/>
         <source> ms</source>
         <translation> ミリ秒</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12272"/>
+        <location filename="../qkeymapper.cpp" line="12331"/>
         <source>LongPress</source>
         <translation>長押</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12273"/>
+        <location filename="../qkeymapper.cpp" line="12332"/>
         <source>DoublePress</source>
         <translation>ダブルクリック</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12298"/>
+        <location filename="../qkeymapper.cpp" line="12357"/>
         <source>Gyro2Mouse X Speed</source>
         <translation>水平スピード</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12299"/>
+        <location filename="../qkeymapper.cpp" line="12358"/>
         <source>Gyro2Mouse Y Speed</source>
         <translation>垂直スピード</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12339"/>
+        <location filename="../qkeymapper.cpp" line="12398"/>
         <source>General setting tab tooltip.</source>
         <translation>「一般設定」ページには、ソフトウェア全体の機能に関するさまざまなオプションが含まれています：
 1. ウィンドウの通常表示とシステムトレイへの最小化を切り替えるショートカットキーを設定します。
@@ -1575,7 +1575,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 7. ソフトウェアのアップデートを確認し、ユーザーにアップグレードするかどうかを選択させます（GithubとGiteeの2つのサイトから選択可能）。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12340"/>
+        <location filename="../qkeymapper.cpp" line="12399"/>
         <source>Mapping setting tab tooltip.</source>
         <translation>「マッピング設定」タブには、マッピング機能に関するオプションが含まれています：
 1. 「マッピング開始」と「マッピング停止」のショートカットキーをそれぞれ設定できます。
@@ -1586,7 +1586,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 5. ソフトウェア自身が作成した仮想ゲームパッドからのキー入力を受け付けるかどうかを選択できます。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12341"/>
+        <location filename="../qkeymapper.cpp" line="12400"/>
         <source>VirtualGamepad setting tab tooltip.</source>
         <translation>「仮想ゲームパッド」設定タブには、QKeyMapperで作成された仮想ゲームパッドのマッピング機能に関する設定があります：
 1. 仮想ゲームパッド用のViGEm Busドライバーをインストールおよびアンインストールできます。
@@ -1599,14 +1599,14 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 8. マウスで仮想ゲームパッドのスティックを操作する際の「中心戻す遅延」を設定できます。0に設定すると中心に戻りません。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12342"/>
+        <location filename="../qkeymapper.cpp" line="12401"/>
         <source>Gyro2Mouse setting tab tooltip.</source>
         <translation>「ジャイロマウス」設定タブには、ゲームパッドのジャイロセンサーでマウスカーソルを動かすための設定があります。
 1. ジャイロマウスの水平方向・垂直方向の速度を個別に設定できます。値が大きいほど速度が速くなります（範囲：0.00～99.99）。
 2. ジャイロマウスに関するその他の高度なオプションも設定できます。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12343"/>
+        <location filename="../qkeymapper.cpp" line="12402"/>
         <source>Multi-Input setting tab tooltip</source>
         <translation>&lt;html&gt;
 &lt;body&gt;
@@ -1620,7 +1620,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 &lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12344"/>
+        <location filename="../qkeymapper.cpp" line="12403"/>
         <source>Forza setting tab tooltip.</source>
         <translation>「Forza」設定タブには、Forzaシリーズのゲームでブレーキやアクセルの自動制御に関する設定があります：
 1. ブレーキ時にタイヤのグリップ不足（スリップ）を検出するためのしきい値を設定します。
@@ -1628,128 +1628,128 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 3. ゲームデータを受信するためのローカルポート番号を設定します。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12355"/>
+        <location filename="../qkeymapper.cpp" line="12414"/>
         <source>Unrecenter</source>
         <translation>中心戻さない</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12388"/>
+        <location filename="../qkeymapper.cpp" line="12447"/>
         <source>PID</source>
         <translation>プロセスID</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12389"/>
+        <location filename="../qkeymapper.cpp" line="12448"/>
         <source>Window Title</source>
         <translation>ウィンドウタイトル</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12849"/>
+        <location filename="../qkeymapper.cpp" line="12912"/>
         <source>For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.</source>
         <translation>Win10以上の64ビットシステムでは「Qt6_x64」バージョンの使用を推奨します。Qt5バージョンはWin7オペレーティングシステムとの互換性のためだけに使用されます。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12850"/>
-        <location filename="../qkeymapper.cpp" line="12879"/>
+        <location filename="../qkeymapper.cpp" line="12913"/>
+        <location filename="../qkeymapper.cpp" line="12942"/>
         <source>Do not show this message again</source>
         <translation>このメッセージを再表示しない</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12878"/>
+        <location filename="../qkeymapper.cpp" line="12941"/>
         <source>Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.</source>
         <translation>QKeyMapperを使用する際は、Windowsのフィルターキー機能を有効にすることを強くお勧めします。さまざまな予期しない問題を回避するためです。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13255"/>
+        <location filename="../qkeymapper.cpp" line="13318"/>
         <source>The upgrade package %1 does not exist in the directory %2. Download failed!</source>
         <translation>ディレクトリ %2 にアップグレードパッケージ %1 が存在しません。ダウンロードに失敗しました！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13260"/>
+        <location filename="../qkeymapper.cpp" line="13323"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;The upgrade package &lt;b&gt;%1&lt;/b&gt; has been successfully downloaded to the directory &lt;b&gt;%2&lt;/b&gt;.&lt;/p&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;アップグレードパッケージ &lt;b&gt;%1&lt;/b&gt; はディレクトリ &lt;b&gt;%2&lt;/b&gt; に正常にダウンロードされました&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13262"/>
+        <location filename="../qkeymapper.cpp" line="13325"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Click [Yes] to automatically close the program and upgrade&lt;/b&gt;, otherwise handle it manually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;[Yes] ボタンをクリックすると、プログラムが自動的に閉じてアップグレードが行われます。&lt;/b&gt;そうでない場合は、手動で解凍して置き換えてください。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13660"/>
+        <location filename="../qkeymapper.cpp" line="13723"/>
         <source>Invalid input format for the original key combination!</source>
         <translation>原始組合キー入力形式が間違っています！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13765"/>
+        <location filename="../qkeymapper.cpp" line="13828"/>
         <source>Key sequence mapping to &quot;%1&quot; exceeds the maximum length!</source>
         <translation>「%1」にマッピングされたキーシーケンスが最大長を超えています！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13798"/>
-        <location filename="../qkeymapper.cpp" line="13965"/>
+        <location filename="../qkeymapper.cpp" line="13861"/>
+        <location filename="../qkeymapper.cpp" line="14028"/>
         <source>Need to set a screen mouse point with &quot;%1&quot; click!</source>
         <translation>「%1」を使用してスクリーン座標点を設定する必要があります！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13798"/>
-        <location filename="../qkeymapper.cpp" line="13965"/>
+        <location filename="../qkeymapper.cpp" line="13861"/>
+        <location filename="../qkeymapper.cpp" line="14028"/>
         <source>L-Ctrl+Mouse-Left Click</source>
         <translation>L-Ctrl+左クリック</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13813"/>
+        <location filename="../qkeymapper.cpp" line="13876"/>
         <source>Already set a same screen mouse point!</source>
         <translation>同じスクリーン座標点が既に保存されています！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13823"/>
-        <location filename="../qkeymapper.cpp" line="13982"/>
+        <location filename="../qkeymapper.cpp" line="13886"/>
+        <location filename="../qkeymapper.cpp" line="14045"/>
         <source>Need to set a window mouse point with &quot;%1&quot; click!</source>
         <translation>「%1」を使用してウィンドウ座標点を設定する必要があります！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13823"/>
-        <location filename="../qkeymapper.cpp" line="13982"/>
+        <location filename="../qkeymapper.cpp" line="13886"/>
+        <location filename="../qkeymapper.cpp" line="14045"/>
         <source>L-Alt+Mouse-Left Click</source>
         <translation>L-Alt+左クリック</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13838"/>
+        <location filename="../qkeymapper.cpp" line="13901"/>
         <source>Already set a same window mouse point!</source>
         <translation>同じウィンドウ座標点が既に保存されています！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13848"/>
-        <location filename="../qkeymapper.cpp" line="13999"/>
+        <location filename="../qkeymapper.cpp" line="13911"/>
+        <location filename="../qkeymapper.cpp" line="14062"/>
         <source>Please input the text to send!</source>
         <translation>送信するテキストを入力してください！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13857"/>
+        <location filename="../qkeymapper.cpp" line="13920"/>
         <source>KeySequenceBreak key can not be set duplicated!</source>
         <translation>キーシーケンスの中断キーは重複して設定することはできません！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14095"/>
+        <location filename="../qkeymapper.cpp" line="14158"/>
         <source>Conflict with exist Keys!</source>
         <translation>既存のキーマッピングと競合しています！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14242"/>
+        <location filename="../qkeymapper.cpp" line="14305"/>
         <source>Are you sure you want to clear all data in the mapping table?</source>
         <translation>マッピングテーブル内全てのデータを消去するか確認してください？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15110"/>
+        <location filename="../qkeymapper.cpp" line="15180"/>
         <source>System reboot is required for the changes to take effect after uninstalling Interception driver.</source>
         <translation>Interceptionドライバをアンインストールした後、システムを再起動する必要があります。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15156"/>
+        <location filename="../qkeymapper.cpp" line="15226"/>
         <source>System reboot is required for the changes to take effect after installing Interception driver.</source>
         <translation>Interceptionドライバをインストールした後、システムを再起動する必要があります。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15116"/>
+        <location filename="../qkeymapper.cpp" line="15186"/>
         <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
 
 Do you confirm to continue installing Interception driver?</source>
@@ -1803,39 +1803,38 @@ Interceptionドライバのインストールを続行してもよろしいで�
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="86"/>
-        <location filename="../qnotificationsetupdialog.ui" line="454"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="75"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="76"/>
+        <location filename="../qnotificationsetupdialog.ui" line="451"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="78"/>
         <source>Duration</source>
         <translation>時間</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.ui" line="124"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="86"/>
+        <location filename="../qnotificationsetupdialog.ui" line="127"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="89"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.ui" line="140"/>
+        <location filename="../qnotificationsetupdialog.ui" line="143"/>
         <location filename="../qnotificationsetupdialog.cpp" line="63"/>
         <source>Weight</source>
         <translation>太さ</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.ui" line="159"/>
+        <location filename="../qnotificationsetupdialog.ui" line="162"/>
         <location filename="../qnotificationsetupdialog.cpp" line="64"/>
         <source>Italic</source>
         <translation>イタリック</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="197"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="84"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="87"/>
         <source>Radius</source>
         <translation>角丸半径</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="213"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="85"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="88"/>
         <source>Padding</source>
         <translation>パディング</translation>
     </message>
@@ -1847,37 +1846,37 @@ Interceptionドライバのインストールを続行してもよろしいで�
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="330"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="90"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="93"/>
         <source>X-Offset</source>
         <translation>Xオフセット</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="346"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="89"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="92"/>
         <source>Offset</source>
         <translation>オフセット</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="362"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="91"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="94"/>
         <source>Y-Offset</source>
         <translation>Yオフセット</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.ui" line="378"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="77"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="80"/>
         <source>FadeIn</source>
         <translation>フェードイン</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.ui" line="416"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="78"/>
+        <location filename="../qnotificationsetupdialog.ui" line="413"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="81"/>
         <source>FadeOut</source>
         <translation>フェードアウト</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.ui" line="470"/>
-        <location filename="../qnotificationsetupdialog.cpp" line="83"/>
+        <location filename="../qnotificationsetupdialog.ui" line="467"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="86"/>
         <source>Border</source>
         <translation>枠</translation>
     </message>
@@ -1898,27 +1897,32 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>通知フォント色を選択</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.cpp" line="68"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="71"/>
         <source>Light</source>
         <translation>ライト</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.cpp" line="69"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="72"/>
         <source>Normal</source>
         <translation>標準</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.cpp" line="70"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="73"/>
         <source>Bold</source>
         <translation>太字</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.cpp" line="81"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="79"/>
+        <source>DisplayDuration</source>
+        <translation>表示時間</translation>
+    </message>
+    <message>
+        <location filename="../qnotificationsetupdialog.cpp" line="84"/>
         <source>BGColor</source>
         <translation>背景色</translation>
     </message>
     <message>
-        <location filename="../qnotificationsetupdialog.cpp" line="82"/>
+        <location filename="../qnotificationsetupdialog.cpp" line="85"/>
         <source>Select Notification Background Color</source>
         <translation>通知背景色を選択</translation>
     </message>

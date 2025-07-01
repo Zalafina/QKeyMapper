@@ -120,7 +120,7 @@ bool QCrosshairSetupDialog::event(QEvent *event)
             }
         }
     }
-    return QWidget::event(event);
+    return QDialog::event(event);
 }
 
 void QCrosshairSetupDialog::closeEvent(QCloseEvent *event)
