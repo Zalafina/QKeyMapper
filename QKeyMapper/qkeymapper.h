@@ -138,20 +138,20 @@ struct ValidationResult
 };
 
 struct PopupNotificationOptions {
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;  // Text color
-    int displayDuration = 3000;                             // Display duration (ms)
-    int position = NOTIFICATION_POSITION_TOP_RIGHT;         // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
-    int size = 16;                                          // Font size
-    QColor backgroundColor = QColor(0,0,0,180);             // Background color
-    double windowOpacity = 1.0;                             // Window opacity (0.0~1.0)
-    int padding = 15;                                       // Padding
-    int borderRadius = 5;                                   // Border radius
-    int fontWeight = QFont::Bold;                           // Font weight
-    bool fontItalic = false;                                // Italic font
-    int fadeInDuration = 0;                                 // Fade-in animation duration (ms)
-    int fadeOutDuration = 500;                              // Fade-out animation duration (ms)
-    int xOffset = 0;                                        // X offset
-    int yOffset = 0;                                        // Y offset
+    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;          // Text color
+    int displayDuration = NOTIFICATION_DISPLAY_DURATION_DEFAULT;            // Display duration (ms)
+    int position = NOTIFICATION_POSITION_TOP_RIGHT;                 // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
+    int size = NOTIFICATION_FONT_SIZE_DEFAULT;                      // Font size
+    QColor backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
+    double windowOpacity = NOTIFICATION_OPACITY_DEFAULT;            // Window opacity (0.0~1.0)
+    int padding = NOTIFICATION_PADDING_DEFAULT;                     // Padding
+    int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
+    int fontWeight = QFont::Bold;                                   // Font weight
+    bool fontItalic = false;                                        // Italic font
+    int fadeInDuration = NOTIFICATION_FADEIN_DURATION_DEFAULT;      // Fade-in animation duration (ms)
+    int fadeOutDuration = NOTIFICATION_FADEOUT_DURATION_DEFAULT;    // Fade-out animation duration (ms)
+    int xOffset = NOTIFICATION_X_OFFSET_DEFAULT;                    // X offset
+    int yOffset = NOTIFICATION_Y_OFFSET_DEFAULT;                    // Y offset
 };
 
 struct Gamepad_Info

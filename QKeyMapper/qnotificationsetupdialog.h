@@ -73,7 +73,6 @@ public:
 
 protected:
     bool event(QEvent *event) override;
-    void showEvent(QShowEvent *event) override;
 
 public slots:
     void onFontColorChanged(QColor &color);
@@ -84,8 +83,6 @@ private:
     Ui::QNotificationSetupDialog *ui;
     ColorPickerWidget *m_FontColorPicker;
     ColorPickerWidget *m_BackgroundColorPicker;
-    QColor m_NotificationFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
-    QColor m_NotificationBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
 };
 
 #endif // QNOTIFICATIONSETUPDIALOG_H

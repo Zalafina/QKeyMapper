@@ -6915,6 +6915,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
 #endif
 
+        // if (true == settingFile.contains(NOTIFICATION_FONTSIZE)){
+        //     settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
+        // }
+
         if (true == settingFile.contains(NOTIFICATION_FONTSIZE)){
             int notification_fontsize = settingFile.value(NOTIFICATION_FONTSIZE).toInt();
             if (NOTIFICATION_FONT_SIZE_MIN <= notification_fontsize && notification_fontsize <= NOTIFICATION_FONT_SIZE_MAX) {
@@ -6930,6 +6934,36 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Notification Font Size ->" << m_NotificationSetupDialog->getNotification_FontSize();
 #endif
+
+        if (true == settingFile.contains(NOTIFICATION_FONTWEIGHT)){
+            int notification_fontweithg = settingFile.value(NOTIFICATION_FONTWEIGHT).toInt();
+            if (NOTIFICATION_FONT_WEIGHT_MIN <= notification_fontweithg && notification_fontweithg <= NOTIFICATION_FONT_WEIGHT_MAX) {
+                m_NotificationSetupDialog->setNotification_FontWeight(notification_fontweithg);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_FontWeight(NOTIFICATION_FONT_WEIGHT_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontWeight(NOTIFICATION_FONT_WEIGHT_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Font Weight ->" << m_NotificationSetupDialog->getNotification_FontWeight();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_FONTITALIC)){
+            bool notification_fontitalic = settingFile.value(NOTIFICATION_FONTITALIC).toBool();
+            m_NotificationSetupDialog->setNotification_FontIsItalic(notification_fontitalic);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Notification Font Italic Checkbox ->" << notification_fontitalic;
+#endif
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontIsItalic(NOTIFICATION_FONT_ITALIC_DEFAULT);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains Notification_FontItalic, Notification_FontItalic set to" << NOTIFICATION_FONT_ITALIC_DEFAULT;
+#endif
+        }
 
         if (true == settingFile.contains(TRAYICON_IDLE)){
             int trayicon_idle = settingFile.value(TRAYICON_IDLE).toInt();

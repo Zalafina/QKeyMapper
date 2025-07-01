@@ -5,9 +5,6 @@ bool ColorPickerWidget::s_isColorSelecting = false;
 
 ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int buttonWidth)
     : QWidget(parent)
-    , m_color()
-    , colorButton(Q_NULLPTR)
-    , colorLabel(Q_NULLPTR)
     , m_buttonText(buttonText)
 {
     colorLabel = new QLabel(this);
@@ -37,6 +34,11 @@ ColorPickerWidget::~ColorPickerWidget()
     // Automatic cleanup of dynamically allocated objects
 }
 
+QColor ColorPickerWidget::getColor()
+{
+    return m_color;
+}
+
 #if 0
 void ColorPickerWidget::setUILanguage(int languageindex)
 {
@@ -52,7 +54,7 @@ void ColorPickerWidget::setUILanguage(int languageindex)
 }
 #endif
 
-void ColorPickerWidget::setColor(QColor &color)
+void ColorPickerWidget::setColor(const QColor &color)
 {
     if (color.isValid()) {
         m_color = color;

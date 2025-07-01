@@ -15,8 +15,10 @@ public:
     explicit ColorPickerWidget(QWidget *parent = nullptr, QString buttonText = QString(), int buttonWidth = 51);
     ~ColorPickerWidget();
 
+    QColor getColor(void);
+
     // void setUILanguage(int languageindex);
-    void setColor(QColor &color);
+    void setColor(const QColor &color);
     void setShowAlphaChannel(bool show);
     void setWindowTitle(QString title);
     void setButtonText(QString text);
@@ -31,10 +33,10 @@ public:
     static bool s_isColorSelecting;
 
 private:
-    QColor m_color;                     // Variable to store the selected color
-    QPushButton *colorButton;           // Button to trigger color picker dialog
-    QLabel *colorLabel;                 // Label to display the selected color
-    QString m_buttonText = "Color";     // Text for the button
+    QColor m_color = QColor();              // Variable to store the selected color
+    QPushButton *colorButton = Q_NULLPTR;   // Button to trigger color picker dialog
+    QLabel *colorLabel = Q_NULLPTR;         // Label to display the selected color
+    QString m_buttonText = "Color";         // Text for the button
     QString m_windowTitle = QString();
     bool m_showAlphaChannel = false;
 };

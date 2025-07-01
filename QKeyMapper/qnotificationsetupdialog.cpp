@@ -6,8 +6,8 @@ QNotificationSetupDialog *QNotificationSetupDialog::m_instance = Q_NULLPTR;
 QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QNotificationSetupDialog)
-    , m_FontColorPicker(new ColorPickerWidget(this, "FontColor", 61))
-    , m_BackgroundColorPicker(new ColorPickerWidget(this, "BGColor", 51))
+    , m_FontColorPicker(new ColorPickerWidget(this, "FontColor", COLORPICKER_BUTTON_WIDTH_NOTIFICATION_FONTCOLOR))
+    , m_BackgroundColorPicker(new ColorPickerWidget(this, "BGColor", COLORPICKER_BUTTON_WIDTH_NOTIFICATION_BGCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -41,6 +41,33 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_FontColorPicker->raise();
     m_BackgroundColorPicker->raise();
     m_BackgroundColorPicker->setShowAlphaChannel(true);
+
+    m_FontColorPicker->setColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+    m_BackgroundColorPicker->setColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+
+    ui->opacitySpinBox->setDecimals(NOTIFICATION_OPACITY_DECIMALS);
+    ui->opacitySpinBox->setSingleStep(NOTIFICATION_OPACITY_SINGLESTEP);
+
+    ui->fontSizeSpinBox->setRange(NOTIFICATION_FONT_SIZE_MIN, NOTIFICATION_FONT_SIZE_MAX);
+    ui->displayDurationSpinBox->setRange(NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX);
+    ui->fadeinDurationSpinBox->setRange(NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX);
+    ui->fadeoutDurationSpinBox->setRange(NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX);
+    ui->borderRadiusSpinBox->setRange(NOTIFICATION_BORDER_RADIUS_MIN, NOTIFICATION_BORDER_RADIUS_MAX);
+    ui->paddingSpinBox->setRange(NOTIFICATION_PADDING_MIN, NOTIFICATION_PADDING_MAX);
+    ui->opacitySpinBox->setRange(NOTIFICATION_OPACITY_MIN, NOTIFICATION_OPACITY_MAX);
+    ui->x_offsetSpinBox->setRange(NOTIFICATION_OFFSET_MIN, NOTIFICATION_OFFSET_MAX);
+    ui->y_offsetSpinBox->setRange(NOTIFICATION_OFFSET_MIN, NOTIFICATION_OFFSET_MAX);
+
+    ui->fontSizeSpinBox->setValue(NOTIFICATION_FONT_SIZE_DEFAULT);
+    ui->fontItalicCheckBox->setChecked(NOTIFICATION_FONT_ITALIC_DEFAULT);
+    ui->displayDurationSpinBox->setValue(NOTIFICATION_DISPLAY_DURATION_DEFAULT);
+    ui->fadeinDurationSpinBox->setValue(NOTIFICATION_FADEIN_DURATION_DEFAULT);
+    ui->fadeoutDurationSpinBox->setValue(NOTIFICATION_FADEOUT_DURATION_DEFAULT);
+    ui->borderRadiusSpinBox->setValue(NOTIFICATION_BORDER_RADIUS_DEFAULT);
+    ui->paddingSpinBox->setValue(NOTIFICATION_PADDING_DEFAULT);
+    ui->opacitySpinBox->setValue(NOTIFICATION_OPACITY_DEFAULT);
+    ui->x_offsetSpinBox->setValue(NOTIFICATION_X_OFFSET_DEFAULT);
+    ui->y_offsetSpinBox->setValue(NOTIFICATION_X_OFFSET_DEFAULT);
 
     QObject::connect(m_FontColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onFontColorChanged);
     QObject::connect(m_BackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onBackgroundColorChanged);
@@ -97,12 +124,22 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
 
 QColor QNotificationSetupDialog::getNotification_FontColor()
 {
-    return m_NotificationFontColor;
+    if (m_FontColorPicker == Q_NULLPTR) {
+        return NOTIFICATION_COLOR_NORMAL_DEFAULT;
+    }
+    else {
+        return m_FontColorPicker->getColor();
+    }
 }
 
 QColor QNotificationSetupDialog::getNotification_BackgroundColor()
 {
-    return m_NotificationBackgroundColor;
+    if (m_BackgroundColorPicker == Q_NULLPTR) {
+        return NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+    }
+    else {
+        return m_BackgroundColorPicker->getColor();
+    }
 }
 
 int QNotificationSetupDialog::getNotification_FontSize()
@@ -122,7 +159,7 @@ bool QNotificationSetupDialog::getNotification_FontIsItalic()
 
 int QNotificationSetupDialog::getNotification_DisplayDuration()
 {
-    return ui->durationSpinBox->value();
+    return ui->displayDurationSpinBox->value();
 }
 
 int QNotificationSetupDialog::getNotification_FadeInDuration()
@@ -163,16 +200,14 @@ int QNotificationSetupDialog::getNotification_Y_Offset()
 void QNotificationSetupDialog::setNotification_FontColor(const QColor &color)
 {
     if (color.isValid()) {
-        m_NotificationFontColor = color;
-        m_FontColorPicker->setColor(m_NotificationFontColor);
+        m_FontColorPicker->setColor(color);
     }
 }
 
 void QNotificationSetupDialog::setNotification_BackgroundColor(const QColor &color)
 {
     if (color.isValid()) {
-        m_NotificationBackgroundColor = color;
-        m_BackgroundColorPicker->setColor(m_NotificationBackgroundColor);
+        m_BackgroundColorPicker->setColor(color);
     }
 }
 
@@ -193,7 +228,7 @@ void QNotificationSetupDialog::setNotification_FontIsItalic(bool italic)
 
 void QNotificationSetupDialog::setNotification_Duration(int duration)
 {
-    ui->durationSpinBox->setValue(duration);
+    ui->displayDurationSpinBox->setValue(duration);
 }
 
 void QNotificationSetupDialog::setNotification_FadeInDuration(int fadein_duration)
@@ -245,51 +280,20 @@ bool QNotificationSetupDialog::event(QEvent *event)
     return QDialog::event(event);
 }
 
-void QNotificationSetupDialog::showEvent(QShowEvent *event)
-{
-    // Load Notification Font Color
-    if (m_NotificationFontColor.isValid() != true) {
-        m_NotificationFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
-    }
-    m_FontColorPicker->setColor(m_NotificationFontColor);
-
-    // Load Notification Background Color
-    if (m_NotificationBackgroundColor.isValid() != true) {
-        m_NotificationBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
-    }
-    m_BackgroundColorPicker->setColor(m_NotificationBackgroundColor);
-
-    QDialog::showEvent(event);
-}
-
 void QNotificationSetupDialog::onFontColorChanged(QColor &color)
 {
-    if (color != m_NotificationFontColor) {
+    Q_UNUSED(color);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[QNotificationSetupDialog::onFontColorChanged] Notification Font Color -> " << color.name();
+    qDebug().nospace().noquote() << "[QNotificationSetupDialog::onFontColorChanged] Notification Font Color -> " << color.name();
 #endif
-        if (color.isValid()) {
-            m_NotificationFontColor = color;
-        }
-        else {
-            m_NotificationFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
-        }
-    }
 }
 
 void QNotificationSetupDialog::onBackgroundColorChanged(QColor &color)
 {
-    if (color != m_NotificationBackgroundColor) {
+    Q_UNUSED(color);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote()
-            << "[QNotificationSetupDialog::onBackgroundColorChanged] Notification Background Color -> " << color.name()
-            << ", Alpha: " << color.alpha();
+    qDebug().nospace().noquote()
+        << "[QNotificationSetupDialog::onBackgroundColorChanged] Notification Background Color -> " << color.name()
+        << ", Alpha: " << color.alpha();
 #endif
-        if (color.isValid()) {
-            m_NotificationBackgroundColor = color;
-        }
-        else {
-            m_NotificationBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
-        }
-    }
 }
