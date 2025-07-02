@@ -42,6 +42,14 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_BackgroundColorPicker->raise();
     m_BackgroundColorPicker->setShowAlphaChannel(true);
 
+    ui->fontWeightComboBox->clear();
+    QStringList fontWeightList;
+    fontWeightList.append(tr("Light"));
+    fontWeightList.append(tr("Normal"));
+    fontWeightList.append(tr("Bold"));
+    ui->fontWeightComboBox->addItems(fontWeightList);
+    ui->fontWeightComboBox->setCurrentIndex(NOTIFICATION_FONT_WEIGHT_DEFAULT);
+
     m_FontColorPicker->setColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
     m_BackgroundColorPicker->setColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
 
@@ -226,19 +234,19 @@ void QNotificationSetupDialog::setNotification_FontIsItalic(bool italic)
     ui->fontItalicCheckBox->setChecked(italic);
 }
 
-void QNotificationSetupDialog::setNotification_Duration(int duration)
+void QNotificationSetupDialog::setNotification_DisplayDuration(int duration)
 {
     ui->displayDurationSpinBox->setValue(duration);
 }
 
-void QNotificationSetupDialog::setNotification_FadeInDuration(int fadein_duration)
+void QNotificationSetupDialog::setNotification_FadeInDuration(int duration)
 {
-    ui->fadeinDurationSpinBox->setValue(fadein_duration);
+    ui->fadeinDurationSpinBox->setValue(duration);
 }
 
-void QNotificationSetupDialog::setNotification_FadeOutDuration(int fadeout_duration)
+void QNotificationSetupDialog::setNotification_FadeOutDuration(int duration)
 {
-    ui->fadeoutDurationSpinBox->setValue(fadeout_duration);
+    ui->fadeoutDurationSpinBox->setValue(duration);
 }
 
 void QNotificationSetupDialog::setNotification_BorderRadius(int radius)

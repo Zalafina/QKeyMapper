@@ -58,9 +58,9 @@ public:
     void setNotification_FontIsItalic(bool italic);
 
     // Set Notification Duration Data
-    void setNotification_Duration(int duration);
-    void setNotification_FadeInDuration(int fadein_duration);
-    void setNotification_FadeOutDuration(int fadeout_duration);
+    void setNotification_DisplayDuration(int duration);
+    void setNotification_FadeInDuration(int duration);
+    void setNotification_FadeOutDuration(int duration);
 
     // Set Notification Border Data
     void setNotification_BorderRadius(int radius);

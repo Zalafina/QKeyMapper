@@ -99,15 +99,23 @@ void ColorPickerWidget::onPickColor()
 
     QColor color;
     if (clear_to_default) {
-        int setting_select_index = QTableSetupDialog::getInstance()->getSettingSelectIndex();
-        if (setting_select_index < 0) {
-            return;
+        if ("TabFontColor" == m_buttonText) {
+            int setting_select_index = QTableSetupDialog::getInstance()->getSettingSelectIndex();
+            if (setting_select_index < 0) {
+                return;
+            }
+            else if (GLOBALSETTING_INDEX == setting_select_index) {
+                color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
+            }
+            else {
+                color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+            }
         }
-        else if (GLOBALSETTING_INDEX == setting_select_index) {
-            color = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
-        }
-        else {
+        else if ("FontColor" == m_buttonText) {
             color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
+        }
+        else if ("BGColor" == m_buttonText) {
+            color = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
         }
     }
     else {
@@ -145,8 +153,13 @@ void ColorPickerWidget::onPickColor()
     colorLabel->setPalette(palette);
 
     if (clear_to_default) {
-        QColor emptyColor;
-        emit colorChanged(emptyColor);
+        if ("TabFontColor" == m_buttonText) {
+            QColor emptyColor;
+            emit colorChanged(emptyColor);
+        }
+        else {
+            emit colorChanged(color);
+        }
     }
     else {
         emit colorChanged(color);

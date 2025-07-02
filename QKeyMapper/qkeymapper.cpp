@@ -6017,20 +6017,8 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
 
-    QColor notification_fontcolor;
-    QString notification_fontcolor_name;
-    notification_fontcolor = m_NotificationSetupDialog->getNotification_FontColor();
-    if (notification_fontcolor.isValid()) {
-        notification_fontcolor_name = notification_fontcolor.name();
-    }
-    QColor notification_bgcolor;
-    QString notification_bgcolor_name;
-    notification_bgcolor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    if (notification_bgcolor.isValid()) {
-        notification_bgcolor_name = notification_bgcolor.name();
-    }
-    settingFile.setValue(NOTIFICATION_FONTCOLOR,        notification_fontcolor_name);
-    settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  notification_bgcolor_name);
+    settingFile.setValue(NOTIFICATION_FONTCOLOR,        m_NotificationSetupDialog->getNotification_FontColor());
+    settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  m_NotificationSetupDialog->getNotification_BackgroundColor());
     settingFile.setValue(NOTIFICATION_FONTSIZE,         m_NotificationSetupDialog->getNotification_FontSize());
     settingFile.setValue(NOTIFICATION_FONTWEIGHT,       m_NotificationSetupDialog->getNotification_FontWeight());
     settingFile.setValue(NOTIFICATION_FONTITALIC,       m_NotificationSetupDialog->getNotification_FontIsItalic());
@@ -6915,9 +6903,39 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
 #endif
 
-        // if (true == settingFile.contains(NOTIFICATION_FONTSIZE)){
-        //     settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
-        // }
+        if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
+            QColor notification_fontcolor = settingFile.value(NOTIFICATION_FONTCOLOR).value<QColor>();
+            if (notification_fontcolor.isValid()) {
+                m_NotificationSetupDialog->setNotification_FontColor(notification_fontcolor);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Font Color ->" << m_NotificationSetupDialog->getNotification_FontColor().name();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_BACKGROUNDCOLOR)){
+            QColor notification_bgcolor = settingFile.value(NOTIFICATION_BACKGROUNDCOLOR).value<QColor>();
+            if (notification_bgcolor.isValid()) {
+                m_NotificationSetupDialog->setNotification_BackgroundColor(notification_bgcolor);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_BackgroundColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_BackgroundColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote()
+            << "[loadKeyMapSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name()
+            << ", Alpha: " << m_NotificationSetupDialog->getNotification_BackgroundColor().alpha();
+#endif
 
         if (true == settingFile.contains(NOTIFICATION_FONTSIZE)){
             int notification_fontsize = settingFile.value(NOTIFICATION_FONTSIZE).toInt();
@@ -6936,9 +6954,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
 
         if (true == settingFile.contains(NOTIFICATION_FONTWEIGHT)){
-            int notification_fontweithg = settingFile.value(NOTIFICATION_FONTWEIGHT).toInt();
-            if (NOTIFICATION_FONT_WEIGHT_MIN <= notification_fontweithg && notification_fontweithg <= NOTIFICATION_FONT_WEIGHT_MAX) {
-                m_NotificationSetupDialog->setNotification_FontWeight(notification_fontweithg);
+            int notification_fontweight = settingFile.value(NOTIFICATION_FONTWEIGHT).toInt();
+            if (NOTIFICATION_FONT_WEIGHT_MIN <= notification_fontweight && notification_fontweight <= NOTIFICATION_FONT_WEIGHT_MAX) {
+                m_NotificationSetupDialog->setNotification_FontWeight(notification_fontweight);
             }
             else {
                 m_NotificationSetupDialog->setNotification_FontWeight(NOTIFICATION_FONT_WEIGHT_DEFAULT);
@@ -6954,16 +6972,141 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         if (true == settingFile.contains(NOTIFICATION_FONTITALIC)){
             bool notification_fontitalic = settingFile.value(NOTIFICATION_FONTITALIC).toBool();
             m_NotificationSetupDialog->setNotification_FontIsItalic(notification_fontitalic);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Notification Font Italic Checkbox ->" << notification_fontitalic;
-#endif
         }
         else {
             m_NotificationSetupDialog->setNotification_FontIsItalic(NOTIFICATION_FONT_ITALIC_DEFAULT);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Do not contains Notification_FontItalic, Notification_FontItalic set to" << NOTIFICATION_FONT_ITALIC_DEFAULT;
-#endif
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Font Italic Checkbox ->" << m_NotificationSetupDialog->getNotification_FontIsItalic();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_DISPLAYDURATION)){
+            int notification_displayduration = settingFile.value(NOTIFICATION_DISPLAYDURATION).toInt();
+            if (NOTIFICATION_DURATION_MIN <= notification_displayduration && notification_displayduration <= NOTIFICATION_DURATION_MAX) {
+                m_NotificationSetupDialog->setNotification_DisplayDuration(notification_displayduration);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_DisplayDuration(NOTIFICATION_DISPLAY_DURATION_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_DisplayDuration(NOTIFICATION_DISPLAY_DURATION_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Display Duration ->" << m_NotificationSetupDialog->getNotification_DisplayDuration();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_FADEINDURATION)){
+            int notification_fadeinduration = settingFile.value(NOTIFICATION_FADEINDURATION).toInt();
+            if (NOTIFICATION_DURATION_MIN <= notification_fadeinduration && notification_fadeinduration <= NOTIFICATION_DURATION_MAX) {
+                m_NotificationSetupDialog->setNotification_FadeInDuration(notification_fadeinduration);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_FadeInDuration(NOTIFICATION_FADEIN_DURATION_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FadeInDuration(NOTIFICATION_FADEIN_DURATION_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification FadeIn Duration ->" << m_NotificationSetupDialog->getNotification_FadeInDuration();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_FADEOUTDURATION)){
+            int notification_fadeoutduration = settingFile.value(NOTIFICATION_FADEOUTDURATION).toInt();
+            if (NOTIFICATION_DURATION_MIN <= notification_fadeoutduration && notification_fadeoutduration <= NOTIFICATION_DURATION_MAX) {
+                m_NotificationSetupDialog->setNotification_FadeOutDuration(notification_fadeoutduration);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_FadeOutDuration(NOTIFICATION_FADEOUT_DURATION_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FadeOutDuration(NOTIFICATION_FADEOUT_DURATION_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification FadeOut Duration ->" << m_NotificationSetupDialog->getNotification_FadeOutDuration();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_BORDERRADIUS)){
+            int notification_border_radius = settingFile.value(NOTIFICATION_BORDERRADIUS).toInt();
+            if (NOTIFICATION_BORDER_RADIUS_MIN <= notification_border_radius && notification_border_radius <= NOTIFICATION_BORDER_RADIUS_MAX) {
+                m_NotificationSetupDialog->setNotification_BorderRadius(notification_border_radius);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_BorderRadius(NOTIFICATION_BORDER_RADIUS_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_BorderRadius(NOTIFICATION_BORDER_RADIUS_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Border Radius ->" << m_NotificationSetupDialog->getNotification_BorderRadius();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_PADDING)){
+            int notification_padding = settingFile.value(NOTIFICATION_PADDING).toInt();
+            if (NOTIFICATION_PADDING_MIN <= notification_padding && notification_padding <= NOTIFICATION_PADDING_MAX) {
+                m_NotificationSetupDialog->setNotification_Padding(notification_padding);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_Padding(NOTIFICATION_PADDING_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_Padding(NOTIFICATION_PADDING_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Padding ->" << m_NotificationSetupDialog->getNotification_Padding();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_OPACITY)){
+            double notification_opacity = settingFile.value(NOTIFICATION_OPACITY).toDouble();
+            if (NOTIFICATION_OPACITY_MIN <= notification_opacity && notification_opacity <= NOTIFICATION_OPACITY_MAX) {
+                m_NotificationSetupDialog->setNotification_Opacity(notification_opacity);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_Opacity(NOTIFICATION_OPACITY_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_Opacity(NOTIFICATION_OPACITY_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Opacity ->" << m_NotificationSetupDialog->getNotification_Opacity();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_X_OFFSET)){
+            int notification_x_offset = settingFile.value(NOTIFICATION_X_OFFSET).toInt();
+            if (NOTIFICATION_OFFSET_MIN <= notification_x_offset && notification_x_offset <= NOTIFICATION_OFFSET_MAX) {
+                m_NotificationSetupDialog->setNotification_X_Offset(notification_x_offset);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_X_Offset(NOTIFICATION_X_OFFSET_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_X_Offset(NOTIFICATION_X_OFFSET_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification X Offset ->" << m_NotificationSetupDialog->getNotification_X_Offset();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_Y_OFFSET)){
+            int notification_y_offset = settingFile.value(NOTIFICATION_Y_OFFSET).toInt();
+            if (NOTIFICATION_OFFSET_MIN <= notification_y_offset && notification_y_offset <= NOTIFICATION_OFFSET_MAX) {
+                m_NotificationSetupDialog->setNotification_Y_Offset(notification_y_offset);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_Y_Offset(NOTIFICATION_Y_OFFSET_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_Y_Offset(NOTIFICATION_Y_OFFSET_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Y Offset ->" << m_NotificationSetupDialog->getNotification_Y_Offset();
+#endif
 
         if (true == settingFile.contains(TRAYICON_IDLE)){
             int trayicon_idle = settingFile.value(TRAYICON_IDLE).toInt();
@@ -14663,7 +14806,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         bgColor = options.backgroundColor;
     }
     else {
-        bgColor = QColor(0,0,0,180);
+        bgColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
     }
 
     QString styleSheet = QString("background-color: rgba(%1, %2, %3, %4); padding: %5px; border-radius: %6px; color: %7;")
