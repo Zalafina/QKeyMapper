@@ -9894,6 +9894,11 @@ void QKeyMapper::mappingStartNotification()
     opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
 
+    QString imagePath = "F:/work/code/mygit_hub/release/QKeyMapper_Qt6_x64/custom_tabicons/ForzaHorizon4/ForzaHorizon4.ico";
+    opts.iconPath = imagePath;
+    // opts.iconPosition = TAB_CUSTOMIMAGE_POSITION_RIGHT;
+    opts.iconPadding = 0;
+
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
 }
@@ -11185,6 +11190,8 @@ void QKeyMapper::updateSystemTrayDisplay()
         TrayInfo = m_MapProcessInfo.FileName;
     }
 
+    // Replace '&' with '&&&' to avoid issues in the system tray tooltip display such as "A&B"
+    TrayInfo.replace("&", "&&&");
     if (KEYMAP_CHECKING == m_KeyMapStatus) {
         m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getMonitoringStateQIcon());
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
@@ -14821,23 +14828,30 @@ void KeyListComboBox::showPopup()
 
 QPopupNotification::QPopupNotification(QWidget *parent)
     : QWidget(parent)
+    , m_IconLabel(new QLabel(this))
+    , m_TextLabel(new QLabel(this))
+    , m_Layout(new QHBoxLayout(this))
     , m_Timer(this)
-    , m_Label(new QLabel(this))
     , m_StartAnimation(new QPropertyAnimation(this, "windowOpacity", this))
     , m_StopAnimation(new QPropertyAnimation(this, "windowOpacity", this))
     , m_CurrentPopupOptions()
 {
+    // Config Window Attribute
     setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->addWidget(m_Label);
-    setLayout(layout);
+    // Config Layout
+    m_Layout->setContentsMargins(0, 0, 0, 0);
+    m_Layout->addWidget(m_IconLabel);
+    m_Layout->addWidget(m_TextLabel);
+    setLayout(m_Layout);
 
+    // Hide the Icon Label initially
+    m_IconLabel->hide();
+
+    // Config animations
     QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, &QWidget::hide);
-
-    // Setup the timer for hiding the notification
     QObject::connect(&m_Timer, &QTimer::timeout, this, &QPopupNotification::hideNotification);
     m_Timer.setSingleShot(true);
 }
@@ -14852,16 +14866,30 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         return;
     }
 
-    // styleSheet
-    QColor bgColor;
-    if(options.backgroundColor.isValid()) {
-        bgColor = options.backgroundColor;
-    }
-    else {
-        bgColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+    // --- 1. Icon Handling ---
+    m_IconLabel->hide(); // Hide icon by default
+    QPixmap iconPixmap;
+    bool hasIcon = !options.iconPath.isEmpty() && iconPixmap.load(options.iconPath);
+
+    if (hasIcon) {
+        // Ensure widgets are in the correct order in the layout
+        m_Layout->removeWidget(m_IconLabel);
+        m_Layout->removeWidget(m_TextLabel);
+        if (options.iconPosition == TAB_CUSTOMIMAGE_POSITION_RIGHT) {
+            m_Layout->addWidget(m_TextLabel);
+            m_Layout->addWidget(m_IconLabel);
+        }
+        else {
+            m_Layout->addWidget(m_IconLabel);
+            m_Layout->addWidget(m_TextLabel);
+        }
+        m_Layout->setSpacing(options.iconPadding);
+    } else {
+        m_Layout->setSpacing(0);
     }
 
-    QString styleSheet = QString("background-color: rgba(%1, %2, %3, %4); padding: %5px; border-radius: %6px; color: %7;")
+    // --- 2. Text Label StyleSheet Setup ---
+    QString textLabelStyleSheet = QString("background-color: rgba(%1, %2, %3, %4); padding: %5px; border-radius: %6px; color: %7;")
         .arg(options.backgroundColor.red())
         .arg(options.backgroundColor.green())
         .arg(options.backgroundColor.blue())
@@ -14869,54 +14897,56 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         .arg(options.padding)
         .arg(options.borderRadius)
         .arg(options.color);
+    m_TextLabel->setStyleSheet(textLabelStyleSheet);
 
-    m_Label->setStyleSheet(styleSheet);
-
-    // Font
+    // --- 3. Font and Text Setup ---
     QFont customFont(FONTNAME_ENGLISH, options.size, options.fontWeight, options.fontItalic);
-    m_Label->setFont(customFont);
+    m_TextLabel->setFont(customFont);
+    m_TextLabel->setText(message);
+    m_TextLabel->adjustSize(); // Adjust text label first to get its height
 
-    m_Label->setText(message);
-    m_Label->adjustSize();
+    // --- 4. Icon Scaling and Display ---
+    if (hasIcon) {
+        int textHeight = m_TextLabel->height();
+        m_IconLabel->setPixmap(iconPixmap.scaled(textHeight, textHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        m_IconLabel->setFixedSize(textHeight, textHeight);
+        m_IconLabel->show();
+    }
 
-    // Position the notification based on the position parameter
+    // --- 5. Adjust Main Widget Size and Position ---
+    adjustSize(); // Adjust the main widget's size to fit the layout content
+
+    // Position the notification based on the options
     QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
     qreal scale = QKeyMapper::s_UI_scale_value;
     int x_right_offset = 20;
     if (scale < 1.10) x_right_offset = 30;
-    int x = screenGeometry.width() - m_Label->width() - x_right_offset;
+    int x = screenGeometry.width() - width() - x_right_offset; // Use the main widget's width
     int y = 10;
+
     if (options.position == NOTIFICATION_POSITION_TOP_LEFT) {
         x = 10; y = 10;
-    }
-    else if (options.position == NOTIFICATION_POSITION_TOP_CENTER) {
-        x = (screenGeometry.width() - m_Label->width()) / 2; y = 10;
-    }
-    else if (options.position == NOTIFICATION_POSITION_TOP_RIGHT) {
-        x = screenGeometry.width() - m_Label->width() - x_right_offset; y = 10;
-    }
-    else if (options.position == NOTIFICATION_POSITION_BOTTOM_LEFT) {
-        x = 10; y = screenGeometry.height() - m_Label->height() - 30;
-    }
-    else if (options.position == NOTIFICATION_POSITION_BOTTOM_CENTER) {
-        x = (screenGeometry.width() - m_Label->width()) / 2; y = screenGeometry.height() - m_Label->height() - 30;
-    }
-    else if (options.position == NOTIFICATION_POSITION_BOTTOM_RIGHT) {
-        x = screenGeometry.width() - m_Label->width() - x_right_offset; y = screenGeometry.height() - m_Label->height() - 30;
+    } else if (options.position == NOTIFICATION_POSITION_TOP_CENTER) {
+        x = (screenGeometry.width() - width()) / 2; y = 10;
+    } else if (options.position == NOTIFICATION_POSITION_TOP_RIGHT) {
+        x = screenGeometry.width() - width() - x_right_offset; y = 10;
+    } else if (options.position == NOTIFICATION_POSITION_BOTTOM_LEFT) {
+        x = 10; y = screenGeometry.height() - height() - 30;
+    } else if (options.position == NOTIFICATION_POSITION_BOTTOM_CENTER) {
+        x = (screenGeometry.width() - width()) / 2; y = screenGeometry.height() - height() - 30;
+    } else if (options.position == NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+        x = screenGeometry.width() - width() - x_right_offset; y = screenGeometry.height() - height() - 30;
     }
 
-    // move position as x & y offset
+    // Apply offsets
     x += options.xOffset;
     y += options.yOffset;
     move(x, y);
 
-    // Adjust the size of the window to fit the new content
-    adjustSize();
-
-    // windowOpacity
+    // --- 6. Opacity and Animations ---
     setWindowOpacity(std::clamp(options.windowOpacity, 0.0, 1.0));
 
-    // StartAnimation
+    // Fade-in animation
     if (options.fadeInDuration > 0) {
         m_StartAnimation->setDuration(options.fadeInDuration);
         m_StartAnimation->setStartValue(0.0);
@@ -14924,12 +14954,11 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         m_StartAnimation->start(QAbstractAnimation::KeepWhenStopped);
     }
 
-    // Show the notification and start the animation
+    // Show the notification and start the timer
     show();
-    // Start the timer for hiding the notification
     m_Timer.start(options.displayDuration);
 
-    // Save options to current options member
+    // Save the current options
     m_CurrentPopupOptions = options;
 }
 

@@ -152,6 +152,10 @@ struct PopupNotificationOptions {
     int fadeOutDuration = NOTIFICATION_FADEOUT_DURATION_DEFAULT;    // Fade-out animation duration (ms)
     int xOffset = NOTIFICATION_X_OFFSET_DEFAULT;                    // X offset
     int yOffset = NOTIFICATION_Y_OFFSET_DEFAULT;                    // Y offset
+
+    QString iconPath;                                               // Optional icon path (PNG/ICO)
+    int iconPosition = TAB_CUSTOMIMAGE_POSITION_LEFT;               // Icon position
+    int iconPadding = 0;                                            // Padding between icon and text
 };
 
 struct Gamepad_Info
@@ -261,11 +265,12 @@ public:
 
 public slots:
     void showPopupNotification(const QString &message, const PopupNotificationOptions &options);
-
     void hideNotification();
 
 private:
-    QLabel *m_Label;
+    QLabel *m_IconLabel; // Label for the icon
+    QLabel *m_TextLabel; // Label for the text message
+    QHBoxLayout *m_Layout; // Layout to hold icon and text
     QTimer m_Timer;
     QPropertyAnimation *m_StartAnimation;
     QPropertyAnimation *m_StopAnimation;
