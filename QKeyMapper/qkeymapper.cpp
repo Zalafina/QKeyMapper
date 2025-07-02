@@ -6017,8 +6017,22 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
 
-    settingFile.setValue(NOTIFICATION_FONTCOLOR,        m_NotificationSetupDialog->getNotification_FontColor());
-    settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  m_NotificationSetupDialog->getNotification_BackgroundColor());
+    QColor notification_fontcolor;
+    QString notification_fontcolor_name;
+    notification_fontcolor = m_NotificationSetupDialog->getNotification_FontColor();
+    if (notification_fontcolor.isValid()) {
+        notification_fontcolor_name = notification_fontcolor.name();
+    }
+    QColor notification_bgcolor;
+    QString notification_bgcolor_name;
+    notification_bgcolor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    if (notification_bgcolor.isValid()) {
+        notification_bgcolor_name = notification_bgcolor.name(QColor::HexArgb);
+    }
+    settingFile.setValue(NOTIFICATION_FONTCOLOR,        notification_fontcolor_name);
+    settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  notification_bgcolor_name);
+    // settingFile.setValue(NOTIFICATION_FONTCOLOR,        m_NotificationSetupDialog->getNotification_FontColor());
+    // settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  m_NotificationSetupDialog->getNotification_BackgroundColor());
     settingFile.setValue(NOTIFICATION_FONTSIZE,         m_NotificationSetupDialog->getNotification_FontSize());
     settingFile.setValue(NOTIFICATION_FONTWEIGHT,       m_NotificationSetupDialog->getNotification_FontWeight());
     settingFile.setValue(NOTIFICATION_FONTITALIC,       m_NotificationSetupDialog->getNotification_FontIsItalic());
@@ -6903,6 +6917,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
 #endif
 
+#if 0
         if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
             QColor notification_fontcolor = settingFile.value(NOTIFICATION_FONTCOLOR).value<QColor>();
             if (notification_fontcolor.isValid()) {
@@ -6933,7 +6948,44 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
-            << "[loadKeyMapSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name()
+            << "[loadKeyMapSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name(QColor::HexArgb)
+            << ", Alpha: " << m_NotificationSetupDialog->getNotification_BackgroundColor().alpha();
+#endif
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
+            QString notification_fontcolor_str = settingFile.value(NOTIFICATION_FONTCOLOR).toString();
+            QColor notification_fontcolor(notification_fontcolor_str);
+            if (notification_fontcolor.isValid()) {
+                m_NotificationSetupDialog->setNotification_FontColor(notification_fontcolor);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Font Color ->" << m_NotificationSetupDialog->getNotification_FontColor().name();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_BACKGROUNDCOLOR)){
+            QString notification_bgcolor_str = settingFile.value(NOTIFICATION_BACKGROUNDCOLOR).toString();
+            QColor notification_bgcolor(notification_bgcolor_str);
+            if (notification_bgcolor.isValid()) {
+                m_NotificationSetupDialog->setNotification_BackgroundColor(notification_bgcolor);
+            }
+            else {
+                m_NotificationSetupDialog->setNotification_BackgroundColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+            }
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_BackgroundColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote()
+            << "[loadKeyMapSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name(QColor::HexArgb)
             << ", Alpha: " << m_NotificationSetupDialog->getNotification_BackgroundColor().alpha();
 #endif
 

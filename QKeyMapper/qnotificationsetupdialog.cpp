@@ -301,7 +301,7 @@ void QNotificationSetupDialog::onBackgroundColorChanged(QColor &color)
     Q_UNUSED(color);
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote()
-        << "[QNotificationSetupDialog::onBackgroundColorChanged] Notification Background Color -> " << color.name()
+        << "[QNotificationSetupDialog::onBackgroundColorChanged] Notification Background Color -> " << color.name(QColor::HexArgb)
         << ", Alpha: " << color.alpha();
 #endif
 }
