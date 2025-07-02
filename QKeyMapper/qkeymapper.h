@@ -154,7 +154,7 @@ struct PopupNotificationOptions {
     int yOffset = NOTIFICATION_Y_OFFSET_DEFAULT;                    // Y offset
 
     QString iconPath;                                               // Optional icon path (PNG/ICO)
-    int iconPosition = TAB_CUSTOMIMAGE_POSITION_LEFT;               // Icon position
+    int iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;               // Icon position
     int iconPadding = 0;                                            // Padding between icon and text
 };
 

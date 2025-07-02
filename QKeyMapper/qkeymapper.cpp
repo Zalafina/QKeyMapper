@@ -9896,7 +9896,7 @@ void QKeyMapper::mappingStartNotification()
 
     QString imagePath = "F:/work/code/mygit_hub/release/QKeyMapper_Qt6_x64/custom_tabicons/ForzaHorizon4/ForzaHorizon4.ico";
     opts.iconPath = imagePath;
-    // opts.iconPosition = TAB_CUSTOMIMAGE_POSITION_RIGHT;
+    // opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_RIGHT;
     opts.iconPadding = 0;
 
     // Show Notification Popup
@@ -14869,13 +14869,13 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
     // --- 1. Icon Handling ---
     m_IconLabel->hide(); // Hide icon by default
     QPixmap iconPixmap;
-    bool hasIcon = !options.iconPath.isEmpty() && iconPixmap.load(options.iconPath);
+    bool hasIcon = (options.iconPosition != TAB_CUSTOMIMAGE_SHOW_NONE) && !options.iconPath.isEmpty() && iconPixmap.load(options.iconPath);
 
     if (hasIcon) {
         // Ensure widgets are in the correct order in the layout
         m_Layout->removeWidget(m_IconLabel);
         m_Layout->removeWidget(m_TextLabel);
-        if (options.iconPosition == TAB_CUSTOMIMAGE_POSITION_RIGHT) {
+        if (options.iconPosition == TAB_CUSTOMIMAGE_SHOW_RIGHT) {
             m_Layout->addWidget(m_TextLabel);
             m_Layout->addWidget(m_IconLabel);
         }
