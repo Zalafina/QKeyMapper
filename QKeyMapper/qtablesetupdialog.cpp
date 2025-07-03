@@ -15,6 +15,9 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    QStyle* windowsStyle = QStyleFactory::create("windows");
+    ui->tabCustomImageGroupBox->setStyle(windowsStyle);
+
     ui->tabNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->tabHotkeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
