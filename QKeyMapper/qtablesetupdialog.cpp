@@ -17,12 +17,16 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
     ui->tabCustomImageGroupBox->setStyle(windowsStyle);
+    ui->customImageLabel->setStyle(windowsStyle);
 
     ui->tabNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->tabHotkeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->tabNameLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->tabHotkeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+
+    ui->customImagePaddingSpinBox->setRange(TAB_CUSTOMIMAGE_PADDING_MIN, TAB_CUSTOMIMAGE_PADDING_MAX);
+    ui->customImagePaddingSpinBox->setValue(TAB_CUSTOMIMAGE_PADDING_DEFAULT);
 
     int x_offset = 0;
     int y_offset = 30;
@@ -33,8 +37,15 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     tabfont_color_y += y_offset;
     // Set position for the tabfont color picker
     m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
-
     m_NotificationFontColorPicker->raise();
+
+    ui->customImageShowPositionComboBox->clear();
+    QStringList showPositionList;
+    showPositionList.append(tr("None"));
+    showPositionList.append(tr("Left"));
+    showPositionList.append(tr("Right"));
+    ui->customImageShowPositionComboBox->addItems(showPositionList);
+    ui->customImageShowPositionComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_POSITION_DEFAULT);
 
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
@@ -60,6 +71,24 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->exportTableButton->setText(tr(EXPORTTABLEBUTTON_STR));
     ui->importTableButton->setText(tr(IMPORTTABLEBUTTON_STR));
     ui->removeTableButton->setText(tr(REMOVETABLEBUTTON_STR));
+
+    ui->tabCustomImageGroupBox->setTitle(tr("Tab Custom Image"));
+    ui->selectCustomImageButton->setText(tr("Select Custom Image"));
+    ui->customImageShowPositionLabel->setText(tr("ShowPositoin"));
+    ui->customImagePaddingLabel->setText(tr("Padding"));
+    ui->customImageShowAsTrayIconCheckBox->setText(tr("Show as TrayIcon"));
+
+    int showposition_index = ui->customImageShowPositionComboBox->currentIndex();
+    if (showposition_index < 0) {
+        showposition_index = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+    }
+    ui->customImageShowPositionComboBox->clear();
+    QStringList showPositionList;
+    showPositionList.append(tr("None"));
+    showPositionList.append(tr("Left"));
+    showPositionList.append(tr("Right"));
+    ui->customImageShowPositionComboBox->addItems(showPositionList);
+    ui->customImageShowPositionComboBox->setCurrentIndex(showposition_index);
 }
 
 void QTableSetupDialog::resetFontSize()
@@ -118,6 +147,62 @@ void QTableSetupDialog::setSettingSelectIndex(int index)
 int QTableSetupDialog::getSettingSelectIndex()
 {
     return m_SettingSelectIndex;
+}
+
+QPixmap QTableSetupDialog::getTabCustomImage()
+{
+    return ui->customImageLabel->pixmap();
+}
+
+int QTableSetupDialog::getTabCustomImage_ShowPosition()
+{
+    return ui->customImageShowPositionComboBox->currentIndex();
+}
+
+int QTableSetupDialog::getTabCustomImage_Padding()
+{
+    return ui->customImagePaddingSpinBox->value();
+}
+
+bool QTableSetupDialog::getTabCustomImage_ShowAsTrayIcon()
+{
+    return ui->customImageShowAsTrayIconCheckBox->isChecked();
+}
+
+void QTableSetupDialog::setTabCustomImage(const QString &imagepath)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
+#endif
+    if (imagepath.isEmpty()) {
+        ui->customImageLabel->clear();
+        m_TabCustomImagePath.clear();
+    }
+    else {
+        QPixmap pixmap;
+        if (pixmap.load(imagepath)) {
+            m_TabCustomImagePath = imagepath;
+            ui->customImageLabel->setPixmap(pixmap.scaled(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        }
+        else {
+            qWarning() << "[QTableSetupDialog::setTabCustomImage] Failed to load image from path:" << imagepath;
+        }
+    }
+}
+
+void QTableSetupDialog::setTabCustomImage_ShowPosition(int position)
+{
+    ui->customImageShowPositionComboBox->setCurrentIndex(position);
+}
+
+void QTableSetupDialog::setTabCustomImage_Padding(int padding)
+{
+    ui->customImagePaddingSpinBox->setValue(padding);
+}
+
+void QTableSetupDialog::setTabCustomImage_ShowAsTrayIcon(bool showAsTrayIcon)
+{
+    ui->customImageShowAsTrayIconCheckBox->setChecked(showAsTrayIcon);
 }
 
 bool QTableSetupDialog::event(QEvent *event)

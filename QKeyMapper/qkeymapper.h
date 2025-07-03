@@ -139,7 +139,7 @@ struct ValidationResult
 
 struct PopupNotificationOptions {
     QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;          // Text color
-    int displayDuration = NOTIFICATION_DISPLAY_DURATION_DEFAULT;            // Display duration (ms)
+    int displayDuration = NOTIFICATION_DISPLAY_DURATION_DEFAULT;    // Display duration (ms)
     int position = NOTIFICATION_POSITION_TOP_RIGHT;                 // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
     int size = NOTIFICATION_FONT_SIZE_DEFAULT;                      // Font size
     QColor backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
@@ -154,7 +154,7 @@ struct PopupNotificationOptions {
     int yOffset = NOTIFICATION_Y_OFFSET_DEFAULT;                    // Y offset
 
     QString iconPath;                                               // Optional icon path (PNG/ICO)
-    int iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;               // Icon position
+    int iconPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;            // Icon position
     int iconPadding = 0;                                            // Padding between icon and text
 };
 

@@ -28,6 +28,16 @@ public:
 
     int getSettingSelectIndex(void);
 
+    QPixmap getTabCustomImage(void);
+    int getTabCustomImage_ShowPosition(void);
+    int getTabCustomImage_Padding(void);
+    bool getTabCustomImage_ShowAsTrayIcon(void);
+
+    void setTabCustomImage(const QString &imagepath);
+    void setTabCustomImage_ShowPosition(int position);
+    void setTabCustomImage_Padding(int padding);
+    void setTabCustomImage_ShowAsTrayIcon(bool showAsTrayIcon);
+
 protected:
     bool event(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
@@ -54,6 +64,7 @@ private:
     int m_TabIndex;
     int m_SettingSelectIndex;
     ColorPickerWidget *m_NotificationFontColorPicker;
+    QString m_TabCustomImagePath = QString();
 };
 
 #endif // QTABLESETUPDIALOG_H

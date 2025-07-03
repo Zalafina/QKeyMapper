@@ -299,7 +299,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Position</string>
+    <string>ShowPositoin</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>

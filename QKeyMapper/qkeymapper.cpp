@@ -6233,7 +6233,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
         QString tabFontColor;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
-            tabName = QString();
+            tabName.clear();
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[saveKeyMapSetting] TabName:" << tabName << " is already exists, set a empty tabname!";
 #endif
@@ -9104,7 +9104,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
 {
     returnback_fontid = -1;
-    fontname = QString();
+    fontname.clear();
     QFile fontFile(fontfilename);
     if(!fontFile.open(QIODevice::ReadOnly))
     {
