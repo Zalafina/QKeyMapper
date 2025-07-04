@@ -185,24 +185,9 @@ void QTableSetupDialog::setTabCustomImage(const QString &imagepath)
             ui->customImageLabel->setPixmap(pixmap.scaled(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT), Qt::KeepAspectRatio, Qt::SmoothTransformation));
         }
         else {
-            qWarning() << "[QTableSetupDialog::setTabCustomImage] Failed to load image from path:" << imagepath;
+            qDebug() << "[QTableSetupDialog::setTabCustomImage] Failed to load image from path:" << imagepath;
         }
     }
-}
-
-void QTableSetupDialog::setTabCustomImage_ShowPosition(int position)
-{
-    ui->customImageShowPositionComboBox->setCurrentIndex(position);
-}
-
-void QTableSetupDialog::setTabCustomImage_Padding(int padding)
-{
-    ui->customImagePaddingSpinBox->setValue(padding);
-}
-
-void QTableSetupDialog::setTabCustomImage_ShowAsTrayIcon(bool showAsTrayIcon)
-{
-    ui->customImageShowAsTrayIconCheckBox->setChecked(showAsTrayIcon);
 }
 
 bool QTableSetupDialog::event(QEvent *event)
@@ -473,5 +458,41 @@ void QTableSetupDialog::on_removeTableButton_clicked()
             popupMessage = tr("Cannot remove the last mapping table!");
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
+    }
+}
+
+void QTableSetupDialog::on_selectCustomImageButton_clicked()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
+    QString filter = tr("Image files") + "(*.ico;*.png;*.jpg)";
+    QString caption_string;
+    caption_string = tr("Select Custom Image") + (" : ") +TabName;
+
+    QString customimage_path = QFileDialog::getOpenFileName(parentWidget(),
+                                                           caption_string,
+                                                           NULL,
+                                                           filter);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "customimage_path from QFileDialog -> TabIndex[" << tabindex << "] : " << customimage_path;
+#endif
+
+    bool selectimage_result = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
+
+    if (!selectimage_result) {
+        // QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
+        // //Show success popup message
+        // QString popupMessage;
+        // QString popupMessageColor;
+        // int popupMessageDisplayTime = 3000;
+        // popupMessageColor = SUCCESS_COLOR;
+        // popupMessage = tr("Import mapping data to table \"%1\" successfully").arg(TabName);
+        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }

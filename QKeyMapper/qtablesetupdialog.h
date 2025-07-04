@@ -34,9 +34,6 @@ public:
     bool getTabCustomImage_ShowAsTrayIcon(void);
 
     void setTabCustomImage(const QString &imagepath);
-    void setTabCustomImage_ShowPosition(int position);
-    void setTabCustomImage_Padding(int padding);
-    void setTabCustomImage_ShowAsTrayIcon(bool showAsTrayIcon);
 
 protected:
     bool event(QEvent *event) override;
@@ -57,6 +54,9 @@ private slots:
     void on_importTableButton_clicked();
 
     void on_removeTableButton_clicked();
+
+    void on_selectCustomImageButton_clicked();
+
 
 private:
     static QTableSetupDialog *m_instance;

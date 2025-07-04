@@ -4587,6 +4587,59 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     return result;
 }
 
+bool QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    if (!QFileInfo::exists(imagepath)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[QKeyMapper::setTabCustomImage]" << " QFileInfo::exists(" << imagepath << ") = false";
+#endif
+        return false;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
+#endif
+    bool result = false;
+    if (s_KeyMappingTabInfoList[tabindex].TabCustomImage.load(imagepath)) {
+        s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = imagepath;
+        result = true;
+    }
+    else {
+        qDebug() << "[QKeyMapper::setTabCustomImage] Failed to load image from path:" << imagepath;
+        result = false;
+    }
+
+    return result;
+}
+
+bool QKeyMapper::setTabCustomImage_ShowPosition(int tabindex, int position)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    return true;
+}
+
+bool QKeyMapper::setTabCustomImage_Padding(int tabindex, int padding)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    return true;
+}
+
+bool QKeyMapper::setTabCustomImage_ShowAsTrayIcon(int tabindex, bool showAsTrayIcon)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    return true;
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
 #else
@@ -5308,6 +5361,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTab_Info tab_info;
     QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
     tab_info.TabName = tabName;
+    tab_info.TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+    tab_info.TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+    tab_info.TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
@@ -9896,8 +9952,9 @@ void QKeyMapper::mappingStartNotification()
 
     // QString imagePath = "F:/work/code/mygit_hub/release/QKeyMapper_Qt6_x64/custom_tabicons/ForzaHorizon4/ForzaHorizon4.ico";
     // QString imagePath = "D:/work/git/mygithub/QKeyMapper/QKeyMapper/QKeyMapper/image/test_image/test/saber_icon.ico";
-    // opts.iconPath = imagePath;
-    // opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    QString imagePath = "D:/work/git/mygithub/QKeyMapper/QKeyMapper/QKeyMapper/image/test_image/ForzaHorizon4/ForzaHorizon4.ico";
+    opts.iconPath = imagePath;
+    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
     // opts.iconPadding = 10;
 
     // Show Notification Popup
