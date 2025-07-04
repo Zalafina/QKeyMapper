@@ -268,9 +268,10 @@ public slots:
     void hideNotification();
 
 private:
-    QLabel *m_IconLabel; // Label for the icon
-    QLabel *m_TextLabel; // Label for the text message
-    QHBoxLayout *m_Layout; // Layout to hold icon and text
+    QFrame *m_BackgroundFrame;  // Background frame
+    QLabel *m_IconLabel;        // Label for the icon
+    QLabel *m_TextLabel;        // Label for the text message
+    QHBoxLayout *m_Layout;      // Layout to hold icon and text
     QTimer m_Timer;
     QPropertyAnimation *m_StartAnimation;
     QPropertyAnimation *m_StopAnimation;

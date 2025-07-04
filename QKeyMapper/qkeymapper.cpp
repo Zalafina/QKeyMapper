@@ -9894,10 +9894,11 @@ void QKeyMapper::mappingStartNotification()
     opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
 
-    QString imagePath = "F:/work/code/mygit_hub/release/QKeyMapper_Qt6_x64/custom_tabicons/ForzaHorizon4/ForzaHorizon4.ico";
-    opts.iconPath = imagePath;
-    // opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_RIGHT;
-    opts.iconPadding = 0;
+    // QString imagePath = "F:/work/code/mygit_hub/release/QKeyMapper_Qt6_x64/custom_tabicons/ForzaHorizon4/ForzaHorizon4.ico";
+    // QString imagePath = "D:/work/git/mygithub/QKeyMapper/QKeyMapper/QKeyMapper/image/test_image/test/saber_icon.ico";
+    // opts.iconPath = imagePath;
+    // opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    // opts.iconPadding = 10;
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
@@ -14828,6 +14829,7 @@ void KeyListComboBox::showPopup()
 
 QPopupNotification::QPopupNotification(QWidget *parent)
     : QWidget(parent)
+    , m_BackgroundFrame(new QFrame(this))
     , m_IconLabel(new QLabel(this))
     , m_TextLabel(new QLabel(this))
     , m_Layout(new QHBoxLayout(this))
@@ -14845,7 +14847,12 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     m_Layout->setContentsMargins(0, 0, 0, 0);
     m_Layout->addWidget(m_IconLabel);
     m_Layout->addWidget(m_TextLabel);
-    setLayout(m_Layout);
+    m_BackgroundFrame->setLayout(m_Layout);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->addWidget(m_BackgroundFrame);
+    setLayout(mainLayout);
 
     // Hide the Icon Label initially
     m_IconLabel->hide();
@@ -14888,16 +14895,20 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         m_Layout->setSpacing(0);
     }
 
-    // --- 2. Text Label StyleSheet Setup ---
-    QString textLabelStyleSheet = QString("background-color: rgba(%1, %2, %3, %4); padding: %5px; border-radius: %6px; color: %7;")
-        .arg(options.backgroundColor.red())
-        .arg(options.backgroundColor.green())
-        .arg(options.backgroundColor.blue())
-        .arg(options.backgroundColor.alpha())
-        .arg(options.padding)
-        .arg(options.borderRadius)
-        .arg(options.color);
+    // --- 2. Frame & Label StyleSheet Setup ---
+    m_IconLabel->setStyleSheet("background: transparent;");
+    QString textLabelStyleSheet = QString("background: transparent; padding: %1px; color: %2;")
+            .arg(options.padding)
+            .arg(options.color);
     m_TextLabel->setStyleSheet(textLabelStyleSheet);
+
+    QString backgroundStyleSheet = QString("background-color: rgba(%1, %2, %3, %4); border-radius: %5px;")
+            .arg(options.backgroundColor.red())
+            .arg(options.backgroundColor.green())
+            .arg(options.backgroundColor.blue())
+            .arg(options.backgroundColor.alpha())
+            .arg(options.borderRadius);
+    m_BackgroundFrame->setStyleSheet(backgroundStyleSheet);
 
     // --- 3. Font and Text Setup ---
     QFont customFont(FONTNAME_ENGLISH, options.size, options.fontWeight, options.fontItalic);

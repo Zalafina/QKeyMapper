@@ -247,9 +247,9 @@
   <widget class="QLabel" name="customImagePaddingLabel">
    <property name="geometry">
     <rect>
-     <x>305</x>
+     <x>265</x>
      <y>185</y>
-     <width>61</width>
+     <width>121</width>
      <height>22</height>
     </rect>
    </property>
@@ -265,7 +265,7 @@
     <rect>
      <x>310</x>
      <y>225</y>
-     <width>131</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>
@@ -279,7 +279,7 @@
   <widget class="QSpinBox" name="customImagePaddingSpinBox">
    <property name="geometry">
     <rect>
-     <x>370</x>
+     <x>390</x>
      <y>185</y>
      <width>61</width>
      <height>22</height>
