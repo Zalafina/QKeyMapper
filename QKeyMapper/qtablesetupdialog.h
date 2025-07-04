@@ -2,6 +2,7 @@
 #define QTABLESETUPDIALOG_H
 
 #include <QDialog>
+#include <QFileDialog>
 #include "colorpickerwidget.h"
 
 namespace Ui {
@@ -25,15 +26,15 @@ public:
     void resetFontSize(void);
     void setTabIndex(int tabindex);
     void setSettingSelectIndex(int index);
+    void initSelectImageFileDialog(void);
 
     int getSettingSelectIndex(void);
+    bool isSelectImageFileDialogVisible(void);
 
     QPixmap getTabCustomImage(void);
     int getTabCustomImage_ShowPosition(void);
     int getTabCustomImage_Padding(void);
     bool getTabCustomImage_ShowAsTrayIcon(void);
-
-    void setTabCustomImage(const QString &imagepath);
 
 protected:
     bool event(QEvent *event) override;
@@ -64,7 +65,7 @@ private:
     int m_TabIndex;
     int m_SettingSelectIndex;
     ColorPickerWidget *m_NotificationFontColorPicker;
-    QString m_TabCustomImagePath = QString();
+    QFileDialog *m_SelectImageFileDialog = Q_NULLPTR;
 };
 
 #endif // QTABLESETUPDIALOG_H

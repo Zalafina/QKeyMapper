@@ -15,6 +15,8 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    initSelectImageFileDialog();
+
     QStyle* windowsStyle = QStyleFactory::create("windows");
     ui->tabCustomImageGroupBox->setStyle(windowsStyle);
     ui->customImageLabel->setStyle(windowsStyle);
@@ -144,9 +146,25 @@ void QTableSetupDialog::setSettingSelectIndex(int index)
     m_SettingSelectIndex = index;
 }
 
+void QTableSetupDialog::initSelectImageFileDialog()
+{
+    m_SelectImageFileDialog = new QFileDialog(this);
+    m_SelectImageFileDialog->setFileMode(QFileDialog::ExistingFile);
+}
+
 int QTableSetupDialog::getSettingSelectIndex()
 {
     return m_SettingSelectIndex;
+}
+
+bool QTableSetupDialog::isSelectImageFileDialogVisible()
+{
+    if (m_SelectImageFileDialog && m_SelectImageFileDialog->isVisible()) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 QPixmap QTableSetupDialog::getTabCustomImage()
@@ -169,32 +187,12 @@ bool QTableSetupDialog::getTabCustomImage_ShowAsTrayIcon()
     return ui->customImageShowAsTrayIconCheckBox->isChecked();
 }
 
-void QTableSetupDialog::setTabCustomImage(const QString &imagepath)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
-#endif
-    if (imagepath.isEmpty()) {
-        ui->customImageLabel->clear();
-        m_TabCustomImagePath.clear();
-    }
-    else {
-        QPixmap pixmap;
-        if (pixmap.load(imagepath)) {
-            m_TabCustomImagePath = imagepath;
-            ui->customImageLabel->setPixmap(pixmap.scaled(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        }
-        else {
-            qDebug() << "[QTableSetupDialog::setTabCustomImage] Failed to load image from path:" << imagepath;
-        }
-    }
-}
-
 bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            if (QKeyMapper::isSelectColorDialogVisible()) {
+            if (QKeyMapper::isSelectColorDialogVisible()
+                || isSelectImageFileDialogVisible()) {
             }
             else {
                 close();
@@ -473,10 +471,21 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     QString caption_string;
     caption_string = tr("Select Custom Image") + (" : ") +TabName;
 
-    QString customimage_path = QFileDialog::getOpenFileName(parentWidget(),
-                                                           caption_string,
-                                                           NULL,
-                                                           filter);
+    m_SelectImageFileDialog->setNameFilter(filter);
+    m_SelectImageFileDialog->setWindowTitle(caption_string);
+    m_SelectImageFileDialog->selectFile(QString());
+
+    QString customimage_path;
+    if (m_SelectImageFileDialog->exec() == QDialog::Accepted) {
+        QStringList selected_files = m_SelectImageFileDialog->selectedFiles();
+        if (!selected_files.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "selected_files from QFileDialog -> " << selected_files;
+#endif
+            customimage_path = selected_files.first();
+        }
+
+    }
 
     if (customimage_path.isEmpty()) {
         return;
@@ -502,7 +511,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr("Unable to load the image: ") + customimage_path;
+        popupMessage = tr("Unable to load the image!");
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
