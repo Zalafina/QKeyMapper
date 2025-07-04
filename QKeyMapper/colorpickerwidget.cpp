@@ -1,8 +1,6 @@
 #include "qkeymapper.h"
 #include "colorpickerwidget.h"
 
-bool ColorPickerWidget::s_isColorSelecting = false;
-
 ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int buttonWidth)
     : QWidget(parent)
     , m_buttonText(buttonText)
@@ -123,7 +121,7 @@ void ColorPickerWidget::onPickColor()
         if (m_color.isValid()) {
             defaultColor = m_color;
         }
-        s_isColorSelecting = true;
+
         // Open the color picker dialog and allow the user to choose a color
         QString title;
         QColorDialog::ColorDialogOptions options;
@@ -136,8 +134,16 @@ void ColorPickerWidget::onPickColor()
         if (m_showAlphaChannel) {
             options |= QColorDialog::ShowAlphaChannel;
         }
-        color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this, title, options);
-        s_isColorSelecting = false;
+
+        // color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this, title, options);
+        QColorDialog *selectcolor_dialog = QKeyMapper::getInstance()->m_SelectColorDialog;
+        selectcolor_dialog->setCurrentColor(defaultColor);
+        selectcolor_dialog->setOptions(options);
+        selectcolor_dialog->setWindowTitle(title);
+
+        if (selectcolor_dialog->exec() == QDialog::Accepted) {
+            color = selectcolor_dialog->selectedColor();
+        }
     }
 
     if (color.isValid()) {

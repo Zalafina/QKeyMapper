@@ -33,6 +33,7 @@ public:
     void setItemRow(int row);
     void updateOriginalKeyListComboBox(void);
     void updateMappingKeyListComboBox(void);
+    bool isCrosshairSetupDialogVisible(void);
 
 public:
     static QString getOriginalKeyText(void);

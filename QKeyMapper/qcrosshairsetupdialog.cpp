@@ -113,7 +113,7 @@ bool QCrosshairSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            if (ColorPickerWidget::s_isColorSelecting) {
+            if (QKeyMapper::isSelectColorDialogVisible()) {
             }
             else {
                 close();

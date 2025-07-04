@@ -194,7 +194,7 @@ bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            if (ColorPickerWidget::s_isColorSelecting) {
+            if (QKeyMapper::isSelectColorDialogVisible()) {
             }
             else {
                 close();
@@ -478,21 +478,31 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
                                                            NULL,
                                                            filter);
 
+    if (customimage_path.isEmpty()) {
+        return;
+    }
+
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "customimage_path from QFileDialog -> TabIndex[" << tabindex << "] : " << customimage_path;
 #endif
 
     bool selectimage_result = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
 
-    if (!selectimage_result) {
-        // QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
-
-        // //Show success popup message
-        // QString popupMessage;
-        // QString popupMessageColor;
-        // int popupMessageDisplayTime = 3000;
-        // popupMessageColor = SUCCESS_COLOR;
-        // popupMessage = tr("Import mapping data to table \"%1\" successfully").arg(TabName);
-        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    if (selectimage_result) {
+        QPixmap pixmap;
+        pixmap = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage;
+        ui->customImageLabel->setPixmap(pixmap.scaled(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    else {
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = tr("Unable to load the image: ") + customimage_path;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }

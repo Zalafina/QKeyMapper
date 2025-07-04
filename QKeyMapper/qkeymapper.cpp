@@ -554,6 +554,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[WindowStateChangedProc]" << "QKeyMapper::WindowStateChangedProc() -> Window Minimized!";
 #endif
+        closeSelectColorDialog();
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
@@ -4587,6 +4588,17 @@ ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath
     return result;
 }
 
+bool QKeyMapper::isSelectColorDialogVisible()
+{
+    if (getInstance()->m_SelectColorDialog != Q_NULLPTR
+        && getInstance()->m_SelectColorDialog->isVisible()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 bool QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
@@ -4735,6 +4747,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
 
         if (false == isHidden()) {
             m_LastWindowPosition = pos(); // Save the current position before hiding
+            closeSelectColorDialog();
             closeTableSetupDialog();
             closeItemSetupDialog();
             closeCrosshairSetupDialog();
@@ -5038,6 +5051,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
     }
 
     if (m_KeyMapStatus != KEYMAP_IDLE){
+        closeSelectColorDialog();
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
@@ -10048,6 +10062,13 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     showNotificationPopup(popupNotification, opts);
 }
 
+void QKeyMapper::closeSelectColorDialog()
+{
+    if (m_SelectColorDialog->isVisible()) {
+         m_SelectColorDialog->reject();
+    }
+}
+
 void QKeyMapper::showInputDeviceListWindow()
 {
     if (!m_deviceListWindow->isVisible()) {
@@ -11083,6 +11104,7 @@ void QKeyMapper::switchShowHide()
 
     if (false == isHidden()) {
         m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeSelectColorDialog();
         closeTableSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
@@ -11117,6 +11139,7 @@ void QKeyMapper::forceHide()
 {
     if (false == isHidden()) {
         m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeSelectColorDialog();
         closeInputDeviceListWindow();
         closeTableSetupDialog();
         closeItemSetupDialog();

@@ -296,6 +296,17 @@ void QItemSetupDialog::updateMappingKeyListComboBox()
     }
 }
 
+bool QItemSetupDialog::isCrosshairSetupDialogVisible()
+{
+    if (m_CrosshairSetupDialog != Q_NULLPTR
+        && m_CrosshairSetupDialog->isVisible()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 QString QItemSetupDialog::getOriginalKeyText()
 {
     return getInstance()->ui->originalKeyLineEdit->text();
@@ -371,7 +382,12 @@ bool QItemSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            close();
+            if (isCrosshairSetupDialogVisible()
+                || QKeyMapper::isSelectColorDialogVisible()) {
+            }
+            else {
+                close();
+            }
         }
     }
     return QDialog::event(event);

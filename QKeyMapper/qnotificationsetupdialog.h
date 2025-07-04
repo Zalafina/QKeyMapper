@@ -4,7 +4,6 @@
 #include <QDialog>
 #include <QStyleFactory>
 #include "colorpickerwidget.h"
-#include "qkeymapper_constants.h"
 
 namespace Ui {
 class QNotificationSetupDialog;

@@ -582,6 +582,7 @@ public:
     static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
     static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);
     static ValidationResult updateWithZipUpdater(const QString &update_filepath);
+    static bool isSelectColorDialogVisible(void);
 
     static bool setTabCustomImage(int tabindex, const QString &imagepath);
     bool setTabCustomImage_ShowPosition(int tabindex, int position);
@@ -890,6 +891,7 @@ private:
     void mappingStopNotification();
     void mappingTabSwitchNotification(bool isSame);
 
+    void closeSelectColorDialog(void);
     void showInputDeviceListWindow(void);
     void closeInputDeviceListWindow(void);
     void showGyro2MouseAdvancedSettingWindow(void);
