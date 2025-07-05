@@ -7809,6 +7809,37 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             clearKeyMappingTabWidget();
             KeyMappingDataList->clear();
 
+            if (tabhotkeylist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabhotkeylist_loaded.append(QString());
+                }
+            }
+            if (tabfontcolorlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabfontcolorlist_loaded.append(QString());
+                }
+            }
+            if (tabcustomimage_pathlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabcustomimage_pathlist_loaded.append(QString());
+                }
+            }
+            if (tabcustomimage_showpositionlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabcustomimage_showpositionlist_loaded.append(QString());
+                }
+            }
+            if (tabcustomimage_paddinglist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabcustomimage_paddinglist_loaded.append(QString());
+                }
+            }
+            if (tabcustomimage_showastrayiconlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabcustomimage_showastrayiconlist_loaded.append(QString());
+                }
+            }
+
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_NOTE)) {
                 notes_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
                 notes_split = notes_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -8584,12 +8615,18 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (TabFontColor.isValid()) {
                 s_KeyMappingTabInfoList[index].TabFontColor = TabFontColor;
             }
+            else {
+                s_KeyMappingTabInfoList[index].TabFontColor = QColor();
+            }
         }
         if (index < tabcustomimage_pathlist_loaded.size()) {
             QString tabcustomimage_path = tabcustomimage_pathlist_loaded.at(index);
             QIcon icon_loaded(tabcustomimage_path);
             if (!icon_loaded.isNull()) {
                 s_KeyMappingTabInfoList[index].TabCustomImage_Path = tabcustomimage_path;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabCustomImage_Path.clear();
             }
         }
         if (index < tabcustomimage_showpositionlist_loaded.size()) {
@@ -11522,6 +11559,16 @@ void QKeyMapper::clearKeyMappingTabWidget()
             delete s_KeyMappingTabInfoList.at(index).KeyMappingData;
         }
         s_KeyMappingTabInfoList.removeLast();
+    }
+
+    if (s_KeyMappingTabInfoList.size() > 0) {
+        s_KeyMappingTabInfoList[0].TabName = "Tab1";
+        s_KeyMappingTabInfoList[0].TabHotkey.clear();
+        s_KeyMappingTabInfoList[0].TabFontColor = QColor();
+        s_KeyMappingTabInfoList[0].TabCustomImage_Path.clear();
+        s_KeyMappingTabInfoList[0].TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+        s_KeyMappingTabInfoList[0].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+        s_KeyMappingTabInfoList[0].TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
     }
 
     m_KeyMappingTabWidget->setTabText(0, "Tab1");
