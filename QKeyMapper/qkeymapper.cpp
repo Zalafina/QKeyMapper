@@ -11292,7 +11292,6 @@ void QKeyMapper::updateSystemTrayDisplay()
 
         m_SysTrayIcon->setIcon(trayicon);
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
-        m_SysTrayIcon->setToolTip(teststr);
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         /* Need to make a new global mapping status ICO */
