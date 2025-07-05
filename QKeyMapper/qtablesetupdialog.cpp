@@ -257,9 +257,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image
         if (!TabCustomImage_Path.isEmpty()) {
-            QIcon loaded_icon(TabCustomImage_Path);
-            if (!loaded_icon.isNull()) {
-                ui->customImageLabel->setPixmap(loaded_icon.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
+            QIcon icon_loaded(TabCustomImage_Path);
+            if (!icon_loaded.isNull()) {
+                ui->customImageLabel->setPixmap(icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
                 ui->customImageLabel->setToolTip(TabCustomImage_Path);
             }
             else {
@@ -284,7 +284,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image Padding
         int padding_value = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
-        if (TabCustomImage_Padding >= 0) {
+        if (TAB_CUSTOMIMAGE_PADDING_MIN <= TabCustomImage_Padding && TabCustomImage_Padding <= TAB_CUSTOMIMAGE_PADDING_MAX) {
             padding_value = TabCustomImage_Padding;
         }
         ui->customImagePaddingSpinBox->setValue(padding_value);
@@ -523,6 +523,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         QKeyMapper::clearTabCustomImage(tabindex);
         ui->customImageLabel->clear();
         ui->customImageLabel->setToolTip("");
+        QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
         return;
     }
 
@@ -564,15 +565,19 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         return;
     }
 
+    tabindex = m_TabIndex;
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "customimage_path from QFileDialog -> TabIndex[" << tabindex << "] : " << customimage_path;
 #endif
 
-    QIcon loaded_icon = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
+    QIcon icon_loaded = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
 
-    if (!loaded_icon.isNull()) {
-        ui->customImageLabel->setPixmap(loaded_icon.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
+    if (!icon_loaded.isNull()) {
+        ui->customImageLabel->setPixmap(icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
         ui->customImageLabel->setToolTip(customimage_path);
+
+        QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
     }
     else {
         QString popupMessage;

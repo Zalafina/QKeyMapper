@@ -4615,15 +4615,15 @@ QIcon QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
 #endif
-    QIcon loaded_icon(imagepath);
-    if (!loaded_icon.isNull()) {
+    QIcon icon_loaded(imagepath);
+    if (!icon_loaded.isNull()) {
         s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = imagepath;
     }
     else {
         qDebug() << "[QKeyMapper::setTabCustomImage] Failed to load image from path:" << imagepath;
     }
 
-    return loaded_icon;
+    return icon_loaded;
 }
 
 void QKeyMapper::clearTabCustomImage(int tabindex)
@@ -4637,7 +4637,6 @@ void QKeyMapper::clearTabCustomImage(int tabindex)
 #endif
 
     s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path.clear();
-    // s_KeyMappingTabInfoList[tabindex].TabCustomImage = QPixmap();
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -6254,6 +6253,10 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabnamelist;
     QStringList tabhotkeylist;
     QStringList tabfontcolorlist;
+    QStringList tabcustomimage_pathList;
+    QStringList tabcustomimage_showpositionList;
+    QStringList tabcustomimage_paddingList;
+    QStringList tabcustomimage_showastrayiconList;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
@@ -6290,6 +6293,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
         QString tabFontColor;
+        QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(index).TabCustomImage_Path;
+        int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowPosition;
+        int tabCustomImage_Padding = s_KeyMappingTabInfoList.at(index).TabCustomImage_Padding;
+        bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsTrayIcon;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName.clear();
 #ifdef DEBUG_LOGOUT_ON
@@ -6302,6 +6309,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabnamelist.append(tabName);
         tabhotkeylist.append(tabHotkey);
         tabfontcolorlist.append(tabFontColor);
+        tabcustomimage_pathList.append(tabCustomImage_Path);
+        tabcustomimage_showpositionList.append(QString::number(tabCustomImage_ShowPosition));
+        tabcustomimage_paddingList.append(QString::number(tabCustomImage_Padding));
+        tabcustomimage_showastrayiconList.append(tabCustomImage_ShowAsTrayIcon ? "ON" : "OFF");
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -6630,6 +6641,10 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST, tabcustomimage_pathList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST, tabcustomimage_showastrayiconList);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -7660,6 +7675,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     QStringList tabhotkeylist_loaded;
     QStringList tabfontcolorlist_loaded;
+    QStringList tabcustomimage_pathlist_loaded;
+    QStringList tabcustomimage_showpositionlist_loaded;
+    QStringList tabcustomimage_paddinglist_loaded;
+    QStringList tabcustomimage_showastrayiconlist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -7740,6 +7759,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
         tabfontcolorlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
+        tabcustomimage_pathlist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST).toStringList();
+        tabcustomimage_showpositionlist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST).toStringList();
+        tabcustomimage_paddinglist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST).toStringList();
+        tabcustomimage_showastrayiconlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST).toStringList();
 
         if (original_keys_loaded.isEmpty() || mapping_keys_loaded.isEmpty()) {
             initKeyMappingTable = true;
@@ -8538,6 +8561,38 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (TabFontColor.isValid()) {
                 s_KeyMappingTabInfoList[index].TabFontColor = TabFontColor;
             }
+        }
+        if (index < tabcustomimage_pathlist_loaded.size()) {
+            QString tabcustomimage_path = tabcustomimage_pathlist_loaded.at(index);
+            QIcon icon_loaded(tabcustomimage_path);
+            if (!icon_loaded.isNull()) {
+                s_KeyMappingTabInfoList[index].TabCustomImage_Path = tabcustomimage_path;
+            }
+        }
+        if (index < tabcustomimage_showpositionlist_loaded.size()) {
+            int tabcustomimage_showposition = tabcustomimage_showpositionlist_loaded.at(index).toInt();
+            if (TAB_CUSTOMIMAGE_POSITION_MIN <= tabcustomimage_showposition && tabcustomimage_showposition <= TAB_CUSTOMIMAGE_POSITION_MAX) {
+                s_KeyMappingTabInfoList[index].TabCustomImage_ShowPosition = tabcustomimage_showposition;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+            }
+        }
+        if (index < tabcustomimage_paddinglist_loaded.size()) {
+            int tabcustomimage_padding = tabcustomimage_paddinglist_loaded.at(index).toInt();
+            if (TAB_CUSTOMIMAGE_PADDING_MIN <= tabcustomimage_padding && tabcustomimage_padding <= TAB_CUSTOMIMAGE_PADDING_MAX) {
+                s_KeyMappingTabInfoList[index].TabCustomImage_Padding = tabcustomimage_padding;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+            }
+        }
+        if (index < tabcustomimage_showastrayiconlist_loaded.size()) {
+            const QString &str = tabcustomimage_showastrayiconlist_loaded.at(index);
+            s_KeyMappingTabInfoList[index].TabCustomImage_ShowAsTrayIcon =
+                (str == "ON") ? true :
+                (str == "OFF") ? false :
+                TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }
@@ -12488,6 +12543,7 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
     const QString tab_hotkey = s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
     const QString tab_name = s_KeyMappingTabInfoList.at(tabindex).TabName;
     const QColor tab_color = s_KeyMappingTabInfoList.at(tabindex).TabFontColor;
+    const QString tab_customimage_path = s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_Path;
     if (false == tab_hotkey.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Set Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
@@ -12507,6 +12563,11 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
     }
 
     m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
+    QIcon icon_loaded;
+    if (!tab_customimage_path.isEmpty()) {
+        icon_loaded = QIcon(tab_customimage_path);
+    }
+    m_KeyMappingTabWidget->tabBar()->setTabIcon(tabindex, icon_loaded);
 
     QString tooltip_str;
     if (false == tab_hotkey.isEmpty()) {
@@ -14958,8 +15019,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
 
     // --- 1. Icon Handling ---
     m_IconLabel->hide(); // Hide icon by default
-    QIcon iconLoaded(options.iconPath);
-    bool hasIcon = (options.iconPosition != TAB_CUSTOMIMAGE_SHOW_NONE) && !options.iconPath.isEmpty() && !iconLoaded.isNull();
+    QIcon icon_loaded(options.iconPath);
+    bool hasIcon = (options.iconPosition != TAB_CUSTOMIMAGE_SHOW_NONE) && !options.iconPath.isEmpty() && !icon_loaded.isNull();
 
     if (hasIcon) {
         // Ensure widgets are in the correct order in the layout
@@ -15004,7 +15065,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         int textHeight = m_TextLabel->height();
         QSize iconSize = QSize(textHeight, textHeight);
         m_IconLabel->setFixedSize(iconSize);
-        m_IconLabel->setPixmap(iconLoaded.pixmap(iconSize));
+        m_IconLabel->setPixmap(icon_loaded.pixmap(iconSize));
         m_IconLabel->show();
     }
 

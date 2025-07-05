@@ -734,6 +734,10 @@ const char *MAPPINGTABLE_LASTTABINDEX = "MappingTable_LastTabIndex";
 const char *MAPPINGTABLE_TABNAMELIST = "MappingTable_TabNameList";
 const char *MAPPINGTABLE_TABHOTKEYLIST = "MappingTable_TabHotkeyList";
 const char *MAPPINGTABLE_TABFONTCOLORLIST = "MappingTable_TabFontColorList";
+const char *MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST = "MappingTable_TabCustomImage_PathList";
+const char *MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST = "MappingTable_TabCustomImage_ShowPositionList";
+const char *MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST = "MappingTable_TabCustomImage_PaddingList";
+const char *MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST = "MappingTable_TabCustomImage_ShowAsTrayIconList";
 const char *CLEARALL = "KeyMapData_ClearAll";
 
 const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
