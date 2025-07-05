@@ -4599,7 +4599,7 @@ bool QKeyMapper::isSelectColorDialogVisible()
     }
 }
 
-QIcon QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
+QIcon QKeyMapper::setTabCustomImage(int tabindex, QString &imagepath)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
         return QIcon();
@@ -4615,12 +4615,35 @@ QIcon QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
 #endif
-    QIcon icon_loaded(imagepath);
+
+    // First, try to load the image using the original path
+    QString appDir = QCoreApplication::applicationDirPath();
+    QFileInfo imgInfo(imagepath);
+    QString imgAbsPath = imgInfo.absoluteFilePath();
+
+    QString pathToLoad;
+
+    // Check if the image is in the application directory or its subdirectory, and prepare the relative path
+    if (imgAbsPath.startsWith(appDir, Qt::CaseInsensitive)) {
+        QString relPath = QDir(appDir).relativeFilePath(imgAbsPath);
+        pathToLoad = relPath;
+    } else {
+        pathToLoad = imgAbsPath;
+    }
+
+    // Try to load the image using the converted path
+    QIcon icon_loaded(pathToLoad);
     if (!icon_loaded.isNull()) {
-        s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = imagepath;
+        s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = pathToLoad;
+        imagepath = pathToLoad;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::setTabCustomImage] Store path:" << pathToLoad;
+#endif
     }
     else {
-        qDebug() << "[QKeyMapper::setTabCustomImage] Failed to load image from path:" << imagepath;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::setTabCustomImage] Failed to load image from path:" << pathToLoad;
+#endif
     }
 
     return icon_loaded;

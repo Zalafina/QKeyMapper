@@ -583,7 +583,7 @@ public:
     static ValidationResult updateWithZipUpdater(const QString &update_filepath);
     static bool isSelectColorDialogVisible(void);
 
-    static QIcon setTabCustomImage(int tabindex, const QString &imagepath);
+    static QIcon setTabCustomImage(int tabindex, QString &imagepath);
     static void clearTabCustomImage(int tabindex);
 
 signals:
