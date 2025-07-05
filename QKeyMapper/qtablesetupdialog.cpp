@@ -219,17 +219,32 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
         QString TabHotkey = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey;
         QColor TabFontColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor;
+        QString TabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
+        int TabCustomImage_ShowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowPosition;
+        int TabCustomImage_Padding = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Padding;
+        bool TabCustomImage_ShowAsTrayIcon = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsTrayIcon;
+
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[QTableSetupDialog::showEvent]" << "TabIndex[" << m_TabIndex << "] -> TabName(" << TabName << "), Hotkey(" << TabHotkey << "), TabFontColor(" << TabFontColor.name() << ")";
+        qDebug().nospace().noquote()
+            << "[QTableSetupDialog::showEvent] "
+            << "TabIndex[" << m_TabIndex << "] -> "
+            << "TabName(" << TabName << "), "
+            << "Hotkey(" << TabHotkey << "), "
+            << "FontColor(" << TabFontColor.name() << "), "
+            << "ShowPosition(" << TabCustomImage_ShowPosition << "), "
+            << "Padding(" << TabCustomImage_Padding << "), "
+            << "ShowAsTrayIcon(" << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ")";
+        qDebug().nospace().noquote()
+            << "[QTableSetupDialog::showEvent] CustomImagePath(" << TabCustomImage_Path << ")";
 #endif
 
-        /* Load TabNamc String */
+        // Load TabNamc String
         ui->tabNameLineEdit->setText(TabName);
 
-        /* Load TabHotkey String */
+        // Load TabHotkey String
         ui->tabHotkeyLineEdit->setText(TabHotkey);
 
-        /* Load TabFontColor */
+        // Load TabFontColor
         if (TabFontColor.isValid() != true) {
             if (GLOBALSETTING_INDEX == m_SettingSelectIndex) {
                 TabFontColor = NOTIFICATION_COLOR_GLOBAL_DEFAULT;
@@ -239,6 +254,43 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             }
         }
         m_NotificationFontColorPicker->setColor(TabFontColor);
+
+        // Load Custom Image
+        if (!TabCustomImage_Path.isEmpty()) {
+            QIcon loaded_icon(TabCustomImage_Path);
+            if (!loaded_icon.isNull()) {
+                ui->customImageLabel->setPixmap(loaded_icon.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
+                ui->customImageLabel->setToolTip(TabCustomImage_Path);
+            }
+            else {
+                ui->customImageLabel->clear();
+                ui->customImageLabel->setToolTip("");
+            }
+        }
+        else {
+            ui->customImageLabel->clear();
+            ui->customImageLabel->setToolTip("");
+        }
+
+        // Load Custom Image Show Position
+        int showposition_index = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+        if (TabCustomImage_ShowPosition == TAB_CUSTOMIMAGE_SHOW_LEFT) {
+            showposition_index = TAB_CUSTOMIMAGE_SHOW_LEFT;
+        }
+        else if (TabCustomImage_ShowPosition == TAB_CUSTOMIMAGE_SHOW_RIGHT) {
+            showposition_index = TAB_CUSTOMIMAGE_SHOW_RIGHT;
+        }
+        ui->customImageShowPositionComboBox->setCurrentIndex(showposition_index);
+
+        // Load Custom Image Padding
+        int padding_value = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+        if (TabCustomImage_Padding >= 0) {
+            padding_value = TabCustomImage_Padding;
+        }
+        ui->customImagePaddingSpinBox->setValue(padding_value);
+
+        // Load Custom Image Show As Tray Icon
+        ui->customImageShowAsTrayIconCheckBox->setChecked(TabCustomImage_ShowAsTrayIcon);
     }
 
     QDialog::showEvent(event);
@@ -466,14 +518,31 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     }
 
     int tabindex = m_TabIndex;
+
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        QKeyMapper::clearTabCustomImage(tabindex);
+        ui->customImageLabel->clear();
+        ui->customImageLabel->setToolTip("");
+        return;
+    }
+
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
+    QString currentTabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
     QString filter = tr("Image files") + "(*.ico;*.png;*.jpg)";
     QString caption_string;
     caption_string = tr("Select Custom Image") + (" : ") +TabName;
 
     m_SelectImageFileDialog->setNameFilter(filter);
     m_SelectImageFileDialog->setWindowTitle(caption_string);
-    m_SelectImageFileDialog->selectFile(QString());
+    // Set the initial directory and selected file based on the current tab's custom image path
+    if (currentTabCustomImage_Path.isEmpty()) {
+        m_SelectImageFileDialog->setDirectory(QDir());
+        m_SelectImageFileDialog->selectFile("");
+    }
+    else {
+        m_SelectImageFileDialog->setDirectory(QFileInfo(currentTabCustomImage_Path).absoluteDir());
+        m_SelectImageFileDialog->selectFile(QFileInfo(currentTabCustomImage_Path).absoluteFilePath());
+    }
 
     QString customimage_path;
     if (m_SelectImageFileDialog->exec() == QDialog::Accepted) {
@@ -499,12 +568,11 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "customimage_path from QFileDialog -> TabIndex[" << tabindex << "] : " << customimage_path;
 #endif
 
-    bool selectimage_result = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
+    QIcon loaded_icon = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
 
-    if (selectimage_result) {
-        QPixmap pixmap;
-        pixmap = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage;
-        ui->customImageLabel->setPixmap(pixmap.scaled(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    if (!loaded_icon.isNull()) {
+        ui->customImageLabel->setPixmap(loaded_icon.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
+        ui->customImageLabel->setToolTip(customimage_path);
     }
     else {
         QString popupMessage;
@@ -513,5 +581,52 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         popupMessageColor = FAILURE_COLOR;
         popupMessage = tr("Unable to load the image!");
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    }
+}
+
+void QTableSetupDialog::on_customImageShowPositionComboBox_currentIndexChanged(int index)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[CustomImageShowPosition] Custom Image show position changed ->" << index;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowPosition = index;
+}
+
+void QTableSetupDialog::on_customImagePaddingSpinBox_valueChanged(int value)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[CustomImagePadding] Custom Image Padding value changed ->" << value;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_Padding = value;
+}
+
+void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int state)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[CustomImageShowAsTrayIcon] Show as TrayIcon state changed ->" << (Qt::CheckState)state;
+#endif
+
+    int tabindex = m_TabIndex;
+    if (Qt::Checked == state) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = true;
+    }
+    else {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = false;
     }
 }

@@ -4599,57 +4599,45 @@ bool QKeyMapper::isSelectColorDialogVisible()
     }
 }
 
-bool QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
+QIcon QKeyMapper::setTabCustomImage(int tabindex, const QString &imagepath)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
+        return QIcon();
     }
 
     if (!QFileInfo::exists(imagepath)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[QKeyMapper::setTabCustomImage]" << " QFileInfo::exists(" << imagepath << ") = false";
 #endif
-        return false;
+        return QIcon();
     }
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
 #endif
-    bool result = false;
-    if (s_KeyMappingTabInfoList[tabindex].TabCustomImage.load(imagepath)) {
+    QIcon loaded_icon(imagepath);
+    if (!loaded_icon.isNull()) {
         s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = imagepath;
-        result = true;
     }
     else {
         qDebug() << "[QKeyMapper::setTabCustomImage] Failed to load image from path:" << imagepath;
-        result = false;
     }
 
-    return result;
+    return loaded_icon;
 }
 
-bool QKeyMapper::setTabCustomImage_ShowPosition(int tabindex, int position)
+void QKeyMapper::clearTabCustomImage(int tabindex)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
+        return;
     }
-    return true;
-}
 
-bool QKeyMapper::setTabCustomImage_Padding(int tabindex, int padding)
-{
-    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
-    }
-    return true;
-}
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QTableSetupDialog::clearTabCustomImage]" << "Clear Custom Image for Tab Index[" << tabindex << "] :" << s_KeyMappingTabInfoList[tabindex].TabName;
+#endif
 
-bool QKeyMapper::setTabCustomImage_ShowAsTrayIcon(int tabindex, bool showAsTrayIcon)
-{
-    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
-    }
-    return true;
+    s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path.clear();
+    // s_KeyMappingTabInfoList[tabindex].TabCustomImage = QPixmap();
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -9910,6 +9898,8 @@ void QKeyMapper::mappingStartNotification()
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
+    QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
     QString description = ui->descriptionLineEdit->text();
     QString notificationSetting;
     if (description.isEmpty()) {
@@ -9964,12 +9954,12 @@ void QKeyMapper::mappingStartNotification()
     opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
 
-    // QString imagePath = "F:/work/code/mygit_hub/release/QKeyMapper_Qt6_x64/custom_tabicons/ForzaHorizon4/ForzaHorizon4.ico";
-    // QString imagePath = "D:/work/git/mygithub/QKeyMapper/QKeyMapper/QKeyMapper/image/test_image/test/saber_icon.ico";
-    QString imagePath = "D:/work/git/mygithub/QKeyMapper/QKeyMapper/QKeyMapper/image/test_image/ForzaHorizon4/ForzaHorizon4.ico";
-    opts.iconPath = imagePath;
-    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
-    // opts.iconPadding = 10;
+    if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
+        && !tabCustomImage_Path.isEmpty()) {
+        opts.iconPath = tabCustomImage_Path;
+        opts.iconPosition = tabCustomImage_ShowPosition;
+        opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+    }
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
@@ -10064,7 +10054,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
 
 void QKeyMapper::closeSelectColorDialog()
 {
-    if (m_SelectColorDialog->isVisible()) {
+    if (m_SelectColorDialog && m_SelectColorDialog->isVisible()) {
          m_SelectColorDialog->reject();
     }
 }
@@ -11278,9 +11268,22 @@ void QKeyMapper::updateSystemTrayDisplay()
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
     }
     else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+        QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
+        bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsTrayIcon;
+
+        bool show_tabcustomimageicon = false;
+        QIcon customImageIcon;
+        if (!tabCustomImage_Path.isEmpty() && tabCustomImage_ShowAsTrayIcon) {
+            customImageIcon = QIcon(tabCustomImage_Path);
+            show_tabcustomimageicon = true;
+        }
         bool processicon_as_trayicon = getProcessIconAsTrayIconStatus();
         QIcon trayicon;
-        if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
+
+        if (show_tabcustomimageicon && customImageIcon.isNull() != true) {
+            trayicon = customImageIcon;
+        }
+        else if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
             trayicon = m_MapProcessInfo.WindowIcon;
         }
         else {
@@ -11289,6 +11292,7 @@ void QKeyMapper::updateSystemTrayDisplay()
 
         m_SysTrayIcon->setIcon(trayicon);
         m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
+        m_SysTrayIcon->setToolTip(teststr);
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         /* Need to make a new global mapping status ICO */
@@ -14955,8 +14959,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
 
     // --- 1. Icon Handling ---
     m_IconLabel->hide(); // Hide icon by default
-    QPixmap iconPixmap;
-    bool hasIcon = (options.iconPosition != TAB_CUSTOMIMAGE_SHOW_NONE) && !options.iconPath.isEmpty() && iconPixmap.load(options.iconPath);
+    QIcon iconLoaded(options.iconPath);
+    bool hasIcon = (options.iconPosition != TAB_CUSTOMIMAGE_SHOW_NONE) && !options.iconPath.isEmpty() && !iconLoaded.isNull();
 
     if (hasIcon) {
         // Ensure widgets are in the correct order in the layout
@@ -14999,8 +15003,9 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
     // --- 4. Icon Scaling and Display ---
     if (hasIcon) {
         int textHeight = m_TextLabel->height();
-        m_IconLabel->setPixmap(iconPixmap.scaled(textHeight, textHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        m_IconLabel->setFixedSize(textHeight, textHeight);
+        QSize iconSize = QSize(textHeight, textHeight);
+        m_IconLabel->setFixedSize(iconSize);
+        m_IconLabel->setPixmap(iconLoaded.pixmap(iconSize));
         m_IconLabel->show();
     }
 

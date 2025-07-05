@@ -221,7 +221,7 @@ struct KeyMappingTab_Info
     QString TabName;
     QString TabHotkey;
     QColor TabFontColor;
-    QPixmap TabCustomImage;
+    // QPixmap TabCustomImage;
     QString TabCustomImage_Path;
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;
@@ -584,10 +584,8 @@ public:
     static ValidationResult updateWithZipUpdater(const QString &update_filepath);
     static bool isSelectColorDialogVisible(void);
 
-    static bool setTabCustomImage(int tabindex, const QString &imagepath);
-    bool setTabCustomImage_ShowPosition(int tabindex, int position);
-    bool setTabCustomImage_Padding(int tabindex, int padding);
-    bool setTabCustomImage_ShowAsTrayIcon(int tabindex, bool showAsTrayIcon);
+    static QIcon setTabCustomImage(int tabindex, const QString &imagepath);
+    static void clearTabCustomImage(int tabindex);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);

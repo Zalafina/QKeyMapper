@@ -58,6 +58,11 @@ private slots:
 
     void on_selectCustomImageButton_clicked();
 
+    void on_customImageShowPositionComboBox_currentIndexChanged(int index);
+
+    void on_customImagePaddingSpinBox_valueChanged(int value);
+
+    void on_customImageShowAsTrayIconCheckBox_stateChanged(int state);
 
 private:
     static QTableSetupDialog *m_instance;
