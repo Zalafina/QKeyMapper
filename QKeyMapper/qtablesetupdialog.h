@@ -31,11 +31,6 @@ public:
     int getSettingSelectIndex(void);
     bool isSelectImageFileDialogVisible(void);
 
-    QPixmap getTabCustomImage(void);
-    int getTabCustomImage_ShowPosition(void);
-    int getTabCustomImage_Padding(void);
-    bool getTabCustomImage_ShowAsTrayIcon(void);
-
 protected:
     bool event(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;

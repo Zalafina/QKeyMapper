@@ -167,26 +167,6 @@ bool QTableSetupDialog::isSelectImageFileDialogVisible()
     }
 }
 
-QPixmap QTableSetupDialog::getTabCustomImage()
-{
-    return ui->customImageLabel->pixmap();
-}
-
-int QTableSetupDialog::getTabCustomImage_ShowPosition()
-{
-    return ui->customImageShowPositionComboBox->currentIndex();
-}
-
-int QTableSetupDialog::getTabCustomImage_Padding()
-{
-    return ui->customImagePaddingSpinBox->value();
-}
-
-bool QTableSetupDialog::getTabCustomImage_ShowAsTrayIcon()
-{
-    return ui->customImageShowAsTrayIconCheckBox->isChecked();
-}
-
 bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
