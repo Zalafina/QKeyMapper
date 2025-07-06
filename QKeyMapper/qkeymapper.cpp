@@ -781,7 +781,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #else
                         m_CheckGlobalSettingSwitchTimer.stop();
 #endif
-                        updateSystemTrayDisplay();
                         emit updateLockStatus_Signal();
                     }
                 }
@@ -837,7 +836,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #else
                     m_CheckGlobalSettingSwitchTimer.stop();
 #endif
-                    updateSystemTrayDisplay();
                     emit updateLockStatus_Signal();
                 }
             }
@@ -10078,6 +10076,8 @@ void QKeyMapper::mappingStartNotification()
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
+
+    updateSystemTrayDisplay();
 }
 
 void QKeyMapper::mappingStopNotification()
@@ -10174,6 +10174,8 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
+
+    updateSystemTrayDisplay();
 }
 
 void QKeyMapper::closeSelectColorDialog()
