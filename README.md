@@ -612,9 +612,9 @@
 
 ---------------
 ## 软件截图
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
-<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_screenshot_04.png" width="auto" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/refs/heads/master/screenshot/QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/refs/heads/master/screenshot/QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/refs/heads/master/screenshot/QKeyMapper_screenshot_04.png" width="auto" height="auto"/></div>
 
 ---------------
 ## XBox手柄按键名称布局参照图
