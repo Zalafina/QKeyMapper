@@ -1406,7 +1406,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9944"/>
         <source>MappingTabSwitch</source>
-        <translation>テーブル切替</translation>
+        <translation>タブ切替</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="10428"/>

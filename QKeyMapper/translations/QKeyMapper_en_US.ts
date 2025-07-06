@@ -1363,7 +1363,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9852"/>
         <source>StartMapping [</source>
-        <translation>StartMapping [</translation>
+        <translation>MappingStart [</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="4964"/>
@@ -1379,7 +1379,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9922"/>
         <source>StopMapping [</source>
-        <translation>StopMapping [</translation>
+        <translation>MappingStop [</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="10431"/>

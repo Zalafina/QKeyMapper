@@ -1363,7 +1363,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9852"/>
         <source>StartMapping [</source>
-        <translation>开始映射 [</translation>
+        <translation>映射开始 [</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="4964"/>
@@ -1379,7 +1379,7 @@
     <message>
         <location filename="../qkeymapper.cpp" line="9922"/>
         <source>StopMapping [</source>
-        <translation>停止映射 [</translation>
+        <translation>映射停止 [</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="10431"/>
@@ -1719,7 +1719,7 @@ Do you confirm to continue installing Interception driver?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="9944"/>
         <source>MappingTabSwitch</source>
-        <translation>映射表切换</translation>
+        <translation>映射切换</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="12616"/>
@@ -2220,8 +2220,5 @@ Do you confirm to continue installing Interception driver?</source>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;您当前已正在使用最新版本的 %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
-</context>
-</TS>
-
 </context>
 </TS>
