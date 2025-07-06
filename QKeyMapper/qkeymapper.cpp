@@ -10111,6 +10111,8 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
+    QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
     QString color_str;
     // popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + " - " + tabName;
     if (isSame) {
@@ -10162,6 +10164,13 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
     opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+
+    if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
+        && !tabCustomImage_Path.isEmpty()) {
+        opts.iconPath = tabCustomImage_Path;
+        opts.iconPosition = tabCustomImage_ShowPosition;
+        opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+    }
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
