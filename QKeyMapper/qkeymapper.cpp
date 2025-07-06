@@ -7701,6 +7701,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QStringList tabcustomimage_showpositionlist_loaded;
     QStringList tabcustomimage_paddinglist_loaded;
     QStringList tabcustomimage_showastrayiconlist_loaded;
+    QVariantList tabcustomimage_trayiconpixellist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -7785,6 +7786,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabcustomimage_showpositionlist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST).toStringList();
         tabcustomimage_paddinglist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST).toStringList();
         tabcustomimage_showastrayiconlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST).toStringList();
+        tabcustomimage_trayiconpixellist_loaded     = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST).toList();
 
         if (original_keys_loaded.isEmpty() || mapping_keys_loaded.isEmpty()) {
             initKeyMappingTable = true;
@@ -7836,6 +7838,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (tabcustomimage_showastrayiconlist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     tabcustomimage_showastrayiconlist_loaded.append(QString());
+                }
+            }
+            if (tabcustomimage_trayiconpixellist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabcustomimage_trayiconpixellist_loaded.append(QSize());
                 }
             }
 
@@ -8652,6 +8659,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 (str == "ON") ? true :
                 (str == "OFF") ? false :
                 TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
+        }
+        if (index < tabcustomimage_trayiconpixellist_loaded.size()) {
+            const QSize &trayiconpixel = tabcustomimage_trayiconpixellist_loaded.at(index).toSize();
+            QList<QSize> iconsize_list = ICON_SIZE_MAP.values();
+            if (iconsize_list.contains(trayiconpixel)) {
+                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = trayiconpixel;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = QSize();
+            }
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }

@@ -210,7 +210,7 @@
    <property name="geometry">
     <rect>
      <x>140</x>
-     <y>185</y>
+     <y>180</y>
      <width>131</width>
      <height>21</height>
     </rect>
@@ -229,7 +229,7 @@
    <property name="geometry">
     <rect>
      <x>190</x>
-     <y>225</y>
+     <y>220</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -248,7 +248,7 @@
    <property name="geometry">
     <rect>
      <x>265</x>
-     <y>185</y>
+     <y>180</y>
      <width>121</width>
      <height>22</height>
     </rect>
@@ -263,8 +263,8 @@
   <widget class="QCheckBox" name="customImageShowAsTrayIconCheckBox">
    <property name="geometry">
     <rect>
-     <x>330</x>
-     <y>225</y>
+     <x>150</x>
+     <y>260</y>
      <width>141</width>
      <height>21</height>
     </rect>
@@ -280,7 +280,7 @@
    <property name="geometry">
     <rect>
      <x>390</x>
-     <y>185</y>
+     <y>180</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -293,7 +293,7 @@
    <property name="geometry">
     <rect>
      <x>125</x>
-     <y>225</y>
+     <y>220</y>
      <width>61</width>
      <height>21</height>
     </rect>
@@ -325,7 +325,7 @@
    <property name="geometry">
     <rect>
      <x>380</x>
-     <y>265</y>
+     <y>260</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -344,7 +344,7 @@
    <property name="geometry">
     <rect>
      <x>265</x>
-     <y>265</y>
+     <y>260</y>
      <width>111</width>
      <height>21</height>
     </rect>
