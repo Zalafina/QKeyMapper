@@ -49,6 +49,20 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->customImageShowPositionComboBox->addItems(showPositionList);
     ui->customImageShowPositionComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_POSITION_DEFAULT);
 
+    ui->customImageTrayIconPixelComboBox->clear();
+    QStringList trayiconPixelList;
+    trayiconPixelList.append(tr("Default"));
+    trayiconPixelList.append("16x16");
+    trayiconPixelList.append("24x24");
+    trayiconPixelList.append("32x32");
+    trayiconPixelList.append("48x48");
+    trayiconPixelList.append("64x64");
+    trayiconPixelList.append("96x96");
+    trayiconPixelList.append("128x128");
+    trayiconPixelList.append("256x256");
+    ui->customImageTrayIconPixelComboBox->addItems(trayiconPixelList);
+    ui->customImageTrayIconPixelComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT);
+
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
     QObject::connect(m_NotificationFontColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabFontColorChanged);
@@ -91,6 +105,26 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     showPositionList.append(tr("Right"));
     ui->customImageShowPositionComboBox->addItems(showPositionList);
     ui->customImageShowPositionComboBox->setCurrentIndex(showposition_index);
+
+    ui->customImageTrayIconPixelLabel->setText(tr("TrayIcon Pixel"));
+    int trayiconpixel_index = ui->customImageTrayIconPixelComboBox->currentIndex();
+    if (trayiconpixel_index < TAB_CUSTOMIMAGE_TRAYICON_PIXEL_MIN
+        || trayiconpixel_index > TAB_CUSTOMIMAGE_TRAYICON_PIXEL_MAX) {
+        trayiconpixel_index = TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT;
+    }
+    ui->customImageTrayIconPixelComboBox->clear();
+    QStringList trayiconPixelList;
+    trayiconPixelList.append(tr("Default"));
+    trayiconPixelList.append("16x16");
+    trayiconPixelList.append("24x24");
+    trayiconPixelList.append("32x32");
+    trayiconPixelList.append("48x48");
+    trayiconPixelList.append("64x64");
+    trayiconPixelList.append("96x96");
+    trayiconPixelList.append("128x128");
+    trayiconPixelList.append("256x256");
+    ui->customImageTrayIconPixelComboBox->addItems(trayiconPixelList);
+    ui->customImageTrayIconPixelComboBox->setCurrentIndex(trayiconpixel_index);
 }
 
 void QTableSetupDialog::resetFontSize()
@@ -203,19 +237,21 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         int TabCustomImage_ShowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowPosition;
         int TabCustomImage_Padding = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Padding;
         bool TabCustomImage_ShowAsTrayIcon = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsTrayIcon;
+        QSize TabCustomImage_TrayIconPixel = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_TrayIconPixel;
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
             << "[QTableSetupDialog::showEvent] "
             << "TabIndex[" << m_TabIndex << "] -> "
-            << "TabName(" << TabName << "), "
-            << "Hotkey(" << TabHotkey << "), "
-            << "FontColor(" << TabFontColor.name() << "), "
-            << "ShowPosition(" << TabCustomImage_ShowPosition << "), "
-            << "Padding(" << TabCustomImage_Padding << "), "
-            << "ShowAsTrayIcon(" << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ")";
+            << "TabName: " << TabName << ", "
+            << "Hotkey: " << TabHotkey << ", "
+            << "FontColor: " << TabFontColor.name() << ", "
+            << "ShowPosition: " << TabCustomImage_ShowPosition << ", "
+            << "Padding: " << TabCustomImage_Padding << ", "
+            << "ShowAsTrayIcon: " << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ", "
+            << "TrayIconPixel: " << TabCustomImage_TrayIconPixel;
         qDebug().nospace().noquote()
-            << "[QTableSetupDialog::showEvent] CustomImagePath(" << TabCustomImage_Path << ")";
+            << "[QTableSetupDialog::showEvent] CustomImagePath: " << TabCustomImage_Path;
 #endif
 
         // Load TabNamc String
@@ -239,7 +275,15 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         if (!TabCustomImage_Path.isEmpty()) {
             QIcon icon_loaded(TabCustomImage_Path);
             if (!icon_loaded.isNull()) {
-                ui->customImageLabel->setPixmap(icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
+#ifdef DEBUG_LOGOUT_ON
+                QList<QSize> iconsizeList = icon_loaded.availableSizes();
+                qDebug() << "[QTableSetupDialog::showEvent]" << "Icon availableSizes:" << iconsizeList;
+#endif
+                QPixmap extent_pixmap = icon_loaded.pixmap(TAB_CUSTOMIMAGE_HEIGHT_DEFAULT);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[QTableSetupDialog::showEvent]" << " Extent(" << TAB_CUSTOMIMAGE_HEIGHT_DEFAULT << ") pixmap size: " << extent_pixmap.size();
+#endif
+                ui->customImageLabel->setPixmap(extent_pixmap);
                 ui->customImageLabel->setToolTip(TabCustomImage_Path);
             }
             else {
@@ -271,6 +315,14 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image Show As Tray Icon
         ui->customImageShowAsTrayIconCheckBox->setChecked(TabCustomImage_ShowAsTrayIcon);
+
+        // Load Custom Image Tray Icon Pixel
+        int trayicon_index = TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT;
+        QList<QSize> iconsize_list = ICON_SIZE_MAP.values();
+        if (iconsize_list.contains(TabCustomImage_TrayIconPixel)) {
+            trayicon_index = ICON_SIZE_MAP.key(TabCustomImage_TrayIconPixel);
+        }
+        ui->customImageTrayIconPixelComboBox->setCurrentIndex(trayicon_index);
     }
 
     QDialog::showEvent(event);
@@ -554,7 +606,15 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     QIcon icon_loaded = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
 
     if (!icon_loaded.isNull()) {
-        ui->customImageLabel->setPixmap(icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT)));
+#ifdef DEBUG_LOGOUT_ON
+        QList<QSize> iconsizeList = icon_loaded.availableSizes();
+        qDebug() << "[QTableSetupDialog::on_selectCustomImageButton_clicked]" << "Icon availableSizes:" << iconsizeList;
+#endif
+        QPixmap extent_pixmap = icon_loaded.pixmap(TAB_CUSTOMIMAGE_HEIGHT_DEFAULT);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[QTableSetupDialog::showEvent]" << " Extent(" << TAB_CUSTOMIMAGE_HEIGHT_DEFAULT << ") pixmap size: " << extent_pixmap.size();
+#endif
+        ui->customImageLabel->setPixmap(extent_pixmap);
         ui->customImageLabel->setToolTip(customimage_path);
 
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
@@ -614,4 +674,24 @@ void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int st
     else {
         QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = false;
     }
+}
+
+void QTableSetupDialog::on_customImageTrayIconPixelComboBox_currentIndexChanged(int index)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (!ICON_SIZE_MAP.contains(index)) {
+        return;
+    }
+
+    QSize trayicon_size = ICON_SIZE_MAP.value(index);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[CustomImageTrayIconPixel] Custom Image TrayIcon pixel changed ->" << trayicon_size;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_TrayIconPixel = trayicon_size;
 }

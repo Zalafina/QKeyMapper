@@ -6275,6 +6275,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabcustomimage_showpositionList;
     QStringList tabcustomimage_paddingList;
     QStringList tabcustomimage_showastrayiconList;
+    QVariantList tabcustomimage_trayiconpixelList;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
@@ -6315,6 +6316,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowPosition;
         int tabCustomImage_Padding = s_KeyMappingTabInfoList.at(index).TabCustomImage_Padding;
         bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsTrayIcon;
+        QSize tabCustomImage_TrayIconPixel = s_KeyMappingTabInfoList.at(index).TabCustomImage_TrayIconPixel;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName.clear();
 #ifdef DEBUG_LOGOUT_ON
@@ -6331,6 +6333,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabcustomimage_showpositionList.append(QString::number(tabCustomImage_ShowPosition));
         tabcustomimage_paddingList.append(QString::number(tabCustomImage_Padding));
         tabcustomimage_showastrayiconList.append(tabCustomImage_ShowAsTrayIcon ? "ON" : "OFF");
+        tabcustomimage_trayiconpixelList.append(tabCustomImage_TrayIconPixel);
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -6663,6 +6666,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST, tabcustomimage_showastrayiconList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST, tabcustomimage_trayiconpixelList);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -11406,7 +11410,22 @@ void QKeyMapper::updateSystemTrayDisplay()
         QIcon trayicon;
 
         if (show_tabcustomimageicon && customImageIcon.isNull() != true) {
-            trayicon = customImageIcon;
+            QList<QSize> iconsizeList = customImageIcon.availableSizes();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::updateSystemTrayDisplay]" << "Tab custom icon availableSizes:" << iconsizeList;
+#endif
+            QSize trayicon_pixel = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_TrayIconPixel;
+            if (iconsizeList.contains(trayicon_pixel)) {
+                int extent_pixel = trayicon_pixel.height() / 2;
+                QPixmap extent_pixmap = customImageIcon.pixmap(extent_pixel);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[QKeyMapper::updateSystemTrayDisplay]" << " TabCustomImage_TrayIconPixel: " << trayicon_pixel <<", Extent pixmap size: " << extent_pixmap.size();
+#endif
+                trayicon = QIcon(extent_pixmap);
+            }
+            else {
+                trayicon = customImageIcon;
+            }
         }
         else if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
             trayicon = m_MapProcessInfo.WindowIcon;
@@ -15145,7 +15164,15 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         int textHeight = m_TextLabel->height();
         QSize iconSize = QSize(textHeight, textHeight);
         m_IconLabel->setFixedSize(iconSize);
-        m_IconLabel->setPixmap(icon_loaded.pixmap(iconSize));
+#ifdef DEBUG_LOGOUT_ON
+        QList<QSize> iconsizeList = icon_loaded.availableSizes();
+        qDebug() << "[QPopupNotification::showPopupNotification]" << "Icon availableSizes:" << iconsizeList;
+#endif
+        QPixmap extent_pixmap = icon_loaded.pixmap(textHeight);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[QPopupNotification::showPopupNotification]" << " Extent(" << textHeight << ") pixmap size: " << extent_pixmap.size();
+#endif
+        m_IconLabel->setPixmap(extent_pixmap);
         m_IconLabel->show();
     }
 

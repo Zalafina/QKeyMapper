@@ -225,6 +225,7 @@ struct KeyMappingTab_Info
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;
     bool TabCustomImage_ShowAsTrayIcon;
+    QSize TabCustomImage_TrayIconPixel;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };

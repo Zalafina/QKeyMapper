@@ -59,6 +59,8 @@ private slots:
 
     void on_customImageShowAsTrayIconCheckBox_stateChanged(int state);
 
+    void on_customImageTrayIconPixelComboBox_currentIndexChanged(int index);
+
 private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;

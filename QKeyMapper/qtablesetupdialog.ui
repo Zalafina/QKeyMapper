@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>285</height>
+    <height>320</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>500</width>
-    <height>285</height>
+    <height>320</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>500</width>
-    <height>285</height>
+    <height>320</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -211,7 +211,7 @@
     <rect>
      <x>140</x>
      <y>185</y>
-     <width>121</width>
+     <width>131</width>
      <height>21</height>
     </rect>
    </property>
@@ -230,7 +230,7 @@
     <rect>
      <x>190</x>
      <y>225</y>
-     <width>71</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -263,9 +263,9 @@
   <widget class="QCheckBox" name="customImageShowAsTrayIconCheckBox">
    <property name="geometry">
     <rect>
-     <x>310</x>
+     <x>330</x>
      <y>225</y>
-     <width>161</width>
+     <width>141</width>
      <height>21</height>
     </rect>
    </property>
@@ -311,7 +311,7 @@
      <x>30</x>
      <y>150</y>
      <width>441</width>
-     <height>116</height>
+     <height>151</height>
     </rect>
    </property>
    <property name="title">
@@ -319,6 +319,41 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="customImageTrayIconPixelComboBox">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>265</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string/>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="customImageTrayIconPixelLabel">
+   <property name="geometry">
+    <rect>
+     <x>265</x>
+     <y>265</y>
+     <width>111</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>TrayIcon Pixel</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
   <zorder>tabCustomImageGroupBox</zorder>
@@ -338,6 +373,8 @@
   <zorder>customImageShowAsTrayIconCheckBox</zorder>
   <zorder>customImagePaddingSpinBox</zorder>
   <zorder>customImageShowPositionLabel</zorder>
+  <zorder>customImageTrayIconPixelComboBox</zorder>
+  <zorder>customImageTrayIconPixelLabel</zorder>
  </widget>
  <resources/>
  <connections/>
