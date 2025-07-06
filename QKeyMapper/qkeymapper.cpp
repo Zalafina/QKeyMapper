@@ -888,7 +888,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #else
                 m_CheckGlobalSettingSwitchTimer.start();
 #endif
-                updateSystemTrayDisplay();
                 emit updateLockStatus_Signal();
             }
         }
@@ -5035,8 +5034,6 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
 #ifdef CYCLECHECKTIMER_ENABLED
         m_CycleCheckTimer.stop();
 #endif
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
-        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
         ui->keymapButton->setText(tr("MappingStart"));
 
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
@@ -10098,6 +10095,8 @@ void QKeyMapper::mappingStopNotification()
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
 
     showNotificationPopup(popupNotification);
+
+    updateSystemTrayDisplay();
 }
 
 void QKeyMapper::mappingTabSwitchNotification(bool isSame)
