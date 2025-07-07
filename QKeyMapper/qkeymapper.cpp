@@ -11433,7 +11433,17 @@ void QKeyMapper::updateSystemTrayDisplay()
 #endif
             QSize trayicon_pixel = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_TrayIconPixel;
             if (iconsizeList.contains(trayicon_pixel)) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
                 QPixmap scaled_pixmap = customImageIcon.pixmap(trayicon_pixel, 1.0);
+#else
+                qreal devicePixelRatio = qApp->devicePixelRatio();
+                QSize deviceIndependentSize = QSize(
+                    qRound(trayicon_pixel.width() / devicePixelRatio),
+                    qRound(trayicon_pixel.height() / devicePixelRatio)
+                );
+                QPixmap scaled_pixmap = customImageIcon.pixmap(deviceIndependentSize);
+#endif
+
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace() << "[QKeyMapper::updateSystemTrayDisplay]" << " TabCustomImage_TrayIconPixel: " << trayicon_pixel <<", Scaled pixmap size: " << scaled_pixmap.size();
 #endif

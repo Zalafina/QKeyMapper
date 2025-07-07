@@ -220,7 +220,16 @@ void QTableSetupDialog::updateTrayIconPixelComboBoxIcons(const QIcon &icon)
                 // Check if this size is in the available sizes list
                 if (availableSizes.contains(itemSize)) {
                     // Extract icon of corresponding size and set it to the item
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
                     QPixmap scaled_pixmap = icon.pixmap(itemSize, 1.0);
+#else
+                    qreal devicePixelRatio = qApp->devicePixelRatio();
+                    QSize deviceIndependentSize = QSize(
+                        qRound(itemSize.width() / devicePixelRatio),
+                        qRound(itemSize.height() / devicePixelRatio)
+                        );
+                    QPixmap scaled_pixmap = icon.pixmap(deviceIndependentSize);
+#endif
                     QIcon itemIcon(scaled_pixmap);
                     ui->customImageTrayIconPixelComboBox->setItemIcon(i, itemIcon);
                 } else {
