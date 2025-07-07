@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>520</width>
     <height>320</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>500</width>
+    <width>520</width>
     <height>320</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>500</width>
+    <width>520</width>
     <height>320</height>
    </size>
   </property>
@@ -181,7 +181,7 @@
   <widget class="QLabel" name="customImageLabel">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>40</x>
      <y>175</y>
      <width>72</width>
      <height>72</height>
@@ -209,7 +209,7 @@
   <widget class="QPushButton" name="selectCustomImageButton">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>130</x>
      <y>180</y>
      <width>131</width>
      <height>21</height>
@@ -228,7 +228,7 @@
   <widget class="QComboBox" name="customImageShowPositionComboBox">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>180</x>
      <y>220</y>
      <width>81</width>
      <height>21</height>
@@ -249,7 +249,7 @@
     <rect>
      <x>265</x>
      <y>180</y>
-     <width>121</width>
+     <width>111</width>
      <height>22</height>
     </rect>
    </property>
@@ -263,7 +263,7 @@
   <widget class="QCheckBox" name="customImageShowAsTrayIconCheckBox">
    <property name="geometry">
     <rect>
-     <x>150</x>
+     <x>140</x>
      <y>260</y>
      <width>141</width>
      <height>21</height>
@@ -279,7 +279,7 @@
   <widget class="QSpinBox" name="customImagePaddingSpinBox">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>380</x>
      <y>180</y>
      <width>61</width>
      <height>22</height>
@@ -292,7 +292,7 @@
   <widget class="QLabel" name="customImageShowPositionLabel">
    <property name="geometry">
     <rect>
-     <x>125</x>
+     <x>115</x>
      <y>220</y>
      <width>61</width>
      <height>21</height>
@@ -308,9 +308,9 @@
   <widget class="QGroupBox" name="tabCustomImageGroupBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>20</x>
      <y>150</y>
-     <width>441</width>
+     <width>481</width>
      <height>151</height>
     </rect>
    </property>
@@ -326,7 +326,7 @@
     <rect>
      <x>380</x>
      <y>260</y>
-     <width>71</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>
