@@ -524,6 +524,7 @@ public:
     static LRESULT CALLBACK MousePointsWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     void InitializeGDIPlus(void);
     void ShutdownGDIPlus(void);
+    void initBlankIconForComboBox(void);
     HWND createTransparentWindow(void);
     void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
     void destoryTransparentWindow(HWND hwnd);
@@ -953,6 +954,7 @@ public:
     static QList<MAP_KEYDATA> s_CopiedMappingData;
     static QHash<int, QStringList> s_OriginalKeysCategoryMap;
     static QHash<int, QStringList> s_MappingKeysCategoryMap;
+    static QIcon s_Icon_Blank;
     int m_UI_Scale;
     KeyMapStatus m_KeyMapStatus;
 

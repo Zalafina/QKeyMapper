@@ -265,7 +265,7 @@ void QItemSetupDialog::updateOriginalKeyListComboBox()
 
     m_OriginalKeyListComboBox->clear();
 
-    QIcon common_icon = QIcon(":/common.png");
+    const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     m_OriginalKeyListComboBox->addItem(QString());
     m_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_LONGPRESS);
     m_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_DOUBLEPRESS);
@@ -282,7 +282,7 @@ void QItemSetupDialog::updateMappingKeyListComboBox()
 
     m_MappingKeyListComboBox->clear();
 
-    QIcon common_icon = QIcon(":/common.png");
+    const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     m_MappingKeyListComboBox->addItem(QString());
     m_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_WAITTIME);
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_DOWN);

@@ -44,6 +44,8 @@ extern const int KEYMAPPINGDATATABLE_TOP;
 extern const int KEYMAPPINGDATATABLE_HEIGHT;
 extern const int DEFAULT_ICON_WIDTH;
 extern const int DEFAULT_ICON_HEIGHT;
+extern const int COMBOBOX_BLANK_ICON_WIDTH;
+extern const int COMBOBOX_BLANK_ICON_HEIGHT;
 extern const int MOUSEWHEEL_SCROLL_NONE;
 extern const int MOUSEWHEEL_SCROLL_UP;
 extern const int MOUSEWHEEL_SCROLL_DOWN;

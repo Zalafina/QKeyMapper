@@ -35,6 +35,7 @@ qreal QKeyMapper::s_UI_scale_value = 1.0;
 QList<MAP_KEYDATA> QKeyMapper::s_CopiedMappingData;
 QHash<int, QStringList> QKeyMapper::s_OriginalKeysCategoryMap;
 QHash<int, QStringList> QKeyMapper::s_MappingKeysCategoryMap;
+QIcon QKeyMapper::s_Icon_Blank;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -103,6 +104,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
+    initBlankIconForComboBox();
     InitializeGDIPlus();
     m_TransParentHandle = createTransparentWindow();
     m_CrosshairHandle = createCrosshairWindow();
@@ -2847,6 +2849,13 @@ void QKeyMapper::InitializeGDIPlus()
 void QKeyMapper::ShutdownGDIPlus()
 {
     GdiplusShutdown(m_GdiplusToken);
+}
+
+void QKeyMapper::initBlankIconForComboBox()
+{
+    QPixmap blankPixmap(COMBOBOX_BLANK_ICON_WIDTH, COMBOBOX_BLANK_ICON_HEIGHT);
+    blankPixmap.fill(Qt::transparent);
+    s_Icon_Blank = QIcon(blankPixmap);
 }
 
 HWND QKeyMapper::createTransparentWindow()
@@ -12416,7 +12425,7 @@ void QKeyMapper::updateMappingKeyListComboBox()
     m_mapkeyComboBox->clear();
     m_mapkeyComboBox->addItem(QString());
 
-    QIcon common_icon = QIcon(":/common.png");
+    const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     const QStringList common_keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_COMMON);
     for (const QString &key : common_keyList) {
         m_mapkeyComboBox->addItem(common_icon, key);

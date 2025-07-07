@@ -234,14 +234,14 @@ void QTableSetupDialog::updateTrayIconPixelComboBoxIcons(const QIcon &icon)
                     ui->customImageTrayIconPixelComboBox->setItemIcon(i, itemIcon);
                 } else {
                     // If the size is not available, clear the item's icon
-                    ui->customImageTrayIconPixelComboBox->setItemIcon(i, QIcon());
+                    ui->customImageTrayIconPixelComboBox->setItemIcon(i, QKeyMapper::s_Icon_Blank);
                 }
             }
         }
     }
 
     // "Default" item (index 0) uses the original icon
-    ui->customImageTrayIconPixelComboBox->setItemIcon(0, icon);
+    ui->customImageTrayIconPixelComboBox->setItemIcon(0, QKeyMapper::s_Icon_Blank);
 }
 
 int QTableSetupDialog::getSettingSelectIndex()
