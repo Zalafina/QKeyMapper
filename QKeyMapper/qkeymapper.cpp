@@ -11433,12 +11433,11 @@ void QKeyMapper::updateSystemTrayDisplay()
 #endif
             QSize trayicon_pixel = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_TrayIconPixel;
             if (iconsizeList.contains(trayicon_pixel)) {
-                int extent_pixel = trayicon_pixel.height() / 2;
-                QPixmap extent_pixmap = customImageIcon.pixmap(extent_pixel);
+                QPixmap scaled_pixmap = customImageIcon.pixmap(trayicon_pixel, 1.0);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[QKeyMapper::updateSystemTrayDisplay]" << " TabCustomImage_TrayIconPixel: " << trayicon_pixel <<", Extent pixmap size: " << extent_pixmap.size();
+                qDebug().nospace() << "[QKeyMapper::updateSystemTrayDisplay]" << " TabCustomImage_TrayIconPixel: " << trayicon_pixel <<", Scaled pixmap size: " << scaled_pixmap.size();
 #endif
-                trayicon = QIcon(extent_pixmap);
+                trayicon = QIcon(scaled_pixmap);
             }
             else {
                 trayicon = customImageIcon;
@@ -15185,11 +15184,11 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
         QList<QSize> iconsizeList = icon_loaded.availableSizes();
         qDebug() << "[QPopupNotification::showPopupNotification]" << "Icon availableSizes:" << iconsizeList;
 #endif
-        QPixmap extent_pixmap = icon_loaded.pixmap(textHeight);
+        QPixmap scaled_pixmap = icon_loaded.pixmap(iconSize);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[QPopupNotification::showPopupNotification]" << " Extent(" << textHeight << ") pixmap size: " << extent_pixmap.size();
+        qDebug().nospace() << "[QPopupNotification::showPopupNotification]" << " Scaled(" << iconSize << ") pixmap size: " << scaled_pixmap.size();
 #endif
-        m_IconLabel->setPixmap(extent_pixmap);
+        m_IconLabel->setPixmap(scaled_pixmap);
         m_IconLabel->show();
     }
 

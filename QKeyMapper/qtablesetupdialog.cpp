@@ -186,6 +186,55 @@ void QTableSetupDialog::initSelectImageFileDialog()
     m_SelectImageFileDialog->setFileMode(QFileDialog::ExistingFile);
 }
 
+void QTableSetupDialog::updateTrayIconPixelComboBoxIcons(const QIcon &icon)
+{
+    // 1. If the icon is null, clear all item icons
+    if (icon.isNull()) {
+        for (int i = 0; i < ui->customImageTrayIconPixelComboBox->count(); ++i) {
+            ui->customImageTrayIconPixelComboBox->setItemIcon(i, QIcon());
+        }
+        return;
+    }
+
+    // 2. Get available icon sizes
+    QList<QSize> availableSizes = icon.availableSizes();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBoxIcons]" << "Icon availableSizes:" << availableSizes;
+#endif
+
+    // 3. Iterate through all ComboBox items (start from index 1, skip "Default" item)
+    for (int i = 1; i < ui->customImageTrayIconPixelComboBox->count(); ++i) {
+        QString itemText = ui->customImageTrayIconPixelComboBox->itemText(i);
+
+        // Parse item text to get size information (e.g., "16x16" -> QSize(16, 16))
+        QStringList sizeParts = itemText.split('x');
+        if (sizeParts.size() == 2) {
+            bool ok1, ok2;
+            int width = sizeParts[0].toInt(&ok1);
+            int height = sizeParts[1].toInt(&ok2);
+
+            if (ok1 && ok2) {
+                QSize itemSize(width, height);
+
+                // Check if this size is in the available sizes list
+                if (availableSizes.contains(itemSize)) {
+                    // Extract icon of corresponding size and set it to the item
+                    QPixmap scaled_pixmap = icon.pixmap(itemSize, 1.0);
+                    QIcon itemIcon(scaled_pixmap);
+                    ui->customImageTrayIconPixelComboBox->setItemIcon(i, itemIcon);
+                } else {
+                    // If the size is not available, clear the item's icon
+                    ui->customImageTrayIconPixelComboBox->setItemIcon(i, QIcon());
+                }
+            }
+        }
+    }
+
+    // "Default" item (index 0) uses the original icon
+    ui->customImageTrayIconPixelComboBox->setItemIcon(0, icon);
+}
+
 int QTableSetupDialog::getSettingSelectIndex()
 {
     return m_SettingSelectIndex;
@@ -272,18 +321,15 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         m_NotificationFontColorPicker->setColor(TabFontColor);
 
         // Load Custom Image
+        QIcon icon_loaded;
         if (!TabCustomImage_Path.isEmpty()) {
-            QIcon icon_loaded(TabCustomImage_Path);
+            icon_loaded = QIcon(TabCustomImage_Path);
             if (!icon_loaded.isNull()) {
+                QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
 #ifdef DEBUG_LOGOUT_ON
-                QList<QSize> iconsizeList = icon_loaded.availableSizes();
-                qDebug() << "[QTableSetupDialog::showEvent]" << "Icon availableSizes:" << iconsizeList;
+                qDebug().nospace() << "[QTableSetupDialog::showEvent]" << " Scaled(" << QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT) << ") pixmap size: " << scaled_pixmap.size();
 #endif
-                QPixmap extent_pixmap = icon_loaded.pixmap(TAB_CUSTOMIMAGE_HEIGHT_DEFAULT);
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[QTableSetupDialog::showEvent]" << " Extent(" << TAB_CUSTOMIMAGE_HEIGHT_DEFAULT << ") pixmap size: " << extent_pixmap.size();
-#endif
-                ui->customImageLabel->setPixmap(extent_pixmap);
+                ui->customImageLabel->setPixmap(scaled_pixmap);
                 ui->customImageLabel->setToolTip(TabCustomImage_Path);
             }
             else {
@@ -323,6 +369,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             trayicon_index = ICON_SIZE_MAP.key(TabCustomImage_TrayIconPixel);
         }
         ui->customImageTrayIconPixelComboBox->setCurrentIndex(trayicon_index);
+
+        // Update TrayIconPixelComboBox Item icon display
+        updateTrayIconPixelComboBoxIcons(icon_loaded);
     }
 
     QDialog::showEvent(event);
@@ -556,6 +605,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         ui->customImageLabel->clear();
         ui->customImageLabel->setToolTip("");
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
+        updateTrayIconPixelComboBoxIcons(QIcon());
         return;
     }
 
@@ -606,15 +656,11 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     QIcon icon_loaded = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
 
     if (!icon_loaded.isNull()) {
+        QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
 #ifdef DEBUG_LOGOUT_ON
-        QList<QSize> iconsizeList = icon_loaded.availableSizes();
-        qDebug() << "[QTableSetupDialog::on_selectCustomImageButton_clicked]" << "Icon availableSizes:" << iconsizeList;
+        qDebug().nospace() << "[QTableSetupDialog::showEvent]" << " Scaled(" << QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT) << ") pixmap size: " << scaled_pixmap.size();
 #endif
-        QPixmap extent_pixmap = icon_loaded.pixmap(TAB_CUSTOMIMAGE_HEIGHT_DEFAULT);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[QTableSetupDialog::showEvent]" << " Extent(" << TAB_CUSTOMIMAGE_HEIGHT_DEFAULT << ") pixmap size: " << extent_pixmap.size();
-#endif
-        ui->customImageLabel->setPixmap(extent_pixmap);
+        ui->customImageLabel->setPixmap(scaled_pixmap);
         ui->customImageLabel->setToolTip(customimage_path);
 
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
@@ -627,6 +673,8 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         popupMessage = tr("Unable to load the image!");
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
+
+    updateTrayIconPixelComboBoxIcons(icon_loaded);
 }
 
 void QTableSetupDialog::on_customImageShowPositionComboBox_currentIndexChanged(int index)
