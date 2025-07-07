@@ -10020,6 +10020,8 @@ void QKeyMapper::playStopSound()
 
 void QKeyMapper::mappingStartNotification()
 {
+    ScopedTrayUpdater trayUpdater(this);
+
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
     if (NOTIFICATION_POSITION_NONE == position) {
@@ -10094,12 +10096,12 @@ void QKeyMapper::mappingStartNotification()
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
-
-    updateSystemTrayDisplay();
 }
 
 void QKeyMapper::mappingStopNotification()
 {
+    ScopedTrayUpdater trayUpdater(this);
+
     QString popupNotification;
     QString mappingStatusString;
     if (KEYMAP_IDLE == m_KeyMapStatus) {
@@ -10116,12 +10118,12 @@ void QKeyMapper::mappingStopNotification()
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
 
     showNotificationPopup(popupNotification);
-
-    updateSystemTrayDisplay();
 }
 
 void QKeyMapper::mappingTabSwitchNotification(bool isSame)
 {
+    ScopedTrayUpdater trayUpdater(this);
+
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
     if (NOTIFICATION_POSITION_NONE == position) {
@@ -10194,8 +10196,6 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
-
-    updateSystemTrayDisplay();
 }
 
 void QKeyMapper::closeSelectColorDialog()

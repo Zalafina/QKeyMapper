@@ -1023,4 +1023,17 @@ private:
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;
 };
+
+class ScopedTrayUpdater {
+private:
+    QKeyMapper* mapper;
+public:
+    explicit ScopedTrayUpdater(QKeyMapper* m) : mapper(m) {}
+    ~ScopedTrayUpdater() {
+        if (mapper) {
+            mapper->updateSystemTrayDisplay();
+        }
+    }
+};
+
 #endif // QKEYMAPPER_H
