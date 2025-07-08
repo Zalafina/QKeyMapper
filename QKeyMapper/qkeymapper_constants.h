@@ -27,6 +27,8 @@ extern const int ORIGINAL_KEY_COLUMN;
 extern const int MAPPING_KEY_COLUMN;
 extern const int BURST_MODE_COLUMN;
 extern const int LOCK_COLUMN;
+extern const int CATEGORY_COLUMN;
+extern const int CATEGORY_FILTER_ALL_INDEX;
 extern const int KEY_TYPE_COMMON;
 extern const int KEY_TYPE_KEYBOARD;
 extern const int KEY_TYPE_MOUSE;
@@ -906,6 +908,7 @@ extern const char *REMOVETABLEBUTTON_STR;
 // extern const char* KEYMAPDATATABLE_COL2_CHINESE;
 // extern const char* KEYMAPDATATABLE_COL3_CHINESE;
 // extern const char* KEYMAPDATATABLE_COL4_CHINESE;
+// extern const char* KEYMAPDATATABLE_COL5_CHINESE;
 #ifdef VIGEM_CLIENT_SUPPORT
 // extern const char* VIRTUALGAMEPADGROUPBOX_CHINESE;
 // extern const char* VJOYXSENSLABEL_CHINESE;
@@ -1032,6 +1035,7 @@ extern const char *REMOVETABLEBUTTON_STR;
 // extern const char* KEYMAPDATATABLE_COL2_ENGLISH;
 // extern const char* KEYMAPDATATABLE_COL3_ENGLISH;
 // extern const char* KEYMAPDATATABLE_COL4_ENGLISH;
+// extern const char* KEYMAPDATATABLE_COL5_ENGLISH;
 #ifdef VIGEM_CLIENT_SUPPORT
 // extern const char* VIRTUALGAMEPADGROUPBOX_ENGLISH;
 // extern const char* VJOYXSENSLABEL_ENGLISH;

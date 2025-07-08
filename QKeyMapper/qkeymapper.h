@@ -207,13 +207,26 @@ public:
     explicit KeyMappingDataTableWidget(QWidget *parent = Q_NULLPTR)
         : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
+    // Category filtering methods
+    void setCategoryFilter(const QString &category);
+    void clearCategoryFilter();
+    QStringList getAvailableCategories() const;
+    void setCategoryColumnVisible(bool visible);
+    bool isCategoryColumnVisible() const;
+
 protected:
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
 
 private:
+    void updateRowVisibility();
+
+private:
     int m_DraggedTopRow;
     int m_DraggedBottomRow;
+    bool m_CategoryColumnVisible = false;  // Category column visibility
+public:
+    QString m_CategoryFilter = QString();  // Current category filter
 };
 
 struct KeyMappingTab_Info
@@ -763,6 +776,8 @@ private slots:
 
     void on_showNotesButton_toggled(bool checked);
 
+    void on_showCategoryButton_toggled(bool checked);
+
     void on_checkUpdateButton_clicked();
 
     void on_Gyro2MouseAdvancedSettingButton_clicked();
@@ -786,6 +801,11 @@ private slots:
     void on_mapList_SelectGamepadButton_toggled(bool checked);
 
     void on_mapList_SelectFunctionButton_toggled(bool checked);
+
+    // Category filter slots
+    void onCategoryFilterChanged(int index);
+    void updateCategoryFilterComboBox(void);
+
 
 private:
     // void initHotKeySequence(void);
@@ -815,6 +835,7 @@ public:
     void showNotificationPopup(const QString &message);
     void initSelectColorDialog(void);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
+    bool isMappingDataTableFiltered(void);
 
 private:
     void initKeyMappingTabWidget(void);
@@ -831,6 +852,7 @@ private:
     void initKeysCategoryMap(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
+    void initCategoryFilterControls(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
     void initWindowSwitchKeyLineEdit(void);

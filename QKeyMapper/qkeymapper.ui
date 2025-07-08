@@ -262,44 +262,6 @@
     <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="moveupButton">
-   <property name="geometry">
-    <rect>
-     <x>999</x>
-     <y>120</y>
-     <width>51</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>▲</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="movedownButton">
-   <property name="geometry">
-    <rect>
-     <x>999</x>
-     <y>180</y>
-     <width>51</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>▼</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
@@ -2109,6 +2071,47 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QPushButton" name="showCategoryButton">
+   <property name="geometry">
+    <rect>
+     <x>990</x>
+     <y>110</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Category</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="CategoryFilterComboBox">
+   <property name="geometry">
+    <rect>
+     <x>990</x>
+     <y>150</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string/>
+   </property>
+   <property name="currentIndex">
+    <number>-1</number>
+   </property>
+  </widget>
   <zorder>keymapButton</zorder>
   <zorder>savemaplistButton</zorder>
   <zorder>processinfoTable</zorder>
@@ -2121,8 +2124,6 @@
   <zorder>deleteSelectedButton</zorder>
   <zorder>clearallButton</zorder>
   <zorder>iconLabel</zorder>
-  <zorder>moveupButton</zorder>
-  <zorder>movedownButton</zorder>
   <zorder>settingselectComboBox</zorder>
   <zorder>removeSettingButton</zorder>
   <zorder>nextarrowCheckBox</zorder>
@@ -2159,6 +2160,8 @@
   <zorder>mapList_SelectKeyboardButton</zorder>
   <zorder>mapList_SelectFunctionButton</zorder>
   <zorder>mapList_SelectMouseButton</zorder>
+  <zorder>showCategoryButton</zorder>
+  <zorder>CategoryFilterComboBox</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

@@ -22,7 +22,7 @@ const unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 const int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
 const int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
-const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 4;
+const int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 5;
 
 const int INITIAL_WINDOW_POSITION = -1;
 
@@ -36,6 +36,9 @@ const int ORIGINAL_KEY_COLUMN = 0;
 const int MAPPING_KEY_COLUMN = 1;
 const int BURST_MODE_COLUMN = 2;
 const int LOCK_COLUMN = 3;
+const int CATEGORY_COLUMN = 4;
+
+const int CATEGORY_FILTER_ALL_INDEX = 0;
 
 const int KEY_TYPE_COMMON       = 0;
 const int KEY_TYPE_KEYBOARD     = 1;
@@ -1031,6 +1034,7 @@ const char *REMOVETABLEBUTTON_STR = "RemoveTable";
 // const char *KEYMAPDATATABLE_COL2_CHINESE = "映射按键";
 // const char *KEYMAPDATATABLE_COL3_CHINESE = "连发";
 // const char *KEYMAPDATATABLE_COL4_CHINESE = "锁定";
+// const char *KEYMAPDATATABLE_COL5_CHINESE = "分类";
 #ifdef VIGEM_CLIENT_SUPPORT
 // const char *VIRTUALGAMEPADGROUPBOX_CHINESE = "虚拟游戏手柄";
 // const char *VJOYXSENSLABEL_CHINESE = "X轴灵敏度";
@@ -1162,6 +1166,7 @@ const char *REMOVETABLEBUTTON_STR = "RemoveTable";
 // const char *KEYMAPDATATABLE_COL2_ENGLISH = "MappingKey";
 // const char *KEYMAPDATATABLE_COL3_ENGLISH = "Burst";
 // const char *KEYMAPDATATABLE_COL4_ENGLISH = "Lock";
+// const char *KEYMAPDATATABLE_COL5_ENGLISH = "Category";
 #ifdef VIGEM_CLIENT_SUPPORT
 // const char *VIRTUALGAMEPADGROUPBOX_ENGLISH = "Virtual Gamepad";
 // const char *VJOYXSENSLABEL_ENGLISH = "X Sens";

@@ -160,6 +160,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // initOriginalKeySeqEdit();
     initCombinationKeyLineEdit();
     initInputDeviceSelectComboBoxes();
+    initCategoryFilterControls();
     initPopupMessage();
     initPushLevelSlider();
 
@@ -249,8 +250,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->nameCheckBox->setChecked(true);
     // ui->titleCheckBox->setChecked(true);
 
-    ui->moveupButton->setFont(QFont("SimSun", 14));
-    ui->movedownButton->setFont(QFont("SimSun", 16));
+    // ui->moveupButton->setFont(QFont("SimSun", 14));
+    // ui->movedownButton->setFont(QFont("SimSun", 16));
 
     ui->oriList_SelectKeyboardButton->setStyle(windowsStyle);
     ui->oriList_SelectMouseButton->setStyle(windowsStyle);
@@ -276,6 +277,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mapList_SelectMouseButton->setChecked(true);
     ui->mapList_SelectGamepadButton->setChecked(true);
     ui->mapList_SelectFunctionButton->setChecked(true);
+
+    // Initialize category button state (default: unchecked/hidden)
+    ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
     ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
@@ -5350,6 +5354,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
 
+    // Initialize category column visibility based on current button state
+    KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
+
     KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
@@ -5359,7 +5366,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
-    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    // Allow editing only for specific columns (will be controlled per item)
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
 
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
@@ -5368,7 +5376,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
                                                                     << tr("MappingKey")
                                                                     << tr("Burst")
-                                                                    << tr("Lock"));
+                                                                    << tr("Lock")
+                                                                    << tr("Category"));
     QFont customFont(FONTNAME_ENGLISH, 9);
     KeyMappingTableWidget->setFont(customFont);
     KeyMappingTableWidget->horizontalHeader()->setFont(customFont);
@@ -5806,6 +5815,19 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
 #endif
+        }
+    }
+    else if (col == CATEGORY_COLUMN) {
+        QString category = m_KeyMappingDataTable->item(row, col)->text();
+        if (category != KeyMappingDataList->at(row).Category) {
+            (*KeyMappingDataList)[row].Category = category;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[%s]: row(%d) category changed to (%s)", __func__, row, category.toLocal8Bit().constData());
+#endif
+            // Update category filter ComboBox
+            if (m_KeyMappingDataTable->isCategoryColumnVisible()) {
+                updateCategoryFilterComboBox();
+            }
         }
     }
 }
@@ -9397,6 +9419,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
+    ui->showCategoryButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -9528,6 +9551,7 @@ void QKeyMapper::setControlFontChinese()
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
+    ui->showCategoryButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -9659,6 +9683,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
+    ui->showCategoryButton->setFont(customFont);
     ui->nameCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -9869,6 +9894,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->clearallButton->setEnabled(status);
     ui->processListButton->setEnabled(status);
     ui->showNotesButton->setEnabled(status);
+    ui->showCategoryButton->setEnabled(status);
 
     ui->settingTabWidget->setEnabled(status);
 
@@ -9916,8 +9942,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->gamepadSelectLabel->setEnabled(status);
     ui->gamepadSelectComboBox->setEnabled(status);
 
-    ui->moveupButton->setEnabled(status);
-    ui->movedownButton->setEnabled(status);
+    // ui->moveupButton->setEnabled(status);
+    // ui->movedownButton->setEnabled(status);
     ui->nextarrowCheckBox->setEnabled(status);
 
     ui->windowswitchkeyLabel->setEnabled(status);
@@ -11572,6 +11598,17 @@ bool QKeyMapper::showMessageBoxWithCheckbox(QWidget *parent, QString message, QS
     return ischecked;
 }
 
+bool QKeyMapper::isMappingDataTableFiltered()
+{
+    if (ui->showCategoryButton->isChecked()
+        && ui->CategoryFilterComboBox->currentIndex() != CATEGORY_FILTER_ALL_INDEX) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 void QKeyMapper::initKeyMappingTabWidget(void)
 {
     m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
@@ -11684,22 +11721,29 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
 {
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
-    int original_key_width_min = mappingDataTable->width()/4 - 15;
+    int original_key_width_min = mappingDataTable->width()/5 - 15;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
     int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
     int lock_width = burst_mode_width;
     burst_mode_width += 8;
-    // int burst_mode_width = mappingDataTable->width()/5 - 40;
-    // int lock_width = mappingDataTable->width()/5 - 40;
+
+    int category_width = 80; // Default width for category column
+    if (mappingDataTable->isCategoryColumnVisible()) {
+        mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
+        category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
+        if (category_width < 80) category_width = 80;
+    } else {
+        category_width = 0;
+    }
 
     if (original_key_width < original_key_width_min) {
         original_key_width = original_key_width_min;
     }
 
-    int mapping_key_width_min = mappingDataTable->width()/4 - 15;
-    int mapping_key_width = mappingDataTable->width() - original_key_width - burst_mode_width - lock_width - 16;
+    int mapping_key_width_min = mappingDataTable->width()/5 - 15;
+    int mapping_key_width = mappingDataTable->width() - original_key_width - burst_mode_width - lock_width - category_width - 16;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
@@ -11708,9 +11752,12 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     mappingDataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
     mappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
     mappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
+    if (mappingDataTable->isCategoryColumnVisible()) {
+        mappingDataTable->setColumnWidth(CATEGORY_COLUMN, category_width);
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
 #endif
 }
 
@@ -12140,6 +12187,17 @@ void QKeyMapper::initInputDeviceSelectComboBoxes()
 {
     initKeyboardSelectComboBox();
     initMouseSelectComboBox();
+}
+
+void QKeyMapper::initCategoryFilterControls()
+{
+    // Initialize category filter ComboBox
+    ui->CategoryFilterComboBox->clear();
+    ui->CategoryFilterComboBox->addItem(tr("All"));
+    ui->CategoryFilterComboBox->setVisible(false);
+
+    // Connect signals
+    connect(ui->CategoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QKeyMapper::onCategoryFilterChanged);
 }
 
 void QKeyMapper::initKeyboardSelectComboBox()
@@ -12602,6 +12660,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             }
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
             ori_TableItem->setToolTip(orikey_withnote);
+            ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             if (keymapdata.PassThrough) {
                 ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
             }
@@ -12611,6 +12670,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
             QTableWidgetItem *mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
             mapping_TableItem->setToolTip(mappingkeys_str);
+            mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             mappingDataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , mapping_TableItem);
 
             /* BURST_MODE_COLUMN */
@@ -12645,6 +12705,17 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 #endif
             mappingDataTable->setItem(rowindex, LOCK_COLUMN    , lockCheckBox);
 
+            /* CATEGORY_COLUMN */
+            QTableWidgetItem *categoryItem = new QTableWidgetItem(keymapdata.Category);
+            categoryItem->setToolTip(keymapdata.Category);
+            // Category column should be editable when visible
+            if (mappingDataTable->isCategoryColumnVisible()) {
+                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+            } else {
+                categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+            }
+            mappingDataTable->setItem(rowindex, CATEGORY_COLUMN, categoryItem);
+
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -12663,6 +12734,11 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     }
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
+
+    // Update category filter ComboBox if category column is visible
+    if (mappingDataTable->isCategoryColumnVisible()) {
+        updateCategoryFilterComboBox();
+    }
 }
 
 void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
@@ -12836,6 +12912,11 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->clearallButton->setText(tr("Clear"));
     ui->processListButton->setText(tr("ProcessList"));
     ui->showNotesButton->setText(tr("ShowNotes"));
+    ui->showCategoryButton->setText(tr("Category"));
+
+    // Update category filter controls text
+    ui->CategoryFilterComboBox->setItemText(CATEGORY_FILTER_ALL_INDEX, tr("All"));
+
     ui->addmapdataButton->setText(tr("ADD"));
     ui->nameCheckBox->setText(tr("Process"));
     ui->titleCheckBox->setText(tr("Title"));
@@ -12977,7 +13058,8 @@ void QKeyMapper::setUILanguage(int languageindex)
         mappingTable->setHorizontalHeaderLabels(QStringList()       << tr("OriginalKey")
                                                                     << tr("MappingKey")
                                                                     << tr("Burst")
-                                                                    << tr("Lock"));
+                                                                    << tr("Lock")
+                                                                    << tr("Category"));
     }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << tr("Process")
@@ -13141,7 +13223,8 @@ void QKeyMapper::setUILanguage_Chinese()
         mappingTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_CHINESE
                                                                 << KEYMAPDATATABLE_COL2_CHINESE
                                                                 << KEYMAPDATATABLE_COL3_CHINESE
-                                                                << KEYMAPDATATABLE_COL4_CHINESE);
+                                                                << KEYMAPDATATABLE_COL4_CHINESE
+                                                                << KEYMAPDATATABLE_COL5_CHINESE);
     }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_CHINESE
@@ -13286,7 +13369,8 @@ void QKeyMapper::setUILanguage_English()
         mappingTable->setHorizontalHeaderLabels(QStringList()   << KEYMAPDATATABLE_COL1_ENGLISH
                                                                 << KEYMAPDATATABLE_COL2_ENGLISH
                                                                 << KEYMAPDATATABLE_COL3_ENGLISH
-                                                                << KEYMAPDATATABLE_COL4_ENGLISH);
+                                                                << KEYMAPDATATABLE_COL4_ENGLISH
+                                                                << KEYMAPDATATABLE_COL5_ENGLISH);
     }
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << PROCESSINFOTABLE_COL1_ENGLISH
@@ -13746,8 +13830,31 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
         disconnectKeyMappingDataTableConnection();
         switchKeyMappingTabIndex(index);
         updateKeyMappingDataTableConnection();
+
+        // Update category-related controls after tab switch
+        if (ui->showCategoryButton->isChecked()) {
+            // If category feature is enabled, update the new tab accordingly
+            if (m_KeyMappingDataTable) {
+                m_KeyMappingDataTable->setCategoryColumnVisible(true);
+                resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+            }
+            // Update filter combobox with categories from the new tab
+            updateCategoryFilterComboBox();
+        }
+        else {
+            // If category feature is disabled, ensure the new tab also has it disabled
+            if (m_KeyMappingDataTable) {
+                m_KeyMappingDataTable->setCategoryColumnVisible(false);
+                resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+            }
+        }
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget tab changed :" << index;
+        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "Category button checked:" << ui->showCategoryButton->isChecked();
+        if (m_KeyMappingDataTable) {
+            qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "Category column visible:" << m_KeyMappingDataTable->isCategoryColumnVisible();
+        }
 #endif
     }
 }
@@ -13807,11 +13914,24 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
     }
 
     int rowindex = item->row();
+    int columnindex = item->column();
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "DoubleClicked";
+    qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
 #endif
 
-    showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+    // Check if the double-clicked item is in the Category column
+    if (columnindex == CATEGORY_COLUMN && m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()) {
+        // If it's the category column and it's visible, allow inline editing
+        m_KeyMappingDataTable->editItem(item);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
+#endif
+    }
+    else {
+        // For all other columns, show the item setup dialog as before
+        showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+    }
 }
 
 void QKeyMapper::setupDialogClosed()
@@ -14698,6 +14818,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
 void QKeyMapper::on_moveupButton_clicked()
 {
+    if (isMappingDataTableFiltered()) {
+        return;
+    }
+
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -14746,6 +14870,10 @@ void QKeyMapper::on_moveupButton_clicked()
 
 void QKeyMapper::on_movedownButton_clicked()
 {
+    if (isMappingDataTableFiltered()) {
+        return;
+    }
+
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -16006,6 +16134,10 @@ void KeyMappingDataTableWidget::startDrag(Qt::DropActions supportedActions)
 void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
 {
     if (event->dropAction() == Qt::MoveAction) {
+        if (QKeyMapper::getInstance()->isMappingDataTableFiltered()) {
+            return;
+        }
+
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         int droppedRow = rowAt(event->position().toPoint().y());
 #else
@@ -16017,6 +16149,103 @@ void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
         }
 
         emit QKeyMapper::getInstance()->keyMappingTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
+    }
+}
+
+// Category filtering methods implementation
+void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
+{
+    m_CategoryFilter = category;
+    updateRowVisibility();
+}
+
+void KeyMappingDataTableWidget::clearCategoryFilter()
+{
+    m_CategoryFilter.clear();
+    updateRowVisibility();
+}
+
+QStringList KeyMappingDataTableWidget::getAvailableCategories() const
+{
+    QStringList categories;
+
+    if (!isCategoryColumnVisible()) {
+        return categories;
+    }
+
+    for (int row = 0; row < rowCount(); ++row) {
+        QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
+        if (categoryItem) {
+            QString category = categoryItem->text().trimmed();
+            if (!category.isEmpty() && !categories.contains(category)) {
+#ifdef DEBUG_LOGOUT_ON
+                // Avoid confusion with the built-in "All" option
+                // Users can still create an "All" category, but we'll warn about it
+                if (category == tr("All")) {
+                    qDebug() << "[getAvailableCategories]" << "Warning: Found user-created category named 'All', which may cause confusion with the built-in 'All' option";
+                }
+#endif
+                categories.append(category);
+            }
+        }
+    }
+
+    return categories;
+}
+
+void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
+{
+    m_CategoryColumnVisible = visible;
+
+    if (visible) {
+        showColumn(CATEGORY_COLUMN);
+        // Enable editing for category column items
+        for (int row = 0; row < rowCount(); ++row) {
+            QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
+            if (categoryItem) {
+                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+            }
+        }
+    }
+    else {
+        hideColumn(CATEGORY_COLUMN);
+        clearCategoryFilter(); // Clear filter when hiding column
+        // Disable editing for category column items
+        for (int row = 0; row < rowCount(); ++row) {
+            QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
+            if (categoryItem) {
+                categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+            }
+        }
+    }
+}
+
+bool KeyMappingDataTableWidget::isCategoryColumnVisible() const
+{
+    return m_CategoryColumnVisible;
+}
+
+void KeyMappingDataTableWidget::updateRowVisibility()
+{
+    if (!isCategoryColumnVisible() || m_CategoryFilter.isEmpty()) {
+        // Show all rows when no filter is active
+        for (int row = 0; row < rowCount(); ++row) {
+            setRowHidden(row, false);
+        }
+        return;
+    }
+
+    // Filter rows based on category
+    for (int row = 0; row < rowCount(); ++row) {
+        QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
+        bool shouldShow = false;
+
+        if (categoryItem) {
+            QString itemCategory = categoryItem->text().trimmed();
+            shouldShow = (itemCategory == m_CategoryFilter);
+        }
+
+        setRowHidden(row, !shouldShow);
     }
 }
 
@@ -16071,6 +16300,24 @@ void QKeyMapper::on_showNotesButton_toggled(bool checked)
 {
     Q_UNUSED(checked);
     refreshAllKeyMappingTagWidget();
+}
+
+void QKeyMapper::on_showCategoryButton_toggled(bool checked)
+{
+    if (m_KeyMappingDataTable) {
+        m_KeyMappingDataTable->setCategoryColumnVisible(checked);
+        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+    }
+    
+    ui->CategoryFilterComboBox->setVisible(checked);
+
+    if (checked) {
+        updateCategoryFilterComboBox();
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[on_showCategoryButton_toggled]" << "Category controls visibility set to:" << checked;
+#endif
 }
 
 void QKeyMapper::on_checkUpdateButton_clicked()
@@ -16250,4 +16497,95 @@ void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
 #endif
     Q_UNUSED(checked);
     updateMappingKeyListComboBox();
+}
+
+void QKeyMapper::onCategoryFilterChanged(int index)
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    if (index == CATEGORY_FILTER_ALL_INDEX) {
+        // Index 0 is always "All" - clear filter to show all items
+        m_KeyMappingDataTable->clearCategoryFilter();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onCategoryFilterChanged]" << "Selected 'All' - clearing category filter";
+#endif
+    } else {
+        // Index > 0 is a user category - apply the filter
+        QString selectedCategory = ui->CategoryFilterComboBox->itemText(index);
+        m_KeyMappingDataTable->setCategoryFilter(selectedCategory);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onCategoryFilterChanged]" << "Selected category:" << selectedCategory << "at index:" << index;
+#endif
+    }
+}
+
+void QKeyMapper::updateCategoryFilterComboBox(void)
+{
+    if (!m_KeyMappingDataTable) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateCategoryFilterComboBox]" << "m_KeyMappingDataTable is null, skipping update";
+#endif
+        return;
+    }
+
+    // Store the current filter value before updating ComboBox
+    QString currentFilter = m_KeyMappingDataTable->m_CategoryFilter;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateCategoryFilterComboBox]" << "Category filter:" << currentFilter;
+#endif
+
+    // Temporarily block emit signals to avoid clearing the filter during ComboBox update
+    ui->CategoryFilterComboBox->blockSignals(true);
+
+    ui->CategoryFilterComboBox->clear();
+    ui->CategoryFilterComboBox->addItem(tr("All"));
+
+    QStringList categories = m_KeyMappingDataTable->getAvailableCategories();
+    categories.sort();
+    ui->CategoryFilterComboBox->addItems(categories);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateCategoryFilterComboBox]" << "Available categories:" << categories;
+#endif
+
+    int index = -1;
+    
+    // Check if we're looking for the "clear filter" state (empty filter)
+    if (currentFilter.isEmpty()) {
+        // Empty filter means "show all", so select index 0
+        index = CATEGORY_FILTER_ALL_INDEX;
+    } else {
+        // We're looking for a specific category
+        // Start searching from index 1 to avoid the built-in "All" at index 0
+        for (int i = 1; i < ui->CategoryFilterComboBox->count(); ++i) {
+            if (ui->CategoryFilterComboBox->itemText(i) == currentFilter) {
+                index = i;
+                break;
+            }
+        }
+    }
+    
+    if (index != -1) {
+        ui->CategoryFilterComboBox->setCurrentIndex(index);
+#ifdef DEBUG_LOGOUT_ON
+        if (index == CATEGORY_FILTER_ALL_INDEX) {
+            qDebug() << "[updateCategoryFilterComboBox]" << "Restored filter to 'All' (show all items)";
+        } else {
+            qDebug() << "[updateCategoryFilterComboBox]" << "Restored filter to category:" << currentFilter << "at index:" << index;
+        }
+#endif
+    } else {
+        // Category not found, clear filter and default to "All"
+        m_KeyMappingDataTable->m_CategoryFilter.clear();
+        ui->CategoryFilterComboBox->setCurrentIndex(CATEGORY_FILTER_ALL_INDEX);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateCategoryFilterComboBox]" << "Previous filter not found, defaulting to 'All'";
+#endif
+    }
+
+    // Restore emit signals after updating ComboBox
+    ui->CategoryFilterComboBox->blockSignals(false);
 }

@@ -73,6 +73,7 @@ typedef struct MAP_KEYDATA
     QStringList MappingKeys_KeyUp;
     QStringList Pure_MappingKeys_KeyUp;
     QString Note;
+    QString Category;  // New category field
     bool Burst;
     int BurstPressTime;
     int BurstReleaseTime;
@@ -110,6 +111,7 @@ typedef struct MAP_KEYDATA
     , MappingKeys_KeyUp()
     , Pure_MappingKeys_KeyUp()
     , Note()
+    , Category()
     , Burst(false)
     , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
@@ -167,6 +169,7 @@ typedef struct MAP_KEYDATA
             Pure_MappingKeys_KeyUp.removeDuplicates();
         }
         Note = note;
+        Category = QString(); // Initialize new category field
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
@@ -203,6 +206,7 @@ typedef struct MAP_KEYDATA
                 && (Mapping_Keys == other.Mapping_Keys)
                 && (MappingKeys_KeyUp == other.MappingKeys_KeyUp)
                 && (Note == other.Note)
+                && (Category == other.Category) // Compare new category field
                 && (Burst == other.Burst)
                 && (BurstPressTime == other.BurstPressTime)
                 && (BurstReleaseTime == other.BurstReleaseTime)
@@ -241,6 +245,7 @@ typedef struct MAP_KEYDATA
                         << ", Mapping_Keys:" << data.Mapping_Keys
                         << ", MappingKeys_KeyUp:" << data.MappingKeys_KeyUp
                         << ", Note:" << data.Note
+                        << ", Category:" << data.Category // Log new category field
                         << ", Burst:" << data.Burst
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
