@@ -9895,6 +9895,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->processListButton->setEnabled(status);
     ui->showNotesButton->setEnabled(status);
     ui->showCategoryButton->setEnabled(status);
+    ui->CategoryFilterComboBox->setEnabled(status);
 
     ui->settingTabWidget->setEnabled(status);
 
@@ -11609,6 +11610,34 @@ bool QKeyMapper::isMappingDataTableFiltered()
     }
 }
 
+void QKeyMapper::updateCategoryFilterByShowCategoryState()
+{
+    // Update category-related controls after tab switch
+    if (ui->showCategoryButton->isChecked()) {
+        // If category feature is enabled, update the new tab accordingly
+        if (m_KeyMappingDataTable) {
+            m_KeyMappingDataTable->setCategoryColumnVisible(true);
+            resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+        }
+        // Update filter combobox with categories from the new tab
+        updateCategoryFilterComboBox();
+    }
+    else {
+        // If category feature is disabled, ensure the new tab also has it disabled
+        if (m_KeyMappingDataTable) {
+            m_KeyMappingDataTable->setCategoryColumnVisible(false);
+            resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category button checked:" << ui->showCategoryButton->isChecked();
+    if (m_KeyMappingDataTable) {
+        qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category column visible:" << m_KeyMappingDataTable->isCategoryColumnVisible();
+    }
+#endif
+}
+
 void QKeyMapper::initKeyMappingTabWidget(void)
 {
     m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
@@ -12545,6 +12574,8 @@ void QKeyMapper::forceSwitchKeyMappingTabWidgetIndex(int index)
     switchKeyMappingTabIndex(index);
     updateKeyMappingDataTableConnection();
     m_KeyMappingTabWidget->blockSignals(false);
+
+    updateCategoryFilterByShowCategoryState();
 }
 
 void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
@@ -13831,30 +13862,10 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
         switchKeyMappingTabIndex(index);
         updateKeyMappingDataTableConnection();
 
-        // Update category-related controls after tab switch
-        if (ui->showCategoryButton->isChecked()) {
-            // If category feature is enabled, update the new tab accordingly
-            if (m_KeyMappingDataTable) {
-                m_KeyMappingDataTable->setCategoryColumnVisible(true);
-                resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
-            }
-            // Update filter combobox with categories from the new tab
-            updateCategoryFilterComboBox();
-        }
-        else {
-            // If category feature is disabled, ensure the new tab also has it disabled
-            if (m_KeyMappingDataTable) {
-                m_KeyMappingDataTable->setCategoryColumnVisible(false);
-                resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
-            }
-        }
+        updateCategoryFilterByShowCategoryState();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "m_KeyMappingTabWidget tab changed :" << index;
-        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "Category button checked:" << ui->showCategoryButton->isChecked();
-        if (m_KeyMappingDataTable) {
-            qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "Category column visible:" << m_KeyMappingDataTable->isCategoryColumnVisible();
-        }
 #endif
     }
 }
@@ -16134,10 +16145,6 @@ void KeyMappingDataTableWidget::startDrag(Qt::DropActions supportedActions)
 void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
 {
     if (event->dropAction() == Qt::MoveAction) {
-        if (QKeyMapper::getInstance()->isMappingDataTableFiltered()) {
-            return;
-        }
-
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         int droppedRow = rowAt(event->position().toPoint().y());
 #else
@@ -16152,6 +16159,24 @@ void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
     }
 }
 
+void KeyMappingDataTableWidget::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (QKeyMapper::getInstance()->isMappingDataTableFiltered()) {
+        event->ignore();
+    } else {
+        QTableWidget::dragEnterEvent(event);
+    }
+}
+
+void KeyMappingDataTableWidget::dragMoveEvent(QDragMoveEvent *event)
+{
+    if (QKeyMapper::getInstance()->isMappingDataTableFiltered()) {
+        event->ignore();
+    } else {
+        QTableWidget::dragMoveEvent(event);
+    }
+}
+
 // Category filtering methods implementation
 void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
 {
@@ -16161,7 +16186,7 @@ void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
 
 void KeyMappingDataTableWidget::clearCategoryFilter()
 {
-    m_CategoryFilter.clear();
+    // m_CategoryFilter.clear();
     updateRowVisibility();
 }
 
@@ -16199,6 +16224,7 @@ void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
 
     if (visible) {
         showColumn(CATEGORY_COLUMN);
+        updateRowVisibility();
         // Enable editing for category column items
         for (int row = 0; row < rowCount(); ++row) {
             QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
@@ -16559,13 +16585,9 @@ void QKeyMapper::updateCategoryFilterComboBox(void)
         index = CATEGORY_FILTER_ALL_INDEX;
     } else {
         // We're looking for a specific category
-        // Start searching from index 1 to avoid the built-in "All" at index 0
-        for (int i = 1; i < ui->CategoryFilterComboBox->count(); ++i) {
-            if (ui->CategoryFilterComboBox->itemText(i) == currentFilter) {
-                index = i;
-                break;
-            }
-        }
+        // Start searching from sorted available categories to avoid the built-in "All" at index 0
+        index = categories.indexOf(currentFilter);
+        index += 1; // Adjust index to account for "All" at index 0
     }
     
     if (index != -1) {

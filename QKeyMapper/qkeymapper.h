@@ -217,6 +217,8 @@ public:
 protected:
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragMoveEvent(QDragMoveEvent *event) override;
 
 private:
     void updateRowVisibility();
@@ -836,6 +838,7 @@ public:
     void initSelectColorDialog(void);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
     bool isMappingDataTableFiltered(void);
+    void updateCategoryFilterByShowCategoryState(void);
 
 private:
     void initKeyMappingTabWidget(void);
