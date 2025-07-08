@@ -11610,6 +11610,113 @@ bool QKeyMapper::isMappingDataTableFiltered()
     }
 }
 
+void QKeyMapper::onCategoryFilterChanged(int index)
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    if (index == CATEGORY_FILTER_ALL_INDEX) {
+        // Index 0 is always "All" - clear filter to show all items
+        m_KeyMappingDataTable->clearCategoryFilter();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onCategoryFilterChanged]" << "Selected 'All' - clearing category filter";
+#endif
+    } else {
+        // Index > 0 is a user category - apply the filter
+        QString selectedCategory = ui->CategoryFilterComboBox->itemText(index);
+        m_KeyMappingDataTable->setCategoryFilter(selectedCategory);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onCategoryFilterChanged]" << "Selected category:" << selectedCategory << "at index:" << index;
+#endif
+    }
+}
+
+void QKeyMapper::updateCategoryFilterComboBox(void)
+{
+    if (!m_KeyMappingDataTable) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateCategoryFilterComboBox]" << "m_KeyMappingDataTable is null, skipping update";
+#endif
+        return;
+    }
+
+    // Store the current filter value before updating ComboBox
+    QString currentFilter = m_KeyMappingDataTable->m_CategoryFilter;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateCategoryFilterComboBox]" << "Category filter:" << currentFilter;
+#endif
+
+    ui->CategoryFilterComboBox->clear();
+    ui->CategoryFilterComboBox->addItem(tr("All"));
+
+    QStringList categories = m_KeyMappingDataTable->getAvailableCategories();
+
+    // Separate regular categories from the special "Blank" option
+    QStringList regularCategories;
+    bool hasBlankOption = false;
+
+    for (const QString &category : std::as_const(categories)) {
+        if (category == tr("Blank")) {
+            hasBlankOption = true;
+        } else {
+            regularCategories.append(category);
+        }
+    }
+
+    // Sort regular categories and add them
+    regularCategories.sort();
+    ui->CategoryFilterComboBox->addItems(regularCategories);
+
+    // Add "Blank" option at the end if it exists
+    if (hasBlankOption) {
+        ui->CategoryFilterComboBox->addItem(tr("Blank"));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateCategoryFilterComboBox]" << "Available categories:" << categories;
+#endif
+
+    int index = -1;
+
+    // Check if we're looking for the "clear filter" state (empty filter)
+    if (currentFilter.isEmpty()) {
+        // Empty filter means "show all", so select index 0
+        index = CATEGORY_FILTER_ALL_INDEX;
+    } else if (currentFilter == tr("Blank")) {
+        // Looking for blank entries
+        if (hasBlankOption) {
+            index = ui->CategoryFilterComboBox->count() - 1; // "Blank" is always last
+        }
+    } else {
+        // We're looking for a specific category
+        // Start searching from sorted regular categories to avoid the built-in "All" at index 0
+        index = regularCategories.indexOf(currentFilter);
+        if (index != -1) {
+            index += 1; // Adjust index to account for "All" at index 0
+        }
+    }
+
+    if (index != -1) {
+        ui->CategoryFilterComboBox->setCurrentIndex(index);
+#ifdef DEBUG_LOGOUT_ON
+        if (index == CATEGORY_FILTER_ALL_INDEX) {
+            qDebug() << "[updateCategoryFilterComboBox]" << "Restored filter to 'All' (show all items)";
+        } else {
+            qDebug() << "[updateCategoryFilterComboBox]" << "Restored filter to category:" << currentFilter << "at index:" << index;
+        }
+#endif
+    } else {
+        // Category not found, clear filter and default to "All"
+        m_KeyMappingDataTable->m_CategoryFilter.clear();
+        ui->CategoryFilterComboBox->setCurrentIndex(CATEGORY_FILTER_ALL_INDEX);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateCategoryFilterComboBox]" << "Previous filter not found, defaulting to 'All'";
+#endif
+    }
+}
+
 void QKeyMapper::updateCategoryFilterByShowCategoryState()
 {
     // Update category-related controls after tab switch
@@ -12224,9 +12331,6 @@ void QKeyMapper::initCategoryFilterControls()
     ui->CategoryFilterComboBox->clear();
     ui->CategoryFilterComboBox->addItem(tr("All"));
     ui->CategoryFilterComboBox->setVisible(false);
-
-    // Connect signals
-    connect(ui->CategoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &QKeyMapper::onCategoryFilterChanged);
 }
 
 void QKeyMapper::initKeyboardSelectComboBox()
@@ -12242,7 +12346,7 @@ void QKeyMapper::initKeyboardSelectComboBox()
     keyboardDeviceList.append(QString());
 
     QList<InputDevice> keyboardlist = Interception_Worker::getKeyboardDeviceList();
-    for (const InputDevice &inputdevice : keyboardlist)
+    for (const InputDevice &inputdevice : std::as_const(keyboardlist))
     {
         QString deviceStr;
         if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
@@ -12277,7 +12381,7 @@ void QKeyMapper::initMouseSelectComboBox()
     mouseDeviceList.append(QString());
 
     QList<InputDevice> mouselist = Interception_Worker::getMouseDeviceList();
-    for (const InputDevice &inputdevice : mouselist)
+    for (const InputDevice &inputdevice : std::as_const(mouselist))
     {
         QString deviceStr;
         if (inputdevice.deviceinfo.devicedesc.isEmpty()) {
@@ -12946,7 +13050,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->showCategoryButton->setText(tr("Category"));
 
     // Update category filter controls text
-    ui->CategoryFilterComboBox->setItemText(CATEGORY_FILTER_ALL_INDEX, tr("All"));
+    updateCategoryFilterComboBox();
 
     ui->addmapdataButton->setText(tr("ADD"));
     ui->nameCheckBox->setText(tr("Process"));
@@ -16186,7 +16290,7 @@ void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
 
 void KeyMappingDataTableWidget::clearCategoryFilter()
 {
-    // m_CategoryFilter.clear();
+    m_CategoryFilter.clear();
     updateRowVisibility();
 }
 
@@ -16198,11 +16302,22 @@ QStringList KeyMappingDataTableWidget::getAvailableCategories() const
         return categories;
     }
 
+    bool hasNonEmptyCategories = false;
+    bool hasEmptyCategories = false;
+
     for (int row = 0; row < rowCount(); ++row) {
         QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
+        QString category;
+
         if (categoryItem) {
-            QString category = categoryItem->text().trimmed();
-            if (!category.isEmpty() && !categories.contains(category)) {
+            category = categoryItem->text().trimmed();
+        }
+
+        if (category.isEmpty()) {
+            hasEmptyCategories = true;
+        } else {
+            hasNonEmptyCategories = true;
+            if (!categories.contains(category)) {
 #ifdef DEBUG_LOGOUT_ON
                 // Avoid confusion with the built-in "All" option
                 // Users can still create an "All" category, but we'll warn about it
@@ -16213,6 +16328,12 @@ QStringList KeyMappingDataTableWidget::getAvailableCategories() const
                 categories.append(category);
             }
         }
+    }
+
+    // Add "(Blanks)" option only if there are both non-empty and empty categories
+    // If all categories are empty, showing "(Blanks)" would be the same as "All"
+    if (hasEmptyCategories && hasNonEmptyCategories) {
+        categories.append(tr("Blank"));
     }
 
     return categories;
@@ -16235,7 +16356,7 @@ void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
     }
     else {
         hideColumn(CATEGORY_COLUMN);
-        clearCategoryFilter(); // Clear filter when hiding column
+        updateRowVisibility(); // Only show all the rows when hiding column
         // Disable editing for category column items
         for (int row = 0; row < rowCount(); ++row) {
             QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
@@ -16266,9 +16387,21 @@ void KeyMappingDataTableWidget::updateRowVisibility()
         QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
         bool shouldShow = false;
 
-        if (categoryItem) {
-            QString itemCategory = categoryItem->text().trimmed();
-            shouldShow = (itemCategory == m_CategoryFilter);
+        if (m_CategoryFilter == tr("Blank")) {
+            // Show rows with empty/blank categories
+            if (categoryItem) {
+                QString itemCategory = categoryItem->text().trimmed();
+                shouldShow = itemCategory.isEmpty();
+            } else {
+                // No item means it's also considered blank
+                shouldShow = true;
+            }
+        } else {
+            // Show rows matching the specific category
+            if (categoryItem) {
+                QString itemCategory = categoryItem->text().trimmed();
+                shouldShow = (itemCategory == m_CategoryFilter);
+            }
         }
 
         setRowHidden(row, !shouldShow);
@@ -16525,89 +16658,7 @@ void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
     updateMappingKeyListComboBox();
 }
 
-void QKeyMapper::onCategoryFilterChanged(int index)
+void QKeyMapper::on_CategoryFilterComboBox_currentIndexChanged(int index)
 {
-    if (!m_KeyMappingDataTable) {
-        return;
-    }
-
-    if (index == CATEGORY_FILTER_ALL_INDEX) {
-        // Index 0 is always "All" - clear filter to show all items
-        m_KeyMappingDataTable->clearCategoryFilter();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onCategoryFilterChanged]" << "Selected 'All' - clearing category filter";
-#endif
-    } else {
-        // Index > 0 is a user category - apply the filter
-        QString selectedCategory = ui->CategoryFilterComboBox->itemText(index);
-        m_KeyMappingDataTable->setCategoryFilter(selectedCategory);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onCategoryFilterChanged]" << "Selected category:" << selectedCategory << "at index:" << index;
-#endif
-    }
-}
-
-void QKeyMapper::updateCategoryFilterComboBox(void)
-{
-    if (!m_KeyMappingDataTable) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[updateCategoryFilterComboBox]" << "m_KeyMappingDataTable is null, skipping update";
-#endif
-        return;
-    }
-
-    // Store the current filter value before updating ComboBox
-    QString currentFilter = m_KeyMappingDataTable->m_CategoryFilter;
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateCategoryFilterComboBox]" << "Category filter:" << currentFilter;
-#endif
-
-    // Temporarily block emit signals to avoid clearing the filter during ComboBox update
-    ui->CategoryFilterComboBox->blockSignals(true);
-
-    ui->CategoryFilterComboBox->clear();
-    ui->CategoryFilterComboBox->addItem(tr("All"));
-
-    QStringList categories = m_KeyMappingDataTable->getAvailableCategories();
-    categories.sort();
-    ui->CategoryFilterComboBox->addItems(categories);
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateCategoryFilterComboBox]" << "Available categories:" << categories;
-#endif
-
-    int index = -1;
-    
-    // Check if we're looking for the "clear filter" state (empty filter)
-    if (currentFilter.isEmpty()) {
-        // Empty filter means "show all", so select index 0
-        index = CATEGORY_FILTER_ALL_INDEX;
-    } else {
-        // We're looking for a specific category
-        // Start searching from sorted available categories to avoid the built-in "All" at index 0
-        index = categories.indexOf(currentFilter);
-        index += 1; // Adjust index to account for "All" at index 0
-    }
-    
-    if (index != -1) {
-        ui->CategoryFilterComboBox->setCurrentIndex(index);
-#ifdef DEBUG_LOGOUT_ON
-        if (index == CATEGORY_FILTER_ALL_INDEX) {
-            qDebug() << "[updateCategoryFilterComboBox]" << "Restored filter to 'All' (show all items)";
-        } else {
-            qDebug() << "[updateCategoryFilterComboBox]" << "Restored filter to category:" << currentFilter << "at index:" << index;
-        }
-#endif
-    } else {
-        // Category not found, clear filter and default to "All"
-        m_KeyMappingDataTable->m_CategoryFilter.clear();
-        ui->CategoryFilterComboBox->setCurrentIndex(CATEGORY_FILTER_ALL_INDEX);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[updateCategoryFilterComboBox]" << "Previous filter not found, defaulting to 'All'";
-#endif
-    }
-
-    // Restore emit signals after updating ComboBox
-    ui->CategoryFilterComboBox->blockSignals(false);
+    onCategoryFilterChanged(index);
 }

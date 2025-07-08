@@ -804,10 +804,7 @@ private slots:
 
     void on_mapList_SelectFunctionButton_toggled(bool checked);
 
-    // Category filter slots
-    void onCategoryFilterChanged(int index);
-    void updateCategoryFilterComboBox(void);
-
+    void on_CategoryFilterComboBox_currentIndexChanged(int index);
 
 private:
     // void initHotKeySequence(void);
@@ -838,6 +835,8 @@ public:
     void initSelectColorDialog(void);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
     bool isMappingDataTableFiltered(void);
+    void onCategoryFilterChanged(int index);
+    void updateCategoryFilterComboBox(void);
     void updateCategoryFilterByShowCategoryState(void);
 
 private:
