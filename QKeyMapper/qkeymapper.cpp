@@ -5373,7 +5373,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
 
-    // KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
+    KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
@@ -11911,11 +11911,13 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
 
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
     int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
-    burst_mode_width += 8;
     int lock_width = burst_mode_width;
+    burst_mode_width += 8;
 
     int category_width = 0;
     if (mappingDataTable->isCategoryColumnVisible()) {
+        lock_width += 8; // Add padding for lock column
+        mappingDataTable->horizontalHeader()->setStretchLastSection(false);
         int category_width_max = mappingDataTable->width() / 5;
         mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
         category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
@@ -11925,6 +11927,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         if (category_width > category_width_max) {
             category_width = category_width_max;
         }
+        mappingDataTable->horizontalHeader()->setStretchLastSection(true);
     }
 
     if (original_key_width < original_key_width_min) {
