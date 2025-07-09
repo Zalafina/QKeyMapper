@@ -7914,7 +7914,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CATEGORY)) {
                 categorys_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CATEGORY).toList();
-                for (const QVariant &variant : categorys_loaded) {
+                for (const QVariant &variant : std::as_const(categorys_loaded)) {
                     categorys_split.append(variant.toStringList());
                 }
             }
