@@ -5357,7 +5357,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
 
-    KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
+    // KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
@@ -11862,16 +11862,20 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
 
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
     int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
-    int lock_width = burst_mode_width;
     burst_mode_width += 8;
+    int lock_width = burst_mode_width;
 
-    int category_width = 80; // Default width for category column
+    int category_width = 0;
     if (mappingDataTable->isCategoryColumnVisible()) {
+        int category_width_max = mappingDataTable->width() / 5;
         mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
         category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
-        if (category_width < 80) category_width = 80;
-    } else {
-        category_width = 0;
+        if (category_width < burst_mode_width) {
+            category_width = burst_mode_width;
+        }
+        if (category_width > category_width_max) {
+            category_width = category_width_max;
+        }
     }
 
     if (original_key_width < original_key_width_min) {
@@ -13047,7 +13051,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->clearallButton->setText(tr("Clear"));
     ui->processListButton->setText(tr("ProcessList"));
     ui->showNotesButton->setText(tr("ShowNotes"));
-    ui->showCategoryButton->setText(tr("Category"));
+    ui->showCategoryButton->setText(tr("ShowCategory"));
 
     // Update category filter controls text
     updateCategoryFilterComboBox();
@@ -16467,7 +16471,7 @@ void QKeyMapper::on_showCategoryButton_toggled(bool checked)
         m_KeyMappingDataTable->setCategoryColumnVisible(checked);
         resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
     }
-    
+
     ui->CategoryFilterComboBox->setVisible(checked);
 
     if (checked) {

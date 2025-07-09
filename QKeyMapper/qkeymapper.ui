@@ -2084,7 +2084,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Category</string>
+    <string>ShowCategory</string>
    </property>
    <property name="checkable">
     <bool>true</bool>
