@@ -627,6 +627,7 @@ extern const char* KEYMAPDATA_ORIGINALKEYS;
 extern const char* KEYMAPDATA_MAPPINGKEYS;
 extern const char *KEYMAPDATA_MAPPINGKEYS_KEYUP;
 extern const char *KEYMAPDATA_NOTE;
+extern const char *KEYMAPDATA_CATEGORY;
 extern const char* KEYMAPDATA_BURST;
 extern const char* KEYMAPDATA_LOCK;
 extern const char *KEYMAPDATA_MAPPINGKEYUNLOCK;

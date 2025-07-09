@@ -710,6 +710,7 @@ const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
 const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";
 const char *KEYMAPDATA_MAPPINGKEYS_KEYUP = "KeyMapData_MappingKeys_KeyUp";
 const char *KEYMAPDATA_NOTE = "KeyMapData_Note";
+const char *KEYMAPDATA_CATEGORY = "KeyMapData_Category";
 const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 const char *KEYMAPDATA_MAPPINGKEYUNLOCK = "KeyMapData_MappingKeyUnlock";

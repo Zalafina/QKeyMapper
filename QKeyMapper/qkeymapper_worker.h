@@ -73,7 +73,7 @@ typedef struct MAP_KEYDATA
     QStringList MappingKeys_KeyUp;
     QStringList Pure_MappingKeys_KeyUp;
     QString Note;
-    QString Category;  // New category field
+    QString Category;
     bool Burst;
     int BurstPressTime;
     int BurstReleaseTime;
@@ -142,7 +142,7 @@ typedef struct MAP_KEYDATA
     , Crosshair_Y_Offset(CROSSHAIR_Y_OFFSET_DEFAULT)
     {}
 
-    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note,
+    MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool mappingkeys_unlock, bool postmappingkey,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
@@ -169,7 +169,7 @@ typedef struct MAP_KEYDATA
             Pure_MappingKeys_KeyUp.removeDuplicates();
         }
         Note = note;
-        Category = QString(); // Initialize new category field
+        Category = category;
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
@@ -245,7 +245,7 @@ typedef struct MAP_KEYDATA
                         << ", Mapping_Keys:" << data.Mapping_Keys
                         << ", MappingKeys_KeyUp:" << data.MappingKeys_KeyUp
                         << ", Note:" << data.Note
-                        << ", Category:" << data.Category // Log new category field
+                        << ", Category:" << data.Category
                         << ", Burst:" << data.Burst
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
