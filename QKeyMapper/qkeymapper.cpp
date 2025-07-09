@@ -14938,6 +14938,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
 void QKeyMapper::on_moveupButton_clicked()
 {
     if (isMappingDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the mapping table is filtered!");
+        showWarningPopup(message);
         return;
     }
 
@@ -14990,6 +14993,9 @@ void QKeyMapper::on_moveupButton_clicked()
 void QKeyMapper::on_movedownButton_clicked()
 {
     if (isMappingDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the mapping table is filtered!");
+        showWarningPopup(message);
         return;
     }
 
@@ -16270,6 +16276,9 @@ void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
 void KeyMappingDataTableWidget::dragEnterEvent(QDragEnterEvent *event)
 {
     if (QKeyMapper::getInstance()->isMappingDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the mapping table is filtered!");
+        QKeyMapper::getInstance()->showWarningPopup(message);
         event->ignore();
     } else {
         QTableWidget::dragEnterEvent(event);
