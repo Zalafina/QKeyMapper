@@ -60,26 +60,11 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentText">
-    <string>Gyro Y</string>
+    <string/>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>-1</number>
    </property>
-   <item>
-    <property name="text">
-     <string>Gyro X</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Gyro Y</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Gyro Z</string>
-    </property>
-   </item>
   </widget>
   <widget class="QLabel" name="mouseXInputSourceLabel">
    <property name="geometry">
@@ -110,26 +95,11 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentText">
-    <string>Gyro X</string>
+    <string/>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>-1</number>
    </property>
-   <item>
-    <property name="text">
-     <string>Gyro X</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Gyro Y</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>Gyro Z</string>
-    </property>
-   </item>
   </widget>
   <widget class="QCheckBox" name="mouseYRevertCheckBox">
    <property name="geometry">

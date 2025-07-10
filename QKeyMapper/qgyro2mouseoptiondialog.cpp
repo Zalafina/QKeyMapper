@@ -1,5 +1,6 @@
 #include "qgyro2mouseoptiondialog.h"
 #include "ui_qgyro2mouseoptiondialog.h"
+#include "qkeymapper_constants.h"
 
 QGyro2MouseOptionDialog *QGyro2MouseOptionDialog::m_instance = Q_NULLPTR;
 
@@ -9,6 +10,15 @@ QGyro2MouseOptionDialog::QGyro2MouseOptionDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    QStringList mouseInputSourceList;
+    mouseInputSourceList.append(tr("Gyro X"));
+    mouseInputSourceList.append(tr("Gyro Y"));
+    mouseInputSourceList.append(tr("Gyro Z"));
+    ui->mouseXInputSourceComboBox->addItems(mouseInputSourceList);
+    ui->mouseYInputSourceComboBox->addItems(mouseInputSourceList);
+    ui->mouseXInputSourceComboBox->setCurrentIndex(GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT);
+    ui->mouseYInputSourceComboBox->setCurrentIndex(GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT);
 }
 
 QGyro2MouseOptionDialog::~QGyro2MouseOptionDialog()
@@ -27,19 +37,12 @@ void QGyro2MouseOptionDialog::setUILanguage(int languageindex)
     ui->mouseXRevertCheckBox->setText(tr("X Revert"));
     ui->mouseYRevertCheckBox->setText(tr("Y Revert"));
 
-    int mouse_x_inputsource_index = ui->mouseXInputSourceComboBox->currentIndex();
-    int mouse_y_inputsource_index = ui->mouseYInputSourceComboBox->currentIndex();
-    ui->mouseXInputSourceComboBox->clear();
-    ui->mouseYInputSourceComboBox->clear();
-    QStringList mouseInputSourceList;
-    mouseInputSourceList.append(tr("Gyro X"));
-    mouseInputSourceList.append(tr("Gyro Y"));
-    mouseInputSourceList.append(tr("Gyro Z"));
-
-    ui->mouseXInputSourceComboBox->addItems(mouseInputSourceList);
-    ui->mouseYInputSourceComboBox->addItems(mouseInputSourceList);
-    ui->mouseXInputSourceComboBox->setCurrentIndex(mouse_x_inputsource_index);
-    ui->mouseYInputSourceComboBox->setCurrentIndex(mouse_y_inputsource_index);
+    ui->mouseXInputSourceComboBox->setItemText(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X, tr("Gyro X"));
+    ui->mouseXInputSourceComboBox->setItemText(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Y, tr("Gyro Y"));
+    ui->mouseXInputSourceComboBox->setItemText(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z, tr("Gyro Z"));
+    ui->mouseYInputSourceComboBox->setItemText(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X, tr("Gyro X"));
+    ui->mouseYInputSourceComboBox->setItemText(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Y, tr("Gyro Y"));
+    ui->mouseYInputSourceComboBox->setItemText(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z, tr("Gyro Z"));
 }
 
 int QGyro2MouseOptionDialog::getGyro2Mouse_MouseXSource()

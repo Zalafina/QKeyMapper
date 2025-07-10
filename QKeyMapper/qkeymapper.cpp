@@ -7910,7 +7910,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_NOTE)) {
-                notes_load_asString = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).canConvert<QString>();
+                // notes_load_asString = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).canConvert<QString>();
                 if (notes_load_asString) {
                     notes_loaded_string = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
                     notes_split_string = notes_loaded_string.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -13196,25 +13196,13 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->notificationAdvancedSettingButton->setText(tr("Noti Advanced"));
     ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
 
-    int last_notification_position = ui->notificationComboBox->currentIndex();
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[setUILanguage_Chinese]" << "last_notification_position" << last_notification_position;
-#endif
-    ui->notificationComboBox->clear();
-    QStringList positoin_list = QStringList() \
-            << tr("None")
-            << tr("Top Left")
-            << tr("Top Center")
-            << tr("Top Right")
-            << tr("Bottom Left")
-            << tr("Bottom Center")
-            << tr("Bottom Right")
-            ;
-    ui->notificationComboBox->addItems(positoin_list);
-    ui->notificationComboBox->setCurrentIndex(last_notification_position);
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[setUILanguage_Chinese]" << "notificationComboBox->currentIndex()" << ui->notificationComboBox->currentIndex();
-#endif
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_NONE,           tr("None"));
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_TOP_LEFT,       tr("Top Left"));
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_TOP_CENTER,     tr("Top Center"));
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_TOP_RIGHT,      tr("Top Right"));
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_LEFT,    tr("Bottom Left"));
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_CENTER,  tr("Bottom Center"));
+    ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_RIGHT,   tr("Bottom Right"));
 
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->general),          tr("General")       );
