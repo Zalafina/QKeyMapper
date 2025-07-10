@@ -7910,7 +7910,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_NOTE)) {
-                // notes_load_asString = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).canConvert<QString>();
+                notes_load_asString = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).canConvert<QString>();
                 if (notes_load_asString) {
                     notes_loaded_string = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
                     notes_split_string = notes_loaded_string.split(SEPARATOR_KEYMAPDATA_LEVEL2);
