@@ -76,6 +76,16 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->repeatTimesSpinBox->setRange(REPEAT_TIMES_MIN, REPEAT_TIMES_MAX);
 
+    QStringList sendtiming_list = QStringList() \
+                                  << tr("Normal")
+                                  << tr("KeyDown")
+                                  << tr("KeyUp")
+                                  << tr("KeyDown+KeyUp")
+                                  << tr("Normal+KeyUp")
+        ;
+    ui->sendTimingComboBox->addItems(sendtiming_list);
+    ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+
     // ui->originalKeyLineEdit->setReadOnly(true);
     // ui->mappingKeyLineEdit->setReadOnly(true);
     // ui->originalKeyUpdateButton->setVisible(false);
@@ -163,16 +173,11 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->burstpressSpinBox->setSuffix(tr(" ms"));
     ui->burstreleaseSpinBox->setSuffix(tr(" ms"));
 
-    ui->sendTimingComboBox->clear();
-    QStringList sendtiming_list = QStringList() \
-                                  << tr("Normal")
-                                  << tr("KeyDown")
-                                  << tr("KeyUp")
-                                  << tr("KeyDown+KeyUp")
-                                  << tr("Normal+KeyUp")
-        ;
-    ui->sendTimingComboBox->addItems(sendtiming_list);
-    ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+    ui->sendTimingComboBox->setItemText(SENDTIMING_NORMAL,              tr("Normal"));
+    ui->sendTimingComboBox->setItemText(SENDTIMING_KEYDOWN,             tr("KeyDown"));
+    ui->sendTimingComboBox->setItemText(SENDTIMING_KEYUP,               tr("KeyUp"));
+    ui->sendTimingComboBox->setItemText(SENDTIMING_KEYDOWN_AND_KEYUP,   tr("KeyDown+KeyUp"));
+    ui->sendTimingComboBox->setItemText(SENDTIMING_NORMAL_AND_KEYUP,    tr("Normal+KeyUp"));
 
     if (m_KeyRecordDialog != Q_NULLPTR) {
         m_KeyRecordDialog->setUILanguage(languageindex);

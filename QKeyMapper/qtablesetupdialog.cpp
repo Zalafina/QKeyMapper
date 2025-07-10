@@ -41,7 +41,6 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
     m_NotificationFontColorPicker->raise();
 
-    ui->customImageShowPositionComboBox->clear();
     QStringList showPositionList;
     showPositionList.append(tr("None"));
     showPositionList.append(tr("Left"));
@@ -49,7 +48,6 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->customImageShowPositionComboBox->addItems(showPositionList);
     ui->customImageShowPositionComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_POSITION_DEFAULT);
 
-    ui->customImageTrayIconPixelComboBox->clear();
     QStringList trayiconPixelList;
     trayiconPixelList.append(tr("Default"));
     trayiconPixelList.append("16x16");
@@ -94,37 +92,12 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->customImagePaddingLabel->setText(tr("Padding"));
     ui->customImageShowAsTrayIconCheckBox->setText(tr("Show as TrayIcon"));
 
-    int showposition_index = ui->customImageShowPositionComboBox->currentIndex();
-    if (showposition_index < 0) {
-        showposition_index = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
-    }
-    ui->customImageShowPositionComboBox->clear();
-    QStringList showPositionList;
-    showPositionList.append(tr("None"));
-    showPositionList.append(tr("Left"));
-    showPositionList.append(tr("Right"));
-    ui->customImageShowPositionComboBox->addItems(showPositionList);
-    ui->customImageShowPositionComboBox->setCurrentIndex(showposition_index);
+    ui->customImageShowPositionComboBox->setItemText(TAB_CUSTOMIMAGE_SHOW_NONE,     tr("None"));
+    ui->customImageShowPositionComboBox->setItemText(TAB_CUSTOMIMAGE_SHOW_LEFT,     tr("Left"));
+    ui->customImageShowPositionComboBox->setItemText(TAB_CUSTOMIMAGE_SHOW_RIGHT,    tr("Right"));
 
     ui->customImageTrayIconPixelLabel->setText(tr("TrayIcon Pixel"));
-    int trayiconpixel_index = ui->customImageTrayIconPixelComboBox->currentIndex();
-    if (trayiconpixel_index < TAB_CUSTOMIMAGE_TRAYICON_PIXEL_MIN
-        || trayiconpixel_index > TAB_CUSTOMIMAGE_TRAYICON_PIXEL_MAX) {
-        trayiconpixel_index = TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT;
-    }
-    ui->customImageTrayIconPixelComboBox->clear();
-    QStringList trayiconPixelList;
-    trayiconPixelList.append(tr("Default"));
-    trayiconPixelList.append("16x16");
-    trayiconPixelList.append("24x24");
-    trayiconPixelList.append("32x32");
-    trayiconPixelList.append("48x48");
-    trayiconPixelList.append("64x64");
-    trayiconPixelList.append("96x96");
-    trayiconPixelList.append("128x128");
-    trayiconPixelList.append("256x256");
-    ui->customImageTrayIconPixelComboBox->addItems(trayiconPixelList);
-    ui->customImageTrayIconPixelComboBox->setCurrentIndex(trayiconpixel_index);
+    ui->customImageTrayIconPixelComboBox->setItemText(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT, tr("Default"));
 }
 
 void QTableSetupDialog::resetFontSize()

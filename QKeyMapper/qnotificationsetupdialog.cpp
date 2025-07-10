@@ -43,7 +43,6 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_BackgroundColorPicker->raise();
     m_BackgroundColorPicker->setShowAlphaChannel(true);
 
-    ui->fontWeightComboBox->clear();
     QStringList fontWeightList;
     fontWeightList.append(tr("Light"));
     fontWeightList.append(tr("Normal"));
@@ -99,17 +98,9 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     ui->fontSizeLabel->setText(tr("Size"));
     ui->fontWeightLabel->setText(tr("Weight"));
     ui->fontItalicCheckBox->setText(tr("Italic"));
-    int font_weight_index = ui->fontWeightComboBox->currentIndex();
-    if (font_weight_index < 0) {
-        font_weight_index = NOTIFICATION_FONT_WEIGHT_DEFAULT;
-    }
-    ui->fontWeightComboBox->clear();
-    QStringList fontWeightList;
-    fontWeightList.append(tr("Light"));
-    fontWeightList.append(tr("Normal"));
-    fontWeightList.append(tr("Bold"));
-    ui->fontWeightComboBox->addItems(fontWeightList);
-    ui->fontWeightComboBox->setCurrentIndex(font_weight_index);
+    ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_LIGHT,     tr("Light"));
+    ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_NORMAL,    tr("Normal"));
+    ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_BOLD,      tr("Bold"));
 
     /* Duration Group */
     ui->durationGroupBox->setTitle(tr("Duration"));
