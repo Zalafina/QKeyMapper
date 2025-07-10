@@ -7910,13 +7910,14 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_NOTE)) {
-                notes_load_asString = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).canConvert<QString>();
+                QVariant notes_loaded_variant = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE);
+                notes_load_asString = notes_loaded_variant.canConvert<QString>();
                 if (notes_load_asString) {
-                    notes_loaded_string = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
+                    notes_loaded_string = notes_loaded_variant.toString();
                     notes_split_string = notes_loaded_string.split(SEPARATOR_KEYMAPDATA_LEVEL2);
                 }
                 else {
-                    notes_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toList();
+                    notes_loaded = notes_loaded_variant.toList();
                     for (const QVariant &variant : std::as_const(notes_loaded)) {
                         notes_split.append(variant.toStringList());
                     }
