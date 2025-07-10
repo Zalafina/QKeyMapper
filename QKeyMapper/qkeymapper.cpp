@@ -11924,6 +11924,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
     int original_key_width_min = mappingDataTable->width()/5 - 15;
+    int original_key_width_max = mappingDataTable->width() / 2;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
@@ -11949,6 +11950,9 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
 
     if (original_key_width < original_key_width_min) {
         original_key_width = original_key_width_min;
+    }
+    else if (original_key_width > original_key_width_max) {
+        original_key_width = original_key_width_max;
     }
 
     int mapping_key_width_min = mappingDataTable->width()/5 - 15;
