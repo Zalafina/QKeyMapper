@@ -5802,9 +5802,9 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 #endif
 
     int row_count = QKeyMapper::KeyMappingDataList->size();
-    if (row < 0 || row >= row_count) {
+    if (row >= row_count || row < 0) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[%s]: row(%d) out of range, row_count(%d), col(%d)", __func__, row, row_count, col);
+        qDebug("\033[1;31m[%s]: row(%d) out of range, row_count(%d), col(%d)\033[0m", __func__, row, row_count, col);
 #endif
         return;
     }
