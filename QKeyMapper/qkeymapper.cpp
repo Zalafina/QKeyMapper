@@ -6091,6 +6091,9 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
 
 void QKeyMapper::saveKeyMapSetting(void)
 {
+    // Create RAII guard to automatically save and restore category filter state
+    CategoryFilterStateGuard filterGuard(this);
+
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settingFile.setIniCodec("UTF-8");
@@ -16790,4 +16793,77 @@ void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
 void QKeyMapper::on_CategoryFilterComboBox_currentIndexChanged(int index)
 {
     onCategoryFilterChanged(index);
+}
+
+// ================================
+// CategoryFilterStateGuard Implementation
+// ================================
+
+QKeyMapper::CategoryFilterStateGuard::CategoryFilterStateGuard(QKeyMapper* parent)
+    : m_parent(parent)
+    , m_savedShowState(false)
+{
+    if (m_parent) {
+        // Save current filter state
+        m_savedFilter = m_parent->getCurrentCategoryFilter();
+        m_savedShowState = m_parent->isCategoryFilterVisible();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[CategoryFilterStateGuard] Saved filter state - Filter:" << m_savedFilter << ", ShowState:" << m_savedShowState;
+#endif
+    }
+}
+
+QKeyMapper::CategoryFilterStateGuard::~CategoryFilterStateGuard()
+{
+    if (m_parent) {
+        // Restore saved filter state
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[CategoryFilterStateGuard] Restoring filter state - Filter:" << m_savedFilter << ", ShowState:" << m_savedShowState;
+#endif
+        m_parent->restoreCategoryFilterState(m_savedFilter, m_savedShowState);
+    }
+}
+
+QString QKeyMapper::getCurrentCategoryFilter() const
+{
+    if (ui->CategoryFilterComboBox && ui->CategoryFilterComboBox->currentIndex() >= 0) {
+        return ui->CategoryFilterComboBox->currentText();
+    }
+    return QString();
+}
+
+bool QKeyMapper::isCategoryFilterVisible() const
+{
+    return ui->showCategoryButton && ui->showCategoryButton->isChecked();
+}
+
+void QKeyMapper::restoreCategoryFilterState(const QString& filter, bool showState)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[restoreCategoryFilterState] Attempting to restore - Filter:" << filter << ", ShowState:" << showState;
+#endif
+
+    // Restore category filter visibility state first
+    if (ui->showCategoryButton && ui->showCategoryButton->isChecked() != showState) {
+        ui->showCategoryButton->setChecked(showState);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[restoreCategoryFilterState] Set showCategoryButton to:" << showState;
+#endif
+    }
+
+    // Restore category filter selection if filter was visible
+    if (showState && !filter.isEmpty() && ui->CategoryFilterComboBox) {
+        int index = ui->CategoryFilterComboBox->findText(filter);
+        if (index >= 0 && index != ui->CategoryFilterComboBox->currentIndex()) {
+            ui->CategoryFilterComboBox->setCurrentIndex(index);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[restoreCategoryFilterState] Set CategoryFilterComboBox index to:" << index << "(" << filter << ")";
+#endif
+        }
+        else if (index < 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[restoreCategoryFilterState] Warning: Filter text '" << filter << "' not found in ComboBox";
+#endif
+        }
+    }
 }
