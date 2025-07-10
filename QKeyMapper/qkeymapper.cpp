@@ -6334,7 +6334,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
-    QString notesList_forsave;
+    QVariantList notesList_forsave;
     QVariantList categorysList_forsave;
     QString burstList_forsave;
     QString burstpresstimeList_forsave;
@@ -6398,7 +6398,6 @@ void QKeyMapper::saveKeyMapSetting(void)
             original_keys_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mapping_keysList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mappingkeys_keyupList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
-            notesList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstpresstimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstreleasetimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -6654,7 +6653,6 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString original_keys_str = original_keys.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mapping_keysList_str = mapping_keysList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mappingkeys_keyupList_str = mappingkeys_keyupList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
-        QString notesList_str = notesList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstList_str = burstList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstpresstimeList_str = burstpresstimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstreleasetimeList_str = burstreleasetimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -6687,7 +6685,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         original_keys_forsave.append(original_keys_str);
         mapping_keysList_forsave.append(mapping_keysList_str);
         mappingkeys_keyupList_forsave.append(mappingkeys_keyupList_str);
-        notesList_forsave.append(notesList_str);
+        notesList_forsave.append(notesList);
         categorysList_forsave.append(categorysList);
         burstList_forsave.append(burstList_str);
         burstpresstimeList_forsave.append(burstpresstimeList_str);
@@ -7768,7 +7766,9 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString original_keys_loaded;
         QString mapping_keys_loaded;
         QString mappingkeys_keyup_loaded;
-        QString notes_loaded;
+        bool notes_load_asString = false;
+        QString notes_loaded_string;
+        QVariantList notes_loaded;
         QVariantList categorys_loaded;
         QString burstData_loaded;
         QString burstpressData_loaded;
@@ -7802,7 +7802,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList original_keys_split;
         QStringList mapping_keys_split;
         QStringList mappingkeys_keyup_split;
-        QStringList notes_split;
+        QStringList notes_split_string;
+        QList<QStringList> notes_split;
         QList<QStringList> categorys_split;
         QStringList burstData_split;
         QStringList burstpressData_split;
@@ -7909,8 +7910,17 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
 
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_NOTE)) {
-                notes_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
-                notes_split = notes_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+                notes_load_asString = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).canConvert<QString>();
+                if (notes_load_asString) {
+                    notes_loaded_string = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toString();
+                    notes_split_string = notes_loaded_string.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+                }
+                else {
+                    notes_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_NOTE).toList();
+                    for (const QVariant &variant : std::as_const(notes_loaded)) {
+                        notes_split.append(variant.toStringList());
+                    }
+                }
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CATEGORY)) {
                 categorys_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CATEGORY).toList();
@@ -8170,8 +8180,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     crosshair_x_offsetStringList = stringListAllZERO;
                     crosshair_y_offsetStringList = stringListAllZERO;
 
-                    if (notes_split.size() == table_count) {
-                        notesList = notes_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    if (notes_load_asString) {
+                        if (notes_split_string.size() == table_count) {
+                            notesList = notes_split_string.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                        }
+                    }
+                    else {
+                        if (notes_split.size() == table_count) {
+                            notesList = notes_split.at(index);
+                        }
                     }
                     if (categorys_split.size() == table_count) {
                         categorysList = categorys_split.at(index);
