@@ -6145,6 +6145,13 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(SHOW_NOTES, false);
     }
 
+    if (ui->showCategoryButton->isChecked()) {
+        settingFile.setValue(SHOW_CATEGORYS, true);
+    }
+    else {
+        settingFile.setValue(SHOW_CATEGORYS, false);
+    }
+
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
 
     QColor notification_fontcolor;
@@ -6969,6 +6976,25 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(SHOW_CATEGORYS)){
+            bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
+            if (showCategorys) {
+                ui->showCategoryButton->setChecked(true);
+            }
+            else {
+                ui->showCategoryButton->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Show Categorys Button ->" << showCategorys;
+#endif
+        }
+        else {
+            ui->showCategoryButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
 #endif
         }
 
@@ -7851,21 +7877,40 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabcustomimage_showastrayiconlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST).toStringList();
         tabcustomimage_trayiconpixellist_loaded     = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST).toList();
 
-        if (original_keys_loaded.isEmpty() || mapping_keys_loaded.isEmpty()) {
+        // Check if we have any tab configuration data to determine if we should initialize
+        if (tabnamelist_loaded.isEmpty()) {
             initKeyMappingTable = true;
         }
         else {
-            original_keys_split = original_keys_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
-            mapping_keys_split = mapping_keys_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
-            mappingkeys_keyup_split = mappingkeys_keyup_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            // We have tab configuration data, process the mapping data if it exists
+            if (!original_keys_loaded.isEmpty() && !mapping_keys_loaded.isEmpty()) {
+                original_keys_split = original_keys_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+                mapping_keys_split = mapping_keys_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+                mappingkeys_keyup_split = mappingkeys_keyup_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
 
-            if (original_keys_split.size() == mapping_keys_split.size()
-                && original_keys_split.size() > 0) {
-                table_count = original_keys_split.size();
+                if (original_keys_split.size() == mapping_keys_split.size()
+                    && original_keys_split.size() > 0) {
+                    table_count = original_keys_split.size();
+                }
+
+                if (mappingkeys_keyup_split.size() != mapping_keys_split.size()) {
+                    mappingkeys_keyup_split = mapping_keys_split;
+                }
             }
+            else {
+                // Even if we don't have mapping data, we should still create tabs based on tabnamelist
+                // This ensures that saved tab configurations (names, hotkeys, colors, etc.) are loaded
+                table_count = tabnamelist_loaded.size();
 
-            if (mappingkeys_keyup_split.size() != mapping_keys_split.size()) {
-                mappingkeys_keyup_split = mapping_keys_split;
+                // Initialize empty split arrays for consistency
+                original_keys_split.clear();
+                mapping_keys_split.clear();
+                mappingkeys_keyup_split.clear();
+                for (int i = 0; i < table_count; ++i) {
+                    original_keys_split.append(QString());
+                    mapping_keys_split.append(QString());
+                    mappingkeys_keyup_split.append(QString());
+                }
             }
         }
 
@@ -8046,11 +8091,20 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 QList<MAP_KEYDATA> loadkeymapdata;
                 bool empty_flag = false;
 
-                if (original_keys_split.at(index).isEmpty() && mapping_keys_split.at(index).isEmpty()) {
+                // Check if we have mapping data for this tab index
+                bool hasMappingData = (index < original_keys_split.size() && index < mapping_keys_split.size());
+
+                if (hasMappingData) {
+                    if (original_keys_split.at(index).isEmpty() && mapping_keys_split.at(index).isEmpty()) {
+                        empty_flag = true;
+                    }
+                }
+                else {
+                    // No mapping data for this tab, treat as empty but still create the tab
                     empty_flag = true;
                 }
 
-                if (!empty_flag) {
+                if (!empty_flag && hasMappingData) {
                     QStringList original_keys;
                     QStringList mapping_keys;
                     QStringList mappingkeys_keyup;

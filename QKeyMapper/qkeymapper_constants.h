@@ -581,6 +581,7 @@ extern const char* LAST_WINDOWPOSITION;
 extern const char* LANGUAGE_INDEX;
 extern const char *SHOW_PROCESSLIST;
 extern const char *SHOW_NOTES;
+extern const char *SHOW_CATEGORYS;
 extern const char *NOTSHOW_VERSION_UNMATCHED;
 extern const char *NOTSHOW_FILTERKEYS_DISABLED;
 extern const char *CLOSETO_SYSTEMTRAY;
