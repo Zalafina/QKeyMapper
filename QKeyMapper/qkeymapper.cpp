@@ -5538,6 +5538,8 @@ void QKeyMapper::moveTabInKeyMappingTabWidget(int from, int to)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[moveTabInKeyMappingTabWidget] Tab moved successfully, new current index:" << s_KeyMappingTabWidgetCurrentIndex;
 #endif
+
+    collectMappingTableTabHotkeys();
 }
 
 int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
