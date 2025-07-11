@@ -16795,33 +16795,9 @@ void QKeyMapper::on_CategoryFilterComboBox_currentIndexChanged(int index)
     onCategoryFilterChanged(index);
 }
 
-// ================================
-// CategoryFilterStateGuard Implementation
-// ================================
-
-QKeyMapper::CategoryFilterStateGuard::CategoryFilterStateGuard(QKeyMapper* parent)
-    : m_parent(parent)
-    , m_savedShowState(false)
+void QKeyMapper::on_CategoryFilterComboBox_currentTextChanged(const QString &text)
 {
-    if (m_parent) {
-        // Save current filter state
-        m_savedFilter = m_parent->getCurrentCategoryFilter();
-        m_savedShowState = m_parent->isCategoryFilterVisible();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[CategoryFilterStateGuard] Saved filter state - Filter:" << m_savedFilter << ", ShowState:" << m_savedShowState;
-#endif
-    }
-}
-
-QKeyMapper::CategoryFilterStateGuard::~CategoryFilterStateGuard()
-{
-    if (m_parent) {
-        // Restore saved filter state
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[CategoryFilterStateGuard] Restoring filter state - Filter:" << m_savedFilter << ", ShowState:" << m_savedShowState;
-#endif
-        m_parent->restoreCategoryFilterState(m_savedFilter, m_savedShowState);
-    }
+    ui->CategoryFilterComboBox->setToolTip(text);
 }
 
 QString QKeyMapper::getCurrentCategoryFilter() const
@@ -16865,5 +16841,34 @@ void QKeyMapper::restoreCategoryFilterState(const QString& filter, bool showStat
             qDebug() << "[restoreCategoryFilterState] Warning: Filter text '" << filter << "' not found in ComboBox";
 #endif
         }
+    }
+}
+
+// ================================
+// CategoryFilterStateGuard Implementation
+// ================================
+
+QKeyMapper::CategoryFilterStateGuard::CategoryFilterStateGuard(QKeyMapper* parent)
+    : m_parent(parent)
+    , m_savedShowState(false)
+{
+    if (m_parent) {
+        // Save current filter state
+        m_savedFilter = m_parent->getCurrentCategoryFilter();
+        m_savedShowState = m_parent->isCategoryFilterVisible();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[CategoryFilterStateGuard] Saved filter state - Filter:" << m_savedFilter << ", ShowState:" << m_savedShowState;
+#endif
+    }
+}
+
+QKeyMapper::CategoryFilterStateGuard::~CategoryFilterStateGuard()
+{
+    if (m_parent) {
+        // Restore saved filter state
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[CategoryFilterStateGuard] Restoring filter state - Filter:" << m_savedFilter << ", ShowState:" << m_savedShowState;
+#endif
+        m_parent->restoreCategoryFilterState(m_savedFilter, m_savedShowState);
     }
 }

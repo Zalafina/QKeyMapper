@@ -806,7 +806,14 @@ private slots:
 
     void on_CategoryFilterComboBox_currentIndexChanged(int index);
 
+    void on_CategoryFilterComboBox_currentTextChanged(const QString &text);
+
 private:
+    // Helper methods for saving/restoring category filter state
+    QString getCurrentCategoryFilter() const;
+    bool isCategoryFilterVisible() const;
+    void restoreCategoryFilterState(const QString& filter, bool showState);
+
     // CategoryFilterStateGuard helper class for RAII-style filter state management
     class CategoryFilterStateGuard {
     public:
@@ -817,11 +824,6 @@ private:
         QString m_savedFilter;
         bool m_savedShowState;
     };
-    
-    // Helper methods for saving/restoring category filter state
-    QString getCurrentCategoryFilter() const;
-    bool isCategoryFilterVisible() const;
-    void restoreCategoryFilterState(const QString& filter, bool showState);
 
     // void initHotKeySequence(void);
     void initProcessInfoTable(void);
