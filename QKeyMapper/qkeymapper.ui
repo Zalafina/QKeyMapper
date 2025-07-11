@@ -2116,9 +2116,9 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>8</y>
+     <y>11</y>
      <width>71</width>
-     <height>22</height>
+     <height>19</height>
     </rect>
    </property>
    <property name="focusPolicy">
