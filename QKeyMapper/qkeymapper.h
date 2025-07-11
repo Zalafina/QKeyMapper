@@ -193,10 +193,20 @@ class KeyMappingTabWidget : public QTabWidget
     Q_OBJECT
 
 public:
-    explicit KeyMappingTabWidget(QWidget *parent = Q_NULLPTR) : QTabWidget(parent) {}
+    explicit KeyMappingTabWidget(QWidget *parent = Q_NULLPTR) : QTabWidget(parent) {
+        setMovable(true);  // Enable tab moving
+        // Connect the tab bar's moved signal to our slot
+        connect(tabBar(), &QTabBar::tabMoved, this, &KeyMappingTabWidget::onTabMoved, Qt::UniqueConnection);
+    }
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+
+private slots:
+    void onTabMoved(int from, int to);
+
+signals:
+    void tabOrderChanged(int from, int to);
 };
 
 class KeyMappingDataTableWidget : public QTableWidget
@@ -667,6 +677,8 @@ public slots:
 
     void keyMappingTabWidgetCurrentChanged(int index);
 
+    void onKeyMappingTabWidgetTabOrderChanged(int from, int to);
+
     void keyMappingTableDragDropMove(int top_row, int bottom_row, int dragged_to);
 
     void keyMappingTableItemDoubleClicked(QTableWidgetItem *item);
@@ -697,6 +709,7 @@ public slots:
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
     int removeTabFromKeyMappingTabWidget(int tabindex);
+    void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
     int insertKeyMappingDataFromCopiedList(void);
 
@@ -732,6 +745,8 @@ public slots:
     void on_moveupButton_clicked();
 
     void on_movedownButton_clicked();
+
+    void on_addTabButton_clicked();
 
     void on_deleteSelectedButton_clicked();
 

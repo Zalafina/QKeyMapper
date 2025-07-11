@@ -1759,7 +1759,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>30</y>
+     <y>50</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -1784,7 +1784,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>70</y>
+     <y>90</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -2075,7 +2075,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>110</y>
+     <y>130</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -2097,7 +2097,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>150</y>
+     <y>170</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -2110,6 +2110,25 @@
    </property>
    <property name="currentIndex">
     <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="addTabButton">
+   <property name="geometry">
+    <rect>
+     <x>990</x>
+     <y>8</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>AddTab</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
   <zorder>keymapButton</zorder>
@@ -2162,6 +2181,7 @@
   <zorder>mapList_SelectMouseButton</zorder>
   <zorder>showCategoryButton</zorder>
   <zorder>CategoryFilterComboBox</zorder>
+  <zorder>addTabButton</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
