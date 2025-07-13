@@ -7,9 +7,20 @@
     <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg"/></a>
 </p>
 
-## 在Win10和Win11下可以正常使用的按键映射工具，使用Qt Widget + WinAPI开发，v1.2.8(2022-12-24)开始更新了对Qt6的支持，v1.2.8及之后的Release中使用Qt6编译的版本，v1.3.6(Build 20231220)新增游戏手柄按键和虚拟游戏手柄支持。v1.3.7(Build 20240410)增加多键鼠+多虚拟手柄支持。
+## 📖 软件简介
+## QKeyMapper是兼容Win7/Win10/Win11的开源按键映射工具，使用Qt Widget 和 WinAPI 基于C++语言开发。可支持键盘、鼠标、游戏手柄、虚拟游戏手柄之间各种互相按键映射，适用于各种游戏或办公等目的的Windows PC端改键场景。
+
 ---------------
-### 最新Release版本压缩包下载:
+## ✨ 功能特性
+| 设备     | 输入检测   | 输入映射   | 组合键支持  | 多键鼠支持 | 多手柄支持    |
+| -------- | -------- | --------- | --------- | --------- | ----------- |
+| 键盘     | ✅       | ✅        | ✅       | ✅       |             |
+| 鼠标     | ✅       | ✅        | ✅       | ✅       |             |
+| 物理手柄  | ✅       |           | ✅       |          | ✅          |
+| 虚拟手柄  |          | ✅        | ✅       |          | ✅          |
+
+---------------
+### 📦 最新Release版本压缩包下载:
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
 ### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
@@ -22,19 +33,20 @@
 [![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
 
 ---------------
+## 💡 软件使用须知
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
-### 注意1 : 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
+### 📌注意1 : 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
 * ( 32位系统则下载安装32位运行库 https://aka.ms/vs/17/release/vc_redist.x86.exe )
 
-### 注意2 : 软件的多设备支持功能使用了Interception驱动，此驱动存在下面已知问题，输入设备(键盘/鼠标)反复USB接口插拔、断开重连或者Windows系统进入睡眠状态再唤醒会导致系统的输入设备(键盘/鼠标等)ID增加，ID数值超过Interception驱动支持上限(10个键盘、10个鼠标)会出现输入设备无法工作的问题，只有完全重新启动操作系统才能复归(保持软件工作状态的快速重启不复归)。请在确实需要使用多设备功能的情况并且仔细阅读了解驱动程序使用方法以及可能引发的副作用前提下再谨慎的安装多设备驱动，避免引发不必要的困扰。如果发生鼠标或键盘无效问题，先对系统完全重启后，点击多设备卸载驱动按钮后再重启系统会恢复正常状态不再受驱动影响。
+### 📌注意2 : 软件的多设备支持功能使用了Interception驱动，此驱动存在下面已知问题，输入设备(键盘/鼠标)反复USB接口插拔、断开重连或者Windows系统进入睡眠状态再唤醒会导致系统的输入设备(键盘/鼠标等)ID增加，ID数值超过Interception驱动支持上限(10个键盘、10个鼠标)会出现输入设备无法工作的问题，只有完全重新启动操作系统才能复归(保持软件工作状态的快速重启不复归)。请在确实需要使用多设备功能的情况并且仔细阅读了解驱动程序使用方法以及可能引发的副作用前提下再谨慎的安装多设备驱动，避免引发不必要的困扰。如果发生鼠标或键盘无效问题，先对系统完全重启后，点击多设备卸载驱动按钮后再重启系统会恢复正常状态不再受驱动影响。
 
-### 注意3 : ViGEMBus驱动与vJoy驱动都是虚拟手柄驱动，不建议在系统中同时安装。如果操作系统中之前安装过vJoy驱动并且出现虚拟手柄相关的异常问题，建议卸载vJoy驱动后确认是否可以解决问题。
+### 📌注意3 : ViGEMBus驱动与vJoy驱动都是虚拟手柄驱动，不建议在系统中同时安装。如果操作系统中之前安装过vJoy驱动并且出现虚拟手柄相关的异常问题，建议卸载vJoy驱动后确认是否可以解决问题。
 
-### [注意4: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
+### [📌注意4: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 * https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
 ---------------
+## 🔧 软件使用建议
 #### ※通常情况下建议先运行QKeyMapper映射工具再运行需要使用按键映射的游戏或软件，避免按键被其他软件拦截导致映射工具无法检测到。
----------------
 #### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。
   - #### Win10系统筛选键开启方式
     Windows设置 -> 轻松使用 -> 键盘 -> 筛选键
@@ -44,17 +56,17 @@
     <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win11_FilterKey.png" width="1182" height="auto"/></div>
 
 ---------------
-## 按键映射工具使用技巧等参考Wiki页面：
+## 📚 按键映射工具使用技巧等参考Wiki页面：
 * [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
 ---------------
-## 使用教学视频合集请点击下方图片
+## 📺 使用教学视频合集请点击下方图片
 [<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png" width="572" height="auto"/></div>](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
 ---------------
-## 使用中有疑问也可以加Q群咨询 (群号: 906963961)
+## 💬 使用中有疑问也可以加Q群咨询 (群号: 906963961)
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/QKeyMapper_QGroup_Number.png" width="357" height="auto"/></div>
 
 ---------------
-### 新添加功能列表(根据更新时间降序排列)
+### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20250712)
     * 添加"分类筛选"功能，点击"分类筛选"按钮显示映射表"分类"列，双击分类列单元格可以填写分类，右侧下拉列表中选择指定的分类标签可对映射表进行筛选显示。
     * Tab标签页名称位置可以拖拽移动Tab映射表，添加Tab功能不再双击"+"Tab标签页，改为使用右上角"添加Tab"按钮，
@@ -385,7 +397,7 @@
 * v1.3.0
     * 开始支持"SaveMapData"可以将多个程序的不同按键映射配置都保存到"keymapdata.ini"文件中。如果配置了"Auto Start Mapping"功能，那么在"KeyMappingStart"状态下会根据当前前台窗口的进程可执行文件名进行自动匹配切换到对应的按键映射配置。
 ---------------
-### 基本功能列表
+### 🔋 基本功能列表
 1. 左侧显示当前正在运行的可见的窗口进程列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
 2. 鼠标左键双击左侧窗口程序列表的某一行可以将选定的窗口程序的可自行文件名和窗口标题设定到图标/文件名/窗口标题区域。
 3. 按下"KeyMappingStart"按钮可以开始执行按键映射处理流程，映射工具会定时循环检测当前处于前台的窗口与设定的可自行文件名和窗口标题是否匹配，按键映射功能可以只在前台窗口与当前进程可执行文件名和窗口标题都匹配的情况才生效，前台窗口不匹配的情况下按键映射自动失效。
@@ -401,7 +413,7 @@
 13. 增加了支持将鼠标左键&右键&中键映射到各种按键。
 
 ---------------
-## 普通键盘和鼠标按键原始及映射按键对照表
+## 📜 普通键盘和鼠标按键原始及映射按键对照表
 | QKeyMapper按键名称 | 原始按键 | 映射按键 | 按键说明                        |
 |-------------------|--------|---------|--------------------------------|
 | Mouse-L           |   ✔    |   ✔    | 鼠标左键                         |
@@ -486,7 +498,7 @@
 ##### 上面键盘鼠标按键包含基本全部标准键鼠按键，但是常见键盘鼠标通常只包含其中一部分按键。
 
 ---------------
-## 特殊映射按键对照表
+## 📜 特殊映射按键对照表
 | QKeyMapper映射按键名称     | 按键说明                                 |
 |--------------------------|----------------------------------------|
 | ⏱                       |  按键延时后缀，后面添加数字代表按键持续按下时长(单位毫秒)|
@@ -525,7 +537,7 @@
 ##### ScreenPoint映射键需要配合 "左Ctrl键+鼠标左键" 在屏幕范围内选取全屏坐标点来使用。
 
 ---------------
-## Xbox手柄按键对照表
+## 🎮 Xbox手柄按键对照表
 | Xbox手柄物理按键 | QKeyMapper原始按键名称|
 |----------------|---------------------|
 | 左摇杆上        | Joy-LS-Up           |
@@ -554,7 +566,7 @@
 | Start(开始)键  | Joy-Key8(Start)     |
 | Guide(西瓜)键  | Joy-Key13(Guide)    |
 
-## 特殊物理手柄按键说明
+## 🎮 特殊物理手柄按键说明
 | QKeyMapper原始按键名称 | 功能                                                    |
 |----------------------|--------------------------------------------------------|
 | Joy-LS2Mouse         | 手柄左摇杆四方向移动鼠标指针(轻推移动较慢，重推移动较快)        |
@@ -568,13 +580,13 @@
 | Gyro2Mouse-Hold      | 按下时抑制陀螺仪鼠标指针移动，松开时允许陀螺仪鼠标指针移动         |
 | Gyro2Mouse-Move      | 按下时允许陀螺仪鼠标指针移动，松开时抑制陀螺仪鼠标指针移动         |
 
-## 扩展手柄按键
+## 🎮 扩展手柄按键
 | QKeyMapper原始按键名称 | 功能                                                              |
 |----------------------|------------------------------------------------------------------|
 | Joy-Key19~30         | 预留的手柄扩展按键检测，通常使用不到，但有可能特殊的手柄会支持更多的按键     |
 
 ---------------
-## PS4-Dualshock手柄按键对照表
+## 🎮 PS4-Dualshock手柄按键对照表
 | PS4手柄物理按键 | QKeyMapper原始按键名称|
 |---------------|---------------------|
 | 左摇杆上       | Joy-LS-Up           |
@@ -605,7 +617,7 @@
 | PS键          | Joy-Key6(RB)        |
 
 ---------------
-## Xbox360虚拟手柄按键对照表
+## 🎮 Xbox360虚拟手柄按键对照表
 参考Xbox手柄按键对照表中的原始按键名称前面加上小写字母 **v** 就是对应的Xbox360虚拟手柄按键。
 示例如下：
 
@@ -616,7 +628,7 @@
 | A键            | vJoy-Key1(A/×)      |
 | 右侧扳机键      | vJoy-Key12(RT)      |
 
-## 特殊虚拟手柄按键说明
+## 🎮 特殊虚拟手柄按键说明
 | QKeyMapper原始按键名称 | 功能                                                    |
 |----------------------|--------------------------------------------------------|
 | vJoy-Mouse2LS        | 用鼠标控制虚拟手柄左摇杆移动                                |
@@ -630,13 +642,13 @@
 | Mouse2vJoy-Hold      | 按下后将鼠标控制的虚拟摇杆保持在当前偏移位置不动，松开后可继续移动   |
 
 ---------------
-## 软件截图
+## 🎨 软件截图
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/refs/heads/master/screenshot/QKeyMapper_screenshot_02.png" width="auto" height="auto"/></div>
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/refs/heads/master/screenshot/QKeyMapper_screenshot_03.png" width="auto" height="auto"/></div>
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/refs/heads/master/screenshot/QKeyMapper_screenshot_04.png" width="auto" height="auto"/></div>
 
 ---------------
-## XBox手柄按键名称布局参照图
+## 🎮 XBox手柄按键名称布局参照图
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_en.png" width="700" height="auto"/></div>
 <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/XBox_Controller_layout_cn.png" width="700" height="auto"/></div>
 
