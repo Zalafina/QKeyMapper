@@ -16486,8 +16486,8 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             if (copied_count > 0) {
                 QString message = tr("%1 selected mapping data copied.").arg(copied_count);
                 QKeyMapper::getInstance()->showInformationPopup(message);
+                return;
             }
-            return;
         }
         else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
             int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList();
