@@ -13,6 +13,14 @@
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
 ### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
+
+---------------
+## ⭐ Star 趋势图
+
+如果 **QKeyMapper** 按键映射软件对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 **QKeyMapper**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
+
 ---------------
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 注意1 : 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
