@@ -5544,7 +5544,7 @@ void QKeyMapper::moveTabInKeyMappingTabWidget(int from, int to)
 
 int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
 {
-    int copied_count = 0;
+    int copied_count = -1;
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -16483,8 +16483,10 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
         }
         else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
             int copied_count = QKeyMapper::getInstance()->copySelectedKeyMappingDataToCopiedList();
-            QString message = tr("%1 selected mapping data copied.").arg(copied_count);
-            QKeyMapper::getInstance()->showInformationPopup(message);
+            if (copied_count > 0) {
+                QString message = tr("%1 selected mapping data copied.").arg(copied_count);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+            }
             return;
         }
         else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
