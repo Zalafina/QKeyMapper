@@ -711,6 +711,19 @@ void QItemSetupDialog::initKeyListComboBoxes()
     }
     s_valiedMappingKeyList.append(QKeyMapper_Worker::SpecialOriginalKeysList);
 
+    s_valiedMappingKeyList.removeOne(MOUSE_L_WINDOWPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_R_WINDOWPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_M_WINDOWPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_X1_WINDOWPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_X2_WINDOWPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_MOVE_WINDOWPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_L_SCREENPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_R_SCREENPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_M_SCREENPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_X1_SCREENPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_X2_SCREENPOINT_STR);
+    s_valiedMappingKeyList.removeOne(MOUSE_MOVE_SCREENPOINT_STR);
+
     int left = ui->orikeyListLabel->x() + ui->orikeyListLabel->width() + 5;
     int top = ui->orikeyListLabel->y();
     m_OriginalKeyListComboBox->setObjectName(SETUPDIALOG_ORIKEY_COMBOBOX_NAME);
