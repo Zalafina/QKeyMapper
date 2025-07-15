@@ -92,9 +92,9 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     Q_UNUSED(languageindex);
 
     m_NotificationFontColorPicker->setButtonText(tr("TabFontColor"));
-    m_NotificationFontColorPicker->setWindowTitle(tr("Select Notification Font Color"));
+    m_NotificationFontColorPicker->setWindowTitle(tr("Select Tab Notification Font Color"));
     m_NotificationBackgroundColorPicker->setButtonText(tr("TabBGColor"));
-    m_NotificationBackgroundColorPicker->setWindowTitle(tr("Select Notification Background Color"));
+    m_NotificationBackgroundColorPicker->setWindowTitle(tr("Select Tab Notification Background Color"));
 
     setWindowTitle(tr(TABLESETUPDIALOG_WINDOWTITLE_STR));
     ui->tabNameLabel->setText(tr(TABNAMELABEL_STR));
@@ -297,7 +297,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             << "TabName: " << TabName << ", "
             << "Hotkey: " << TabHotkey << ", "
             << "FontColor: " << TabFontColor.name() << ", "
-            << "BackgroundColor: " << TabBackgroundColor.name(QColor::HexArgb) << ", "
+            << "BackgroundColor: (" << TabBackgroundColor.name(QColor::HexArgb) << ", Alpha: " << TabBackgroundColor.alpha() << "), "
             << "ShowPosition: " << TabCustomImage_ShowPosition << ", "
             << "Padding: " << TabCustomImage_Padding << ", "
             << "ShowAsTrayIcon: " << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ", "

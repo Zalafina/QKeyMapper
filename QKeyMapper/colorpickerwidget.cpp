@@ -88,6 +88,7 @@ void ColorPickerWidget::onPickColor()
 
     bool clear_to_default = false;
     if ("TabFontColor" == m_buttonText
+        || "TabBGColor" == m_buttonText
         || "FontColor" == m_buttonText
         || "BGColor" == m_buttonText) {
         if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
@@ -108,6 +109,9 @@ void ColorPickerWidget::onPickColor()
             else {
                 color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
             }
+        }
+        else if ("TabBGColor" == m_buttonText) {
+            color = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
         }
         else if ("FontColor" == m_buttonText) {
             color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
@@ -159,7 +163,8 @@ void ColorPickerWidget::onPickColor()
     colorLabel->setPalette(palette);
 
     if (clear_to_default) {
-        if ("TabFontColor" == m_buttonText) {
+        if ("TabFontColor" == m_buttonText
+            || "TabBGColor" == m_buttonText) {
             QColor emptyColor;
             emit colorChanged(emptyColor);
         }

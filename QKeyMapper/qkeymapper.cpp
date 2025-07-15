@@ -6409,6 +6409,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabnamelist;
     QStringList tabhotkeylist;
     QStringList tabfontcolorlist;
+    QStringList tabbgcolorlist;
     QStringList tabcustomimage_pathList;
     QStringList tabcustomimage_showpositionList;
     QStringList tabcustomimage_paddingList;
@@ -6451,6 +6452,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
         QString tabFontColor;
+        QString tabBGColor;
         QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(index).TabCustomImage_Path;
         int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowPosition;
         int tabCustomImage_Padding = s_KeyMappingTabInfoList.at(index).TabCustomImage_Padding;
@@ -6465,9 +6467,13 @@ void QKeyMapper::saveKeyMapSetting(void)
         if (s_KeyMappingTabInfoList.at(index).TabFontColor.isValid()) {
             tabFontColor = s_KeyMappingTabInfoList.at(index).TabFontColor.name();
         }
+        if (s_KeyMappingTabInfoList.at(index).TabBackgroundColor.isValid()) {
+            tabBGColor = s_KeyMappingTabInfoList.at(index).TabBackgroundColor.name(QColor::HexArgb);
+        }
         tabnamelist.append(tabName);
         tabhotkeylist.append(tabHotkey);
         tabfontcolorlist.append(tabFontColor);
+        tabbgcolorlist.append(tabBGColor);
         tabcustomimage_pathList.append(tabCustomImage_Path);
         tabcustomimage_showpositionList.append(QString::number(tabCustomImage_ShowPosition));
         tabcustomimage_paddingList.append(QString::number(tabCustomImage_Padding));
@@ -6802,6 +6808,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABBGCOLORLIST, tabbgcolorlist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST, tabcustomimage_pathList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
@@ -7857,6 +7864,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     QStringList tabhotkeylist_loaded;
     QStringList tabfontcolorlist_loaded;
+    QStringList tabbgcolorlist_loaded;
     QStringList tabcustomimage_pathlist_loaded;
     QStringList tabcustomimage_showpositionlist_loaded;
     QStringList tabcustomimage_paddinglist_loaded;
@@ -7947,6 +7955,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
         tabfontcolorlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
+        tabbgcolorlist_loaded   = settingFile.value(settingSelectStr+MAPPINGTABLE_TABBGCOLORLIST).toStringList();
         tabcustomimage_pathlist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST).toStringList();
         tabcustomimage_showpositionlist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST).toStringList();
         tabcustomimage_paddinglist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST).toStringList();
@@ -8002,6 +8011,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (tabfontcolorlist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     tabfontcolorlist_loaded.append(QString());
+                }
+            }
+            if (tabbgcolorlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabbgcolorlist_loaded.append(QString());
                 }
             }
             if (tabcustomimage_pathlist_loaded.isEmpty()) {
@@ -8851,6 +8865,16 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 s_KeyMappingTabInfoList[index].TabFontColor = QColor();
+            }
+        }
+        if (index < tabbgcolorlist_loaded.size()) {
+            QString tabbgcolor_str = tabbgcolorlist_loaded.at(index);
+            QColor TabBGColor = QColor(tabbgcolor_str);
+            if (TabBGColor.isValid()) {
+                s_KeyMappingTabInfoList[index].TabBackgroundColor = TabBGColor;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabBackgroundColor = QColor();
             }
         }
         if (index < tabcustomimage_pathlist_loaded.size()) {
@@ -10268,6 +10292,7 @@ void QKeyMapper::mappingStartNotification()
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
     int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
     QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
     QString description = ui->descriptionLineEdit->text();
@@ -10304,7 +10329,12 @@ void QKeyMapper::mappingStartNotification()
     opts.position = position;
     opts.size = m_NotificationSetupDialog->getNotification_FontSize();
     opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    if (tabBGColor.isValid()) {
+        opts.backgroundColor = tabBGColor;
+    }
+    else {
+        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    }
     opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
     opts.padding = m_NotificationSetupDialog->getNotification_Padding();
     opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
@@ -10370,6 +10400,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
     QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
     int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
     QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
     QString color_str;
@@ -10404,7 +10435,12 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     opts.position = position;
     opts.size = m_NotificationSetupDialog->getNotification_FontSize();
     opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    if (tabBGColor.isValid()) {
+        opts.backgroundColor = tabBGColor;
+    }
+    else {
+        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    }
     opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
     opts.padding = m_NotificationSetupDialog->getNotification_Padding();
     opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
