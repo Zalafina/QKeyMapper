@@ -40,6 +40,7 @@ protected:
 
 public slots:
     void onTabFontColorChanged(QColor &color);
+    void onTabBackgroundColorChanged(QColor &color);
 
 private slots:
     void on_tabNameUpdateButton_clicked();
@@ -68,6 +69,7 @@ private:
     int m_TabIndex;
     int m_SettingSelectIndex;
     ColorPickerWidget *m_NotificationFontColorPicker;
+    ColorPickerWidget *m_NotificationBackgroundColorPicker;
     QFileDialog *m_SelectImageFileDialog = Q_NULLPTR;
 };
 

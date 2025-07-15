@@ -246,6 +246,7 @@ struct KeyMappingTab_Info
     QString TabName;
     QString TabHotkey;
     QColor TabFontColor;
+    QColor TabBackgroundColor;
     QString TabCustomImage_Path;
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;

@@ -11,6 +11,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     , m_TabIndex(-1)
     , m_SettingSelectIndex(-1)
     , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR))
+    , m_NotificationBackgroundColorPicker(new ColorPickerWidget(this, "TabBGColor", COLORPICKER_BUTTON_WIDTH_TABBGCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -30,9 +31,12 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->customImagePaddingSpinBox->setRange(TAB_CUSTOMIMAGE_PADDING_MIN, TAB_CUSTOMIMAGE_PADDING_MAX);
     ui->customImagePaddingSpinBox->setValue(TAB_CUSTOMIMAGE_PADDING_DEFAULT);
 
-    int x_offset = 0;
-    int y_offset = 30;
+    int x_offset;
+    int y_offset;
     QRect exportTableButtonGeometry = ui->exportTableButton->geometry();
+
+    x_offset = 0;
+    y_offset = 30;
     int tabfont_color_x = exportTableButtonGeometry.x();
     int tabfont_color_y = exportTableButtonGeometry.y();
     tabfont_color_x += x_offset;
@@ -40,6 +44,17 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     // Set position for the tabfont color picker
     m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
     m_NotificationFontColorPicker->raise();
+
+    x_offset = 200;
+    y_offset = 0;
+    int tabbg_color_x = tabfont_color_x;
+    int tabbg_color_y = tabfont_color_y;
+    tabbg_color_x += x_offset;
+    tabbg_color_y += y_offset;
+    // Set position for the tabbackground color picker
+    m_NotificationBackgroundColorPicker->move(tabbg_color_x, tabbg_color_y);
+    m_NotificationBackgroundColorPicker->raise();
+    m_NotificationBackgroundColorPicker->setShowAlphaChannel(true);
 
     QStringList showPositionList;
     showPositionList.append(tr("None"));
@@ -64,6 +79,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
     QObject::connect(m_NotificationFontColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabFontColorChanged);
+    QObject::connect(m_NotificationBackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabBackgroundColorChanged);
 }
 
 QTableSetupDialog::~QTableSetupDialog()
@@ -77,6 +93,9 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 
     m_NotificationFontColorPicker->setButtonText(tr("TabFontColor"));
     m_NotificationFontColorPicker->setWindowTitle(tr("Select Notification Font Color"));
+    m_NotificationBackgroundColorPicker->setButtonText(tr("TabBGColor"));
+    m_NotificationBackgroundColorPicker->setWindowTitle(tr("Select Notification Background Color"));
+
     setWindowTitle(tr(TABLESETUPDIALOG_WINDOWTITLE_STR));
     ui->tabNameLabel->setText(tr(TABNAMELABEL_STR));
     ui->tabHotkeyLabel->setText(tr(TABHOTKEYLABEL_STR));
@@ -264,6 +283,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
         QString TabHotkey = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey;
         QColor TabFontColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor;
+        QColor TabBackgroundColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabBackgroundColor;
         QString TabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
         int TabCustomImage_ShowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowPosition;
         int TabCustomImage_Padding = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Padding;
@@ -277,6 +297,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             << "TabName: " << TabName << ", "
             << "Hotkey: " << TabHotkey << ", "
             << "FontColor: " << TabFontColor.name() << ", "
+            << "BackgroundColor: " << TabBackgroundColor.name(QColor::HexArgb) << ", "
             << "ShowPosition: " << TabCustomImage_ShowPosition << ", "
             << "Padding: " << TabCustomImage_Padding << ", "
             << "ShowAsTrayIcon: " << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ", "
@@ -301,6 +322,12 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             }
         }
         m_NotificationFontColorPicker->setColor(TabFontColor);
+
+        // Load TabBackgroundColor
+        if (TabBackgroundColor.isValid() != true) {
+            TabBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+        }
+        m_NotificationBackgroundColorPicker->setColor(TabBackgroundColor);
 
         // Load Custom Image
         QIcon icon_loaded;
@@ -384,6 +411,22 @@ void QTableSetupDialog::onTabFontColorChanged(QColor &color)
 #endif
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabFontColor = color;
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(m_TabIndex);
+    }
+}
+
+void QTableSetupDialog::onTabBackgroundColorChanged(QColor &color)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabBackgroundColor) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote()
+            << "[QTableSetupDialog::onTabFontColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Background Color -> " << color.name(QColor::HexArgb)
+            << ", Alpha: " << color.alpha();
+#endif
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabBackgroundColor = color;
     }
 }
 

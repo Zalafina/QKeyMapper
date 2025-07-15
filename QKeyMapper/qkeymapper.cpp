@@ -12003,6 +12003,7 @@ void QKeyMapper::clearKeyMappingTabWidget()
         s_KeyMappingTabInfoList[0].TabName = "Tab1";
         s_KeyMappingTabInfoList[0].TabHotkey.clear();
         s_KeyMappingTabInfoList[0].TabFontColor = QColor();
+        s_KeyMappingTabInfoList[0].TabBackgroundColor = QColor();
         s_KeyMappingTabInfoList[0].TabCustomImage_Path.clear();
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
