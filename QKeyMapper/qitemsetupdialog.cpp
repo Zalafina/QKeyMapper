@@ -1449,8 +1449,33 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 
     int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
+    static QRegularExpression sendtext_regex(R"(SendText\(([^)]+)\))"); // RegularExpression to match "SendText(string)" - non-greedy
+
     QString mappingKey = m_MappingKeyLineEdit->text();
-    mappingKey.remove(whitespace_reg);
+
+    // Find and temporarily replace SendText content to preserve spaces
+    QStringList sendTextParts;
+    QString tempMappingKey = mappingKey;
+    QRegularExpressionMatchIterator iterator = sendtext_regex.globalMatch(mappingKey);
+    int replacementIndex = 0;
+
+    while (iterator.hasNext()) {
+        QRegularExpressionMatch match = iterator.next();
+        QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
+        sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part
+        tempMappingKey.replace(match.captured(0), placeholder);
+    }
+
+    // Remove whitespace from the temporary string (excluding SendText content)
+    tempMappingKey.remove(whitespace_reg);
+
+    // Restore SendText parts
+    for (int i = 0; i < sendTextParts.size(); ++i) {
+        QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, sendTextParts[i]);
+    }
+
+    mappingKey = tempMappingKey;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
