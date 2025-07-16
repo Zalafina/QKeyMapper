@@ -1173,4 +1173,8 @@ extern const int MOUSE_TABLE_COLUMN_COUNT;
 
 void generateVirtualInputRandomValues();
 
+// SendText escape/unescape functions for safe saving and loading
+QString escapeSendTextForSaving(const QString &text);
+QString unescapeSendTextForLoading(const QString &text);
+
 #endif // QKEYMAPPER_CONSTANTS_H

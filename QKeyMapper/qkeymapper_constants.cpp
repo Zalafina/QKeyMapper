@@ -1349,3 +1349,20 @@ void generateVirtualInputRandomValues() {
     qDebug().noquote() << "[generateVirtualInputRandomValues]" << QString("VIRTUAL_RESEND_REALKEY: 0x%08").arg((qulonglong)VIRTUAL_RESEND_REALKEY, 0, 16).toUpper();
 #endif
 }
+
+// SendText escape/unescape functions for safe saving and loading
+QString escapeSendTextForSaving(const QString &text)
+{
+    QString result = text;
+    result.replace("#", "░");
+    result.replace("|", "┋");
+    return result;
+}
+
+QString unescapeSendTextForLoading(const QString &text)
+{
+    QString result = text;
+    result.replace("░", "#");
+    result.replace("┋", "|");
+    return result;
+}

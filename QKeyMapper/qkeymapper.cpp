@@ -6552,9 +6552,21 @@ void QKeyMapper::saveKeyMapSetting(void)
             for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
             {
                 original_keys << keymapdata.Original_Key;
-                QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+
+                // Escape SendText content in mapping keys for safe saving
+                QStringList escapedMappingKeys;
+                for (const QString &key : keymapdata.Mapping_Keys) {
+                    escapedMappingKeys << escapeSendTextForSaving(key);
+                }
+                QString mappingkeys_str = escapedMappingKeys.join(SEPARATOR_NEXTARROW);
                 mapping_keysList  << mappingkeys_str;
-                QString mappingkeys_keyup_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+
+                // Escape SendText content in keyup mapping keys for safe saving
+                QStringList escapedMappingKeysKeyUp;
+                for (const QString &key : keymapdata.MappingKeys_KeyUp) {
+                    escapedMappingKeysKeyUp << escapeSendTextForSaving(key);
+                }
+                QString mappingkeys_keyup_str = escapedMappingKeysKeyUp.join(SEPARATOR_NEXTARROW);
                 if (mappingkeys_keyup_str.isEmpty()) {
                     mappingkeys_keyupList << mappingkeys_str;
                 }
@@ -8728,20 +8740,26 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             }
 
                             bool checkoriginalstr = checkOriginalkeyStr(ori_key);
-                            bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
+
+                            // Unescape SendText content in mapping keys for safe loading
+                            QString unescaped_mapping_keys = unescapeSendTextForLoading(mapping_keys[loadindex]);
+                            bool checkmappingstr = checkMappingkeyStr(unescaped_mapping_keys);
 
                             if (mappingkeys_keyup[loadindex].isEmpty()) {
                                 mappingkeys_keyup[loadindex] = mapping_keys[loadindex];
                             }
-                            bool checkmapping_keyupstr = checkMappingkeyStr(mappingkeys_keyup[loadindex]);
+                            // Unescape SendText content in keyup mapping keys for safe loading
+                            QString unescaped_mappingkeys_keyup = unescapeSendTextForLoading(mappingkeys_keyup[loadindex]);
+                            bool checkmapping_keyupstr = checkMappingkeyStr(unescaped_mappingkeys_keyup);
                             if (!checkmapping_keyupstr) {
                                 mappingkeys_keyup[loadindex] = mapping_keys[loadindex];
+                                unescaped_mappingkeys_keyup = unescaped_mapping_keys;
                             }
 
                             if (true == checkoriginalstr && true == checkmappingstr) {
                                 loadkeymapdata.append(MAP_KEYDATA(ori_key,
-                                                                  mapping_keys.at(loadindex),
-                                                                  mappingkeys_keyup.at(loadindex),
+                                                                  unescaped_mapping_keys,
+                                                                  unescaped_mappingkeys_keyup,
                                                                   notesList.at(loadindex),
                                                                   categorysList.at(loadindex),
                                                                   burstList.at(loadindex),
