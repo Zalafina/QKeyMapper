@@ -153,6 +153,9 @@ void ColorPickerWidget::onPickColor()
         if (selectcolor_dialog->exec() == QDialog::Accepted) {
             color = selectcolor_dialog->selectedColor();
         }
+        else {
+            return;
+        }
 
         // Restore focus to the original window
         if (parentWindow) {
