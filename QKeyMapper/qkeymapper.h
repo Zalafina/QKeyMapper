@@ -541,6 +541,8 @@ public:
     static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
     static void copyStringToClipboard(const QString &string);
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
+    static QString escapeSendTextForSaving(const QString &text);
+    static QString unescapeSendTextForLoading(const QString &text);
 
     // unused enum all process function >>>
     static void EnumProcessFunction(void);

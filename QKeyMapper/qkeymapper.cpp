@@ -2555,6 +2555,22 @@ bool QKeyMapper::backupFile(const QString &sourceFile, const QString &backupFile
     return QFile::copy(sourceFile, backupFile);
 }
 
+QString QKeyMapper::escapeSendTextForSaving(const QString &text)
+{
+    QString result = text;
+    result.replace("#", "░");
+    result.replace("|", "┋");
+    return result;
+}
+
+QString QKeyMapper::unescapeSendTextForLoading(const QString &text)
+{
+    QString result = text;
+    result.replace("░", "#");
+    result.replace("┋", "|");
+    return result;
+}
+
 void QKeyMapper::EnumProcessFunction(void)
 {
 #if 0
