@@ -869,6 +869,7 @@ public:
     void showNotificationPopup(const QString &message, const PopupNotificationOptions &options);
     void showNotificationPopup(const QString &message);
     void initSelectColorDialog(void);
+    void setParentForSelectColorDialog(QWidget *parent);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
     bool isMappingDataTableFiltered(void);
     void onCategoryFilterChanged(int index);

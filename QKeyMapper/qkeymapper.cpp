@@ -422,6 +422,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->windowswitchkeyLineEdit->setText(DISPLAYSWITCH_KEY_DEFAULT);
     ui->mappingStartKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
+    initSelectColorDialog();
     initKeyMappingTabWidget();
     m_ItemSetupDialog = new QItemSetupDialog(this);
     m_TableSetupDialog = new QTableSetupDialog(this);
@@ -11851,6 +11852,16 @@ void QKeyMapper::initSelectColorDialog()
 {
     if (m_SelectColorDialog == Q_NULLPTR) {
         m_SelectColorDialog = new QColorDialog(this);
+    }
+}
+
+void QKeyMapper::setParentForSelectColorDialog(QWidget *parent)
+{
+    if (m_SelectColorDialog == Q_NULLPTR) {
+        m_SelectColorDialog = new QColorDialog(this);
+    }
+    else {
+        m_SelectColorDialog->setParent(parent);
     }
 }
 

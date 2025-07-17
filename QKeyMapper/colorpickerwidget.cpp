@@ -84,8 +84,6 @@ void ColorPickerWidget::setButtonText(QString text)
 
 void ColorPickerWidget::onPickColor()
 {
-    QKeyMapper::getInstance()->initSelectColorDialog();
-
     bool clear_to_default = false;
     if ("TabFontColor" == m_buttonText
         || "TabBGColor" == m_buttonText
@@ -139,6 +137,13 @@ void ColorPickerWidget::onPickColor()
             options |= QColorDialog::ShowAlphaChannel;
         }
 
+        // Save the current focus widget
+        QWidget *currentFocusWidget = QApplication::focusWidget();
+        QWidget *parentWindow = this->parentWidget();
+        while (parentWindow && !parentWindow->isWindow()) {
+            parentWindow = parentWindow->parentWidget();
+        }
+
         // color = QKeyMapper::getInstance()->m_SelectColorDialog->getColor(defaultColor, this, title, options);
         QColorDialog *selectcolor_dialog = QKeyMapper::getInstance()->m_SelectColorDialog;
         selectcolor_dialog->setCurrentColor(defaultColor);
@@ -147,6 +152,15 @@ void ColorPickerWidget::onPickColor()
 
         if (selectcolor_dialog->exec() == QDialog::Accepted) {
             color = selectcolor_dialog->selectedColor();
+        }
+
+        // Restore focus to the original window
+        if (parentWindow) {
+            parentWindow->raise();
+            parentWindow->activateWindow();
+        }
+        if (currentFocusWidget) {
+            currentFocusWidget->setFocus();
         }
     }
 

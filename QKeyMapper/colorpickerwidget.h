@@ -6,6 +6,7 @@
 #include <QColorDialog>
 #include <QLabel>
 #include <QHBoxLayout>
+#include <QApplication>
 
 class ColorPickerWidget : public QWidget
 {
