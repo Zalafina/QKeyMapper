@@ -9191,13 +9191,25 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                         if ((*QKeyMapper::KeyMappingDataList)[rowindex].LockState == LOCK_STATE_LOCKOFF) {
                             update_lockstatus = true;
                             pressedLockKeysMap.remove(locked_orikey);
+
 #ifdef DEBUG_LOGOUT_ON
                             QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" contains in OriginalKey(%2), rowindex(%3), MappingKeys(%4), remove it").arg(keycodeString, locked_orikey).arg(rowindex).arg((*QKeyMapper::KeyMappingDataList)[rowindex].Mapping_Keys.constFirst());
                             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
 #endif
-                            QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(rowindex).Mapping_Keys;
-                            QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+
+                            // Stop burst timer if Lock+Burst is enabled
+                            if ((*QKeyMapper::KeyMappingDataList)[rowindex].Burst) {
+                                emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(locked_orikey, rowindex);
+#ifdef DEBUG_LOGOUT_ON
+                                QString burstmessage = QString("[hookBurstAndLockProc] Stop burst timer for unlocked key \"%1\"").arg(locked_orikey);
+                                qDebug().nospace().noquote() << "\033[1;32m" << burstmessage << "\033[0m";
+#endif
+                            }
+                            else {
+                                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(rowindex).Mapping_Keys;
+                                QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            }
                         }
                     }
                 }
