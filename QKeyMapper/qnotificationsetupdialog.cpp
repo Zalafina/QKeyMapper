@@ -103,7 +103,7 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_BOLD,      tr("Bold"));
 
     /* Duration Group */
-    ui->durationGroupBox->setTitle(tr("Duration"));
+    ui->displayDurationSpinBox->setSpecialValueText(tr("Undisappear"));
     ui->durationLabel->setText(tr("DisplayDuration"));
     ui->fadeinDurationLabel->setText(tr("FadeIn"));
     ui->fadeoutDurationLabel->setText(tr("FadeOut"));

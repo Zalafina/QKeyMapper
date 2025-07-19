@@ -15749,7 +15749,7 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
     m_StopAnimation->stop();
     hide(); // Hide the window before updating content
 
-    if (options.displayDuration <= 0 || options.position == NOTIFICATION_POSITION_NONE) {
+    if (options.displayDuration < 0 || options.position == NOTIFICATION_POSITION_NONE) {
         return;
     }
 
@@ -15856,7 +15856,12 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
 
     // Show the notification and start the timer
     show();
-    m_Timer.start(options.displayDuration);
+
+    // If displayDuration is 0, keep the notification visible permanently (never disappear)
+    // Otherwise, start the timer to auto-hide after the specified duration
+    if (options.displayDuration > 0) {
+        m_Timer.start(options.displayDuration);
+    }
 
     // Save the current options
     m_CurrentPopupOptions = options;
