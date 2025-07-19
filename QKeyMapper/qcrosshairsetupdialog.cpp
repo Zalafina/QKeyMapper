@@ -8,8 +8,8 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QCrosshairSetupDialog)
     , m_ItemRow(-1)
-    , m_CenterColorPicker(new ColorPickerWidget(this, "Color", 51))
-    , m_CrosshairColorPicker(new ColorPickerWidget(this, "Color", 51))
+    , m_CenterColorPicker(new ColorPickerWidget(this, "CenterColor", 51))
+    , m_CrosshairColorPicker(new ColorPickerWidget(this, "CrosshairColor", 51))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -138,13 +138,22 @@ void QCrosshairSetupDialog::showEvent(QShowEvent *event)
         qDebug().nospace().noquote() << "[QCrosshairSetupDialog::showEvent]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
 #endif
 
+        QColor CenterColor = keymapdata.Crosshair_CenterColor;
+        QColor CrosshairColor = keymapdata.Crosshair_CrosshairColor;
+
         /* Crosshair-Center config values */
-        m_CenterColorPicker->setColor(keymapdata.Crosshair_CenterColor);
+        if (CenterColor.isValid() != true) {
+            CenterColor = CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
+        }
+        m_CenterColorPicker->setColor(CenterColor);
         ui->centerSizeSpinBox->setValue(keymapdata.Crosshair_CenterSize);
         ui->centerOpacitySpinBox->setValue(keymapdata.Crosshair_CenterOpacity);
 
         /* Crosshair-Crosshair config values */
-        m_CrosshairColorPicker->setColor(keymapdata.Crosshair_CrosshairColor);
+        if (CrosshairColor.isValid() != true) {
+            CrosshairColor = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
+        }
+        m_CrosshairColorPicker->setColor(CrosshairColor);
         ui->crosshairLineWidthSpinBox->setValue(keymapdata.Crosshair_CrosshairWidth);
         ui->crosshairLineLengthSpinBox->setValue(keymapdata.Crosshair_CrosshairLength);
         ui->crosshairOpacitySpinBox->setValue(keymapdata.Crosshair_CrosshairOpacity);

@@ -88,7 +88,9 @@ void ColorPickerWidget::onPickColor()
     if ("TabFontColor" == m_buttonText
         || "TabBGColor" == m_buttonText
         || "FontColor" == m_buttonText
-        || "BGColor" == m_buttonText) {
+        || "BGColor" == m_buttonText
+        || "CenterColor" == m_buttonText
+        || "CrosshairColor" == m_buttonText) {
         if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
             clear_to_default = true;
         }
@@ -116,6 +118,12 @@ void ColorPickerWidget::onPickColor()
         }
         else if ("BGColor" == m_buttonText) {
             color = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+        }
+        else if ("CenterColor" == m_buttonText) {
+            color = CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
+        }
+        else if ("CrosshairColor" == m_buttonText) {
+            color = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
         }
     }
     else {
@@ -150,11 +158,10 @@ void ColorPickerWidget::onPickColor()
         selectcolor_dialog->setOptions(options);
         selectcolor_dialog->setWindowTitle(title);
 
+        bool accepted = false;
         if (selectcolor_dialog->exec() == QDialog::Accepted) {
             color = selectcolor_dialog->selectedColor();
-        }
-        else {
-            return;
+            accepted = true;
         }
 
         // Restore focus to the original window
@@ -164,6 +171,10 @@ void ColorPickerWidget::onPickColor()
         }
         if (currentFocusWidget) {
             currentFocusWidget->setFocus();
+        }
+
+        if (!accepted) {
+            return;
         }
     }
 
