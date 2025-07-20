@@ -57,7 +57,7 @@
    <property name="geometry">
     <rect>
      <x>315</x>
-     <y>450</y>
+     <y>399</y>
      <width>111</width>
      <height>31</height>
     </rect>
@@ -88,61 +88,6 @@
    </property>
    <property name="columnCount">
     <number>0</number>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="nameCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>115</x>
-     <y>385</y>
-     <width>71</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Process</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="titleCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>115</x>
-     <y>420</y>
-     <width>71</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Title</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="nameLineEdit">
-   <property name="geometry">
-    <rect>
-     <x>176</x>
-     <y>385</y>
-     <width>324</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="readOnly">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="titleLineEdit">
-   <property name="geometry">
-    <rect>
-     <x>176</x>
-     <y>420</y>
-     <width>324</width>
-     <height>20</height>
-    </rect>
    </property>
   </widget>
   <widget class="QPushButton" name="addmapdataButton">
@@ -234,39 +179,11 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="iconLabel">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>370</y>
-     <width>72</width>
-     <height>72</height>
-    </rect>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="frameShape">
-    <enum>QFrame::Shape::WinPanel</enum>
-   </property>
-   <property name="frameShadow">
-    <enum>QFrame::Shadow::Sunken</enum>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-  </widget>
   <widget class="QComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>455</y>
+     <y>404</y>
      <width>271</width>
      <height>22</height>
     </rect>
@@ -282,7 +199,7 @@
    <property name="geometry">
     <rect>
      <x>439</x>
-     <y>456</y>
+     <y>405</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -515,9 +432,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>525</y>
+     <y>445</y>
      <width>491</width>
-     <height>131</height>
+     <height>211</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -526,6 +443,155 @@
    <property name="currentIndex">
     <number>0</number>
    </property>
+   <widget class="QWidget" name="windowinfo">
+    <attribute name="title">
+     <string>WindowInfo</string>
+    </attribute>
+    <widget class="QLineEdit" name="descriptionLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>90</y>
+       <width>301</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="descriptionLabel">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>90</y>
+       <width>81</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Description</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="processLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>20</y>
+       <width>301</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="titleCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>50</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Title</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="processCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>20</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Process</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="titleLineEdit">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>50</y>
+       <width>301</width>
+       <height>20</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="iconLabel">
+     <property name="geometry">
+      <rect>
+       <x>14</x>
+       <y>90</y>
+       <width>72</width>
+       <height>72</height>
+      </rect>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::WinPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Sunken</enum>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="checkProcessComboBox">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>20</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="currentText">
+      <string/>
+     </property>
+     <property name="currentIndex">
+      <number>-1</number>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="checkTitleComboBox">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>50</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="currentText">
+      <string/>
+     </property>
+     <property name="currentIndex">
+      <number>-1</number>
+     </property>
+    </widget>
+   </widget>
    <widget class="QWidget" name="general">
     <attribute name="title">
      <string>General</string>
@@ -1743,32 +1809,6 @@
     <number>-1</number>
    </property>
   </widget>
-  <widget class="QLineEdit" name="descriptionLineEdit">
-   <property name="geometry">
-    <rect>
-     <x>100</x>
-     <y>490</y>
-     <width>331</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="descriptionLabel">
-   <property name="geometry">
-    <rect>
-     <x>-15</x>
-     <y>490</y>
-     <width>111</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Description</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
   <widget class="QPushButton" name="processListButton">
    <property name="geometry">
     <rect>
@@ -2145,57 +2185,32 @@
     <bool>false</bool>
    </property>
   </widget>
-  <zorder>keymapButton</zorder>
-  <zorder>savemaplistButton</zorder>
-  <zorder>processinfoTable</zorder>
-  <zorder>titleCheckBox</zorder>
-  <zorder>nameLineEdit</zorder>
-  <zorder>titleLineEdit</zorder>
-  <zorder>addmapdataButton</zorder>
-  <zorder>orikeyLabel</zorder>
-  <zorder>mapkeyLabel</zorder>
-  <zorder>deleteSelectedButton</zorder>
-  <zorder>clearallButton</zorder>
-  <zorder>iconLabel</zorder>
-  <zorder>settingselectComboBox</zorder>
-  <zorder>removeSettingButton</zorder>
-  <zorder>nextarrowCheckBox</zorder>
-  <zorder>nameCheckBox</zorder>
-  <zorder>waitTimeSpinBox</zorder>
-  <zorder>waitTimeLabel</zorder>
-  <zorder>orikeySeqLabel</zorder>
-  <zorder>combinationKeyLineEdit</zorder>
-  <zorder>pointLabel</zorder>
-  <zorder>pointDisplayLabel</zorder>
-  <zorder>keyboardSelectComboBox</zorder>
-  <zorder>mouseSelectComboBox</zorder>
-  <zorder>keyboardSelectLabel</zorder>
-  <zorder>mouseSelectLabel</zorder>
-  <zorder>pressTimeSpinBox</zorder>
-  <zorder>keyPressTypeComboBox</zorder>
-  <zorder>settingTabWidget</zorder>
-  <zorder>sendTextLineEdit</zorder>
-  <zorder>sendTextLabel</zorder>
-  <zorder>gamepadSelectLabel</zorder>
-  <zorder>gamepadSelectComboBox</zorder>
-  <zorder>descriptionLineEdit</zorder>
-  <zorder>descriptionLabel</zorder>
-  <zorder>processListButton</zorder>
-  <zorder>showNotesButton</zorder>
-  <zorder>pushLevelSlider</zorder>
-  <zorder>pushLevelLabel</zorder>
-  <zorder>pushLevelSpinBox</zorder>
-  <zorder>oriList_SelectKeyboardButton</zorder>
-  <zorder>oriList_SelectMouseButton</zorder>
-  <zorder>oriList_SelectGamepadButton</zorder>
-  <zorder>oriList_SelectFunctionButton</zorder>
-  <zorder>mapList_SelectGamepadButton</zorder>
-  <zorder>mapList_SelectKeyboardButton</zorder>
-  <zorder>mapList_SelectFunctionButton</zorder>
-  <zorder>mapList_SelectMouseButton</zorder>
-  <zorder>showCategoryButton</zorder>
-  <zorder>CategoryFilterComboBox</zorder>
-  <zorder>addTabButton</zorder>
+  <widget class="QLineEdit" name="settingNameLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>370</y>
+     <width>331</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="settingNameLabel">
+   <property name="geometry">
+    <rect>
+     <x>4</x>
+     <y>370</y>
+     <width>91</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>SettingName</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

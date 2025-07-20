@@ -123,7 +123,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         QWidget *tabPage = ui->settingTabWidget->widget(tabindex);
         tabPage->setStyle(fusionStyle);
     }
-    ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->mapping));
+    ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
@@ -247,7 +247,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->iconLabel->setStyle(windowsStyle);
     ui->pointDisplayLabel->setStyle(windowsStyle);
     // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
-    // ui->nameCheckBox->setChecked(true);
+    // ui->processCheckBox->setChecked(true);
     // ui->titleCheckBox->setChecked(true);
 
     // ui->moveupButton->setFont(QFont("SimSun", 14));
@@ -282,9 +282,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
-    ui->nameCheckBox->setFocusPolicy(Qt::NoFocus);
+    ui->processCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
-    ui->nameLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->settingNameLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->processLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->descriptionLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->sendTextLineEdit->setFocusPolicy(Qt::ClickFocus);
@@ -586,12 +587,12 @@ void QKeyMapper::cycleCheckProcessProc(void)
         QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
         Q_UNUSED(keymapstatusEnum);
 
-        if ((false == ui->nameCheckBox->isChecked())
+        if ((false == ui->processCheckBox->isChecked())
             && (false == ui->titleCheckBox->isChecked())){
             checkresult = 2;
         }
         else if (true == getSendToSameTitleWindowsStatus()
-            && true == ui->nameCheckBox->isChecked()
+            && true == ui->processCheckBox->isChecked()
             && true == ui->titleCheckBox->isChecked()){
             if ((m_MapProcessInfo.FileName.isEmpty() == false)
                 && (m_MapProcessInfo.WindowTitle.isEmpty() == false)){
@@ -713,7 +714,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     }
                 }
 
-                if ((true == ui->nameCheckBox->isChecked())
+                if ((true == ui->processCheckBox->isChecked())
                     && (true == ui->titleCheckBox->isChecked())){
                     if ((m_MapProcessInfo.FileName == filename)
                         && (m_MapProcessInfo.WindowTitle.isEmpty() == false)
@@ -721,7 +722,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         checkresult = 1;
                     }
                 }
-                else if (true == ui->nameCheckBox->isChecked()){
+                else if (true == ui->processCheckBox->isChecked()){
                     if (m_MapProcessInfo.FileName == filename){
                         checkresult = 1;
                     }
@@ -795,7 +796,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 else {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_MATCHED) << "]" << ", ForegroundWindow: " << windowTitle << "(" << filename << ")";
-                    qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
+                    qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->processCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                     qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                     qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
                     qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
@@ -853,7 +854,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_CHECKING) << "]" << ", ForegroundWindow: " << windowTitle << "(" << filename << ")";
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " checkresult = " << checkresult << "," << " KeyMapStatus need to change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
-                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->nameCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
+                qDebug().nospace() << "[cycleCheckProcessProc]" << " NameChecked = " << ui->processCheckBox->isChecked() << "," << " TitleChecked = " << ui->titleCheckBox->isChecked();
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
                 qDebug().nospace() << "[cycleCheckProcessProc]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
@@ -1726,7 +1727,7 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
     bool fileNameExist = !QKeyMapper::getInstance()->m_MapProcessInfo.FileName.isEmpty();
     bool windowTitleExist = !QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle.isEmpty();
 
-    if (QKeyMapper::getInstance()->ui->nameCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+    if (QKeyMapper::getInstance()->ui->processCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
         fileNameCheckOK = false;
     }
 
@@ -5044,7 +5045,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         bool fileNameExist = !m_MapProcessInfo.FileName.isEmpty();
         bool windowTitleExist = !m_MapProcessInfo.WindowTitle.isEmpty();
 
-        if (ui->nameCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+        if (ui->processCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
             fileNameCheckOK = false;
         }
 
@@ -6364,11 +6365,11 @@ void QKeyMapper::saveKeyMapSetting(void)
             customGlobalSettingIndex = 1;
         }
 
-        if ((false == ui->nameLineEdit->text().isEmpty())
+        if ((false == ui->processLineEdit->text().isEmpty())
                  && (false == ui->titleLineEdit->text().isEmpty())
-                 && (true == ui->nameCheckBox->isChecked())
+                 && (true == ui->processCheckBox->isChecked())
                  && (true == ui->titleCheckBox->isChecked())
-                 && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+                 && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
                  && (m_MapProcessInfo.FilePath.isEmpty() != true)){
             QStringList groups = settingFile.childGroups();
             int index = -1;
@@ -6400,10 +6401,10 @@ void QKeyMapper::saveKeyMapSetting(void)
                 return;
             }
         }
-        else if ((false == ui->nameLineEdit->text().isEmpty())
-            && (true == ui->nameCheckBox->isChecked())
+        else if ((false == ui->processLineEdit->text().isEmpty())
+            && (true == ui->processCheckBox->isChecked())
             && (false == ui->titleCheckBox->isChecked())
-            && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)
+            && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
             && (m_MapProcessInfo.FilePath.isEmpty() != true)){
             QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
             settingFile.setValue(SETTINGSELECT , subgroup);
@@ -6906,10 +6907,10 @@ void QKeyMapper::saveKeyMapSetting(void)
         // settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, false);
     }
     else {
-        if ((false == ui->nameLineEdit->text().isEmpty())
+        if ((false == ui->processLineEdit->text().isEmpty())
                 && (false == ui->titleLineEdit->text().isEmpty())
                 // && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
-                && (ui->nameLineEdit->text() == m_MapProcessInfo.FileName)){
+                && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)){
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->titleLineEdit->text());
 
@@ -6922,7 +6923,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
             }
 
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_CHECKED, ui->nameCheckBox->isChecked());
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_CHECKED, ui->processCheckBox->isChecked());
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
         }
         else{
@@ -8992,19 +8993,21 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     refreshAllKeyMappingTagWidget();
 
     if (loadGlobalSetting && loadDefault != true) {
-        ui->nameLineEdit->setText(QString());
+        ui->settingNameLineEdit->setText(GROUPNAME_GLOBALSETTING);
+        ui->processLineEdit->setText(QString());
         ui->titleLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
         ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
-        ui->nameCheckBox->setChecked(false);
+        ui->processCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
         // ui->disableWinKeyCheckBox->setChecked(false);
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
         ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
 
-        ui->nameLineEdit->setEnabled(false);
+        ui->settingNameLineEdit->setEnabled(false);
+        ui->processLineEdit->setEnabled(false);
         ui->titleLineEdit->setEnabled(false);
-        ui->nameCheckBox->setEnabled(false);
+        ui->processCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
@@ -9015,25 +9018,29 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         m_MapProcessInfo = MAP_PROCESSINFO();
     }
     else {
-        ui->nameLineEdit->setEnabled(true);
+        ui->settingNameLineEdit->setEnabled(true);
+        ui->processLineEdit->setEnabled(true);
         ui->titleLineEdit->setEnabled(true);
-        ui->nameCheckBox->setEnabled(true);
+        ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
         ui->ProcessIconAsTrayIconCheckBox->setEnabled(true);
 
-        if ((true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME))
-                && (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE))){
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME)){
             m_MapProcessInfo.FileName = settingFile.value(settingSelectStr+PROCESSINFO_FILENAME).toString();
-            m_MapProcessInfo.WindowTitle = settingFile.value(settingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
+            ui->processLineEdit->setText(m_MapProcessInfo.FileName);
+        }
+        else {
+            ui->processLineEdit->setText(QString());
+        }
 
-            ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE)){
+            m_MapProcessInfo.WindowTitle = settingFile.value(settingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
             ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
         }
         else {
-            ui->nameLineEdit->setText(QString());
             ui->titleLineEdit->setText(QString());
         }
 
@@ -9055,10 +9062,11 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
         if (true == loadDefault) {
             // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
-            ui->nameLineEdit->setText(QString());
+            ui->settingNameLineEdit->setText(QString());
+            ui->processLineEdit->setText(QString());
             ui->titleLineEdit->setText(QString());
             ui->descriptionLineEdit->setText(QString());
-            ui->nameCheckBox->setChecked(false);
+            ui->processCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
@@ -9070,17 +9078,17 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME_CHECKED)){
             bool fileNameChecked = settingFile.value(settingSelectStr+PROCESSINFO_FILENAME_CHECKED).toBool();
             if (true == fileNameChecked) {
-                ui->nameCheckBox->setChecked(true);
+                ui->processCheckBox->setChecked(true);
             }
             else {
-                ui->nameCheckBox->setChecked(false);
+                ui->processCheckBox->setChecked(false);
             }
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "FileNameChecked =" << fileNameChecked;
 #endif
         }
         else {
-            ui->nameCheckBox->setChecked(false);
+            ui->processCheckBox->setChecked(false);
         }
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED)){
@@ -9100,7 +9108,7 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 
         if (true == loadDefault) {
-            ui->nameCheckBox->setChecked(false);
+            ui->processCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
         }
 
@@ -9554,7 +9562,8 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         return false;
     }
     else {
-        ui->nameLineEdit->setCursorPosition(0);
+        ui->settingNameLineEdit->setCursorPosition(0);
+        ui->processLineEdit->setCursorPosition(0);
         ui->titleLineEdit->setCursorPosition(0);
 
         if (settingSelectStr.isEmpty() != true) {
@@ -9617,7 +9626,7 @@ void QKeyMapper::setControlCustomFont(const QString &fontname)
     ui->deleteSelectedButton->setFont(customFont);
     ui->clearallButton->setFont(customFont);
     ui->addmapdataButton->setFont(customFont);
-    ui->nameCheckBox->setFont(customFont);
+    ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
@@ -9677,8 +9686,9 @@ void QKeyMapper::setControlFontEnglish()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
-    ui->nameCheckBox->setFont(customFont);
+    ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
@@ -9810,8 +9820,9 @@ void QKeyMapper::setControlFontChinese()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
-    ui->nameCheckBox->setFont(customFont);
+    ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
@@ -9943,8 +9954,9 @@ void QKeyMapper::setControlFontJapanese()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
-    ui->nameCheckBox->setFont(customFont);
+    ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeySeqLabel->setFont(customFont);
@@ -10041,7 +10053,7 @@ void QKeyMapper::setControlFontJapanese()
 void QKeyMapper::changeControlEnableStatus(bool status)
 {
     if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
-        ui->nameCheckBox->setEnabled(false);
+        ui->processCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
@@ -10049,7 +10061,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->ProcessIconAsTrayIconCheckBox->setEnabled(false);
     }
     else {
-        ui->nameCheckBox->setEnabled(status);
+        ui->processCheckBox->setEnabled(status);
         ui->titleCheckBox->setEnabled(status);
         ui->removeSettingButton->setEnabled(status);
         // ui->disableWinKeyCheckBox->setEnabled(status);
@@ -10062,12 +10074,14 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->ProcessIconAsTrayIconCheckBox->setEnabled(status);
     }
 
-    //ui->nameLineEdit->setEnabled(status);
+    //ui->processLineEdit->setEnabled(status);
     //ui->titleLineEdit->setEnabled(status);
-    ui->titleLineEdit->setReadOnly(!status);
-    ui->descriptionLabel->setEnabled(status);
-    ui->descriptionLineEdit->setEnabled(status);
-    ui->autoStartMappingCheckBox->setEnabled(status);
+    // ui->processLineEdit->setReadOnly(!status);
+    // ui->titleLineEdit->setReadOnly(!status);
+    // ui->descriptionLabel->setEnabled(status);
+    // ui->descriptionLineEdit->setEnabled(status);
+    ui->settingNameLabel->setEnabled(status);
+    ui->settingNameLineEdit->setEnabled(status);
     ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
@@ -11456,11 +11470,11 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
 
 void QKeyMapper::updateProcessInfoDisplay()
 {
-    ui->nameLineEdit->setText(m_MapProcessInfo.FileName);
+    ui->processLineEdit->setText(m_MapProcessInfo.FileName);
     ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
     if ((false == m_MapProcessInfo.FilePath.isEmpty())
             && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
-        ui->nameLineEdit->setToolTip(m_MapProcessInfo.FilePath);
+        ui->processLineEdit->setToolTip(m_MapProcessInfo.FilePath);
 
         QFileIconProvider icon_provider;
         QIcon fileicon = icon_provider.icon(QFileInfo(m_MapProcessInfo.FilePath));
@@ -11511,7 +11525,7 @@ void QKeyMapper::updateProcessInfoDisplay()
         }
     }
     else{
-        if ((DEFAULT_NAME == ui->nameLineEdit->text())
+        if ((DEFAULT_NAME == ui->processLineEdit->text())
                 && (DEFAULT_TITLE == ui->titleLineEdit->text())){
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LoadSetting]" << "Default icon availableSizes:" << m_MapProcessInfo.WindowIcon.availableSizes();
@@ -13345,8 +13359,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     updateCategoryFilterComboBox();
 
     ui->addmapdataButton->setText(tr("ADD"));
-    ui->nameCheckBox->setText(tr("Process"));
+    ui->processCheckBox->setText(tr("Process"));
     ui->titleCheckBox->setText(tr("Title"));
+    ui->settingNameLabel->setText(tr("SettingName"));
     ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
         ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
@@ -13421,17 +13436,19 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_RIGHT,   tr("Bottom Right"));
 
     QTabWidget *tabWidget = ui->settingTabWidget;
+    tabWidget->setTabText(tabWidget->indexOf(ui->windowinfo),       tr("WindowInfo")    );
     tabWidget->setTabText(tabWidget->indexOf(ui->general),          tr("General")       );
     tabWidget->setTabText(tabWidget->indexOf(ui->mapping),          tr("Mapping")       );
     tabWidget->setTabText(tabWidget->indexOf(ui->virtual_gamepad),  tr("VirtualGamepad"));
-    tabWidget->setTabText(tabWidget->indexOf(ui->gyro2mouse),       tr("Gyro2Mouse"));
+    tabWidget->setTabText(tabWidget->indexOf(ui->gyro2mouse),       tr("Gyro2Mouse")    );
     tabWidget->setTabText(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input")   );
     tabWidget->setTabText(tabWidget->indexOf(ui->forza),            tr("Forza")         );
 
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->windowinfo),       tr("WindowInfo setting tab tooltip.")    );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->general),          tr("General setting tab tooltip.")       );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->mapping),          tr("Mapping setting tab tooltip.")       );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->virtual_gamepad),  tr("VirtualGamepad setting tab tooltip."));
-    tabWidget->setTabToolTip(tabWidget->indexOf(ui->gyro2mouse),       tr("Gyro2Mouse setting tab tooltip."));
+    tabWidget->setTabToolTip(tabWidget->indexOf(ui->gyro2mouse),       tr("Gyro2Mouse setting tab tooltip.")    );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->multi_input),      tr("Multi-Input setting tab tooltip")    );
     tabWidget->setTabToolTip(tabWidget->indexOf(ui->forza),            tr("Forza setting tab tooltip.")         );
 
@@ -13526,7 +13543,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
     ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
-    ui->nameCheckBox->setText(NAMECHECKBOX_CHINESE);
+    ui->processCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
     ui->descriptionLabel->setText(SETTINGDESCLABEL_CHINESE);
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
@@ -13678,7 +13695,7 @@ void QKeyMapper::setUILanguage_English()
     ui->processListButton->setText(PROCESSLISTBUTTON_ENGLISH);
     ui->showNotesButton->setText(SHOWNOTESBUTTON_ENGLISH);
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
-    ui->nameCheckBox->setText(NAMECHECKBOX_ENGLISH);
+    ui->processCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
     ui->descriptionLabel->setText(SETTINGDESCLABEL_ENGLISH);
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
@@ -13818,7 +13835,8 @@ void QKeyMapper::resetFontSize()
         || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
         || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
 
-        ui->nameLineEdit->setFont(customFont);
+        ui->settingNameLineEdit->setFont(customFont);
+        ui->processLineEdit->setFont(customFont);
         ui->titleLineEdit->setFont(customFont);
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
@@ -13866,7 +13884,8 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadListComboBox->setFont(customFont);
     }
     else {
-        ui->nameLineEdit->setFont(customFont);
+        ui->settingNameLineEdit->setFont(customFont);
+        ui->processLineEdit->setFont(customFont);
         ui->titleLineEdit->setFont(customFont);
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
@@ -14518,9 +14537,9 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[SelectProcessInfo]" << "Table DoubleClicked [" << index.row() << "] " << ui->processinfoTable->item(index.row(), 0)->text() << ", " << ui->processinfoTable->item(index.row(), 2)->text();
 #endif
-        ui->nameLineEdit->setEnabled(true);
+        ui->processLineEdit->setEnabled(true);
         ui->titleLineEdit->setEnabled(true);
-        ui->nameCheckBox->setEnabled(true);
+        ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
@@ -14562,7 +14581,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             ui->descriptionLineEdit->clear();
         }
 
-        ui->nameLineEdit->setText(filename);
+        ui->processLineEdit->setText(filename);
         ui->titleLineEdit->setText(windowTitle);
 
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
@@ -14642,7 +14661,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 //        IconPixmap.save("selecticon.png");
 #endif
         ui->iconLabel->setPixmap(IconPixmap);
-        ui->nameLineEdit->setToolTip(ProcessPath);
+        ui->processLineEdit->setToolTip(ProcessPath);
     }
 }
 
@@ -16000,9 +16019,10 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Select setting text Empty!";
 #endif
-        ui->nameLineEdit->setEnabled(true);
+        ui->settingNameLineEdit->setEnabled(true);
+        ui->processLineEdit->setEnabled(true);
         ui->titleLineEdit->setEnabled(true);
-        ui->nameCheckBox->setEnabled(true);
+        ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
