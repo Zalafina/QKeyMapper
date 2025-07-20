@@ -524,7 +524,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -570,7 +570,7 @@
       <rect>
        <x>20</x>
        <y>40</y>
-       <width>131</width>
+       <width>111</width>
        <height>21</height>
       </rect>
      </property>
@@ -797,6 +797,20 @@
       <bool>false</bool>
      </property>
     </widget>
+    <zorder>startupMinimizedCheckBox</zorder>
+    <zorder>autoStartupCheckBox</zorder>
+    <zorder>notificationLabel</zorder>
+    <zorder>notificationComboBox</zorder>
+    <zorder>windowswitchkeyLineEdit</zorder>
+    <zorder>windowswitchkeyLabel</zorder>
+    <zorder>languageComboBox</zorder>
+    <zorder>languageLabel</zorder>
+    <zorder>checkUpdateButton</zorder>
+    <zorder>updateSiteLabel</zorder>
+    <zorder>updateSiteComboBox</zorder>
+    <zorder>selectTrayIconButton</zorder>
+    <zorder>notificationAdvancedSettingButton</zorder>
+    <zorder>soundEffectCheckBox</zorder>
    </widget>
    <widget class="QWidget" name="mapping">
     <attribute name="title">
