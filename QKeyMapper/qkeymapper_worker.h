@@ -80,6 +80,7 @@ typedef struct MAP_KEYDATA
     bool Lock;
     bool MappingKeyUnlock;
     bool PostMappingKey;
+    int ForceVKeyCode;
     uint LockState;
     bool CheckCombKeyOrder;
     bool Unbreakable;
@@ -118,6 +119,7 @@ typedef struct MAP_KEYDATA
     , Lock(false)
     , MappingKeyUnlock(false)
     , PostMappingKey(false)
+    , ForceVKeyCode(FORCE_VIRTUAL_KEY_CODE_DEFAULT)
     , LockState(LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
     , Unbreakable(false)

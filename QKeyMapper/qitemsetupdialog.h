@@ -98,6 +98,7 @@ private slots:
     void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
     void on_crosshairSetupButton_clicked();
+    void on_forceVKeyCodeSpinBox_valueChanged(int value);
 };
 
 class KeyStringLineEdit : public QLineEdit

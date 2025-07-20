@@ -536,6 +536,10 @@ extern const UINT SCANCODE_LWIN;
 extern const UINT SCANCODE_RWIN;
 extern const UINT SCANCODE_APPS;
 
+extern const int FORCE_VIRTUAL_KEY_CODE_MIN;
+extern const int FORCE_VIRTUAL_KEY_CODE_MAX;
+extern const int FORCE_VIRTUAL_KEY_CODE_DEFAULT;
+
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;
 extern const char *CHECK_UPDATES_URL_GITHUB;

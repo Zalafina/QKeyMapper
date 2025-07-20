@@ -1761,3 +1761,25 @@ void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
         QItemSetupDialog::setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
     }
 }
+
+void QItemSetupDialog::on_forceVKeyCodeSpinBox_valueChanged(int value)
+{
+    Q_UNUSED(value);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int forcevkeycode = ui->forceVKeyCodeSpinBox->value();
+    if (forcevkeycode < FORCE_VIRTUAL_KEY_CODE_MIN || forcevkeycode > FORCE_VIRTUAL_KEY_CODE_MAX) {
+        forcevkeycode = FORCE_VIRTUAL_KEY_CODE_DEFAULT;
+        ui->forceVKeyCodeSpinBox->setValue(forcevkeycode);
+        return;
+    }
+    if (forcevkeycode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).ForceVKeyCode) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].ForceVKeyCode = forcevkeycode;
+#ifdef DEBUG_LOGOUT_ON
+        QString forcevkeycodeStr = QString("0x%1").arg(QString::number(forcevkeycode, 16).toUpper(), 2, '0');
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] ForceVKeyCode -> " << forcevkeycodeStr;
+#endif
+    }
+}

@@ -965,8 +965,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
     bool postmappingkey = false;
+    int forcevkeycode = FORCE_VIRTUAL_KEY_CODE_DEFAULT;
     if (rowindex >= 0) {
         postmappingkey = QKeyMapper::KeyMappingDataList->at(rowindex).PostMappingKey;
+        forcevkeycode  = QKeyMapper::KeyMappingDataList->at(rowindex).ForceVKeyCode;
+        if (forcevkeycode < FORCE_VIRTUAL_KEY_CODE_MIN || forcevkeycode > FORCE_VIRTUAL_KEY_CODE_MAX) {
+            forcevkeycode = FORCE_VIRTUAL_KEY_CODE_DEFAULT;
+        }
     }
 
     if (KEY_UP == keyupdown) {
@@ -1300,6 +1305,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 else {
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                }
+                if (forcevkeycode != FORCE_VIRTUAL_KEY_CODE_DEFAULT) {
+                    input.ki.wVk = forcevkeycode;
                 }
                 if (postmappingkey) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -1857,6 +1865,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else {
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
+                    }
+                    if (forcevkeycode != FORCE_VIRTUAL_KEY_CODE_DEFAULT) {
+                        input.ki.wVk = forcevkeycode;
                     }
                     if (postmappingkey) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -12773,7 +12784,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
