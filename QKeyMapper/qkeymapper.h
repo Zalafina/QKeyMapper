@@ -932,7 +932,7 @@ private:
 public:
     void saveKeyMapSetting(void);
 private:
-    bool loadKeyMapSetting(const QString &settingtext);
+    QString loadKeyMapSetting(const QString &settingtext);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT

@@ -431,7 +431,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     loadSetting_flag = true;
-    bool loadresult = loadKeyMapSetting(QString());
+    QString loadresult = loadKeyMapSetting(QString());
+    ui->settingNameLineEdit->setText(loadresult);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
@@ -702,7 +703,8 @@ void QKeyMapper::cycleCheckProcessProc(void)
                             qDebug().nospace().noquote() << "[cycleCheckProcessProc] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
 #endif
                             loadSetting_flag = true;
-                            bool loadresult = loadKeyMapSetting(loadSettingSelectStr);
+                            QString loadresult = loadKeyMapSetting(loadSettingSelectStr);
+                            ui->settingNameLineEdit->setText(loadresult);
                             Q_UNUSED(loadresult)
                             loadSetting_flag = false;
                         }
@@ -909,7 +911,8 @@ void QKeyMapper::cycleCheckProcessProc(void)
     if (m_KeyMapStatus == KEYMAP_CHECKING && GLOBAL_MAPPING_START_WAIT == s_CycleCheckLoopCount) {
         if (checkGlobalSettingAutoStart()) {
             loadSetting_flag = true;
-            bool loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
+            QString loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
+            ui->settingNameLineEdit->setText(loadresult);
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
         }
@@ -932,7 +935,8 @@ void QKeyMapper::checkGlobalSettingSwitchTimeout()
     if (m_KeyMapStatus == KEYMAP_CHECKING) {
         if (checkGlobalSettingAutoStart()) {
             loadSetting_flag = true;
-            bool loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
+            QString loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
+            ui->settingNameLineEdit->setText(loadresult);
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
             cycleCheckProcessProc();
@@ -6996,14 +7000,15 @@ void QKeyMapper::saveKeyMapSetting(void)
     const QString savedSettingName = saveSettingSelectStr.remove("/");
 
     loadSetting_flag = true;
-    bool loadresult = loadKeyMapSetting(savedSettingName);
+    QString loadresult = loadKeyMapSetting(savedSettingName);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
-    if (true == loadresult) {
+    if (loadresult == savedSettingName) {
+        ui->settingNameLineEdit->setText(loadresult);
         popupMessage = tr("Save success : ") + savedSettingName;
         popupMessageColor = SUCCESS_COLOR;
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
@@ -7014,6 +7019,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
     }
     else {
+        ui->settingNameLineEdit->setText(QString());
         popupMessage = tr("Save failure : ") + savedSettingName;
         popupMessageColor = FAILURE_COLOR;
 #ifdef DEBUG_LOGOUT_ON
@@ -7023,7 +7029,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
 
-bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
+QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 {
     bool loadDefault = false;
     bool loadGlobalSetting = false;
@@ -7634,14 +7640,15 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, tr("Global keymapping setting"));
     ui->settingselectComboBox->addItem(globalSettingNameWithDescStr);
     m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
-    QStandardItem* item = model->item(1);
-    item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
-#else
-    QBrush colorBrush(Qt::darkMagenta);
-    ui->settingselectComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
-#endif
+// #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+//     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
+//     QStandardItem* item = model->item(1);
+//     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+// #else
+//     QBrush colorBrush(Qt::darkMagenta);
+//     ui->settingselectComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
+// #endif
+    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.png"));
     QStringList groups = settingFile.childGroups();
     QStringList validgroups;
     QStringList validgroups_fullmatch;
@@ -9557,9 +9564,10 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Stop Key [" << settingSelectStr+MAPPINGSTOP_KEY << "] -> \"" << s_MappingStopKeyString << "\"";
 #endif
 
+    QString loadedSettingString;
     if (false == datavalidflag){
         showFailurePopup(tr("Invalid mapping data : ") + settingtext);
-        return false;
+        return loadedSettingString;
     }
     else {
         ui->settingNameLineEdit->setCursorPosition(0);
@@ -9577,12 +9585,13 @@ bool QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             ui->settingselectComboBox->setCurrentIndex(settingSelectIndex);
             // ui->settingselectComboBox->setCurrentText(settingSelectStr);
+            loadedSettingString = settingSelectStr;
         }
 
         if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
             MappingSwitch(MAPPINGSTART_LOADSETTING);
         }
-        return true;
+        return loadedSettingString;
     }
 }
 
@@ -14566,7 +14575,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
 #endif
                 loadSetting_flag = true;
-                bool loadresult = loadKeyMapSetting(loadSettingSelectStr);
+                QString loadresult = loadKeyMapSetting(loadSettingSelectStr);
+                ui->settingNameLineEdit->setText(loadresult);
                 Q_UNUSED(loadresult)
                 loadSetting_flag = false;
             }
@@ -16011,7 +16021,8 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
             qDebug().noquote().nospace() << "[on_settingselectComboBox_textActivated/textChanged]" << "Change to setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
 #endif
         }
-        bool loadresult = loadKeyMapSetting(curSettingSelectStr);
+        QString loadresult = loadKeyMapSetting(curSettingSelectStr);
+        ui->settingNameLineEdit->setText(loadresult);
         Q_UNUSED(loadresult);
         loadSetting_flag = false;
     }
@@ -16073,7 +16084,8 @@ void QKeyMapper::on_removeSettingButton_clicked()
             qDebug() << "[removeSetting] Change to Setting ->" << curSettingSelectStr;
 #endif
             loadSetting_flag = true;
-            bool loadresult = loadKeyMapSetting(curSettingSelectStr);
+            QString loadresult = loadKeyMapSetting(curSettingSelectStr);
+            ui->settingNameLineEdit->setText(loadresult);
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
         }
