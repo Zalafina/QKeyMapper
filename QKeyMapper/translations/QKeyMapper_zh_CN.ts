@@ -581,86 +581,86 @@
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="816"/>
-        <source>ForceVKeyCode</source>
-        <translation type="unfinished"></translation>
+        <source>FixedVKeyCode</source>
+        <translation>固定虚拟键码</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="157"/>
-        <location filename="../qitemsetupdialog.cpp" line="161"/>
+        <location filename="../qitemsetupdialog.cpp" line="162"/>
+        <location filename="../qitemsetupdialog.cpp" line="166"/>
         <source>Keyboard Keys</source>
         <translation>键盘按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="158"/>
-        <location filename="../qitemsetupdialog.cpp" line="162"/>
+        <location filename="../qitemsetupdialog.cpp" line="163"/>
+        <location filename="../qitemsetupdialog.cpp" line="167"/>
         <source>Mouse Keys</source>
         <translation>鼠标按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="159"/>
-        <location filename="../qitemsetupdialog.cpp" line="163"/>
+        <location filename="../qitemsetupdialog.cpp" line="164"/>
+        <location filename="../qitemsetupdialog.cpp" line="168"/>
         <source>Gamepad Keys</source>
         <translation>手柄按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="160"/>
-        <location filename="../qitemsetupdialog.cpp" line="164"/>
+        <location filename="../qitemsetupdialog.cpp" line="165"/>
+        <location filename="../qitemsetupdialog.cpp" line="169"/>
         <source>Function Keys</source>
         <translation>功能按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="173"/>
-        <location filename="../qitemsetupdialog.cpp" line="174"/>
+        <location filename="../qitemsetupdialog.cpp" line="178"/>
+        <location filename="../qitemsetupdialog.cpp" line="179"/>
         <source> ms</source>
         <translation> 毫秒</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="80"/>
-        <location filename="../qitemsetupdialog.cpp" line="176"/>
+        <location filename="../qitemsetupdialog.cpp" line="85"/>
+        <location filename="../qitemsetupdialog.cpp" line="181"/>
         <source>Normal</source>
         <translation>正常</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="81"/>
-        <location filename="../qitemsetupdialog.cpp" line="177"/>
+        <location filename="../qitemsetupdialog.cpp" line="86"/>
+        <location filename="../qitemsetupdialog.cpp" line="182"/>
         <source>KeyDown</source>
         <translation>按下</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="82"/>
-        <location filename="../qitemsetupdialog.cpp" line="178"/>
+        <location filename="../qitemsetupdialog.cpp" line="87"/>
+        <location filename="../qitemsetupdialog.cpp" line="183"/>
         <source>KeyUp</source>
         <translation>抬起</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="83"/>
-        <location filename="../qitemsetupdialog.cpp" line="179"/>
+        <location filename="../qitemsetupdialog.cpp" line="88"/>
+        <location filename="../qitemsetupdialog.cpp" line="184"/>
         <source>KeyDown+KeyUp</source>
         <translation>按下+抬起</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="84"/>
-        <location filename="../qitemsetupdialog.cpp" line="180"/>
+        <location filename="../qitemsetupdialog.cpp" line="89"/>
+        <location filename="../qitemsetupdialog.cpp" line="185"/>
         <source>Normal+KeyUp</source>
         <translation>正常+抬起</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1423"/>
+        <location filename="../qitemsetupdialog.cpp" line="1428"/>
         <source>OriginalKey update success</source>
         <translation>原始按键更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1492"/>
+        <location filename="../qitemsetupdialog.cpp" line="1497"/>
         <source>MappingKey update success</source>
         <translation>映射按键更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1540"/>
+        <location filename="../qitemsetupdialog.cpp" line="1545"/>
         <source>KeyUp MappingKey update success</source>
         <translation>抬起映射更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1669"/>
+        <location filename="../qitemsetupdialog.cpp" line="1674"/>
         <source>Mapping item note update success</source>
         <translation>映射项备注更新成功</translation>
     </message>

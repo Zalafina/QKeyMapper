@@ -581,86 +581,86 @@
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="816"/>
-        <source>ForceVKeyCode</source>
-        <translation type="unfinished"></translation>
+        <source>FixedVKeyCode</source>
+        <translation>FixedVKeyCode</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="157"/>
-        <location filename="../qitemsetupdialog.cpp" line="161"/>
+        <location filename="../qitemsetupdialog.cpp" line="162"/>
+        <location filename="../qitemsetupdialog.cpp" line="166"/>
         <source>Keyboard Keys</source>
         <translation>Keyboard Keys</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="158"/>
-        <location filename="../qitemsetupdialog.cpp" line="162"/>
+        <location filename="../qitemsetupdialog.cpp" line="163"/>
+        <location filename="../qitemsetupdialog.cpp" line="167"/>
         <source>Mouse Keys</source>
         <translation>Mouse Keys</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="159"/>
-        <location filename="../qitemsetupdialog.cpp" line="163"/>
+        <location filename="../qitemsetupdialog.cpp" line="164"/>
+        <location filename="../qitemsetupdialog.cpp" line="168"/>
         <source>Gamepad Keys</source>
         <translation>Gamepad Keys</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="160"/>
-        <location filename="../qitemsetupdialog.cpp" line="164"/>
+        <location filename="../qitemsetupdialog.cpp" line="165"/>
+        <location filename="../qitemsetupdialog.cpp" line="169"/>
         <source>Function Keys</source>
         <translation>Function Keys</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="173"/>
-        <location filename="../qitemsetupdialog.cpp" line="174"/>
+        <location filename="../qitemsetupdialog.cpp" line="178"/>
+        <location filename="../qitemsetupdialog.cpp" line="179"/>
         <source> ms</source>
         <translation> ms</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="80"/>
-        <location filename="../qitemsetupdialog.cpp" line="176"/>
+        <location filename="../qitemsetupdialog.cpp" line="85"/>
+        <location filename="../qitemsetupdialog.cpp" line="181"/>
         <source>Normal</source>
         <translation>Normal</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="81"/>
-        <location filename="../qitemsetupdialog.cpp" line="177"/>
+        <location filename="../qitemsetupdialog.cpp" line="86"/>
+        <location filename="../qitemsetupdialog.cpp" line="182"/>
         <source>KeyDown</source>
         <translation>KeyDown</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="82"/>
-        <location filename="../qitemsetupdialog.cpp" line="178"/>
+        <location filename="../qitemsetupdialog.cpp" line="87"/>
+        <location filename="../qitemsetupdialog.cpp" line="183"/>
         <source>KeyUp</source>
         <translation>KeyUp</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="83"/>
-        <location filename="../qitemsetupdialog.cpp" line="179"/>
+        <location filename="../qitemsetupdialog.cpp" line="88"/>
+        <location filename="../qitemsetupdialog.cpp" line="184"/>
         <source>KeyDown+KeyUp</source>
         <translation>KeyDown+KeyUp</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="84"/>
-        <location filename="../qitemsetupdialog.cpp" line="180"/>
+        <location filename="../qitemsetupdialog.cpp" line="89"/>
+        <location filename="../qitemsetupdialog.cpp" line="185"/>
         <source>Normal+KeyUp</source>
         <translation>Normal+KeyUp</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1423"/>
+        <location filename="../qitemsetupdialog.cpp" line="1428"/>
         <source>OriginalKey update success</source>
         <translation>OriginalKey update success</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1492"/>
+        <location filename="../qitemsetupdialog.cpp" line="1497"/>
         <source>MappingKey update success</source>
         <translation>MappingKey update success</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1540"/>
+        <location filename="../qitemsetupdialog.cpp" line="1545"/>
         <source>KeyUp MappingKey update success</source>
         <translation>KeyUp MappingKey update success</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1669"/>
+        <location filename="../qitemsetupdialog.cpp" line="1674"/>
         <source>Mapping item note update success</source>
         <translation>Mapping item note update success</translation>
     </message>

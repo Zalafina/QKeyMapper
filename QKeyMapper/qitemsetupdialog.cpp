@@ -76,6 +76,11 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->repeatTimesSpinBox->setRange(REPEAT_TIMES_MIN, REPEAT_TIMES_MAX);
 
+    ui->fixedVKeyCodeSpinBox->setRange(FIXED_VIRTUAL_KEY_CODE_MIN, FIXED_VIRTUAL_KEY_CODE_MAX);
+    ui->fixedVKeyCodeSpinBox->setPrefix("0x");
+    ui->fixedVKeyCodeSpinBox->setDisplayIntegerBase(16);
+    ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
+
     QStringList sendtiming_list = QStringList() \
                                   << tr("Normal")
                                   << tr("KeyDown")
@@ -169,6 +174,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
+    ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
 
     ui->burstpressSpinBox->setSuffix(tr(" ms"));
     ui->burstreleaseSpinBox->setSuffix(tr(" ms"));
@@ -1762,24 +1768,24 @@ void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
     }
 }
 
-void QItemSetupDialog::on_forceVKeyCodeSpinBox_valueChanged(int value)
+void QItemSetupDialog::on_fixedVKeyCodeSpinBox_valueChanged(int value)
 {
     Q_UNUSED(value);
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
-    int forcevkeycode = ui->forceVKeyCodeSpinBox->value();
-    if (forcevkeycode < FORCE_VIRTUAL_KEY_CODE_MIN || forcevkeycode > FORCE_VIRTUAL_KEY_CODE_MAX) {
-        forcevkeycode = FORCE_VIRTUAL_KEY_CODE_DEFAULT;
-        ui->forceVKeyCodeSpinBox->setValue(forcevkeycode);
+    int fixedvkeycode = ui->fixedVKeyCodeSpinBox->value();
+    if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
+        fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
+        ui->fixedVKeyCodeSpinBox->setValue(fixedvkeycode);
         return;
     }
-    if (forcevkeycode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).ForceVKeyCode) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].ForceVKeyCode = forcevkeycode;
+    if (fixedvkeycode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).FixedVKeyCode) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].FixedVKeyCode = fixedvkeycode;
 #ifdef DEBUG_LOGOUT_ON
-        QString forcevkeycodeStr = QString("0x%1").arg(QString::number(forcevkeycode, 16).toUpper(), 2, '0');
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] ForceVKeyCode -> " << forcevkeycodeStr;
+        QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] FixedVKeyCode -> " << fixedvkeycodeStr;
 #endif
     }
 }

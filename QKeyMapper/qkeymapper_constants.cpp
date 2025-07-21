@@ -604,9 +604,9 @@ const UINT SCANCODE_LWIN            = 0x5B;
 const UINT SCANCODE_RWIN            = 0x5C;
 const UINT SCANCODE_APPS            = 0x5D;
 
-const int FORCE_VIRTUAL_KEY_CODE_MIN        = 0x00;
-const int FORCE_VIRTUAL_KEY_CODE_MAX        = 0xFF;
-const int FORCE_VIRTUAL_KEY_CODE_DEFAULT    = 0x00;
+const int FIXED_VIRTUAL_KEY_CODE_MIN        = 0x00;
+const int FIXED_VIRTUAL_KEY_CODE_MAX        = 0xFF;
+const int FIXED_VIRTUAL_KEY_CODE_DEFAULT    = 0x00;
 
 /* constant chars for QKeyMapper */
 const char *PROGRAM_NAME = "QKeyMapper";

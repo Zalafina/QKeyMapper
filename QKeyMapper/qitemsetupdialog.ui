@@ -790,7 +790,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QSpinBox" name="forceVKeyCodeSpinBox">
+  <widget class="QSpinBox" name="fixedVKeyCodeSpinBox">
    <property name="geometry">
     <rect>
      <x>455</x>
@@ -803,22 +803,63 @@
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
   </widget>
-  <widget class="QLabel" name="forceVKeyCodeLabel">
+  <widget class="QLabel" name="fixedVKeyCodeLabel">
    <property name="geometry">
     <rect>
-     <x>350</x>
+     <x>330</x>
      <y>250</y>
-     <width>101</width>
+     <width>121</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>ForceVKeyCode</string>
+    <string>FixedVKeyCode</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
+  <zorder>burstCheckBox</zorder>
+  <zorder>lockCheckBox</zorder>
+  <zorder>passThroughCheckBox</zorder>
+  <zorder>burstpressSpinBox</zorder>
+  <zorder>burstpressLabel</zorder>
+  <zorder>burstreleaseLabel</zorder>
+  <zorder>burstreleaseSpinBox</zorder>
+  <zorder>originalKeyLineEdit</zorder>
+  <zorder>originalKeyLabel</zorder>
+  <zorder>mappingKeyLabel</zorder>
+  <zorder>orikeyListLabel</zorder>
+  <zorder>mapkeyListLabel</zorder>
+  <zorder>originalKeyUpdateButton</zorder>
+  <zorder>mappingKeyUpdateButton</zorder>
+  <zorder>keySeqHoldDownCheckBox</zorder>
+  <zorder>repeatByKeyCheckBox</zorder>
+  <zorder>repeatByTimesCheckBox</zorder>
+  <zorder>repeatTimesSpinBox</zorder>
+  <zorder>itemNoteLabel</zorder>
+  <zorder>itemNoteLineEdit</zorder>
+  <zorder>itemNoteUpdateButton</zorder>
+  <zorder>mappingKeyUnlockCheckBox</zorder>
+  <zorder>mappingKey_KeyUpUpdateButton</zorder>
+  <zorder>mappingKey_KeyUpLabel</zorder>
+  <zorder>sendTimingComboBox</zorder>
+  <zorder>sendTimingLabel</zorder>
+  <zorder>recordKeysButton</zorder>
+  <zorder>checkCombKeyOrderCheckBox</zorder>
+  <zorder>unbreakableCheckBox</zorder>
+  <zorder>crosshairSetupButton</zorder>
+  <zorder>oriList_SelectGamepadButton</zorder>
+  <zorder>oriList_SelectKeyboardButton</zorder>
+  <zorder>oriList_SelectMouseButton</zorder>
+  <zorder>oriList_SelectFunctionButton</zorder>
+  <zorder>mapList_SelectFunctionButton</zorder>
+  <zorder>mapList_SelectMouseButton</zorder>
+  <zorder>mapList_SelectGamepadButton</zorder>
+  <zorder>mapList_SelectKeyboardButton</zorder>
+  <zorder>fixedVKeyCodeSpinBox</zorder>
+  <zorder>fixedVKeyCodeLabel</zorder>
+  <zorder>postMappingKeyCheckBox</zorder>
  </widget>
  <resources/>
  <connections/>

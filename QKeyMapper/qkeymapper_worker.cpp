@@ -965,12 +965,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
     bool postmappingkey = false;
-    int forcevkeycode = FORCE_VIRTUAL_KEY_CODE_DEFAULT;
+    int fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
     if (rowindex >= 0) {
         postmappingkey = QKeyMapper::KeyMappingDataList->at(rowindex).PostMappingKey;
-        forcevkeycode  = QKeyMapper::KeyMappingDataList->at(rowindex).ForceVKeyCode;
-        if (forcevkeycode < FORCE_VIRTUAL_KEY_CODE_MIN || forcevkeycode > FORCE_VIRTUAL_KEY_CODE_MAX) {
-            forcevkeycode = FORCE_VIRTUAL_KEY_CODE_DEFAULT;
+        fixedvkeycode  = QKeyMapper::KeyMappingDataList->at(rowindex).FixedVKeyCode;
+        if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
+            fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
         }
     }
 
@@ -998,6 +998,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             /* Add for KeySequenceHoldDown <<< */
             return;
         }
+
+// #ifdef DEBUG_LOGOUT_ON
+//         if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+//             QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');
+//             QString debugmessage = QString("\033[1;32m[sendInputKeys] KeyUp FixedVirtualKeyCode = %1\033[0m").arg(fixedvkeycodeStr);
+//             qDebug().nospace().noquote() << debugmessage;
+//         }
+// #endif
 
         const QString mappingkeys_str = inputKeys.constFirst();
         QStringList mappingKeys = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS);
@@ -1241,6 +1249,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
+                    && fixedvkeycode == FIXED_VIRTUAL_KEY_CODE_DEFAULT
                     && postmappingkey != true
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
@@ -1306,8 +1315,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else {
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
-                if (forcevkeycode != FORCE_VIRTUAL_KEY_CODE_DEFAULT) {
-                    input.ki.wVk = forcevkeycode;
+                if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+                    input.ki.wVk = fixedvkeycode;
                 }
                 if (postmappingkey) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -1510,6 +1519,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     return;
                 }
             }
+
+// #ifdef DEBUG_LOGOUT_ON
+//             if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+//                 QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');
+//                 QString debugmessage = QString("\033[1;32m[sendInputKeys] KeyDown FixedVirtualKeyCode = %1\033[0m").arg(fixedvkeycodeStr);
+//                 qDebug().nospace().noquote() << debugmessage;
+//             }
+// #endif
 
             const QString mappingkeys_str = inputKeys.constFirst();
             QStringList mappingKeys = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS);
@@ -1866,8 +1883,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
-                    if (forcevkeycode != FORCE_VIRTUAL_KEY_CODE_DEFAULT) {
-                        input.ki.wVk = forcevkeycode;
+                    if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+                        input.ki.wVk = fixedvkeycode;
                     }
                     if (postmappingkey) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -12784,7 +12801,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
