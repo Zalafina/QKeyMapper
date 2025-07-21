@@ -802,15 +802,6 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="prefix">
-    <string>0x</string>
-   </property>
-   <property name="maximum">
-    <number>255</number>
-   </property>
-   <property name="displayIntegerBase">
-    <number>16</number>
-   </property>
   </widget>
   <widget class="QLabel" name="forceVKeyCodeLabel">
    <property name="geometry">

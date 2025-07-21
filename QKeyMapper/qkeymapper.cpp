@@ -286,7 +286,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->settingNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->processLineEdit->setFocusPolicy(Qt::ClickFocus);
-    ui->titleLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->windowTitleLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->descriptionLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->sendTextLineEdit->setFocusPolicy(Qt::ClickFocus);
 
@@ -6370,7 +6370,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         if ((false == ui->processLineEdit->text().isEmpty())
-                 && (false == ui->titleLineEdit->text().isEmpty())
+                 && (false == ui->windowTitleLineEdit->text().isEmpty())
                  && (true == ui->processCheckBox->isChecked())
                  && (true == ui->titleCheckBox->isChecked())
                  && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
@@ -6384,7 +6384,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                     QVariant windowTitle_Var;
                     if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
                         QString titleStr = windowTitle_Var.toString();
-                        if (titleStr == ui->titleLineEdit->text()) {
+                        if (titleStr == ui->windowTitleLineEdit->text()) {
                             break;
                         }
                     }
@@ -6912,11 +6912,11 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
     else {
         if ((false == ui->processLineEdit->text().isEmpty())
-                && (false == ui->titleLineEdit->text().isEmpty())
-                // && (ui->titleLineEdit->text() == m_MapProcessInfo.WindowTitle)
+                && (false == ui->windowTitleLineEdit->text().isEmpty())
+                // && (ui->windowTitleLineEdit->text() == m_MapProcessInfo.WindowTitle)
                 && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)){
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->titleLineEdit->text());
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
 
             if (false == m_MapProcessInfo.FilePath.isEmpty()){
                 settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
@@ -7659,19 +7659,37 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     for (const QString &group : std::as_const(groups)){
         bool valid_setting = false;
         QString tempSettingSelectStr = group + "/";
-        if (group.endsWith(QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
-            || group.contains(QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
-            || group.startsWith(PROCESS_UNKNOWN+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
-            if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
-                    && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
-                    && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH))
-                    && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME_CHECKED))
-                    && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED))){
-                valid_setting = true;
-            }
+        // if (group.endsWith(QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
+        //     || group.contains(QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
+        //     || group.startsWith(PROCESS_UNKNOWN+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
+        //     if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
+        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
+        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH))
+        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME_CHECKED))
+        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED))){
+        //         valid_setting = true;
+        //     }
+        // }
+        if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
+            && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
+            && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH))
+            && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME_CHECKED))
+            && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED))){
+            valid_setting = true;
         }
 
         if (true == valid_setting) {
+            QString filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+            QIcon settingIcon = QKeyMapper::s_Icon_Blank;
+            if (!filepathString.isEmpty()
+                && QFileInfo::exists(filepathString)){
+                QFileIconProvider icon_provider;
+                QIcon fileicon = icon_provider.icon(QFileInfo(filepathString));
+                if (!fileicon.isNull()) {
+                    settingIcon = fileicon;
+                }
+            }
+
             QString descriptionString;
             if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
                 descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
@@ -7681,7 +7699,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 groupnameWithDescription = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
             }
 
-            ui->settingselectComboBox->addItem(groupnameWithDescription);
+            ui->settingselectComboBox->addItem(settingIcon, groupnameWithDescription);
             m_SettingSelectListWithoutDescription.append(group);
             validgroups_fullmatch.append(group);
 #ifdef DEBUG_LOGOUT_ON
@@ -7818,11 +7836,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select Setting" << settingtext;
 #endif
             QVariant settingSelect = settingFile.value(SETTINGSELECT);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            if (settingSelect.metaType().id() == QMetaType::QString) {
-#else
-            if (settingSelect.canConvert(QMetaType::QString)) {
-#endif
+            if (settingSelect.canConvert<QString>()) {
                 settingSelectStr = settingSelect.toString();
             }
 
@@ -9002,7 +9016,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     if (loadGlobalSetting && loadDefault != true) {
         ui->settingNameLineEdit->setText(GROUPNAME_GLOBALSETTING);
         ui->processLineEdit->setText(QString());
-        ui->titleLineEdit->setText(QString());
+        ui->windowTitleLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
         ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
         ui->processCheckBox->setChecked(false);
@@ -9013,7 +9027,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
         ui->settingNameLineEdit->setEnabled(false);
         ui->processLineEdit->setEnabled(false);
-        ui->titleLineEdit->setEnabled(false);
+        ui->windowTitleLineEdit->setEnabled(false);
         ui->processCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
@@ -9025,9 +9039,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         m_MapProcessInfo = MAP_PROCESSINFO();
     }
     else {
-        ui->settingNameLineEdit->setEnabled(true);
+        if (KEYMAP_IDLE == m_KeyMapStatus){
+            ui->settingNameLineEdit->setEnabled(true);
+        }
         ui->processLineEdit->setEnabled(true);
-        ui->titleLineEdit->setEnabled(true);
+        ui->windowTitleLineEdit->setEnabled(true);
         ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
@@ -9045,10 +9061,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_WINDOWTITLE)){
             m_MapProcessInfo.WindowTitle = settingFile.value(settingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
-            ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
+            ui->windowTitleLineEdit->setText(m_MapProcessInfo.WindowTitle);
         }
         else {
-            ui->titleLineEdit->setText(QString());
+            ui->windowTitleLineEdit->setText(QString());
         }
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILEPATH)){
@@ -9071,7 +9087,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
             ui->settingNameLineEdit->setText(QString());
             ui->processLineEdit->setText(QString());
-            ui->titleLineEdit->setText(QString());
+            ui->windowTitleLineEdit->setText(QString());
             ui->descriptionLineEdit->setText(QString());
             ui->processCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
@@ -9570,9 +9586,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         return loadedSettingString;
     }
     else {
-        ui->settingNameLineEdit->setCursorPosition(0);
-        ui->processLineEdit->setCursorPosition(0);
-        ui->titleLineEdit->setCursorPosition(0);
+        ui->settingNameLineEdit->setCursorPosition(ui->settingNameLineEdit->text().length());
+        ui->processLineEdit->setCursorPosition(ui->processLineEdit->text().length());
+        ui->windowTitleLineEdit->setCursorPosition(ui->windowTitleLineEdit->text().length());
 
         if (settingSelectStr.isEmpty() != true) {
             settingSelectStr = settingSelectStr.remove("/");
@@ -9697,6 +9713,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->showCategoryButton->setFont(customFont);
     ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->processLabel->setFont(customFont);
+    ui->windowTitleLabel->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
@@ -9831,6 +9849,8 @@ void QKeyMapper::setControlFontChinese()
     ui->showCategoryButton->setFont(customFont);
     ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->processLabel->setFont(customFont);
+    ui->windowTitleLabel->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
@@ -9965,6 +9985,8 @@ void QKeyMapper::setControlFontJapanese()
     ui->showCategoryButton->setFont(customFont);
     ui->processCheckBox->setFont(customFont);
     ui->titleCheckBox->setFont(customFont);
+    ui->processLabel->setFont(customFont);
+    ui->windowTitleLabel->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
@@ -10061,32 +10083,36 @@ void QKeyMapper::setControlFontJapanese()
 
 void QKeyMapper::changeControlEnableStatus(bool status)
 {
-    if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
-        ui->processCheckBox->setEnabled(false);
-        ui->titleCheckBox->setEnabled(false);
-        ui->removeSettingButton->setEnabled(false);
-        // ui->disableWinKeyCheckBox->setEnabled(false);
-        ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
-        ui->ProcessIconAsTrayIconCheckBox->setEnabled(false);
-    }
-    else {
-        ui->processCheckBox->setEnabled(status);
-        ui->titleCheckBox->setEnabled(status);
-        ui->removeSettingButton->setEnabled(status);
-        // ui->disableWinKeyCheckBox->setEnabled(status);
-        if (ui->autoStartMappingCheckBox->isChecked()) {
-            ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
-        }
-        else {
-            ui->sendToSameTitleWindowsCheckBox->setEnabled(status);
-        }
-        ui->ProcessIconAsTrayIconCheckBox->setEnabled(status);
-    }
+    // if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
+    //     ui->processCheckBox->setEnabled(false);
+    //     ui->titleCheckBox->setEnabled(false);
+    //     ui->processLabel->setEnabled(false);
+    //     ui->windowTitleLabel->setEnabled(false);
+    //     ui->removeSettingButton->setEnabled(false);
+    //     // ui->disableWinKeyCheckBox->setEnabled(false);
+    //     ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+    //     ui->ProcessIconAsTrayIconCheckBox->setEnabled(false);
+    // }
+    // else {
+    //     ui->processCheckBox->setEnabled(status);
+    //     ui->titleCheckBox->setEnabled(status);
+    //     ui->processLabel->setEnabled(status);
+    //     ui->windowTitleLabel->setEnabled(status);
+    //     ui->removeSettingButton->setEnabled(status);
+    //     // ui->disableWinKeyCheckBox->setEnabled(status);
+    //     if (ui->autoStartMappingCheckBox->isChecked()) {
+    //         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+    //     }
+    //     else {
+    //         ui->sendToSameTitleWindowsCheckBox->setEnabled(status);
+    //     }
+    //     ui->ProcessIconAsTrayIconCheckBox->setEnabled(status);
+    // }
 
     //ui->processLineEdit->setEnabled(status);
-    //ui->titleLineEdit->setEnabled(status);
+    //ui->windowTitleLineEdit->setEnabled(status);
     // ui->processLineEdit->setReadOnly(!status);
-    // ui->titleLineEdit->setReadOnly(!status);
+    // ui->windowTitleLineEdit->setReadOnly(!status);
     // ui->descriptionLabel->setEnabled(status);
     // ui->descriptionLineEdit->setEnabled(status);
     ui->settingNameLabel->setEnabled(status);
@@ -11480,7 +11506,7 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
 void QKeyMapper::updateProcessInfoDisplay()
 {
     ui->processLineEdit->setText(m_MapProcessInfo.FileName);
-    ui->titleLineEdit->setText(m_MapProcessInfo.WindowTitle);
+    ui->windowTitleLineEdit->setText(m_MapProcessInfo.WindowTitle);
     if ((false == m_MapProcessInfo.FilePath.isEmpty())
             && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
         ui->processLineEdit->setToolTip(m_MapProcessInfo.FilePath);
@@ -11535,7 +11561,7 @@ void QKeyMapper::updateProcessInfoDisplay()
     }
     else{
         if ((DEFAULT_NAME == ui->processLineEdit->text())
-                && (DEFAULT_TITLE == ui->titleLineEdit->text())){
+                && (DEFAULT_TITLE == ui->windowTitleLineEdit->text())){
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LoadSetting]" << "Default icon availableSizes:" << m_MapProcessInfo.WindowIcon.availableSizes();
 #endif
@@ -13370,6 +13396,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->addmapdataButton->setText(tr("ADD"));
     ui->processCheckBox->setText(tr("Process"));
     ui->titleCheckBox->setText(tr("Title"));
+    ui->processLabel->setText(tr("Process"));
+    ui->windowTitleLabel->setText(tr("Title"));
     ui->settingNameLabel->setText(tr("SettingName"));
     ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
@@ -13846,7 +13874,7 @@ void QKeyMapper::resetFontSize()
 
         ui->settingNameLineEdit->setFont(customFont);
         ui->processLineEdit->setFont(customFont);
-        ui->titleLineEdit->setFont(customFont);
+        ui->windowTitleLineEdit->setFont(customFont);
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
@@ -13895,7 +13923,7 @@ void QKeyMapper::resetFontSize()
     else {
         ui->settingNameLineEdit->setFont(customFont);
         ui->processLineEdit->setFont(customFont);
-        ui->titleLineEdit->setFont(customFont);
+        ui->windowTitleLineEdit->setFont(customFont);
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
@@ -14547,7 +14575,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         qDebug().nospace() << "[SelectProcessInfo]" << "Table DoubleClicked [" << index.row() << "] " << ui->processinfoTable->item(index.row(), 0)->text() << ", " << ui->processinfoTable->item(index.row(), 2)->text();
 #endif
         ui->processLineEdit->setEnabled(true);
-        ui->titleLineEdit->setEnabled(true);
+        ui->windowTitleLineEdit->setEnabled(true);
         ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
@@ -14579,6 +14607,10 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 ui->settingNameLineEdit->setText(loadresult);
                 Q_UNUSED(loadresult)
                 loadSetting_flag = false;
+
+                if (loadresult == loadSettingSelectStr) {
+                    return;
+                }
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -14590,9 +14622,6 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             ui->settingselectComboBox->setCurrentText(QString());
             ui->descriptionLineEdit->clear();
         }
-
-        ui->processLineEdit->setText(filename);
-        ui->titleLineEdit->setText(windowTitle);
 
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
         QString ProcessPath;
@@ -14672,6 +14701,10 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
         ui->iconLabel->setPixmap(IconPixmap);
         ui->processLineEdit->setToolTip(ProcessPath);
+
+        ui->settingNameLineEdit->setText(filename);
+        ui->processLineEdit->setText(ProcessPath);
+        ui->windowTitleLineEdit->setText(windowTitle);
     }
 }
 
@@ -16032,7 +16065,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 #endif
         ui->settingNameLineEdit->setEnabled(true);
         ui->processLineEdit->setEnabled(true);
-        ui->titleLineEdit->setEnabled(true);
+        ui->windowTitleLineEdit->setEnabled(true);
         ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
