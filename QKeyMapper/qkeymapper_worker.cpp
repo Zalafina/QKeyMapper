@@ -1284,6 +1284,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     extenedkeyflag = 0;
                 }
                 input.type = INPUT_KEYBOARD;
+                bool normal_send = false;
                 if (sendtype == SENDTYPE_EXCLUSION) {
                     input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                 }
@@ -1293,7 +1294,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     || VK_KEY2MOUSE_LEFT == vkeycode.KeyCode
                     || VK_KEY2MOUSE_RIGHT == vkeycode.KeyCode
                     || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
-                    || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
+                    || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode
+                    || VK_GYRO2MOUSE_HOLD == vkeycode.KeyCode
+                    || VK_GYRO2MOUSE_MOVE == vkeycode.KeyCode) {
                     if (0 <= row_index && row_index < USHRT_MAX) {
                         input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | row_index;
                     }
@@ -1303,6 +1306,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 else {
                     input.ki.dwExtraInfo = VIRTUAL_KEY_SEND | sendvirtualkey_state;
+                    normal_send = true;
                 }
                 input.ki.wVk = vkeycode.KeyCode;
                 input.ki.wScan = MapVirtualKey(input.ki.wVk, MAPVK_VK_TO_VSC);
@@ -1315,8 +1319,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else {
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
-                if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+                if (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
                     input.ki.wVk = fixedvkeycode;
+                    input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                 }
                 if (postmappingkey) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -1856,12 +1861,19 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         extenedkeyflag = 0;
                     }
                     input.type = INPUT_KEYBOARD;
+                    bool normal_send = false;
                     if (sendtype == SENDTYPE_EXCLUSION) {
                         input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                     }
                     else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
+                        || VK_KEY2MOUSE_UP == vkeycode.KeyCode
+                        || VK_KEY2MOUSE_DOWN == vkeycode.KeyCode
+                        || VK_KEY2MOUSE_LEFT == vkeycode.KeyCode
+                        || VK_KEY2MOUSE_RIGHT == vkeycode.KeyCode
                         || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
-                        || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode) {
+                        || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode
+                        || VK_GYRO2MOUSE_HOLD == vkeycode.KeyCode
+                        || VK_GYRO2MOUSE_MOVE == vkeycode.KeyCode) {
                         if (0 <= row_index && row_index < USHRT_MAX) {
                             input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | row_index;
                         }
@@ -1871,6 +1883,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else {
                         input.ki.dwExtraInfo = VIRTUAL_KEY_SEND | sendvirtualkey_state;
+                        normal_send = true;
                     }
                     input.ki.wVk = vkeycode.KeyCode;
                     input.ki.wScan = MapVirtualKey(input.ki.wVk, MAPVK_VK_TO_VSC);
@@ -1883,8 +1896,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
-                    if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+                    if (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
                         input.ki.wVk = fixedvkeycode;
+                        input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                     }
                     if (postmappingkey) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -8352,9 +8366,16 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
         }
     }
-    else{
+    else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) Input, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", pKeyBoard->vkCode, pKeyBoard->scanCode, wParam, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
+        QString keyupdownStr = "KEY_UPDOWN_UNKNOWN";
+        if (WM_KEYDOWN == wParam || WM_SYSKEYDOWN == wParam) {
+            keyupdownStr = "KEY_DOWN";
+        }
+        else if (WM_KEYUP == wParam || WM_SYSKEYUP == wParam) {
+            keyupdownStr = "KEY_UP";
+        }
+        qDebug("[LowLevelKeyboardHookProc] UnknownKey (0x%02X) %s, scanCode(0x%08X), wParam(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)", pKeyBoard->vkCode, keyupdownStr.toStdString().c_str(), pKeyBoard->scanCode, wParam, pKeyBoard->flags, vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
 #endif
     }
 
