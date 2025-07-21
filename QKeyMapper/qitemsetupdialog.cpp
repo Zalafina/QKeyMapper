@@ -519,6 +519,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->postMappingKeyCheckBox->setChecked(false);
         }
 
+        /* Load FixedVKeyCode */
+        if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
+            ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
+        }
+        else {
+            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
+        }
+
         QString mappingkey = keymapdata.Mapping_Keys.constFirst();
         if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
             ui->postMappingKeyCheckBox->setChecked(false);
@@ -822,6 +830,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->postMappingKeyCheckBox->setChecked(false);
+        }
+
+        /* Load FixedVKeyCode */
+        if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
+            ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
+        }
+        else {
+            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
         }
 
         QString mappingkey = keymapdata.Mapping_Keys.constFirst();
@@ -1139,6 +1155,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->postMappingKeyCheckBox->setChecked(false);
+        }
+
+        /* Load FixedVKeyCode */
+        if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
+            ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
+        }
+        else {
+            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
         }
 
         QString mappingkey = keymapdata.Mapping_Keys.constFirst();
