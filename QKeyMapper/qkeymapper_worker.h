@@ -737,13 +737,13 @@ public slots:
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);
     void sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey);
-    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL);
+    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
 public:
     static void sendBurstKeyDown(const QString &burstKey, bool start);
     static void sendBurstKeyUp(const QString &burstKey, bool stop);
-    static void sendBurstKeyDown(int findindex, bool start);
-    static void sendBurstKeyUp(int findindex, bool stop);
+    static void sendBurstKeyDown(int findindex, bool start, QList<MAP_KEYDATA> *keyMappingDataList);
+    static void sendBurstKeyUp(int findindex, bool stop, QList<MAP_KEYDATA> *keyMappingDataList);
     void sendBurstKeyUpForce(int findindex);
     void sendSpecialVirtualKey(const QString &keycodeString, int keyupdown);
     void sendSpecialVirtualKeyDown(const QString &virtualKey);
@@ -799,8 +799,8 @@ signals:
     void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
-    void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex);
-    void stopBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex);
+    void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
+    void stopBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
 #if 0
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
@@ -905,8 +905,8 @@ public:
     static void CombinationKeyProc(int rowindex, const QString &keycodeString, int keyupdown);
     static bool releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key,const QStringList mappingkeyslist = QStringList());
     static bool releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers);
-    static void startBurstKeyTimer(const QString &burstKey, int mappingIndex);
-    static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex);
+    static void startBurstKeyTimer(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
+    static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
     static void resendRealKeyCodeOnStop(int rowindex, bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
 
@@ -934,8 +934,8 @@ public:
 public slots:
     static void onLongPressTimeOut(const QString keycodeStringWithPressTime);
     static void onDoublePressTimeOut(const QString keycodeString);
-    static void onBurstKeyPressTimeOut(const QString burstKey, int mappingIndex);
-    static void onBurstKeyTimeOut(const QString burstKey, int mappingIndex);
+    static void onBurstKeyPressTimeOut(const QString burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
+    static void onBurstKeyTimeOut(const QString burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
 
 private:
     bool JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick);
