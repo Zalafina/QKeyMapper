@@ -419,47 +419,7 @@ int sign(T val) {
 class SendInputTask : public QRunnable
 {
 public:
-    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state) :
-        m_rowindex(rowindex),
-        m_inputKeys(inputKeys),
-        m_keyupdown(keyupdown),
-        m_original_key(original_key),
-        m_real_originalkey(original_key),
-        m_sendmode(sendmode),
-        m_sendvirtualkey_state(sendvirtualkey_state)
-    {
-        // Set the real original key
-        m_real_originalkey = getRealOriginalKey(original_key);
-
-        {
-            // Lock the map access mutex
-            QMutexLocker mapLocker(&s_SendInputTaskControllerMapMutex);
-
-            // Check if the Controller for this original key already exists
-            if (!s_SendInputTaskControllerMap.contains(m_real_originalkey)) {
-                // Create a new Controller struct and insert it into the map
-                SendInputTaskController controller;
-                controller.task_threadpool = new QThreadPool();
-                controller.task_threadpool->setMaxThreadCount(1);
-                controller.task_stop_mutex = new QMutex();
-                controller.task_stop_condition = new QWaitCondition();
-                controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
-                controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
-                controller.task_rowindex = INITIAL_ROW_INDEX;
-                s_SendInputTaskControllerMap.insert(m_real_originalkey, controller);
-            }
-            else {
-                SendInputTaskController *controller = Q_NULLPTR;
-                controller = &s_SendInputTaskControllerMap[m_real_originalkey];
-                if (keyupdown == KEY_UP) {
-                    controller->task_keyup_sent = true;
-                }
-                else {
-                    controller->task_keyup_sent = false;
-                }
-            }
-        }
-    }
+    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
     void run() override;
 
@@ -481,6 +441,9 @@ public:
     QString m_real_originalkey;
     int m_sendmode;
     int m_sendvirtualkey_state;
+
+    // Save mapping table pointer to avoid array bounds issues during tab switching
+    QList<MAP_KEYDATA> *m_keyMappingDataList = Q_NULLPTR;
 };
 
 class QKeyMapper_Worker : public QObject
@@ -769,8 +732,8 @@ public slots:
 #endif
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
-    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
-    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller);
+    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);
     void sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey);
@@ -842,7 +805,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
-    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state);
+    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif

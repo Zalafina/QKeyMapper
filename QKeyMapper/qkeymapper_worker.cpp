@@ -871,9 +871,9 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
     }
 }
 
-void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state)
+void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList)
 {
-    SendInputTask *sendInputTask = new SendInputTask(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
+    SendInputTask *sendInputTask = new SendInputTask(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList);
 
     SendInputTaskController *controller = Q_NULLPTR;
     controller = &SendInputTask::s_SendInputTaskControllerMap[sendInputTask->m_real_originalkey];
@@ -886,7 +886,7 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
 #endif
 }
 
-void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller)
+void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -958,6 +958,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         return;
     }
 
+    if (keyMappingDataList == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("sendInputKeys(): keyMappingDataList is NULL!!!");
+#endif
+        return;
+    }
+
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
     static QRegularExpression sendTextRegexp(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
@@ -966,9 +973,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
     bool postmappingkey = false;
     int fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
-    if (rowindex >= 0) {
-        postmappingkey = QKeyMapper::KeyMappingDataList->at(rowindex).PostMappingKey;
-        fixedvkeycode  = QKeyMapper::KeyMappingDataList->at(rowindex).FixedVKeyCode;
+
+    // Use saved mapping table pointer to avoid array bounds issues during tab switching
+    if (rowindex >= 0 && rowindex < keyMappingDataList->size()) {
+        postmappingkey = keyMappingDataList->at(rowindex).PostMappingKey;
+        fixedvkeycode = keyMappingDataList->at(rowindex).FixedVKeyCode;
         if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
             fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
         }
@@ -1192,8 +1201,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
-                    bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                    bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
 
                     if (send_exclusion
                         && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
@@ -1263,8 +1272,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
-                    bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                    bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
 
                     if (send_exclusion
                         && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
@@ -1403,13 +1412,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_UP, remove OriginalKey:" << orikey_str << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
 
-                int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str);
+                int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str, keyMappingDataList);
                 if (findindex >= 0) {
                     resendRealKeyCodeOnStop(findindex);
 
-                    int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
-                    QStringList repeat_mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
-                    QString repeat_original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                    int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
+                    QStringList repeat_mappingKeyList = keyMappingDataList->at(findindex).Mapping_Keys;
+                    QString repeat_original_key = keyMappingDataList->at(findindex).Original_Key;
                     int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
                     if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
                         if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
@@ -1423,15 +1432,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         if (keyseq_finished) {
             bool real_finished = true;
             QString orikey_str = original_key.left(original_key.indexOf(":"));
-            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str, keyMappingDataList);
 
             if (findindex >= 0) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendInputKeys] KeySequence finished -> OriginalKey:" << orikey_str << ", Index:" << findindex;
 #endif
-                int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
-                QStringList repeat_mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
-                QString repeat_original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
+                QStringList repeat_mappingKeyList = keyMappingDataList->at(findindex).Mapping_Keys;
+                QString repeat_original_key = keyMappingDataList->at(findindex).Original_Key;
                 int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
 
                 if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYKEY == repeat_mode) {
@@ -1465,7 +1474,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                 }
                 else if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
-                    int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
+                    int repeat_times = keyMappingDataList->at(findindex).RepeatTimes;
                     if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
                         ++s_KeySequenceRepeatCount[repeat_original_key];
 #ifdef DEBUG_LOGOUT_ON
@@ -1725,8 +1734,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         send_keyupdown = KEY_UP;
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
-                        bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                        bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
 
                         if (send_exclusion
                             && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
@@ -1840,8 +1849,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         send_keyupdown = KEY_UP;
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key);
-                        bool send_exclusion = (findindex < 0 || QKeyMapper::KeyMappingDataList->at(findindex).PassThrough);
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                        bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
 
                         if (send_exclusion
                             && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
@@ -2016,13 +2025,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     qDebug().nospace().noquote() << "[sendInputKeys] Running KeySequence breaked on KEY_DOWN, remove OriginalKey:" << orikey_str << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList;
 #endif
 
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str);
+                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(orikey_str, keyMappingDataList);
                     if (findindex >= 0) {
                         resendRealKeyCodeOnStop(findindex);
 
-                        int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
-                        QStringList repeat_mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
-                        QString repeat_original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                        int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
+                        QStringList repeat_mappingKeyList = keyMappingDataList->at(findindex).Mapping_Keys;
+                        QString repeat_original_key = keyMappingDataList->at(findindex).Original_Key;
                         int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
                         if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
                             if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
@@ -2231,12 +2240,14 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         controller = &SendInputTask::s_SendInputTaskControllerMap[original_key];
     }
 
+    QList<MAP_KEYDATA> *keyMappingDataList = QKeyMapper::KeyMappingDataList;
+
     int findindex = rowindex;
     bool burst = false;
     bool unbreakable = false;
     if (findindex >= 0) {
-        burst = QKeyMapper::KeyMappingDataList->at(findindex).Burst;
-        unbreakable = QKeyMapper::KeyMappingDataList->at(findindex).Unbreakable;
+        burst = keyMappingDataList->at(findindex).Burst;
+        unbreakable = keyMappingDataList->at(findindex).Unbreakable;
         if (burst && controller != Q_NULLPTR) {
             if (sendmode == SENDMODE_BURSTKEY_START) {
                 controller->task_threadpool->clear();
@@ -2271,8 +2282,8 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
 
         if (isKeySequence) {
             if (findindex >= 0) {
-                int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
-                int repeat_times = QKeyMapper::KeyMappingDataList->at(findindex).RepeatTimes;
+                int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
+                int repeat_times = keyMappingDataList->at(findindex).RepeatTimes;
 
                 if (sendmode == SENDMODE_NORMAL
                     && repeat_mode == REPEAT_MODE_BYTIMES
@@ -2353,7 +2364,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     }
     else if (keyupdown == KEY_UP) {
         if (findindex >= 0) {
-            int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+            int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
 
             if (sendmode == SENDMODE_NORMAL
                 && repeat_mode == REPEAT_MODE_BYKEY) {
@@ -2383,7 +2394,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     }
 
     if (false == skip_emitsignal) {
-        emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state);
+        emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList);
 #ifdef DEBUG_LOGOUT_ON
         QAtomicInt task_stop_flag(INPUTSTOP_NONE);
         if (controller != Q_NULLPTR) {
@@ -10331,7 +10342,7 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
 
         QStringList pressedRealKeysListToCheckCopy = pressedRealKeysListToCheck;
         for (const QString &realkey : pressedRealKeysListToCheckCopy) {
-            int findindex = QKeyMapper::findOriKeyInCertainKeyMappingDataList(realkey, KeyMappingDataList_ToCheck);
+            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(realkey, KeyMappingDataList_ToCheck);
             if (findindex >= 0 && !KeyMappingDataList_ToCheck->at(findindex).PassThrough) {
                 pressedRealKeysListToCheck.removeAll(realkey);
             }
@@ -12361,7 +12372,7 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
         if (SendInputTask::s_SendInputTaskControllerMap.contains(real_originalkey)) {
             controller = &SendInputTask::s_SendInputTaskControllerMap[real_originalkey];
         }
-        int findindex = QKeyMapper::findOriKeyInCertainKeyMappingDataList(real_originalkey, KeyMappingDataList_ToClear);
+        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(real_originalkey, KeyMappingDataList_ToClear);
         if (findindex >= 0) {
             // QStringList mappingKeyList = KeyMappingDataList_ToClear->at(findindex).Mapping_Keys;
             bool burst = KeyMappingDataList_ToClear->at(findindex).Burst;
@@ -13083,6 +13094,53 @@ QString getRealOriginalKey(const QString &original_key)
     return original_key.left(original_key.indexOf(":"));
 }
 
+SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int keyupdown, const QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList) :
+    m_rowindex(rowindex),
+    m_inputKeys(inputKeys),
+    m_keyupdown(keyupdown),
+    m_original_key(original_key),
+    m_real_originalkey(original_key),
+    m_sendmode(sendmode),
+    m_sendvirtualkey_state(sendvirtualkey_state)
+{
+    // Set the real original key
+    m_real_originalkey = getRealOriginalKey(original_key);
+
+    // Save current mapping table pointer to avoid array bounds issues during tab switching
+    if (keyMappingDataList != Q_NULLPTR) {
+        m_keyMappingDataList = keyMappingDataList;
+    }
+
+    {
+        // Lock the map access mutex
+        QMutexLocker mapLocker(&s_SendInputTaskControllerMapMutex);
+
+        // Check if the Controller for this original key already exists
+        if (!s_SendInputTaskControllerMap.contains(m_real_originalkey)) {
+            // Create a new Controller struct and insert it into the map
+            SendInputTaskController controller;
+            controller.task_threadpool = new QThreadPool();
+            controller.task_threadpool->setMaxThreadCount(1);
+            controller.task_stop_mutex = new QMutex();
+            controller.task_stop_condition = new QWaitCondition();
+            controller.task_stop_flag = new QAtomicInt(INPUTSTOP_NONE);
+            controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+            controller.task_rowindex = INITIAL_ROW_INDEX;
+            s_SendInputTaskControllerMap.insert(m_real_originalkey, controller);
+        }
+        else {
+            SendInputTaskController *controller = Q_NULLPTR;
+            controller = &s_SendInputTaskControllerMap[m_real_originalkey];
+            if (keyupdown == KEY_UP) {
+                controller->task_keyup_sent = true;
+            }
+            else {
+                controller->task_keyup_sent = false;
+            }
+        }
+    }
+}
+
 void SendInputTask::run()
 {
     // Retrieve the controller for m_real_originalkey
@@ -13124,7 +13182,7 @@ void SendInputTask::run()
     else if (m_sendvirtualkey_state == SENDVIRTUALKEY_STATE_FORCE) {
         controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
     }
-    QKeyMapper_Worker::getInstance()->sendInputKeys(m_rowindex, m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller);
+    QKeyMapper_Worker::getInstance()->sendInputKeys(m_rowindex, m_inputKeys, m_keyupdown, m_original_key, m_sendmode, *controller, m_keyMappingDataList);
     controller->sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
     controller->task_rowindex = INITIAL_ROW_INDEX;
 

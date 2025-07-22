@@ -1781,13 +1781,17 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
     }
 }
 
-int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname)
+int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
 {
+    if (keyMappingDataListToCheck == Q_NULLPTR) {
+        keyMappingDataListToCheck = KeyMappingDataList;
+    }
+
     int returnindex = -1;
     int keymapdataindex = 0;
     QString keyname_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keyname);
 
-    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*keyMappingDataListToCheck))
     {
         if (keymapdata.Original_Key == keyname
             || keymapdata.Original_Key == keyname_RemoveMultiInput){
@@ -1828,6 +1832,7 @@ int QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(const QString &k
     return returnindex;
 }
 
+#if 0
 int QKeyMapper::findOriKeyInCertainKeyMappingDataList(const QString &keyname, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
 {
     int returnindex = -1;
@@ -1853,6 +1858,7 @@ int QKeyMapper::findOriKeyInCertainKeyMappingDataList(const QString &keyname, QL
 
     return returnindex;
 }
+#endif
 
 int QKeyMapper::findOriKeyInKeyMappingDataList(const QString &keyname, bool &removemultiinput)
 {
