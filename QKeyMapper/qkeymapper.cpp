@@ -3592,6 +3592,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList lockList;
     QStringList mappingkeyunlockList;
     QStringList postmappingkeyList;
+    QStringList fixedvkeycodeList;
     QStringList checkcombkeyorderList;
     QStringList unbreakableList;
     QStringList passthroughList;
@@ -3663,6 +3664,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         }
         else {
             postmappingkeyList.append("OFF");
+        }
+        if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
+            fixedvkeycodeList.append(QString::number(keymapdata.FixedVKeyCode, 16));
+        }
+        else {
+            fixedvkeycodeList.append(QString::number(FIXED_VIRTUAL_KEY_CODE_NONE, 16));
         }
         if (true == keymapdata.CheckCombKeyOrder) {
             checkcombkeyorderList.append("ON");
@@ -3814,6 +3821,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_POSTMAPPINGKEY, postmappingkeyList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FIXEDVKEYCODE, fixedvkeycodeList);
     keyMappingDataFile.setValue(KEYMAPDATA_CHECKCOMBKEYORDER, checkcombkeyorderList);
     keyMappingDataFile.setValue(KEYMAPDATA_UNBREAKABLE, unbreakableList);
     keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
@@ -3863,6 +3871,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList lockStringList;
     QStringList mappingkeyunlockStringList;
     QStringList postmappingkeyStringList;
+    QStringList fixedvkeycodeStringList;
     QStringList checkcombkeyorderStringList;
     QStringList unbreakableStringList;
     QStringList passthroughStringList;
@@ -3892,6 +3901,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> lockList;
     QList<bool> mappingkeyunlockList;
     QList<bool> postmappingkeyList;
+    QList<int> fixedvkeycodeList;
     QList<bool> checkcombkeyorderList;
     QList<bool> unbreakableList;
     QList<bool> passthroughList;
@@ -3932,6 +3942,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList stringListAllNORMAL;
         QStringList burstpressStringListDefault;
         QStringList burstreleaseStringListDefault;
+        QStringList fixedvkeycodeStringListDefault;
         QStringList repeattimesStringListDefault;
         QStringList crosshair_centercolorStringListDefault;
         QStringList crosshair_centersizeStringListDefault;
@@ -3947,6 +3958,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             stringListAllNORMAL << SENDTIMING_STR_NORMAL;
             burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
             burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
+            fixedvkeycodeStringListDefault.append(QString::number(FIXED_VIRTUAL_KEY_CODE_NONE, 16));
             repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
             crosshair_centercolorStringListDefault.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
             crosshair_centersizeStringListDefault.append(QString::number(CROSSHAIR_CENTERSIZE_DEFAULT));
@@ -3962,6 +3974,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         lockStringList          = stringListAllOFF;
         mappingkeyunlockStringList = stringListAllOFF;
         postmappingkeyStringList = stringListAllOFF;
+        fixedvkeycodeStringList = fixedvkeycodeStringListDefault;
         checkcombkeyorderStringList = stringListAllON;
         unbreakableStringList = stringListAllOFF;
         passthroughStringList   = stringListAllOFF;
@@ -4007,6 +4020,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_POSTMAPPINGKEY)) {
             postmappingkeyStringList = keyMappingDataFile.value(KEYMAPDATA_POSTMAPPINGKEY).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FIXEDVKEYCODE)) {
+            fixedvkeycodeStringList = keyMappingDataFile.value(KEYMAPDATA_FIXEDVKEYCODE).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_CHECKCOMBKEYORDER)) {
             checkcombkeyorderStringList = keyMappingDataFile.value(KEYMAPDATA_CHECKCOMBKEYORDER).toStringList();
@@ -4142,6 +4158,16 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 } else {
                     postmappingkeyList.append(false);
                 }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &fixedvkeycodeStr = (i < fixedvkeycodeStringList.size()) ? fixedvkeycodeStringList.at(i) : QString::number(FIXED_VIRTUAL_KEY_CODE_NONE, 16);
+                bool ok;
+                int fixedvkeycode = fixedvkeycodeStr.toInt(&ok, 16);
+                if (!ok || fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
+                    fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
+                }
+                fixedvkeycodeList.append(fixedvkeycode);
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
@@ -4390,7 +4416,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       lockList.at(loadindex),
                                                       mappingkeyunlockList.at(loadindex),
                                                       postmappingkeyList.at(loadindex),
-                                                      FIXED_VIRTUAL_KEY_CODE_NONE,
+                                                      fixedvkeycodeList.at(loadindex),
                                                       checkcombkeyorderList.at(loadindex),
                                                       unbreakableList.at(loadindex),
                                                       passthroughList.at(loadindex),
@@ -6455,6 +6481,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString lockList_forsave;
     QString mappingkeyunlockList_forsave;
     QString postmappingkeyList_forsave;
+    QString fixedvkeycodeList_forsave;
     QString checkcombkeyorderList_forsave;
     QString unbreakableList_forsave;
     QString passthroughList_forsave;
@@ -6522,6 +6549,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             lockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mappingkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             postmappingkeyList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            fixedvkeycodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             checkcombkeyorderList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             unbreakableList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             passthroughList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -6556,6 +6584,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList lockList;
         QStringList mappingkeyunlockList;
         QStringList postmappingkeyList;
+        QStringList fixedvkeycodeList;
         QStringList checkcombkeyorderList;
         QStringList unbreakableList;
         QStringList passthroughList;
@@ -6639,6 +6668,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 }
                 else {
                     postmappingkeyList.append("OFF");
+                }
+                if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
+                    fixedvkeycodeList.append(QString::number(keymapdata.FixedVKeyCode, 16));
+                }
+                else {
+                    fixedvkeycodeList.append(QString::number(FIXED_VIRTUAL_KEY_CODE_NONE, 16));
                 }
                 if (true == keymapdata.CheckCombKeyOrder) {
                     checkcombkeyorderList.append("ON");
@@ -6789,6 +6824,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString lockList_str = lockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mappingkeyunlockList_str = mappingkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString postmappingkeyList_str = postmappingkeyList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString fixedvkeycodeList_str = fixedvkeycodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString checkcombkeyorderList_str = checkcombkeyorderList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString unbreakableList_str = unbreakableList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString passthroughList_str = passthroughList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -6823,6 +6859,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         lockList_forsave.append(lockList_str);
         mappingkeyunlockList_forsave.append(mappingkeyunlockList_str);
         postmappingkeyList_forsave.append(postmappingkeyList_str);
+        fixedvkeycodeList_forsave.append(fixedvkeycodeList_str);
         checkcombkeyorderList_forsave.append(checkcombkeyorderList_str);
         unbreakableList_forsave.append(unbreakableList_str);
         passthroughList_forsave.append(passthroughList_str);
@@ -6867,6 +6904,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_POSTMAPPINGKEY , postmappingkeyList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FIXEDVKEYCODE , fixedvkeycodeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER , checkcombkeyorderList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_UNBREAKABLE , unbreakableList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList_forsave);
@@ -7944,6 +7982,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QString lockData_loaded;
         QString mappingkeyunlockData_loaded;
         QString postmappingkeyData_loaded;
+        QString fixedvkeycodeData_loaded;
         QString checkcombkeyorderData_loaded;
         QString unbreakableData_loaded;
         QString passthroughData_loaded;
@@ -7978,6 +8017,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         QStringList burstreleaseData_split;
         QStringList lockData_split;
         QStringList mappingkeyunlockData_split;
+        QStringList fixedvkeycodeData_split;
         QStringList postmappingkeyData_split;
         QStringList checkcombkeyorderData_split;
         QStringList unbreakableData_split;
@@ -8146,6 +8186,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 postmappingkeyData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_POSTMAPPINGKEY).toString();
                 postmappingkeyData_split = postmappingkeyData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FIXEDVKEYCODE)) {
+                fixedvkeycodeData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FIXEDVKEYCODE).toString();
+                fixedvkeycodeData_split = fixedvkeycodeData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER)) {
                 checkcombkeyorderData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER).toString();
                 checkcombkeyorderData_split = checkcombkeyorderData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -8262,6 +8306,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList lockStringList;
                     QStringList mappingkeyunlockStringList;
                     QStringList postmappingkeyStringList;
+                    QStringList fixedvkeycodeStringList;
                     QStringList checkcombkeyorderStringList;
                     QStringList unbreakableStringList;
                     QStringList passthroughStringList;
@@ -8292,6 +8337,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QList<bool> lockList;
                     QList<bool> mappingkeyunlockList;
                     QList<bool> postmappingkeyList;
+                    QList<int> fixedvkeycodeList;
                     QList<bool> checkcombkeyorderList;
                     QList<bool> unbreakableList;
                     QList<bool> passthroughList;
@@ -8330,6 +8376,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     QStringList stringListAllNORMAL;
                     QStringList burstpressStringListDefault;
                     QStringList burstreleaseStringListDefault;
+                    QStringList fixedvkeycodeStringListDefault;
                     QStringList repeattimesStringListDefault;
                     QStringList crosshair_centercolorStringListDefault;
                     QStringList crosshair_centersizeStringListDefault;
@@ -8345,6 +8392,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                         stringListAllNORMAL << SENDTIMING_STR_NORMAL;
                         burstpressStringListDefault.append(QString::number(BURST_PRESS_TIME_DEFAULT));
                         burstreleaseStringListDefault.append(QString::number(BURST_RELEASE_TIME_DEFAULT));
+                        fixedvkeycodeStringListDefault.append(QString::number(FIXED_VIRTUAL_KEY_CODE_NONE, 16));
                         repeattimesStringListDefault.append(QString::number(REPEAT_TIMES_DEFAULT));
                         crosshair_centercolorStringListDefault.append(CROSSHAIR_CENTERCOLOR_DEFAULT);
                         crosshair_centersizeStringListDefault.append(QString::number(CROSSHAIR_CENTERSIZE_DEFAULT));
@@ -8360,6 +8408,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     lockStringList          = stringListAllOFF;
                     mappingkeyunlockStringList = stringListAllOFF;
                     postmappingkeyStringList = stringListAllOFF;
+                    fixedvkeycodeStringList = fixedvkeycodeStringListDefault;
                     checkcombkeyorderStringList = stringListAllON;
                     unbreakableStringList   = stringListAllOFF;
                     passthroughStringList   = stringListAllOFF;
@@ -8413,6 +8462,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                     }
                     if (postmappingkeyData_split.size() == table_count) {
                         postmappingkeyStringList = postmappingkeyData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (fixedvkeycodeData_split.size() == table_count) {
+                        fixedvkeycodeStringList = fixedvkeycodeData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (checkcombkeyorderData_split.size() == table_count) {
                         checkcombkeyorderStringList = checkcombkeyorderData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -8552,6 +8604,16 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                             } else {
                                 postmappingkeyList.append(false);
                             }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &fixedvkeycodeStr = (i < fixedvkeycodeStringList.size()) ? fixedvkeycodeStringList.at(i) : QString::number(FIXED_VIRTUAL_KEY_CODE_NONE, 16);
+                            bool ok;
+                            int fixedvkeycode = fixedvkeycodeStr.toInt(&ok, 16);
+                            if (!ok || fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
+                                fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
+                            }
+                            fixedvkeycodeList.append(fixedvkeycode);
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
@@ -8814,7 +8876,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   lockList.at(loadindex),
                                                                   mappingkeyunlockList.at(loadindex),
                                                                   postmappingkeyList.at(loadindex),
-                                                                  FIXED_VIRTUAL_KEY_CODE_NONE,
+                                                                  fixedvkeycodeList.at(loadindex),
                                                                   checkcombkeyorderList.at(loadindex),
                                                                   unbreakableList.at(loadindex),
                                                                   passthroughList.at(loadindex),

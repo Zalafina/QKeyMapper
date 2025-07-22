@@ -638,6 +638,7 @@ extern const char* KEYMAPDATA_BURST;
 extern const char* KEYMAPDATA_LOCK;
 extern const char *KEYMAPDATA_MAPPINGKEYUNLOCK;
 extern const char *KEYMAPDATA_POSTMAPPINGKEY;
+extern const char *KEYMAPDATA_FIXEDVKEYCODE;
 extern const char *KEYMAPDATA_CHECKCOMBKEYORDER;
 extern const char *KEYMAPDATA_UNBREAKABLE;
 extern const char *KEYMAPDATA_PASSTHROUGH;

@@ -721,6 +721,7 @@ const char *KEYMAPDATA_BURST = "KeyMapData_Burst";
 const char *KEYMAPDATA_LOCK = "KeyMapData_Lock";
 const char *KEYMAPDATA_MAPPINGKEYUNLOCK = "KeyMapData_MappingKeyUnlock";
 const char *KEYMAPDATA_POSTMAPPINGKEY = "KeyMapData_PostMappingKey";
+const char *KEYMAPDATA_FIXEDVKEYCODE = "KeyMapData_FixedVirtualKeyCode";
 const char *KEYMAPDATA_CHECKCOMBKEYORDER = "KeyMapData_CheckCombKeyOrder";
 const char *KEYMAPDATA_UNBREAKABLE = "KeyMapData_Unbreakable";
 const char *KEYMAPDATA_PASSTHROUGH = "KeyMapData_PassThrough";
