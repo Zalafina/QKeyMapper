@@ -146,7 +146,7 @@ typedef struct MAP_KEYDATA
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
                 bool burst, int burstpresstime, int burstreleasetime,
-                bool lock, bool mappingkeys_unlock, bool postmappingkey,
+                bool lock, bool mappingkeys_unlock, bool postmappingkey, int fixedvkeycode,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times,
@@ -178,6 +178,7 @@ typedef struct MAP_KEYDATA
         Lock = lock;
         MappingKeyUnlock = mappingkeys_unlock;
         PostMappingKey = postmappingkey;
+        FixedVKeyCode = fixedvkeycode;
         LockState = LOCK_STATE_LOCKOFF;
         CheckCombKeyOrder = checkcombkeyorder;
         Unbreakable = unbreakable;
@@ -215,6 +216,7 @@ typedef struct MAP_KEYDATA
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (PostMappingKey == other.PostMappingKey)
+                && (FixedVKeyCode == other.FixedVKeyCode)
                 && (CheckCombKeyOrder == other.CheckCombKeyOrder)
                 && (Unbreakable == other.Unbreakable)
                 && (PassThrough == other.PassThrough)
@@ -242,6 +244,7 @@ typedef struct MAP_KEYDATA
     friend QDebug operator<<(QDebug debug, const MAP_KEYDATA& data)
     {
         QDebugStateSaver saver(debug);
+        QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(data.FixedVKeyCode, 16).toUpper(), 2, '0');
         debug.nospace() << "\nMAP_KEYDATA["
                         << "Original_Key:" << data.Original_Key
                         << ", Mapping_Keys:" << data.Mapping_Keys
@@ -254,6 +257,7 @@ typedef struct MAP_KEYDATA
                         << ", Lock:" << data.Lock
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", PostMappingKey:" << data.PostMappingKey
+                        << ", FixedVKeyCode:" << fixedvkeycodeStr
                         << ", LockState:" << data.LockState
                         << ", CheckCombKeyOrder:" << data.CheckCombKeyOrder
                         << ", Unbreakable:" << data.Unbreakable

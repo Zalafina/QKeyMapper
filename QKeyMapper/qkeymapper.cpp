@@ -4390,6 +4390,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       lockList.at(loadindex),
                                                       mappingkeyunlockList.at(loadindex),
                                                       postmappingkeyList.at(loadindex),
+                                                      FIXED_VIRTUAL_KEY_CODE_DEFAULT,
                                                       checkcombkeyorderList.at(loadindex),
                                                       unbreakableList.at(loadindex),
                                                       passthroughList.at(loadindex),
@@ -8813,6 +8814,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                                                                   lockList.at(loadindex),
                                                                   mappingkeyunlockList.at(loadindex),
                                                                   postmappingkeyList.at(loadindex),
+                                                                  FIXED_VIRTUAL_KEY_CODE_DEFAULT,
                                                                   checkcombkeyorderList.at(loadindex),
                                                                   unbreakableList.at(loadindex),
                                                                   passthroughList.at(loadindex),
@@ -15074,6 +15076,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.Lock,
                                                                keymapdata.MappingKeyUnlock,
                                                                keymapdata.PostMappingKey,
+                                                               keymapdata.FixedVKeyCode,
                                                                keymapdata.CheckCombKeyOrder,
                                                                keymapdata.Unbreakable,
                                                                keymapdata.PassThrough,
@@ -15233,6 +15236,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    false,                                   /* lock bool */
                                                    false,                                   /* mappingkeys_unlock bool */
                                                    false,                                   /* postmappingkey bool */
+                                                   FIXED_VIRTUAL_KEY_CODE_DEFAULT,          /* fixedvkeycode int */
                                                    true,                                    /* checkcombkeyorder bool */
                                                    false,                                   /* unbreakable bool */
                                                    false,                                   /* passthrough bool */
