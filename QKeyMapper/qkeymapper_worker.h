@@ -119,7 +119,7 @@ typedef struct MAP_KEYDATA
     , Lock(false)
     , MappingKeyUnlock(false)
     , PostMappingKey(false)
-    , FixedVKeyCode(FIXED_VIRTUAL_KEY_CODE_DEFAULT)
+    , FixedVKeyCode(FIXED_VIRTUAL_KEY_CODE_NONE)
     , LockState(LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
     , Unbreakable(false)

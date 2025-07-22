@@ -972,14 +972,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
     bool postmappingkey = false;
-    int fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
+    int fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
 
     // Use saved mapping table pointer to avoid array bounds issues during tab switching
     if (rowindex >= 0 && rowindex < keyMappingDataList->size()) {
         postmappingkey = keyMappingDataList->at(rowindex).PostMappingKey;
         fixedvkeycode = keyMappingDataList->at(rowindex).FixedVKeyCode;
         if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
-            fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
+            fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
         }
     }
 
@@ -1009,7 +1009,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         }
 
 // #ifdef DEBUG_LOGOUT_ON
-//         if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+//         if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) {
 //             QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');
 //             QString debugmessage = QString("\033[1;32m[sendInputKeys] KeyUp FixedVirtualKeyCode = %1\033[0m").arg(fixedvkeycodeStr);
 //             qDebug().nospace().noquote() << debugmessage;
@@ -1258,7 +1258,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
-                    && fixedvkeycode == FIXED_VIRTUAL_KEY_CODE_DEFAULT
+                    && fixedvkeycode == FIXED_VIRTUAL_KEY_CODE_NONE
                     && postmappingkey != true
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
@@ -1328,7 +1328,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else {
                     input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                 }
-                if (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+                if (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) {
                     input.ki.wVk = fixedvkeycode;
                     input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                 }
@@ -1535,7 +1535,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
 
 // #ifdef DEBUG_LOGOUT_ON
-//             if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+//             if (fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) {
 //                 QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');
 //                 QString debugmessage = QString("\033[1;32m[sendInputKeys] KeyDown FixedVirtualKeyCode = %1\033[0m").arg(fixedvkeycodeStr);
 //                 qDebug().nospace().noquote() << debugmessage;
@@ -1905,7 +1905,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                     }
-                    if (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_DEFAULT) {
+                    if (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) {
                         input.ki.wVk = fixedvkeycode;
                         input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                     }

@@ -538,7 +538,7 @@ extern const UINT SCANCODE_APPS;
 
 extern const int FIXED_VIRTUAL_KEY_CODE_MIN;
 extern const int FIXED_VIRTUAL_KEY_CODE_MAX;
-extern const int FIXED_VIRTUAL_KEY_CODE_DEFAULT;
+extern const int FIXED_VIRTUAL_KEY_CODE_NONE;
 
 /* constant chars for QKeyMapper */
 extern const char* PROGRAM_NAME;

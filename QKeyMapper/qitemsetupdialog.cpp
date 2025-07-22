@@ -79,7 +79,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->fixedVKeyCodeSpinBox->setRange(FIXED_VIRTUAL_KEY_CODE_MIN, FIXED_VIRTUAL_KEY_CODE_MAX);
     ui->fixedVKeyCodeSpinBox->setPrefix("0x");
     ui->fixedVKeyCodeSpinBox->setDisplayIntegerBase(16);
-    ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
+    ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
 
     QStringList sendtiming_list = QStringList() \
                                   << tr("Normal")
@@ -524,7 +524,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
         }
         else {
-            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
+            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
         }
 
         QString mappingkey = keymapdata.Mapping_Keys.constFirst();
@@ -837,7 +837,7 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
         }
         else {
-            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
+            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
         }
 
         QString mappingkey = keymapdata.Mapping_Keys.constFirst();
@@ -1162,7 +1162,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
         }
         else {
-            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_DEFAULT);
+            ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
         }
 
         QString mappingkey = keymapdata.Mapping_Keys.constFirst();
@@ -1801,7 +1801,7 @@ void QItemSetupDialog::on_fixedVKeyCodeSpinBox_valueChanged(int value)
 
     int fixedvkeycode = ui->fixedVKeyCodeSpinBox->value();
     if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
-        fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_DEFAULT;
+        fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
         ui->fixedVKeyCodeSpinBox->setValue(fixedvkeycode);
         return;
     }
