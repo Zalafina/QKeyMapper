@@ -958,7 +958,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         return;
     }
 
-    if (keyMappingDataList == Q_NULLPTR) {
+    if (keyMappingDataList == Q_NULLPTR && rowindex >= 0) {
 #ifdef DEBUG_LOGOUT_ON
         qWarning("sendInputKeys(): keyMappingDataList is NULL!!!");
 #endif
