@@ -9964,7 +9964,36 @@ void QKeyMapper_Worker::CombinationKeyProc(int rowindex, const QString &keycodeS
             QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
             QStringList mappingKey_KeyUpList = QKeyMapper::KeyMappingDataList->at(findindex).MappingKeys_KeyUp;
             QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+            QString firstmappingkey = mappingKeyList.constFirst();
             int mappingkeylist_size = mappingKeyList.size();
+
+            // Check for BLOCKED and FUNC_PREFIX mappings for combination keys
+            if (mappingkeylist_size == 1 && firstmappingkey == KEY_BLOCKED_STR) {
+#ifdef DEBUG_LOGOUT_ON
+                if (KEY_DOWN == keyupdown){
+                    qDebug() << "[CombinationKeyProc]" << "CombinationKey KEY_DOWN Blocked ->" << original_key;
+                }
+                else {
+                    qDebug() << "[CombinationKeyProc]" << "CombinationKey KEY_UP Blocked ->" << original_key;
+                }
+#endif
+                return; // Block the combination key
+            }
+            else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
+#ifdef DEBUG_LOGOUT_ON
+                if (KEY_DOWN == keyupdown){
+                    qDebug() << "[CombinationKeyProc]" << "Function CombinationKey KEY_DOWN ->" << firstmappingkey;
+                }
+                else {
+                    qDebug() << "[CombinationKeyProc]" << "Function CombinationKey KEY_UP ->" << firstmappingkey;
+                }
+#endif
+                if (KEY_DOWN == keyupdown){
+                    emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
+                }
+                return; // Function mapping handled
+            }
+
             int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
             bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
             if (KEY_DOWN == keyupdown){
