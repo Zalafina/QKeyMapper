@@ -6361,6 +6361,18 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
         saveSettingSelectStr = saveSettingSelectStr + "/";
     }
+    else {
+        QString settingNameString = ui->settingNameLineEdit->text().trimmed();
+        QStringList groups = settingFile.childGroups();
+    }
+
+#if 0
+    if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
+        saveGlobalSetting = true;
+        saveSettingSelectStr = cursettingSelectStr;
+        settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+        saveSettingSelectStr = saveSettingSelectStr + "/";
+    }
     else if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
             && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
         saveSettingSelectStr = cursettingSelectStr;
@@ -6459,6 +6471,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             saveSettingSelectStr = saveSettingSelectStr + "/";
         }
     }
+#endif
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, s_KeyMappingTabWidgetCurrentIndex);
 
@@ -7696,7 +7709,46 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 // #endif
     ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.png"));
     QStringList groups = settingFile.childGroups();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
+#endif
     QStringList validgroups;
+
+    for (const QString &group : std::as_const(groups)){
+        QString tempSettingSelectStr = group + "/";
+
+        QIcon settingIcon = QKeyMapper::s_Icon_Blank;
+        QString filepathString;
+        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
+            filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+        }
+        if (!filepathString.isEmpty()
+            && QFileInfo::exists(filepathString)){
+            QFileIconProvider icon_provider;
+            QIcon fileicon = icon_provider.icon(QFileInfo(filepathString));
+            if (!fileicon.isNull()) {
+                settingIcon = fileicon;
+            }
+        }
+
+        QString descriptionString;
+        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
+            descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
+        }
+        QString groupnameWithDescription = group;
+        if (!descriptionString.isEmpty()) {
+            groupnameWithDescription = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
+        }
+
+        ui->settingselectComboBox->addItem(settingIcon, groupnameWithDescription);
+        m_SettingSelectListWithoutDescription.append(group);
+        validgroups.append(group);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting] Setting select add FullMatch ->" << group;
+#endif
+    }
+
+#if 0
     QStringList validgroups_fullmatch;
     QStringList validgroups_customsetting;
 #ifdef DEBUG_LOGOUT_ON
@@ -7705,17 +7757,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     for (const QString &group : std::as_const(groups)){
         bool valid_setting = false;
         QString tempSettingSelectStr = group + "/";
-        // if (group.endsWith(QString(SEPARATOR_TITLESETTING)+ANYWINDOWTITLE_STRING, Qt::CaseInsensitive)
-        //     || group.contains(QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)
-        //     || group.startsWith(PROCESS_UNKNOWN+QString(SEPARATOR_TITLESETTING)+WINDOWTITLE_STRING)) {
-        //     if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
-        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
-        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH))
-        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME_CHECKED))
-        //             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED))){
-        //         valid_setting = true;
-        //     }
-        // }
         if ((true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILENAME))
             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE))
             && (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH))
@@ -7780,6 +7821,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
         }
     }
+#endif
 
     if (groups.contains(GROUPNAME_GLOBALSETTING)) {
         QString settingSelectStr_bak = settingSelectStr;
@@ -7831,7 +7873,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         settingSelectStr = settingSelectStr_bak;
     }
 
-    validgroups = validgroups + validgroups_fullmatch + validgroups_customsetting;
+    // validgroups = validgroups + validgroups_fullmatch + validgroups_customsetting;
 
     if (true == settingtext.isEmpty()) {
         if (true == settingFile.contains(SETTINGSELECT)){
