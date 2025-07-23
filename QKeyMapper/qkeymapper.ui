@@ -450,9 +450,9 @@
     <widget class="QLineEdit" name="descriptionLineEdit">
      <property name="geometry">
       <rect>
-       <x>170</x>
+       <x>153</x>
        <y>90</y>
-       <width>301</width>
+       <width>317</width>
        <height>20</height>
       </rect>
      </property>
@@ -460,9 +460,9 @@
     <widget class="QLabel" name="descriptionLabel">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>84</x>
        <y>90</y>
-       <width>81</width>
+       <width>61</width>
        <height>21</height>
       </rect>
      </property>
@@ -476,9 +476,9 @@
     <widget class="QLineEdit" name="processLineEdit">
      <property name="geometry">
       <rect>
-       <x>170</x>
+       <x>153</x>
        <y>20</y>
-       <width>301</width>
+       <width>317</width>
        <height>20</height>
       </rect>
      </property>
@@ -518,9 +518,9 @@
     <widget class="QLineEdit" name="windowTitleLineEdit">
      <property name="geometry">
       <rect>
-       <x>170</x>
+       <x>153</x>
        <y>50</y>
-       <width>301</width>
+       <width>317</width>
        <height>20</height>
       </rect>
      </property>
@@ -558,7 +558,7 @@
       <rect>
        <x>65</x>
        <y>20</y>
-       <width>96</width>
+       <width>80</width>
        <height>21</height>
       </rect>
      </property>
@@ -577,7 +577,7 @@
       <rect>
        <x>65</x>
        <y>50</y>
-       <width>96</width>
+       <width>80</width>
        <height>21</height>
       </rect>
      </property>

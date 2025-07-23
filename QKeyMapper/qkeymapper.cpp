@@ -155,6 +155,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initQSimpleUpdater();
     extractSoundFiles();
     initAddKeyComboBoxes();
+    initWindowInfoMatchComboBoxes();
     initWindowSwitchKeyLineEdit();
     initMappingSwitchKeyLineEdit();
     // initOriginalKeySeqEdit();
@@ -10625,6 +10626,15 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     showNotificationPopup(popupNotification, opts);
 }
 
+void QKeyMapper::switchToWindowInfoTab()
+{
+    if (KEYMAP_IDLE == m_KeyMapStatus) {
+        if (ui->settingTabWidget->currentWidget() != ui->windowinfo) {
+            ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
+        }
+    }
+}
+
 void QKeyMapper::closeSelectColorDialog()
 {
     if (m_SelectColorDialog && m_SelectColorDialog->isVisible()) {
@@ -11449,6 +11459,20 @@ void QKeyMapper::initPushLevelSlider()
 
     QObject::connect(ui->pushLevelSlider, &QSlider::valueChanged, ui->pushLevelSpinBox, &QSpinBox::setValue);
     QObject::connect(ui->pushLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), ui->pushLevelSlider, &QSlider::setValue);
+}
+
+void QKeyMapper::initWindowInfoMatchComboBoxes()
+{
+    QStringList windowinfoMatchList;
+    windowinfoMatchList.append(tr("Ignore"));
+    windowinfoMatchList.append(tr("Equals"));
+    windowinfoMatchList.append(tr("Contains"));
+    windowinfoMatchList.append(tr("StartsWith"));
+    windowinfoMatchList.append(tr("EndsWith"));
+    ui->checkProcessComboBox->addItems(windowinfoMatchList);
+    ui->checkWindowTitleComboBox->addItems(windowinfoMatchList);
+    ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_EQUALS);
+    ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_EQUALS);
 }
 
 void QKeyMapper::updateSysTrayIconMenuText()
@@ -13542,6 +13566,17 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_CENTER,  tr("Bottom Center"));
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_RIGHT,   tr("Bottom Right"));
 
+    ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
+    ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));
+    ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_CONTAINS,      tr("Contains"));
+    ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,    tr("StartsWith"));
+    ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,      tr("EndsWith"));
+    ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,    tr("Ignore"));
+    ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,    tr("Equals"));
+    ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_CONTAINS,  tr("Contains"));
+    ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,tr("StartsWith"));
+    ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,  tr("EndsWith"));
+
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->windowinfo),       tr("WindowInfo")    );
     tabWidget->setTabText(tabWidget->indexOf(ui->general),          tr("General")       );
@@ -14679,6 +14714,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 loadSetting_flag = false;
 
                 if (loadresult == loadSettingSelectStr) {
+                    switchToWindowInfoTab();
                     return;
                 }
             }
@@ -14775,6 +14811,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->settingNameLineEdit->setText(filename);
         ui->processLineEdit->setText(ProcessPath);
         ui->windowTitleLineEdit->setText(windowTitle);
+
+        switchToWindowInfoTab();
     }
 }
 

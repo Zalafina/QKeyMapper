@@ -848,6 +848,7 @@ private:
     void initSysTrayIcon(void);
     void initPopupMessage(void);
     void initPushLevelSlider(void);
+    void initWindowInfoMatchComboBoxes(void);
     void updateSysTrayIconMenuText(void);
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
@@ -950,6 +951,7 @@ private:
     void mappingStartNotification();
     void mappingStopNotification();
     void mappingTabSwitchNotification(bool isSame);
+    void switchToWindowInfoTab(void);
 
     void closeSelectColorDialog(void);
     void showInputDeviceListWindow(void);
