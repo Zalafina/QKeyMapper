@@ -103,6 +103,7 @@ const int WINDOWINFO_MATCH_INDEX_EQUALS     = 1;
 const int WINDOWINFO_MATCH_INDEX_CONTAINS   = 2;
 const int WINDOWINFO_MATCH_INDEX_STARTSWITH = 3;
 const int WINDOWINFO_MATCH_INDEX_ENDSWITH   = 4;
+const int WINDOWINFO_MATCH_INDEX_DEFAULT    = WINDOWINFO_MATCH_INDEX_EQUALS;
 
 const int BURST_TIME_MIN = 1;
 const int BURST_TIME_MAX = 99999;
@@ -793,12 +794,13 @@ const char *PROCESSINFO_WINDOWTITLE = "ProcessInfo_WindowTitle";
 const char *PROCESSINFO_FILEPATH = "ProcessInfo_FilePath";
 const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
 const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
+const char *PROCESSINFO_FILENAME_MATCH_INDEX = "ProcessInfo_FileNameMatchIndex";
+const char *PROCESSINFO_WINDOWTITLE_MATCH_INDEX = "ProcessInfo_WindowTitleMatchIndex";
 const char *PROCESSINFO_DESCRIPTION = "ProcessInfo_Description";
 
 const char *DATAPORT_NUMBER = "DataPortNumber";
 const char *GRIP_THRESHOLD_BRAKE = "GripThresholdBrake";
 const char *GRIP_THRESHOLD_ACCEL = "GripThresholdAccel";
-// const char *DISABLEWINKEY_CHECKED = "DisableWinKeyChecked";
 const char *AUTOSTARTMAPPING_CHECKED = "AutoStartMappingChecked";
 const char *SENDTOSAMEWINDOWS_CHECKED = "SendToSameWindowsChecked";
 const char *ACCEPTVIRTUALGAMEPADINPUT_CHECKED = "AcceptVirtualGamdpadInputChecked";

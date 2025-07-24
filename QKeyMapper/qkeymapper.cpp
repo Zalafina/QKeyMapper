@@ -6204,6 +6204,24 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
     return ret_index;
 }
 
+QString QKeyMapper::searchSavedSettings(const QString &processpath, const QString &windowtitle)
+{
+    QString searchResultString;
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QStringList groups = settingFile.childGroups();
+
+    for (const QString &group : std::as_const(groups)){
+        if (group == GROUPNAME_GLOBALSETTING) {
+            continue;
+        }
+
+        QString tempSettingSelectStr = group + "/";
+
+        QString filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+        QString windowtitleString = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
+    }
+}
+
 bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata)
 {
     bool readresult = false;
@@ -7034,37 +7052,27 @@ void QKeyMapper::saveKeyMapSetting(void)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[saveKeyMapSetting]" << "GlobalSetting do not need processinfo!";
 #endif
-
-        // settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, false);
     }
     else {
-        if ((false == ui->processLineEdit->text().isEmpty())
-                && (false == ui->windowTitleLineEdit->text().isEmpty())
-                // && (ui->windowTitleLineEdit->text() == m_MapProcessInfo.WindowTitle)
-                && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)){
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, m_MapProcessInfo.FileName);
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
+        QString processString = ui->processLineEdit->text();
+        QString windowtitleString = ui->windowTitleLineEdit->text();
 
-            if (false == m_MapProcessInfo.FilePath.isEmpty()){
-                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
-            }
-            else{
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[saveKeyMapSetting]" << "FilePath is empty, unsaved.";
-#endif
-            }
+        if (!processString.isEmpty()) {
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, processString);
+        }
 
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_CHECKED, ui->processCheckBox->isChecked());
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_CHECKED, ui->titleCheckBox->isChecked());
+        if (!windowtitleString.isEmpty()) {
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, windowtitleString);
         }
-        else{
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[saveKeyMapSetting]" << "Unmatch display processinfo & stored processinfo.";
-#endif
+
+        if (!m_MapProcessInfo.FilePath.isEmpty()){
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
         }
+
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX, ui->checkProcessComboBox->currentIndex());
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_MATCH_INDEX, ui->checkWindowTitleComboBox->currentIndex());
 
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DESCRIPTION, ui->descriptionLineEdit->text());
-        // settingFile.setValue(saveSettingSelectStr+DISABLEWINKEY_CHECKED, ui->disableWinKeyCheckBox->isChecked());
     }
 
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
@@ -9200,21 +9208,28 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     if (loadGlobalSetting && loadDefault != true) {
         ui->settingNameLineEdit->setText(GROUPNAME_GLOBALSETTING);
+        ui->settingNameLineEdit->setReadOnly(true);
         ui->processLineEdit->setText(QString());
         ui->windowTitleLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
         ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
         ui->processCheckBox->setChecked(false);
         ui->titleCheckBox->setChecked(false);
+        ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+        ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
         // ui->disableWinKeyCheckBox->setChecked(false);
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
         ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
 
-        ui->settingNameLineEdit->setEnabled(false);
+        // ui->settingNameLineEdit->setEnabled(false);
         ui->processLineEdit->setEnabled(false);
         ui->windowTitleLineEdit->setEnabled(false);
         ui->processCheckBox->setEnabled(false);
         ui->titleCheckBox->setEnabled(false);
+        ui->processLabel->setEnabled(false);
+        ui->windowTitleLabel->setEnabled(false);
+        ui->checkProcessComboBox->setEnabled(false);
+        ui->checkWindowTitleComboBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
@@ -9227,10 +9242,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         if (KEYMAP_IDLE == m_KeyMapStatus){
             ui->settingNameLineEdit->setEnabled(true);
         }
+        ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
         ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
+        ui->processLabel->setEnabled(true);
+        ui->windowTitleLabel->setEnabled(true);
+        ui->checkProcessComboBox->setEnabled(true);
+        ui->checkWindowTitleComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
@@ -9319,24 +9339,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->processCheckBox->setChecked(false);
             ui->titleCheckBox->setChecked(false);
         }
-
-#if 0
-        if (true == settingFile.contains(settingSelectStr+DISABLEWINKEY_CHECKED)){
-            bool disableWinKeyChecked = settingFile.value(settingSelectStr+DISABLEWINKEY_CHECKED).toBool();
-            if (true == disableWinKeyChecked) {
-                ui->disableWinKeyCheckBox->setChecked(true);
-            }
-            else {
-                ui->disableWinKeyCheckBox->setChecked(false);
-            }
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "DisableWinKeyChecked =" << disableWinKeyChecked;
-#endif
-        }
-        else {
-            ui->disableWinKeyCheckBox->setChecked(false);
-        }
-#endif
     }
 
 #if 0
@@ -11584,8 +11586,8 @@ void QKeyMapper::initWindowInfoMatchComboBoxes()
     windowinfoMatchList.append(tr("EndsWith"));
     ui->checkProcessComboBox->addItems(windowinfoMatchList);
     ui->checkWindowTitleComboBox->addItems(windowinfoMatchList);
-    ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_EQUALS);
-    ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_EQUALS);
+    ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
 }
 
 void QKeyMapper::updateSysTrayIconMenuText()
@@ -14380,7 +14382,8 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageLabel->hide();
     m_PopupMessageLabel->clear();
 
-    QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
+    // QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
+    QString styleSheet = QString("color: %1;").arg(color);
     m_PopupMessageLabel->setStyleSheet(styleSheet);
 
     QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
@@ -14799,9 +14802,13 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->windowTitleLineEdit->setEnabled(true);
         ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
+        ui->processLabel->setEnabled(true);
+        ui->windowTitleLabel->setEnabled(true);
+        ui->checkProcessComboBox->setEnabled(true);
+        ui->checkWindowTitleComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
-        // ui->disableWinKeyCheckBox->setEnabled(true);
 
+#if 0
         QString filename = ui->processinfoTable->item(index.row(), 0)->text();
         QString windowTitle = ui->processinfoTable->item(index.row(), 2)->text();
 
@@ -14844,12 +14851,53 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             ui->settingselectComboBox->setCurrentText(QString());
             ui->descriptionLineEdit->clear();
         }
+#endif
 
+        QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
+        QString windowTitle = ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text();
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
         QString ProcessPath;
         DWORD dwProcessId = pidStr.toULong();
 
         getProcessInfoFromPID(dwProcessId, ProcessPath);
+
+        QString loadSettingSelectStr = searchSavedSettings(ProcessPath, windowTitle);
+        if (loadSettingSelectStr.isEmpty()) {
+            ui->settingselectComboBox->setCurrentText(QString());
+            ui->descriptionLineEdit->clear();
+        }
+        else {
+            QString curSettingSelectStr;
+            int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+            if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+                curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace() << "[on_processinfoTable_doubleClicked]" << "Doubleclick to load setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+            }
+            if (curSettingSelectStr != loadSettingSelectStr) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
+#endif
+                loadSetting_flag = true;
+                QString loadresult = loadKeyMapSetting(loadSettingSelectStr);
+                ui->settingNameLineEdit->setText(loadresult);
+                Q_UNUSED(loadresult)
+                loadSetting_flag = false;
+
+                if (loadresult == loadSettingSelectStr) {
+                    switchToWindowInfoTab();
+                    return;
+                }
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[on_processinfoTable_doubleClicked]" << "Current setting select is already the same ->" << curSettingSelectStr;
+#endif
+            }
+        }
 
         if (ProcessPath.isEmpty()) {
             bool adjust_priv;
@@ -16292,10 +16340,15 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Select setting text Empty!";
 #endif
         ui->settingNameLineEdit->setEnabled(true);
+        ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
         ui->processCheckBox->setEnabled(true);
         ui->titleCheckBox->setEnabled(true);
+        ui->processLabel->setEnabled(true);
+        ui->windowTitleLabel->setEnabled(true);
+        ui->checkProcessComboBox->setEnabled(true);
+        ui->checkWindowTitleComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->descriptionLineEdit->clear();
