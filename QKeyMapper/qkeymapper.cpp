@@ -11559,8 +11559,7 @@ void QKeyMapper::initPopupMessage()
     m_PopupMessageLabel->setAlignment(Qt::AlignCenter);
 
     m_PopupMessageAnimation = new QPropertyAnimation(m_PopupMessageLabel, "windowOpacity", this);
-    m_PopupMessageAnimation->setStartValue(1.0);
-    m_PopupMessageAnimation->setEndValue(0.0);
+    QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, m_PopupMessageLabel, &QLabel::hide);
 }
 
 void QKeyMapper::initPushLevelSlider()
@@ -14377,9 +14376,12 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
         return;
     }
 
+    m_PopupMessageAnimation->stop();
+    m_PopupMessageLabel->hide();
+    m_PopupMessageLabel->clear();
+
     QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
     m_PopupMessageLabel->setStyleSheet(styleSheet);
-    m_PopupMessageLabel->setWindowFlag(Qt::WindowStaysOnTopHint);
 
     QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
     if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
@@ -14393,18 +14395,15 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     int x = windowGeometry.x() + (windowGeometry.width() - m_PopupMessageLabel->width()) / 2;
     int y = windowGeometry.y() + (windowGeometry.height() - m_PopupMessageLabel->height()) / 2;
     m_PopupMessageLabel->move(x, y);
-    m_PopupMessageLabel->show();
 
+    m_PopupMessageLabel->setWindowFlag(Qt::WindowStaysOnTopHint);
 
-    QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, this, [this]() {
-        m_PopupMessageLabel->hide();
-        m_PopupMessageLabel->clear();
-    });
-    // QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, m_PopupMessageLabel, &QLabel::hide);
-
-    m_PopupMessageAnimation->stop();
     m_PopupMessageAnimation->setDuration(displayDuration);
+    m_PopupMessageAnimation->setStartValue(1.0);
+    m_PopupMessageAnimation->setEndValue(0.0);
     m_PopupMessageAnimation->start(QAbstractAnimation::KeepWhenStopped);
+
+    m_PopupMessageLabel->show();
 }
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
@@ -16008,7 +16007,7 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     , m_CurrentPopupOptions()
 {
     // Config Window Attribute
-    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
@@ -16131,6 +16130,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
     x += options.xOffset;
     y += options.yOffset;
     move(x, y);
+
+    this->setWindowFlag(Qt::WindowStaysOnTopHint);
 
     // --- 6. Opacity and Animations ---
     setWindowOpacity(std::clamp(options.windowOpacity, 0.0, 1.0));
