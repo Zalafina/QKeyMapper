@@ -6383,6 +6383,13 @@ void QKeyMapper::saveKeyMapSetting(void)
                 foundInvalidChars += invalidChars.at(i);
             }
         }
+        // Also check for newline characters (though they're unlikely in QLineEdit)
+        if (settingNameString.contains('\n') || settingNameString.contains('\r')) {
+            if (!foundInvalidChars.isEmpty()) {
+                foundInvalidChars += " ";
+            }
+            foundInvalidChars += tr("newline characters");
+        }
         if (!foundInvalidChars.isEmpty()) {
             showFailurePopup(tr("Setting name cannot contain the following characters: %1").arg(foundInvalidChars));
             return;
