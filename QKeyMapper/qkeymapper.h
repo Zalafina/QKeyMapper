@@ -1042,7 +1042,6 @@ public:
 private:
     QLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
-    QTimer m_PopupMessageTimer;
 #ifdef USE_SAOFONT
     int m_SAO_FontFamilyID;
     QString m_SAO_FontName;

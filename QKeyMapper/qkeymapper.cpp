@@ -57,7 +57,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TrayIconMenu_QuitAction(Q_NULLPTR),
     m_PopupMessageLabel(Q_NULLPTR),
     m_PopupMessageAnimation(Q_NULLPTR),
-    m_PopupMessageTimer(this),
 #ifdef USE_SAOFONT
     m_SAO_FontFamilyID(-1),
     m_SAO_FontName(),
@@ -14396,13 +14395,16 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageLabel->move(x, y);
     m_PopupMessageLabel->show();
 
+
+    QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, this, [this]() {
+        m_PopupMessageLabel->hide();
+        m_PopupMessageLabel->clear();
+    });
+    // QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, m_PopupMessageLabel, &QLabel::hide);
+
     m_PopupMessageAnimation->stop();
     m_PopupMessageAnimation->setDuration(displayDuration);
     m_PopupMessageAnimation->start(QAbstractAnimation::KeepWhenStopped);
-
-    m_PopupMessageTimer.setSingleShot(true);
-    connect(&m_PopupMessageTimer, &QTimer::timeout, m_PopupMessageLabel, &QLabel::hide);
-    m_PopupMessageTimer.start(displayDuration);
 }
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
