@@ -6169,6 +6169,111 @@ int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const 
     return ret_index;
 }
 
+QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle)
+{
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QStringList groups = settingFile.childGroups();
+    groups.removeOne(GROUPNAME_GLOBALSETTING);
+
+    for (const QString &group : std::as_const(groups)) {
+        Qt::CheckState autoStartMappingChecked = Qt::Unchecked;
+        QVariant autoStartMappingChecked_Var;
+        if (readSaveSettingData(group, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
+            autoStartMappingChecked = (Qt::CheckState)autoStartMappingChecked_Var.toInt();
+        }
+        if (autoStartMappingChecked != Qt::Checked) {
+            continue;
+        }
+
+        QString tempSettingSelectStr = group + "/";
+        bool process_matched = false;
+        bool windowtitle_matched = false;
+
+        bool ok = false;
+        int matchProcessIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX).toInt(&ok);
+        if (!ok || matchProcessIndex < WINDOWINFO_MATCH_INDEX_MIN || matchProcessIndex > WINDOWINFO_MATCH_INDEX_MAX) {
+            matchProcessIndex = WINDOWINFO_MATCH_INDEX_DEFAULT;
+        }
+
+        ok = false;
+        int matchWindowTitleIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE_MATCH_INDEX).toInt(&ok);
+        if (!ok || matchWindowTitleIndex < WINDOWINFO_MATCH_INDEX_MIN || matchWindowTitleIndex > WINDOWINFO_MATCH_INDEX_MAX) {
+            matchWindowTitleIndex = WINDOWINFO_MATCH_INDEX_DEFAULT;
+        }
+
+        if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_IGNORE && matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
+            continue;
+        }
+
+        QString processNameString = settingFile.value(tempSettingSelectStr + PROCESSINFO_FILENAME).toString();
+        if (processpath.isEmpty() || processNameString.isEmpty()) {
+            process_matched = false;
+        }
+        else {
+            if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
+                process_matched = true;
+            }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                if (processpath == processNameString) {
+                    process_matched = true;
+                }
+            }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                if (processpath.contains(processNameString)) {
+                    process_matched = true;
+                }
+            }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                if (processpath.startsWith(processNameString)) {
+                    process_matched = true;
+                }
+            }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                if (processpath.endsWith(processNameString)) {
+                    process_matched = true;
+                }
+            }
+        }
+
+        QString windowTitleString = settingFile.value(tempSettingSelectStr + PROCESSINFO_WINDOWTITLE).toString();
+        if (windowtitle.isEmpty() || windowTitleString.isEmpty()) {
+            windowtitle_matched = false;
+        }
+        else {
+            if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
+                windowtitle_matched = true;
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                if (windowtitle == windowTitleString) {
+                    windowtitle_matched = true;
+                }
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                if (windowtitle.contains(windowTitleString)) {
+                    windowtitle_matched = true;
+                }
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                if (windowtitle.startsWith(windowTitleString)) {
+                    windowtitle_matched = true;
+                }
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                if (windowtitle.endsWith(windowTitleString)) {
+                    windowtitle_matched = true;
+                }
+            }
+        }
+
+        if (process_matched && windowtitle_matched) {
+            return group;
+        }
+    }
+
+    return QString();
+}
+
+#if 0
 int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &windowtitle)
 {
     int ret_index = TITLESETTING_INDEX_INVALID;
@@ -6203,23 +6308,57 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
 
     return ret_index;
 }
+#endif
 
-QString QKeyMapper::searchSavedSettings(const QString &processpath, const QString &windowtitle)
+QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString &windowtitle)
 {
-    QString searchResultString;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
+    groups.removeOne(GROUPNAME_GLOBALSETTING);
 
-    for (const QString &group : std::as_const(groups)){
-        if (group == GROUPNAME_GLOBALSETTING) {
-            continue;
-        }
+    // Store candidates for fallback matching (lower priority)
+    QString processPathOnlyMatch;
+    QString windowTitleContainsMatch;
 
+    for (const QString &group : std::as_const(groups)) {
         QString tempSettingSelectStr = group + "/";
 
         QString filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
         QString windowtitleString = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
+
+        // Priority 1: Exact match for both processpath and windowtitle
+        if (processpath == filepathString && windowtitle == windowtitleString) {
+            return group;
+        }
+
+        // Priority 2: Exact processpath match and windowtitle contains windowtitleString
+        if (processpath == filepathString && windowtitle.contains(windowtitleString)) {
+            return group;
+        }
+
+        // Store candidates for lower priority matches
+        // Priority 3: Only processpath matches (store first match)
+        if (processPathOnlyMatch.isEmpty() && processpath == filepathString) {
+            processPathOnlyMatch = group;
+        }
+
+        // Priority 4: Only windowtitle contains match (store first match)
+        if (windowTitleContainsMatch.isEmpty() && windowtitle.contains(windowtitleString)) {
+            windowTitleContainsMatch = group;
+        }
     }
+
+    // Return fallback matches in priority order
+    if (!processPathOnlyMatch.isEmpty()) {
+        return processPathOnlyMatch;
+    }
+
+    if (!windowTitleContainsMatch.isEmpty()) {
+        return windowTitleContainsMatch;
+    }
+
+    // No match found
+    return QString();
 }
 
 bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata)
@@ -14861,7 +15000,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
         getProcessInfoFromPID(dwProcessId, ProcessPath);
 
-        QString loadSettingSelectStr = searchSavedSettings(ProcessPath, windowTitle);
+        QString loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle);
         if (loadSettingSelectStr.isEmpty()) {
             ui->settingselectComboBox->setCurrentText(QString());
             ui->descriptionLineEdit->clear();

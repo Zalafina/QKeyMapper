@@ -78,6 +78,8 @@ extern const int WINDOWINFO_MATCH_INDEX_CONTAINS;
 extern const int WINDOWINFO_MATCH_INDEX_STARTSWITH;
 extern const int WINDOWINFO_MATCH_INDEX_ENDSWITH;
 extern const int WINDOWINFO_MATCH_INDEX_DEFAULT;
+extern const int WINDOWINFO_MATCH_INDEX_MIN;
+extern const int WINDOWINFO_MATCH_INDEX_MAX;
 extern const int BURST_TIME_MIN;
 extern const int BURST_TIME_MAX;
 extern const int BURST_PRESS_TIME_DEFAULT;
