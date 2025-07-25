@@ -591,6 +591,8 @@ extern const char *SUCCESS_COLOR;
 extern const char *FAILURE_COLOR;
 extern const char *WARNING_COLOR;
 extern const char* LAST_WINDOWPOSITION;
+extern const char *PROGRAM_VERSION;
+extern const char *PROGRAM_PLATFORM;
 extern const char* LANGUAGE_INDEX;
 extern const char *SHOW_PROCESSLIST;
 extern const char *SHOW_NOTES;

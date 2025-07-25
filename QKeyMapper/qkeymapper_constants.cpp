@@ -103,7 +103,7 @@ const int WINDOWINFO_MATCH_INDEX_EQUALS     = 1;
 const int WINDOWINFO_MATCH_INDEX_CONTAINS   = 2;
 const int WINDOWINFO_MATCH_INDEX_STARTSWITH = 3;
 const int WINDOWINFO_MATCH_INDEX_ENDSWITH   = 4;
-const int WINDOWINFO_MATCH_INDEX_DEFAULT    = WINDOWINFO_MATCH_INDEX_EQUALS;
+const int WINDOWINFO_MATCH_INDEX_DEFAULT    = WINDOWINFO_MATCH_INDEX_CONTAINS;
 const int WINDOWINFO_MATCH_INDEX_MIN        = WINDOWINFO_MATCH_INDEX_IGNORE;
 const int WINDOWINFO_MATCH_INDEX_MAX        = WINDOWINFO_MATCH_INDEX_ENDSWITH;
 
@@ -670,6 +670,8 @@ const char *WARNING_COLOR = "#f39c12";
 
 /* General global settings >>> */
 const char *LAST_WINDOWPOSITION = "LastWindowPosition";
+const char *PROGRAM_VERSION = "ProgramVersion";
+const char *PROGRAM_PLATFORM = "ProgramPlatform";
 const char *LANGUAGE_INDEX = "LanguageIndex";
 const char *SHOW_PROCESSLIST = "ShowProcessList";
 const char *SHOW_NOTES = "ShowNotes";

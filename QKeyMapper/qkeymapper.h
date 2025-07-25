@@ -480,7 +480,8 @@ public:
 
 public slots:
     void WindowStateChangedProc(void);
-    void cycleCheckProcessProc(void);
+    // void cycleCheckProcessProc(void);
+    void matchForegroundWindow(void);
 #ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     void checkGlobalSettingSwitchTimeout(void);
 #endif

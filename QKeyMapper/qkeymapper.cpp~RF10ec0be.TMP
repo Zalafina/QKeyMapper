@@ -936,7 +936,7 @@ void QKeyMapper::matchForegroundWindow()
             IgnoreBothChecks = 2,   // IgnoreBothChecks,     same as checkresult = 2
             SendToSameWindows = 3   // SendToSameWindows,    same as checkresult = 3
         };
-
+        
         MatchResult matchResult = MatchResult::NoMatch;
         QString windowTitle;
         QString filename;
