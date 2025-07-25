@@ -15401,6 +15401,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[on_processinfoTable_doubleClicked]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
+                return;
             }
         }
 
