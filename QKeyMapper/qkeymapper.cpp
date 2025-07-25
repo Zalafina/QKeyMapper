@@ -450,6 +450,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     updateSysTrayIconMenuText();
     reloadUILanguage();
     resetFontSize();
+    ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
 
     updateMultiInputStatus();
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -6758,27 +6759,12 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
     }
 
-    if (!ui->processListButton->isChecked()) {
-        settingFile.setValue(SHOW_PROCESSLIST, false);
-    }
-    else {
-        settingFile.setValue(SHOW_PROCESSLIST, true);
-    }
-
-    if (ui->showNotesButton->isChecked()) {
-        settingFile.setValue(SHOW_NOTES, true);
-    }
-    else {
-        settingFile.setValue(SHOW_NOTES, false);
-    }
-
-    if (ui->showCategoryButton->isChecked()) {
-        settingFile.setValue(SHOW_CATEGORYS, true);
-    }
-    else {
-        settingFile.setValue(SHOW_CATEGORYS, false);
-    }
-
+    settingFile.setValue(PLAY_SOUNDEFFECT, ui->soundEffectCheckBox->isChecked());
+    settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
+    settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
+    settingFile.setValue(SHOW_PROCESSLIST, ui->processListButton->isChecked());
+    settingFile.setValue(SHOW_NOTES, ui->showNotesButton->isChecked());
+    settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
 
     QColor notification_fontcolor;
@@ -8186,6 +8172,25 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->startupMinimizedCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupMinimized, StartupMinimized set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(STARTUP_AUTOMONITORING)){
+            bool startupautomonitoringChecked = settingFile.value(STARTUP_AUTOMONITORING).toBool();
+            if (true == startupautomonitoringChecked) {
+                ui->startupAutoMonitoringCheckBox->setChecked(true);
+            }
+            else {
+                ui->startupAutoMonitoringCheckBox->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Startup AutoMonitoring Checkbox ->" << startupautomonitoringChecked;
+#endif
+        }
+        else {
+            ui->startupAutoMonitoringCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
 #endif
         }
 
@@ -9701,6 +9706,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
         // ui->settingNameLineEdit->setEnabled(false);
         ui->processLineEdit->setEnabled(false);
+        ui->restoreProcessPathButton->setEnabled(false);
         ui->windowTitleLineEdit->setEnabled(false);
         // ui->processCheckBox->setEnabled(false);
         // ui->titleCheckBox->setEnabled(false);
@@ -9722,6 +9728,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
+        ui->restoreProcessPathButton->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
         // ui->processCheckBox->setEnabled(true);
         // ui->titleCheckBox->setEnabled(true);
@@ -10171,17 +10178,20 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
     }
 
-    Qt::CheckState autoStartMappingCheckState = Qt::Unchecked;
     if (true == settingFile.contains(settingSelectStr+AUTOSTARTMAPPING_CHECKED)){
-        autoStartMappingCheckState = (Qt::CheckState)settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toInt();
+        bool ok = false;
+        Qt::CheckState autoStartMappingCheckState = (Qt::CheckState)settingFile.value(settingSelectStr+AUTOSTARTMAPPING_CHECKED).toInt(&ok);
+        if (!ok || autoStartMappingCheckState < Qt::Unchecked || autoStartMappingCheckState > Qt::Checked) {
+            autoStartMappingCheckState = Qt::Unchecked;
+        }
+        ui->autoStartMappingCheckBox->setCheckState(autoStartMappingCheckState);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingCheckState =" << autoStartMappingCheckState;
+#endif
     }
     else {
-        autoStartMappingCheckState = Qt::Unchecked;
+        ui->autoStartMappingCheckBox->setCheckState(Qt::Unchecked);
     }
-    ui->autoStartMappingCheckBox->setCheckState(autoStartMappingCheckState);
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "AutoStartMappingCheckState =" << autoStartMappingCheckState;
-#endif
 
     if (true == settingFile.contains(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED)){
         bool sendToSameWindowsChecked = settingFile.value(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED).toBool();
@@ -10305,9 +10315,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->settingselectComboBox->setCurrentIndex(settingSelectIndex);
             // ui->settingselectComboBox->setCurrentText(settingSelectStr);
             loadedSettingString = settingSelectStr;
+            ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
         }
 
-        if ((Qt::Checked == autoStartMappingCheckState) && (true == settingtext.isEmpty())) {
+        if (ui->startupAutoMonitoringCheckBox->isChecked() && settingtext.isEmpty()) {
             MappingSwitch(MAPPINGSTART_LOADSETTING);
         }
         return loadedSettingString;
@@ -10418,6 +10429,7 @@ void QKeyMapper::setControlFontEnglish()
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
+    ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
@@ -10483,6 +10495,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
+    ui->startupAutoMonitoringCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
@@ -10554,6 +10567,7 @@ void QKeyMapper::setControlFontChinese()
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
+    ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
@@ -10619,6 +10633,7 @@ void QKeyMapper::setControlFontChinese()
     ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
+    ui->startupAutoMonitoringCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
@@ -10690,6 +10705,7 @@ void QKeyMapper::setControlFontJapanese()
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
+    ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
@@ -10755,6 +10771,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
+    ui->startupAutoMonitoringCheckBox->setFont(customFont);
     ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
@@ -10823,6 +10840,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
+    ui->startupAutoMonitoringCheckBox->setEnabled(status);
     ui->soundEffectCheckBox->setEnabled(status);
     ui->notificationLabel->setEnabled(status);
     ui->notificationComboBox->setEnabled(status);
@@ -14123,6 +14141,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     // ui->titleCheckBox->setText(tr("Title"));
     ui->processLabel->setText(tr("Process"));
     ui->windowTitleLabel->setText(tr("Title"));
+    ui->restoreProcessPathButton->setText(tr("Restore"));
     ui->settingNameLabel->setText(tr("SettingName"));
     ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
@@ -14168,6 +14187,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
+    ui->startupAutoMonitoringCheckBox->setText(tr("Startup AutoMonitoring"));
     ui->soundEffectCheckBox->setText(tr("Sound"));
     ui->notificationLabel->setText(tr("Notification"));
     ui->languageLabel->setText(tr("Language"));
@@ -15320,6 +15340,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
+        ui->restoreProcessPathButton->setEnabled(true);
         // ui->processCheckBox->setEnabled(true);
         // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
@@ -16869,6 +16890,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
+        ui->restoreProcessPathButton->setEnabled(true);
         // ui->processCheckBox->setEnabled(true);
         // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
@@ -17201,6 +17223,7 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 }
 #endif
 
+#if 0
 void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -17216,6 +17239,7 @@ void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
         settingFile.setValue(PLAY_SOUNDEFFECT , false);
     }
 }
+#endif
 
 void QKeyMapper::on_installInterceptionButton_clicked()
 {
@@ -17669,6 +17693,7 @@ void KeyMappingDataTableWidget::updateRowVisibility()
     }
 }
 
+#if 0
 void QKeyMapper::on_startupMinimizedCheckBox_stateChanged(int state)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -17684,6 +17709,7 @@ void QKeyMapper::on_startupMinimizedCheckBox_stateChanged(int state)
         settingFile.setValue(STARTUP_MINIMIZED , false);
     }
 }
+#endif
 
 void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
 {
@@ -17927,6 +17953,22 @@ void QKeyMapper::on_CategoryFilterComboBox_currentIndexChanged(int index)
 void QKeyMapper::on_CategoryFilterComboBox_currentTextChanged(const QString &text)
 {
     ui->CategoryFilterComboBox->setToolTip(text);
+}
+
+void QKeyMapper::on_restoreProcessPathButton_clicked()
+{
+    if (!m_MapProcessInfo.FilePath.isEmpty()) {
+        QString message = tr("Restore to absolute process path \"%1\"?").arg(m_MapProcessInfo.FilePath);
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                   QMessageBox::Yes | QMessageBox::No,
+                                                                   QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+            // User cancelled, don't restore
+            return;
+        }
+
+        ui->processLineEdit->setText(m_MapProcessInfo.FilePath);
+    }
 }
 
 QString QKeyMapper::getCurrentCategoryFilter() const

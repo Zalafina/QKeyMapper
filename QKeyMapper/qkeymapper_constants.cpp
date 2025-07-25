@@ -702,6 +702,7 @@ const char *UPDATE_SITE = "UpdateSite";
 const char *SETTINGSELECT = "SettingSelect";
 const char *AUTO_STARTUP = "AutoStartup";
 const char *STARTUP_MINIMIZED = "StartupMinimized";
+const char *STARTUP_AUTOMONITORING = "StartupAutoMonitoring";
 const char *PLAY_SOUNDEFFECT = "PlaySoundEffect";
 const char *WINDOWSWITCH_KEYSEQ = "WindowSwitch_KeySequence";
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -715,12 +716,12 @@ const char *DISABLED_KEYBOARDLIST = "DisabledKeyboardList";
 const char *DISABLED_MOUSELIST = "DisabledMouseList";
 /* General global settings <<< */
 
-const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
-const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
-const char *GROUPNAME_CUSTOMGLOBALSETTING = "CustomGlobalSetting ";
 const char *GROUPNAME_GLOBALSETTING = "QKeyMapperGlobalSetting";
-const char *WINDOWTITLE_STRING = "Title";
-const char *ANYWINDOWTITLE_STRING = "AnyTitle";
+// const char *GROUPNAME_EXECUTABLE_SUFFIX = ".exe";
+// const char *GROUPNAME_CUSTOMSETTING = "CustomSetting ";
+// const char *GROUPNAME_CUSTOMGLOBALSETTING = "CustomGlobalSetting ";
+// const char *WINDOWTITLE_STRING = "Title";
+// const char *ANYWINDOWTITLE_STRING = "AnyTitle";
 
 const char *KEYMAPDATA_ORIGINALKEYS = "KeyMapData_OriginalKeys";
 const char *KEYMAPDATA_MAPPINGKEYS = "KeyMapData_MappingKeys";

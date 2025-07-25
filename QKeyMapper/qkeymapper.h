@@ -775,7 +775,7 @@ private slots:
 
     // void on_uninstallViGEmBusButton_clicked();
 
-    void on_soundEffectCheckBox_stateChanged(int state);
+    // void on_soundEffectCheckBox_stateChanged(int state);
 
     void on_installInterceptionButton_clicked();
 
@@ -789,7 +789,7 @@ private slots:
 
     void keyMappingTabl_ItemSelectionChanged();
 
-    void on_startupMinimizedCheckBox_stateChanged(int state);
+    // void on_startupMinimizedCheckBox_stateChanged(int state);
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
@@ -826,6 +826,8 @@ private slots:
     void on_CategoryFilterComboBox_currentIndexChanged(int index);
 
     void on_CategoryFilterComboBox_currentTextChanged(const QString &text);
+
+    void on_restoreProcessPathButton_clicked();
 
 private:
     // Helper methods for saving/restoring category filter state

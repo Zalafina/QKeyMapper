@@ -452,7 +452,7 @@
       <rect>
        <x>153</x>
        <y>90</y>
-       <width>317</width>
+       <width>281</width>
        <height>20</height>
       </rect>
      </property>
@@ -478,7 +478,7 @@
       <rect>
        <x>153</x>
        <y>20</y>
-       <width>317</width>
+       <width>281</width>
        <height>20</height>
       </rect>
      </property>
@@ -488,7 +488,7 @@
       <rect>
        <x>153</x>
        <y>50</y>
-       <width>317</width>
+       <width>281</width>
        <height>20</height>
       </rect>
      </property>
@@ -591,6 +591,25 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
+    <widget class="QPushButton" name="restoreProcessPathButton">
+     <property name="geometry">
+      <rect>
+       <x>440</x>
+       <y>20</y>
+       <width>41</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Restore</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="general">
     <attribute name="title">
@@ -601,7 +620,7 @@
       <rect>
        <x>20</x>
        <y>70</y>
-       <width>131</width>
+       <width>151</width>
        <height>21</height>
       </rect>
      </property>
@@ -863,6 +882,22 @@
       <bool>false</bool>
      </property>
     </widget>
+    <widget class="QCheckBox" name="startupAutoMonitoringCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>100</y>
+       <width>151</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Startup AutoMonitoring</string>
+     </property>
+    </widget>
     <zorder>startupMinimizedCheckBox</zorder>
     <zorder>autoStartupCheckBox</zorder>
     <zorder>notificationLabel</zorder>
@@ -877,6 +912,7 @@
     <zorder>selectTrayIconButton</zorder>
     <zorder>notificationAdvancedSettingButton</zorder>
     <zorder>soundEffectCheckBox</zorder>
+    <zorder>startupAutoMonitoringCheckBox</zorder>
    </widget>
    <widget class="QWidget" name="mapping">
     <attribute name="title">
