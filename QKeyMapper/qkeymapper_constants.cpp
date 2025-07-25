@@ -92,11 +92,10 @@ const int KEYPRESS_TYPE_DOUBLEPRESS = 1;
 
 const int GLOBALSETTING_INDEX = 1;
 
-const int CUSTOMSETTING_INDEX_MAX = 30;
-
-const int TITLESETTING_INDEX_INVALID = -1;
-const int TITLESETTING_INDEX_ANYTITLE = 0;
-const int TITLESETTING_INDEX_MAX = 9;
+// const int CUSTOMSETTING_INDEX_MAX = 30;
+// const int TITLESETTING_INDEX_INVALID = -1;
+// const int TITLESETTING_INDEX_ANYTITLE = 0;
+// const int TITLESETTING_INDEX_MAX = 9;
 
 const int WINDOWINFO_MATCH_INDEX_IGNORE     = 0;
 const int WINDOWINFO_MATCH_INDEX_EQUALS     = 1;
@@ -796,8 +795,8 @@ const char *CLEARALL = "KeyMapData_ClearAll";
 const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";
 const char *PROCESSINFO_WINDOWTITLE = "ProcessInfo_WindowTitle";
 const char *PROCESSINFO_FILEPATH = "ProcessInfo_FilePath";
-const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
-const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
+// const char *PROCESSINFO_FILENAME_CHECKED = "ProcessInfo_FileNameChecked";
+// const char *PROCESSINFO_WINDOWTITLE_CHECKED = "ProcessInfo_WindowTitleChecked";
 const char *PROCESSINFO_FILENAME_MATCH_INDEX = "ProcessInfo_FileNameMatchIndex";
 const char *PROCESSINFO_WINDOWTITLE_MATCH_INDEX = "ProcessInfo_WindowTitleMatchIndex";
 const char *PROCESSINFO_DESCRIPTION = "ProcessInfo_Description";

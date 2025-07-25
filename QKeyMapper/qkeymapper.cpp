@@ -282,8 +282,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
-    ui->processCheckBox->setFocusPolicy(Qt::NoFocus);
-    ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
+    // ui->processCheckBox->setFocusPolicy(Qt::NoFocus);
+    // ui->titleCheckBox->setFocusPolicy(Qt::NoFocus);
     ui->settingNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->processLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->windowTitleLineEdit->setFocusPolicy(Qt::ClickFocus);
@@ -2056,11 +2056,11 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
     bool fileNameExist = !QKeyMapper::getInstance()->m_MapProcessInfo.FileName.isEmpty();
     bool windowTitleExist = !QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle.isEmpty();
 
-    if (QKeyMapper::getInstance()->ui->processCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+    if (QKeyMapper::getInstance()->ui->checkProcessComboBox->currentIndex() != WINDOWINFO_MATCH_INDEX_IGNORE && false == fileNameExist) {
         fileNameCheckOK = false;
     }
 
-    if (QKeyMapper::getInstance()->ui->titleCheckBox->checkState() == Qt::Checked && false == windowTitleExist) {
+    if (QKeyMapper::getInstance()->ui->checkWindowTitleComboBox->currentIndex() != WINDOWINFO_MATCH_INDEX_IGNORE && false == windowTitleExist) {
         windowTitleCheckOK = false;
     }
 
@@ -5407,11 +5407,11 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         bool fileNameExist = !m_MapProcessInfo.FileName.isEmpty();
         bool windowTitleExist = !m_MapProcessInfo.WindowTitle.isEmpty();
 
-        if (ui->processCheckBox->checkState() == Qt::Checked && false == fileNameExist) {
+        if (ui->checkProcessComboBox->currentIndex() != WINDOWINFO_MATCH_INDEX_IGNORE && false == fileNameExist) {
             fileNameCheckOK = false;
         }
 
-        if (ui->titleCheckBox->checkState() == Qt::Checked && false == windowTitleExist) {
+        if (ui->checkWindowTitleComboBox->currentIndex() != WINDOWINFO_MATCH_INDEX_IGNORE && false == windowTitleExist) {
             windowTitleCheckOK = false;
         }
 
@@ -6423,6 +6423,7 @@ void QKeyMapper::convertSettingsFile()
 }
 #endif
 
+#if 0
 int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle)
 {
     int ret_index = TITLESETTING_INDEX_INVALID;
@@ -6493,6 +6494,7 @@ int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const 
 
     return ret_index;
 }
+#endif
 
 QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle)
 {
@@ -9686,8 +9688,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->windowTitleLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
         ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
-        ui->processCheckBox->setChecked(false);
-        ui->titleCheckBox->setChecked(false);
+        // ui->processCheckBox->setChecked(false);
+        // ui->titleCheckBox->setChecked(false);
         ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         // ui->disableWinKeyCheckBox->setChecked(false);
@@ -9697,8 +9699,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         // ui->settingNameLineEdit->setEnabled(false);
         ui->processLineEdit->setEnabled(false);
         ui->windowTitleLineEdit->setEnabled(false);
-        ui->processCheckBox->setEnabled(false);
-        ui->titleCheckBox->setEnabled(false);
+        // ui->processCheckBox->setEnabled(false);
+        // ui->titleCheckBox->setEnabled(false);
         ui->processLabel->setEnabled(false);
         ui->windowTitleLabel->setEnabled(false);
         ui->checkProcessComboBox->setEnabled(false);
@@ -9718,8 +9720,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
-        ui->processCheckBox->setEnabled(true);
-        ui->titleCheckBox->setEnabled(true);
+        // ui->processCheckBox->setEnabled(true);
+        // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
@@ -9767,8 +9769,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->processLineEdit->setText(QString());
             ui->windowTitleLineEdit->setText(QString());
             ui->descriptionLineEdit->setText(QString());
-            ui->processCheckBox->setChecked(false);
-            ui->titleCheckBox->setChecked(false);
+            // ui->processCheckBox->setChecked(false);
+            // ui->titleCheckBox->setChecked(false);
+            ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
@@ -9808,6 +9812,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
         }
 
+#if 0
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME_CHECKED)){
             bool fileNameChecked = settingFile.value(settingSelectStr+PROCESSINFO_FILENAME_CHECKED).toBool();
             if (true == fileNameChecked) {
@@ -9839,10 +9844,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         else {
             ui->titleCheckBox->setChecked(false);
         }
+#endif
 
         if (true == loadDefault) {
-            ui->processCheckBox->setChecked(false);
-            ui->titleCheckBox->setChecked(false);
+            // ui->processCheckBox->setChecked(false);
+            // ui->titleCheckBox->setChecked(false);
+            ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
         }
     }
 
@@ -10403,8 +10411,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
-    ui->processCheckBox->setFont(customFont);
-    ui->titleCheckBox->setFont(customFont);
+    // ui->processCheckBox->setFont(customFont);
+    // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
@@ -10539,8 +10547,8 @@ void QKeyMapper::setControlFontChinese()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
-    ui->processCheckBox->setFont(customFont);
-    ui->titleCheckBox->setFont(customFont);
+    // ui->processCheckBox->setFont(customFont);
+    // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
@@ -10675,8 +10683,8 @@ void QKeyMapper::setControlFontJapanese()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
-    ui->processCheckBox->setFont(customFont);
-    ui->titleCheckBox->setFont(customFont);
+    // ui->processCheckBox->setFont(customFont);
+    // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
@@ -14108,8 +14116,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     updateCategoryFilterComboBox();
 
     ui->addmapdataButton->setText(tr("ADD"));
-    ui->processCheckBox->setText(tr("Process"));
-    ui->titleCheckBox->setText(tr("Title"));
+    // ui->processCheckBox->setText(tr("Process"));
+    // ui->titleCheckBox->setText(tr("Title"));
     ui->processLabel->setText(tr("Process"));
     ui->windowTitleLabel->setText(tr("Title"));
     ui->settingNameLabel->setText(tr("SettingName"));
@@ -14600,6 +14608,8 @@ void QKeyMapper::resetFontSize()
         ui->settingNameLineEdit->setFont(customFont);
         ui->processLineEdit->setFont(customFont);
         ui->windowTitleLineEdit->setFont(customFont);
+        ui->checkProcessComboBox->setFont(customFont);
+        ui->checkWindowTitleComboBox->setFont(customFont);
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
@@ -14649,6 +14659,8 @@ void QKeyMapper::resetFontSize()
         ui->settingNameLineEdit->setFont(customFont);
         ui->processLineEdit->setFont(customFont);
         ui->windowTitleLineEdit->setFont(customFont);
+        ui->checkProcessComboBox->setFont(customFont);
+        ui->checkWindowTitleComboBox->setFont(customFont);
         ui->descriptionLineEdit->setFont(customFont);
         ui->languageComboBox->setFont(customFont);
         ui->notificationComboBox->setFont(customFont);
@@ -15305,8 +15317,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
-        ui->processCheckBox->setEnabled(true);
-        ui->titleCheckBox->setEnabled(true);
+        // ui->processCheckBox->setEnabled(true);
+        // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
@@ -16849,8 +16861,8 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
-        ui->processCheckBox->setEnabled(true);
-        ui->titleCheckBox->setEnabled(true);
+        // ui->processCheckBox->setEnabled(true);
+        // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);

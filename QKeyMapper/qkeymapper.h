@@ -928,7 +928,7 @@ private:
     bool checkSettingsFileNeedtoConvert(void);
     void convertSettingsFile(void);
 #endif
-    int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
+    // int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle);
     // int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchSavedSettings(const QString &processpath, const QString &windowtitle);

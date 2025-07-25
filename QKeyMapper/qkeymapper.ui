@@ -483,38 +483,6 @@
       </rect>
      </property>
     </widget>
-    <widget class="QCheckBox" name="titleCheckBox">
-     <property name="geometry">
-      <rect>
-       <x>100</x>
-       <y>150</y>
-       <width>81</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Title</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="processCheckBox">
-     <property name="geometry">
-      <rect>
-       <x>100</x>
-       <y>120</y>
-       <width>81</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Process</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
     <widget class="QLineEdit" name="windowTitleLineEdit">
      <property name="geometry">
       <rect>
