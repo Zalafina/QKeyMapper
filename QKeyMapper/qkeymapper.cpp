@@ -12095,7 +12095,11 @@ void QKeyMapper::initPopupMessage()
     m_PopupMessageLabel->setAlignment(Qt::AlignCenter);
 
     m_PopupMessageAnimation = new QPropertyAnimation(m_PopupMessageLabel, "windowOpacity", this);
-    QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, m_PopupMessageLabel, &QLabel::hide);
+    // QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, m_PopupMessageLabel, &QLabel::hide);
+    QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, this, [this]() {
+        m_PopupMessageLabel->hide();
+        m_PopupMessageLabel->clear();
+    });
 }
 
 void QKeyMapper::initPushLevelSlider()
@@ -16621,7 +16625,13 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     m_IconLabel->hide();
 
     // Config animations
-    QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, &QWidget::hide);
+    // QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, &QWidget::hide);
+    QObject::connect(m_StopAnimation, &QPropertyAnimation::finished, this, [this]() {
+        this->hide();
+        m_IconLabel->clear();
+        m_TextLabel->clear();
+    });
+
     QObject::connect(&m_Timer, &QTimer::timeout, this, &QPopupNotification::hideNotification);
     m_Timer.setSingleShot(true);
 }
@@ -16630,6 +16640,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
 {
     m_StartAnimation->stop();
     m_StopAnimation->stop();
+    m_IconLabel->clear();
+    m_TextLabel->clear();
     hide(); // Hide the window before updating content
 
     if (options.displayDuration < 0 || options.position == NOTIFICATION_POSITION_NONE) {
@@ -16763,6 +16775,8 @@ void QPopupNotification::hideNotification()
         m_StopAnimation->start(QAbstractAnimation::KeepWhenStopped);
     }
     else {
+        m_IconLabel->clear();
+        m_TextLabel->clear();
         hide();
     }
 }
