@@ -16902,6 +16902,16 @@ void QKeyMapper::on_removeSettingButton_clicked()
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QStringList groups = settingFile.childGroups();
     if (groups.contains(settingSelectStr)) {
+
+        QString message = tr("Are you sure you want to remove the setting \"%1\"?").arg(settingSelectStr);
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                   QMessageBox::Yes | QMessageBox::No,
+                                                                   QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+            // User cancelled, don't remove
+            return;
+        }
+
         settingFile.remove(settingSelectStr);
         ui->settingselectComboBox->removeItem(currentSettingIndex);
         m_SettingSelectListWithoutDescription.removeAt(currentSettingIndex);
