@@ -939,7 +939,9 @@ void QKeyMapper::matchForegroundWindow()
 
         MatchResult matchResult = MatchResult::NoMatch;
         QString windowTitle;
+        QString processName;
         QString filename;
+        QString ProcessPath;
         HWND hwnd = GetForegroundWindow();
         TCHAR titleBuffer[MAX_PATH];
         memset(titleBuffer, 0x00, sizeof(titleBuffer));
@@ -965,7 +967,6 @@ void QKeyMapper::matchForegroundWindow()
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
         if (resultLength){
             windowTitle = QString::fromWCharArray(titleBuffer);
-            QString ProcessPath;
             getProcessInfoFromHWND( hwnd, ProcessPath);
 
             if (ProcessPath.isEmpty()) {
@@ -998,13 +999,13 @@ void QKeyMapper::matchForegroundWindow()
             }
 
             if (false == windowTitle.isEmpty()){
-                // QFileInfo fileinfo(ProcessPath);
-                // filename = fileinfo.fileName();
-                filename = ProcessPath;
+                QFileInfo fileinfo(ProcessPath);
+                filename = fileinfo.fileName();
+                processName = ProcessPath;
             }
 
-            if (filename.isEmpty() != true) {
-                QString autoMatchSettingGroup = matchAutoStartSaveSettings(filename, windowTitle);
+            if (processName.isEmpty() != true) {
+                QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle);
 
                 if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
                     QString curSettingSelectStr;
@@ -1041,16 +1042,16 @@ void QKeyMapper::matchForegroundWindow()
                 // Check for process name match
                 if (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty()) {
                     if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
-                        processMatched = (m_MapProcessInfo.FileName == filename);
+                        processMatched = (m_MapProcessInfo.FileName == processName);
                     }
                     else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
-                        processMatched = filename.contains(m_MapProcessInfo.FileName);
+                        processMatched = processName.contains(m_MapProcessInfo.FileName);
                     }
                     else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
-                        processMatched = filename.startsWith(m_MapProcessInfo.FileName);
+                        processMatched = processName.startsWith(m_MapProcessInfo.FileName);
                     }
                     else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
-                        processMatched = filename.endsWith(m_MapProcessInfo.FileName);
+                        processMatched = processName.endsWith(m_MapProcessInfo.FileName);
                     }
                 }
                 else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
@@ -1153,6 +1154,7 @@ void QKeyMapper::matchForegroundWindow()
                     qDebug().nospace() << "[matchForegroundWindow]" << " MatchResult = " << static_cast<int>(matchResult) << "," << " KeyMapStatus need to change [" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << "] -> [" << keymapstatusEnum.valueToKey(KEYMAP_MAPPING_MATCHED) << "]" << ", ForegroundWindow: " << windowTitle << "(" << filename << ")";
                     qDebug().nospace() << "[matchForegroundWindow]" << " MatchProcessIndex = " << matchProcessIndex << "," << " MatchWindowTitleIndex = " << matchWindowTitleIndex;
                     qDebug().nospace() << "[matchForegroundWindow]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
+                    qDebug().nospace() << "[matchForegroundWindow]" << " ProcessPath = " << ProcessPath;
                     qDebug().nospace() << "[matchForegroundWindow]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
                     qDebug().nospace() << "[matchForegroundWindow]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
                     qDebug().nospace() << "[matchForegroundWindow]" << " isToolbarWindow = " << isToolbarWindow;
@@ -1207,6 +1209,7 @@ void QKeyMapper::matchForegroundWindow()
                 qDebug().nospace() << "[matchForegroundWindow]" << " MatchResult = " << static_cast<int>(matchResult) << "," << " KeyMapStatus need to change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") " << "ForegroundWindow: " << windowTitle << "(" << filename << ")";
                 qDebug().nospace() << "[matchForegroundWindow]" << " MatchProcessIndex = " << matchProcessIndex << "," << " MatchWindowTitleIndex = " << matchWindowTitleIndex;
                 qDebug().nospace() << "[matchForegroundWindow]" << " ProcessInfo.FileName = " << m_MapProcessInfo.FileName << "," << " ProcessInfo.WindowTitle = " << m_MapProcessInfo.WindowTitle;
+                qDebug().nospace() << "[matchForegroundWindow]" << " ProcessPath = " << ProcessPath;
                 qDebug().nospace() << "[matchForegroundWindow]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
                 qDebug().nospace() << "[matchForegroundWindow]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
                 qDebug().nospace() << "[matchForegroundWindow]" << " isToolbarWindow = " << isToolbarWindow;
@@ -15496,6 +15499,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->settingNameLineEdit->setText(windowTitle);
         ui->processLineEdit->setText(ProcessPath);
         ui->windowTitleLineEdit->setText(windowTitle);
+        ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+        ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
 
         switchToWindowInfoTab();
     }
