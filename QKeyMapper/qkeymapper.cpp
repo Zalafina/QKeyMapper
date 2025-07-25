@@ -15370,7 +15370,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         }
 #endif
 
-        QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
+        // QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
         QString windowTitle = ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text();
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
         QString ProcessPath;
@@ -15413,6 +15413,9 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[on_processinfoTable_doubleClicked]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
+                switchToWindowInfoTab();
+                QString message = tr("The current selected setting is already \"%1\"").arg(curSettingSelectStr);
+                QKeyMapper::getInstance()->showInformationPopup(message);
                 return;
             }
         }
@@ -15490,7 +15493,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->iconLabel->setPixmap(IconPixmap);
         ui->processLineEdit->setToolTip(ProcessPath);
 
-        ui->settingNameLineEdit->setText(filename);
+        ui->settingNameLineEdit->setText(windowTitle);
         ui->processLineEdit->setText(ProcessPath);
         ui->windowTitleLineEdit->setText(windowTitle);
 
