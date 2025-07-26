@@ -6737,6 +6737,18 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
 
         QString filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
         QString windowtitleString = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
+        bool filepathNeedMatch = false;
+        bool windowtitleNeedMatch = false;
+        if (!filepathString.isEmpty()) {
+            filepathNeedMatch = true;
+        }
+        if (!windowtitleString.isEmpty()) {
+            windowtitleNeedMatch = true;
+        }
+
+        if (!filepathNeedMatch && !windowtitleNeedMatch) {
+            continue; // Skip groups that don't require matching
+        }
 
         // Priority 1: Exact match for both processpath and windowtitle
         if (processpath == filepathString && windowtitle == windowtitleString) {
@@ -15434,51 +15446,6 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
 
-#if 0
-        QString filename = ui->processinfoTable->item(index.row(), 0)->text();
-        QString windowTitle = ui->processinfoTable->item(index.row(), 2)->text();
-
-        int checksaveindex = checkSaveSettings(filename, windowTitle);
-        if (TITLESETTING_INDEX_ANYTITLE < checksaveindex && checksaveindex <= TITLESETTING_INDEX_MAX) {
-            QString loadSettingSelectStr = filename + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(checksaveindex);
-            // QString curSettingSelectStr = ui->settingselectComboBox->currentText();
-            QString curSettingSelectStr;
-            int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
-            if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
-                curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().noquote().nospace() << "[on_processinfoTable_doubleClicked]" << "Doubleclick to load setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
-#endif
-            }
-            if (curSettingSelectStr != loadSettingSelectStr) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] "<< "Setting Check Matched! Load setting -> [" << loadSettingSelectStr << "]";
-#endif
-                loadSetting_flag = true;
-                QString loadresult = loadKeyMapSetting(loadSettingSelectStr);
-                ui->settingNameLineEdit->setText(loadresult);
-                Q_UNUSED(loadresult)
-                loadSetting_flag = false;
-
-                if (loadresult == loadSettingSelectStr) {
-                    switchToWindowInfoTab();
-                    return;
-                }
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[on_processinfoTable_doubleClicked]" << "Current setting select is already the same ->" << curSettingSelectStr;
-#endif
-            }
-        }
-        else {
-            ui->settingselectComboBox->setCurrentText(QString());
-            ui->descriptionLineEdit->clear();
-        }
-#endif
-
         // QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
         QString windowTitle = ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text();
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
@@ -15491,6 +15458,9 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         if (loadSettingSelectStr.isEmpty()) {
             ui->settingselectComboBox->setCurrentText(QString());
             ui->descriptionLineEdit->clear();
+            ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->settingNameLineEdit->setText(windowTitle);
         }
         else {
             QString curSettingSelectStr;
@@ -15514,18 +15484,22 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 loadSetting_flag = false;
 
                 if (loadresult == loadSettingSelectStr) {
-                    switchToWindowInfoTab();
-                    return;
+                    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
+                        switchToWindowInfoTab();
+                        return;
+                    }
                 }
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[on_processinfoTable_doubleClicked]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
-                switchToWindowInfoTab();
-                QString message = tr("The current selected setting is already \"%1\"").arg(curSettingSelectStr);
-                QKeyMapper::getInstance()->showInformationPopup(message);
-                return;
+                if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
+                    switchToWindowInfoTab();
+                    QString message = tr("The current selected setting is already \"%1\"").arg(curSettingSelectStr);
+                    QKeyMapper::getInstance()->showInformationPopup(message);
+                    return;
+                }
             }
         }
 
@@ -15602,11 +15576,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->iconLabel->setPixmap(IconPixmap);
         ui->processLineEdit->setToolTip(ProcessPath);
 
-        ui->settingNameLineEdit->setText(windowTitle);
         ui->processLineEdit->setText(ProcessPath);
         ui->windowTitleLineEdit->setText(windowTitle);
-        ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
-        ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
 
         switchToWindowInfoTab();
     }

@@ -92,9 +92,9 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     setWindowTitle(tr("Notification Advanced Setting"));
 
     /* Font Group */
+    ui->fontGroupBox->setTitle(tr("Font"));
     m_FontColorPicker->setButtonText(tr("FontColor"));
     m_FontColorPicker->setWindowTitle(tr("Select Notification Font Color"));
-    ui->fontGroupBox->setTitle(tr("Font"));
     ui->fontSizeLabel->setText(tr("Size"));
     ui->fontWeightLabel->setText(tr("Weight"));
     ui->fontItalicCheckBox->setText(tr("Italic"));
@@ -103,15 +103,16 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_BOLD,      tr("Bold"));
 
     /* Duration Group */
+    ui->durationGroupBox->setTitle(tr("Duration"));
     ui->displayDurationSpinBox->setSpecialValueText(tr("Undisappear"));
     ui->durationLabel->setText(tr("DisplayDuration"));
     ui->fadeinDurationLabel->setText(tr("FadeIn"));
     ui->fadeoutDurationLabel->setText(tr("FadeOut"));
 
     /* Border Group */
+    ui->borderGroupBox->setTitle(tr("Border"));
     m_BackgroundColorPicker->setButtonText(tr("BGColor"));
     m_BackgroundColorPicker->setWindowTitle(tr("Select Notification Background Color"));
-    ui->borderGroupBox->setTitle(tr("Border"));
     ui->borderRadiusLabel->setText(tr("Radius"));
     ui->paddingLabel->setText(tr("Padding"));
     ui->opacityLabel->setText(tr("Opacity"));
