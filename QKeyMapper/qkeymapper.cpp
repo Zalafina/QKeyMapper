@@ -18052,7 +18052,8 @@ void QKeyMapper::on_CategoryFilterComboBox_currentTextChanged(const QString &tex
 
 void QKeyMapper::on_restoreProcessPathButton_clicked()
 {
-    if (!m_MapProcessInfo.FilePath.isEmpty()) {
+    if (!m_MapProcessInfo.FilePath.isEmpty()
+        && ui->processLineEdit->text() != m_MapProcessInfo.FilePath) {
         QString message = tr("Restore to absolute process path \"%1\"?").arg(m_MapProcessInfo.FilePath);
         QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
                                                                    QMessageBox::Yes | QMessageBox::No,
