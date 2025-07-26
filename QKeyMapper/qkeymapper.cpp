@@ -6751,23 +6751,25 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
         }
 
         // Priority 1: Exact match for both processpath and windowtitle
-        if (processpath == filepathString && windowtitle == windowtitleString) {
+        if (filepathNeedMatch && windowtitleNeedMatch
+            && processpath == filepathString && windowtitle == windowtitleString) {
             return group;
         }
 
         // Priority 2: Exact processpath match and windowtitle contains windowtitleString
-        if (processpath == filepathString && windowtitle.contains(windowtitleString)) {
+        if (filepathNeedMatch && windowtitleNeedMatch
+            && processpath == filepathString && windowtitle.contains(windowtitleString)) {
             return group;
         }
 
         // Store candidates for lower priority matches
         // Priority 3: Only processpath matches (store first match)
-        if (processPathOnlyMatch.isEmpty() && processpath == filepathString) {
+        if (processPathOnlyMatch.isEmpty() && filepathNeedMatch && processpath == filepathString) {
             processPathOnlyMatch = group;
         }
 
         // Priority 4: Only windowtitle contains match (store first match)
-        if (windowTitleContainsMatch.isEmpty() && windowtitle.contains(windowtitleString)) {
+        if (windowTitleContainsMatch.isEmpty() && windowtitleNeedMatch && windowtitle.contains(windowtitleString)) {
             windowTitleContainsMatch = group;
         }
     }
