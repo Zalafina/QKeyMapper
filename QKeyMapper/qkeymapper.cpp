@@ -7611,21 +7611,12 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
     }
     else {
-        QString processString = ui->processLineEdit->text();
-        QString windowtitleString = ui->windowTitleLineEdit->text();
-
-        if (!processString.isEmpty()) {
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, processString);
-        }
-
-        if (!windowtitleString.isEmpty()) {
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, windowtitleString);
-        }
-
         if (!m_MapProcessInfo.FilePath.isEmpty()){
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
         }
 
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, ui->processLineEdit->text());
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX, ui->checkProcessComboBox->currentIndex());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_MATCH_INDEX, ui->checkWindowTitleComboBox->currentIndex());
 
