@@ -514,7 +514,7 @@ public:
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
-    static QString getProcessNameFromPID(DWORD dwProcessId);
+    static QString getProcessPathFromPID(DWORD dwProcessId);
     static HWND getHWND_byPID(DWORD dwProcessID);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
@@ -576,6 +576,8 @@ public:
     static QString getCurrentOriCombinationKeyText(void);
     static QString getSendTextString(void);
     static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
+    static int getMatchProcessNameIndex(void);
+    static int getMatchWindowTitleIndex(void);
     // static int getBurstPressTime(void);
     // static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
