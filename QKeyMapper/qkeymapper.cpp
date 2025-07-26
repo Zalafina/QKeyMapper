@@ -12590,11 +12590,8 @@ void QKeyMapper::updateSystemTrayDisplay()
     if (!description.isEmpty()) {
         TrayInfo = description;
     }
-    else if (!m_MapProcessInfo.WindowTitle.isEmpty()) {
-        TrayInfo = m_MapProcessInfo.WindowTitle;
-    }
     else {
-        TrayInfo = m_MapProcessInfo.FileName;
+        TrayInfo = ui->settingselectComboBox->currentText();
     }
 
     // Replace '&' with '&&&' to avoid issues in the system tray tooltip display such as "A&B"
