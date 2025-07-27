@@ -1739,6 +1739,27 @@ HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
     return Q_NULLPTR;
 }
 
+#if 0
+QIcon QKeyMapper::extractIconFromExecutable(const QString &exePath, int iconIndex, bool large)
+{
+    HICON hIcon = nullptr;
+    QIcon icon_fromexe;
+    UINT numIcons = ExtractIconExW((LPCWSTR)exePath.utf16(), iconIndex,
+                                   large ? &hIcon : nullptr,
+                                   large ? nullptr : &hIcon, 1);
+    if (numIcons > 0 && hIcon) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        icon_fromexe = QIcon(QPixmap::fromImage(QImage::fromHICON(hIcon)));
+#else
+        icon_fromexe = QIcon(QtWin::fromHICON(hIcon));
+#endif
+        DestroyIcon(hIcon);
+    }
+
+    return icon_fromexe;
+}
+#endif
+
 BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
 {
     //  It must be a visible Window
@@ -12336,7 +12357,7 @@ void QKeyMapper::updateProcessInfoDisplay()
     ui->processLineEdit->setText(m_MapProcessInfo.FileName);
     ui->windowTitleLineEdit->setText(m_MapProcessInfo.WindowTitle);
     if ((false == m_MapProcessInfo.FilePath.isEmpty())
-            && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
+        && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
         ui->processLineEdit->setToolTip(m_MapProcessInfo.FilePath);
 
         QFileIconProvider icon_provider;
@@ -12344,10 +12365,12 @@ void QKeyMapper::updateProcessInfoDisplay()
 
         if (false == fileicon.isNull()){
             m_MapProcessInfo.WindowIcon = fileicon;
-            QList<QSize> iconsizeList = fileicon.availableSizes();
 #ifdef DEBUG_LOGOUT_ON
+            QList<QSize> iconsizeList = fileicon.availableSizes();
             qDebug() << "[UpdateProcessInfo]" << "Icon availableSizes:" << iconsizeList;
 #endif
+
+#if 0
             QSize selectedSize = QSize(0, 0);
             QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
             for(const QSize &iconsize : std::as_const(iconsizeList)){
@@ -12379,7 +12402,14 @@ void QKeyMapper::updateProcessInfoDisplay()
             qDebug() << "[UpdateProcessInfo]" << "Pixmap devicePixelRatio is" << IconPixmap.devicePixelRatio();
 //            IconPixmap.save("selecticon.png");
 #endif
-            ui->iconLabel->setPixmap(IconPixmap);
+#endif
+
+            QPixmap scaled_pixmap = m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_WIDTH));
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[UpdateProcessInfo]" << " Icon Scaled(" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_WIDTH) << ") pixmap size: " << scaled_pixmap.size();
+#endif
+
+            ui->iconLabel->setPixmap(scaled_pixmap);
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
@@ -12388,13 +12418,16 @@ void QKeyMapper::updateProcessInfoDisplay()
         }
     }
     else{
+        ui->iconLabel->clear();
+#if 0
         if ((DEFAULT_NAME == ui->processLineEdit->text())
-                && (DEFAULT_TITLE == ui->windowTitleLineEdit->text())){
+            && (DEFAULT_TITLE == ui->windowTitleLineEdit->text())){
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[LoadSetting]" << "Default icon availableSizes:" << m_MapProcessInfo.WindowIcon.availableSizes();
 #endif
             ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
         }
+#endif
     }
 }
 

@@ -516,6 +516,7 @@ public:
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static QString getProcessPathFromPID(DWORD dwProcessId);
     static HWND getHWND_byPID(DWORD dwProcessID);
+    // static QIcon extractIconFromExecutable(const QString &exePath, int iconIndex = 0, bool large = true);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
