@@ -655,6 +655,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void mousePressEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *object, QEvent *event);
 
 public slots:
@@ -749,9 +750,9 @@ private slots:
     void on_addmapdataButton_clicked();
 
 public slots:
-    void on_moveupButton_clicked();
+    void selectedItemsMoveUp();
 
-    void on_movedownButton_clicked();
+    void selectedItemsMoveDown();
 
     void on_addTabButton_clicked();
 

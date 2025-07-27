@@ -5217,11 +5217,13 @@ void QKeyMapper::showEvent(QShowEvent *event)
 
         QTimer::singleShot(100, this, [=]() {
             if (m_KeyMapStatus == KEYMAP_IDLE){
+                QWidget *focused = QApplication::focusWidget();
+                if (focused && focused != this) {
+                    focused->clearFocus();
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[QKeyMapper::showEvent]" << "Set and Clear Focus.";
+                    qDebug() << "[QKeyMapper::showEvent]" << "Clear initial Focus.";
 #endif
-                m_KeyMappingDataTable->setFocus();
-                m_KeyMappingDataTable->clearFocus();
+                }
             }
         });
     }
@@ -5455,6 +5457,18 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
     }
 
     QDialog::keyPressEvent(event);
+}
+
+void QKeyMapper::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = QApplication::focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
 }
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
@@ -16168,7 +16182,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 }
 
-void QKeyMapper::on_moveupButton_clicked()
+void QKeyMapper::selectedItemsMoveUp()
 {
     if (isMappingDataTableFiltered()) {
         QString message;
@@ -16223,7 +16237,7 @@ void QKeyMapper::on_moveupButton_clicked()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    QString debugmessage = QString("[on_moveupButton_clicked] %1: topRow(%2), bottomRow(%3)").arg(move_to_top?"MoveTop":"MoveUp").arg(topRow).arg(bottomRow);
+    QString debugmessage = QString("[selectedItemsMoveUp] %1: topRow(%2), bottomRow(%3)").arg(move_to_top?"MoveTop":"MoveUp").arg(topRow).arg(bottomRow);
     qDebug().nospace().noquote() << debugmessage;
 #endif
 
@@ -16257,7 +16271,7 @@ void QKeyMapper::on_moveupButton_clicked()
 #endif
 }
 
-void QKeyMapper::on_movedownButton_clicked()
+void QKeyMapper::selectedItemsMoveDown()
 {
     if (isMappingDataTableFiltered()) {
         QString message;
@@ -16312,7 +16326,7 @@ void QKeyMapper::on_movedownButton_clicked()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    QString debugmessage = QString("[on_movedownButton_clicked] %1: topRow(%2), bottomRow(%3)").arg(move_to_bottom?"MoveBottom":"MoveDown").arg(topRow).arg(bottomRow);
+    QString debugmessage = QString("[selectedItemsMoveDown] %1: topRow(%2), bottomRow(%3)").arg(move_to_bottom?"MoveBottom":"MoveDown").arg(topRow).arg(bottomRow);
     qDebug().nospace().noquote() << debugmessage;
 #endif
 
@@ -17554,11 +17568,11 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
 
     if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
         if (event->key() == Qt::Key_Up) {
-            QKeyMapper::getInstance()->on_moveupButton_clicked();
+            QKeyMapper::getInstance()->selectedItemsMoveUp();
             return;
         }
         else if (event->key() == Qt::Key_Down) {
-            QKeyMapper::getInstance()->on_movedownButton_clicked();
+            QKeyMapper::getInstance()->selectedItemsMoveDown();
             return;
         }
         else if (event->key() == Qt::Key_Delete) {
