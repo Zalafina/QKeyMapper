@@ -263,10 +263,6 @@ int main(int argc, char *argv[])
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "Auto Start Mapping = TRUE, hide QKeyMapper window at startup.";
 #endif
-        /* Add show&hide to trigger QKeyMapper::showEvent */
-        /* m_MainWindowHandle will update by winId() at the startup with minimize to systemtray */
-        w.show();
-        w.hide();
     }
     else {
         w.show();

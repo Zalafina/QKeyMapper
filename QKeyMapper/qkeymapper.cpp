@@ -80,7 +80,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #ifdef USE_QTRANSLATOR
     m_custom_Translator(new QTranslator(this)),
 #endif
-    m_MainWindowHandle(NULL),
     m_TransParentHandle(NULL),
     m_TransParentWindowInitialX(0),
     m_TransParentWindowInitialY(0),
@@ -110,6 +109,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_instance = this;
     ui->setupUi(this);
+
+    // Explicitly create the native MainWindow HWND at startup.
+    // This ensures that even if the application is minimized to system tray at startup,
+    // and show() is never called, winId() will still return a valid HWND handle.
+    createWinId();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper()]" << "Mainwindow HWND ID ->" << reinterpret_cast<HWND>(winId());
+#endif
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
     QStyle* fusionStyle = QStyleFactory::create("Fusion");
@@ -235,6 +242,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         setControlCustomFont(m_SAO_FontName);
     }
 #endif
+
+    // Enable WTS session notifications
+    WTSRegisterSessionNotification(reinterpret_cast<HWND>(winId()), NOTIFY_FOR_THIS_SESSION);
 
 #ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     m_CheckGlobalSettingSwitchTimer.setInterval(CHECK_GLOBALSETTING_SWITCH_TIMEOUT);
@@ -534,7 +544,6 @@ QKeyMapper::~QKeyMapper()
     // Unregister WTS session notifications
     WTSUnRegisterSessionNotification(reinterpret_cast<HWND>(winId()));
 
-    m_MainWindowHandle = NULL;
     destoryTransparentWindow(m_TransParentHandle);
     m_TransParentHandle = NULL;
     destoryCrosshairWindow(m_CrosshairHandle);
@@ -5196,24 +5205,12 @@ void QKeyMapper::showEvent(QShowEvent *event)
 #endif
 
     if (false == event->spontaneous()) {
-        if (m_MainWindowHandle == NULL) {
-            m_MainWindowHandle = reinterpret_cast<HWND>(winId());
-            // Enable WTS session notifications
-            WTSRegisterSessionNotification(m_MainWindowHandle, NOTIFY_FOR_THIS_SESSION);
-
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::showEvent] m_MainWindowHandle ->" << m_MainWindowHandle;
+        QRect parentRect = geometry();
+        QString debugmessage = QString("[QKeyMapper::showEvent] Call QSimpleUpdater::setGeometryWithParentWidget(%1, %2)").arg(parentRect.x()).arg(parentRect.y());
+        qDebug().noquote().nospace() << debugmessage;
 #endif
-        }
-
-        if (m_MainWindowHandle != NULL) {
-#ifdef DEBUG_LOGOUT_ON
-            QRect parentRect = geometry();
-            QString debugmessage = QString("[QKeyMapper::showEvent] Call QSimpleUpdater::setGeometryWithParentWidget(%1, %2)").arg(parentRect.x()).arg(parentRect.y());
-            qDebug().noquote().nospace() << debugmessage;
-#endif
-            QSimpleUpdater::getInstance()->setGeometryWithParentWidget(this);
-        }
+        QSimpleUpdater::getInstance()->setGeometryWithParentWidget(this);
 
         QTimer::singleShot(100, this, [=]() {
             if (m_KeyMapStatus == KEYMAP_IDLE){
@@ -5286,13 +5283,7 @@ void QKeyMapper::changeEvent(QEvent *event)
     {
         QTimer::singleShot(0, this, SLOT(WindowStateChangedProc()));
     }
-    else if (event->type() == QEvent::WinIdChange)
-    {
-        m_MainWindowHandle = reinterpret_cast<HWND>(winId());
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::changeEvent]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
-#endif
-    }
+
     QDialog::changeEvent(event);
 }
 
@@ -12456,14 +12447,9 @@ void QKeyMapper::updateProcessInfoDisplay()
 
 void QKeyMapper::showQKeyMapperWindowToTop()
 {
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[showQKeyMapperWindowToTop]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
-#endif
     /* BringWindowToTopEx() may cause OBS program registered shortcut be invalid. >>> */
-    if (m_MainWindowHandle != NULL) {
-        // BringWindowToTopEx(m_MainWindowHandle);
-        SetWindowPos(m_MainWindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    }
+    // BringWindowToTopEx(reinterpret_cast<HWND>(winId()));
+    SetWindowPos(reinterpret_cast<HWND>(winId()), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     /* BringWindowToTopEx() may cause OBS program registered shortcut be invalid. <<< */
     showNormal();
     activateWindow();
@@ -12497,12 +12483,6 @@ void QKeyMapper::switchShowHide()
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
 #endif
-        if (NULL == m_MainWindowHandle) {
-            m_MainWindowHandle = reinterpret_cast<HWND>(winId());
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::switchShowHide]" << "m_MainWindowHandle ->" << m_MainWindowHandle;
-#endif
-        }
 
         if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
             move(m_LastWindowPosition); // Restore the position before showing

@@ -1078,7 +1078,6 @@ private:
 #ifdef USE_QTRANSLATOR
     QTranslator *m_custom_Translator;
 #endif
-    HWND m_MainWindowHandle;
     HWND m_TransParentHandle;
     int m_TransParentWindowInitialX;
     int m_TransParentWindowInitialY;
