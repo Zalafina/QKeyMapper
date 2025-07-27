@@ -5484,42 +5484,24 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
     Q_UNUSED(mappingstartmodeEnum);
 
     if (KEYMAP_IDLE == m_KeyMapStatus){
-        bool fileNameCheckOK = true;
-        bool windowTitleCheckOK = true;
-        bool fileNameExist = !m_MapProcessInfo.FileName.isEmpty();
-        bool windowTitleExist = !m_MapProcessInfo.WindowTitle.isEmpty();
-
-        if (ui->checkProcessComboBox->currentIndex() != WINDOWINFO_MATCH_INDEX_IGNORE && false == fileNameExist) {
-            fileNameCheckOK = false;
-        }
-
-        if (ui->checkWindowTitleComboBox->currentIndex() != WINDOWINFO_MATCH_INDEX_IGNORE && false == windowTitleExist) {
-            windowTitleCheckOK = false;
-        }
-
-        if (true == fileNameCheckOK && true == windowTitleCheckOK){
 #ifdef CYCLECHECKTIMER_ENABLED
-            m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
+        m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
 #endif
-            ui->keymapButton->setText(tr("MappingStop"));
-            m_KeyMapStatus = KEYMAP_CHECKING;
-            startWinEventHook();
+        ui->keymapButton->setText(tr("MappingStop"));
+        m_KeyMapStatus = KEYMAP_CHECKING;
+        startWinEventHook();
 #ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-            s_CycleCheckLoopCount = 0;
+        s_CycleCheckLoopCount = 0;
 #else
-            m_CheckGlobalSettingSwitchTimer.start();
+        m_CheckGlobalSettingSwitchTimer.start();
 #endif
-            updateSystemTrayDisplay();
-            emit updateLockStatus_Signal();
-            startKeyMap = true;
+        updateSystemTrayDisplay();
+        emit updateLockStatus_Signal();
+        startKeyMap = true;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[MappingStart]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") -> " << mappingstartmodeEnum.valueToKey(startmode);
+        qDebug().nospace().noquote() << "[MappingStart]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") -> " << mappingstartmodeEnum.valueToKey(startmode);
 #endif
-        }
-        else{
-            showFailurePopup(tr("Please doubleclick process info table to select valid processinfo for key mapping."));
-        }
     }
     else{
 #ifdef CYCLECHECKTIMER_ENABLED
