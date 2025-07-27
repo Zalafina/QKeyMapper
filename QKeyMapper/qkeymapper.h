@@ -833,6 +833,8 @@ private slots:
 
     void on_restoreProcessPathButton_clicked();
 
+    void on_processinfoTable_clicked(const QModelIndex &index);
+
 private:
     // Helper methods for saving/restoring category filter state
     QString getCurrentCategoryFilter() const;

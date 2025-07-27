@@ -15472,7 +15472,7 @@ void QKeyMapper::HotKeyForMappingReleased(const QString &keyseqstr, const Qt::Ke
 void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 {
     if ((KEYMAP_IDLE == m_KeyMapStatus)
-            && (true == ui->processinfoTable->isEnabled())){
+        && (true == ui->processinfoTable->isEnabled())){
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[SelectProcessInfo]" << "Table DoubleClicked [" << index.row() << "] " << ui->processinfoTable->item(index.row(), 0)->text() << ", " << ui->processinfoTable->item(index.row(), 2)->text();
 #endif
@@ -18076,6 +18076,19 @@ void QKeyMapper::on_restoreProcessPathButton_clicked()
         }
 
         ui->processLineEdit->setText(m_MapProcessInfo.FilePath);
+    }
+}
+
+void QKeyMapper::on_processinfoTable_clicked(const QModelIndex &index)
+{
+    Q_UNUSED(index);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::on_processinfoTable_clicked] clicked.";
+#endif
+
+    QWidget *focused = QApplication::focusWidget();
+    if (focused && focused != this) {
+        focused->clearFocus();
     }
 }
 
