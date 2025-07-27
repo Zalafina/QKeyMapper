@@ -6632,18 +6632,19 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
                 return false;
             }
 
-            switch (matchProcessIndex) {
-                case WINDOWINFO_MATCH_INDEX_EQUALS:
-                    return processpath == processNameString;
-                case WINDOWINFO_MATCH_INDEX_CONTAINS:
-                    return processpath.contains(processNameString);
-                case WINDOWINFO_MATCH_INDEX_STARTSWITH:
-                    return processpath.startsWith(processNameString);
-                case WINDOWINFO_MATCH_INDEX_ENDSWITH:
-                    return processpath.endsWith(processNameString);
-                default:
-                    return false;
+            if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                return processpath == processNameString;
             }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                return processpath.contains(processNameString);
+            }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                return processpath.startsWith(processNameString);
+            }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                return processpath.endsWith(processNameString);
+            }
+            return false;
         };
 
         // Helper function to check window title matching
@@ -6652,18 +6653,19 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
                 return false;
             }
 
-            switch (matchWindowTitleIndex) {
-                case WINDOWINFO_MATCH_INDEX_EQUALS:
-                    return windowtitle == windowTitleString;
-                case WINDOWINFO_MATCH_INDEX_CONTAINS:
-                    return windowtitle.contains(windowTitleString);
-                case WINDOWINFO_MATCH_INDEX_STARTSWITH:
-                    return windowtitle.startsWith(windowTitleString);
-                case WINDOWINFO_MATCH_INDEX_ENDSWITH:
-                    return windowtitle.endsWith(windowTitleString);
-                default:
-                    return false;
+            if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                return windowtitle == windowTitleString;
             }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                return windowtitle.contains(windowTitleString);
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                return windowtitle.startsWith(windowTitleString);
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                return windowtitle.endsWith(windowTitleString);
+            }
+            return false;
         };
 
         // Priority 1: Both process and window title need to match
