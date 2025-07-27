@@ -6584,7 +6584,12 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
     QStringList groups = settingFile.childGroups();
     groups.removeOne(GROUPNAME_GLOBALSETTING);
 
+    // Store candidates for fallback matching (lower priority)
+    QString processOnlyMatch;
+    QString windowTitleOnlyMatch;
+
     for (const QString &group : std::as_const(groups)) {
+        // Skip groups without autoStartMapping enabled
         Qt::CheckState autoStartMappingChecked = Qt::Unchecked;
         QVariant autoStartMappingChecked_Var;
         if (readSaveSettingData(group, AUTOSTARTMAPPING_CHECKED, autoStartMappingChecked_Var)) {
@@ -6595,9 +6600,8 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
         }
 
         QString tempSettingSelectStr = group + "/";
-        bool process_matched = false;
-        bool windowtitle_matched = false;
 
+        // Get match indices
         bool ok = false;
         int matchProcessIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX).toInt(&ok);
         if (!ok || matchProcessIndex < WINDOWINFO_MATCH_INDEX_MIN || matchProcessIndex > WINDOWINFO_MATCH_INDEX_MAX) {
@@ -6610,78 +6614,91 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
             matchWindowTitleIndex = WINDOWINFO_MATCH_INDEX_DEFAULT;
         }
 
+        // Get match strings
         QString processNameString = settingFile.value(tempSettingSelectStr + PROCESSINFO_FILENAME).toString();
         QString windowTitleString = settingFile.value(tempSettingSelectStr + PROCESSINFO_WINDOWTITLE).toString();
+
+        // Determine what needs to match
         bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
         bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
 
         if (!matchProcess && !matchWindowTitle) {
-            continue;
+            continue; // Skip groups that don't require matching
         }
 
-        if (processpath.isEmpty() || processNameString.isEmpty()) {
-            process_matched = false;
-        }
-        else {
-            if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
-                process_matched = true;
+        // Helper function to check process matching
+        auto checkProcessMatch = [&]() -> bool {
+            if (processpath.isEmpty() || processNameString.isEmpty()) {
+                return false;
             }
-            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
-                if (processpath == processNameString) {
-                    process_matched = true;
-                }
-            }
-            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
-                if (processpath.contains(processNameString)) {
-                    process_matched = true;
-                }
-            }
-            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
-                if (processpath.startsWith(processNameString)) {
-                    process_matched = true;
-                }
-            }
-            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
-                if (processpath.endsWith(processNameString)) {
-                    process_matched = true;
-                }
-            }
-        }
 
-        if (windowtitle.isEmpty() || windowTitleString.isEmpty()) {
-            windowtitle_matched = false;
-        }
-        else {
-            if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
-                windowtitle_matched = true;
+            switch (matchProcessIndex) {
+                case WINDOWINFO_MATCH_INDEX_EQUALS:
+                    return processpath == processNameString;
+                case WINDOWINFO_MATCH_INDEX_CONTAINS:
+                    return processpath.contains(processNameString);
+                case WINDOWINFO_MATCH_INDEX_STARTSWITH:
+                    return processpath.startsWith(processNameString);
+                case WINDOWINFO_MATCH_INDEX_ENDSWITH:
+                    return processpath.endsWith(processNameString);
+                default:
+                    return false;
             }
-            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
-                if (windowtitle == windowTitleString) {
-                    windowtitle_matched = true;
-                }
+        };
+
+        // Helper function to check window title matching
+        auto checkWindowTitleMatch = [&]() -> bool {
+            if (windowtitle.isEmpty() || windowTitleString.isEmpty()) {
+                return false;
             }
-            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
-                if (windowtitle.contains(windowTitleString)) {
-                    windowtitle_matched = true;
-                }
+
+            switch (matchWindowTitleIndex) {
+                case WINDOWINFO_MATCH_INDEX_EQUALS:
+                    return windowtitle == windowTitleString;
+                case WINDOWINFO_MATCH_INDEX_CONTAINS:
+                    return windowtitle.contains(windowTitleString);
+                case WINDOWINFO_MATCH_INDEX_STARTSWITH:
+                    return windowtitle.startsWith(windowTitleString);
+                case WINDOWINFO_MATCH_INDEX_ENDSWITH:
+                    return windowtitle.endsWith(windowTitleString);
+                default:
+                    return false;
             }
-            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
-                if (windowtitle.startsWith(windowTitleString)) {
-                    windowtitle_matched = true;
-                }
-            }
-            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
-                if (windowtitle.endsWith(windowTitleString)) {
-                    windowtitle_matched = true;
-                }
+        };
+
+        // Priority 1: Both process and window title need to match
+        if (matchProcess && matchWindowTitle) {
+            if (checkProcessMatch() && checkWindowTitleMatch()) {
+                return group;
             }
         }
 
-        if (process_matched && windowtitle_matched) {
-            return group;
+        // Store candidates for lower priority matches
+        // Priority 2: Only process matches (store first match)
+        if (processOnlyMatch.isEmpty() && matchProcess && !matchWindowTitle) {
+            if (checkProcessMatch()) {
+                processOnlyMatch = group;
+            }
+        }
+
+        // Priority 3: Only window title matches (store first match)
+        if (windowTitleOnlyMatch.isEmpty() && !matchProcess && matchWindowTitle) {
+            if (checkWindowTitleMatch()) {
+                windowTitleOnlyMatch = group;
+            }
         }
     }
 
+    // Return fallback matches in priority order
+    if (!processOnlyMatch.isEmpty()) {
+        return processOnlyMatch;
+    }
+
+    if (!windowTitleOnlyMatch.isEmpty()) {
+        return windowTitleOnlyMatch;
+    }
+
+    // No match found
     return QString();
 }
 
