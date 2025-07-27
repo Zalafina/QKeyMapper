@@ -5552,6 +5552,15 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
         changeControlEnableStatus(false);
+
+        QString curSettingSelectStr;
+        int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+        if (GLOBALSETTING_INDEX < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+            curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+            if (ui->settingNameLineEdit->text() != curSettingSelectStr) {
+                ui->settingNameLineEdit->setText(curSettingSelectStr);
+            }
+        }
     }
     else{
         changeControlEnableStatus(true);
