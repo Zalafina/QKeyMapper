@@ -1284,8 +1284,13 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 void QKeyMapper::updateHWNDListProc()
 {
     s_hWndList.clear();
-    if (false == m_MapProcessInfo.WindowTitle.isEmpty()
-        && false == m_MapProcessInfo.FileName.isEmpty()) {
+    QString processNameString = m_MapProcessInfo.FileName;
+    QString windowTitleString = m_MapProcessInfo.WindowTitle;
+    int matchProcessIndex = ui->checkProcessComboBox->currentIndex();
+    int matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+    bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
+    bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
+    if (matchProcess || matchWindowTitle) {
         EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsBgProc, 0);
     }
 
@@ -2052,29 +2057,18 @@ BOOL QKeyMapper::EnumWindowsBgProc(HWND hWnd, LPARAM lParam)
 
 void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
 {
-    bool fileNameCheckOK = true;
-    bool windowTitleCheckOK = true;
-    QString fileNameString = QKeyMapper::getInstance()->m_MapProcessInfo.FileName;
+    QString processNameString = QKeyMapper::getInstance()->m_MapProcessInfo.FileName;
     QString windowTitleString = QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle;
     int matchProcessIndex = getMatchProcessNameIndex();
     int matchWindowTitleIndex = getMatchWindowTitleIndex();
+    bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
+    bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
 
-    if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_IGNORE
-        && matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
+    if (!matchProcess && !matchWindowTitle) {
         return;
     }
 
-    if (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && fileNameString.isEmpty()) {
-        fileNameCheckOK = false;
-    }
-
-    if (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && windowTitleString.isEmpty()) {
-        windowTitleCheckOK = false;
-    }
-
-    if (true == fileNameCheckOK
-        && true == windowTitleCheckOK
-        && false == WindowText.isEmpty()){
+    if (false == WindowText.isEmpty()){
         DWORD dwProcessId = 0;
         GetWindowThreadProcessId(hWnd, &dwProcessId);
         QString processPath = getProcessPathFromPID(dwProcessId);
@@ -2084,26 +2078,26 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
         bool windowTitleMatched = false;
 
         // Check for process name match
-        if (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !fileNameString.isEmpty()) {
+        if (matchProcess) {
             if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
-                processMatched = (fileNameString == processPath);
+                processMatched = (processNameString == processPath);
             }
             else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
-                processMatched = processPath.contains(fileNameString);
+                processMatched = processPath.contains(processNameString);
             }
             else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
-                processMatched = processPath.startsWith(fileNameString);
+                processMatched = processPath.startsWith(processNameString);
             }
             else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
-                processMatched = processPath.endsWith(fileNameString);
+                processMatched = processPath.endsWith(processNameString);
             }
         }
-        else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
+        else {
             processMatched = true; // Treat as matched if process name check is ignored
         }
 
         // Check for window title match
-        if (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty()) {
+        if (matchWindowTitle) {
             if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
                 windowTitleMatched = (windowTitleString == WindowText);
             }
@@ -2117,25 +2111,25 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
                 windowTitleMatched = WindowText.endsWith(windowTitleString);
             }
         }
-        else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_IGNORE) {
+        else {
             windowTitleMatched = true; // Treat as matched if window title check is ignored
         }
 
         // Set matchResult based on the matching outcome
         bool hwndMatched = false;
-        if (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE) {
+        if (matchProcess && matchWindowTitle) {
             // Check both process name and window title
             if (processMatched && windowTitleMatched) {
                 hwndMatched = true;
             }
         }
-        else if (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE) {
+        else if (matchProcess) {
             // Check process name only
             if (processMatched) {
                 hwndMatched = true;
             }
         }
-        else if (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE) {
+        else if (matchWindowTitle) {
             // Check window title only
             if (windowTitleMatched) {
                 hwndMatched = true;
