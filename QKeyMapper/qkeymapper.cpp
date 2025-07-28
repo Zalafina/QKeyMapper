@@ -1797,6 +1797,53 @@ BOOL QKeyMapper::enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, L
     return TRUE; // Continue enumeration
 }
 
+// Static helper function to extract icon using traditional ExtractIconEx method
+// This serves as a fallback when resource enumeration fails or for simple icon extraction needs
+QIcon QKeyMapper::extractIconFromExecutable(const QString &filePath, int targetSize)
+{
+    QIcon result;
+
+    if (filePath.isEmpty() || !QFileInfo::exists(filePath)) {
+        return result;
+    }
+
+    std::wstring wFilePath = filePath.toStdWString();
+    HICON hLargeIcon = nullptr;
+    HICON hSmallIcon = nullptr;
+
+    // Extract both large and small icons from executable
+    if (ExtractIconExW(wFilePath.c_str(), 0, &hLargeIcon, &hSmallIcon, 1) > 0) {
+        // Choose appropriate icon based on target size
+        HICON selectedIcon = (targetSize > 32 && hLargeIcon) ? hLargeIcon : hSmallIcon;
+
+        if (selectedIcon) {
+            // Convert HICON to QPixmap
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(selectedIcon));
+#else
+            QPixmap pixmap = QtWin::fromHICON(selectedIcon);
+#endif
+
+            if (!pixmap.isNull()) {
+                result.addPixmap(pixmap);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[extractIconFromExecutable] Successfully extracted icon, pixmap size:" << pixmap.size();
+#endif
+            }
+        }
+
+        // Clean up icon handles
+        if (hLargeIcon) DestroyIcon(hLargeIcon);
+        if (hSmallIcon) DestroyIcon(hSmallIcon);
+    } else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractIconFromExecutable] Failed to extract icon from:" << filePath;
+#endif
+    }
+
+    return result;
+}
+
 QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int targetSize)
 {
     QIcon result;
@@ -1905,31 +1952,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[extractBestIconFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
 #endif
-
-        HICON hLargeIcon = nullptr;
-        HICON hSmallIcon = nullptr;
-
-        if (ExtractIconExW(wFilePath.c_str(), 0, &hLargeIcon, &hSmallIcon, 1) > 0) {
-            HICON selectedIcon = (targetSize > 32 && hLargeIcon) ? hLargeIcon : hSmallIcon;
-
-            if (selectedIcon) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(selectedIcon));
-#else
-                QPixmap pixmap = QtWin::fromHICON(selectedIcon);
-#endif
-
-                if (!pixmap.isNull()) {
-                    result.addPixmap(pixmap);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[extractBestIconFromExecutable] Fallback successful, pixmap size:" << pixmap.size();
-#endif
-                }
-            }
-
-            if (hLargeIcon) DestroyIcon(hLargeIcon);
-            if (hSmallIcon) DestroyIcon(hSmallIcon);
-        }
+        result = extractIconFromExecutable(filePath, targetSize);
     }
 
     return result;
@@ -2029,8 +2052,12 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             ProcessInfo.FilePath = ProcessPath;
 
             QIcon fileicon;
-            QFileIconProvider icon_provider;
-            fileicon = icon_provider.icon(QFileInfo(ProcessPath));
+            fileicon = extractIconFromExecutable(ProcessPath);
+
+            if (fileicon.isNull()) {
+                QFileIconProvider icon_provider;
+                fileicon = icon_provider.icon(QFileInfo(ProcessPath));
+            }
 
             if (fileicon.isNull()) {
                 HICON iconptr = (HICON)(LONG_PTR)GetClassLongPtr(hWnd, GCLP_HICON);
@@ -2094,6 +2121,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     return TRUE;
 }
 
+#if 0
 BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
 {
     Q_UNUSED(lParam);
@@ -2178,6 +2206,7 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
 
     return TRUE;
 }
+#endif
 
 BOOL QKeyMapper::DosPathToNtPath(LPTSTR pszDosPath, LPTSTR pszNtPath)
 {
@@ -8573,8 +8602,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         if (!filepathString.isEmpty()
             && QFileInfo::exists(filepathString)){
-            QFileIconProvider icon_provider;
-            QIcon fileicon = icon_provider.icon(QFileInfo(filepathString));
+            QIcon fileicon;
+            fileicon = extractIconFromExecutable(filepathString);
+
+            if (fileicon.isNull()) {
+                QFileIconProvider icon_provider;
+                fileicon = icon_provider.icon(QFileInfo(filepathString));
+            }
+
             if (!fileicon.isNull()) {
                 settingIcon = fileicon;
             }
