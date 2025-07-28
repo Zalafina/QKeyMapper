@@ -554,7 +554,7 @@ public:
     static QString unescapeSendTextForLoading(const QString &text);
 
     // unused enum all process function >>>
-    static void EnumProcessFunction(void);
+    // static void EnumProcessFunction(void);
     // unused enum all process function <<<
 
     static void DrawMousePoints(HWND hwnd, HDC hdc, int showMode);
