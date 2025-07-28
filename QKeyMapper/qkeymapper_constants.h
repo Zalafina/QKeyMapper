@@ -44,6 +44,7 @@ extern const int KEYMAPPINGDATATABLE_WIDE_LEFT;
 extern const int KEYMAPPINGDATATABLE_WIDE_WIDTH;
 extern const int KEYMAPPINGDATATABLE_TOP;
 extern const int KEYMAPPINGDATATABLE_HEIGHT;
+extern const int BEST_ICON_SIZE;
 extern const int DEFAULT_ICON_WIDTH;
 extern const int DEFAULT_ICON_HEIGHT;
 extern const int COMBOBOX_BLANK_ICON_WIDTH;

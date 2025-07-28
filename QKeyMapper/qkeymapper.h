@@ -256,6 +256,12 @@ struct KeyMappingTab_Info
     QList<MAP_KEYDATA> *KeyMappingData;
 };
 
+// Structure to pass data to the enumeration callback
+struct IconEnumData {
+    QList<QPair<HICON, int>> icons;  // icon handle and its size
+    HMODULE hModule;
+};
+
 class StyledDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
@@ -516,7 +522,8 @@ public:
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static QString getProcessPathFromPID(DWORD dwProcessId);
     static HWND getHWND_byPID(DWORD dwProcessID);
-    // static QIcon extractIconFromExecutable(const QString &exePath, int iconIndex = 0, bool large = true);
+    static BOOL CALLBACK enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
+    static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = BEST_ICON_SIZE);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
     static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);
@@ -941,6 +948,7 @@ private:
     // int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchSavedSettings(const QString &processpath, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
+
 public:
     void saveKeyMapSetting(void);
 private:

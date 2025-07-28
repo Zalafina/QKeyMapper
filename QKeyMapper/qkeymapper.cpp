@@ -1748,26 +1748,185 @@ HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
     return Q_NULLPTR;
 }
 
-#if 0
-QIcon QKeyMapper::extractIconFromExecutable(const QString &exePath, int iconIndex, bool large)
+BOOL QKeyMapper::enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam)
 {
-    HICON hIcon = nullptr;
-    QIcon icon_fromexe;
-    UINT numIcons = ExtractIconExW((LPCWSTR)exePath.utf16(), iconIndex,
-                                   large ? &hIcon : nullptr,
-                                   large ? nullptr : &hIcon, 1);
-    if (numIcons > 0 && hIcon) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        icon_fromexe = QIcon(QPixmap::fromImage(QImage::fromHICON(hIcon)));
-#else
-        icon_fromexe = QIcon(QtWin::fromHICON(hIcon));
-#endif
-        DestroyIcon(hIcon);
+    IconEnumData* pData = reinterpret_cast<IconEnumData*>(lParam);
+
+    HRSRC hRes = FindResourceW(hModule, lpName, lpType);
+    if (!hRes) {
+        return TRUE; // Continue enumeration
     }
 
-    return icon_fromexe;
-}
+    DWORD size = SizeofResource(hModule, hRes);
+    HGLOBAL hGlobal = LoadResource(hModule, hRes);
+    if (!hGlobal) {
+        return TRUE; // Continue enumeration
+    }
+
+    BYTE* pBytes = static_cast<BYTE*>(LockResource(hGlobal));
+    if (!pBytes) {
+        return TRUE; // Continue enumeration
+    }
+
+    // Create icon from resource data
+    HICON hIcon = CreateIconFromResourceEx(pBytes, size, TRUE, 0x00030000, 0, 0, 0);
+    if (hIcon) {
+        // Get icon size information
+        ICONINFOEX iconInfoEx = { sizeof(ICONINFOEX) };
+        if (GetIconInfoEx(hIcon, &iconInfoEx) && iconInfoEx.hbmColor) {
+            BITMAP bitmap;
+            if (GetObject(iconInfoEx.hbmColor, sizeof(bitmap), &bitmap) > 0) {
+                int iconSize = bitmap.bmWidth; // Assume square icons
+                pData->icons.append(qMakePair(hIcon, iconSize));
+
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[extractBestIconFromExecutable] Found icon: " << iconSize << "x" << iconSize << " (" << bitmap.bmBitsPixel << " bits)";
 #endif
+            } else {
+                DestroyIcon(hIcon); // Clean up if we can't get size info
+            }
+
+            // Clean up bitmap handles
+            if (iconInfoEx.hbmColor) DeleteObject(iconInfoEx.hbmColor);
+            if (iconInfoEx.hbmMask) DeleteObject(iconInfoEx.hbmMask);
+        } else {
+            DestroyIcon(hIcon); // Clean up if we can't get icon info
+        }
+    }
+
+    return TRUE; // Continue enumeration
+}
+
+QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int targetSize)
+{
+    QIcon result;
+
+    if (filePath.isEmpty() || !QFileInfo::exists(filePath)) {
+        return result;
+    }
+
+    std::wstring wFilePath = filePath.toStdWString();
+
+    // Load the executable as an image resource
+    HMODULE hModule = LoadLibraryExW(wFilePath.c_str(), NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+    if (!hModule) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractBestIconFromExecutable] Failed to load module:" << filePath;
+#endif
+        return result;
+    }
+
+    IconEnumData enumData;
+    enumData.hModule = hModule;
+
+    // Enumerate all icon resources
+    EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
+
+    // Find the best icon based on target size
+    HICON bestIcon = nullptr;
+    int bestSize = 0;
+    int bestIndex = -1;
+
+    for (int i = 0; i < enumData.icons.size(); ++i) {
+        int iconSize = enumData.icons[i].second;
+
+        // Selection logic: prefer icon that's closest to target size without exceeding it
+        // If no such icon exists, choose the smallest one that exceeds target size
+        if (!bestIcon) {
+            // First valid icon
+            bestIcon = enumData.icons[i].first;
+            bestSize = iconSize;
+            bestIndex = i;
+        } else if (iconSize <= targetSize && iconSize > bestSize) {
+            // Better fit within target size
+            bestIcon = enumData.icons[i].first;
+            bestSize = iconSize;
+            bestIndex = i;
+        } else if (bestSize > targetSize && iconSize < bestSize) {
+            // Smaller icon when current best exceeds target
+            bestIcon = enumData.icons[i].first;
+            bestSize = iconSize;
+            bestIndex = i;
+        } else if (iconSize == targetSize) {
+            // Perfect match
+            bestIcon = enumData.icons[i].first;
+            bestSize = iconSize;
+            bestIndex = i;
+            break;
+        }
+    }
+
+    if (bestIcon) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[extractBestIconFromExecutable] Selected icon size: " << bestSize << "x" << bestSize << " for target: " << targetSize << "x" << targetSize;
+#endif
+
+        // Convert HICON to QPixmap
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(bestIcon));
+#else
+        QPixmap pixmap = QtWin::fromHICON(bestIcon);
+#endif
+
+        if (!pixmap.isNull()) {
+            result.addPixmap(pixmap);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[extractBestIconFromExecutable] Successfully extracted icon, actual pixmap size: " << pixmap.size();
+            qDebug().nospace() << "[extractBestIconFromExecutable] QIcon availableSizes: " << result.availableSizes();
+#endif
+        }
+    }
+
+    // Clean up all icons except the one we used
+    for (int i = 0; i < enumData.icons.size(); ++i) {
+        if (i != bestIndex) {
+            DestroyIcon(enumData.icons[i].first);
+        }
+    }
+
+    // Clean up the selected icon after conversion to QPixmap
+    if (bestIcon) {
+        DestroyIcon(bestIcon);
+    }
+
+    // Free the loaded module
+    FreeLibrary(hModule);
+
+    // If resource enumeration failed, fallback to ExtractIconEx as backup
+    if (result.isNull()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractBestIconFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
+#endif
+
+        HICON hLargeIcon = nullptr;
+        HICON hSmallIcon = nullptr;
+
+        if (ExtractIconExW(wFilePath.c_str(), 0, &hLargeIcon, &hSmallIcon, 1) > 0) {
+            HICON selectedIcon = (targetSize > 32 && hLargeIcon) ? hLargeIcon : hSmallIcon;
+
+            if (selectedIcon) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(selectedIcon));
+#else
+                QPixmap pixmap = QtWin::fromHICON(selectedIcon);
+#endif
+
+                if (!pixmap.isNull()) {
+                    result.addPixmap(pixmap);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[extractBestIconFromExecutable] Fallback successful, pixmap size:" << pixmap.size();
+#endif
+                }
+            }
+
+            if (hLargeIcon) DestroyIcon(hLargeIcon);
+            if (hSmallIcon) DestroyIcon(hSmallIcon);
+        }
+    }
+
+    return result;
+}
 
 BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
 {
@@ -12374,50 +12533,29 @@ void QKeyMapper::updateProcessInfoDisplay()
         && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
         ui->processLineEdit->setToolTip(m_MapProcessInfo.FilePath);
 
-        QFileIconProvider icon_provider;
-        QIcon fileicon = icon_provider.icon(QFileInfo(m_MapProcessInfo.FilePath));
+        // Use the new icon extraction method, prefer extracting icon with specified size
+        QIcon fileicon;
+        fileicon = extractBestIconFromExecutable(m_MapProcessInfo.FilePath);
 
-        if (false == fileicon.isNull()){
+        if (fileicon.isNull()) {
+            // If the new method fails, fallback to the original QFileIconProvider method
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[UpdateProcessInfo]" << "New icon extraction failed, falling back to QFileIconProvider";
+#endif
+            QFileIconProvider icon_provider;
+            fileicon = icon_provider.icon(QFileInfo(m_MapProcessInfo.FilePath));
+        }
+
+        if (!fileicon.isNull()) {
             m_MapProcessInfo.WindowIcon = fileicon;
+        }
+
+        if (!m_MapProcessInfo.WindowIcon.isNull()) {
 #ifdef DEBUG_LOGOUT_ON
             QList<QSize> iconsizeList = fileicon.availableSizes();
             qDebug() << "[UpdateProcessInfo]" << "Icon availableSizes:" << iconsizeList;
 #endif
-
-#if 0
-            QSize selectedSize = QSize(0, 0);
-            QSize selectedSize_previous = QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT);
-            for(const QSize &iconsize : std::as_const(iconsizeList)){
-                if ((iconsize.width() >= DEFAULT_ICON_WIDTH)
-                        && (iconsize.height() >= DEFAULT_ICON_HEIGHT)){
-                    selectedSize = iconsize;
-                    break;
-                }
-                selectedSize_previous = iconsize;
-            }
-
-            if (selectedSize == QSize(0, 0)){
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[UpdateProcessInfo]" << "No available icon size, use previous icon size:" << selectedSize_previous;
-#endif
-                selectedSize = selectedSize_previous;
-            }
-            else if (selectedSize.width() > DEFAULT_ICON_WIDTH || selectedSize.height() > DEFAULT_ICON_HEIGHT) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[UpdateProcessInfo]" << "Icon size larger than default, use previous icon size:" << selectedSize_previous;
-#endif
-                selectedSize = selectedSize_previous;
-            }
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[UpdateProcessInfo]" << "Icon selectedSize is" << selectedSize;
-#endif
-            QPixmap IconPixmap = m_MapProcessInfo.WindowIcon.pixmap(selectedSize);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[UpdateProcessInfo]" << "Pixmap devicePixelRatio is" << IconPixmap.devicePixelRatio();
-//            IconPixmap.save("selecticon.png");
-#endif
-#endif
-
+            // Directly create pixmap from the extracted icon, as we have ensured the correct size
             QPixmap scaled_pixmap = m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_WIDTH));
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[UpdateProcessInfo]" << " Icon Scaled(" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_WIDTH) << ") pixmap size: " << scaled_pixmap.size();
@@ -12425,23 +12563,15 @@ void QKeyMapper::updateProcessInfoDisplay()
 
             ui->iconLabel->setPixmap(scaled_pixmap);
         }
-        else{
+        else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[LoadSetting]" << "Load & retrive file icon failure!!!";
+            qDebug() << "[UpdateProcessInfo]" << "Load & retrive file icon failure!!!";
 #endif
+            ui->iconLabel->clear();
         }
     }
     else{
         ui->iconLabel->clear();
-#if 0
-        if ((DEFAULT_NAME == ui->processLineEdit->text())
-            && (DEFAULT_TITLE == ui->windowTitleLineEdit->text())){
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[LoadSetting]" << "Default icon availableSizes:" << m_MapProcessInfo.WindowIcon.availableSizes();
-#endif
-            ui->iconLabel->setPixmap(m_MapProcessInfo.WindowIcon.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT)));
-        }
-#endif
     }
 }
 
