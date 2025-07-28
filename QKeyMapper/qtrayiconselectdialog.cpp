@@ -3,7 +3,6 @@
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 
-// OrderedMap<int, QString> QTrayIconSelectDialog::s_TrayIconColorMap;
 QTrayIconSelectDialog *QTrayIconSelectDialog::m_instance = Q_NULLPTR;
 
 QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
@@ -13,7 +12,6 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    // initTrayIconColorMap();
     initTrayIconComboBoxes();
     ui->idleStateTrayIconSelectComboBox->setCurrentText(TRAYICON_IDLE_DEFAULT_FILE);
     ui->monitoringStateTrayIconSelectComboBox->setCurrentText(TRAYICON_MONITORING_DEFAULT_FILE);
@@ -26,66 +24,12 @@ QTrayIconSelectDialog::~QTrayIconSelectDialog()
     delete ui;
 }
 
-#if 0
-void QTrayIconSelectDialog::initTrayIconColorMap()
-{
-    s_TrayIconColorMap.clear();
-
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_BLACK,     "Black.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_BLUE1,     "Blue1.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_BLUE2,     "Blue2.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_CYAN,      "Cyan.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_GRAY1,     "Gray1.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_GRAY2,     "Gray2.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_GREEN1,    "Green1.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_GREEN2,    "Green2.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_ORANGE,    "Orange.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_PINK,      "Pink.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_PURPLE,    "Purple.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_RED,       "Red.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_WHITE,     "White.ico");
-    s_TrayIconColorMap.insert(TRAYICON_INDEX_YELLOW,    "Yellow.ico");
-}
-#endif
-
 void QTrayIconSelectDialog::initTrayIconComboBoxes()
 {
     ui->idleStateTrayIconSelectComboBox->clear();
     ui->monitoringStateTrayIconSelectComboBox->clear();
     ui->globalStateTrayIconSelectComboBox->clear();
     ui->matchedStateTrayIconSelectComboBox->clear();
-
-#if 0
-    struct IconInfo {
-        QString filename;
-        QString displayName;
-    };
-
-    QList<IconInfo> systrayIconList = {
-        {"Black.ico",   tr("Black.ico")},
-        {"Blue1.ico",   tr("Blue1.ico")},
-        {"Blue2.ico",   tr("Blue2.ico")},
-        {"Cyan.ico",    tr("Cyan.ico")},
-        {"Gray1.ico",   tr("Gray1.ico")},
-        {"Gray2.ico",   tr("Gray2.ico")},
-        {"Green1.ico",  tr("Green1.ico")},
-        {"Green2.ico",  tr("Green2.ico")},
-        {"Orange.ico",  tr("Orange.ico")},
-        {"Pink.ico",    tr("Pink.ico")},
-        {"Purple.ico",  tr("Purple.ico")},
-        {"Red.ico",     tr("Red.ico")},
-        {"White.ico",   tr("White.ico")},
-        {"Yellow.ico",  tr("Yellow.ico")}
-    };
-
-    for (const IconInfo &iconInfo : systrayIconList) {
-        QIcon icon(QString(":/") + iconInfo.filename);
-        ui->idleStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
-        ui->monitoringStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
-        ui->globalStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
-        ui->matchedStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
-    }
-#endif
 
     QStringList builtinSystrayIconList = QStringList() \
         << ":/Black.ico"
@@ -117,7 +61,35 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
 
 void QTrayIconSelectDialog::appendCustomTrayIconsFromDir(const QString &dir)
 {
+    // Check if the directory exists
+    QDir iconDir(dir);
+    if (!iconDir.exists()) {
+        return;
+    }
 
+    // Filter for .ico files
+    QStringList iconFilters;
+    iconFilters << "*.ico";
+    iconDir.setNameFilters(iconFilters);
+    iconDir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
+
+    // Get all .ico files in the directory
+    QFileInfoList iconFiles = iconDir.entryInfoList();
+
+    for (const QFileInfo &fileInfo : std::as_const(iconFiles)) {
+        QString absolutePath = fileInfo.absoluteFilePath();
+        QString relativePath = dir + "/" + fileInfo.fileName();
+
+        // Try to create QIcon and check if it's valid
+        QIcon icon(absolutePath);
+        if (!icon.isNull()) {
+            // Add the valid icon to all four comboboxes
+            ui->idleStateTrayIconSelectComboBox->addItem(icon, relativePath);
+            ui->monitoringStateTrayIconSelectComboBox->addItem(icon, relativePath);
+            ui->globalStateTrayIconSelectComboBox->addItem(icon, relativePath);
+            ui->matchedStateTrayIconSelectComboBox->addItem(icon, relativePath);
+        }
+    }
 }
 
 void QTrayIconSelectDialog::setUILanguage(int languageindex)
