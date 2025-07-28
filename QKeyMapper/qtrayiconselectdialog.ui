@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>230</width>
+    <width>300</width>
     <height>160</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>230</width>
+    <width>300</width>
     <height>160</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>230</width>
+    <width>300</width>
     <height>160</height>
    </size>
   </property>
@@ -34,9 +34,9 @@
   <widget class="QLabel" name="idleStateTrayIconSelectLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>0</x>
      <y>20</y>
-     <width>61</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -50,9 +50,9 @@
   <widget class="QComboBox" name="idleStateTrayIconSelectComboBox">
    <property name="geometry">
     <rect>
-     <x>95</x>
+     <x>90</x>
      <y>20</y>
-     <width>111</width>
+     <width>191</width>
      <height>21</height>
     </rect>
    </property>
@@ -69,9 +69,9 @@
   <widget class="QLabel" name="monitoringStateTrayIconSelectLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>0</x>
      <y>50</y>
-     <width>61</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -85,9 +85,9 @@
   <widget class="QComboBox" name="monitoringStateTrayIconSelectComboBox">
    <property name="geometry">
     <rect>
-     <x>95</x>
+     <x>90</x>
      <y>50</y>
-     <width>111</width>
+     <width>191</width>
      <height>21</height>
     </rect>
    </property>
@@ -104,9 +104,9 @@
   <widget class="QLabel" name="globalStateTrayIconSelectLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>0</x>
      <y>80</y>
-     <width>61</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -120,9 +120,9 @@
   <widget class="QComboBox" name="globalStateTrayIconSelectComboBox">
    <property name="geometry">
     <rect>
-     <x>95</x>
+     <x>90</x>
      <y>80</y>
-     <width>111</width>
+     <width>191</width>
      <height>21</height>
     </rect>
    </property>
@@ -139,9 +139,9 @@
   <widget class="QLabel" name="matchedStateTrayIconSelectLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>0</x>
      <y>110</y>
-     <width>61</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -155,9 +155,9 @@
   <widget class="QComboBox" name="matchedStateTrayIconSelectComboBox">
    <property name="geometry">
     <rect>
-     <x>95</x>
+     <x>90</x>
      <y>110</y>
-     <width>111</width>
+     <width>191</width>
      <height>21</height>
     </rect>
    </property>

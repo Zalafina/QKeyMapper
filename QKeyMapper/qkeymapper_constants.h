@@ -134,6 +134,7 @@ extern const int NOTIFICATION_BORDER_RADIUS_MIN;
 extern const int NOTIFICATION_BORDER_RADIUS_MAX;
 extern const int NOTIFICATION_OFFSET_MIN;
 extern const int NOTIFICATION_OFFSET_MAX;
+#if 0
 extern const int TRAYICON_INDEX_BLACK;
 extern const int TRAYICON_INDEX_BLUE1;
 extern const int TRAYICON_INDEX_BLUE2;
@@ -154,6 +155,13 @@ extern const int TRAYICON_IDLE_DEFAULT;
 extern const int TRAYICON_MONITORING_DEFAULT;
 extern const int TRAYICON_GLOBAL_DEFAULT;
 extern const int TRAYICON_MATCHED_DEFAULT;
+#endif
+extern const char *CUSTOM_TRAYICONS_DIR;
+extern const char *ICON_FILE_SUFFIX;
+extern const char *TRAYICON_IDLE_DEFAULT_FILE;
+extern const char *TRAYICON_MONITORING_DEFAULT_FILE;
+extern const char *TRAYICON_GLOBAL_DEFAULT_FILE;
+extern const char *TRAYICON_MATCHED_DEFAULT_FILE;
 extern const int TAB_CUSTOMIMAGE_WIDTH_DEFAULT;
 extern const int TAB_CUSTOMIMAGE_HEIGHT_DEFAULT;
 extern const int TAB_CUSTOMIMAGE_SHOW_NONE;

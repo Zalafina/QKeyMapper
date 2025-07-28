@@ -3,7 +3,7 @@
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 
-OrderedMap<int, QString> QTrayIconSelectDialog::s_TrayIconColorMap;
+// OrderedMap<int, QString> QTrayIconSelectDialog::s_TrayIconColorMap;
 QTrayIconSelectDialog *QTrayIconSelectDialog::m_instance = Q_NULLPTR;
 
 QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
@@ -13,12 +13,12 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    initTrayIconColorMap();
+    // initTrayIconColorMap();
     initTrayIconComboBoxes();
-    ui->idleStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_IDLE_DEFAULT);
-    ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_MONITORING_DEFAULT);
-    ui->globalStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_GLOBAL_DEFAULT);
-    ui->matchedStateTrayIconSelectComboBox->setCurrentIndex(TRAYICON_MATCHED_DEFAULT);
+    ui->idleStateTrayIconSelectComboBox->setCurrentText(TRAYICON_IDLE_DEFAULT_FILE);
+    ui->monitoringStateTrayIconSelectComboBox->setCurrentText(TRAYICON_MONITORING_DEFAULT_FILE);
+    ui->globalStateTrayIconSelectComboBox->setCurrentText(TRAYICON_GLOBAL_DEFAULT_FILE);
+    ui->matchedStateTrayIconSelectComboBox->setCurrentText(TRAYICON_MATCHED_DEFAULT_FILE);
 }
 
 QTrayIconSelectDialog::~QTrayIconSelectDialog()
@@ -26,6 +26,7 @@ QTrayIconSelectDialog::~QTrayIconSelectDialog()
     delete ui;
 }
 
+#if 0
 void QTrayIconSelectDialog::initTrayIconColorMap()
 {
     s_TrayIconColorMap.clear();
@@ -45,6 +46,7 @@ void QTrayIconSelectDialog::initTrayIconColorMap()
     s_TrayIconColorMap.insert(TRAYICON_INDEX_WHITE,     "White.ico");
     s_TrayIconColorMap.insert(TRAYICON_INDEX_YELLOW,    "Yellow.ico");
 }
+#endif
 
 void QTrayIconSelectDialog::initTrayIconComboBoxes()
 {
@@ -53,6 +55,7 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
     ui->globalStateTrayIconSelectComboBox->clear();
     ui->matchedStateTrayIconSelectComboBox->clear();
 
+#if 0
     struct IconInfo {
         QString filename;
         QString displayName;
@@ -82,6 +85,39 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
         ui->globalStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
         ui->matchedStateTrayIconSelectComboBox->addItem(icon, iconInfo.displayName);
     }
+#endif
+
+    QStringList builtinSystrayIconList = QStringList() \
+        << ":/Black.ico"
+        << ":/Blue1.ico"
+        << ":/Blue2.ico"
+        << ":/Cyan.ico"
+        << ":/Gray1.ico"
+        << ":/Gray2.ico"
+        << ":/Green1.ico"
+        << ":/Green2.ico"
+        << ":/Orange.ico"
+        << ":/Pink.ico"
+        << ":/Purple.ico"
+        << ":/Red.ico"
+        << ":/White.ico"
+        << ":/Yellow.ico"
+        ;
+
+    for (const QString &iconfile : std::as_const(builtinSystrayIconList)) {
+        QIcon icon(iconfile);
+        ui->idleStateTrayIconSelectComboBox->addItem(icon, iconfile);
+        ui->monitoringStateTrayIconSelectComboBox->addItem(icon, iconfile);
+        ui->globalStateTrayIconSelectComboBox->addItem(icon, iconfile);
+        ui->matchedStateTrayIconSelectComboBox->addItem(icon, iconfile);
+    }
+
+    appendCustomTrayIconsFromDir(CUSTOM_TRAYICONS_DIR);
+}
+
+void QTrayIconSelectDialog::appendCustomTrayIconsFromDir(const QString &dir)
+{
+
 }
 
 void QTrayIconSelectDialog::setUILanguage(int languageindex)
@@ -94,6 +130,7 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
     ui->globalStateTrayIconSelectLabel->setText(tr("Global"));
     ui->matchedStateTrayIconSelectLabel->setText(tr("Matched"));
 
+#if 0
     // Backup current selections
     int idle_icon_index = ui->idleStateTrayIconSelectComboBox->currentIndex();
     int monitoring_icon_index = ui->monitoringStateTrayIconSelectComboBox->currentIndex();
@@ -106,66 +143,83 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
     ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(monitoring_icon_index);
     ui->globalStateTrayIconSelectComboBox->setCurrentIndex(global_icon_index);
     ui->matchedStateTrayIconSelectComboBox->setCurrentIndex(matched_icon_index);
+#endif
 }
 
-int QTrayIconSelectDialog::getTrayIcon_IdleStateIcon()
+QString QTrayIconSelectDialog::getTrayIcon_IdleStateIcon()
 {
-    return ui->idleStateTrayIconSelectComboBox->currentIndex();
+    return ui->idleStateTrayIconSelectComboBox->currentText();
 }
 
-int QTrayIconSelectDialog::getTrayIcon_MonitoringStateIcon()
+QString QTrayIconSelectDialog::getTrayIcon_MonitoringStateIcon()
 {
-    return ui->monitoringStateTrayIconSelectComboBox->currentIndex();
+    return ui->monitoringStateTrayIconSelectComboBox->currentText();
 }
 
-int QTrayIconSelectDialog::getTrayIcon_GlobalStateIcon()
+QString QTrayIconSelectDialog::getTrayIcon_GlobalStateIcon()
 {
-    return ui->globalStateTrayIconSelectComboBox->currentIndex();
+    return ui->globalStateTrayIconSelectComboBox->currentText();
 }
 
-int QTrayIconSelectDialog::getTrayIcon_MatchedStateIcon()
+QString QTrayIconSelectDialog::getTrayIcon_MatchedStateIcon()
 {
-    return ui->matchedStateTrayIconSelectComboBox->currentIndex();
+    return ui->matchedStateTrayIconSelectComboBox->currentText();
 }
 
-void QTrayIconSelectDialog::setTrayIcon_IdleStateIcon(int trayicon_index)
+void QTrayIconSelectDialog::setTrayIcon_IdleStateIcon(const QString &trayicon_filename)
 {
-    ui->idleStateTrayIconSelectComboBox->setCurrentIndex(trayicon_index);
+    ui->idleStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
 }
 
-void QTrayIconSelectDialog::setTrayIcon_MonitoringStateIcon(int trayicon_index)
+void QTrayIconSelectDialog::setTrayIcon_MonitoringStateIcon(const QString &trayicon_filename)
 {
-    ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(trayicon_index);
+    ui->monitoringStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
 }
 
-void QTrayIconSelectDialog::setTrayIcon_GlobalStateIcon(int trayicon_index)
+void QTrayIconSelectDialog::setTrayIcon_GlobalStateIcon(const QString &trayicon_filename)
 {
-    ui->globalStateTrayIconSelectComboBox->setCurrentIndex(trayicon_index);
+    ui->globalStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
 }
 
-void QTrayIconSelectDialog::setTrayIcon_MatchedStateIcon(int trayicon_index)
+void QTrayIconSelectDialog::setTrayIcon_MatchedStateIcon(const QString &trayicon_filename)
 {
-    ui->matchedStateTrayIconSelectComboBox->setCurrentIndex(trayicon_index);
+    ui->matchedStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
 }
 
 QIcon QTrayIconSelectDialog::getIdleStateQIcon()
 {
-    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_IdleStateIcon())));
+    QIcon tray_icon = QIcon(getTrayIcon_IdleStateIcon());
+    if (tray_icon.isNull()) {
+        tray_icon = QIcon(TRAYICON_IDLE_DEFAULT_FILE);
+    }
+    return tray_icon;
 }
 
 QIcon QTrayIconSelectDialog::getMonitoringStateQIcon()
 {
-    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_MonitoringStateIcon())));
+    QIcon tray_icon = QIcon(getTrayIcon_MonitoringStateIcon());
+    if (tray_icon.isNull()) {
+        tray_icon = QIcon(TRAYICON_MONITORING_DEFAULT_FILE);
+    }
+    return tray_icon;
 }
 
 QIcon QTrayIconSelectDialog::getGlobalStateQIcon()
 {
-    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_GlobalStateIcon())));
+    QIcon tray_icon = QIcon(getTrayIcon_GlobalStateIcon());
+    if (tray_icon.isNull()) {
+        tray_icon = QIcon(TRAYICON_GLOBAL_DEFAULT_FILE);
+    }
+    return tray_icon;
 }
 
 QIcon QTrayIconSelectDialog::getMatchedStateQIcon()
 {
-    return QIcon(QString(":/%1").arg(s_TrayIconColorMap.value(getTrayIcon_MatchedStateIcon())));
+    QIcon tray_icon = QIcon(getTrayIcon_MatchedStateIcon());
+    if (tray_icon.isNull()) {
+        tray_icon = QIcon(TRAYICON_MATCHED_DEFAULT_FILE);
+    }
+    return tray_icon;
 }
 
 bool QTrayIconSelectDialog::event(QEvent *event)

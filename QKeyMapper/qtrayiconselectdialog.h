@@ -21,19 +21,20 @@ public:
         return m_instance;
     }
 
-    void initTrayIconColorMap(void);
+    // void initTrayIconColorMap(void);
     void initTrayIconComboBoxes(void);
+    void appendCustomTrayIconsFromDir(const QString &dir);
     void setUILanguage(int languageindex);
 
-    int getTrayIcon_IdleStateIcon(void);
-    int getTrayIcon_MonitoringStateIcon(void);
-    int getTrayIcon_GlobalStateIcon(void);
-    int getTrayIcon_MatchedStateIcon(void);
+    QString getTrayIcon_IdleStateIcon(void);
+    QString getTrayIcon_MonitoringStateIcon(void);
+    QString getTrayIcon_GlobalStateIcon(void);
+    QString getTrayIcon_MatchedStateIcon(void);
 
-    void setTrayIcon_IdleStateIcon(int trayicon_index);
-    void setTrayIcon_MonitoringStateIcon(int trayicon_index);
-    void setTrayIcon_GlobalStateIcon(int trayicon_index);
-    void setTrayIcon_MatchedStateIcon(int trayicon_index);
+    void setTrayIcon_IdleStateIcon(const QString &trayicon_filename);
+    void setTrayIcon_MonitoringStateIcon(const QString &trayicon_filename);
+    void setTrayIcon_GlobalStateIcon(const QString &trayicon_filename);
+    void setTrayIcon_MatchedStateIcon(const QString &trayicon_filename);
 
     QIcon getIdleStateQIcon(void);
     QIcon getMonitoringStateQIcon(void);
@@ -45,7 +46,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 public:
-    static OrderedMap<int, QString> s_TrayIconColorMap;
+    // static OrderedMap<int, QString> s_TrayIconColorMap;
 
 private:
     static QTrayIconSelectDialog *m_instance;
