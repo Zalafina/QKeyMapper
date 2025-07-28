@@ -1822,38 +1822,45 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
     // Enumerate all icon resources
     EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
 
-    // Find the best icon based on target size
+    // Sort icons by size in descending order for better selection performance
+    std::sort(enumData.icons.begin(), enumData.icons.end(),
+              [](const QPair<HICON, int>& a, const QPair<HICON, int>& b) {
+                  return a.second > b.second; // Sort by size (descending)
+              });
+
+    // Find the best icon based on target size - start from largest and work down
     HICON bestIcon = nullptr;
     int bestSize = 0;
     int bestIndex = -1;
 
+    // Optimized selection: since icons are sorted by size (largest first),
+    // we can use a more efficient strategy
     for (int i = 0; i < enumData.icons.size(); ++i) {
         int iconSize = enumData.icons[i].second;
 
-        // Selection logic: prefer icon that's closest to target size without exceeding it
-        // If no such icon exists, choose the smallest one that exceeds target size
-        if (!bestIcon) {
-            // First valid icon
+        if (iconSize <= targetSize) {
+            // Found the largest icon that fits within target size - this is optimal
             bestIcon = enumData.icons[i].first;
             bestSize = iconSize;
             bestIndex = i;
-        } else if (iconSize <= targetSize && iconSize > bestSize) {
-            // Better fit within target size
-            bestIcon = enumData.icons[i].first;
-            bestSize = iconSize;
-            bestIndex = i;
-        } else if (bestSize > targetSize && iconSize < bestSize) {
-            // Smaller icon when current best exceeds target
-            bestIcon = enumData.icons[i].first;
-            bestSize = iconSize;
-            bestIndex = i;
-        } else if (iconSize == targetSize) {
-            // Perfect match
-            bestIcon = enumData.icons[i].first;
-            bestSize = iconSize;
-            bestIndex = i;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon size: " << bestSize << "x" << bestSize << " (target: " << targetSize << "x" << targetSize << ")";
+#endif
             break;
+        } else if (!bestIcon) {
+            // If no icon fits within target size, remember the smallest oversized one
+            // Since we're going from large to small, the last oversized one will be smallest
+            bestIcon = enumData.icons[i].first;
+            bestSize = iconSize;
+            bestIndex = i;
         }
+    }
+
+    // If we only found oversized icons, bestIcon contains the smallest oversized one
+    if (bestIcon && bestSize > targetSize) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[extractBestIconFromExecutable] Using smallest available icon: " << bestSize << "x" << bestSize << " (target: " << targetSize << "x" << targetSize << ")";
+#endif
     }
 
     if (bestIcon) {
@@ -15702,7 +15709,8 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             QFileIconProvider icon_provider;
             fileicon = icon_provider.icon(QFileInfo(ProcessPath));
         }
-        else {
+
+        if (fileicon.isNull()) {
             fileicon = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->icon();
         }
 
