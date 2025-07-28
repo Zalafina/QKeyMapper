@@ -6968,10 +6968,10 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
         QString windowtitleString = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
         bool filepathNeedMatch = false;
         bool windowtitleNeedMatch = false;
-        if (!filepathString.isEmpty()) {
+        if (!filepathString.trimmed().isEmpty()) {
             filepathNeedMatch = true;
         }
-        if (!windowtitleString.isEmpty()) {
+        if (!windowtitleString.trimmed().isEmpty()) {
             windowtitleNeedMatch = true;
         }
 
