@@ -566,13 +566,13 @@ public:
     void initBlankIconForComboBox(void);
     HWND createTransparentWindow(void);
     void resizeTransparentWindow(HWND hwnd, int x, int y, int width, int height);
-    void destoryTransparentWindow(HWND hwnd);
+    void destroyTransparentWindow(HWND hwnd);
     static void clearTransparentWindow(HWND hwnd, HDC hdc);
     static void DrawCrosshair(HWND hwnd, HDC hdc, int showParam);
     static LRESULT CALLBACK CrosshairWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     HWND createCrosshairWindow(void);
     void resizeCrosshairWindow(HWND hwnd, int x, int y, int width, int height);
-    void destoryCrosshairWindow(HWND hwnd);
+    void destroyCrosshairWindow(HWND hwnd);
     static void clearCrosshairWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
 

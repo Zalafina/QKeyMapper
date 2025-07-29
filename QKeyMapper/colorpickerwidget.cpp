@@ -77,7 +77,7 @@ void ColorPickerWidget::setWindowTitle(QString title)
 
 void ColorPickerWidget::setButtonText(QString text)
 {
-    if (text.isEmpty() != true) {
+    if (!text.isEmpty()) {
         colorButton->setText(text);
     }
 }

@@ -544,9 +544,9 @@ QKeyMapper::~QKeyMapper()
     // Unregister WTS session notifications
     WTSUnRegisterSessionNotification(reinterpret_cast<HWND>(winId()));
 
-    destoryTransparentWindow(m_TransParentHandle);
+    destroyTransparentWindow(m_TransParentHandle);
     m_TransParentHandle = NULL;
-    destoryCrosshairWindow(m_CrosshairHandle);
+    destroyCrosshairWindow(m_CrosshairHandle);
     m_CrosshairHandle = NULL;
     ShutdownGDIPlus();
 
@@ -652,7 +652,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 filename = fileinfo.fileName();
             }
 
-            if (filename.isEmpty() != true) {
+            if (!filename.isEmpty()) {
                 int savecheckindex = checkAutoStartSaveSettings(filename, windowTitle);
 
                 if ((TITLESETTING_INDEX_INVALID < savecheckindex && savecheckindex <= TITLESETTING_INDEX_MAX) && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
@@ -966,7 +966,7 @@ void QKeyMapper::matchForegroundWindow()
         if (!matchProcess && !matchWindowTitle) {
             matchResult = MatchResult::IgnoreBothChecks;
         }
-        else if (true == getSendToSameTitleWindowsStatus()
+        else if (getSendToSameTitleWindowsStatus()
             && matchWindowTitle){
             matchResult = MatchResult::SendToSameWindows;
         }
@@ -1011,7 +1011,7 @@ void QKeyMapper::matchForegroundWindow()
                 processName = ProcessPath;
             }
 
-            if (processName.isEmpty() != true) {
+            if (!processName.isEmpty()) {
                 QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle);
 
                 if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
@@ -2294,7 +2294,7 @@ BOOL QKeyMapper::EnumChildWindowsProc(HWND hWnd, LPARAM lParam)
                 return TRUE;
             }
 
-            if (ProcessInfo.WindowIcon.isNull() != true){
+            if (!ProcessInfo.WindowIcon.isNull()){
                 static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3409,7 +3409,7 @@ void QKeyMapper::EnumProcessFunction(void)
                     //                return TRUE;
                     //            }
 
-                    if (ProcessInfo.WindowIcon.isNull() != true){
+                    if (!ProcessInfo.WindowIcon.isNull()){
                         static_ProcessInfoList.append(ProcessInfo);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3686,7 +3686,7 @@ void QKeyMapper::resizeTransparentWindow(HWND hwnd, int x, int y, int width, int
     SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
-void QKeyMapper::destoryTransparentWindow(HWND hwnd)
+void QKeyMapper::destroyTransparentWindow(HWND hwnd)
 {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
@@ -3936,7 +3936,7 @@ void QKeyMapper::resizeCrosshairWindow(HWND hwnd, int x, int y, int width, int h
     SetWindowPos(hwnd, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
-void QKeyMapper::destoryCrosshairWindow(HWND hwnd)
+void QKeyMapper::destroyCrosshairWindow(HWND hwnd)
 {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
@@ -6745,14 +6745,14 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
         m_mapkeyComboBox->setEnabled(true);
     }
 
-    if (text.isEmpty() != true) {
+    if (!text.isEmpty()) {
         m_orikeyComboBox->setToolTip(text);
     }
 }
 
 void QKeyMapper::MapkeyComboBox_currentTextChangedSlot(const QString &text)
 {
-    if (text.isEmpty() != true) {
+    if (!text.isEmpty()) {
         m_mapkeyComboBox->setToolTip(text);
     }
 }
@@ -7415,7 +7415,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                  && (true == ui->processCheckBox->isChecked())
                  && (true == ui->titleCheckBox->isChecked())
                  && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
-                 && (m_MapProcessInfo.FilePath.isEmpty() != true)){
+                 && (!m_MapProcessInfo.FilePath.isEmpty())){
             QStringList groups = settingFile.childGroups();
             int index = -1;
             for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
@@ -7450,7 +7450,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             && (true == ui->processCheckBox->isChecked())
             && (false == ui->titleCheckBox->isChecked())
             && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
-            && (m_MapProcessInfo.FilePath.isEmpty() != true)){
+            && (!m_MapProcessInfo.FilePath.isEmpty())){
             QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
             settingFile.setValue(SETTINGSELECT , subgroup);
             saveSettingSelectStr = subgroup + "/";
@@ -10745,7 +10745,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->processLineEdit->setCursorPosition(ui->processLineEdit->text().length());
         ui->windowTitleLineEdit->setCursorPosition(ui->windowTitleLineEdit->text().length());
 
-        if (settingSelectStr.isEmpty() != true) {
+        if (!settingSelectStr.isEmpty()) {
             settingSelectStr = settingSelectStr.remove("/");
             int settingSelectIndex = 0;
             if (m_SettingSelectListWithoutDescription.contains(settingSelectStr)) {
@@ -12941,7 +12941,7 @@ void QKeyMapper::updateSystemTrayDisplay()
         bool processicon_as_trayicon = getProcessIconAsTrayIconStatus();
         QIcon trayicon;
 
-        if (show_tabcustomimageicon && customImageIcon.isNull() != true) {
+        if (show_tabcustomimageicon && !customImageIcon.isNull()) {
             QList<QSize> iconsizeList = customImageIcon.availableSizes();
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::updateSystemTrayDisplay]" << "Tab custom icon availableSizes:" << iconsizeList;
@@ -12968,7 +12968,7 @@ void QKeyMapper::updateSystemTrayDisplay()
                 trayicon = customImageIcon;
             }
         }
-        else if (processicon_as_trayicon && m_MapProcessInfo.WindowIcon.isNull() != true){
+        else if (processicon_as_trayicon && !m_MapProcessInfo.WindowIcon.isNull()){
             trayicon = m_MapProcessInfo.WindowIcon;
         }
         else {
