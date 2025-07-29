@@ -2093,7 +2093,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 }
 
 #if 0
-QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
+QIcon QKeyMapper::extractAllBestIconsFromExecutable(const QString &filePath)
 {
     QIcon result;
 
@@ -2107,32 +2107,145 @@ QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
     HMODULE hModule = LoadLibraryExW(wFilePath.c_str(), NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
     if (!hModule) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[extractAllIconsFromExecutable] Failed to load module:" << filePath;
+        qDebug() << "[extractAllBestIconsFromExecutable] Failed to load module:" << filePath;
 #endif
         return result;
     }
 
     IconEnumData enumData;
     enumData.hModule = hModule;
+    enumData.onlyFirstGroup = true;
+    enumData.firstGroupProcessed = false;
+    enumData.firstGroupName = nullptr;
 
-    // Enumerate all icon resources
-    EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
-
-    // Sort icons by size in descending order (largest to smallest)
-    std::sort(enumData.icons.begin(), enumData.icons.end(),
-              [](const QPair<HICON, int>& a, const QPair<HICON, int>& b) {
-                  return a.second > b.second; // Sort by size (descending)
-              });
+    // First, enumerate icon groups to find the first group
+    EnumResourceNamesW(hModule, RT_GROUP_ICON, enumIconGroupsProc, reinterpret_cast<LONG_PTR>(&enumData));
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[extractAllIconsFromExecutable] Found " << enumData.icons.size() << " icons in " << filePath;
+    qDebug() << "[extractAllBestIconsFromExecutable] First group enumeration completed, firstGroupProcessed:" << enumData.firstGroupProcessed;
 #endif
 
-    // Convert all icons to QPixmap and add them to the result QIcon
+    // Now enumerate only the icons from the first group
+    if (enumData.firstGroupProcessed && enumData.firstGroupName) {
+        // Load the icon group resource to get the icon IDs
+        HRSRC hGroupRes = FindResourceW(hModule, enumData.firstGroupName, RT_GROUP_ICON);
+        if (hGroupRes) {
+            HGLOBAL hGroupGlobal = LoadResource(hModule, hGroupRes);
+            if (hGroupGlobal) {
+                BYTE* pGroupData = static_cast<BYTE*>(LockResource(hGroupGlobal));
+                if (pGroupData) {
+                    // Parse the icon group structure
+                    GRPICONDIR* pDir = reinterpret_cast<GRPICONDIR*>(pGroupData);
+                    GRPICONDIRENTRY* pEntries = reinterpret_cast<GRPICONDIRENTRY*>(pGroupData + sizeof(GRPICONDIR));
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[extractAllBestIconsFromExecutable] First icon group contains " << pDir->idCount << " icons";
+                    qDebug().nospace() << "[extractAllBestIconsFromExecutable] Group info - Reserved:" << pDir->idReserved
+                                      << ", Type:" << pDir->idType << ", Count:" << pDir->idCount;
+#endif
+
+                    // Load each icon from the first group
+                    for (int i = 0; i < pDir->idCount; ++i) {
+                        GRPICONDIRENTRY& entry = pEntries[i];
+
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[extractAllBestIconsFromExecutable] Processing icon " << (i+1) << "/" << pDir->idCount
+                                          << " - Size:" << (int)entry.bWidth << "x" << (int)entry.bHeight
+                                          << ", BitCount:" << entry.wBitCount << ", ID:" << entry.nID;
+#endif
+
+                        HRSRC hIconRes = FindResourceW(hModule, MAKEINTRESOURCEW(entry.nID), RT_ICON);
+                        if (hIconRes) {
+                            DWORD iconSize = SizeofResource(hModule, hIconRes);
+                            HGLOBAL hIconGlobal = LoadResource(hModule, hIconRes);
+                            if (hIconGlobal) {
+                                BYTE* pIconData = static_cast<BYTE*>(LockResource(hIconGlobal));
+                                if (pIconData) {
+                                    HICON hIcon = CreateIconFromResourceEx(pIconData, iconSize, TRUE, 0x00030000, 0, 0, 0);
+                                    if (hIcon) {
+                                        int iconSizePixels = (entry.bWidth == 0) ? 256 : entry.bWidth; // 0 means 256
+                                        int bitCount = entry.wBitCount; // Get color depth from icon group entry
+                                        enumData.icons.append(IconInfo(hIcon, iconSizePixels, bitCount));
+
+#ifdef DEBUG_LOGOUT_ON
+                                        qDebug().nospace() << "[extractAllBestIconsFromExecutable] Successfully loaded icon from first group: "
+                                                          << iconSizePixels << "x" << iconSizePixels << " (" << bitCount << " bits)";
+#endif
+                                    } else {
+#ifdef DEBUG_LOGOUT_ON
+                                        qDebug().nospace() << "[extractAllBestIconsFromExecutable] Failed to create icon from resource ID " << entry.nID;
+#endif
+                                    }
+                                } else {
+#ifdef DEBUG_LOGOUT_ON
+                                    qDebug().nospace() << "[extractAllBestIconsFromExecutable] Failed to lock resource for icon ID " << entry.nID;
+#endif
+                                }
+                            } else {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace() << "[extractAllBestIconsFromExecutable] Failed to load resource for icon ID " << entry.nID;
+#endif
+                            }
+                        } else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace() << "[extractAllBestIconsFromExecutable] Failed to find resource for icon ID " << entry.nID;
+#endif
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        // Fallback: if no icon groups found, enumerate all icons (original behavior)
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractAllBestIconsFromExecutable] No icon groups found, falling back to enumerate all icons";
+#endif
+        enumData.onlyFirstGroup = false;
+        EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[extractAllBestIconsFromExecutable] Total icons collected:" << enumData.icons.size();
+#endif
+
+    // Find the highest bit count (best quality) in the collected icons
+    int maxBitCount = 0;
+    for (const IconInfo& iconInfo : enumData.icons) {
+        if (iconInfo.bitCount > maxBitCount) {
+            maxBitCount = iconInfo.bitCount;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[extractAllBestIconsFromExecutable] Highest bit count found: " << maxBitCount << " bits";
+#endif
+
+    // Filter icons to only include those with the highest bit count
+    QList<IconInfo> highestQualityIcons;
+    for (const IconInfo& iconInfo : enumData.icons) {
+        if (iconInfo.bitCount == maxBitCount) {
+            highestQualityIcons.append(iconInfo);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[extractAllBestIconsFromExecutable] Filtered to " << highestQualityIcons.size() << " icons with " << maxBitCount << " bits";
+#endif
+
+    // Sort the highest quality icons by size in descending order (largest to smallest)
+    std::sort(highestQualityIcons.begin(), highestQualityIcons.end(),
+              [](const IconInfo& a, const IconInfo& b) {
+                  return a.size > b.size; // Sort by size (descending)
+              });
+
+    // Convert all highest quality icons to QPixmap and add them to the result QIcon
     // Process in order from largest to smallest
-    for (int i = 0; i < enumData.icons.size(); ++i) {
-        HICON hIcon = enumData.icons[i].first;
-        int iconSize = enumData.icons[i].second;
+    for (int i = 0; i < highestQualityIcons.size(); ++i) {
+        const IconInfo& iconInfo = highestQualityIcons[i];
+        HICON hIcon = iconInfo.hIcon;
+        int iconSize = iconInfo.size;
+        int bitCount = iconInfo.bitCount;
 
         if (hIcon) {
             // Convert HICON to QPixmap
@@ -2145,12 +2258,17 @@ QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
             if (!pixmap.isNull()) {
                 result.addPixmap(pixmap);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[extractAllIconsFromExecutable] Added icon: " << iconSize << "x" << iconSize << " (actual pixmap: " << pixmap.size() << ")";
+                qDebug().nospace() << "[extractAllBestIconsFromExecutable] Added icon: " << iconSize << "x" << iconSize 
+                                  << " (" << bitCount << " bits) - actual pixmap: " << pixmap.size();
 #endif
             }
+        }
+    }
 
-            // Clean up the icon handle
-            DestroyIcon(hIcon);
+    // Clean up all icon handles
+    for (const IconInfo& iconInfo : enumData.icons) {
+        if (iconInfo.hIcon) {
+            DestroyIcon(iconInfo.hIcon);
         }
     }
 
@@ -2158,13 +2276,13 @@ QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
     FreeLibrary(hModule);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[extractAllIconsFromExecutable] Successfully extracted all icons, QIcon availableSizes: " << result.availableSizes();
+    qDebug().nospace() << "[extractAllBestIconsFromExecutable] Successfully extracted highest quality icons, QIcon availableSizes: " << result.availableSizes();
 #endif
 
     // If resource enumeration failed, fallback to extracting standard icons
     if (result.isNull()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[extractAllIconsFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
+        qDebug() << "[extractAllBestIconsFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
 #endif
 
         // Try to extract both large and small icons as fallback
@@ -2182,7 +2300,7 @@ QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
                 if (!largePixmap.isNull()) {
                     result.addPixmap(largePixmap);
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[extractAllIconsFromExecutable] Fallback: Added large icon, pixmap size:" << largePixmap.size();
+                    qDebug() << "[extractAllBestIconsFromExecutable] Fallback: Added large icon, pixmap size:" << largePixmap.size();
 #endif
                 }
             }
@@ -2197,7 +2315,7 @@ QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
                 if (!smallPixmap.isNull()) {
                     result.addPixmap(smallPixmap);
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[extractAllIconsFromExecutable] Fallback: Added small icon, pixmap size:" << smallPixmap.size();
+                    qDebug() << "[extractAllBestIconsFromExecutable] Fallback: Added small icon, pixmap size:" << smallPixmap.size();
 #endif
                 }
             }
