@@ -15948,6 +15948,10 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->processLineEdit->setText(ProcessPath);
         ui->windowTitleLineEdit->setText(windowTitle);
 
+        if (ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
+            ui->settingNameLineEdit->setReadOnly(false);
+        }
+
         switchToWindowInfoTab();
     }
 }
