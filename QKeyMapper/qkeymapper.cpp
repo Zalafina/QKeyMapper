@@ -1748,6 +1748,31 @@ HWND QKeyMapper::getHWND_byPID(DWORD dwProcessID)
     return Q_NULLPTR;
 }
 
+BOOL QKeyMapper::enumIconGroupsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam)
+{
+    Q_UNUSED(hModule);
+    Q_UNUSED(lpType);
+    IconEnumData* pData = reinterpret_cast<IconEnumData*>(lParam);
+
+    // If we only want the first group and haven't processed it yet
+    if (pData->onlyFirstGroup && !pData->firstGroupProcessed) {
+        pData->firstGroupName = lpName;
+        pData->firstGroupProcessed = true;
+
+#ifdef DEBUG_LOGOUT_ON
+        if (IS_INTRESOURCE(lpName)) {
+            qDebug().nospace() << "[enumIconGroupsProc] Found first icon group (ID): " << reinterpret_cast<ULONG_PTR>(lpName);
+        } else {
+            QString groupName = QString::fromWCharArray(lpName);
+            qDebug().nospace() << "[enumIconGroupsProc] Found first icon group (Name): " << groupName;
+        }
+#endif
+        return FALSE; // Stop enumeration after finding the first group
+    }
+
+    return TRUE; // Continue enumeration if not in "first group only" mode
+}
+
 BOOL QKeyMapper::enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam)
 {
     IconEnumData* pData = reinterpret_cast<IconEnumData*>(lParam);
@@ -1866,9 +1891,120 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 
     IconEnumData enumData;
     enumData.hModule = hModule;
+    enumData.onlyFirstGroup = true;
+    enumData.firstGroupProcessed = false;
+    enumData.firstGroupName = nullptr;
 
-    // Enumerate all icon resources
-    EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
+    // First, enumerate icon groups to find the first group
+    EnumResourceNamesW(hModule, RT_GROUP_ICON, enumIconGroupsProc, reinterpret_cast<LONG_PTR>(&enumData));
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[extractBestIconFromExecutable] First group enumeration completed, firstGroupProcessed:" << enumData.firstGroupProcessed;
+#endif
+
+    // Now enumerate only the icons from the first group
+    if (enumData.firstGroupProcessed && enumData.firstGroupName) {
+        // Load the icon group resource to get the icon IDs
+        HRSRC hGroupRes = FindResourceW(hModule, enumData.firstGroupName, RT_GROUP_ICON);
+        if (hGroupRes) {
+            HGLOBAL hGroupGlobal = LoadResource(hModule, hGroupRes);
+            if (hGroupGlobal) {
+                BYTE* pGroupData = static_cast<BYTE*>(LockResource(hGroupGlobal));
+                if (pGroupData) {
+                    // Parse the icon group structure
+                    // Icon group structure: GRPICONDIR followed by GRPICONDIRENTRY array
+                    // Use proper memory alignment for PE resource structures
+#pragma pack(push, 2)
+                    struct GRPICONDIR {
+                        WORD idReserved;
+                        WORD idType;
+                        WORD idCount;
+                    };
+
+                    struct GRPICONDIRENTRY {
+                        BYTE bWidth;
+                        BYTE bHeight;
+                        BYTE bColorCount;
+                        BYTE bReserved;
+                        WORD wPlanes;
+                        WORD wBitCount;
+                        DWORD dwBytesInRes;
+                        WORD nID;  // This is the icon resource ID
+                    };
+#pragma pack(pop)
+
+                    GRPICONDIR* pDir = reinterpret_cast<GRPICONDIR*>(pGroupData);
+                    GRPICONDIRENTRY* pEntries = reinterpret_cast<GRPICONDIRENTRY*>(pGroupData + sizeof(GRPICONDIR));
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[extractBestIconFromExecutable] First icon group contains " << pDir->idCount << " icons";
+                    qDebug().nospace() << "[extractBestIconFromExecutable] Group info - Reserved:" << pDir->idReserved
+                                      << ", Type:" << pDir->idType << ", Count:" << pDir->idCount;
+#endif
+
+                    // Load each icon from the first group
+                    for (int i = 0; i < pDir->idCount; ++i) {
+                        GRPICONDIRENTRY& entry = pEntries[i];
+
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[extractBestIconFromExecutable] Processing icon " << (i+1) << "/" << pDir->idCount
+                                          << " - Size:" << (int)entry.bWidth << "x" << (int)entry.bHeight 
+                                          << ", BitCount:" << entry.wBitCount << ", ID:" << entry.nID;
+#endif
+
+                        HRSRC hIconRes = FindResourceW(hModule, MAKEINTRESOURCEW(entry.nID), RT_ICON);
+                        if (hIconRes) {
+                            DWORD iconSize = SizeofResource(hModule, hIconRes);
+                            HGLOBAL hIconGlobal = LoadResource(hModule, hIconRes);
+                            if (hIconGlobal) {
+                                BYTE* pIconData = static_cast<BYTE*>(LockResource(hIconGlobal));
+                                if (pIconData) {
+                                    HICON hIcon = CreateIconFromResourceEx(pIconData, iconSize, TRUE, 0x00030000, 0, 0, 0);
+                                    if (hIcon) {
+                                        int iconSizePixels = (entry.bWidth == 0) ? 256 : entry.bWidth; // 0 means 256
+                                        enumData.icons.append(qMakePair(hIcon, iconSizePixels));
+
+#ifdef DEBUG_LOGOUT_ON
+                                        qDebug().nospace() << "[extractBestIconFromExecutable] Successfully loaded icon from first group: "
+                                                          << iconSizePixels << "x" << iconSizePixels << " (" << entry.wBitCount << " bits)";
+#endif
+                                    } else {
+#ifdef DEBUG_LOGOUT_ON
+                                        qDebug().nospace() << "[extractBestIconFromExecutable] Failed to create icon from resource ID " << entry.nID;
+#endif
+                                    }
+                                } else {
+#ifdef DEBUG_LOGOUT_ON
+                                    qDebug().nospace() << "[extractBestIconFromExecutable] Failed to lock resource for icon ID " << entry.nID;
+#endif
+                                }
+                            } else {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace() << "[extractBestIconFromExecutable] Failed to load resource for icon ID " << entry.nID;
+#endif
+                            }
+                        } else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace() << "[extractBestIconFromExecutable] Failed to find resource for icon ID " << entry.nID;
+#endif
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        // Fallback: if no icon groups found, enumerate all icons (original behavior)
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractBestIconFromExecutable] No icon groups found, falling back to enumerate all icons";
+#endif
+        enumData.onlyFirstGroup = false;
+        EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[extractBestIconFromExecutable] Total icons collected:" << enumData.icons.size();
+#endif
 
     // Sort icons by size in descending order for better selection performance
     std::sort(enumData.icons.begin(), enumData.icons.end(),

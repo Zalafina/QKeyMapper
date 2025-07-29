@@ -260,6 +260,9 @@ struct KeyMappingTab_Info
 struct IconEnumData {
     QList<QPair<HICON, int>> icons;  // icon handle and its size
     HMODULE hModule;
+    bool onlyFirstGroup = false;     // Flag to indicate if we only want the first icon group
+    bool firstGroupProcessed = false; // Flag to track if first group has been processed
+    LPWSTR firstGroupName = nullptr; // Name of the first icon group
 };
 
 class StyledDelegate : public QStyledItemDelegate
@@ -522,6 +525,7 @@ public:
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static QString getProcessPathFromPID(DWORD dwProcessId);
     static HWND getHWND_byPID(DWORD dwProcessID);
+    static BOOL CALLBACK enumIconGroupsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
     static BOOL CALLBACK enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
     static QIcon extractIconFromExecutable(const QString &filePath, int targetSize = DEFAULT_ICON_WIDTH);
     static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = BEST_ICON_SIZE);
