@@ -525,6 +525,7 @@ public:
     static BOOL CALLBACK enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
     static QIcon extractIconFromExecutable(const QString &filePath, int targetSize = DEFAULT_ICON_WIDTH);
     static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = BEST_ICON_SIZE);
+    // static QIcon extractAllIconsFromExecutable(const QString &filePath);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
     // static BOOL CALLBACK EnumChildWindowsProc(HWND hWnd, LPARAM lParam);

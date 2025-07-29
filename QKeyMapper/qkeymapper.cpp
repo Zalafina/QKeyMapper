@@ -1835,7 +1835,8 @@ QIcon QKeyMapper::extractIconFromExecutable(const QString &filePath, int targetS
         // Clean up icon handles
         if (hLargeIcon) DestroyIcon(hLargeIcon);
         if (hSmallIcon) DestroyIcon(hSmallIcon);
-    } else {
+    }
+    else {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[extractIconFromExecutable] Failed to extract icon from:" << filePath;
 #endif
@@ -1957,6 +1958,126 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 
     return result;
 }
+
+#if 0
+QIcon QKeyMapper::extractAllIconsFromExecutable(const QString &filePath)
+{
+    QIcon result;
+
+    if (filePath.isEmpty() || !QFileInfo::exists(filePath)) {
+        return result;
+    }
+
+    std::wstring wFilePath = filePath.toStdWString();
+
+    // Load the executable as an image resource
+    HMODULE hModule = LoadLibraryExW(wFilePath.c_str(), NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+    if (!hModule) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractAllIconsFromExecutable] Failed to load module:" << filePath;
+#endif
+        return result;
+    }
+
+    IconEnumData enumData;
+    enumData.hModule = hModule;
+
+    // Enumerate all icon resources
+    EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
+
+    // Sort icons by size in descending order (largest to smallest)
+    std::sort(enumData.icons.begin(), enumData.icons.end(),
+              [](const QPair<HICON, int>& a, const QPair<HICON, int>& b) {
+                  return a.second > b.second; // Sort by size (descending)
+              });
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[extractAllIconsFromExecutable] Found " << enumData.icons.size() << " icons in " << filePath;
+#endif
+
+    // Convert all icons to QPixmap and add them to the result QIcon
+    // Process in order from largest to smallest
+    for (int i = 0; i < enumData.icons.size(); ++i) {
+        HICON hIcon = enumData.icons[i].first;
+        int iconSize = enumData.icons[i].second;
+
+        if (hIcon) {
+            // Convert HICON to QPixmap
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+            QPixmap pixmap = QPixmap::fromImage(QImage::fromHICON(hIcon));
+#else
+            QPixmap pixmap = QtWin::fromHICON(hIcon);
+#endif
+
+            if (!pixmap.isNull()) {
+                result.addPixmap(pixmap);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[extractAllIconsFromExecutable] Added icon: " << iconSize << "x" << iconSize << " (actual pixmap: " << pixmap.size() << ")";
+#endif
+            }
+
+            // Clean up the icon handle
+            DestroyIcon(hIcon);
+        }
+    }
+
+    // Free the loaded module
+    FreeLibrary(hModule);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[extractAllIconsFromExecutable] Successfully extracted all icons, QIcon availableSizes: " << result.availableSizes();
+#endif
+
+    // If resource enumeration failed, fallback to extracting standard icons
+    if (result.isNull()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[extractAllIconsFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
+#endif
+
+        // Try to extract both large and small icons as fallback
+        HICON hLargeIcon = nullptr;
+        HICON hSmallIcon = nullptr;
+
+        if (ExtractIconExW(wFilePath.c_str(), 0, &hLargeIcon, &hSmallIcon, 1) > 0) {
+            // Add large icon first (if available)
+            if (hLargeIcon) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                QPixmap largePixmap = QPixmap::fromImage(QImage::fromHICON(hLargeIcon));
+#else
+                QPixmap largePixmap = QtWin::fromHICON(hLargeIcon);
+#endif
+                if (!largePixmap.isNull()) {
+                    result.addPixmap(largePixmap);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[extractAllIconsFromExecutable] Fallback: Added large icon, pixmap size:" << largePixmap.size();
+#endif
+                }
+            }
+
+            // Add small icon second (if available and different from large)
+            if (hSmallIcon) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                QPixmap smallPixmap = QPixmap::fromImage(QImage::fromHICON(hSmallIcon));
+#else
+                QPixmap smallPixmap = QtWin::fromHICON(hSmallIcon);
+#endif
+                if (!smallPixmap.isNull()) {
+                    result.addPixmap(smallPixmap);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[extractAllIconsFromExecutable] Fallback: Added small icon, pixmap size:" << smallPixmap.size();
+#endif
+                }
+            }
+        }
+
+        // Clean up icon handles
+        if (hLargeIcon) DestroyIcon(hLargeIcon);
+        if (hSmallIcon) DestroyIcon(hSmallIcon);
+    }
+
+    return result;
+}
+#endif
 
 BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
 {
