@@ -6998,7 +6998,7 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
         }
 
         // Priority 4: Only windowtitle contains match (store first match)
-        if (windowTitleContainsMatch.isEmpty() && windowtitleNeedMatch && windowtitle.contains(windowtitleString)) {
+        if (windowTitleContainsMatch.isEmpty() && windowtitleNeedMatch && windowtitle == windowtitleString) {
             windowTitleContainsMatch = group;
         }
     }

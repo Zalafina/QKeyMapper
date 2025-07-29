@@ -31,7 +31,7 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
     ui->globalStateTrayIconSelectComboBox->clear();
     ui->matchedStateTrayIconSelectComboBox->clear();
 
-    QStringList builtinSystrayIconList = QStringList() \
+    QStringList builtinTrayIconsList = QStringList() \
         << ":/Black.ico"
         << ":/Blue1.ico"
         << ":/Blue2.ico"
@@ -48,7 +48,7 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
         << ":/Yellow.ico"
         ;
 
-    for (const QString &iconfile : std::as_const(builtinSystrayIconList)) {
+    for (const QString &iconfile : std::as_const(builtinTrayIconsList)) {
         QIcon icon(iconfile);
         ui->idleStateTrayIconSelectComboBox->addItem(icon, iconfile);
         ui->monitoringStateTrayIconSelectComboBox->addItem(icon, iconfile);
@@ -101,21 +101,6 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
     ui->monitoringStateTrayIconSelectLabel->setText(tr("Monitoring"));
     ui->globalStateTrayIconSelectLabel->setText(tr("Global"));
     ui->matchedStateTrayIconSelectLabel->setText(tr("Matched"));
-
-#if 0
-    // Backup current selections
-    int idle_icon_index = ui->idleStateTrayIconSelectComboBox->currentIndex();
-    int monitoring_icon_index = ui->monitoringStateTrayIconSelectComboBox->currentIndex();
-    int global_icon_index = ui->globalStateTrayIconSelectComboBox->currentIndex();
-    int matched_icon_index = ui->matchedStateTrayIconSelectComboBox->currentIndex();
-
-    initTrayIconComboBoxes();
-    // Restore the previous selections
-    ui->idleStateTrayIconSelectComboBox->setCurrentIndex(idle_icon_index);
-    ui->monitoringStateTrayIconSelectComboBox->setCurrentIndex(monitoring_icon_index);
-    ui->globalStateTrayIconSelectComboBox->setCurrentIndex(global_icon_index);
-    ui->matchedStateTrayIconSelectComboBox->setCurrentIndex(matched_icon_index);
-#endif
 }
 
 QString QTrayIconSelectDialog::getTrayIcon_IdleStateIcon()
