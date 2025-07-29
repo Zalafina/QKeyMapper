@@ -256,9 +256,18 @@ struct KeyMappingTab_Info
     QList<MAP_KEYDATA> *KeyMappingData;
 };
 
+// Structure to store icon information with quality metrics
+struct IconInfo {
+    HICON hIcon;
+    int size;
+    int bitCount; // Color depth (bits per pixel)
+
+    IconInfo(HICON icon, int sz, int bits) : hIcon(icon), size(sz), bitCount(bits) {}
+};
+
 // Structure to pass data to the enumeration callback
 struct IconEnumData {
-    QList<QPair<HICON, int>> icons;  // icon handle and its size
+    QList<IconInfo> icons;  // icon handle, size, and bit count
     HMODULE hModule;
     bool onlyFirstGroup = false;     // Flag to indicate if we only want the first icon group
     bool firstGroupProcessed = false; // Flag to track if first group has been processed

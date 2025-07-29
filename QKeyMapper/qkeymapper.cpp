@@ -1802,10 +1802,11 @@ BOOL QKeyMapper::enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, L
             BITMAP bitmap;
             if (GetObject(iconInfoEx.hbmColor, sizeof(bitmap), &bitmap) > 0) {
                 int iconSize = bitmap.bmWidth; // Assume square icons
-                pData->icons.append(qMakePair(hIcon, iconSize));
+                int bitCount = bitmap.bmBitsPixel; // Get color depth
+                pData->icons.append(IconInfo(hIcon, iconSize, bitCount));
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[extractBestIconFromExecutable] Found icon: " << iconSize << "x" << iconSize << " (" << bitmap.bmBitsPixel << " bits)";
+                qDebug().nospace() << "[extractBestIconFromExecutable] Found icon: " << iconSize << "x" << iconSize << " (" << bitCount << " bits)";
 #endif
             } else {
                 DestroyIcon(hIcon); // Clean up if we can't get size info
@@ -1962,11 +1963,12 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
                                     HICON hIcon = CreateIconFromResourceEx(pIconData, iconSize, TRUE, 0x00030000, 0, 0, 0);
                                     if (hIcon) {
                                         int iconSizePixels = (entry.bWidth == 0) ? 256 : entry.bWidth; // 0 means 256
-                                        enumData.icons.append(qMakePair(hIcon, iconSizePixels));
+                                        int bitCount = entry.wBitCount; // Get color depth from icon group entry
+                                        enumData.icons.append(IconInfo(hIcon, iconSizePixels, bitCount));
 
 #ifdef DEBUG_LOGOUT_ON
                                         qDebug().nospace() << "[extractBestIconFromExecutable] Successfully loaded icon from first group: "
-                                                          << iconSizePixels << "x" << iconSizePixels << " (" << entry.wBitCount << " bits)";
+                                                          << iconSizePixels << "x" << iconSizePixels << " (" << bitCount << " bits)";
 #endif
                                     } else {
 #ifdef DEBUG_LOGOUT_ON
@@ -2006,50 +2008,66 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
     qDebug() << "[extractBestIconFromExecutable] Total icons collected:" << enumData.icons.size();
 #endif
 
-    // Sort icons by size in descending order for better selection performance
+    // Sort icons by quality: first by color depth (descending), then by size (descending)
+    // This ensures we prioritize higher bit depth icons for better visual quality
     std::sort(enumData.icons.begin(), enumData.icons.end(),
-              [](const QPair<HICON, int>& a, const QPair<HICON, int>& b) {
-                  return a.second > b.second; // Sort by size (descending)
+              [](const IconInfo& a, const IconInfo& b) {
+                  // First priority: higher bit count (better color quality)
+                  if (a.bitCount != b.bitCount) {
+                      return a.bitCount > b.bitCount;
+                  }
+                  // Second priority: larger size if bit count is the same
+                  return a.size > b.size;
               });
 
-    // Find the best icon based on target size - start from largest and work down
+    // Find the best icon based on target size and quality
+    // Icons are now sorted by bit count (descending) then size (descending)
     HICON bestIcon = nullptr;
     int bestSize = 0;
+    int bestBitCount = 0;
     int bestIndex = -1;
 
-    // Optimized selection: since icons are sorted by size (largest first),
-    // we can use a more efficient strategy
+    // Strategy: Find the highest quality icon that fits the target size
+    // If no icon fits exactly, prefer higher bit count over size matching
     for (int i = 0; i < enumData.icons.size(); ++i) {
-        int iconSize = enumData.icons[i].second;
+        const IconInfo& iconInfo = enumData.icons[i];
+        int iconSize = iconInfo.size;
+        int bitCount = iconInfo.bitCount;
 
         if (iconSize <= targetSize) {
-            // Found the largest icon that fits within target size - this is optimal
-            bestIcon = enumData.icons[i].first;
+            // Found an icon that fits within target size
+            // Since icons are sorted by quality first, this is the best quality that fits
+            bestIcon = iconInfo.hIcon;
             bestSize = iconSize;
+            bestBitCount = bitCount;
             bestIndex = i;
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon size: " << bestSize << "x" << bestSize << " (target: " << targetSize << "x" << targetSize << ")";
+            qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon: " << bestSize << "x" << bestSize
+                              << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif
             break;
         } else if (!bestIcon) {
-            // If no icon fits within target size, remember the smallest oversized one
-            // Since we're going from large to small, the last oversized one will be smallest
-            bestIcon = enumData.icons[i].first;
+            // If no icon fits within target size, use the first one (highest quality)
+            // This will be the highest bit count icon available
+            bestIcon = iconInfo.hIcon;
             bestSize = iconSize;
+            bestBitCount = bitCount;
             bestIndex = i;
         }
     }
 
-    // If we only found oversized icons, bestIcon contains the smallest oversized one
+    // If we only found oversized icons, bestIcon contains the highest quality one
     if (bestIcon && bestSize > targetSize) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[extractBestIconFromExecutable] Using smallest available icon: " << bestSize << "x" << bestSize << " (target: " << targetSize << "x" << targetSize << ")";
+        qDebug().nospace() << "[extractBestIconFromExecutable] Using highest quality available icon: " << bestSize << "x" << bestSize
+                          << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif
     }
 
     if (bestIcon) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[extractBestIconFromExecutable] Selected icon size: " << bestSize << "x" << bestSize << " for target: " << targetSize << "x" << targetSize;
+        qDebug().nospace() << "[extractBestIconFromExecutable] Selected best icon: " << bestSize << "x" << bestSize
+                          << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif
 
         // Convert HICON to QPixmap
@@ -2072,7 +2090,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
     // Clean up all icons except the one we used
     for (int i = 0; i < enumData.icons.size(); ++i) {
         if (i != bestIndex) {
-            DestroyIcon(enumData.icons[i].first);
+            DestroyIcon(enumData.icons[i].hIcon);
         }
     }
 
