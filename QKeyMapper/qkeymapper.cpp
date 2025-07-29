@@ -1759,7 +1759,7 @@ BOOL QKeyMapper::enumIconGroupsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpNa
         pData->firstGroupName = lpName;
         pData->firstGroupProcessed = true;
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
         if (IS_INTRESOURCE(lpName)) {
             qDebug().nospace() << "[enumIconGroupsProc] Found first icon group (ID): " << reinterpret_cast<ULONG_PTR>(lpName);
         } else {
@@ -1899,7 +1899,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
     // First, enumerate icon groups to find the first group
     EnumResourceNamesW(hModule, RT_GROUP_ICON, enumIconGroupsProc, reinterpret_cast<LONG_PTR>(&enumData));
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
     qDebug() << "[extractBestIconFromExecutable] First group enumeration completed, firstGroupProcessed:" << enumData.firstGroupProcessed;
 #endif
 
@@ -1913,31 +1913,10 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
                 BYTE* pGroupData = static_cast<BYTE*>(LockResource(hGroupGlobal));
                 if (pGroupData) {
                     // Parse the icon group structure
-                    // Icon group structure: GRPICONDIR followed by GRPICONDIRENTRY array
-                    // Use proper memory alignment for PE resource structures
-#pragma pack(push, 2)
-                    struct GRPICONDIR {
-                        WORD idReserved;
-                        WORD idType;
-                        WORD idCount;
-                    };
-
-                    struct GRPICONDIRENTRY {
-                        BYTE bWidth;
-                        BYTE bHeight;
-                        BYTE bColorCount;
-                        BYTE bReserved;
-                        WORD wPlanes;
-                        WORD wBitCount;
-                        DWORD dwBytesInRes;
-                        WORD nID;  // This is the icon resource ID
-                    };
-#pragma pack(pop)
-
                     GRPICONDIR* pDir = reinterpret_cast<GRPICONDIR*>(pGroupData);
                     GRPICONDIRENTRY* pEntries = reinterpret_cast<GRPICONDIRENTRY*>(pGroupData + sizeof(GRPICONDIR));
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
                     qDebug().nospace() << "[extractBestIconFromExecutable] First icon group contains " << pDir->idCount << " icons";
                     qDebug().nospace() << "[extractBestIconFromExecutable] Group info - Reserved:" << pDir->idReserved
                                       << ", Type:" << pDir->idType << ", Count:" << pDir->idCount;
@@ -1947,7 +1926,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
                     for (int i = 0; i < pDir->idCount; ++i) {
                         GRPICONDIRENTRY& entry = pEntries[i];
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
                         qDebug().nospace() << "[extractBestIconFromExecutable] Processing icon " << (i+1) << "/" << pDir->idCount
                                           << " - Size:" << (int)entry.bWidth << "x" << (int)entry.bHeight 
                                           << ", BitCount:" << entry.wBitCount << ", ID:" << entry.nID;
@@ -1966,7 +1945,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
                                         int bitCount = entry.wBitCount; // Get color depth from icon group entry
                                         enumData.icons.append(IconInfo(hIcon, iconSizePixels, bitCount));
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
                                         qDebug().nospace() << "[extractBestIconFromExecutable] Successfully loaded icon from first group: "
                                                           << iconSizePixels << "x" << iconSizePixels << " (" << bitCount << " bits)";
 #endif
@@ -2004,7 +1983,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
         EnumResourceNamesW(hModule, RT_ICON, enumIconsProc, reinterpret_cast<LONG_PTR>(&enumData));
     }
 
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
     qDebug() << "[extractBestIconFromExecutable] Total icons collected:" << enumData.icons.size();
 #endif
 
@@ -2041,7 +2020,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
             bestSize = iconSize;
             bestBitCount = bitCount;
             bestIndex = i;
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
             qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon: " << bestSize << "x" << bestSize
                               << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif
@@ -2058,7 +2037,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 
     // If we only found oversized icons, bestIcon contains the highest quality one
     if (bestIcon && bestSize > targetSize) {
-#ifdef DEBUG_LOGOUT_ON
+#ifdef EXTRACTICON_VERBOSE_LOG
         qDebug().nospace() << "[extractBestIconFromExecutable] Using highest quality available icon: " << bestSize << "x" << bestSize
                           << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif

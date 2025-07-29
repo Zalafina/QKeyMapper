@@ -274,6 +274,27 @@ struct IconEnumData {
     LPWSTR firstGroupName = nullptr; // Name of the first icon group
 };
 
+// Icon group structure: GRPICONDIR followed by GRPICONDIRENTRY array
+// Use proper memory alignment for PE resource structures
+#pragma pack(push, 2)
+struct GRPICONDIR {
+    WORD idReserved;
+    WORD idType;
+    WORD idCount;
+};
+
+struct GRPICONDIRENTRY {
+    BYTE bWidth;
+    BYTE bHeight;
+    BYTE bColorCount;
+    BYTE bReserved;
+    WORD wPlanes;
+    WORD wBitCount;
+    DWORD dwBytesInRes;
+    WORD nID;  // This is the icon resource ID
+};
+#pragma pack(pop)
+
 class StyledDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
