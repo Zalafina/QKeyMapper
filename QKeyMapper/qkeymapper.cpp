@@ -10303,14 +10303,30 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 s_KeyMappingTabInfoList[index].TabBackgroundColor = QColor();
             }
         }
+        if (index < tabcustomimage_trayiconpixellist_loaded.size()) {
+            const QSize &trayiconpixel = tabcustomimage_trayiconpixellist_loaded.at(index).toSize();
+            if (!trayiconpixel.isEmpty()) {
+                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = trayiconpixel;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = QSize();
+            }
+        }
         if (index < tabcustomimage_pathlist_loaded.size()) {
             QString tabcustomimage_path = tabcustomimage_pathlist_loaded.at(index);
             QIcon icon_loaded(tabcustomimage_path);
+
             if (!icon_loaded.isNull()) {
                 s_KeyMappingTabInfoList[index].TabCustomImage_Path = tabcustomimage_path;
+
+                QList<QSize> availableSizes = icon_loaded.availableSizes();
+                if (!availableSizes.contains(s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel)) {
+                    s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = QSize();
+                }
             }
             else {
                 s_KeyMappingTabInfoList[index].TabCustomImage_Path.clear();
+                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = QSize();
             }
         }
         if (index < tabcustomimage_showpositionlist_loaded.size()) {
@@ -10337,16 +10353,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 (str == "ON") ? true :
                 (str == "OFF") ? false :
                 TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
-        }
-        if (index < tabcustomimage_trayiconpixellist_loaded.size()) {
-            const QSize &trayiconpixel = tabcustomimage_trayiconpixellist_loaded.at(index).toSize();
-            QList<QSize> iconsize_list = ICON_SIZE_MAP.values();
-            if (iconsize_list.contains(trayiconpixel)) {
-                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = trayiconpixel;
-            }
-            else {
-                s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = QSize();
-            }
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }

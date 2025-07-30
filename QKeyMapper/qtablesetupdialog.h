@@ -27,7 +27,10 @@ public:
     void setTabIndex(int tabindex);
     void setSettingSelectIndex(int index);
     void initSelectImageFileDialog(void);
-    void updateTrayIconPixelComboBoxIcons(const QIcon &icon);
+    void clearTrayIconPixelComboBox(void);
+    void updateTrayIconPixelComboBox(const QIcon &icon, const QSize &targetSize = QSize());
+    QSize parseComboBoxTextToSize(const QString &text);
+    void updateTrayIconPixelSizeWithCurrentText(void);
 
     int getSettingSelectIndex(void);
     bool isSelectImageFileDialogVisible(void);

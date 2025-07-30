@@ -63,18 +63,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->customImageShowPositionComboBox->addItems(showPositionList);
     ui->customImageShowPositionComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_POSITION_DEFAULT);
 
-    QStringList trayiconPixelList;
-    trayiconPixelList.append(tr("Default"));
-    trayiconPixelList.append("16x16");
-    trayiconPixelList.append("24x24");
-    trayiconPixelList.append("32x32");
-    trayiconPixelList.append("48x48");
-    trayiconPixelList.append("64x64");
-    trayiconPixelList.append("96x96");
-    trayiconPixelList.append("128x128");
-    trayiconPixelList.append("256x256");
-    ui->customImageTrayIconPixelComboBox->addItems(trayiconPixelList);
-    ui->customImageTrayIconPixelComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT);
+    clearTrayIconPixelComboBox();
 
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
@@ -116,7 +105,7 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->customImageShowPositionComboBox->setItemText(TAB_CUSTOMIMAGE_SHOW_RIGHT,    tr("Right"));
 
     ui->customImageTrayIconPixelLabel->setText(tr("TrayIcon Pixel"));
-    ui->customImageTrayIconPixelComboBox->setItemText(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT, tr("Default"));
+    ui->customImageTrayIconPixelComboBox->setItemText(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT, tr("Default"));
 }
 
 void QTableSetupDialog::resetFontSize()
@@ -178,62 +167,165 @@ void QTableSetupDialog::initSelectImageFileDialog()
     m_SelectImageFileDialog->setFileMode(QFileDialog::ExistingFile);
 }
 
-void QTableSetupDialog::updateTrayIconPixelComboBoxIcons(const QIcon &icon)
+void QTableSetupDialog::clearTrayIconPixelComboBox()
 {
-    // 1. If the icon is null, clear all item icons
-    if (icon.isNull()) {
-        for (int i = 0; i < ui->customImageTrayIconPixelComboBox->count(); ++i) {
-            ui->customImageTrayIconPixelComboBox->setItemIcon(i, QIcon());
-        }
+    ui->customImageTrayIconPixelComboBox->blockSignals(true);
+    ui->customImageTrayIconPixelComboBox->clear();
+    ui->customImageTrayIconPixelComboBox->addItem(QKeyMapper::s_Icon_Blank, tr("Default"));
+    ui->customImageTrayIconPixelComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT);
+    ui->customImageTrayIconPixelComboBox->blockSignals(false);
+}
+
+QSize QTableSetupDialog::parseComboBoxTextToSize(const QString &text)
+{
+    // Parse text like "16×16" or "32×32" to QSize
+    // Return QSize() (invalid) if parsing fails or values are not positive
+    QStringList sizeParts = text.split(ICON_SIZE_SEPARATORT);
+    if (sizeParts.size() != 2) {
+        return QSize(); // Invalid format
+    }
+
+    bool ok1, ok2;
+    int width = sizeParts[0].toInt(&ok1);
+    int height = sizeParts[1].toInt(&ok2);
+
+    if (ok1 && ok2 && width > 0 && height > 0) {
+        return QSize(width, height);
+    }
+
+    return QSize(); // Invalid size
+}
+
+void QTableSetupDialog::updateTrayIconPixelSizeWithCurrentText()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
-    // 2. Get available icon sizes
-    QList<QSize> availableSizes = icon.availableSizes();
+    QString currentText = ui->customImageTrayIconPixelComboBox->currentText();
+    QSize trayicon_size = parseComboBoxTextToSize(currentText);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBoxIcons]" << "Icon availableSizes:" << availableSizes;
+    qDebug() << "[updateTrayIconPixelSizeWithCurrentText] Custom Image TrayIcon pixel currentText:" << currentText << ", converted Size: " << trayicon_size;
 #endif
 
-    // 3. Iterate through all ComboBox items (start from index 1, skip "Default" item)
-    for (int i = 1; i < ui->customImageTrayIconPixelComboBox->count(); ++i) {
-        QString itemText = ui->customImageTrayIconPixelComboBox->itemText(i);
+    if (trayicon_size.isEmpty()) {
+        if (ui->customImageTrayIconPixelComboBox->currentIndex() != TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT) {
+            ui->customImageTrayIconPixelComboBox->blockSignals(true);
+            ui->customImageTrayIconPixelComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT);
+            ui->customImageTrayIconPixelComboBox->blockSignals(false);
+        }
+    }
 
-        // Parse item text to get size information (e.g., "16x16" -> QSize(16, 16))
-        QStringList sizeParts = itemText.split('x');
-        if (sizeParts.size() == 2) {
-            bool ok1, ok2;
-            int width = sizeParts[0].toInt(&ok1);
-            int height = sizeParts[1].toInt(&ok2);
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_TrayIconPixel = trayicon_size;
+}
 
-            if (ok1 && ok2) {
-                QSize itemSize(width, height);
+void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSize &targetSize)
+{
+    // 1. If the icon is null, clear all item icons
+    if (icon.isNull()) {
+        clearTrayIconPixelComboBox();
+        return;
+    }
 
-                // Check if this size is in the available sizes list
-                if (availableSizes.contains(itemSize)) {
-                    // Extract icon of corresponding size and set it to the item
+    // 2. Get available icon sizes & sort in descending order
+    QList<QSize> availableSizes = icon.availableSizes();
+    if (availableSizes.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBox]" << "Icon availableSizes is empty.";
+#endif
+        clearTrayIconPixelComboBox();
+        return;
+    }
+
+    std::sort(availableSizes.begin(), availableSizes.end(), [](const QSize &a, const QSize &b) {
+        if (a.width() != b.width())
+            return a.width() > b.width();   // Primary: sort by width in descending order
+        return a.height() > b.height();     // Secondary: sort by height in descending order
+    });
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBox]" << "Icon availableSizes sorted:" << availableSizes;
+#endif
+
+    // 3. Save current selection before clearing if it's not the default
+    QSize savedCurrentSize;
+    if (ui->customImageTrayIconPixelComboBox->currentIndex() != TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT) {
+        QString currentText = ui->customImageTrayIconPixelComboBox->currentText();
+        savedCurrentSize = parseComboBoxTextToSize(currentText);
+    }
+
+    // 4. Clear TrayIconPixelComboBox & set "Default" item (index 0) uses the original icon
+    clearTrayIconPixelComboBox();
+    ui->customImageTrayIconPixelComboBox->setItemIcon(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT, icon);
+
+    // 5. Add available sizes as new items with corresponding icons
+    for (const QSize &size : std::as_const(availableSizes)) {
+        QString itemText = QString("%1%2%3").arg(size.width()).arg(ICON_SIZE_SEPARATORT).arg(size.height());
+
+        // Extract icon of corresponding size and create item
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                    QPixmap scaled_pixmap = icon.pixmap(itemSize, 1.0);
+        QPixmap scaled_pixmap = icon.pixmap(size, 1.0);
 #else
-                    qreal devicePixelRatio = qApp->devicePixelRatio();
-                    QSize deviceIndependentSize = QSize(
-                        qRound(itemSize.width() / devicePixelRatio),
-                        qRound(itemSize.height() / devicePixelRatio)
-                        );
-                    QPixmap scaled_pixmap = icon.pixmap(deviceIndependentSize);
+        qreal devicePixelRatio = qApp->devicePixelRatio();
+        QSize deviceIndependentSize = QSize(
+            qRound(size.width() / devicePixelRatio),
+            qRound(size.height() / devicePixelRatio)
+        );
+        QPixmap scaled_pixmap = icon.pixmap(deviceIndependentSize);
 #endif
-                    QIcon itemIcon(scaled_pixmap);
-                    ui->customImageTrayIconPixelComboBox->setItemIcon(i, itemIcon);
-                } else {
-                    // If the size is not available, clear the item's icon
-                    ui->customImageTrayIconPixelComboBox->setItemIcon(i, QKeyMapper::s_Icon_Blank);
-                }
+
+        QIcon itemIcon(scaled_pixmap);
+        ui->customImageTrayIconPixelComboBox->addItem(itemIcon, itemText);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[QTableSetupDialog::updateTrayIconPixelComboBox] Added item: " << itemText << " at index " << (ui->customImageTrayIconPixelComboBox->count() - 1);
+#endif
+    }
+
+    // 6. Try to set index based on targetSize first
+    int targetIndex = TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT;
+    bool indexSet = false;
+
+    if (!targetSize.isEmpty()) {
+        // Search for matching targetSize in available sizes
+        for (int i = 0; i < availableSizes.size(); ++i) {
+            if (availableSizes[i] == targetSize) {
+                targetIndex = i + 1; // +1 because index 0 is "Default"
+                indexSet = true;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[QTableSetupDialog::updateTrayIconPixelComboBox] Found targetSize match at index " << targetIndex << " for size " << targetSize;
+#endif
+                break;
             }
         }
     }
 
-    // "Default" item (index 0) uses the original icon
-    ui->customImageTrayIconPixelComboBox->setItemIcon(0, QKeyMapper::s_Icon_Blank);
+    // 7. If targetSize didn't work, try saved current size
+    if (!indexSet && !savedCurrentSize.isEmpty()) {
+        for (int i = 0; i < availableSizes.size(); ++i) {
+            if (availableSizes[i] == savedCurrentSize) {
+                targetIndex = i + 1; // +1 because index 0 is "Default"
+                indexSet = true;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[QTableSetupDialog::updateTrayIconPixelComboBox] Restored saved size at index " << targetIndex << " for size " << savedCurrentSize;
+#endif
+                break;
+            }
+        }
+    }
+
+    Q_UNUSED(indexSet);
+
+    // 8. Set the final index (default if nothing matched)
+    ui->customImageTrayIconPixelComboBox->blockSignals(true);
+    ui->customImageTrayIconPixelComboBox->setCurrentIndex(targetIndex);
+    ui->customImageTrayIconPixelComboBox->blockSignals(false);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[QTableSetupDialog::updateTrayIconPixelComboBox] Final index set to " << targetIndex << " (total items: " << ui->customImageTrayIconPixelComboBox->count() << ")";
+#endif
 }
 
 int QTableSetupDialog::getSettingSelectIndex()
@@ -351,6 +443,10 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             ui->customImageLabel->setToolTip("");
         }
 
+        // Update TrayIconPixelComboBox Items & Index
+        updateTrayIconPixelComboBox(icon_loaded, TabCustomImage_TrayIconPixel);
+        updateTrayIconPixelSizeWithCurrentText();
+
         // Load Custom Image Show Position
         int showposition_index = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
         if (TabCustomImage_ShowPosition == TAB_CUSTOMIMAGE_SHOW_LEFT) {
@@ -370,17 +466,6 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image Show As Tray Icon
         ui->customImageShowAsTrayIconCheckBox->setChecked(TabCustomImage_ShowAsTrayIcon);
-
-        // Load Custom Image Tray Icon Pixel
-        int trayicon_index = TAB_CUSTOMIMAGE_TRAYICON_PIXEL_DEFAULT;
-        QList<QSize> iconsize_list = ICON_SIZE_MAP.values();
-        if (iconsize_list.contains(TabCustomImage_TrayIconPixel)) {
-            trayicon_index = ICON_SIZE_MAP.key(TabCustomImage_TrayIconPixel);
-        }
-        ui->customImageTrayIconPixelComboBox->setCurrentIndex(trayicon_index);
-
-        // Update TrayIconPixelComboBox Item icon display
-        updateTrayIconPixelComboBoxIcons(icon_loaded);
     }
 
     QDialog::showEvent(event);
@@ -630,7 +715,8 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         ui->customImageLabel->clear();
         ui->customImageLabel->setToolTip("");
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
-        updateTrayIconPixelComboBoxIcons(QIcon());
+        updateTrayIconPixelComboBox(QIcon());
+        updateTrayIconPixelSizeWithCurrentText();
         return;
     }
 
@@ -699,7 +785,8 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 
-    updateTrayIconPixelComboBoxIcons(icon_loaded);
+    updateTrayIconPixelComboBox(icon_loaded);
+    updateTrayIconPixelSizeWithCurrentText();
 }
 
 void QTableSetupDialog::on_customImageShowPositionComboBox_currentIndexChanged(int index)
@@ -751,20 +838,10 @@ void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int st
 
 void QTableSetupDialog::on_customImageTrayIconPixelComboBox_currentIndexChanged(int index)
 {
+    Q_UNUSED(index);
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
-    if (!ICON_SIZE_MAP.contains(index)) {
-        return;
-    }
-
-    QSize trayicon_size = ICON_SIZE_MAP.value(index);
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[CustomImageTrayIconPixel] Custom Image TrayIcon pixel changed ->" << trayicon_size;
-#endif
-
-    int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_TrayIconPixel = trayicon_size;
+    updateTrayIconPixelSizeWithCurrentText();
 }

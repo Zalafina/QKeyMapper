@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>520</width>
+    <width>540</width>
     <height>320</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>520</width>
+    <width>540</width>
     <height>320</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>520</width>
+    <width>540</width>
     <height>320</height>
    </size>
   </property>
@@ -34,7 +34,7 @@
   <widget class="QPushButton" name="tabHotkeyUpdateButton">
    <property name="geometry">
     <rect>
-     <x>420</x>
+     <x>440</x>
      <y>40</y>
      <width>61</width>
      <height>20</height>
@@ -71,7 +71,7 @@
     <rect>
      <x>80</x>
      <y>40</y>
-     <width>331</width>
+     <width>351</width>
      <height>20</height>
     </rect>
    </property>
@@ -79,7 +79,7 @@
   <widget class="QPushButton" name="tabNameUpdateButton">
    <property name="geometry">
     <rect>
-     <x>420</x>
+     <x>440</x>
      <y>10</y>
      <width>61</width>
      <height>20</height>
@@ -116,7 +116,7 @@
     <rect>
      <x>80</x>
      <y>10</y>
-     <width>331</width>
+     <width>351</width>
      <height>20</height>
     </rect>
    </property>
@@ -143,7 +143,7 @@
   <widget class="QPushButton" name="importTableButton">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>230</x>
      <y>80</y>
      <width>91</width>
      <height>21</height>
@@ -162,7 +162,7 @@
   <widget class="QPushButton" name="removeTableButton">
    <property name="geometry">
     <rect>
-     <x>360</x>
+     <x>380</x>
      <y>80</y>
      <width>91</width>
      <height>21</height>
@@ -310,7 +310,7 @@
     <rect>
      <x>20</x>
      <y>150</y>
-     <width>481</width>
+     <width>501</width>
      <height>151</height>
     </rect>
    </property>
@@ -326,7 +326,7 @@
     <rect>
      <x>380</x>
      <y>260</y>
-     <width>101</width>
+     <width>121</width>
      <height>21</height>
     </rect>
    </property>
