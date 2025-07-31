@@ -11882,6 +11882,10 @@ void QKeyMapper::mappingStartNotification()
         options.position = QPoint(50, 50);
         options.size = QSize(72, 72);
         options.windowOpacity = 1.0;
+        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+        if (!options.backgroundColor.isValid()) {
+            options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+        }
         options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
 
