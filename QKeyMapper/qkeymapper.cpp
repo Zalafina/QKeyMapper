@@ -11879,8 +11879,8 @@ void QKeyMapper::mappingStartNotification()
     if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
-        options.position = QPoint(100, 100);
-        options.size = QSize(96, 96);
+        options.position = QPoint(50, 50);
+        options.size = QSize(72, 72);
         options.windowOpacity = 1.0;
         options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
