@@ -96,7 +96,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TrayIconSelectDialog(Q_NULLPTR),
     m_ItemSetupDialog(Q_NULLPTR),
     m_TableSetupDialog(Q_NULLPTR),
-    m_PopupNotification(Q_NULLPTR)
+    m_PopupNotification(Q_NULLPTR),
+    m_FloatingIconWindow(Q_NULLPTR)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("QKeyMapper() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -451,6 +452,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initGyro2MouseSpinBoxes();
 
     m_PopupNotification = new QPopupNotification(Q_NULLPTR);
+    m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     m_deviceListWindow = new QInputDeviceListWindow(this);
     // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
@@ -563,6 +565,12 @@ QKeyMapper::~QKeyMapper()
     if (m_PopupNotification != Q_NULLPTR) {
         delete m_PopupNotification;
         m_PopupNotification = Q_NULLPTR;
+    }
+
+    if (m_FloatingIconWindow != Q_NULLPTR) {
+        m_FloatingIconWindow->hideFloatingWindow();
+        delete m_FloatingIconWindow;
+        m_FloatingIconWindow = Q_NULLPTR;
     }
 
     exitDeleteKeyMappingTabWidget();
@@ -11867,6 +11875,24 @@ void QKeyMapper::mappingStartNotification()
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
+
+
+    if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
+        && !tabCustomImage_Path.isEmpty()) {
+        FloatingWindowOptions options;
+        options.position = QPoint(200, 200);
+        options.size = QSize(128, 128);
+        options.windowOpacity = 1.0;
+        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+        if (!options.backgroundColor.isValid()) {
+            options.backgroundColor = QColor(0,0,0,80);
+        }
+        options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+        options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
+        options.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+
+        QKeyMapper::getInstance()->showFloatingIconWindow(options);
+    }
 }
 
 void QKeyMapper::mappingStopNotification()
@@ -11889,6 +11915,8 @@ void QKeyMapper::mappingStopNotification()
     popupNotification = tr("StopMapping [") + mappingStatusString + "]";
 
     showNotificationPopup(popupNotification);
+
+    QKeyMapper::getInstance()->hideFloatingIconWindow();
 }
 
 void QKeyMapper::mappingTabSwitchNotification(bool isSame)
@@ -13310,6 +13338,38 @@ void QKeyMapper::showNotificationPopup(const QString &message)
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
 
     m_PopupNotification->showPopupNotification(message, opts);
+}
+
+void QKeyMapper::showFloatingIconWindow(const FloatingWindowOptions &options)
+{
+    if (Q_NULLPTR == m_FloatingIconWindow) {
+        return;
+    }
+    m_FloatingIconWindow->showFloatingWindow(options);
+}
+
+void QKeyMapper::hideFloatingIconWindow()
+{
+    if (Q_NULLPTR == m_FloatingIconWindow) {
+        return;
+    }
+    m_FloatingIconWindow->hideFloatingWindow();
+}
+
+void QKeyMapper::updateFloatingIconWindow(const FloatingWindowOptions &options)
+{
+    if (Q_NULLPTR == m_FloatingIconWindow) {
+        return;
+    }
+    m_FloatingIconWindow->updateWindowSettings(options);
+}
+
+FloatingWindowOptions QKeyMapper::getCurrentFloatingWindowOptions() const
+{
+    if (Q_NULLPTR == m_FloatingIconWindow) {
+        return FloatingWindowOptions();
+    }
+    return m_FloatingIconWindow->getCurrentOptions();
 }
 
 void QKeyMapper::initSelectColorDialog()
@@ -17461,6 +17521,332 @@ void QPopupNotification::hideNotification()
         m_TextLabel->clear();
         hide();
     }
+}
+
+QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
+    : QWidget(parent)
+    , m_IconLabel(nullptr)
+    , m_CurrentOpacity(1.0)
+    , m_Dragging(false)
+    , m_Resizing(false)
+{
+    // Set window flags for a topmost, frameless window
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_DeleteOnClose, false);
+
+    // Create and setup the icon label
+    m_IconLabel = new QLabel(this);
+    m_IconLabel->setAlignment(Qt::AlignCenter);
+    m_IconLabel->setScaledContents(true);
+
+    // Set default size and position
+    resize(64, 64);
+    move(100, 100);
+
+    // Hide initially
+    hide();
+
+    QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::QFloatingIconWindow] Floating icon window created";
+#endif
+}
+
+QFloatingIconWindow::~QFloatingIconWindow()
+{
+    if (m_IconLabel) {
+        delete m_IconLabel;
+        m_IconLabel = nullptr;
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::~QFloatingIconWindow] Floating icon window destroyed";
+#endif
+}
+
+void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &options)
+{
+    m_CurrentOptions = options;
+    m_CurrentOpacity = options.windowOpacity;
+
+    // Set window geometry (ensure square shape)
+    int squareSize = qMax(options.size.width(), options.size.height());
+    resize(squareSize, squareSize);
+    move(options.position);
+
+    // Load icon if path is provided
+    QFileInfo icon_fileinfo(options.iconPath);
+    if (icon_fileinfo.exists()) {
+        loadIconFromPath(options.iconPath);
+    }
+
+    // Update window appearance
+    updateWindowStyle();
+    updateIconDisplay();
+
+    // Show the window
+    show();
+    raise();
+    activateWindow();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::showFloatingWindow] Shown at position:" << options.position
+             << "size:" << QSize(squareSize, squareSize) << "opacity:" << options.windowOpacity;
+#endif
+}
+
+void QFloatingIconWindow::hideFloatingWindow()
+{
+    hide();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::hideFloatingWindow] Window hidden";
+#endif
+}
+
+void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &options)
+{
+    m_CurrentOptions = options;
+    m_CurrentOpacity = options.windowOpacity;
+
+    // Update geometry if changed (ensure square shape)
+    int squareSize = qMax(options.size.width(), options.size.height());
+    QSize newSize(squareSize, squareSize);
+    if (size() != newSize) {
+        resize(newSize);
+    }
+    if (pos() != options.position) {
+        move(options.position);
+    }
+
+    // Reload icon if path changed
+    QFileInfo icon_fileinfo(options.iconPath);
+    if (m_CurrentOptions.iconPath != options.iconPath && icon_fileinfo.exists()) {
+        loadIconFromPath(options.iconPath);
+    }
+
+    // Update appearance
+    updateWindowStyle();
+    updateIconDisplay();
+    update();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::updateWindowSettings] Updated - position:" << options.position
+             << "size:" << newSize << "opacity:" << options.windowOpacity;
+#endif
+}
+
+void QFloatingIconWindow::onWindowOpacityChanged(double newOpacity)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::onWindowOpacityChanged] Floating window opacity changed to:" << newOpacity;
+#endif
+}
+
+void QFloatingIconWindow::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // Set up the background brush with opacity
+    QColor bgColor = m_CurrentOptions.backgroundColor;
+    painter.setBrush(QBrush(bgColor));
+    painter.setPen(Qt::NoPen);
+
+    // Draw rounded rectangle
+    if (m_CurrentOptions.borderRadius > 0) {
+        painter.drawRoundedRect(rect(), m_CurrentOptions.borderRadius, m_CurrentOptions.borderRadius);
+    } else {
+        painter.drawRect(rect());
+    }
+
+    // Draw resize handle indicator in bottom-right corner
+    if (isInResizeHandle(mapFromGlobal(QCursor::pos()))) {
+        QRect handleRect = getResizeHandleRect();
+        painter.setBrush(QBrush(QColor(100, 100, 100, 100)));
+        painter.drawRect(handleRect);
+    }
+}
+
+void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        if (isInResizeHandle(event->pos())) {
+            // Start resizing
+            m_Resizing = true;
+            m_ResizeStartSize = size();
+            m_ResizeStartMousePos = event->globalPos();
+            setCursor(Qt::SizeFDiagCursor);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QFloatingIconWindow::mousePressEvent] Start resizing from size:" << m_ResizeStartSize;
+#endif
+        } else {
+            // Start dragging
+            m_Dragging = true;
+            m_DragStartPosition = event->globalPos() - frameGeometry().topLeft();
+            setCursor(Qt::ClosedHandCursor);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QFloatingIconWindow::mousePressEvent] Start dragging from position:" << pos();
+#endif
+        }
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_Resizing && (event->buttons() & Qt::LeftButton)) {
+        // Handle window resizing (maintain 1:1 aspect ratio)
+        QPoint globalMousePos = event->globalPos();
+        QPoint mouseDelta = globalMousePos - m_ResizeStartMousePos;
+
+        // Calculate new size (use the larger delta to maintain square shape)
+        int deltaSize = qMax(mouseDelta.x(), mouseDelta.y());
+        int newSize = qMax(MIN_WINDOW_SIZE, qMin(MAX_WINDOW_SIZE, m_ResizeStartSize.width() + deltaSize));
+
+        QSize newWindowSize(newSize, newSize);
+        if (newWindowSize != size()) {
+            resize(newWindowSize);
+            m_CurrentOptions.size = newWindowSize;
+            emit windowSizeChanged(newWindowSize);
+            // emit windowSettingsChanged(m_CurrentOptions);
+        }
+    } else if (m_Dragging && (event->buttons() & Qt::LeftButton)) {
+        // Handle window dragging
+        QPoint newPos = event->globalPos() - m_DragStartPosition;
+
+        // Keep window within screen bounds
+        QScreen *screen = QApplication::screenAt(event->globalPos());
+        if (screen) {
+            QRect screenGeometry = screen->availableGeometry();
+            newPos.setX(qMax(0, qMin(newPos.x(), screenGeometry.width() - width())));
+            newPos.setY(qMax(0, qMin(newPos.y(), screenGeometry.height() - height())));
+        }
+
+        if (newPos != pos()) {
+            move(newPos);
+            m_CurrentOptions.position = newPos;
+            emit windowPositionChanged(newPos);
+            // emit windowSettingsChanged(m_CurrentOptions);
+        }
+    } else {
+        // Update cursor based on position
+        if (isInResizeHandle(event->pos())) {
+            setCursor(Qt::SizeFDiagCursor);
+        } else {
+            setCursor(Qt::OpenHandCursor);
+        }
+    }
+
+    QWidget::mouseMoveEvent(event);
+}
+
+void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_Dragging = false;
+        m_Resizing = false;
+        setCursor(Qt::ArrowCursor);
+#ifdef DEBUG_LOGOUT_ON
+        if (m_Resizing) {
+            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished resizing to size:" << size();
+        }
+        if (m_Dragging) {
+            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished dragging to position:" << pos();
+        }
+#endif
+    }
+    QWidget::mouseReleaseEvent(event);
+}
+
+void QFloatingIconWindow::wheelEvent(QWheelEvent *event)
+{
+    // Adjust opacity with mouse wheel
+    double opacityChange = (event->angleDelta().y() > 0) ? OPACITY_STEP : -OPACITY_STEP;
+    double newOpacity = qMax(MIN_OPACITY, qMin(MAX_OPACITY, m_CurrentOpacity + opacityChange));
+
+    if (qAbs(newOpacity - m_CurrentOpacity) > 0.001) {
+        m_CurrentOpacity = newOpacity;
+        m_CurrentOptions.windowOpacity = newOpacity;
+        updateWindowStyle();
+        emit windowOpacityChanged(newOpacity);
+        // emit windowSettingsChanged(m_CurrentOptions);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QFloatingIconWindow::wheelEvent] Opacity changed to:" << newOpacity;
+#endif
+    }
+
+    QWidget::wheelEvent(event);
+}
+
+void QFloatingIconWindow::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    updateIconDisplay();
+}
+
+void QFloatingIconWindow::moveEvent(QMoveEvent *event)
+{
+    QWidget::moveEvent(event);
+    // Position change is already emitted in mouseMoveEvent for drag operations
+}
+
+void QFloatingIconWindow::updateWindowStyle()
+{
+    // Set window opacity
+    setWindowOpacity(m_CurrentOpacity);
+
+    // Update the widget to trigger a repaint
+    update();
+}
+
+void QFloatingIconWindow::loadIconFromPath(const QString &iconPath)
+{
+    m_LoadedIcon = QIcon(iconPath);
+    if (m_LoadedIcon.isNull()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QFloatingIconWindow::loadIconFromPath] Failed to load icon from:" << iconPath;
+#endif
+    } else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QFloatingIconWindow::loadIconFromPath] Successfully loaded icon from:" << iconPath;
+#endif
+    }
+}
+
+void QFloatingIconWindow::updateIconDisplay()
+{
+    if (!m_IconLabel || m_LoadedIcon.isNull()) {
+        return;
+    }
+
+    // Calculate icon size considering padding
+    int availableSize = qMin(width(), height()) - (m_CurrentOptions.iconPadding * 2);
+    availableSize = qMax(1, availableSize); // Ensure positive size
+
+    QSize iconSize(availableSize, availableSize);
+    QPixmap iconPixmap = m_LoadedIcon.pixmap(iconSize);
+
+    // Set the pixmap to the label
+    m_IconLabel->setPixmap(iconPixmap);
+
+    // Update label geometry with padding
+    int padding = m_CurrentOptions.iconPadding;
+    m_IconLabel->setGeometry(padding, padding, width() - 2 * padding, height() - 2 * padding);
+}
+
+QRect QFloatingIconWindow::getResizeHandleRect() const
+{
+    return QRect(width() - RESIZE_HANDLE_SIZE, height() - RESIZE_HANDLE_SIZE,
+                 RESIZE_HANDLE_SIZE, RESIZE_HANDLE_SIZE);
+}
+
+bool QFloatingIconWindow::isInResizeHandle(const QPoint &pos) const
+{
+    return getResizeHandleRect().contains(pos);
 }
 
 #if 0

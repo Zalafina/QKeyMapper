@@ -38,6 +38,7 @@
 #include <QDateTime>
 #include <QTranslator>
 #include <QLibraryInfo>
+#include <QPainter>
 #include <cmath>
 #include <windows.h>
 #ifndef max
@@ -156,6 +157,16 @@ struct PopupNotificationOptions {
     QString iconPath;                                               // Optional icon path (PNG/ICO)
     int iconPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;            // Icon position
     int iconPadding = 0;                                            // Padding between icon and text
+};
+
+struct FloatingWindowOptions {
+    QPoint position = QPoint(100, 100);                             // Window position
+    QSize size = QSize(64, 64);                                     // Window size (square)
+    QColor backgroundColor = QColor(0, 0, 0, 80);                   // Background color
+    double windowOpacity = 1.0;                                     // Window opacity (0.1~1.0)
+    int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
+    QString iconPath;                                               // Icon file path (.ico/.png)
+    int iconPadding = 0;                                            // Padding between icon and window border
 };
 
 struct Gamepad_Info
@@ -346,6 +357,69 @@ private:
     QPropertyAnimation *m_StartAnimation;
     QPropertyAnimation *m_StopAnimation;
     PopupNotificationOptions m_CurrentPopupOptions;
+};
+
+class QFloatingIconWindow : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit QFloatingIconWindow(QWidget *parent = Q_NULLPTR);
+    ~QFloatingIconWindow();
+
+public slots:
+    void showFloatingWindow(const FloatingWindowOptions &options);
+    void hideFloatingWindow();
+    void updateWindowSettings(const FloatingWindowOptions &options);
+    void onWindowOpacityChanged(double newOpacity);
+
+    // Getters for current state
+    QPoint getCurrentPosition() const { return pos(); }
+    QSize getCurrentSize() const { return size(); }
+    double getCurrentOpacity() const { return m_CurrentOpacity; }
+    FloatingWindowOptions getCurrentOptions() const { return m_CurrentOptions; }
+
+signals:
+    void windowPositionChanged(const QPoint &newPosition);
+    void windowSizeChanged(const QSize &newSize);
+    void windowOpacityChanged(double newOpacity);
+    void windowSettingsChanged(const FloatingWindowOptions &newOptions);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void moveEvent(QMoveEvent *event) override;
+
+private:
+    void updateWindowStyle();
+    void loadIconFromPath(const QString &iconPath);
+    void updateIconDisplay();
+    QRect getResizeHandleRect() const;
+    bool isInResizeHandle(const QPoint &pos) const;
+
+private:
+    QLabel *m_IconLabel;                        // Label to display the icon
+    QIcon m_LoadedIcon;                         // Cached icon object
+    FloatingWindowOptions m_CurrentOptions;    // Current window options
+    double m_CurrentOpacity;                    // Current opacity value
+
+    // Mouse interaction state
+    bool m_Dragging;                            // Window dragging state
+    bool m_Resizing;                            // Window resizing state
+    QPoint m_DragStartPosition;                 // Start position for dragging
+    QSize m_ResizeStartSize;                    // Start size for resizing
+    QPoint m_ResizeStartMousePos;               // Mouse position when resize started
+
+    static constexpr int RESIZE_HANDLE_SIZE = 15;   // Size of resize handle area
+    static constexpr double OPACITY_STEP = 0.1;     // Opacity change step
+    static constexpr double MIN_OPACITY = 0.1;      // Minimum opacity
+    static constexpr double MAX_OPACITY = 1.0;      // Maximum opacity
+    static constexpr int MIN_WINDOW_SIZE = 20;      // Minimum window size
+    static constexpr int MAX_WINDOW_SIZE = 500;     // Maximum window size
 };
 
 class SystrayMenu : public QMenu
@@ -921,6 +995,10 @@ public:
     void showFailurePopup(const QString &message);
     void showNotificationPopup(const QString &message, const PopupNotificationOptions &options);
     void showNotificationPopup(const QString &message);
+    void showFloatingIconWindow(const FloatingWindowOptions &options);
+    void hideFloatingIconWindow();
+    void updateFloatingIconWindow(const FloatingWindowOptions &options);
+    FloatingWindowOptions getCurrentFloatingWindowOptions() const;
     void initSelectColorDialog(void);
     void setParentForSelectColorDialog(QWidget *parent);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
@@ -1140,6 +1218,7 @@ private:
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;
+    QFloatingIconWindow *m_FloatingIconWindow;
 };
 
 class ScopedTrayUpdater {
