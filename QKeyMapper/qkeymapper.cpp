@@ -11889,7 +11889,6 @@ void QKeyMapper::mappingStartNotification()
         }
         options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
-        options.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
 
         QKeyMapper::getInstance()->showFloatingIconWindow(options);
     }
@@ -17677,7 +17676,7 @@ void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
             // Start resizing
             m_Resizing = true;
             m_ResizeStartSize = size();
-            m_ResizeStartMousePos = event->globalPos();
+            m_ResizeStartMousePos = event->globalPosition().toPoint();
             setCursor(Qt::SizeFDiagCursor);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::mousePressEvent] Start resizing from size:" << m_ResizeStartSize;
@@ -17685,7 +17684,7 @@ void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
         } else {
             // Start dragging
             m_Dragging = true;
-            m_DragStartPosition = event->globalPos() - frameGeometry().topLeft();
+            m_DragStartPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
             setCursor(Qt::ClosedHandCursor);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::mousePressEvent] Start dragging from position:" << pos();
@@ -17699,7 +17698,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_Resizing && (event->buttons() & Qt::LeftButton)) {
         // Handle window resizing (maintain 1:1 aspect ratio)
-        QPoint globalMousePos = event->globalPos();
+        QPoint globalMousePos = event->globalPosition().toPoint();
         QPoint mouseDelta = globalMousePos - m_ResizeStartMousePos;
 
         // Calculate new size (use the larger delta to maintain square shape)
@@ -17715,10 +17714,10 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         }
     } else if (m_Dragging && (event->buttons() & Qt::LeftButton)) {
         // Handle window dragging
-        QPoint newPos = event->globalPos() - m_DragStartPosition;
+        QPoint newPos = event->globalPosition().toPoint() - m_DragStartPosition;
 
         // Keep window within screen bounds
-        QScreen *screen = QApplication::screenAt(event->globalPos());
+        QScreen *screen = QApplication::screenAt(event->globalPosition().toPoint());
         if (screen) {
             QRect screenGeometry = screen->availableGeometry();
             newPos.setX(qMax(0, qMin(newPos.x(), screenGeometry.width() - width())));

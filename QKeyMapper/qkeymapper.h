@@ -162,9 +162,9 @@ struct PopupNotificationOptions {
 struct FloatingWindowOptions {
     QPoint position = QPoint(100, 100);                             // Window position
     QSize size = QSize(64, 64);                                     // Window size (square)
-    QColor backgroundColor = QColor(0, 0, 0, 80);                   // Background color
+    QColor backgroundColor = QColor(0, 0, 0, 0);                    // Background color
     double windowOpacity = 1.0;                                     // Window opacity (0.1~1.0)
-    int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
+    int borderRadius = 0;                                           // Border radius
     QString iconPath;                                               // Icon file path (.ico/.png)
     int iconPadding = 0;                                            // Padding between icon and window border
 };
@@ -367,17 +367,19 @@ public:
     explicit QFloatingIconWindow(QWidget *parent = Q_NULLPTR);
     ~QFloatingIconWindow();
 
-public slots:
+public:
     void showFloatingWindow(const FloatingWindowOptions &options);
     void hideFloatingWindow();
     void updateWindowSettings(const FloatingWindowOptions &options);
-    void onWindowOpacityChanged(double newOpacity);
 
     // Getters for current state
     QPoint getCurrentPosition() const { return pos(); }
     QSize getCurrentSize() const { return size(); }
     double getCurrentOpacity() const { return m_CurrentOpacity; }
     FloatingWindowOptions getCurrentOptions() const { return m_CurrentOptions; }
+
+public slots:
+    void onWindowOpacityChanged(double newOpacity);
 
 signals:
     void windowPositionChanged(const QPoint &newPosition);
@@ -414,8 +416,8 @@ private:
     QSize m_ResizeStartSize;                    // Start size for resizing
     QPoint m_ResizeStartMousePos;               // Mouse position when resize started
 
-    static constexpr int RESIZE_HANDLE_SIZE = 15;   // Size of resize handle area
-    static constexpr double OPACITY_STEP = 0.1;     // Opacity change step
+    static constexpr int RESIZE_HANDLE_SIZE = 6;    // Size of resize handle area
+    static constexpr double OPACITY_STEP = 0.02;    // Opacity change step
     static constexpr double MIN_OPACITY = 0.1;      // Minimum opacity
     static constexpr double MAX_OPACITY = 1.0;      // Maximum opacity
     static constexpr int MIN_WINDOW_SIZE = 20;      // Minimum window size
