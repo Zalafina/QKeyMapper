@@ -17534,6 +17534,9 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_DeleteOnClose, false);
 
+    // Enable mouse tracking to receive mouse move events even without mouse button pressed
+    setMouseTracking(true);
+
     // Create and setup the icon label
     m_IconLabel = new QLabel(this);
     m_IconLabel->setAlignment(Qt::AlignCenter);
@@ -17696,6 +17699,11 @@ void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
 
 void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 {
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::mouseMoveEvent] QMouseEvent position ->" << event->pos();
+#endif
+
     if (m_Resizing && (event->buttons() & Qt::LeftButton)) {
         // Handle window resizing (maintain 1:1 aspect ratio)
         QPoint globalMousePos = event->globalPosition().toPoint();
@@ -17712,6 +17720,8 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
             emit windowSizeChanged(newWindowSize);
             // emit windowSettingsChanged(m_CurrentOptions);
         }
+        // Keep resize cursor during resize operation
+        setCursor(Qt::SizeFDiagCursor);
     } else if (m_Dragging && (event->buttons() & Qt::LeftButton)) {
         // Handle window dragging
         QPoint newPos = event->globalPosition().toPoint() - m_DragStartPosition;
@@ -17730,13 +17740,11 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
             emit windowPositionChanged(newPos);
             // emit windowSettingsChanged(m_CurrentOptions);
         }
+        // Keep drag cursor during drag operation
+        setCursor(Qt::ClosedHandCursor);
     } else {
-        // Update cursor based on position
-        if (isInResizeHandle(event->pos())) {
-            setCursor(Qt::SizeFDiagCursor);
-        } else {
-            setCursor(Qt::OpenHandCursor);
-        }
+        // Update cursor based on position when not dragging or resizing
+        updateCursorForPosition(event->pos());
     }
 
     QWidget::mouseMoveEvent(event);
@@ -17745,14 +17753,22 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+#ifdef DEBUG_LOGOUT_ON
+        bool wasResizing = m_Resizing;
+        bool wasDragging = m_Dragging;
+#endif
+        
         m_Dragging = false;
         m_Resizing = false;
-        setCursor(Qt::ArrowCursor);
+        
+        // After releasing mouse button, update cursor based on current position
+        updateCursorForPosition(event->pos());
+        
 #ifdef DEBUG_LOGOUT_ON
-        if (m_Resizing) {
+        if (wasResizing) {
             qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished resizing to size:" << size();
         }
-        if (m_Dragging) {
+        if (wasDragging) {
             qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished dragging to position:" << pos();
         }
 #endif
@@ -17785,12 +17801,44 @@ void QFloatingIconWindow::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     updateIconDisplay();
+    
+    // After resize, update cursor if mouse is still over the window
+    if (underMouse()) {
+        QPoint mousePos = mapFromGlobal(QCursor::pos());
+        updateCursorForPosition(mousePos);
+    }
 }
 
 void QFloatingIconWindow::moveEvent(QMoveEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::moveEvent] QMoveEvent position ->" << event->pos();
+#endif
+
     QWidget::moveEvent(event);
     // Position change is already emitted in mouseMoveEvent for drag operations
+}
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+void QFloatingIconWindow::enterEvent(QEnterEvent *event)
+{
+    // When mouse enters the window, update cursor based on position
+    QPoint localPos = event->position().toPoint();
+#else
+void QFloatingIconWindow::enterEvent(QEvent *event)
+{
+    // When mouse enters the window, update cursor based on position
+    QPoint localPos = mapFromGlobal(QCursor::pos());
+#endif
+    updateCursorForPosition(localPos);
+    QWidget::enterEvent(event);
+}
+
+void QFloatingIconWindow::leaveEvent(QEvent *event)
+{
+    // When mouse leaves the window, restore default cursor
+    setCursor(Qt::ArrowCursor);
+    QWidget::leaveEvent(event);
 }
 
 void QFloatingIconWindow::updateWindowStyle()
@@ -17846,6 +17894,24 @@ QRect QFloatingIconWindow::getResizeHandleRect() const
 bool QFloatingIconWindow::isInResizeHandle(const QPoint &pos) const
 {
     return getResizeHandleRect().contains(pos);
+}
+
+void QFloatingIconWindow::updateCursorForPosition(const QPoint &pos)
+{
+    if (m_Dragging || m_Resizing) {
+        // Don't change cursor during active drag/resize operations
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::updateCursorForPosition] Current position ->" << pos;
+#endif
+    
+    if (isInResizeHandle(pos)) {
+        setCursor(Qt::SizeFDiagCursor);
+    } else {
+        setCursor(Qt::ArrowCursor);
+    }
 }
 
 #if 0
