@@ -11876,17 +11876,12 @@ void QKeyMapper::mappingStartNotification()
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
 
-
     if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
-        options.position = QPoint(200, 200);
-        options.size = QSize(128, 128);
+        options.position = QPoint(100, 100);
+        options.size = QSize(96, 96);
         options.windowOpacity = 1.0;
-        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
-        if (!options.backgroundColor.isValid()) {
-            options.backgroundColor = QColor(0,0,0,80);
-        }
         options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
 
@@ -17552,7 +17547,7 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     // Hide initially
     hide();
 
-    QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
+    // QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::QFloatingIconWindow] Floating icon window created";
@@ -17646,6 +17641,11 @@ void QFloatingIconWindow::onWindowOpacityChanged(double newOpacity)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::onWindowOpacityChanged] Floating window opacity changed to:" << newOpacity;
 #endif
+
+    if (m_CurrentOpacity != newOpacity
+        && newOpacity >= 0.1 && newOpacity <= 1.0) {
+        m_CurrentOpacity = newOpacity;
+    }
 }
 
 void QFloatingIconWindow::paintEvent(QPaintEvent *event)
@@ -17715,7 +17715,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         if (newWindowSize != size()) {
             resize(newWindowSize);
             m_CurrentOptions.size = newWindowSize;
-            emit windowSizeChanged(newWindowSize);
+            // emit windowSizeChanged(newWindowSize);
             // emit windowSettingsChanged(m_CurrentOptions);
         }
         // Keep resize cursor during resize operation
@@ -17735,7 +17735,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         if (newPos != pos()) {
             move(newPos);
             m_CurrentOptions.position = newPos;
-            emit windowPositionChanged(newPos);
+            // emit windowPositionChanged(newPos);
             // emit windowSettingsChanged(m_CurrentOptions);
         }
         // Keep drag cursor during drag operation
@@ -17784,7 +17784,7 @@ void QFloatingIconWindow::wheelEvent(QWheelEvent *event)
         m_CurrentOpacity = newOpacity;
         m_CurrentOptions.windowOpacity = newOpacity;
         updateWindowStyle();
-        emit windowOpacityChanged(newOpacity);
+        // emit windowOpacityChanged(newOpacity);
         // emit windowSettingsChanged(m_CurrentOptions);
 
 #ifdef DEBUG_LOGOUT_ON

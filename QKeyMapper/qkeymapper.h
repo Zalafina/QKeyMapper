@@ -382,10 +382,10 @@ public slots:
     void onWindowOpacityChanged(double newOpacity);
 
 signals:
-    void windowPositionChanged(const QPoint &newPosition);
-    void windowSizeChanged(const QSize &newSize);
-    void windowOpacityChanged(double newOpacity);
-    void windowSettingsChanged(const FloatingWindowOptions &newOptions);
+    // void windowPositionChanged(const QPoint &newPosition);
+    // void windowSizeChanged(const QSize &newSize);
+    // void windowOpacityChanged(double newOpacity);
+    // void windowSettingsChanged(const FloatingWindowOptions &newOptions);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
