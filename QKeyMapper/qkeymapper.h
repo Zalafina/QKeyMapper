@@ -394,7 +394,6 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
-    void moveEvent(QMoveEvent *event) override;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     void enterEvent(QEnterEvent *event) override;
 #else
@@ -423,7 +422,7 @@ private:
     QSize m_ResizeStartSize;                    // Start size for resizing
     QPoint m_ResizeStartMousePos;               // Mouse position when resize started
 
-    static constexpr int RESIZE_HANDLE_SIZE = 10;    // Size of resize handle area
+    static constexpr int RESIZE_HANDLE_SIZE = 8;    // Size of resize handle area
     static constexpr double OPACITY_STEP = 0.02;    // Opacity change step
     static constexpr double MIN_OPACITY = 0.1;      // Minimum opacity
     static constexpr double MAX_OPACITY = 1.0;      // Maximum opacity
