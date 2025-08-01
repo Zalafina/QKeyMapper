@@ -101,6 +101,8 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->customImageShowPositionLabel->setText(tr("ShowPositoin"));
     ui->customImagePaddingLabel->setText(tr("Padding"));
     ui->customImageShowAsTrayIconCheckBox->setText(tr("Show as TrayIcon"));
+    ui->customImageShowAsFloatingWindowCheckBox->setText(tr("Show as FloatingWindow"));
+    ui->floatingWindowSetupButton->setText(tr("FloatingWindow Setup"));
 
     ui->customImageShowPositionComboBox->setItemText(TAB_CUSTOMIMAGE_SHOW_NONE,     tr("None"));
     ui->customImageShowPositionComboBox->setItemText(TAB_CUSTOMIMAGE_SHOW_LEFT,     tr("Left"));
@@ -116,30 +118,7 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 
 void QTableSetupDialog::resetFontSize()
 {
-    // int scale = QKeyMapper::getInstance()->m_UI_Scale;
-    QFont customFont;
-    if (LANGUAGE_ENGLISH == QKeyMapper::getLanguageIndex()) {
-        customFont.setFamily(FONTNAME_ENGLISH);
-        customFont.setPointSize(9);
-    }
-    else if (LANGUAGE_JAPANESE == QKeyMapper::getLanguageIndex()) {
-        customFont.setFamily(FONTNAME_ENGLISH);
-        customFont.setPointSize(9);
-    }
-    else {
-        customFont.setFamily(FONTNAME_ENGLISH);
-        customFont.setPointSize(9);
-
-        // customFont.setFamily(FONTNAME_CHINESE);
-        // customFont.setBold(true);
-
-        // if (UI_SCALE_4K_PERCENT_150 == scale) {
-        //     customFont.setPointSize(11);
-        // }
-        // else {
-        //     customFont.setPointSize(9);
-        // }
-    }
+    QFont customFont(FONTNAME_ENGLISH, 9);
 
     ui->tabNameLabel->setFont(customFont);
     ui->tabHotkeyLabel->setFont(customFont);
@@ -401,6 +380,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         int TabCustomImage_ShowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowPosition;
         int TabCustomImage_Padding = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Padding;
         bool TabCustomImage_ShowAsTrayIcon = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsTrayIcon;
+        bool TabCustomImage_ShowAsFloatingWindow = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsFloatingWindow;
         QSize TabCustomImage_TrayIconPixel = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_TrayIconPixel;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -414,6 +394,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             << "ShowPosition: " << TabCustomImage_ShowPosition << ", "
             << "Padding: " << TabCustomImage_Padding << ", "
             << "ShowAsTrayIcon: " << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ", "
+            << "ShowAsFloatingWindow: " << (TabCustomImage_ShowAsFloatingWindow ? "true" : "false") << ", "
             << "TrayIconPixel: " << TabCustomImage_TrayIconPixel;
         qDebug().nospace().noquote()
             << "[QTableSetupDialog::showEvent] CustomImagePath: " << TabCustomImage_Path;
@@ -487,6 +468,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image Show As Tray Icon
         ui->customImageShowAsTrayIconCheckBox->setChecked(TabCustomImage_ShowAsTrayIcon);
+
+        // Load Custom Image Show As Floating Window
+        ui->customImageShowAsFloatingWindowCheckBox->setChecked(TabCustomImage_ShowAsFloatingWindow);
     }
 
     QDialog::showEvent(event);
@@ -865,6 +849,25 @@ void QTableSetupDialog::on_customImageTrayIconPixelComboBox_currentIndexChanged(
     }
 
     updateTrayIconPixelSizeWithCurrentText();
+}
+
+void QTableSetupDialog::on_customImageShowAsFloatingWindowCheckBox_stateChanged(int state)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[CustomImageShowAsFloatingWindow] Show as FloatingWindow state changed ->" << (Qt::CheckState)state;
+#endif
+
+    int tabindex = m_TabIndex;
+    if (Qt::Checked == state) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsFloatingWindow = true;
+    }
+    else {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsFloatingWindow = false;
+    }
 }
 
 void QTableSetupDialog::on_floatingWindowSetupButton_clicked()

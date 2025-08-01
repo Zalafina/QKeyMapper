@@ -49,7 +49,7 @@
         <translation type="vanished">Do not show this message again</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="502"/>
+        <location filename="../qkeymapper.h" line="498"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
@@ -321,38 +321,32 @@
     <name>QFloatingWindowSetupDialog</name>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="32"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="25"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="42"/>
         <source>Floating Window Setup</source>
         <translation>Floating Window Setup</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="30"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="46"/>
         <source>Opacity</source>
         <translation>Opacity</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="73"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="26"/>
-        <source>Width</source>
-        <translation>Width</translation>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="43"/>
+        <source>Size</source>
+        <translation>Size</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="89"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="27"/>
-        <source>Height</source>
-        <translation>Height</translation>
-    </message>
-    <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="169"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="28"/>
-        <source>X Position</source>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="137"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="44"/>
+        <source>Position X</source>
         <translation>Position X</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="185"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="29"/>
-        <source>Y Position</source>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="153"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="45"/>
+        <source>Position Y</source>
         <translation>Position Y</translation>
     </message>
 </context>
@@ -2209,7 +2203,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qtablesetupdialog.ui" line="369"/>
         <location filename="../qtablesetupdialog.cpp" line="109"/>
         <source>TrayIcon Pixel</source>
-        <translation>TrayIcon Pixel</translation>
+        <translation>Icon Select</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="337"/>

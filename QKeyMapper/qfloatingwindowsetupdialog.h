@@ -29,6 +29,15 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
 
+private slots:
+    void on_windowSizeSpinBox_valueChanged(int value);
+
+    void on_windowPositionXSpinBox_valueChanged(int position_x);
+
+    void on_windowPositionYSpinBox_valueChanged(int position_y);
+
+    void on_windowOpacitySpinBox_valueChanged(double value);
+
 private:
     static QFloatingWindowSetupDialog *m_instance;
     Ui::QFloatingWindowSetupDialog *ui;

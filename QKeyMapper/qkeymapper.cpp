@@ -6473,6 +6473,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     tab_info.TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
     tab_info.TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
     tab_info.TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
+    tab_info.TabCustomImage_ShowAsFloatingWindow = TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
@@ -7740,6 +7741,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabcustomimage_showpositionList;
     QStringList tabcustomimage_paddingList;
     QStringList tabcustomimage_showastrayiconList;
+    QStringList tabcustomimage_showasfloatingwindowList;
     QVariantList tabcustomimage_trayiconpixelList;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
@@ -7784,6 +7786,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowPosition;
         int tabCustomImage_Padding = s_KeyMappingTabInfoList.at(index).TabCustomImage_Padding;
         bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsTrayIcon;
+        bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsFloatingWindow;
         QSize tabCustomImage_TrayIconPixel = s_KeyMappingTabInfoList.at(index).TabCustomImage_TrayIconPixel;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName.clear();
@@ -7805,6 +7808,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabcustomimage_showpositionList.append(QString::number(tabCustomImage_ShowPosition));
         tabcustomimage_paddingList.append(QString::number(tabCustomImage_Padding));
         tabcustomimage_showastrayiconList.append(tabCustomImage_ShowAsTrayIcon ? "ON" : "OFF");
+        tabcustomimage_showasfloatingwindowList.append(tabCustomImage_ShowAsFloatingWindow ? "ON" : "OFF");
         tabcustomimage_trayiconpixelList.append(tabCustomImage_TrayIconPixel);
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
@@ -8162,6 +8166,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST, tabcustomimage_showastrayiconList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOW, tabcustomimage_showasfloatingwindowList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST, tabcustomimage_trayiconpixelList);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
@@ -9275,6 +9280,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QStringList tabcustomimage_showpositionlist_loaded;
     QStringList tabcustomimage_paddinglist_loaded;
     QStringList tabcustomimage_showastrayiconlist_loaded;
+    QStringList tabcustomimage_showasfloatingwindowlist_loaded;
     QVariantList tabcustomimage_trayiconpixellist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
@@ -9368,6 +9374,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabcustomimage_showpositionlist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST).toStringList();
         tabcustomimage_paddinglist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST).toStringList();
         tabcustomimage_showastrayiconlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST).toStringList();
+        tabcustomimage_showasfloatingwindowlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOW).toStringList();
         tabcustomimage_trayiconpixellist_loaded     = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST).toList();
 
         // Check if we have any tab configuration data to determine if we should initialize
@@ -9444,6 +9451,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (tabcustomimage_showastrayiconlist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     tabcustomimage_showastrayiconlist_loaded.append(QString());
+                }
+            }
+            if (tabcustomimage_showasfloatingwindowlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabcustomimage_showasfloatingwindowlist_loaded.append(QString());
                 }
             }
             if (tabcustomimage_trayiconpixellist_loaded.isEmpty()) {
@@ -10364,6 +10376,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 (str == "ON") ? true :
                 (str == "OFF") ? false :
                 TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
+        }
+        if (index < tabcustomimage_showasfloatingwindowlist_loaded.size()) {
+            const QString &str = tabcustomimage_showasfloatingwindowlist_loaded.at(index);
+            s_KeyMappingTabInfoList[index].TabCustomImage_ShowAsFloatingWindow =
+                (str == "ON") ? true :
+                (str == "OFF") ? false :
+                TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }
@@ -11810,6 +11829,7 @@ void QKeyMapper::mappingStartNotification()
     QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
     int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
     QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
+    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
     QString description = ui->descriptionLineEdit->text();
     QString notificationSetting;
     if (description.isEmpty()) {
@@ -11879,7 +11899,7 @@ void QKeyMapper::mappingStartNotification()
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
 
-    if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
+    if (tabCustomImage_ShowAsFloatingWindow
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
         options.position = FLOATINGICONWINDOW_POSITION_DEFAULT;
@@ -13627,6 +13647,7 @@ void QKeyMapper::clearKeyMappingTabWidget()
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
+        s_KeyMappingTabInfoList[0].TabCustomImage_ShowAsFloatingWindow = TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
     }
 
     m_KeyMappingTabWidget->setTabText(0, "Tab1");
@@ -17725,7 +17746,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 
         // Calculate new size (use the larger delta to maintain square shape)
         int deltaSize = qMax(mouseDelta.x(), mouseDelta.y());
-        int newSize = qMax(MIN_WINDOW_SIZE, qMin(MAX_WINDOW_SIZE, m_ResizeStartSize.width() + deltaSize));
+        int newSize = qMax(FLOATINGICONWINDOW_SIZE_MIN, qMin(FLOATINGICONWINDOW_SIZE_MAX, m_ResizeStartSize.width() + deltaSize));
 
         QSize newWindowSize(newSize, newSize);
         if (newWindowSize != size()) {
@@ -17793,7 +17814,7 @@ void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
 void QFloatingIconWindow::wheelEvent(QWheelEvent *event)
 {
     // Adjust opacity with mouse wheel
-    double opacityChange = (event->angleDelta().y() > 0) ? OPACITY_STEP : -OPACITY_STEP;
+    double opacityChange = (event->angleDelta().y() > 0) ? WHEEL_OPACITY_STEP : -WHEEL_OPACITY_STEP;
     double newOpacity = qMax(FLOATINGICONWINDOW_OPACITY_MIN, qMin(FLOATINGICONWINDOW_OPACITY_MAX, m_CurrentOpacity + opacityChange));
 
     if (qAbs(newOpacity - m_CurrentOpacity) > 0.001) {

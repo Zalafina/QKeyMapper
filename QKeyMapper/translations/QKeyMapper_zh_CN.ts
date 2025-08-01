@@ -49,7 +49,7 @@
         <translation type="vanished">不再显示此消息</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="502"/>
+        <location filename="../qkeymapper.h" line="498"/>
         <source>OK</source>
         <translation>确认</translation>
     </message>
@@ -321,38 +321,32 @@
     <name>QFloatingWindowSetupDialog</name>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="32"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="25"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="42"/>
         <source>Floating Window Setup</source>
         <translation>悬浮窗口设定</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="30"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="46"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="73"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="26"/>
-        <source>Width</source>
-        <translation>宽度</translation>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="43"/>
+        <source>Size</source>
+        <translation>大小</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="89"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="27"/>
-        <source>Height</source>
-        <translation>高度</translation>
-    </message>
-    <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="169"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="28"/>
-        <source>X Position</source>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="137"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="44"/>
+        <source>Position X</source>
         <translation>坐标 X</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="185"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="29"/>
-        <source>Y Position</source>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="153"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="45"/>
+        <source>Position Y</source>
         <translation>坐标 Y</translation>
     </message>
 </context>
@@ -2209,7 +2203,7 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qtablesetupdialog.ui" line="369"/>
         <location filename="../qtablesetupdialog.cpp" line="109"/>
         <source>TrayIcon Pixel</source>
-        <translation>托盘图标像素</translation>
+        <translation>图标选择</translation>
     </message>
     <message>
         <location filename="../qtablesetupdialog.ui" line="337"/>

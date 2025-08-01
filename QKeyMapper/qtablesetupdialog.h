@@ -68,6 +68,8 @@ private slots:
 
     void on_customImageTrayIconPixelComboBox_currentIndexChanged(int index);
 
+    void on_customImageShowAsFloatingWindowCheckBox_stateChanged(int state);
+
     void on_floatingWindowSetupButton_clicked();
 
 private:

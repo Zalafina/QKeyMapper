@@ -163,8 +163,8 @@ struct FloatingWindowOptions {
     QPoint position = FLOATINGICONWINDOW_POSITION_DEFAULT;          // Window position
     QSize size = FLOATINGICONWINDOW_SIZE_DEFAULT;                   // Window size (square)
     QColor backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
-    double windowOpacity = 1.0;                                     // Window opacity (0.1~1.0)
-    int borderRadius = 0;                                           // Border radius
+    double windowOpacity = FLOATINGICONWINDOW_OPACITY_DEFAULT;      // Window opacity (0.1~1.0)
+    int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
     QString iconPath;                                               // Icon file path (.ico/.png)
     int iconPadding = 0;                                            // Padding between icon and window border
 };
@@ -262,6 +262,7 @@ struct KeyMappingTab_Info
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;
     bool TabCustomImage_ShowAsTrayIcon;
+    bool TabCustomImage_ShowAsFloatingWindow;
     QSize TabCustomImage_TrayIconPixel;
     QPoint FloatingWindow_Position;
     QSize FloatingWindow_Size;
@@ -426,9 +427,7 @@ private:
     QPoint m_ResizeStartMousePos;               // Mouse position when resize started
 
     static constexpr int RESIZE_HANDLE_SIZE = 8;    // Size of resize handle area
-    static constexpr double OPACITY_STEP = 0.05;    // Opacity change step
-    static constexpr int MIN_WINDOW_SIZE = 20;      // Minimum window size
-    static constexpr int MAX_WINDOW_SIZE = 500;     // Maximum window size
+    static constexpr double WHEEL_OPACITY_STEP = 0.05;    // Opacity change step
 };
 
 class SystrayMenu : public QMenu

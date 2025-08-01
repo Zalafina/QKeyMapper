@@ -12,10 +12,19 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    ui->windowPositionXSpinBox->setRange(FLOATINGICONWINDOW_POSITION_MIN.x(),
+                                         FLOATINGICONWINDOW_POSITION_MAX.x());
+    ui->windowPositionYSpinBox->setRange(FLOATINGICONWINDOW_POSITION_MIN.y(),
+                                         FLOATINGICONWINDOW_POSITION_MAX.y());
     ui->windowPositionXSpinBox->setValue(FLOATINGICONWINDOW_POSITION_DEFAULT.x());
     ui->windowPositionYSpinBox->setValue(FLOATINGICONWINDOW_POSITION_DEFAULT.y());
-    ui->windowWidthSpinBox->setValue(FLOATINGICONWINDOW_SIZE_DEFAULT.width());
-    ui->windowHeightSpinBox->setValue(FLOATINGICONWINDOW_SIZE_DEFAULT.height());
+
+    ui->windowSizeSpinBox->setRange(FLOATINGICONWINDOW_SIZE_MIN,
+                                     FLOATINGICONWINDOW_SIZE_MAX);
+    ui->windowSizeSpinBox->setValue(FLOATINGICONWINDOW_SIZE_DEFAULT.width());
+
+    ui->windowOpacitySpinBox->setRange(FLOATINGICONWINDOW_OPACITY_MIN,
+                                       FLOATINGICONWINDOW_OPACITY_MAX);
     ui->windowOpacitySpinBox->setDecimals(FLOATINGICONWINDOW_OPACITY_DECIMALS);
     ui->windowOpacitySpinBox->setSingleStep(FLOATINGICONWINDOW_OPACITY_SINGLESTEP);
     ui->windowOpacitySpinBox->setValue(FLOATINGICONWINDOW_OPACITY_DEFAULT);
@@ -31,10 +40,9 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     Q_UNUSED(languageindex);
 
     setWindowTitle(tr("Floating Window Setup"));
-    ui->windowWidthLabel->setText(tr("Width"));
-    ui->windowHeightLabel->setText(tr("Height"));
-    ui->windowPositionXLabel->setText(tr("X Position"));
-    ui->windowPositionYLabel->setText(tr("Y Position"));
+    ui->windowSizeLabel->setText(tr("Size"));
+    ui->windowPositionXLabel->setText(tr("Position X"));
+    ui->windowPositionYLabel->setText(tr("Position Y"));
     ui->windowOpacityLabel->setText(tr("Opacity"));
 }
 
@@ -91,10 +99,68 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
 
         ui->windowPositionXSpinBox->setValue(WindowPosition.x());
         ui->windowPositionYSpinBox->setValue(WindowPosition.y());
-        ui->windowWidthSpinBox->setValue(WindowSize.width());
-        ui->windowHeightSpinBox->setValue(WindowSize.height());
+        ui->windowSizeSpinBox->setValue(WindowSize.width());
         ui->windowOpacitySpinBox->setValue(WindowOpacity);
     }
 
     QDialog::showEvent(event);
+}
+
+void QFloatingWindowSetupDialog::on_windowSizeSpinBox_valueChanged(int value)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[FloatingWindowSetup] Floating Window Size value changed ->" << value;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Size = QSize(value, value);
+}
+
+
+void QFloatingWindowSetupDialog::on_windowPositionXSpinBox_valueChanged(int position_x)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[FloatingWindowSetup] Floating Window Position X changed ->" << position_x;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Position.setX(position_x);
+}
+
+
+void QFloatingWindowSetupDialog::on_windowPositionYSpinBox_valueChanged(int position_y)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[FloatingWindowSetup] Floating Window Position Y changed ->" << position_y;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Position.setY(position_y);
+}
+
+
+void QFloatingWindowSetupDialog::on_windowOpacitySpinBox_valueChanged(double value)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[FloatingWindowSetup] Floating Window Opacity value changed ->" << value;
+#endif
+
+    int tabindex = m_TabIndex;
+    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Opacity = value;
 }
