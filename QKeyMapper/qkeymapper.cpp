@@ -441,6 +441,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
+    m_PopupNotification = new QPopupNotification(Q_NULLPTR);
+    m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
     ui->settingNameLineEdit->setText(loadresult);
@@ -451,8 +453,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIcon->show();
     initGyro2MouseSpinBoxes();
 
-    m_PopupNotification = new QPopupNotification(Q_NULLPTR);
-    m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     m_deviceListWindow = new QInputDeviceListWindow(this);
     // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
@@ -11879,8 +11879,8 @@ void QKeyMapper::mappingStartNotification()
     if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
-        options.position = QPoint(50, 50);
-        options.size = QSize(72, 72);
+        options.position = FLOATINGICONWINDOW_POSITION_DEFAULT;
+        options.size = FLOATINGICONWINDOW_SIZE_DEFAULT;
         options.windowOpacity = 1.0;
         options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
         if (!options.backgroundColor.isValid()) {
@@ -12814,7 +12814,7 @@ void QKeyMapper::initSysTrayIcon()
 void QKeyMapper::initPopupMessage()
 {
     m_PopupMessageLabel = new QLabel(this);
-    m_PopupMessageLabel->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+    m_PopupMessageLabel->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     m_PopupMessageLabel->setAttribute(Qt::WA_TranslucentBackground);
     m_PopupMessageLabel->setAttribute(Qt::WA_ShowWithoutActivating);
     m_PopupMessageLabel->setAlignment(Qt::AlignCenter);
@@ -15669,8 +15669,6 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     int y = windowGeometry.y() + (windowGeometry.height() - m_PopupMessageLabel->height()) / 2;
     m_PopupMessageLabel->move(x, y);
 
-    m_PopupMessageLabel->setWindowFlag(Qt::WindowStaysOnTopHint);
-
     m_PopupMessageAnimation->setDuration(displayDuration);
     m_PopupMessageAnimation->setStartValue(1.0);
     m_PopupMessageAnimation->setEndValue(0.0);
@@ -17346,7 +17344,7 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     , m_CurrentPopupOptions()
 {
     // Config Window Attribute
-    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
@@ -17478,8 +17476,6 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
     y += options.yOffset;
     move(x, y);
 
-    this->setWindowFlag(Qt::WindowStaysOnTopHint);
-
     // --- 6. Opacity and Animations ---
     setWindowOpacity(std::clamp(options.windowOpacity, 0.0, 1.0));
 
@@ -17545,8 +17541,8 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     m_IconLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
 
     // Set default size and position
-    resize(64, 64);
-    move(100, 100);
+    resize(FLOATINGICONWINDOW_SIZE_DEFAULT);
+    move(FLOATINGICONWINDOW_POSITION_DEFAULT);
 
     // Hide initially
     hide();
@@ -17672,11 +17668,11 @@ void QFloatingIconWindow::paintEvent(QPaintEvent *event)
     }
 
     // Draw resize handle indicator in bottom-right corner
-    if (isInResizeHandle(mapFromGlobal(QCursor::pos()))) {
-        QRect handleRect = getResizeHandleRect();
-        painter.setBrush(QBrush(QColor(100, 100, 100, 100)));
-        painter.drawRect(handleRect);
-    }
+    // if (isInResizeHandle(mapFromGlobal(QCursor::pos()))) {
+    //     QRect handleRect = getResizeHandleRect();
+    //     painter.setBrush(QBrush(QColor(100, 100, 100, 100)));
+    //     painter.drawRect(handleRect);
+    // }
 }
 
 void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)

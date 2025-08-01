@@ -160,9 +160,9 @@ struct PopupNotificationOptions {
 };
 
 struct FloatingWindowOptions {
-    QPoint position = QPoint(100, 100);                             // Window position
-    QSize size = QSize(64, 64);                                     // Window size (square)
-    QColor backgroundColor = QColor(0, 0, 0, 0);                    // Background color
+    QPoint position = FLOATINGICONWINDOW_POSITION_DEFAULT;          // Window position
+    QSize size = FLOATINGICONWINDOW_SIZE_DEFAULT;                   // Window size (square)
+    QColor backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
     double windowOpacity = 1.0;                                     // Window opacity (0.1~1.0)
     int borderRadius = 0;                                           // Border radius
     QString iconPath;                                               // Icon file path (.ico/.png)
