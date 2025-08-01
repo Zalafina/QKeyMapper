@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QFileDialog>
 #include "colorpickerwidget.h"
+#include "qfloatingwindowsetupdialog.h"
 
 namespace Ui {
 class QTableSetupDialog;
@@ -34,6 +35,7 @@ public:
 
     int getSettingSelectIndex(void);
     bool isSelectImageFileDialogVisible(void);
+    bool isFloatingWindowSetupDialogVisible(void);
 
 protected:
     bool event(QEvent *event) override;
@@ -66,6 +68,8 @@ private slots:
 
     void on_customImageTrayIconPixelComboBox_currentIndexChanged(int index);
 
+    void on_floatingWindowSetupButton_clicked();
+
 private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
@@ -74,6 +78,9 @@ private:
     ColorPickerWidget *m_NotificationFontColorPicker;
     ColorPickerWidget *m_NotificationBackgroundColorPicker;
     QFileDialog *m_SelectImageFileDialog = Q_NULLPTR;
+
+public:
+    QFloatingWindowSetupDialog *m_FloatingWindowSetupDialog = Q_NULLPTR;
 };
 
 #endif // QTABLESETUPDIALOG_H

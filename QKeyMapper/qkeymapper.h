@@ -263,6 +263,9 @@ struct KeyMappingTab_Info
     int TabCustomImage_Padding;
     bool TabCustomImage_ShowAsTrayIcon;
     QSize TabCustomImage_TrayIconPixel;
+    QPoint FloatingWindow_Position;
+    QSize FloatingWindow_Size;
+    double  FloatingWindow_Opacity;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };
@@ -423,9 +426,7 @@ private:
     QPoint m_ResizeStartMousePos;               // Mouse position when resize started
 
     static constexpr int RESIZE_HANDLE_SIZE = 8;    // Size of resize handle area
-    static constexpr double OPACITY_STEP = 0.02;    // Opacity change step
-    static constexpr double MIN_OPACITY = 0.1;      // Minimum opacity
-    static constexpr double MAX_OPACITY = 1.0;      // Maximum opacity
+    static constexpr double OPACITY_STEP = 0.05;    // Opacity change step
     static constexpr int MIN_WINDOW_SIZE = 20;      // Minimum window size
     static constexpr int MAX_WINDOW_SIZE = 500;     // Maximum window size
 };
@@ -1106,6 +1107,7 @@ private:
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
+    void closeFloatingWindowSetupDialog(void);
 
     void showTableSetupDialog(int tabindex);
     void closeTableSetupDialog(void);

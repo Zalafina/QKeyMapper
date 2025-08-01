@@ -16,6 +16,8 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    m_FloatingWindowSetupDialog = new QFloatingWindowSetupDialog(this);
+
     initSelectImageFileDialog();
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
@@ -106,6 +108,10 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 
     ui->customImageTrayIconPixelLabel->setText(tr("TrayIcon Pixel"));
     ui->customImageTrayIconPixelComboBox->setItemText(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT, tr("Default"));
+
+    if (m_FloatingWindowSetupDialog != Q_NULLPTR) {
+        m_FloatingWindowSetupDialog->setUILanguage(languageindex);
+    }
 }
 
 void QTableSetupDialog::resetFontSize()
@@ -142,6 +148,10 @@ void QTableSetupDialog::resetFontSize()
     ui->exportTableButton->setFont(customFont);
     ui->importTableButton->setFont(customFont);
     ui->removeTableButton->setFont(customFont);
+
+    if (m_FloatingWindowSetupDialog != Q_NULLPTR) {
+        m_FloatingWindowSetupDialog->resetFontSize();
+    }
 }
 
 void QTableSetupDialog::setTabIndex(int tabindex)
@@ -343,12 +353,23 @@ bool QTableSetupDialog::isSelectImageFileDialogVisible()
     }
 }
 
+bool QTableSetupDialog::isFloatingWindowSetupDialogVisible()
+{
+    if (m_FloatingWindowSetupDialog && m_FloatingWindowSetupDialog->isVisible()) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
             if (QKeyMapper::isSelectColorDialogVisible()
-                || isSelectImageFileDialogVisible()) {
+                || isSelectImageFileDialogVisible()
+                || isFloatingWindowSetupDialogVisible()) {
             }
             else {
                 close();
@@ -844,4 +865,23 @@ void QTableSetupDialog::on_customImageTrayIconPixelComboBox_currentIndexChanged(
     }
 
     updateTrayIconPixelSizeWithCurrentText();
+}
+
+void QTableSetupDialog::on_floatingWindowSetupButton_clicked()
+{
+    if (Q_NULLPTR == m_FloatingWindowSetupDialog) {
+        return;
+    }
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[on_floatingWindowSetupButton_clicked] Show Floating Window Setup Dialog";
+#endif
+
+    if (!m_FloatingWindowSetupDialog->isVisible()) {
+        m_FloatingWindowSetupDialog->setTabIndex(m_TabIndex);
+        m_FloatingWindowSetupDialog->show();
+    }
 }

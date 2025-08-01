@@ -584,6 +584,7 @@ void QKeyMapper::WindowStateChangedProc(void)
 #endif
         closeSelectColorDialog();
         closeTableSetupDialog();
+        closeFloatingWindowSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
@@ -5838,6 +5839,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             m_LastWindowPosition = pos(); // Save the current position before hiding
             closeSelectColorDialog();
             closeTableSetupDialog();
+            closeFloatingWindowSetupDialog();
             closeItemSetupDialog();
             closeCrosshairSetupDialog();
             closeGyro2MouseAdvancedSettingDialog();
@@ -6130,6 +6132,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
     if (m_KeyMapStatus != KEYMAP_IDLE){
         closeSelectColorDialog();
         closeTableSetupDialog();
+        closeFloatingWindowSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
@@ -12145,6 +12148,17 @@ void QKeyMapper::closeCrosshairSetupDialog()
     }
 }
 
+void QKeyMapper::closeFloatingWindowSetupDialog()
+{
+    if (Q_NULLPTR == QTableSetupDialog::getInstance()->m_FloatingWindowSetupDialog) {
+        return;
+    }
+
+    if (QTableSetupDialog::getInstance()->m_FloatingWindowSetupDialog->isVisible()) {
+        QTableSetupDialog::getInstance()->m_FloatingWindowSetupDialog->close();
+    }
+}
+
 void QKeyMapper::showTableSetupDialog(int tabindex)
 {
     if (Q_NULLPTR == m_TableSetupDialog) {
@@ -13049,6 +13063,7 @@ void QKeyMapper::switchShowHide()
         m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
         closeTableSetupDialog();
+        closeFloatingWindowSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
@@ -13079,6 +13094,7 @@ void QKeyMapper::forceHide()
         closeSelectColorDialog();
         closeInputDeviceListWindow();
         closeTableSetupDialog();
+        closeFloatingWindowSetupDialog();
         closeItemSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
@@ -17778,7 +17794,7 @@ void QFloatingIconWindow::wheelEvent(QWheelEvent *event)
 {
     // Adjust opacity with mouse wheel
     double opacityChange = (event->angleDelta().y() > 0) ? OPACITY_STEP : -OPACITY_STEP;
-    double newOpacity = qMax(MIN_OPACITY, qMin(MAX_OPACITY, m_CurrentOpacity + opacityChange));
+    double newOpacity = qMax(FLOATINGICONWINDOW_OPACITY_MIN, qMin(FLOATINGICONWINDOW_OPACITY_MAX, m_CurrentOpacity + opacityChange));
 
     if (qAbs(newOpacity - m_CurrentOpacity) > 0.001) {
         m_CurrentOpacity = newOpacity;
