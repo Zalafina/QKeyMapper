@@ -130,7 +130,13 @@ namespace QKeyMapperConstants {
     inline constexpr const char NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR[] = "#26de81";
     inline constexpr const char NOTIFICATION_COLOR_NORMAL_DEFAULT_STR[] = "#d6a2e8";
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     inline constexpr QColor NOTIFICATION_COLOR_GLOBAL_DEFAULT = QColor(38, 222, 129);
     inline constexpr QColor NOTIFICATION_COLOR_NORMAL_DEFAULT = QColor(214, 162, 232);
     inline constexpr QColor NOTIFICATION_BACKGROUND_COLOR_DEFAULT = QColor(0,0,0,120);
+#else
+    inline const QColor NOTIFICATION_COLOR_GLOBAL_DEFAULT = QColor(38, 222, 129);
+    inline const QColor NOTIFICATION_COLOR_NORMAL_DEFAULT = QColor(214, 162, 232);
+    inline const QColor NOTIFICATION_BACKGROUND_COLOR_DEFAULT = QColor(0,0,0,120);
+#endif
 }

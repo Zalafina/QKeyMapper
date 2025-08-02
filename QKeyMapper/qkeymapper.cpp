@@ -17834,7 +17834,11 @@ void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
             // Start resizing
             m_Resizing = true;
             m_ResizeStartSize = size();
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
             m_ResizeStartMousePos = event->globalPosition().toPoint();
+#else
+            m_ResizeStartMousePos = event->globalPos();
+#endif
             setCursor(Qt::SizeFDiagCursor);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::mousePressEvent] Start resizing from size:" << m_ResizeStartSize;
@@ -17842,7 +17846,11 @@ void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
         } else {
             // Start dragging
             m_Dragging = true;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
             m_DragStartPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+#else
+            m_DragStartPosition = event->globalPos() - frameGeometry().topLeft();
+#endif
             setCursor(Qt::ClosedHandCursor);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::mousePressEvent] Start dragging from position:" << pos();
@@ -17856,7 +17864,11 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_Resizing && (event->buttons() & Qt::LeftButton)) {
         // Handle window resizing (maintain 1:1 aspect ratio)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         QPoint globalMousePos = event->globalPosition().toPoint();
+#else
+        QPoint globalMousePos = event->globalPos();
+#endif
         QPoint mouseDelta = globalMousePos - m_ResizeStartMousePos;
 
         // Calculate new size (use the larger delta to maintain square shape)
@@ -17874,7 +17886,11 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         setCursor(Qt::SizeFDiagCursor);
     } else if (m_Dragging && (event->buttons() & Qt::LeftButton)) {
         // Handle window dragging
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         QPoint newPos = event->globalPosition().toPoint() - m_DragStartPosition;
+#else
+        QPoint newPos = event->globalPos() - m_DragStartPosition;
+#endif
 
         // Keep window within screen bounds
         // QScreen *screen = QApplication::screenAt(event->globalPosition().toPoint());
