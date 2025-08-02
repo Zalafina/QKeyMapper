@@ -769,8 +769,11 @@ const char *MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST = "MappingTable_TabCustomImage_
 const char *MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST = "MappingTable_TabCustomImage_ShowPositionList";
 const char *MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST = "MappingTable_TabCustomImage_PaddingList";
 const char *MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST = "MappingTable_TabCustomImage_ShowAsTrayIconList";
-const char *MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOW = "MappingTable_TabCustomImage_ShowAsFloatingWindow";
+const char *MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST = "MappingTable_TabCustomImage_ShowAsFloatingWindowList";
 const char *MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST = "MappingTable_TabCustomImage_TrayIconPixelList";
+const char *MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST = "MappingTable_FloatingWindow_PositionList";
+const char *MAPPINGTABLE_FLOATINGWINDOW_SIZELIST = "MappingTable_FloatingWindow_SizeList";
+const char *MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST = "MappingTable_FloatingWindow_OpacityList";
 const char *CLEARALL = "KeyMapData_ClearAll";
 
 const char *PROCESSINFO_FILENAME = "ProcessInfo_FileName";

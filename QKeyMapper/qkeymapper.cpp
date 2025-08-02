@@ -7743,6 +7743,9 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabcustomimage_showastrayiconList;
     QStringList tabcustomimage_showasfloatingwindowList;
     QVariantList tabcustomimage_trayiconpixelList;
+    QVariantList floatingwindow_positionList;
+    QVariantList floatingwindow_sizeList;
+    QStringList floatingwindow_opacityList;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
@@ -7788,6 +7791,9 @@ void QKeyMapper::saveKeyMapSetting(void)
         bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsTrayIcon;
         bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsFloatingWindow;
         QSize tabCustomImage_TrayIconPixel = s_KeyMappingTabInfoList.at(index).TabCustomImage_TrayIconPixel;
+        QPoint floatingWindow_Position = s_KeyMappingTabInfoList.at(index).FloatingWindow_Position;
+        QSize floatingWindow_Size = s_KeyMappingTabInfoList.at(index).FloatingWindow_Size;
+        double floatingWindow_Opacity = s_KeyMappingTabInfoList.at(index).FloatingWindow_Opacity;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName.clear();
 #ifdef DEBUG_LOGOUT_ON
@@ -7810,6 +7816,9 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabcustomimage_showastrayiconList.append(tabCustomImage_ShowAsTrayIcon ? "ON" : "OFF");
         tabcustomimage_showasfloatingwindowList.append(tabCustomImage_ShowAsFloatingWindow ? "ON" : "OFF");
         tabcustomimage_trayiconpixelList.append(tabCustomImage_TrayIconPixel);
+        floatingwindow_positionList.append(floatingWindow_Position);
+        floatingwindow_sizeList.append(floatingWindow_Size);
+        floatingwindow_opacityList.append(QString::number(floatingWindow_Opacity, 'f', FLOATINGICONWINDOW_OPACITY_DECIMALS));
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -8166,8 +8175,11 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST, tabcustomimage_showastrayiconList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOW, tabcustomimage_showasfloatingwindowList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST, tabcustomimage_showasfloatingwindowList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST, tabcustomimage_trayiconpixelList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST, floatingwindow_positionList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST, floatingwindow_sizeList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST, floatingwindow_opacityList);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -9282,6 +9294,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QStringList tabcustomimage_showastrayiconlist_loaded;
     QStringList tabcustomimage_showasfloatingwindowlist_loaded;
     QVariantList tabcustomimage_trayiconpixellist_loaded;
+    QVariantList floatingwindow_positionlist_loaded;
+    QVariantList floatingwindow_sizelist_loaded;
+    QStringList floatingwindow_opacitylist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -9374,8 +9389,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabcustomimage_showpositionlist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST).toStringList();
         tabcustomimage_paddinglist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST).toStringList();
         tabcustomimage_showastrayiconlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST).toStringList();
-        tabcustomimage_showasfloatingwindowlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOW).toStringList();
+        tabcustomimage_showasfloatingwindowlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST).toStringList();
         tabcustomimage_trayiconpixellist_loaded     = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST).toList();
+        floatingwindow_positionlist_loaded          = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST).toList();
+        floatingwindow_sizelist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST).toList();
+        floatingwindow_opacitylist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST).toStringList();
 
         // Check if we have any tab configuration data to determine if we should initialize
         if (tabnamelist_loaded.isEmpty()) {
@@ -9461,6 +9479,21 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (tabcustomimage_trayiconpixellist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     tabcustomimage_trayiconpixellist_loaded.append(QSize());
+                }
+            }
+            if (floatingwindow_positionlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_positionlist_loaded.append(QPoint(-80000, -80000));
+                }
+            }
+            if (floatingwindow_sizelist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_sizelist_loaded.append(QSize());
+                }
+            }
+            if (floatingwindow_opacitylist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_opacitylist_loaded.append(QString());
                 }
             }
 
@@ -10327,7 +10360,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
         }
         if (index < tabcustomimage_trayiconpixellist_loaded.size()) {
-            const QSize &trayiconpixel = tabcustomimage_trayiconpixellist_loaded.at(index).toSize();
+            QSize trayiconpixel = tabcustomimage_trayiconpixellist_loaded.at(index).toSize();
             if (!trayiconpixel.isEmpty()) {
                 s_KeyMappingTabInfoList[index].TabCustomImage_TrayIconPixel = trayiconpixel;
             }
@@ -10368,6 +10401,39 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 s_KeyMappingTabInfoList[index].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+            }
+        }
+        if (index < floatingwindow_positionlist_loaded.size()) {
+            QPoint floatingwindow_position = floatingwindow_positionlist_loaded.at(index).toPoint();
+            if (floatingwindow_position.x() < FLOATINGICONWINDOW_POSITION_MIN.x()
+                || floatingwindow_position.y() < FLOATINGICONWINDOW_POSITION_MIN.y()
+                || floatingwindow_position.x() > FLOATINGICONWINDOW_POSITION_MAX.x()
+                || floatingwindow_position.y() > FLOATINGICONWINDOW_POSITION_MAX.y()) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Position = FLOATINGICONWINDOW_POSITION_DEFAULT;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Position = floatingwindow_position;
+            }
+        }
+        if (index < floatingwindow_sizelist_loaded.size()) {
+            QSize floatingwindow_size = floatingwindow_sizelist_loaded.at(index).toSize();
+            if (floatingwindow_size.width() < FLOATINGICONWINDOW_SIZE_MIN
+                || floatingwindow_size.height() < FLOATINGICONWINDOW_SIZE_MIN
+                || floatingwindow_size.width() > FLOATINGICONWINDOW_SIZE_MAX
+                || floatingwindow_size.height() > FLOATINGICONWINDOW_SIZE_MAX) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Size = FLOATINGICONWINDOW_SIZE_DEFAULT;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Size = floatingwindow_size;
+            }
+        }
+        if (index < floatingwindow_opacitylist_loaded.size()) {
+            int floatingwindow_opacity = floatingwindow_opacitylist_loaded.at(index).toDouble();
+            if (FLOATINGICONWINDOW_OPACITY_MIN <= floatingwindow_opacity && floatingwindow_opacity <= FLOATINGICONWINDOW_OPACITY_MAX) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Opacity = floatingwindow_opacity;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Opacity = FLOATINGICONWINDOW_OPACITY_DEFAULT;
             }
         }
         if (index < tabcustomimage_showastrayiconlist_loaded.size()) {
@@ -11902,9 +11968,9 @@ void QKeyMapper::mappingStartNotification()
     if (tabCustomImage_ShowAsFloatingWindow
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
-        options.position = FLOATINGICONWINDOW_POSITION_DEFAULT;
-        options.size = FLOATINGICONWINDOW_SIZE_DEFAULT;
-        options.windowOpacity = 1.0;
+        options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
+        options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
+        options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
         options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
         if (!options.backgroundColor.isValid()) {
             options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
