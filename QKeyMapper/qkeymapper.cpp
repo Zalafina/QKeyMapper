@@ -11896,7 +11896,6 @@ void QKeyMapper::mappingStartNotification()
     QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
     int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
     QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
-    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
     QString description = ui->descriptionLineEdit->text();
     QString notificationSetting;
     if (description.isEmpty()) {
@@ -11963,6 +11962,7 @@ void QKeyMapper::mappingStartNotification()
         opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
     }
 
+    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
     if (tabCustomImage_ShowAsFloatingWindow
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
@@ -12085,6 +12085,23 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
         opts.iconPath = tabCustomImage_Path;
         opts.iconPosition = tabCustomImage_ShowPosition;
         opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+    }
+
+    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
+    if (tabCustomImage_ShowAsFloatingWindow
+        && !tabCustomImage_Path.isEmpty()) {
+        FloatingWindowOptions options;
+        options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
+        options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
+        options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
+        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+        if (!options.backgroundColor.isValid()) {
+            options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+        }
+        options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+        options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
+
+        QKeyMapper::getInstance()->showFloatingIconWindow(options);
     }
 
     // Show Notification Popup
@@ -17673,6 +17690,8 @@ QFloatingIconWindow::~QFloatingIconWindow()
 
 void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &options)
 {
+    hide(); // Hide the window before updating content
+
     m_CurrentOptions = options;
     m_CurrentOpacity = options.windowOpacity;
 
