@@ -383,12 +383,14 @@ public:
     FloatingWindowOptions getCurrentOptions() const { return m_CurrentOptions; }
 
 public slots:
+    void onWindowPositionChanged(const QPoint &newPosition);
+    void onWindowSizeChanged(const QSize &newSize);
     void onWindowOpacityChanged(double newOpacity);
 
 signals:
-    // void windowPositionChanged(const QPoint &newPosition);
-    // void windowSizeChanged(const QSize &newSize);
-    // void windowOpacityChanged(double newOpacity);
+    void windowPositionChanged(const QPoint &newPosition);
+    void windowSizeChanged(const QSize &newSize);
+    void windowOpacityChanged(double newOpacity);
     // void windowSettingsChanged(const FloatingWindowOptions &newOptions);
 
 protected:

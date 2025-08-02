@@ -17650,7 +17650,9 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     // Hide initially
     hide();
 
-    // QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
+    QObject::connect(this, &QFloatingIconWindow::windowPositionChanged, this, &QFloatingIconWindow::onWindowPositionChanged);
+    QObject::connect(this, &QFloatingIconWindow::windowSizeChanged, this, &QFloatingIconWindow::onWindowSizeChanged);
+    QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::QFloatingIconWindow] Floating icon window created";
@@ -17739,16 +17741,61 @@ void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &opti
 #endif
 }
 
-void QFloatingIconWindow::onWindowOpacityChanged(double newOpacity)
+void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newPosition)
 {
+    int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onWindowOpacityChanged] Floating window opacity changed to:" << newOpacity;
+    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Floating Window Position ->" << newPosition;
 #endif
 
-    if (m_CurrentOpacity != newOpacity
-        && newOpacity >= 0.1 && newOpacity <= 1.0) {
-        m_CurrentOpacity = newOpacity;
+    if (newPosition.x() < FLOATINGICONWINDOW_POSITION_MIN.x()
+        || newPosition.y() < FLOATINGICONWINDOW_POSITION_MIN.y()
+        || newPosition.x() > FLOATINGICONWINDOW_POSITION_MAX.x()
+        || newPosition.y() > FLOATINGICONWINDOW_POSITION_MAX.y()) {
+        return;
     }
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Position = newPosition;
+}
+
+void QFloatingIconWindow::onWindowSizeChanged(const QSize &newSize)
+{
+    int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::onWindowSizeChanged] Floating Window Size ->" << newSize;
+#endif
+
+    if (newSize.width() < FLOATINGICONWINDOW_SIZE_MIN
+        || newSize.height() < FLOATINGICONWINDOW_SIZE_MIN
+        || newSize.width() > FLOATINGICONWINDOW_SIZE_MAX
+        || newSize.height() > FLOATINGICONWINDOW_SIZE_MAX) {
+        return;
+    }
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Size = newSize;
+}
+
+void QFloatingIconWindow::onWindowOpacityChanged(double newOpacity)
+{
+    int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::onWindowOpacityChanged] Floating Window Opacity ->" << newOpacity;
+#endif
+
+    if (newOpacity < FLOATINGICONWINDOW_OPACITY_MIN || newOpacity > FLOATINGICONWINDOW_OPACITY_MAX) {
+        return;
+    }
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Opacity = newOpacity;
 }
 
 void QFloatingIconWindow::paintEvent(QPaintEvent *event)
@@ -17818,7 +17865,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         if (newWindowSize != size()) {
             resize(newWindowSize);
             m_CurrentOptions.size = newWindowSize;
-            // emit windowSizeChanged(newWindowSize);
+            emit windowSizeChanged(newWindowSize);
             // emit windowSettingsChanged(m_CurrentOptions);
         }
         // Keep resize cursor during resize operation
@@ -17838,7 +17885,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         if (newPos != pos()) {
             move(newPos);
             m_CurrentOptions.position = newPos;
-            // emit windowPositionChanged(newPos);
+            emit windowPositionChanged(newPos);
             // emit windowSettingsChanged(m_CurrentOptions);
         }
         // Keep drag cursor during drag operation
@@ -17887,12 +17934,8 @@ void QFloatingIconWindow::wheelEvent(QWheelEvent *event)
         m_CurrentOpacity = newOpacity;
         m_CurrentOptions.windowOpacity = newOpacity;
         updateWindowStyle();
-        // emit windowOpacityChanged(newOpacity);
+        emit windowOpacityChanged(newOpacity);
         // emit windowSettingsChanged(m_CurrentOptions);
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QFloatingIconWindow::wheelEvent] Opacity changed to:" << newOpacity;
-#endif
     }
 
     QWidget::wheelEvent(event);
