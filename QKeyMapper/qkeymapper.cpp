@@ -10428,7 +10428,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
         }
         if (index < floatingwindow_opacitylist_loaded.size()) {
-            int floatingwindow_opacity = floatingwindow_opacitylist_loaded.at(index).toDouble();
+            double floatingwindow_opacity = floatingwindow_opacitylist_loaded.at(index).toDouble();
             if (FLOATINGICONWINDOW_OPACITY_MIN <= floatingwindow_opacity && floatingwindow_opacity <= FLOATINGICONWINDOW_OPACITY_MAX) {
                 s_KeyMappingTabInfoList[index].FloatingWindow_Opacity = floatingwindow_opacity;
             }
@@ -17902,24 +17902,21 @@ void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
 #ifdef DEBUG_LOGOUT_ON
-        bool wasResizing = m_Resizing;
-        bool wasDragging = m_Dragging;
+        if (m_Dragging) {
+            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished dragging to position:" << pos();
+        }
+        if (m_Resizing) {
+            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished resizing to size:" << size();
+        }
 #endif
-
         m_Dragging = false;
         m_Resizing = false;
 
         // After releasing mouse button, update cursor based on current position
         updateCursorForPosition(event->pos());
 
-#ifdef DEBUG_LOGOUT_ON
-        if (wasResizing) {
-            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished resizing to size:" << size();
-        }
-        if (wasDragging) {
-            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished dragging to position:" << pos();
-        }
-#endif
+        emit windowPositionChanged(pos());
+        emit windowSizeChanged(size());
     }
     QWidget::mouseReleaseEvent(event);
 }
