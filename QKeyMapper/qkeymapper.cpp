@@ -17762,12 +17762,12 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         QPoint newPos = event->globalPosition().toPoint() - m_DragStartPosition;
 
         // Keep window within screen bounds
-        QScreen *screen = QApplication::screenAt(event->globalPosition().toPoint());
-        if (screen) {
-            QRect screenGeometry = screen->availableGeometry();
-            newPos.setX(qMax(0, qMin(newPos.x(), screenGeometry.width() - width())));
-            newPos.setY(qMax(0, qMin(newPos.y(), screenGeometry.height() - height())));
-        }
+        // QScreen *screen = QApplication::screenAt(event->globalPosition().toPoint());
+        // if (screen) {
+        //     QRect screenGeometry = screen->availableGeometry();
+        //     newPos.setX(qMax(0, qMin(newPos.x(), screenGeometry.width() - width())));
+        //     newPos.setY(qMax(0, qMin(newPos.y(), screenGeometry.height() - height())));
+        // }
 
         if (newPos != pos()) {
             move(newPos);
