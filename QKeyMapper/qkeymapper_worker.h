@@ -352,16 +352,16 @@ struct RecordKeyData {
     {
         QDebugStateSaver saver(debug);
         QString input_type_str;
-        if (INPUT_INIT == data.input_type) {
+        if (QKeyMapperConstants::INPUT_INIT == data.input_type) {
 			input_type_str = "INPUT_INIT";
 		}
-		else if (INPUT_KEY_UP == data.input_type) {
+		else if (QKeyMapperConstants::INPUT_KEY_UP == data.input_type) {
 			input_type_str = "INPUT_KEY_UP";
 		}
-		else if (INPUT_KEY_DOWN == data.input_type) {
+		else if (QKeyMapperConstants::INPUT_KEY_DOWN == data.input_type) {
 			input_type_str = "INPUT_KEY_DOWN";
 		}
-		else if (INPUT_MOUSE_WHEEL == data.input_type) {
+		else if (QKeyMapperConstants::INPUT_MOUSE_WHEEL == data.input_type) {
 			input_type_str = "INPUT_MOUSE_WHEEL";
 		}
 		else {
