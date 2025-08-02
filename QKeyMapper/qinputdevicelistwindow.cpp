@@ -3,6 +3,8 @@
 #include "ui_qinputdevicelistwindow.h"
 #include "qkeymapper_constants.h"
 
+using namespace QKeyMapperConstants;
+
 QInputDeviceListWindow::QInputDeviceListWindow(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QInputDeviceListWindow)

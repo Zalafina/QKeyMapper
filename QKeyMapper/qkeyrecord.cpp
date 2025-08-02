@@ -3,6 +3,8 @@
 #include "ui_qkeyrecord.h"
 #include "qkeymapper_constants.h"
 
+using namespace QKeyMapperConstants;
+
 QAtomicBool QKeyRecord::s_KeyRecordDiagShow;
 QKeyRecord *QKeyRecord::m_instance = Q_NULLPTR;
 

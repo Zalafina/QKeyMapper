@@ -2,6 +2,8 @@
 #include "qnotificationsetupdialog.h"
 #include "ui_qnotificationsetupdialog.h"
 
+using namespace QKeyMapperConstants;
+
 QNotificationSetupDialog *QNotificationSetupDialog::m_instance = Q_NULLPTR;
 
 QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)

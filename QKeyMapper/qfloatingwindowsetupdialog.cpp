@@ -1,7 +1,8 @@
 #include "qkeymapper.h"
-// #include "qkeymapper_constants.h"
 #include "qfloatingwindowsetupdialog.h"
 #include "ui_qfloatingwindowsetupdialog.h"
+
+using namespace QKeyMapperConstants;
 
 QFloatingWindowSetupDialog *QFloatingWindowSetupDialog::m_instance = Q_NULLPTR;
 

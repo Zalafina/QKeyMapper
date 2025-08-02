@@ -3,6 +3,8 @@
 #include "qtablesetupdialog.h"
 #include "ui_qtablesetupdialog.h"
 
+using namespace QKeyMapperConstants;
+
 QTableSetupDialog *QTableSetupDialog::m_instance = Q_NULLPTR;
 
 QTableSetupDialog::QTableSetupDialog(QWidget *parent)

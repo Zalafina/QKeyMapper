@@ -1,6 +1,8 @@
 #include "qkeymapper.h"
 #include "colorpickerwidget.h"
 
+using namespace QKeyMapperConstants;
+
 ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int buttonWidth)
     : QWidget(parent)
     , m_buttonText(buttonText)

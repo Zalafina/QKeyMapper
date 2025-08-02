@@ -32,6 +32,7 @@
 using QAtomicBool = QAtomicInteger<bool>;
 
 #include "qkeymapper_constants.h"
+#include "qkeymapper_constants_modern.h"
 
 #define OLD_SEPARATOR_PLUS      (" + ")
 #define OLD_SEPARATOR_NEXTARROW (" » ")
@@ -114,8 +115,8 @@ typedef struct MAP_KEYDATA
     , Note()
     , Category()
     , Burst(false)
-    , BurstPressTime(BURST_PRESS_TIME_DEFAULT)
-    , BurstReleaseTime(BURST_RELEASE_TIME_DEFAULT)
+    , BurstPressTime(QKeyMapperConstants::BURST_PRESS_TIME_DEFAULT)
+    , BurstReleaseTime(QKeyMapperConstants::BURST_RELEASE_TIME_DEFAULT)
     , Lock(false)
     , MappingKeyUnlock(false)
     , PostMappingKey(false)
@@ -126,8 +127,8 @@ typedef struct MAP_KEYDATA
     , PassThrough(false)
     , SendTiming(SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)
-    , RepeatMode(REPEAT_MODE_NONE)
-    , RepeatTimes(REPEAT_TIMES_DEFAULT)
+    , RepeatMode(QKeyMapperConstants::REPEAT_MODE_NONE)
+    , RepeatTimes(QKeyMapperConstants::REPEAT_TIMES_DEFAULT)
     , Crosshair_CenterColor(CROSSHAIR_CENTERCOLOR_DEFAULT)
     , Crosshair_CenterSize(CROSSHAIR_CENTERSIZE_DEFAULT)
     , Crosshair_CenterOpacity(CROSSHAIR_CENTEROPACITY_DEFAULT)

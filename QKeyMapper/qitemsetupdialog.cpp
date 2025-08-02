@@ -3,6 +3,8 @@
 #include "ui_qitemsetupdialog.h"
 #include "qkeymapper_constants.h"
 
+using namespace QKeyMapperConstants;
+
 QItemSetupDialog *QItemSetupDialog::m_instance = Q_NULLPTR;
 QStringList QItemSetupDialog::s_valiedOriginalKeyList;
 QStringList QItemSetupDialog::s_valiedMappingKeyList;

@@ -2,6 +2,8 @@
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
 
+using namespace QKeyMapperConstants;
+
 QMutex SendInputTask::s_SendInputTaskControllerMapMutex;
 QHash<QString, SendInputTaskController> SendInputTask::s_SendInputTaskControllerMap;
 SendInputTaskController SendInputTask::s_GlobalSendInputTaskController;

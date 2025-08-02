@@ -139,11 +139,11 @@ struct ValidationResult
 };
 
 struct PopupNotificationOptions {
-    QString color = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;          // Text color
+    QString color = QKeyMapperConstants::NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;          // Text color
     int displayDuration = NOTIFICATION_DISPLAY_DURATION_DEFAULT;    // Display duration (ms)
     int position = NOTIFICATION_POSITION_TOP_RIGHT;                 // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
     int size = NOTIFICATION_FONT_SIZE_DEFAULT;                      // Font size
-    QColor backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
+    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
     double windowOpacity = NOTIFICATION_OPACITY_DEFAULT;            // Window opacity (0.0~1.0)
     int padding = NOTIFICATION_PADDING_DEFAULT;                     // Padding
     int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
@@ -162,8 +162,8 @@ struct PopupNotificationOptions {
 struct FloatingWindowOptions {
     QPoint position = FLOATINGICONWINDOW_POSITION_DEFAULT;          // Window position
     QSize size = FLOATINGICONWINDOW_SIZE_DEFAULT;                   // Window size (square)
-    QColor backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
-    double windowOpacity = FLOATINGICONWINDOW_OPACITY_DEFAULT;      // Window opacity (0.1~1.0)
+    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
+    double windowOpacity = QKeyMapperConstants::FLOATINGICONWINDOW_OPACITY_DEFAULT;      // Window opacity (0.1~1.0)
     int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
     QString iconPath;                                               // Icon file path (.ico/.png)
     int iconPadding = 0;                                            // Padding between icon and window border
@@ -438,7 +438,7 @@ class SystrayMenu : public QMenu
 
 public:
     explicit SystrayMenu(QWidget *parent = Q_NULLPTR) : QMenu(parent)
-    , m_MenuItem_Pressed(SYSTRAY_MENU_ITEM_PRESSED_NONE)
+    , m_MenuItem_Pressed(QKeyMapperConstants::SYSTRAY_MENU_ITEM_PRESSED_NONE)
     {}
 
 protected:
@@ -641,8 +641,8 @@ public:
     static HWND getHWND_byPID(DWORD dwProcessID);
     static BOOL CALLBACK enumIconGroupsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
     static BOOL CALLBACK enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
-    static QIcon extractIconFromExecutable(const QString &filePath, int targetSize = DEFAULT_ICON_WIDTH);
-    static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = BEST_ICON_SIZE);
+    static QIcon extractIconFromExecutable(const QString &filePath, int targetSize = QKeyMapperConstants::DEFAULT_ICON_WIDTH);
+    static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = QKeyMapperConstants::BEST_ICON_SIZE);
     // static QIcon extractAllBestIconsFromExecutable(const QString &filePath);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
