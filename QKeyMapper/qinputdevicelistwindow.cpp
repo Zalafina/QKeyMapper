@@ -1,7 +1,6 @@
 #include "interception_worker.h"
 #include "qinputdevicelistwindow.h"
 #include "ui_qinputdevicelistwindow.h"
-#include "qkeymapper_constants.h"
 
 using namespace QKeyMapperConstants;
 

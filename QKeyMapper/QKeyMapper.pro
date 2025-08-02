@@ -185,7 +185,6 @@ SOURCES     += \
     qinputdevicelistwindow.cpp \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
-    qkeymapper_constants.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
     qnotificationsetupdialog.cpp \
@@ -197,7 +196,6 @@ HEADERS     += \
     qinputdevicelistwindow.h \
     qkeymapper.h \
     qkeymapper_worker.h \
-    qkeymapper_constants_modern.h \
     qkeymapper_constants.h
 
 contains( DEFINES, SINGLE_APPLICATION ) {

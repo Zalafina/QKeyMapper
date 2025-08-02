@@ -17,6 +17,8 @@
 #endif
 #endif
 
+using namespace QKeyMapperConstants;
+
 #ifdef LOGOUT_TOFILE
 static QMutex *logfile_mutex = Q_NULLPTR;
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
@@ -245,7 +247,7 @@ int main(int argc, char *argv[])
     workerThread->start();
 
     QKeyMapper w;
-    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(JOYSTICK_INVALID_INSTANCE_ID);
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(QKeyMapperConstants::JOYSTICK_INVALID_INSTANCE_ID);
     emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
     emit QKeyMapper::getInstance()->checkFilterKeysEnabled_Signal();
 

@@ -1,7 +1,6 @@
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
 #include "qkeymapper_constants.h"
-#include "qkeymapper_constants_modern.h"
 
 using namespace QKeyMapperConstants;
 using namespace Gdiplus;

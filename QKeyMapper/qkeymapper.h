@@ -139,34 +139,34 @@ struct ValidationResult
 };
 
 struct PopupNotificationOptions {
-    QString color = QKeyMapperConstants::NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;          // Text color
-    int displayDuration = NOTIFICATION_DISPLAY_DURATION_DEFAULT;    // Display duration (ms)
-    int position = NOTIFICATION_POSITION_TOP_RIGHT;                 // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
-    int size = NOTIFICATION_FONT_SIZE_DEFAULT;                      // Font size
-    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
-    double windowOpacity = NOTIFICATION_OPACITY_DEFAULT;            // Window opacity (0.0~1.0)
-    int padding = NOTIFICATION_PADDING_DEFAULT;                     // Padding
-    int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
-    int fontWeight = QFont::Bold;                                   // Font weight
-    bool fontItalic = false;                                        // Italic font
-    int fadeInDuration = NOTIFICATION_FADEIN_DURATION_DEFAULT;      // Fade-in animation duration (ms)
-    int fadeOutDuration = NOTIFICATION_FADEOUT_DURATION_DEFAULT;    // Fade-out animation duration (ms)
-    int xOffset = NOTIFICATION_X_OFFSET_DEFAULT;                    // X offset
-    int yOffset = NOTIFICATION_Y_OFFSET_DEFAULT;                    // Y offset
+    QString color = QKeyMapperConstants::NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;             // Text color
+    int displayDuration = QKeyMapperConstants::NOTIFICATION_DISPLAY_DURATION_DEFAULT;       // Display duration (ms)
+    int position = QKeyMapperConstants::NOTIFICATION_POSITION_TOP_RIGHT;                    // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
+    int size = QKeyMapperConstants::NOTIFICATION_FONT_SIZE_DEFAULT;                         // Font size
+    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT;    // Background color
+    double windowOpacity = QKeyMapperConstants::NOTIFICATION_OPACITY_DEFAULT;               // Window opacity (0.0~1.0)
+    int padding = QKeyMapperConstants::NOTIFICATION_PADDING_DEFAULT;                        // Padding
+    int borderRadius = QKeyMapperConstants::NOTIFICATION_BORDER_RADIUS_DEFAULT;             // Border radius
+    int fontWeight = QFont::Bold;                                                           // Font weight
+    bool fontItalic = false;                                                                // Italic font
+    int fadeInDuration = QKeyMapperConstants::NOTIFICATION_FADEIN_DURATION_DEFAULT;         // Fade-in animation duration (ms)
+    int fadeOutDuration = QKeyMapperConstants::NOTIFICATION_FADEOUT_DURATION_DEFAULT;       // Fade-out animation duration (ms)
+    int xOffset = QKeyMapperConstants::NOTIFICATION_X_OFFSET_DEFAULT;                       // X offset
+    int yOffset = QKeyMapperConstants::NOTIFICATION_Y_OFFSET_DEFAULT;                       // Y offset
 
-    QString iconPath;                                               // Optional icon path (PNG/ICO)
-    int iconPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;            // Icon position
-    int iconPadding = 0;                                            // Padding between icon and text
+    QString iconPath;                                                                       // Optional icon path (PNG/ICO)
+    int iconPosition = QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_DEFAULT;               // Icon position
+    int iconPadding = 0;                                                                    // Padding between icon and text
 };
 
 struct FloatingWindowOptions {
-    QPoint position = FLOATINGICONWINDOW_POSITION_DEFAULT;          // Window position
-    QSize size = FLOATINGICONWINDOW_SIZE_DEFAULT;                   // Window size (square)
-    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT; // Background color
-    double windowOpacity = QKeyMapperConstants::FLOATINGICONWINDOW_OPACITY_DEFAULT;      // Window opacity (0.1~1.0)
-    int borderRadius = NOTIFICATION_BORDER_RADIUS_DEFAULT;          // Border radius
-    QString iconPath;                                               // Icon file path (.ico/.png)
-    int iconPadding = 0;                                            // Padding between icon and window border
+    QPoint position = QKeyMapperConstants::FLOATINGICONWINDOW_POSITION_DEFAULT;             // Window position
+    QSize size = QKeyMapperConstants::FLOATINGICONWINDOW_SIZE_DEFAULT;                      // Window size (square)
+    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT;    // Background color
+    double windowOpacity = QKeyMapperConstants::FLOATINGICONWINDOW_OPACITY_DEFAULT;         // Window opacity (0.1~1.0)
+    int borderRadius = QKeyMapperConstants::NOTIFICATION_BORDER_RADIUS_DEFAULT;             // Border radius
+    QString iconPath;                                                                       // Icon file path (.ico/.png)
+    int iconPadding = 0;                                                                    // Padding between icon and window border
 };
 
 struct Gamepad_Info
@@ -177,7 +177,7 @@ struct Gamepad_Info
     ushort productid;
     QString serial;
     bool isvirtual;
-    bool gyro_enabled;
+    int gyro_enabled;
     QString info_string;
 
     Gamepad_Info() : instance_id(-1), name(), vendorid(0), productid(0), serial(), isvirtual(false) {}
@@ -462,7 +462,7 @@ public:
 
     CustomMessageBox(QWidget *parent = nullptr, QString message = QString(), QString checkbox_message = QString(), IconType iconType = Warning)
         : QDialog(parent) {
-        setWindowTitle(PROGRAM_NAME);
+        setWindowTitle(QKeyMapperConstants::PROGRAM_NAME);
 
         QVBoxLayout *mainLayout = new QVBoxLayout(this);
 

@@ -1,7 +1,6 @@
 #include "qkeymapper.h"
 #include "qitemsetupdialog.h"
 #include "ui_qitemsetupdialog.h"
-#include "qkeymapper_constants.h"
 
 using namespace QKeyMapperConstants;
 

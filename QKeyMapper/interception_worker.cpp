@@ -2,6 +2,8 @@
 #include "interception_worker.h"
 #include "qkeymapper_constants.h"
 
+using namespace QKeyMapperConstants;
+
 InterceptionContext Interception_Worker::s_InterceptionContext = Q_NULLPTR;
 QAtomicBool Interception_Worker::s_RebootRequired = QAtomicBool();
 bool Interception_Worker::s_libusb_available = false;

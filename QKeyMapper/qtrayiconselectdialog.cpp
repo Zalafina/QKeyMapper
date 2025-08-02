@@ -1,7 +1,8 @@
 #include "qtrayiconselectdialog.h"
 #include "ui_qtrayiconselectdialog.h"
 #include "qkeymapper.h"
-#include "qkeymapper_constants.h"
+
+using namespace QKeyMapperConstants;
 
 QTrayIconSelectDialog *QTrayIconSelectDialog::m_instance = Q_NULLPTR;
 

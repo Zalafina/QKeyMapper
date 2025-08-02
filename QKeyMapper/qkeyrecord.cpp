@@ -1,7 +1,6 @@
 #include "qkeymapper.h"
 #include "qkeyrecord.h"
 #include "ui_qkeyrecord.h"
-#include "qkeymapper_constants.h"
 
 using namespace QKeyMapperConstants;
 

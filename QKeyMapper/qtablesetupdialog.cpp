@@ -1,5 +1,4 @@
 #include "qkeymapper.h"
-#include "qkeymapper_constants.h"
 #include "qtablesetupdialog.h"
 #include "ui_qtablesetupdialog.h"
 

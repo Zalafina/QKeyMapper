@@ -2,6 +2,8 @@
 #include "ui_qgyro2mouseoptiondialog.h"
 #include "qkeymapper_constants.h"
 
+using namespace QKeyMapperConstants;
+
 QGyro2MouseOptionDialog *QGyro2MouseOptionDialog::m_instance = Q_NULLPTR;
 
 QGyro2MouseOptionDialog::QGyro2MouseOptionDialog(QWidget *parent)

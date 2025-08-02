@@ -7,6 +7,7 @@
 #include <QHash>
 #include <QColor>
 #include <QPoint>
+#include <QSize>
 // #include <QHotkey>
 #include <QThreadPool>
 #include <QWaitCondition>
@@ -32,7 +33,6 @@
 using QAtomicBool = QAtomicInteger<bool>;
 
 #include "qkeymapper_constants.h"
-#include "qkeymapper_constants_modern.h"
 
 #define OLD_SEPARATOR_PLUS      (" + ")
 #define OLD_SEPARATOR_NEXTARROW (" » ")
@@ -120,29 +120,29 @@ typedef struct MAP_KEYDATA
     , Lock(false)
     , MappingKeyUnlock(false)
     , PostMappingKey(false)
-    , FixedVKeyCode(FIXED_VIRTUAL_KEY_CODE_NONE)
-    , LockState(LOCK_STATE_LOCKOFF)
+    , FixedVKeyCode(QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_NONE)
+    , LockState(QKeyMapperConstants::LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
     , Unbreakable(false)
     , PassThrough(false)
-    , SendTiming(SENDTIMING_NORMAL)
+    , SendTiming(QKeyMapperConstants::SENDTIMING_NORMAL)
     , KeySeqHoldDown(false)
     , RepeatMode(QKeyMapperConstants::REPEAT_MODE_NONE)
     , RepeatTimes(QKeyMapperConstants::REPEAT_TIMES_DEFAULT)
-    , Crosshair_CenterColor(CROSSHAIR_CENTERCOLOR_DEFAULT)
-    , Crosshair_CenterSize(CROSSHAIR_CENTERSIZE_DEFAULT)
-    , Crosshair_CenterOpacity(CROSSHAIR_CENTEROPACITY_DEFAULT)
-    , Crosshair_CrosshairColor(CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)
-    , Crosshair_CrosshairWidth(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT)
-    , Crosshair_CrosshairLength(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT)
-    , Crosshair_CrosshairOpacity(CROSSHAIR_CROSSHAIROPACITY_DEFAULT)
+    , Crosshair_CenterColor(QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT)
+    , Crosshair_CenterSize(QKeyMapperConstants::CROSSHAIR_CENTERSIZE_DEFAULT)
+    , Crosshair_CenterOpacity(QKeyMapperConstants::CROSSHAIR_CENTEROPACITY_DEFAULT)
+    , Crosshair_CrosshairColor(QKeyMapperConstants::CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)
+    , Crosshair_CrosshairWidth(QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_DEFAULT)
+    , Crosshair_CrosshairLength(QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_DEFAULT)
+    , Crosshair_CrosshairOpacity(QKeyMapperConstants::CROSSHAIR_CROSSHAIROPACITY_DEFAULT)
     , Crosshair_ShowCenter(true)
     , Crosshair_ShowTop(true)
     , Crosshair_ShowBottom(true)
     , Crosshair_ShowLeft(true)
     , Crosshair_ShowRight(true)
-    , Crosshair_X_Offset(CROSSHAIR_X_OFFSET_DEFAULT)
-    , Crosshair_Y_Offset(CROSSHAIR_Y_OFFSET_DEFAULT)
+    , Crosshair_X_Offset(QKeyMapperConstants::CROSSHAIR_X_OFFSET_DEFAULT)
+    , Crosshair_Y_Offset(QKeyMapperConstants::CROSSHAIR_Y_OFFSET_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
@@ -157,8 +157,8 @@ typedef struct MAP_KEYDATA
                 int crosshair_x_offset, int crosshair_y_offset)
     {
         Original_Key = originalkey;
-        Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_NEXT);
-        Pure_MappingKeys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUSANDNEXT, true);
+        Mapping_Keys = splitMappingKeyString(mappingkeys, QKeyMapperConstants::SPLIT_WITH_NEXT);
+        Pure_MappingKeys = splitMappingKeyString(mappingkeys, QKeyMapperConstants::SPLIT_WITH_PLUSANDNEXT, true);
         Pure_MappingKeys.removeDuplicates();
         Pure_OriginalKeys = splitOriginalKeyString(originalkey, true);
         Pure_OriginalKeys.removeDuplicates();
@@ -167,8 +167,8 @@ typedef struct MAP_KEYDATA
             Pure_MappingKeys_KeyUp = Pure_MappingKeys;
         }
         else {
-            MappingKeys_KeyUp = splitMappingKeyString(mappingkeys_keyup, SPLIT_WITH_NEXT);
-            Pure_MappingKeys_KeyUp = splitMappingKeyString(mappingkeys_keyup, SPLIT_WITH_PLUSANDNEXT, true);
+            MappingKeys_KeyUp = splitMappingKeyString(mappingkeys_keyup, QKeyMapperConstants::SPLIT_WITH_NEXT);
+            Pure_MappingKeys_KeyUp = splitMappingKeyString(mappingkeys_keyup, QKeyMapperConstants::SPLIT_WITH_PLUSANDNEXT, true);
             Pure_MappingKeys_KeyUp.removeDuplicates();
         }
         Note = note;
@@ -180,7 +180,7 @@ typedef struct MAP_KEYDATA
         MappingKeyUnlock = mappingkeys_unlock;
         PostMappingKey = postmappingkey;
         FixedVKeyCode = fixedvkeycode;
-        LockState = LOCK_STATE_LOCKOFF;
+        LockState = QKeyMapperConstants::LOCK_STATE_LOCKOFF;
         CheckCombKeyOrder = checkcombkeyorder;
         Unbreakable = unbreakable;
         PassThrough = passthrough;
@@ -345,7 +345,7 @@ struct RecordKeyData {
     int input_type;
     qint64 elapsed_time;
 
-    RecordKeyData() : keystring(), input_type(INPUT_INIT), elapsed_time(0) {}
+    RecordKeyData() : keystring(), input_type(QKeyMapperConstants::INPUT_INIT), elapsed_time(0) {}
 
 #ifdef DEBUG_LOGOUT_ON
     friend QDebug operator<<(QDebug debug, const RecordKeyData& data)
@@ -396,8 +396,8 @@ struct ViGEm_ReportData
 
     ViGEm_ReportData()
         : xusb_report()
-        , custom_radius_ls(VJOY_STICK_RADIUS_MAX)
-        , custom_radius_rs(VJOY_STICK_RADIUS_MAX)
+        , custom_radius_ls(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_rs(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
     {}
 };
 
@@ -742,7 +742,7 @@ public slots:
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);
     void sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey);
-    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
+    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
 public:
     static void sendBurstKeyDown(const QString &burstKey, bool start);
@@ -889,6 +889,9 @@ private:
     void gyro2MouseMoveProc(const GameControllerSensorData &sensor_data);
 
 public:
+    static ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues);
+    static void generateVirtualInputRandomValues(void);
+
     static int InterceptionKeyboardHookProc(UINT scan_code, int keyupdown, ULONG_PTR extra_info, bool ExtenedFlag_e0, bool ExtenedFlag_e1, int keyboard_index);
     static int InterceptionMouseHookProc(MouseEvent mouse_event, int delta_x, int delta_y, short delta_wheel, unsigned short flags, ULONG_PTR extra_info, int mouse_index);
     static LRESULT CALLBACK LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam);
@@ -986,6 +989,19 @@ public:
     void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state);
 
 public:
+    static ULONG_PTR VIRTUAL_KEY_SEND;
+    static ULONG_PTR VIRTUAL_KEY_SEND_NORMAL;
+    static ULONG_PTR VIRTUAL_KEY_SEND_FORCE;
+    static ULONG_PTR VIRTUAL_KEY_SEND_MODIFIERS;
+    static ULONG_PTR VIRTUAL_KEY_SEND_BURST_TIMEOUT;
+    static ULONG_PTR VIRTUAL_KEY_SEND_BURST_STOP;
+    static ULONG_PTR VIRTUAL_KEY_SEND_KEYSEQ_NORMAL;
+    static ULONG_PTR VIRTUAL_KEY_SEND_KEYSEQ_HOLDDOWN;
+    static ULONG_PTR VIRTUAL_KEY_SEND_KEYSEQ_REPEAT;
+    static ULONG_PTR VIRTUAL_MOUSE_POINTCLICK;
+    static ULONG_PTR VIRTUAL_MOUSE_WHEEL;
+    static ULONG_PTR VIRTUAL_KEY_OVERLAY;
+    static ULONG_PTR VIRTUAL_RESEND_REALKEY;
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
     static QAtomicBool s_Mouse2vJoy_Hold;

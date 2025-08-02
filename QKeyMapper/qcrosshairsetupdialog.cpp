@@ -2,6 +2,8 @@
 #include "qcrosshairsetupdialog.h"
 #include "ui_qcrosshairsetupdialog.h"
 
+using namespace QKeyMapperConstants;
+
 QCrosshairSetupDialog *QCrosshairSetupDialog::m_instance = Q_NULLPTR;
 
 QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
