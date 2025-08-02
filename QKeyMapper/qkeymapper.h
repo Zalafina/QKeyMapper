@@ -426,8 +426,8 @@ private:
     QSize m_ResizeStartSize;                    // Start size for resizing
     QPoint m_ResizeStartMousePos;               // Mouse position when resize started
 
-    static constexpr int RESIZE_HANDLE_SIZE = 8;    // Size of resize handle area
-    static constexpr double WHEEL_OPACITY_STEP = 0.05;    // Opacity change step
+    static constexpr int RESIZE_HANDLE_SIZE = 8;            // Size of resize handle area
+    static constexpr double WHEEL_OPACITY_STEP = 0.02;      // Wheel up&down change opacity step
 };
 
 class SystrayMenu : public QMenu
