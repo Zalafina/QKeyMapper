@@ -713,6 +713,18 @@ void QItemSetupDialog::keyPressEvent(QKeyEvent *event)
     QDialog::keyPressEvent(event);
 }
 
+void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
+}
+
 void QItemSetupDialog::initKeyListComboBoxes()
 {
     updateOriginalKeyListComboBox();

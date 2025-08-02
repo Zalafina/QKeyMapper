@@ -173,6 +173,18 @@ void QCrosshairSetupDialog::showEvent(QShowEvent *event)
     QDialog::showEvent(event);
 }
 
+void QCrosshairSetupDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
+}
+
 void QCrosshairSetupDialog::onCenterColorChanged(QColor &color)
 {
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {

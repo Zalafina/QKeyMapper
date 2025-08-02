@@ -95,3 +95,15 @@ bool QGyro2MouseOptionDialog::event(QEvent *event)
     }
     return QDialog::event(event);
 }
+
+void QGyro2MouseOptionDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
+}

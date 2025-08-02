@@ -2,6 +2,7 @@
 #define QGYRO2MOUSEOPTIONDIALOG_H
 
 #include <QDialog>
+#include <QMouseEvent>
 
 namespace Ui {
 class QGyro2MouseOptionDialog;
@@ -34,6 +35,7 @@ public:
 
 protected:
     bool event(QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     static QGyro2MouseOptionDialog *m_instance;

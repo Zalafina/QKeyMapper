@@ -11962,9 +11962,6 @@ void QKeyMapper::mappingStartNotification()
         opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
     }
 
-    // Show Notification Popup
-    showNotificationPopup(popupNotification, opts);
-
     if (tabCustomImage_ShowAsFloatingWindow
         && !tabCustomImage_Path.isEmpty()) {
         FloatingWindowOptions options;
@@ -11980,6 +11977,9 @@ void QKeyMapper::mappingStartNotification()
 
         QKeyMapper::getInstance()->showFloatingIconWindow(options);
     }
+
+    // Show Notification Popup
+    showNotificationPopup(popupNotification, opts);
 }
 
 void QKeyMapper::mappingStopNotification()

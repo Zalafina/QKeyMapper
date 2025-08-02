@@ -106,6 +106,18 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
     QDialog::showEvent(event);
 }
 
+void QFloatingWindowSetupDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
+}
+
 void QFloatingWindowSetupDialog::on_windowSizeSpinBox_valueChanged(int value)
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {

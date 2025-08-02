@@ -281,6 +281,18 @@ bool QNotificationSetupDialog::event(QEvent *event)
     return QDialog::event(event);
 }
 
+void QNotificationSetupDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
+}
+
 void QNotificationSetupDialog::onFontColorChanged(QColor &color)
 {
     Q_UNUSED(color);

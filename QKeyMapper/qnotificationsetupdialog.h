@@ -72,6 +72,7 @@ public:
 
 protected:
     bool event(QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 public slots:
     void onFontColorChanged(QColor &color);
