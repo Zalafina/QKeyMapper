@@ -17680,6 +17680,7 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     // Set window flags for a topmost, frameless window
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_ShowWithoutActivating);
     setAttribute(Qt::WA_DeleteOnClose, false);
 
     // Enable mouse tracking to receive mouse move events even without mouse button pressed
@@ -17748,10 +17749,8 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
     updateIconDisplay();
     updateWindowStyle();
 
-    // Show the window
+    // Show the window without activating it (to avoid stealing focus)
     show();
-    raise();
-    activateWindow();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::showFloatingWindow] Shown at position:" << options.position
