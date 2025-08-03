@@ -17914,8 +17914,17 @@ void QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough] Switch Floating Window Mouse PassThrough.";
+    qDebug() << "[QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough] Switch Floating Window Mouse PassThrough on current state :" << m_MousePassThrough;
 #endif
+
+    if (m_MousePassThrough) {
+        m_MousePassThrough = false;
+    }
+    else {
+        m_MousePassThrough = true;
+    }
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_MousePassThrough = m_MousePassThrough;
+    setMousePassThroughEnabled(m_MousePassThrough);
 }
 
 void QFloatingIconWindow::paintEvent(QPaintEvent *event)
