@@ -450,8 +450,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
-    updateSystemTrayDisplay();
-    m_SysTrayIcon->show();
     initGyro2MouseSpinBoxes();
 
     m_deviceListWindow = new QInputDeviceListWindow(this);
@@ -464,6 +462,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     reloadUILanguage();
     resetFontSize();
     ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
+
+    updateSystemTrayDisplay();
+    m_SysTrayIcon->show();
 
     updateMultiInputStatus();
 #ifdef VIGEM_CLIENT_SUPPORT
