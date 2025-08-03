@@ -389,14 +389,14 @@ public slots:
     void onWindowPositionChanged(const QPoint &newPosition);
     void onWindowSizeChanged(const QSize &newSize);
     void onWindowOpacityChanged(double newOpacity);
-    void onWindowMousePassThroughChanged(bool enabled);
+    // void onWindowMousePassThroughChanged(bool enabled);
     void onSwitchFloatingWindowMousePassThrough(void);
 
 signals:
     void windowPositionChanged(const QPoint &newPosition);
     void windowSizeChanged(const QSize &newSize);
     void windowOpacityChanged(double newOpacity);
-    void windowMousePassThroughChanged(bool enabled);
+    // void windowMousePassThroughChanged(bool enabled);
     // void windowSettingsChanged(const FloatingWindowOptions &newOptions);
 
 protected:

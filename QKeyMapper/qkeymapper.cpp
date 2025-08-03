@@ -17704,7 +17704,7 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     QObject::connect(this, &QFloatingIconWindow::windowPositionChanged, this, &QFloatingIconWindow::onWindowPositionChanged);
     QObject::connect(this, &QFloatingIconWindow::windowSizeChanged, this, &QFloatingIconWindow::onWindowSizeChanged);
     QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
-    QObject::connect(this, &QFloatingIconWindow::windowMousePassThroughChanged, this, &QFloatingIconWindow::onWindowMousePassThroughChanged);
+    // QObject::connect(this, &QFloatingIconWindow::windowMousePassThroughChanged, this, &QFloatingIconWindow::onWindowMousePassThroughChanged);
     QObject::connect(QKeyMapper::getInstance(), &QKeyMapper::switchFloatingWindowMousePassThrough_Signal, this, &QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -17868,6 +17868,7 @@ void QFloatingIconWindow::onWindowOpacityChanged(double newOpacity)
     QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Opacity = newOpacity;
 }
 
+#if 0
 void QFloatingIconWindow::onWindowMousePassThroughChanged(bool enabled)
 {
     int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
@@ -17894,6 +17895,7 @@ void QFloatingIconWindow::onWindowMousePassThroughChanged(bool enabled)
         disableMousePassThrough();
     }
 }
+#endif
 
 void QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough()
 {
