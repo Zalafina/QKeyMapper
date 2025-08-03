@@ -442,7 +442,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
-    m_PopupNotification = new QPopupNotification(Q_NULLPTR);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
@@ -452,6 +451,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     initGyro2MouseSpinBoxes();
 
+    m_PopupNotification = new QPopupNotification(Q_NULLPTR);
     m_deviceListWindow = new QInputDeviceListWindow(this);
     // m_ItemSetupDialog->setWindowFlags(Qt::Popup);
 
