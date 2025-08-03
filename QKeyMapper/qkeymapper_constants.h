@@ -210,6 +210,8 @@ namespace QKeyMapperConstants {
     inline constexpr double FLOATINGICONWINDOW_OPACITY_MAX = 1.0;
     inline constexpr double FLOATINGICONWINDOW_OPACITY_DEFAULT = 1.0;
 
+    inline constexpr bool FLOATINGICONWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
+
     inline constexpr const char CROSSHAIR_CENTERCOLOR_DEFAULT[] = "70a1ff";
     inline constexpr const char CROSSHAIR_CROSSHAIRCOLOR_DEFAULT[] = "70a1ff";
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -747,6 +749,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST[] = "MappingTable_FloatingWindow_PositionList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_SIZELIST[] = "MappingTable_FloatingWindow_SizeList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST[] = "MappingTable_FloatingWindow_OpacityList";
+    inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST[] = "MappingTable_FloatingWindow_MousePassThroughList";
     inline constexpr const char CLEARALL[] = "KeyMapData_ClearAll";
 
     inline constexpr const char PROCESSINFO_FILENAME[] = "ProcessInfo_FileName";

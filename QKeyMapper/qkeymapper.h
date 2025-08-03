@@ -160,13 +160,14 @@ struct PopupNotificationOptions {
 };
 
 struct FloatingWindowOptions {
-    QPoint position = QKeyMapperConstants::FLOATINGICONWINDOW_POSITION_DEFAULT;             // Window position
-    QSize size = QKeyMapperConstants::FLOATINGICONWINDOW_SIZE_DEFAULT;                      // Window size (square)
-    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT;    // Background color
-    double windowOpacity = QKeyMapperConstants::FLOATINGICONWINDOW_OPACITY_DEFAULT;         // Window opacity (0.1~1.0)
-    int borderRadius = QKeyMapperConstants::NOTIFICATION_BORDER_RADIUS_DEFAULT;             // Border radius
-    QString iconPath;                                                                       // Icon file path (.ico/.png)
-    int iconPadding = 0;                                                                    // Padding between icon and window border
+    QPoint position = QKeyMapperConstants::FLOATINGICONWINDOW_POSITION_DEFAULT;                 // Window position
+    QSize size = QKeyMapperConstants::FLOATINGICONWINDOW_SIZE_DEFAULT;                          // Window size (square)
+    QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT;        // Background color
+    double windowOpacity = QKeyMapperConstants::FLOATINGICONWINDOW_OPACITY_DEFAULT;             // Window opacity (0.1~1.0)
+    bool mousePassThrough = QKeyMapperConstants::FLOATINGICONWINDOW_MOUSE_PASSTHROUGH_DEFAULT;  // Mouse pass-through
+    int borderRadius = QKeyMapperConstants::NOTIFICATION_BORDER_RADIUS_DEFAULT;                 // Border radius
+    QString iconPath;                                                                           // Icon file path (.ico/.png)
+    int iconPadding = 0;                                                                        // Padding between icon and window border
 };
 
 struct Gamepad_Info
@@ -267,6 +268,7 @@ struct KeyMappingTab_Info
     QPoint FloatingWindow_Position;
     QSize FloatingWindow_Size;
     double  FloatingWindow_Opacity;
+    bool FloatingWindow_MousePassThrough;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };
@@ -375,6 +377,7 @@ public:
     void showFloatingWindow(const FloatingWindowOptions &options);
     void hideFloatingWindow();
     void updateWindowSettings(const FloatingWindowOptions &options);
+    void setMousePassThroughEnabled(bool enabled);
 
     // Getters for current state
     QPoint getCurrentPosition() const { return pos(); }
@@ -386,11 +389,13 @@ public slots:
     void onWindowPositionChanged(const QPoint &newPosition);
     void onWindowSizeChanged(const QSize &newSize);
     void onWindowOpacityChanged(double newOpacity);
+    void onWindowMousePassThroughChanged(bool enabled);
 
 signals:
     void windowPositionChanged(const QPoint &newPosition);
     void windowSizeChanged(const QSize &newSize);
     void windowOpacityChanged(double newOpacity);
+    void windowMousePassThroughChanged(bool enabled);
     // void windowSettingsChanged(const FloatingWindowOptions &newOptions);
 
 protected:
@@ -414,12 +419,15 @@ private:
     void updateCursorForPosition(const QPoint &pos);
     QRect getResizeHandleRect() const;
     bool isInResizeHandle(const QPoint &pos) const;
+    void enableMousePassThrough(void);
+    void disableMousePassThrough(void);
 
 private:
     QLabel *m_IconLabel;                        // Label to display the icon
     QIcon m_LoadedIcon;                         // Cached icon object
-    FloatingWindowOptions m_CurrentOptions;    // Current window options
+    FloatingWindowOptions m_CurrentOptions;     // Current window options
     double m_CurrentOpacity;                    // Current opacity value
+    bool m_MousePassThrough;                    // Flag for mouse pass-through mode
 
     // Mouse interaction state
     bool m_Dragging;                            // Window dragging state

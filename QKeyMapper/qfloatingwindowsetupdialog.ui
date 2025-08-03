@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>340</width>
-    <height>100</height>
+    <height>140</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>340</width>
-    <height>100</height>
+    <height>140</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>340</width>
-    <height>100</height>
+    <height>140</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -154,6 +154,22 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="mousePassThroughCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>100</y>
+     <width>141</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>MousePassThrough</string>
    </property>
   </widget>
  </widget>

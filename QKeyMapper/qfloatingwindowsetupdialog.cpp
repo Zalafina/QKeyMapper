@@ -45,6 +45,7 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     ui->windowPositionXLabel->setText(tr("Position X"));
     ui->windowPositionYLabel->setText(tr("Position Y"));
     ui->windowOpacityLabel->setText(tr("Opacity"));
+    ui->mousePassThroughCheckBox->setText(tr("MousePassThrough"));
 }
 
 void QFloatingWindowSetupDialog::resetFontSize()
@@ -85,6 +86,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         QPoint WindowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Position;
         QSize WindowSize = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Size;
         double WindowOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
+        bool MousePassThrough = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough;
 
         if (WindowPosition.isNull()) {
             WindowPosition = FLOATINGICONWINDOW_POSITION_DEFAULT;
@@ -102,6 +104,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         ui->windowPositionYSpinBox->setValue(WindowPosition.y());
         ui->windowSizeSpinBox->setValue(WindowSize.width());
         ui->windowOpacitySpinBox->setValue(WindowOpacity);
+        ui->mousePassThroughCheckBox->setChecked(MousePassThrough);
     }
 
     QDialog::showEvent(event);
@@ -176,4 +179,23 @@ void QFloatingWindowSetupDialog::on_windowOpacitySpinBox_valueChanged(double val
 
     int tabindex = m_TabIndex;
     QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Opacity = value;
+}
+
+void QFloatingWindowSetupDialog::on_mousePassThroughCheckBox_stateChanged(int state)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[FloatingWindowSetup] Floating Window Mouse PassThrough state changed ->" << (Qt::CheckState)state;
+#endif
+
+    int tabindex = m_TabIndex;
+    if (Qt::Checked == state) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_MousePassThrough = true;
+    }
+    else {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_MousePassThrough = false;
+    }
 }

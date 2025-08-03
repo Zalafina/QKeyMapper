@@ -39,6 +39,8 @@ private slots:
 
     void on_windowOpacitySpinBox_valueChanged(double value);
 
+    void on_mousePassThroughCheckBox_stateChanged(int state);
+
 private:
     static QFloatingWindowSetupDialog *m_instance;
     Ui::QFloatingWindowSetupDialog *ui;

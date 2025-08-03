@@ -6476,6 +6476,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     tab_info.TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
     tab_info.TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
     tab_info.TabCustomImage_ShowAsFloatingWindow = TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
+    tab_info.FloatingWindow_Opacity = FLOATINGICONWINDOW_OPACITY_DEFAULT;
+    tab_info.FloatingWindow_MousePassThrough = FLOATINGICONWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
@@ -7748,6 +7750,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QVariantList floatingwindow_positionList;
     QVariantList floatingwindow_sizeList;
     QStringList floatingwindow_opacityList;
+    QStringList floatingwindow_mousepassthroughList;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
@@ -7796,6 +7799,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QPoint floatingWindow_Position = s_KeyMappingTabInfoList.at(index).FloatingWindow_Position;
         QSize floatingWindow_Size = s_KeyMappingTabInfoList.at(index).FloatingWindow_Size;
         double floatingWindow_Opacity = s_KeyMappingTabInfoList.at(index).FloatingWindow_Opacity;
+        bool floatingWindow_MousePassThrough = s_KeyMappingTabInfoList.at(index).FloatingWindow_MousePassThrough;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName.clear();
 #ifdef DEBUG_LOGOUT_ON
@@ -7821,6 +7825,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         floatingwindow_positionList.append(floatingWindow_Position);
         floatingwindow_sizeList.append(floatingWindow_Size);
         floatingwindow_opacityList.append(QString::number(floatingWindow_Opacity, 'f', FLOATINGICONWINDOW_OPACITY_DECIMALS));
+        floatingwindow_mousepassthroughList.append(floatingWindow_MousePassThrough ? "ON" : "OFF");
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -8182,6 +8187,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST, floatingwindow_positionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST, floatingwindow_sizeList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST, floatingwindow_opacityList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST, floatingwindow_mousepassthroughList);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -9299,6 +9305,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QVariantList floatingwindow_positionlist_loaded;
     QVariantList floatingwindow_sizelist_loaded;
     QStringList floatingwindow_opacitylist_loaded;
+    QStringList floatingwindow_mousepassthroughlist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -9396,6 +9403,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         floatingwindow_positionlist_loaded          = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST).toList();
         floatingwindow_sizelist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST).toList();
         floatingwindow_opacitylist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST).toStringList();
+        floatingwindow_mousepassthroughlist_loaded  = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST).toStringList();
 
         // Check if we have any tab configuration data to determine if we should initialize
         if (tabnamelist_loaded.isEmpty()) {
@@ -9496,6 +9504,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (floatingwindow_opacitylist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     floatingwindow_opacitylist_loaded.append(QString());
+                }
+            }
+            if (floatingwindow_mousepassthroughlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_mousepassthroughlist_loaded.append(QString());
                 }
             }
 
@@ -10451,6 +10464,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 (str == "ON") ? true :
                 (str == "OFF") ? false :
                 TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
+        }
+        if (index < floatingwindow_mousepassthroughlist_loaded.size()) {
+            const QString &str = floatingwindow_mousepassthroughlist_loaded.at(index);
+            s_KeyMappingTabInfoList[index].FloatingWindow_MousePassThrough =
+                (str == "ON") ? true :
+                (str == "OFF") ? false :
+                FLOATINGICONWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }
@@ -11970,6 +11990,7 @@ void QKeyMapper::mappingStartNotification()
         options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
         options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
         options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
+        options.mousePassThrough = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThrough;
         options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
         if (!options.backgroundColor.isValid()) {
             options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
@@ -12095,6 +12116,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
         options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
         options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
         options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
+        options.mousePassThrough = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThrough;
         options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
         if (!options.backgroundColor.isValid()) {
             options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
@@ -17651,6 +17673,7 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     : QWidget(parent)
     , m_IconLabel(nullptr)
     , m_CurrentOpacity(1.0)
+    , m_MousePassThrough(false)
     , m_Dragging(false)
     , m_Resizing(false)
 {
@@ -17680,10 +17703,13 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     QObject::connect(this, &QFloatingIconWindow::windowPositionChanged, this, &QFloatingIconWindow::onWindowPositionChanged);
     QObject::connect(this, &QFloatingIconWindow::windowSizeChanged, this, &QFloatingIconWindow::onWindowSizeChanged);
     QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
+    QObject::connect(this, &QFloatingIconWindow::windowMousePassThroughChanged, this, &QFloatingIconWindow::onWindowMousePassThroughChanged);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::QFloatingIconWindow] Floating icon window created";
 #endif
+
+    this->createWinId();
 }
 
 QFloatingIconWindow::~QFloatingIconWindow()
@@ -17703,6 +17729,7 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
 
     m_CurrentOptions = options;
     m_CurrentOpacity = options.windowOpacity;
+    m_MousePassThrough = options.mousePassThrough;
 
     // Set window geometry (ensure square shape)
     int squareSize = qMax(options.size.width(), options.size.height());
@@ -17716,8 +17743,9 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
     }
 
     // Update window appearance
-    updateWindowStyle();
+    setMousePassThroughEnabled(options.mousePassThrough);
     updateIconDisplay();
+    updateWindowStyle();
 
     // Show the window
     show();
@@ -17742,6 +17770,7 @@ void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &opti
 {
     m_CurrentOptions = options;
     m_CurrentOpacity = options.windowOpacity;
+    m_MousePassThrough = options.mousePassThrough;
 
     // Update geometry if changed (ensure square shape)
     int squareSize = qMax(options.size.width(), options.size.height());
@@ -17760,14 +17789,23 @@ void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &opti
     }
 
     // Update appearance
-    updateWindowStyle();
     updateIconDisplay();
-    update();
+    updateWindowStyle();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::updateWindowSettings] Updated - position:" << options.position
              << "size:" << newSize << "opacity:" << options.windowOpacity;
 #endif
+}
+
+void QFloatingIconWindow::setMousePassThroughEnabled(bool enabled)
+{
+    if (enabled) {
+        enableMousePassThrough();
+    }
+    else {
+        disableMousePassThrough();
+    }
 }
 
 void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newPosition)
@@ -17778,7 +17816,8 @@ void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newPosition)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Floating Window Position ->" << newPosition;
+    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Floating Window Position ->" << newPosition
+             << ", Current Tab Index:" << current_tabindex;
 #endif
 
     if (newPosition.x() < FLOATINGICONWINDOW_POSITION_MIN.x()
@@ -17798,7 +17837,8 @@ void QFloatingIconWindow::onWindowSizeChanged(const QSize &newSize)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onWindowSizeChanged] Floating Window Size ->" << newSize;
+    qDebug() << "[QFloatingIconWindow::onWindowSizeChanged] Floating Window Size ->" << newSize
+             << ", Current Tab Index:" << current_tabindex;
 #endif
 
     if (newSize.width() < FLOATINGICONWINDOW_SIZE_MIN
@@ -17818,13 +17858,41 @@ void QFloatingIconWindow::onWindowOpacityChanged(double newOpacity)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onWindowOpacityChanged] Floating Window Opacity ->" << newOpacity;
+    qDebug() << "[QFloatingIconWindow::onWindowOpacityChanged] Floating Window Opacity ->" << newOpacity
+             << ", Current Tab Index:" << current_tabindex;
 #endif
 
     if (newOpacity < FLOATINGICONWINDOW_OPACITY_MIN || newOpacity > FLOATINGICONWINDOW_OPACITY_MAX) {
         return;
     }
     QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Opacity = newOpacity;
+}
+
+void QFloatingIconWindow::onWindowMousePassThroughChanged(bool enabled)
+{
+    int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::onWindowMousePassThroughChanged] Floating Window Mouse PassThrough ->" << enabled
+             << ", Current Tab Index:" << current_tabindex;
+#endif
+
+    if (m_MousePassThrough == enabled) {
+        return;
+    }
+
+    m_MousePassThrough = enabled;
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_MousePassThrough = enabled;
+
+    if (enabled) {
+        enableMousePassThrough();
+    }
+    else {
+        disableMousePassThrough();
+    }
 }
 
 void QFloatingIconWindow::paintEvent(QPaintEvent *event)
@@ -18084,6 +18152,22 @@ void QFloatingIconWindow::updateCursorForPosition(const QPoint &pos)
     } else {
         setCursor(Qt::ArrowCursor);
     }
+}
+
+void QFloatingIconWindow::enableMousePassThrough()
+{
+    HWND hwnd = reinterpret_cast<HWND>(this->winId());
+    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+    exStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT;
+    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+}
+
+void QFloatingIconWindow::disableMousePassThrough()
+{
+    HWND hwnd = reinterpret_cast<HWND>(this->winId());
+    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+    exStyle &= ~WS_EX_TRANSPARENT;
+    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 }
 
 #if 0
