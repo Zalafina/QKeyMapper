@@ -579,6 +579,24 @@ namespace QKeyMapperConstants {
     inline constexpr int FIXED_VIRTUAL_KEY_CODE_MAX        = 0xFF;
     inline constexpr int FIXED_VIRTUAL_KEY_CODE_NONE       = 0x00;
 
+    /* Separator chars */
+#ifdef SEPARATOR_CONVERT
+    inline constexpr const char OLD_SEPARATOR_PLUS[] = " + ";
+    inline constexpr const char OLD_SEPARATOR_NEXTARROW[] = " » ";
+#endif
+
+    inline constexpr const char SEPARATOR_PLUS[]                = "+";
+    inline constexpr const char SEPARATOR_NEXTARROW[]           = "»";
+    inline constexpr const char SEPARATOR_WAITTIME[]            = "⏱";
+    inline constexpr const char SEPARATOR_LONGPRESS[]           = "⏲";
+    inline constexpr const char SEPARATOR_DOUBLEPRESS[]         = "✖";
+
+    inline constexpr const char SEPARATOR_KEYMAPDATA_LEVEL1[]   = "#";
+    inline constexpr const char SEPARATOR_KEYMAPDATA_LEVEL2[]   = "|";
+
+    inline constexpr const int MAPPING_KEYS_MAX = 1000;
+    inline constexpr const int KEY_SEQUENCE_MAX = 20000;
+
     /* constant chars for QKeyMapper */
     inline constexpr const char PROGRAM_NAME[] = "QKeyMapper";
     inline constexpr const char CHECK_UPDATES_URL_GITHUB[] = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";

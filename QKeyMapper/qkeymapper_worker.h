@@ -34,27 +34,6 @@ using QAtomicBool = QAtomicInteger<bool>;
 
 #include "qkeymapper_constants.h"
 
-#define OLD_SEPARATOR_PLUS      (" + ")
-#define OLD_SEPARATOR_NEXTARROW (" » ")
-
-#define SEPARATOR_PLUS          ("+")
-#define SEPARATOR_NEXTARROW     ("»")
-#define SEPARATOR_WAITTIME      ("⏱")
-#define SEPARATOR_LONGPRESS     ("⏲")
-#define SEPARATOR_DOUBLEPRESS   ("✖")
-#define SEPARATOR_TITLESETTING  ("|")
-
-#define SEPARATOR_KEYMAPDATA_LEVEL1  ("#")
-#define SEPARATOR_KEYMAPDATA_LEVEL2  ("|")
-
-// #define KEYBOARD_MODIFIERS      ("KeyboardModifiers")
-// #define KEYSEQUENCE_STR         ("KeySequence")
-// #define CLEAR_VIRTUALKEYS       ("ClearVirtualKeys")
-
-#define MAPPING_KEYS_MAX        (1000)
-// #define SEND_INPUTS_MAX         (100)
-#define KEY_SEQUENCE_MAX        (20000)
-
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
 QString getRealOriginalKey(const QString &original_key);
