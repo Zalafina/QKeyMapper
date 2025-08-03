@@ -17704,6 +17704,7 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     QObject::connect(this, &QFloatingIconWindow::windowSizeChanged, this, &QFloatingIconWindow::onWindowSizeChanged);
     QObject::connect(this, &QFloatingIconWindow::windowOpacityChanged, this, &QFloatingIconWindow::onWindowOpacityChanged);
     QObject::connect(this, &QFloatingIconWindow::windowMousePassThroughChanged, this, &QFloatingIconWindow::onWindowMousePassThroughChanged);
+    QObject::connect(QKeyMapper::getInstance(), &QKeyMapper::switchFloatingWindowMousePassThrough_Signal, this, &QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::QFloatingIconWindow] Floating icon window created";
@@ -17893,6 +17894,28 @@ void QFloatingIconWindow::onWindowMousePassThroughChanged(bool enabled)
     else {
         disableMousePassThrough();
     }
+}
+
+void QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough()
+{
+    QKeyMapper::KeyMapStatus keymap_status = QKeyMapper::getInstance()->m_KeyMapStatus;
+    if (keymap_status != QKeyMapper::KEYMAP_MAPPING_MATCHED
+        && keymap_status != QKeyMapper::KEYMAP_MAPPING_GLOBAL) {
+        return;
+    }
+
+    if (!isVisible()) {
+        return;
+    }
+
+    int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough] Switch Floating Window Mouse PassThrough.";
+#endif
 }
 
 void QFloatingIconWindow::paintEvent(QPaintEvent *event)

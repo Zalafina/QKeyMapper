@@ -390,6 +390,7 @@ public slots:
     void onWindowSizeChanged(const QSize &newSize);
     void onWindowOpacityChanged(double newOpacity);
     void onWindowMousePassThroughChanged(bool enabled);
+    void onSwitchFloatingWindowMousePassThrough(void);
 
 signals:
     void windowPositionChanged(const QPoint &newPosition);
@@ -769,6 +770,7 @@ signals:
     void showCarOrdinal_Signal(qint32 car_ordinal);
     void showCrosshairStart_Signal(int rowindex, const QString &crosshair_keystr);
     void showCrosshairStop_Signal(int rowindex, const QString &crosshair_keystr);
+    void switchFloatingWindowMousePassThrough_Signal(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
     void updateVirtualGamepadListDisplay_Signal(void);
