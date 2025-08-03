@@ -17913,6 +17913,13 @@ void QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough()
         return;
     }
 
+    // Check if mouse cursor is within the floating window bounds
+    QPoint globalMousePos = QCursor::pos();
+    QPoint localMousePos = mapFromGlobal(globalMousePos);
+    if (!rect().contains(localMousePos)) {
+        return;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough] Switch Floating Window Mouse PassThrough on current state :" << m_MousePassThrough;
 #endif

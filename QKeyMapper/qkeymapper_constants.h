@@ -847,7 +847,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char SENDTIMING_STR_NORMAL_AND_KEYUP[]     = "NORMAL_AND_KEYUP";
 
     inline constexpr const char SHOW_KEY_DEBUGINFO[]            = "Application";
-    inline constexpr const char SWITCH_MOUSE_PASSTHROUGH_KEY[]  = "F4";
+    inline constexpr const char SWITCH_MOUSE_PASSTHROUGH_KEY[]  = "F11";
     inline constexpr const char SHOW_POINTS_IN_WINDOW_KEY[]     = "F8";
     inline constexpr const char SHOW_POINTS_IN_SCREEN_KEY[]     = "F9";
     inline constexpr const char SHOW_CAR_ORDINAL_KEY[]          = "Home";
