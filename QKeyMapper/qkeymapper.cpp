@@ -13325,11 +13325,10 @@ void QKeyMapper::updateSystemTrayDisplay()
         TrayInfo = ui->settingselectComboBox->currentText();
     }
 
-    // Replace '&' with '&&&' to avoid issues in the system tray tooltip display such as "A&B"
-    TrayInfo.replace("&", "&&&");
+    QString systray_tooltip_status;
     if (KEYMAP_CHECKING == m_KeyMapStatus) {
         m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getMonitoringStateQIcon());
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Monitoring : ") + TrayInfo + ")");
+        systray_tooltip_status = tr("Monitoring : ") + TrayInfo;
     }
     else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
         QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
@@ -13379,17 +13378,26 @@ void QKeyMapper::updateSystemTrayDisplay()
         }
 
         m_SysTrayIcon->setIcon(trayicon);
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : ") + TrayInfo + ")");
+        systray_tooltip_status = tr("Mapping : ") + TrayInfo;
     }
     else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         /* Need to make a new global mapping status ICO */
         m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getGlobalStateQIcon());
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Mapping : Global") + ")");
+        systray_tooltip_status = tr("Mapping : Global");
     }
     else {
-        m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
         m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
+        systray_tooltip_status = tr("Idle");
     }
+    systray_tooltip_status.prepend("【");
+    systray_tooltip_status.append("】");
+
+    // Combine with newline
+    QString systray_tooltip = QString("%1\n%2").arg(PROGRAM_NAME, systray_tooltip_status);
+
+    // Replace '&' with '&&&' to avoid issues in the system tray tooltip display such as "A&B"
+    systray_tooltip.replace("&", "&&&");
+    m_SysTrayIcon->setToolTip(systray_tooltip);
 }
 
 void QKeyMapper::showInformationPopup(const QString &message)
