@@ -9,26 +9,37 @@ QFloatingWindowSetupDialog *QFloatingWindowSetupDialog::m_instance = Q_NULLPTR;
 QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QFloatingWindowSetupDialog)
+    , m_FloatingWindow_BGColorPicker(new ColorPickerWidget(this, "FW_BGColor", COLORPICKER_BUTTON_WIDTH_FLOATINGWINDOW_BGCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
 
-    ui->windowPositionXSpinBox->setRange(FLOATINGICONWINDOW_POSITION_MIN.x(),
-                                         FLOATINGICONWINDOW_POSITION_MAX.x());
-    ui->windowPositionYSpinBox->setRange(FLOATINGICONWINDOW_POSITION_MIN.y(),
-                                         FLOATINGICONWINDOW_POSITION_MAX.y());
-    ui->windowPositionXSpinBox->setValue(FLOATINGICONWINDOW_POSITION_DEFAULT.x());
-    ui->windowPositionYSpinBox->setValue(FLOATINGICONWINDOW_POSITION_DEFAULT.y());
+    int background_color_x = 34;
+    int background_color_y = 11;
+    // Set position for the background color picker
+    m_FloatingWindow_BGColorPicker->move(background_color_x, background_color_y);
+    m_FloatingWindow_BGColorPicker->raise();
+    m_FloatingWindow_BGColorPicker->setShowAlphaChannel(true);
+    m_FloatingWindow_BGColorPicker->setColor(FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT);
 
-    ui->windowSizeSpinBox->setRange(FLOATINGICONWINDOW_SIZE_MIN,
-                                     FLOATINGICONWINDOW_SIZE_MAX);
-    ui->windowSizeSpinBox->setValue(FLOATINGICONWINDOW_SIZE_DEFAULT.width());
+    ui->windowPositionXSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN.x(),
+                                         FLOATINGWINDOW_POSITION_MAX.x());
+    ui->windowPositionYSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN.y(),
+                                         FLOATINGWINDOW_POSITION_MAX.y());
+    ui->windowPositionXSpinBox->setValue(FLOATINGWINDOW_POSITION_DEFAULT.x());
+    ui->windowPositionYSpinBox->setValue(FLOATINGWINDOW_POSITION_DEFAULT.y());
 
-    ui->windowOpacitySpinBox->setRange(FLOATINGICONWINDOW_OPACITY_MIN,
-                                       FLOATINGICONWINDOW_OPACITY_MAX);
-    ui->windowOpacitySpinBox->setDecimals(FLOATINGICONWINDOW_OPACITY_DECIMALS);
-    ui->windowOpacitySpinBox->setSingleStep(FLOATINGICONWINDOW_OPACITY_SINGLESTEP);
-    ui->windowOpacitySpinBox->setValue(FLOATINGICONWINDOW_OPACITY_DEFAULT);
+    ui->windowSizeSpinBox->setRange(FLOATINGWINDOW_SIZE_MIN,
+                                     FLOATINGWINDOW_SIZE_MAX);
+    ui->windowSizeSpinBox->setValue(FLOATINGWINDOW_SIZE_DEFAULT.width());
+
+    ui->windowOpacitySpinBox->setRange(FLOATINGWINDOW_OPACITY_MIN,
+                                       FLOATINGWINDOW_OPACITY_MAX);
+    ui->windowOpacitySpinBox->setDecimals(FLOATINGWINDOW_OPACITY_DECIMALS);
+    ui->windowOpacitySpinBox->setSingleStep(FLOATINGWINDOW_OPACITY_SINGLESTEP);
+    ui->windowOpacitySpinBox->setValue(FLOATINGWINDOW_OPACITY_DEFAULT);
+
+    QObject::connect(m_FloatingWindow_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingWindowSetupDialog::onBackgroundColorChanged);
 }
 
 QFloatingWindowSetupDialog::~QFloatingWindowSetupDialog()
@@ -41,6 +52,8 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     Q_UNUSED(languageindex);
 
     setWindowTitle(tr("Floating Window Setup"));
+    m_FloatingWindow_BGColorPicker->setButtonText(tr("BGColor"));
+    m_FloatingWindow_BGColorPicker->setWindowTitle(tr("Select Floating Window Background Color"));
     ui->windowSizeLabel->setText(tr("Size"));
     ui->windowPositionXLabel->setText(tr("Position X"));
     ui->windowPositionYLabel->setText(tr("Position Y"));
@@ -67,7 +80,11 @@ bool QFloatingWindowSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
         if (!isActiveWindow()) {
-            close();
+            if (QKeyMapper::isSelectColorDialogVisible()) {
+            }
+            else {
+                close();
+            }
         }
     }
     return QDialog::event(event);
@@ -85,21 +102,27 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
     if (0 <= m_TabIndex && m_TabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
         QPoint WindowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Position;
         QSize WindowSize = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Size;
+        QColor WindowBGColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_BackgroundColor;
         double WindowOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
         bool MousePassThrough = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough;
 
         if (WindowPosition.isNull()) {
-            WindowPosition = FLOATINGICONWINDOW_POSITION_DEFAULT;
+            WindowPosition = FLOATINGWINDOW_POSITION_DEFAULT;
         }
 
         if (WindowSize.isEmpty()) {
-            WindowSize = FLOATINGICONWINDOW_SIZE_DEFAULT;
+            WindowSize = FLOATINGWINDOW_SIZE_DEFAULT;
         }
 
-        if (WindowOpacity < FLOATINGICONWINDOW_OPACITY_MIN || WindowOpacity > FLOATINGICONWINDOW_OPACITY_MAX) {
-            WindowOpacity = FLOATINGICONWINDOW_OPACITY_DEFAULT;
+        if (!WindowBGColor.isValid()) {
+            WindowBGColor = FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
         }
 
+        if (WindowOpacity < FLOATINGWINDOW_OPACITY_MIN || WindowOpacity > FLOATINGWINDOW_OPACITY_MAX) {
+            WindowOpacity = FLOATINGWINDOW_OPACITY_DEFAULT;
+        }
+
+        m_FloatingWindow_BGColorPicker->setColor(WindowBGColor);
         ui->windowPositionXSpinBox->setValue(WindowPosition.x());
         ui->windowPositionYSpinBox->setValue(WindowPosition.y());
         ui->windowSizeSpinBox->setValue(WindowSize.width());
@@ -122,6 +145,24 @@ void QFloatingWindowSetupDialog::mousePressEvent(QMouseEvent *event)
     QDialog::mousePressEvent(event);
 }
 
+void QFloatingWindowSetupDialog::onBackgroundColorChanged(QColor &color)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_BackgroundColor) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote()
+            << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+            << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+            << "] FloatingWindow Background Color -> " << color.name(QColor::HexArgb)
+            << ", Alpha: " << color.alpha();
+#endif
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_BackgroundColor = color;
+    }
+}
+
 void QFloatingWindowSetupDialog::on_windowSizeSpinBox_valueChanged(int value)
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -129,11 +170,13 @@ void QFloatingWindowSetupDialog::on_windowSizeSpinBox_valueChanged(int value)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[FloatingWindowSetup] Floating Window Size value changed ->" << value;
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Size value changed -> " << value;
 #endif
 
-    int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Size = QSize(value, value);
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Size = QSize(value, value);
 }
 
 
@@ -144,11 +187,13 @@ void QFloatingWindowSetupDialog::on_windowPositionXSpinBox_valueChanged(int posi
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[FloatingWindowSetup] Floating Window Position X changed ->" << position_x;
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Position X changed -> " << position_x;
 #endif
 
-    int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Position.setX(position_x);
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Position.setX(position_x);
 }
 
 
@@ -159,11 +204,13 @@ void QFloatingWindowSetupDialog::on_windowPositionYSpinBox_valueChanged(int posi
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[FloatingWindowSetup] Floating Window Position Y changed ->" << position_y;
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Position Y changed -> " << position_y;
 #endif
 
-    int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Position.setY(position_y);
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Position.setY(position_y);
 }
 
 
@@ -174,11 +221,13 @@ void QFloatingWindowSetupDialog::on_windowOpacitySpinBox_valueChanged(double val
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[FloatingWindowSetup] Floating Window Opacity value changed ->" << value;
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Opacity value changed -> " << value;
 #endif
 
-    int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_Opacity = value;
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Opacity = value;
 }
 
 void QFloatingWindowSetupDialog::on_mousePassThroughCheckBox_stateChanged(int state)
@@ -188,14 +237,16 @@ void QFloatingWindowSetupDialog::on_mousePassThroughCheckBox_stateChanged(int st
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[FloatingWindowSetup] Floating Window Mouse PassThrough state changed ->" << (Qt::CheckState)state;
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Mouse PassThrough state changed -> " << (Qt::CheckState)state;
 #endif
 
-    int tabindex = m_TabIndex;
     if (Qt::Checked == state) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_MousePassThrough = true;
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThrough = true;
     }
     else {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].FloatingWindow_MousePassThrough = false;
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThrough = false;
     }
 }

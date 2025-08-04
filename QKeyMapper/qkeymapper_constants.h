@@ -122,6 +122,7 @@ namespace QKeyMapperConstants {
     inline constexpr int COLORPICKER_BUTTON_WIDTH_TABBGCOLOR = 101;
     inline constexpr int COLORPICKER_BUTTON_WIDTH_NOTIFICATION_FONTCOLOR = 61;
     inline constexpr int COLORPICKER_BUTTON_WIDTH_NOTIFICATION_BGCOLOR = 51;
+    inline constexpr int COLORPICKER_BUTTON_WIDTH_FLOATINGWINDOW_BGCOLOR = 51;
 
     inline constexpr const char NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR[] = "#26de81";
     inline constexpr const char NOTIFICATION_COLOR_NORMAL_DEFAULT_STR[] = "#d6a2e8";
@@ -196,21 +197,29 @@ namespace QKeyMapperConstants {
 
     inline constexpr int TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT = 0;
 
-    inline constexpr QPoint FLOATINGICONWINDOW_POSITION_MIN = QPoint(-50000, -50000);
-    inline constexpr QPoint FLOATINGICONWINDOW_POSITION_MAX = QPoint(50000, 50000);
-    inline constexpr QPoint FLOATINGICONWINDOW_POSITION_DEFAULT = QPoint(50, 50);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT = QColor(0,0,0,120);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT = QColor(0,0,0,120);
+#endif
 
-    inline constexpr int FLOATINGICONWINDOW_SIZE_MIN = 16;
-    inline constexpr int FLOATINGICONWINDOW_SIZE_MAX = 640;
-    inline constexpr QSize FLOATINGICONWINDOW_SIZE_DEFAULT = QSize(64, 64);
+    inline constexpr QPoint FLOATINGWINDOW_POSITION_MIN = QPoint(-50000, -50000);
+    inline constexpr QPoint FLOATINGWINDOW_POSITION_MAX = QPoint(50000, 50000);
+    inline constexpr QPoint FLOATINGWINDOW_POSITION_DEFAULT = QPoint(50, 50);
 
-    inline constexpr int FLOATINGICONWINDOW_OPACITY_DECIMALS = 2;
-    inline constexpr double FLOATINGICONWINDOW_OPACITY_SINGLESTEP = 0.01;
-    inline constexpr double FLOATINGICONWINDOW_OPACITY_MIN = 0.1;
-    inline constexpr double FLOATINGICONWINDOW_OPACITY_MAX = 1.0;
-    inline constexpr double FLOATINGICONWINDOW_OPACITY_DEFAULT = 1.0;
+    inline constexpr int FLOATINGWINDOW_SIZE_MIN = 16;
+    inline constexpr int FLOATINGWINDOW_SIZE_MAX = 640;
+    inline constexpr QSize FLOATINGWINDOW_SIZE_DEFAULT = QSize(64, 64);
 
-    inline constexpr bool FLOATINGICONWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
+    inline constexpr int FLOATINGWINDOW_OPACITY_DECIMALS = 2;
+    inline constexpr double FLOATINGWINDOW_OPACITY_SINGLESTEP = 0.01;
+    inline constexpr double FLOATINGWINDOW_OPACITY_MIN = 0.1;
+    inline constexpr double FLOATINGWINDOW_OPACITY_MAX = 1.0;
+    inline constexpr double FLOATINGWINDOW_OPACITY_DEFAULT = 1.0;
+
+    inline constexpr bool FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
 
     inline constexpr const char CROSSHAIR_CENTERCOLOR_DEFAULT[] = "70a1ff";
     inline constexpr const char CROSSHAIR_CROSSHAIRCOLOR_DEFAULT[] = "70a1ff";
@@ -768,6 +777,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST[] = "MappingTable_TabCustomImage_TrayIconPixelList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST[] = "MappingTable_FloatingWindow_PositionList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_SIZELIST[] = "MappingTable_FloatingWindow_SizeList";
+    inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST[] = "MappingTable_FloatingWindow_BackgroundColorList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST[] = "MappingTable_FloatingWindow_OpacityList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST[] = "MappingTable_FloatingWindow_MousePassThroughList";
     inline constexpr const char CLEARALL[] = "KeyMapData_ClearAll";

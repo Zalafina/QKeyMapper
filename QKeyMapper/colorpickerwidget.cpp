@@ -89,6 +89,7 @@ void ColorPickerWidget::onPickColor()
     bool clear_to_default = false;
     if ("TabFontColor" == m_buttonText
         || "TabBGColor" == m_buttonText
+        || "FW_BGColor" == m_buttonText
         || "FontColor" == m_buttonText
         || "BGColor" == m_buttonText
         || "CenterColor" == m_buttonText
@@ -114,6 +115,9 @@ void ColorPickerWidget::onPickColor()
         }
         else if ("TabBGColor" == m_buttonText) {
             color = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+        }
+        else if ("FW_BGColor" == m_buttonText) {
+            color = FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
         }
         else if ("FontColor" == m_buttonText) {
             color = NOTIFICATION_COLOR_NORMAL_DEFAULT;

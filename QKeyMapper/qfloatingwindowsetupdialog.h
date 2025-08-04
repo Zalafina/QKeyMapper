@@ -2,6 +2,7 @@
 #define QFLOATINGWINDOWSETUPDIALOG_H
 
 #include <QDialog>
+#include "colorpickerwidget.h"
 
 namespace Ui {
 class QFloatingWindowSetupDialog;
@@ -30,6 +31,9 @@ protected:
     void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
+public slots:
+    void onBackgroundColorChanged(QColor &color);
+
 private slots:
     void on_windowSizeSpinBox_valueChanged(int value);
 
@@ -45,6 +49,7 @@ private:
     static QFloatingWindowSetupDialog *m_instance;
     Ui::QFloatingWindowSetupDialog *ui;
     int m_TabIndex;
+    ColorPickerWidget *m_FloatingWindow_BGColorPicker;
 };
 
 #endif // QFLOATINGWINDOWSETUPDIALOG_H

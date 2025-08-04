@@ -526,7 +526,7 @@ void QTableSetupDialog::onTabBackgroundColorChanged(QColor &color)
     if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabBackgroundColor) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
-            << "[QTableSetupDialog::onTabFontColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Background Color -> " << color.name(QColor::HexArgb)
+            << "[QTableSetupDialog::onTabBackgroundColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Background Color -> " << color.name(QColor::HexArgb)
             << ", Alpha: " << color.alpha();
 #endif
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabBackgroundColor = color;
