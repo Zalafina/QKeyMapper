@@ -6482,7 +6482,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     tab_info.TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
     tab_info.TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
     tab_info.TabCustomImage_ShowAsFloatingWindow = TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
+    tab_info.FloatingWindow_Position = FLOATINGWINDOW_POSITION_DEFAULT;
     tab_info.FloatingWindow_ReferencePoint = FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+    tab_info.FloatingWindow_Size = FLOATINGWINDOW_SIZE_DEFAULT;
     tab_info.FloatingWindow_Radius = FLOATINGWINDOW_RADIUS_DEFAULT;
     tab_info.FloatingWindow_Opacity = FLOATINGWINDOW_OPACITY_DEFAULT;
     tab_info.FloatingWindow_MousePassThrough = FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
@@ -10451,10 +10453,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         if (index < floatingwindow_positionlist_loaded.size()) {
             QPoint floatingwindow_position = floatingwindow_positionlist_loaded.at(index).toPoint();
-            if (floatingwindow_position.x() < FLOATINGWINDOW_POSITION_MIN.x()
-                || floatingwindow_position.y() < FLOATINGWINDOW_POSITION_MIN.y()
-                || floatingwindow_position.x() > FLOATINGWINDOW_POSITION_MAX.x()
-                || floatingwindow_position.y() > FLOATINGWINDOW_POSITION_MAX.y()) {
+            if (floatingwindow_position.x() < FLOATINGWINDOW_POSITION_MIN_X
+                || floatingwindow_position.y() < FLOATINGWINDOW_POSITION_MIN_Y
+                || floatingwindow_position.x() > FLOATINGWINDOW_POSITION_MAX_X
+                || floatingwindow_position.y() > FLOATINGWINDOW_POSITION_MAX_Y) {
                 s_KeyMappingTabInfoList[index].FloatingWindow_Position = FLOATINGWINDOW_POSITION_DEFAULT;
             }
             else {
@@ -17860,7 +17862,7 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
     qDebug() << "[QFloatingIconWindow::showFloatingWindow] Shown at Qt position:" << qtAbsolutePosition
              << "physical position:" << physicalAbsolutePosition
              << "from relative position:" << options.position
-             << "with reference point:" << options.referencePoint
+             << "with reference point:" << getReferencePointName(options.referencePoint)
              << "size:" << QSize(squareSize, squareSize) << "opacity:" << options.windowOpacity;
 #endif
 }
@@ -17907,7 +17909,7 @@ void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &opti
     qDebug() << "[QFloatingIconWindow::updateWindowSettings] Updated - Qt position:" << qtAbsolutePosition
              << "physical position:" << physicalAbsolutePosition
              << "relative position:" << options.position
-             << "reference point:" << options.referencePoint
+             << "reference point:" << getReferencePointName(options.referencePoint)
              << "size:" << newSize << "opacity:" << options.windowOpacity;
 #endif
 }
@@ -17922,25 +17924,69 @@ void QFloatingIconWindow::setMousePassThroughEnabled(bool enabled)
     }
 }
 
-void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newPosition)
+#ifdef DEBUG_LOGOUT_ON
+QString QFloatingIconWindow::getReferencePointName(int referencePoint) const
+{
+    switch (referencePoint) {
+        case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT:
+            return "ScreenTopLeft";
+        case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPRIGHT:
+            return "ScreenTopRight";
+        case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPCENTER:
+            return "ScreenTopCenter";
+        case FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMLEFT:
+            return "ScreenBottomLeft";
+        case FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMRIGHT:
+            return "ScreenBottomRight";
+        case FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMCENTER:
+            return "ScreenBottomCenter";
+        case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT:
+            return "WindowTopLeft";
+        case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPRIGHT:
+            return "WindowTopRight";
+        case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPCENTER:
+            return "WindowTopCenter";
+        case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT:
+            return "WindowBottomLeft";
+        case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT:
+            return "WindowBottomRight";
+        case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER:
+            return "WindowBottomCenter";
+        default:
+            return "Unknown";
+    }
+}
+#endif
+
+void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newQtPosition)
 {
     int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
+    // Convert Qt position to physical coordinates
+    QPoint newPhysicalPosition = qtToPhysicalCoordinates(newQtPosition);
+
+    // Calculate relative position based on current reference point
+    QPoint newRelativePosition = calculateRelativePosition(newPhysicalPosition, m_CurrentOptions.referencePoint);
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Floating Window Position ->" << newPosition
-             << ", Current Tab Index:" << current_tabindex;
+    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Qt Position:" << newQtPosition
+             << "Physical Position:" << newPhysicalPosition
+             << "Relative Position:" << newRelativePosition
+             << "Reference Point:" << getReferencePointName(m_CurrentOptions.referencePoint)
+             << "Current Tab Index:" << current_tabindex;
 #endif
 
-    if (newPosition.x() < FLOATINGWINDOW_POSITION_MIN.x()
-        || newPosition.y() < FLOATINGWINDOW_POSITION_MIN.y()
-        || newPosition.x() > FLOATINGWINDOW_POSITION_MAX.x()
-        || newPosition.y() > FLOATINGWINDOW_POSITION_MAX.y()) {
+    // Validate the relative position (check if it's within reasonable bounds)
+    if (newRelativePosition.x() < FLOATINGWINDOW_POSITION_MIN_X || newRelativePosition.y() < FLOATINGWINDOW_POSITION_MIN_Y
+        || newRelativePosition.x() > FLOATINGWINDOW_POSITION_MAX_X || newRelativePosition.y() > FLOATINGWINDOW_POSITION_MAX_Y) {
         return;
     }
-    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Position = newPosition;
+
+    // Save the relative position (not absolute position)
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Position = newRelativePosition;
 }
 
 void QFloatingIconWindow::onWindowSizeChanged(const QSize &newSize)
@@ -18147,7 +18193,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::mouseMoveEvent] Dragged to Qt pos:" << newQtPos
                      << "physical pos:" << newPhysicalPos << "relative pos:" << newRelativePos
-                     << "reference point:" << m_CurrentOptions.referencePoint;
+                     << "reference point:" << getReferencePointName(m_CurrentOptions.referencePoint);
 #endif
         }
         // Keep drag cursor during drag operation
@@ -18176,6 +18222,11 @@ void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
 
         // After releasing mouse button, update cursor based on current position
         updateCursorForPosition(event->pos());
+
+        // Calculate the current relative position based on current reference point using physical coordinates
+        QPoint currentPhysicalPos = qtToPhysicalCoordinates(pos());
+        QPoint currentRelativePos = calculateRelativePosition(currentPhysicalPos, m_CurrentOptions.referencePoint);
+        m_CurrentOptions.position = currentRelativePos;
 
         emit windowPositionChanged(pos());
         emit windowSizeChanged(size());

@@ -22,10 +22,10 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     m_FloatingWindow_BGColorPicker->setShowAlphaChannel(true);
     m_FloatingWindow_BGColorPicker->setColor(FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT);
 
-    ui->windowPositionXSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN.x(),
-                                         FLOATINGWINDOW_POSITION_MAX.x());
-    ui->windowPositionYSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN.y(),
-                                         FLOATINGWINDOW_POSITION_MAX.y());
+    ui->windowPositionXSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN_X,
+                                         FLOATINGWINDOW_POSITION_MAX_X);
+    ui->windowPositionYSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN_Y,
+                                         FLOATINGWINDOW_POSITION_MAX_Y);
     ui->windowPositionXSpinBox->setValue(FLOATINGWINDOW_POSITION_DEFAULT.x());
     ui->windowPositionYSpinBox->setValue(FLOATINGWINDOW_POSITION_DEFAULT.y());
 

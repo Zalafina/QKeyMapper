@@ -389,6 +389,10 @@ public:
     double getCurrentOpacity() const { return m_CurrentOpacity; }
     FloatingWindowOptions getCurrentOptions() const { return m_CurrentOptions; }
 
+#ifdef DEBUG_LOGOUT_ON
+    QString getReferencePointName(int referencePoint) const;
+#endif
+
 public slots:
     void onWindowPositionChanged(const QPoint &newPosition);
     void onWindowSizeChanged(const QSize &newSize);
