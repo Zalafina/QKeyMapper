@@ -6482,6 +6482,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     tab_info.TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
     tab_info.TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
     tab_info.TabCustomImage_ShowAsFloatingWindow = TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
+    tab_info.FloatingWindow_ReferencePoint = FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+    tab_info.FloatingWindow_Radius = FLOATINGWINDOW_RADIUS_DEFAULT;
     tab_info.FloatingWindow_Opacity = FLOATINGWINDOW_OPACITY_DEFAULT;
     tab_info.FloatingWindow_MousePassThrough = FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
@@ -17785,12 +17787,19 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
 {
     hide(); // Hide the window before updating content
 
+    if (!isValidReferencePoint(options.referencePoint)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QFloatingIconWindow::showFloatingWindow] Error: Invalid reference point specified" << options.referencePoint;
+#endif
+        return;
+    }
+
     m_CurrentOptions = options;
     m_CurrentOpacity = options.windowOpacity;
     m_MousePassThrough = options.mousePassThrough;
 
-    // Calculate absolute position based on reference point
-    QPoint absolutePosition;
+    // Calculate absolute position based on reference point (in physical coordinates)
+    QPoint physicalAbsolutePosition;
 
     if (isWindowReferencePoint(options.referencePoint)) {
         // Window-based reference point - need valid mapping window
@@ -17801,8 +17810,8 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
             return; // Don't show floating window
         }
 
-        absolutePosition = calculateAbsolutePosition(options.position, options.referencePoint);
-        if (absolutePosition == QPoint(-1, -1)) {
+        physicalAbsolutePosition = calculateAbsolutePosition(options.position, options.referencePoint);
+        if (physicalAbsolutePosition == QPoint(-1, -1)) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::showFloatingWindow] Error: Cannot calculate absolute position for window reference point" << options.referencePoint;
 #endif
@@ -17813,11 +17822,11 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
         m_LastMappingHWND = QKeyMapper::s_CurrentMappingHWND;
         getWindowClientRect(QKeyMapper::s_CurrentMappingHWND, m_LastWindowClientRect);
     } else {
-        // Screen-based reference point
-        absolutePosition = calculateAbsolutePosition(options.position, options.referencePoint);
-        if (absolutePosition == QPoint(-1, -1)) {
+        // Screen-based reference point (using physical coordinates)
+        physicalAbsolutePosition = calculateAbsolutePosition(options.position, options.referencePoint);
+        if (physicalAbsolutePosition == QPoint(-1, -1)) {
             // Fallback to direct position if calculation fails
-            absolutePosition = options.position;
+            physicalAbsolutePosition = options.position;
         }
 
         // Clear window tracking for screen-based positioning
@@ -17825,10 +17834,13 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
         m_LastWindowClientRect = QRect();
     }
 
+    // Convert physical coordinates to Qt coordinates for window positioning
+    QPoint qtAbsolutePosition = physicalToQtCoordinates(physicalAbsolutePosition);
+
     // Set window geometry (ensure square shape)
     int squareSize = qMax(options.size.width(), options.size.height());
     resize(squareSize, squareSize);
-    move(absolutePosition);
+    move(qtAbsolutePosition);
 
     // Load icon if path is provided
     QFileInfo icon_fileinfo(options.iconPath);
@@ -17845,7 +17857,8 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
     show();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::showFloatingWindow] Shown at absolute position:" << absolutePosition
+    qDebug() << "[QFloatingIconWindow::showFloatingWindow] Shown at Qt position:" << qtAbsolutePosition
+             << "physical position:" << physicalAbsolutePosition
              << "from relative position:" << options.position
              << "with reference point:" << options.referencePoint
              << "size:" << QSize(squareSize, squareSize) << "opacity:" << options.windowOpacity;
@@ -17866,14 +17879,18 @@ void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &opti
     m_CurrentOpacity = options.windowOpacity;
     m_MousePassThrough = options.mousePassThrough;
 
+    // Calculate absolute position from relative position and reference point (in physical coordinates)
+    QPoint physicalAbsolutePosition = calculateAbsolutePosition(options.position, options.referencePoint);
+    QPoint qtAbsolutePosition = physicalToQtCoordinates(physicalAbsolutePosition);
+
     // Update geometry if changed (ensure square shape)
     int squareSize = qMax(options.size.width(), options.size.height());
     QSize newSize(squareSize, squareSize);
     if (size() != newSize) {
         resize(newSize);
     }
-    if (pos() != options.position) {
-        move(options.position);
+    if (pos() != qtAbsolutePosition) {
+        move(qtAbsolutePosition);
     }
 
     // Reload icon if path changed
@@ -17887,7 +17904,10 @@ void QFloatingIconWindow::updateWindowSettings(const FloatingWindowOptions &opti
     updateWindowStyle();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::updateWindowSettings] Updated - position:" << options.position
+    qDebug() << "[QFloatingIconWindow::updateWindowSettings] Updated - Qt position:" << qtAbsolutePosition
+             << "physical position:" << physicalAbsolutePosition
+             << "relative position:" << options.position
+             << "reference point:" << options.referencePoint
              << "size:" << newSize << "opacity:" << options.windowOpacity;
 #endif
 }
@@ -18063,26 +18083,24 @@ void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
             // Start resizing
             m_Resizing = true;
             m_ResizeStartSize = size();
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            m_ResizeStartMousePos = event->globalPosition().toPoint();
-#else
-            m_ResizeStartMousePos = event->globalPos();
-#endif
+            // Use physical cursor position for consistent coordinates
+            m_ResizeStartMousePos = getPhysicalCursorPosition();
             setCursor(Qt::SizeFDiagCursor);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QFloatingIconWindow::mousePressEvent] Start resizing from size:" << m_ResizeStartSize;
+            qDebug() << "[QFloatingIconWindow::mousePressEvent] Start resizing from size:" << m_ResizeStartSize
+                     << "physical cursor pos:" << m_ResizeStartMousePos;
 #endif
         } else {
             // Start dragging
             m_Dragging = true;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            m_DragStartPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
-#else
-            m_DragStartPosition = event->globalPos() - frameGeometry().topLeft();
-#endif
+            // Calculate drag offset using physical coordinates
+            QPoint physicalWindowPos = qtToPhysicalCoordinates(frameGeometry().topLeft());
+            QPoint physicalCursorPos = getPhysicalCursorPosition();
+            m_DragStartPosition = physicalCursorPos - physicalWindowPos;
             setCursor(Qt::ClosedHandCursor);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QFloatingIconWindow::mousePressEvent] Start dragging from position:" << pos();
+            qDebug() << "[QFloatingIconWindow::mousePressEvent] Start dragging from position:" << pos()
+                     << "physical window pos:" << physicalWindowPos << "physical cursor pos:" << physicalCursorPos;
 #endif
         }
     }
@@ -18093,12 +18111,8 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_Resizing && (event->buttons() & Qt::LeftButton)) {
         // Handle window resizing (maintain 1:1 aspect ratio)
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        QPoint globalMousePos = event->globalPosition().toPoint();
-#else
-        QPoint globalMousePos = event->globalPos();
-#endif
-        QPoint mouseDelta = globalMousePos - m_ResizeStartMousePos;
+        QPoint physicalMousePos = getPhysicalCursorPosition();
+        QPoint mouseDelta = physicalMousePos - m_ResizeStartMousePos;
 
         // Calculate new size (use the larger delta to maintain square shape)
         int deltaSize = qMax(mouseDelta.x(), mouseDelta.y());
@@ -18114,25 +18128,26 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         // Keep resize cursor during resize operation
         setCursor(Qt::SizeFDiagCursor);
     } else if (m_Dragging && (event->buttons() & Qt::LeftButton)) {
-        // Handle window dragging with reference point consideration
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        QPoint newAbsolutePos = event->globalPosition().toPoint() - m_DragStartPosition;
-#else
-        QPoint newAbsolutePos = event->globalPos() - m_DragStartPosition;
-#endif
+        // Handle window dragging with reference point consideration using physical coordinates
+        QPoint physicalMousePos = getPhysicalCursorPosition();
+        QPoint newPhysicalPos = physicalMousePos - m_DragStartPosition;
 
-        if (newAbsolutePos != pos()) {
-            move(newAbsolutePos);
+        // Convert physical position back to Qt coordinates for window positioning
+        QPoint newQtPos = physicalToQtCoordinates(newPhysicalPos);
 
-            // Calculate the new relative position based on current reference point
-            QPoint newRelativePos = calculateRelativePosition(newAbsolutePos, m_CurrentOptions.referencePoint);
+        if (newQtPos != pos()) {
+            move(newQtPos);
+
+            // Calculate the new relative position based on current reference point using physical coordinates
+            QPoint newRelativePos = calculateRelativePosition(newPhysicalPos, m_CurrentOptions.referencePoint);
             m_CurrentOptions.position = newRelativePos;
 
-            emit windowPositionChanged(newAbsolutePos);
+            emit windowPositionChanged(newQtPos);
             // emit windowSettingsChanged(m_CurrentOptions);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QFloatingIconWindow::mouseMoveEvent] Dragged to absolute pos:" << newAbsolutePos
-                     << "relative pos:" << newRelativePos << "reference point:" << m_CurrentOptions.referencePoint;
+            qDebug() << "[QFloatingIconWindow::mouseMoveEvent] Dragged to Qt pos:" << newQtPos
+                     << "physical pos:" << newPhysicalPos << "relative pos:" << newRelativePos
+                     << "reference point:" << m_CurrentOptions.referencePoint;
 #endif
         }
         // Keep drag cursor during drag operation
@@ -18333,32 +18348,42 @@ bool QFloatingIconWindow::getWindowClientRect(HWND hwnd, QRect &clientRect) cons
 
 QPoint QFloatingIconWindow::getScreenReferencePoint(int referencePoint) const
 {
-    QScreen *screen = QApplication::primaryScreen();
-    if (!screen) {
-        return QPoint(0, 0);
-    }
+    // Use Windows API to get physical screen dimensions (excluding DPI scaling)
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    QRect screenGeometry = screen->availableGeometry();
-    int screenWidth = screenGeometry.width();
-    int screenHeight = screenGeometry.height();
-    int screenLeft = screenGeometry.left();
-    int screenTop = screenGeometry.top();
+    // For multi-monitor setups, use virtual screen dimensions
+    int virtualScreenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualScreenTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int virtualScreenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int virtualScreenHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    // Use primary screen for single monitor or virtual screen for multi-monitor
+    int useWidth = (virtualScreenWidth > screenWidth) ? virtualScreenWidth : screenWidth;
+    int useHeight = (virtualScreenHeight > screenHeight) ? virtualScreenHeight : screenHeight;
+    int useLeft = (virtualScreenWidth > screenWidth) ? virtualScreenLeft : 0;
+    int useTop = (virtualScreenHeight > screenHeight) ? virtualScreenTop : 0;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::getScreenReferencePoint] Physical screen size:"
+             << useWidth << "x" << useHeight << "at" << QPoint(useLeft, useTop);
+#endif
 
     switch (referencePoint) {
     case QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT:
-        return QPoint(screenLeft, screenTop);
+        return QPoint(useLeft, useTop);
     case QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPRIGHT:
-        return QPoint(screenLeft + screenWidth, screenTop);
+        return QPoint(useLeft + useWidth, useTop);
     case QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPCENTER:
-        return QPoint(screenLeft + screenWidth / 2, screenTop);
+        return QPoint(useLeft + useWidth / 2, useTop);
     case QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMLEFT:
-        return QPoint(screenLeft, screenTop + screenHeight);
+        return QPoint(useLeft, useTop + useHeight);
     case QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMRIGHT:
-        return QPoint(screenLeft + screenWidth, screenTop + screenHeight);
+        return QPoint(useLeft + useWidth, useTop + useHeight);
     case QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMCENTER:
-        return QPoint(screenLeft + screenWidth / 2, screenTop + screenHeight);
+        return QPoint(useLeft + useWidth / 2, useTop + useHeight);
     default:
-        return QPoint(screenLeft, screenTop); // Default to top-left
+        return QPoint(useLeft, useTop); // Default to top-left
     }
 }
 
@@ -18409,7 +18434,7 @@ QPoint QFloatingIconWindow::calculateAbsolutePosition(const QPoint &relativePosi
     return referenceOrigin + relativePosition;
 }
 
-QPoint QFloatingIconWindow::calculateRelativePosition(const QPoint &absolutePosition, int referencePoint) const
+QPoint QFloatingIconWindow::calculateRelativePosition(const QPoint &physicalPosition, int referencePoint) const
 {
     QPoint referenceOrigin;
 
@@ -18420,15 +18445,28 @@ QPoint QFloatingIconWindow::calculateRelativePosition(const QPoint &absolutePosi
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::calculateRelativePosition] Warning: Cannot get window client rect for reference point" << referencePoint;
 #endif
-            return absolutePosition; // Return original position if can't calculate relative
+            return physicalPosition; // Return original position if can't calculate relative
         }
         referenceOrigin = getWindowReferencePoint(referencePoint, clientRect);
     } else {
-        // Screen-based reference point
+        // Screen-based reference point (already using physical coordinates)
         referenceOrigin = getScreenReferencePoint(referencePoint);
     }
 
-    return absolutePosition - referenceOrigin;
+    QPoint relativePos = physicalPosition - referenceOrigin;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::calculateRelativePosition] Physical pos:" << physicalPosition
+             << "reference origin:" << referenceOrigin << "relative pos:" << relativePos;
+#endif
+
+    return relativePos;
+}
+
+bool QFloatingIconWindow::isValidReferencePoint(int referencePoint)
+{
+    return (referencePoint >= QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_MIN &&
+            referencePoint <= QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_MAX);
 }
 
 void QFloatingIconWindow::updatePositionForCurrentWindow()
@@ -18466,19 +18504,22 @@ void QFloatingIconWindow::updatePositionForCurrentWindow()
         return;
     }
 
-    // Calculate new absolute position based on current window
-    QPoint newAbsolutePosition = calculateAbsolutePosition(m_CurrentOptions.position, m_CurrentOptions.referencePoint);
-    if (newAbsolutePosition == QPoint(-1, -1)) {
+    // Calculate new absolute position based on current window (in physical coordinates)
+    QPoint newPhysicalPosition = calculateAbsolutePosition(m_CurrentOptions.position, m_CurrentOptions.referencePoint);
+    if (newPhysicalPosition == QPoint(-1, -1)) {
         // Error calculating position
         return;
     }
 
+    // Convert to Qt coordinates for window positioning
+    QPoint newQtPosition = physicalToQtCoordinates(newPhysicalPosition);
+
     // Update position if it has changed
-    if (newAbsolutePosition != pos()) {
-        move(newAbsolutePosition);
+    if (newQtPosition != pos()) {
+        move(newQtPosition);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QFloatingIconWindow::updatePositionForCurrentWindow] Updated position from"
-                 << pos() << "to" << newAbsolutePosition
+        qDebug() << "[QFloatingIconWindow::updatePositionForCurrentWindow] Updated Qt position from"
+                 << pos() << "to" << newQtPosition << "physical position:" << newPhysicalPosition
                  << "based on reference point" << m_CurrentOptions.referencePoint;
 #endif
     }
@@ -18486,6 +18527,32 @@ void QFloatingIconWindow::updatePositionForCurrentWindow()
     // Update tracking variables
     m_LastMappingHWND = QKeyMapper::s_CurrentMappingHWND;
     m_LastWindowClientRect = currentClientRect;
+}
+
+QPoint QFloatingIconWindow::qtToPhysicalCoordinates(const QPoint &qtPoint) const
+{
+    // Get DPI scaling factor
+    qreal dpiScale = QApplication::primaryScreen()->devicePixelRatio();
+
+    // Convert Qt logical coordinates to physical coordinates
+    return QPoint(qRound(qtPoint.x() * dpiScale), qRound(qtPoint.y() * dpiScale));
+}
+
+QPoint QFloatingIconWindow::physicalToQtCoordinates(const QPoint &physicalPoint) const
+{
+    // Get DPI scaling factor
+    qreal dpiScale = QApplication::primaryScreen()->devicePixelRatio();
+
+    // Convert physical coordinates to Qt logical coordinates
+    return QPoint(qRound(physicalPoint.x() / dpiScale), qRound(physicalPoint.y() / dpiScale));
+}
+
+QPoint QFloatingIconWindow::getPhysicalCursorPosition() const
+{
+    // Use Windows API to get true physical cursor position
+    POINT cursorPos;
+    GetCursorPos(&cursorPos);
+    return QPoint(cursorPos.x, cursorPos.y);
 }
 
 #if 0

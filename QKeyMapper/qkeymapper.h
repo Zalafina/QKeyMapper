@@ -430,12 +430,20 @@ private:
     // Reference point related helper functions
     bool isWindowReferencePoint(int referencePoint) const;
     QPoint calculateAbsolutePosition(const QPoint &relativePosition, int referencePoint) const;
-    QPoint calculateRelativePosition(const QPoint &absolutePosition, int referencePoint) const;
+    QPoint calculateRelativePosition(const QPoint &physicalPosition, int referencePoint) const;
     bool getWindowClientRect(HWND hwnd, QRect &clientRect) const;
     QPoint getScreenReferencePoint(int referencePoint) const;
     QPoint getWindowReferencePoint(int referencePoint, const QRect &clientRect) const;
 
+    // Coordinate conversion helper functions
+    QPoint qtToPhysicalCoordinates(const QPoint &qtPoint) const;
+    QPoint physicalToQtCoordinates(const QPoint &physicalPoint) const;
+    QPoint getPhysicalCursorPosition() const;
+
 public:
+    // static method
+    static bool isValidReferencePoint(int referencePoint);
+
     // Public method to update floating window position based on current reference point
     void updatePositionForCurrentWindow();
 
