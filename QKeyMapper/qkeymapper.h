@@ -161,6 +161,7 @@ struct PopupNotificationOptions {
 
 struct FloatingWindowOptions {
     QPoint position = QKeyMapperConstants::FLOATINGWINDOW_POSITION_DEFAULT;                 // Window position
+    int referencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;        // Window position reference point
     QSize size = QKeyMapperConstants::FLOATINGWINDOW_SIZE_DEFAULT;                          // Window size (square)
     QColor backgroundColor = QKeyMapperConstants::FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;  // Background color
     double windowOpacity = QKeyMapperConstants::FLOATINGWINDOW_OPACITY_DEFAULT;             // Window opacity (0.1~1.0)
@@ -266,6 +267,7 @@ struct KeyMappingTab_Info
     bool TabCustomImage_ShowAsFloatingWindow;
     QSize TabCustomImage_TrayIconPixel;
     QPoint FloatingWindow_Position;
+    int FloatingWindow_ReferencePoint;
     QSize FloatingWindow_Size;
     QColor FloatingWindow_BackgroundColor;
     int FloatingWindow_Radius;
