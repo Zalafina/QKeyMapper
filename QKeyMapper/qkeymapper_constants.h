@@ -351,6 +351,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr int TRY_LOCK_WAIT_TIME = 1000;
 
+    inline constexpr int SENDMESSAGE_TIMEOUT = 200;
+
     inline constexpr int SENDVIRTUALKEY_STATE_NORMAL           = 0;
     inline constexpr int SENDVIRTUALKEY_STATE_FORCE            = 1;
     inline constexpr int SENDVIRTUALKEY_STATE_MODIFIERS        = 2;

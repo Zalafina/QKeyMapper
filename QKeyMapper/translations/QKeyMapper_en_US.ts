@@ -611,7 +611,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="544"/>
         <source>PostMappingKey</source>
-        <translation>PostMappingKey</translation>
+        <translation>SendMessage</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="563"/>

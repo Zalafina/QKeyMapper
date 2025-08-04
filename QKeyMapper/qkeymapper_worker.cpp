@@ -267,10 +267,26 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 void QKeyMapper_Worker::postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown)
 {
     if (keyupdown == KEY_DOWN) {
-        PostMessage(hwnd, WM_KEYDOWN, keycode, 0);
+        SendMessageTimeout(
+            hwnd,
+            WM_KEYDOWN,
+            keycode,
+            0,
+            SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+            SENDMESSAGE_TIMEOUT,
+            nullptr
+        );
     }
     else {
-        PostMessage(hwnd, WM_KEYUP, keycode, 0);
+        SendMessageTimeout(
+            hwnd,
+            WM_KEYUP,
+            keycode,
+            0,
+            SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+            SENDMESSAGE_TIMEOUT,
+            nullptr
+        );
     }
 }
 
@@ -307,7 +323,15 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
         for (const QChar &ch : text) {
             wchar_t wchar = ch.unicode();
             if (hWnd != NULL) {
-                PostMessage(hWnd, WM_CHAR, wchar, 0);
+                SendMessageTimeout(
+                    hWnd,
+                    WM_CHAR,
+                    wchar,
+                    0,
+                    SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+                    SENDMESSAGE_TIMEOUT,
+                    nullptr
+                );
             } else {
                 sendUnicodeChar(wchar);
             }
@@ -492,7 +516,15 @@ void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, i
         return;
     }
 
-    PostMessage(hwnd, messageMouseButton, wParam, lParam);
+    SendMessageTimeout(
+        hwnd,
+        messageMouseButton,
+        wParam,
+        lParam,
+        SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+        SENDMESSAGE_TIMEOUT,
+        nullptr
+    );
 }
 
 void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
@@ -519,7 +551,15 @@ void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
     }
 
     if (msg != 0) {
-        PostMessage(hwnd, msg, wParam, lParam);
+        SendMessageTimeout(
+            hwnd,
+            msg,
+            wParam,
+            lParam,
+            SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+            SENDMESSAGE_TIMEOUT,
+            nullptr
+        );
     }
 }
 
@@ -546,7 +586,15 @@ void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
     newPos.y = currentPos.y + delta_y;
 
     LPARAM lParam = MAKELPARAM(newPos.x, newPos.y);
-    PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+    SendMessageTimeout(
+        hwnd,
+        WM_MOUSEMOVE,
+        0,
+        lParam,
+        SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+        SENDMESSAGE_TIMEOUT,
+        nullptr
+    );
 
 #else
     POINT currentPos;
@@ -561,7 +609,15 @@ void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
     int new_y = currentPos.y + delta_y;
 
     LPARAM lParam = MAKELPARAM(new_x, new_y);
-    PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+    SendMessageTimeout(
+        hwnd,
+        WM_MOUSEMOVE,
+        0,
+        lParam,
+        SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+        SENDMESSAGE_TIMEOUT,
+        nullptr
+    );
 #endif
 }
 
@@ -572,7 +628,15 @@ void QKeyMapper_Worker::postMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint
     newPos.y = mousepoint.y();
 
     LPARAM lParam = MAKELPARAM(newPos.x, newPos.y);
-    PostMessage(hwnd, WM_MOUSEMOVE, 0, lParam);
+    SendMessageTimeout(
+        hwnd,
+        WM_MOUSEMOVE,
+        0,
+        lParam,
+        SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+        SENDMESSAGE_TIMEOUT,
+        nullptr
+    );
 }
 
 void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
