@@ -17815,7 +17815,7 @@ void QFloatingIconWindow::showFloatingWindow(const FloatingWindowOptions &option
         physicalAbsolutePosition = calculateAbsolutePosition(options.position, options.referencePoint);
         if (physicalAbsolutePosition == QPoint(-1, -1)) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QFloatingIconWindow::showFloatingWindow] Error: Cannot calculate absolute position for window reference point" << options.referencePoint;
+            qDebug() << "[QFloatingIconWindow::showFloatingWindow] Error: Cannot calculate absolute position for window reference point" << getReferencePointName(options.referencePoint);
 #endif
             return; // Don't show floating window
         }
@@ -18472,7 +18472,7 @@ QPoint QFloatingIconWindow::calculateAbsolutePosition(const QPoint &relativePosi
         QRect clientRect;
         if (!getWindowClientRect(QKeyMapper::s_CurrentMappingHWND, clientRect)) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QFloatingIconWindow::calculateAbsolutePosition] Warning: Cannot get window client rect for reference point" << referencePoint;
+            qDebug() << "[QFloatingIconWindow::calculateAbsolutePosition] Warning: Cannot get window client rect for reference point" << getReferencePointName(referencePoint);
 #endif
             return QPoint(-1, -1); // Invalid position to indicate error
         }
@@ -18494,7 +18494,7 @@ QPoint QFloatingIconWindow::calculateRelativePosition(const QPoint &physicalPosi
         QRect clientRect;
         if (!getWindowClientRect(QKeyMapper::s_CurrentMappingHWND, clientRect)) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QFloatingIconWindow::calculateRelativePosition] Warning: Cannot get window client rect for reference point" << referencePoint;
+            qDebug() << "[QFloatingIconWindow::calculateRelativePosition] Warning: Cannot get window client rect for reference point" << getReferencePointName(referencePoint);
 #endif
             return physicalPosition; // Return original position if can't calculate relative
         }
@@ -18571,7 +18571,7 @@ void QFloatingIconWindow::updatePositionForCurrentWindow()
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QFloatingIconWindow::updatePositionForCurrentWindow] Updated Qt position from"
                  << pos() << "to" << newQtPosition << "physical position:" << newPhysicalPosition
-                 << "based on reference point" << m_CurrentOptions.referencePoint;
+                 << "based on reference point" << getReferencePointName(m_CurrentOptions.referencePoint);
 #endif
     }
 

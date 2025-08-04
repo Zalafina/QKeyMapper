@@ -159,7 +159,7 @@
   <widget class="QCheckBox" name="mousePassThroughCheckBox">
    <property name="geometry">
     <rect>
-     <x>233</x>
+     <x>240</x>
      <y>140</y>
      <width>151</width>
      <height>21</height>

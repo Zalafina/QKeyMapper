@@ -112,10 +112,6 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         double WindowOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
         bool MousePassThrough = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough;
 
-        if (WindowPosition.isNull()) {
-            WindowPosition = FLOATINGWINDOW_POSITION_DEFAULT;
-        }
-
         if (WindowSize.isEmpty()) {
             WindowSize = FLOATINGWINDOW_SIZE_DEFAULT;
         }
