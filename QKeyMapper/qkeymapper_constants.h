@@ -1,6 +1,9 @@
 #pragma once
 
 #include <windows.h>
+#include <QPoint>
+#include <QSize>
+#include <QColor>
 
 namespace QKeyMapperConstants {
 

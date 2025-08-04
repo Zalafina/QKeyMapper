@@ -427,6 +427,18 @@ private:
     void enableMousePassThrough(void);
     void disableMousePassThrough(void);
 
+    // Reference point related helper functions
+    bool isWindowReferencePoint(int referencePoint) const;
+    QPoint calculateAbsolutePosition(const QPoint &relativePosition, int referencePoint) const;
+    QPoint calculateRelativePosition(const QPoint &absolutePosition, int referencePoint) const;
+    bool getWindowClientRect(HWND hwnd, QRect &clientRect) const;
+    QPoint getScreenReferencePoint(int referencePoint) const;
+    QPoint getWindowReferencePoint(int referencePoint, const QRect &clientRect) const;
+
+public:
+    // Public method to update floating window position based on current reference point
+    void updatePositionForCurrentWindow();
+
 private:
     QLabel *m_IconLabel;                        // Label to display the icon
     QIcon m_LoadedIcon;                         // Cached icon object
@@ -440,6 +452,10 @@ private:
     QPoint m_DragStartPosition;                 // Start position for dragging
     QSize m_ResizeStartSize;                    // Start size for resizing
     QPoint m_ResizeStartMousePos;               // Mouse position when resize started
+
+    // Reference point tracking (for window following)
+    HWND m_LastMappingHWND;                     // Last window HWND used for positioning
+    QRect m_LastWindowClientRect;               // Last window client rect for position tracking
 
     static constexpr int RESIZE_HANDLE_SIZE = 8;            // Size of resize handle area
     static constexpr double WHEEL_OPACITY_STEP = 0.02;      // Wheel up&down change opacity step
