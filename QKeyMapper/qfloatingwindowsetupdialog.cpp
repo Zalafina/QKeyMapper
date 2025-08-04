@@ -14,8 +14,14 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    int background_color_x = 34;
-    int background_color_y = 11;
+    int x_offset = -41;
+    int y_offset = -6;
+    QRect referencePointComboBoxGeometry = ui->referencePointComboBox->geometry();
+    QRect windowSizeSpinBoxGeometry = ui->windowSizeSpinBox->geometry();
+    int background_color_x = windowSizeSpinBoxGeometry.x();
+    int background_color_y = referencePointComboBoxGeometry.y();
+    background_color_x += x_offset;
+    background_color_y += y_offset;
     // Set position for the background color picker
     m_FloatingWindow_BGColorPicker->move(background_color_x, background_color_y);
     m_FloatingWindow_BGColorPicker->raise();
