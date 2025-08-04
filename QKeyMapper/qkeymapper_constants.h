@@ -213,6 +213,10 @@ namespace QKeyMapperConstants {
     inline constexpr int FLOATINGWINDOW_SIZE_MAX = 640;
     inline constexpr QSize FLOATINGWINDOW_SIZE_DEFAULT = QSize(64, 64);
 
+    inline constexpr int FLOATINGWINDOW_RADIUS_MIN = 0;
+    inline constexpr int FLOATINGWINDOW_RADIUS_MAX = FLOATINGWINDOW_SIZE_MAX / 2;
+    inline constexpr int FLOATINGWINDOW_RADIUS_DEFAULT = 0;
+
     inline constexpr int FLOATINGWINDOW_OPACITY_DECIMALS = 2;
     inline constexpr double FLOATINGWINDOW_OPACITY_SINGLESTEP = 0.01;
     inline constexpr double FLOATINGWINDOW_OPACITY_MIN = 0.1;

@@ -35,7 +35,7 @@
    <property name="geometry">
     <rect>
      <x>5</x>
-     <y>100</y>
+     <y>140</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -51,7 +51,7 @@
    <property name="geometry">
     <rect>
      <x>80</x>
-     <y>100</y>
+     <y>140</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -159,7 +159,7 @@
   <widget class="QCheckBox" name="mousePassThroughCheckBox">
    <property name="geometry">
     <rect>
-     <x>63</x>
+     <x>233</x>
      <y>140</y>
      <width>151</width>
      <height>21</height>
@@ -204,7 +204,7 @@
   <widget class="QComboBox" name="mousePassThroughSwitchKeyComboBox">
    <property name="geometry">
     <rect>
-     <x>80</x>
+     <x>250</x>
      <y>180</y>
      <width>131</width>
      <height>21</height>
@@ -217,7 +217,7 @@
   <widget class="QLabel" name="mousePassThroughSwitchKeyLabel">
    <property name="geometry">
     <rect>
-     <x>5</x>
+     <x>175</x>
      <y>180</y>
      <width>71</width>
      <height>21</height>
@@ -225,6 +225,35 @@
    </property>
    <property name="text">
     <string>SwitchKey</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="windowRadiusSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>100</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="windowRadiusLabel">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>100</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Radius</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>

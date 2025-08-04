@@ -162,12 +162,12 @@ struct PopupNotificationOptions {
 struct FloatingWindowOptions {
     QPoint position = QKeyMapperConstants::FLOATINGWINDOW_POSITION_DEFAULT;                 // Window position
     QSize size = QKeyMapperConstants::FLOATINGWINDOW_SIZE_DEFAULT;                          // Window size (square)
-    QColor backgroundColor = QKeyMapperConstants::FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;      // Background color
+    QColor backgroundColor = QKeyMapperConstants::FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;  // Background color
     double windowOpacity = QKeyMapperConstants::FLOATINGWINDOW_OPACITY_DEFAULT;             // Window opacity (0.1~1.0)
     bool mousePassThrough = QKeyMapperConstants::FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;  // Mouse pass-through
-    int borderRadius = QKeyMapperConstants::NOTIFICATION_BORDER_RADIUS_DEFAULT;                 // Border radius
-    QString iconPath;                                                                           // Icon file path (.ico/.png)
-    int iconPadding = 0;                                                                        // Padding between icon and window border
+    int borderRadius = QKeyMapperConstants::FLOATINGWINDOW_RADIUS_DEFAULT;                  // Border radius
+    QString iconPath;                                                                       // Icon file path (.ico/.png)
+    int iconPadding = 0;                                                                    // Padding between icon and window border
 };
 
 struct Gamepad_Info
@@ -268,6 +268,7 @@ struct KeyMappingTab_Info
     QPoint FloatingWindow_Position;
     QSize FloatingWindow_Size;
     QColor FloatingWindow_BackgroundColor;
+    int FloatingWindow_Radius;
     double  FloatingWindow_Opacity;
     bool FloatingWindow_MousePassThrough;
     KeyMappingDataTableWidget *KeyMappingDataTable;

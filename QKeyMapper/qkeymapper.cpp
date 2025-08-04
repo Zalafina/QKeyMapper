@@ -11995,7 +11995,7 @@ void QKeyMapper::mappingStartNotification()
         if (!options.backgroundColor.isValid()) {
             options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
         }
-        options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+        options.borderRadius = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Radius;
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
 
         QKeyMapper::getInstance()->showFloatingIconWindow(options);
@@ -12124,7 +12124,7 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
         if (!options.backgroundColor.isValid()) {
             options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
         }
-        options.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+        options.borderRadius = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Radius;
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
 
         QKeyMapper::getInstance()->showFloatingIconWindow(options);

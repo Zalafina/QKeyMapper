@@ -33,6 +33,10 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
                                      FLOATINGWINDOW_SIZE_MAX);
     ui->windowSizeSpinBox->setValue(FLOATINGWINDOW_SIZE_DEFAULT.width());
 
+    ui->windowRadiusSpinBox->setRange(FLOATINGWINDOW_RADIUS_MIN,
+                                    FLOATINGWINDOW_RADIUS_MAX);
+    ui->windowRadiusSpinBox->setValue(FLOATINGWINDOW_RADIUS_DEFAULT);
+
     ui->windowOpacitySpinBox->setRange(FLOATINGWINDOW_OPACITY_MIN,
                                        FLOATINGWINDOW_OPACITY_MAX);
     ui->windowOpacitySpinBox->setDecimals(FLOATINGWINDOW_OPACITY_DECIMALS);
@@ -57,6 +61,7 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     ui->windowSizeLabel->setText(tr("Size"));
     ui->windowPositionXLabel->setText(tr("Position X"));
     ui->windowPositionYLabel->setText(tr("Position Y"));
+    ui->windowRadiusLabel->setText(tr("Radius"));
     ui->windowOpacityLabel->setText(tr("Opacity"));
     ui->mousePassThroughCheckBox->setText(tr("MousePassThrough"));
 }
@@ -103,6 +108,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         QPoint WindowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Position;
         QSize WindowSize = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Size;
         QColor WindowBGColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_BackgroundColor;
+        int WindowRadius = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Radius;
         double WindowOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
         bool MousePassThrough = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough;
 
@@ -118,6 +124,10 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
             WindowBGColor = FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
         }
 
+        if (WindowRadius < FLOATINGWINDOW_RADIUS_MIN || WindowRadius > FLOATINGWINDOW_RADIUS_MAX) {
+            WindowRadius = FLOATINGWINDOW_RADIUS_DEFAULT;
+        }
+
         if (WindowOpacity < FLOATINGWINDOW_OPACITY_MIN || WindowOpacity > FLOATINGWINDOW_OPACITY_MAX) {
             WindowOpacity = FLOATINGWINDOW_OPACITY_DEFAULT;
         }
@@ -127,6 +137,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         ui->windowPositionYSpinBox->setValue(WindowPosition.y());
         ui->windowSizeSpinBox->setValue(WindowSize.width());
         ui->windowOpacitySpinBox->setValue(WindowOpacity);
+        ui->windowRadiusSpinBox->setValue(WindowRadius);
         ui->mousePassThroughCheckBox->setChecked(MousePassThrough);
     }
 
@@ -249,4 +260,20 @@ void QFloatingWindowSetupDialog::on_mousePassThroughCheckBox_stateChanged(int st
     else {
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThrough = false;
     }
+}
+
+void QFloatingWindowSetupDialog::on_windowRadiusSpinBox_valueChanged(int value)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Radius changed -> " << value;
+#endif
+
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Radius = value;
 }

@@ -37,7 +37,7 @@
         <translation>Color</translation>
     </message>
     <message>
-        <location filename="../colorpickerwidget.cpp" line="141"/>
+        <location filename="../colorpickerwidget.cpp" line="145"/>
         <source>Select Color</source>
         <translation>Select Color</translation>
     </message>
@@ -49,7 +49,7 @@
         <translation type="vanished">Do not show this message again</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="510"/>
+        <location filename="../qkeymapper.h" line="512"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
@@ -321,47 +321,63 @@
     <name>QFloatingWindowSetupDialog</name>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="32"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="54"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="58"/>
         <source>Floating Window Setup</source>
         <translation>Floating Window Setup</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="60"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="65"/>
         <source>Opacity</source>
         <translation>Opacity</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="73"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="57"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="61"/>
         <source>Size</source>
         <translation>Size</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="137"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="58"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="62"/>
         <source>Position X</source>
         <translation>Position X</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="153"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="59"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="63"/>
         <source>Position Y</source>
         <translation>Position Y</translation>
     </message>
     <message>
         <location filename="../qfloatingwindowsetupdialog.ui" line="172"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="61"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="66"/>
         <source>MousePassThrough</source>
         <translation>MousePassThrough</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="55"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="185"/>
+        <source>Reference</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="227"/>
+        <source>SwitchKey</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="256"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="64"/>
+        <source>Radius</source>
+        <translation>Radius</translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="59"/>
         <source>BGColor</source>
         <translation>BGColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="56"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="60"/>
         <source>Select Floating Window Background Color</source>
         <translation>Select Floating Window Background Color</translation>
     </message>
