@@ -198,7 +198,8 @@ void ColorPickerWidget::onPickColor()
 
     if (clear_to_default) {
         if ("TabFontColor" == m_buttonText
-            || "TabBGColor" == m_buttonText) {
+            || "TabBGColor" == m_buttonText
+            || "FW_BGColor" == m_buttonText) {
             QColor emptyColor;
             emit colorChanged(emptyColor);
         }

@@ -782,6 +782,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST[] = "MappingTable_FloatingWindow_PositionList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_SIZELIST[] = "MappingTable_FloatingWindow_SizeList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST[] = "MappingTable_FloatingWindow_BackgroundColorList";
+    inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST[] = "MappingTable_FloatingWindow_RadiusList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST[] = "MappingTable_FloatingWindow_OpacityList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST[] = "MappingTable_FloatingWindow_MousePassThroughList";
     inline constexpr const char CLEARALL[] = "KeyMapData_ClearAll";

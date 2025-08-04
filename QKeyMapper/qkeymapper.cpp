@@ -7749,6 +7749,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     QVariantList tabcustomimage_trayiconpixelList;
     QVariantList floatingwindow_positionList;
     QVariantList floatingwindow_sizeList;
+    QStringList floatingwindow_bgcolorList;
+    QStringList floatingwindow_radiusList;
     QStringList floatingwindow_opacityList;
     QStringList floatingwindow_mousepassthroughList;
     QString original_keys_forsave;
@@ -7798,6 +7800,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         QSize tabCustomImage_TrayIconPixel = s_KeyMappingTabInfoList.at(index).TabCustomImage_TrayIconPixel;
         QPoint floatingWindow_Position = s_KeyMappingTabInfoList.at(index).FloatingWindow_Position;
         QSize floatingWindow_Size = s_KeyMappingTabInfoList.at(index).FloatingWindow_Size;
+        QString floatingWindow_BGColor;
+        int floatingWindow_Radius = s_KeyMappingTabInfoList.at(index).FloatingWindow_Radius;
         double floatingWindow_Opacity = s_KeyMappingTabInfoList.at(index).FloatingWindow_Opacity;
         bool floatingWindow_MousePassThrough = s_KeyMappingTabInfoList.at(index).FloatingWindow_MousePassThrough;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
@@ -7812,6 +7816,9 @@ void QKeyMapper::saveKeyMapSetting(void)
         if (s_KeyMappingTabInfoList.at(index).TabBackgroundColor.isValid()) {
             tabBGColor = s_KeyMappingTabInfoList.at(index).TabBackgroundColor.name(QColor::HexArgb);
         }
+        if (s_KeyMappingTabInfoList.at(index).FloatingWindow_BackgroundColor.isValid()) {
+            floatingWindow_BGColor = s_KeyMappingTabInfoList.at(index).FloatingWindow_BackgroundColor.name(QColor::HexArgb);
+        }
         tabnamelist.append(tabName);
         tabhotkeylist.append(tabHotkey);
         tabfontcolorlist.append(tabFontColor);
@@ -7824,6 +7831,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabcustomimage_trayiconpixelList.append(tabCustomImage_TrayIconPixel);
         floatingwindow_positionList.append(floatingWindow_Position);
         floatingwindow_sizeList.append(floatingWindow_Size);
+        floatingwindow_bgcolorList.append(floatingWindow_BGColor);
+        floatingwindow_radiusList.append(QString::number(floatingWindow_Radius));
         floatingwindow_opacityList.append(QString::number(floatingWindow_Opacity, 'f', FLOATINGWINDOW_OPACITY_DECIMALS));
         floatingwindow_mousepassthroughList.append(floatingWindow_MousePassThrough ? "ON" : "OFF");
 
@@ -8186,6 +8195,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST, tabcustomimage_trayiconpixelList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST, floatingwindow_positionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST, floatingwindow_sizeList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST, floatingwindow_bgcolorList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST, floatingwindow_radiusList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST, floatingwindow_opacityList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST, floatingwindow_mousepassthroughList);
 
@@ -9304,6 +9315,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QVariantList tabcustomimage_trayiconpixellist_loaded;
     QVariantList floatingwindow_positionlist_loaded;
     QVariantList floatingwindow_sizelist_loaded;
+    QStringList floatingwindow_bgcolorlist_loaded;
+    QStringList floatingwindow_radiuslist_loaded;
     QStringList floatingwindow_opacitylist_loaded;
     QStringList floatingwindow_mousepassthroughlist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
@@ -9402,6 +9415,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabcustomimage_trayiconpixellist_loaded     = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST).toList();
         floatingwindow_positionlist_loaded          = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST).toList();
         floatingwindow_sizelist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST).toList();
+        floatingwindow_bgcolorlist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST).toStringList();
+        floatingwindow_radiuslist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST).toStringList();
         floatingwindow_opacitylist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST).toStringList();
         floatingwindow_mousepassthroughlist_loaded  = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST).toStringList();
 
@@ -9499,6 +9514,16 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (floatingwindow_sizelist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     floatingwindow_sizelist_loaded.append(QSize());
+                }
+            }
+            if (floatingwindow_bgcolorlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_bgcolorlist_loaded.append(QString());
+                }
+            }
+            if (floatingwindow_radiuslist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_radiuslist_loaded.append(QString());
                 }
             }
             if (floatingwindow_opacitylist_loaded.isEmpty()) {
@@ -10355,8 +10380,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         if (index < tabfontcolorlist_loaded.size()) {
-            QString tabfontcolor_str = tabfontcolorlist_loaded.at(index);
-            QColor TabFontColor = QColor(tabfontcolor_str);
+            QColor TabFontColor = QColor(tabfontcolorlist_loaded.at(index));
             if (TabFontColor.isValid()) {
                 s_KeyMappingTabInfoList[index].TabFontColor = TabFontColor;
             }
@@ -10365,8 +10389,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
         }
         if (index < tabbgcolorlist_loaded.size()) {
-            QString tabbgcolor_str = tabbgcolorlist_loaded.at(index);
-            QColor TabBGColor = QColor(tabbgcolor_str);
+            QColor TabBGColor = QColor(tabbgcolorlist_loaded.at(index));
             if (TabBGColor.isValid()) {
                 s_KeyMappingTabInfoList[index].TabBackgroundColor = TabBGColor;
             }
@@ -10440,6 +10463,24 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 s_KeyMappingTabInfoList[index].FloatingWindow_Size = floatingwindow_size;
+            }
+        }
+        if (index < floatingwindow_bgcolorlist_loaded.size()) {
+            QColor FloatingWindowBGColor = QColor(floatingwindow_bgcolorlist_loaded.at(index));
+            if (FloatingWindowBGColor.isValid()) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_BackgroundColor = FloatingWindowBGColor;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_BackgroundColor = QColor();
+            }
+        }
+        if (index < floatingwindow_radiuslist_loaded.size()) {
+            int floatingwindow_radius = floatingwindow_radiuslist_loaded.at(index).toDouble();
+            if (FLOATINGWINDOW_RADIUS_MIN <= floatingwindow_radius && floatingwindow_radius <= FLOATINGWINDOW_RADIUS_MAX) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Radius = floatingwindow_radius;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_Radius = FLOATINGWINDOW_RADIUS_DEFAULT;
             }
         }
         if (index < floatingwindow_opacitylist_loaded.size()) {
