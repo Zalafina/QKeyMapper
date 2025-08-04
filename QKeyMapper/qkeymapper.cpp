@@ -12000,6 +12000,9 @@ void QKeyMapper::mappingStartNotification()
 
         QKeyMapper::getInstance()->showFloatingIconWindow(options);
     }
+    else {
+        QKeyMapper::getInstance()->hideFloatingIconWindow();
+    }
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
@@ -12125,6 +12128,9 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
         options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
 
         QKeyMapper::getInstance()->showFloatingIconWindow(options);
+    }
+    else {
+        QKeyMapper::getInstance()->hideFloatingIconWindow();
     }
 
     // Show Notification Popup
