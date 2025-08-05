@@ -6499,6 +6499,137 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     return true;
 }
 
+bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
+{
+    int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    QString tabName = s_KeyMappingTabInfoList.at(current_tabindex).TabName + tr("_copy");
+
+    // Check if tabName already exists. If a duplicate is found, generate a unique name in the format "tabName(001~999)"
+    if (isTabTextDuplicate(tabName)) {
+        bool uniqueNameFound = false;
+        for (int i = 1; i <= 999; ++i) {
+            QString tempName = QString("%1(%2)").arg(tabName).arg(i, 3, 10, QChar('0'));
+            if (!isTabTextDuplicate(tempName)) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[addTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
+#endif
+                tabName = tempName;
+                uniqueNameFound = true;
+                break;
+            }
+        }
+        // If no unique name is found after checking all possible values (001~999), return false
+        if (!uniqueNameFound) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[addTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
+#endif
+            return false;
+        }
+    }
+
+    KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
+
+    int left = KEYMAPPINGDATATABLE_NARROW_LEFT;
+    int width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
+    int top = KEYMAPPINGDATATABLE_TOP;
+    int height = KEYMAPPINGDATATABLE_HEIGHT;
+    if (!ui->processListButton->isChecked()) {
+        left    = KEYMAPPINGDATATABLE_WIDE_LEFT;
+        width   = KEYMAPPINGDATATABLE_WIDE_WIDTH;
+    }
+    KeyMappingTableWidget->setGeometry(QRect(left, top, width, height));
+
+    KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
+    KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
+
+    // Initialize category column visibility based on current button state
+    KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
+
+    KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
+    KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
+
+    resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
+
+    KeyMappingTableWidget->verticalHeader()->setVisible(false);
+    KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
+    KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    // Allow editing only for specific columns (will be controlled per item)
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
+
+    /* Suuport Drag&Drop for KeyMappingData Table */
+    KeyMappingTableWidget->setDragEnabled(true);
+    KeyMappingTableWidget->setDragDropMode(QAbstractItemView::InternalMove);
+
+    KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
+                                                                    << tr("MappingKey")
+                                                                    << tr("Burst")
+                                                                    << tr("Lock")
+                                                                    << tr("Category"));
+    QFont customFont(FONTNAME_ENGLISH, 9);
+    KeyMappingTableWidget->setFont(customFont);
+    KeyMappingTableWidget->horizontalHeader()->setFont(customFont);
+
+#ifdef DEBUG_LOGOUT_ON
+    // qDebug() << "verticalHeader->isVisible" << KeyMappingTableWidget->verticalHeader()->isVisible();
+    // qDebug() << "selectionBehavior" << KeyMappingTableWidget->selectionBehavior();
+    // qDebug() << "selectionMode" << KeyMappingTableWidget->selectionMode();
+    // qDebug() << "editTriggers" << KeyMappingTableWidget->editTriggers();
+    // qDebug() << "verticalHeader-DefaultSectionSize" << KeyMappingTableWidget->verticalHeader()->defaultSectionSize();
+#endif
+
+    KeyMappingTableWidget->setStyle(QStyleFactory::create("Fusion"));
+
+    // Add the new tab at the end with the generated tabName
+    m_KeyMappingTabWidget->addTab(KeyMappingTableWidget, tabName);
+
+    KeyMappingTab_Info tab_info;
+    QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
+
+    // Copy data from the source tab
+    const KeyMappingTab_Info &sourceTabInfo = s_KeyMappingTabInfoList.at(current_tabindex);
+
+    // Deep copy the keyMappingData from source tab
+    if (sourceTabInfo.KeyMappingData != nullptr) {
+        *keyMappingData = *(sourceTabInfo.KeyMappingData);
+    }
+
+    // Copy other tab-specific settings from source tab
+    tab_info.TabName = tabName;
+    tab_info.TabHotkey = sourceTabInfo.TabHotkey;
+    tab_info.TabFontColor = sourceTabInfo.TabFontColor;
+    tab_info.TabBackgroundColor = sourceTabInfo.TabBackgroundColor;
+    tab_info.TabCustomImage_Path = sourceTabInfo.TabCustomImage_Path;
+    tab_info.TabCustomImage_ShowPosition = sourceTabInfo.TabCustomImage_ShowPosition;
+    tab_info.TabCustomImage_Padding = sourceTabInfo.TabCustomImage_Padding;
+    tab_info.TabCustomImage_ShowAsTrayIcon = sourceTabInfo.TabCustomImage_ShowAsTrayIcon;
+    tab_info.TabCustomImage_ShowAsFloatingWindow = sourceTabInfo.TabCustomImage_ShowAsFloatingWindow;
+    tab_info.TabCustomImage_TrayIconPixel = sourceTabInfo.TabCustomImage_TrayIconPixel;
+    tab_info.FloatingWindow_Position = sourceTabInfo.FloatingWindow_Position;
+    tab_info.FloatingWindow_ReferencePoint = sourceTabInfo.FloatingWindow_ReferencePoint;
+    tab_info.FloatingWindow_Size = sourceTabInfo.FloatingWindow_Size;
+    tab_info.FloatingWindow_BackgroundColor = sourceTabInfo.FloatingWindow_BackgroundColor;
+    tab_info.FloatingWindow_Radius = sourceTabInfo.FloatingWindow_Radius;
+    tab_info.FloatingWindow_Opacity = sourceTabInfo.FloatingWindow_Opacity;
+    tab_info.FloatingWindow_MousePassThrough = sourceTabInfo.FloatingWindow_MousePassThrough;
+    tab_info.KeyMappingDataTable = KeyMappingTableWidget;
+    tab_info.KeyMappingData = keyMappingData;
+
+    s_KeyMappingTabInfoList.append(tab_info);
+
+    refreshKeyMappingDataTableByTabIndex(s_KeyMappingTabInfoList.size() - 1);
+    updateKeyMappingTabWidgetTabDisplay(s_KeyMappingTabInfoList.size() - 1);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Copy tab from TabIndex[" << current_tabindex << "] new TabName: " << tabName;
+#endif
+    return true;
+}
+
 int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
 {
     if (m_KeyMappingTabWidget->count() <= 1 || s_KeyMappingTabInfoList.size() <= 1) {
@@ -17238,14 +17369,36 @@ void QKeyMapper::selectedItemsMoveDown()
 
 void QKeyMapper::on_addTabButton_clicked()
 {
+    bool copy_tab = false;
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        copy_tab = true;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[on_addTabButton_clicked]" << "Add tab button clicked!";
+    if (copy_tab) {
+        qDebug() << "[on_addTabButton_clicked]" << "Copy tab button clicked!";
+    }
+    else {
+        qDebug() << "[on_addTabButton_clicked]" << "Add tab button clicked!";
+    }
 #endif
-    bool addtab_result = addTabToKeyMappingTabWidget();
+
+    bool addtab_result;
+    if (copy_tab) {
+        addtab_result = copyCurrentTabToKeyMappingTabWidget();
+    }
+    else {
+        addtab_result = addTabToKeyMappingTabWidget();
+    }
     Q_UNUSED(addtab_result);
 #ifdef DEBUG_LOGOUT_ON
     if (false == addtab_result) {
-        qWarning() << "[on_addTabButton_clicked]" << "addTabToKeyMappingTabWidget failed!";
+        if (copy_tab) {
+            qWarning() << "[on_addTabButton_clicked]" << "copyCurrentTabToKeyMappingTabWidget() failed!";
+        }
+        else {
+            qWarning() << "[on_addTabButton_clicked]" << "addTabToKeyMappingTabWidget() failed!";
+        }
     }
 #endif
 }

@@ -886,6 +886,7 @@ public slots:
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
+    bool copyCurrentTabToKeyMappingTabWidget(void);
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
