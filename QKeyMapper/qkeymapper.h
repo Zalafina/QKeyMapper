@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QScreen>
+#include <QWindow>
 #include <QTimer>
 #include <QTimerEvent>
 #include <QThread>

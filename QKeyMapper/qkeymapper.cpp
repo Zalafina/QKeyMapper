@@ -17958,35 +17958,27 @@ QString QFloatingIconWindow::getReferencePointName(int referencePoint) const
 }
 #endif
 
-void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newQtPosition)
+void QFloatingIconWindow::onWindowPositionChanged(const QPoint &newPosition)
 {
     int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
-    // Convert Qt position to physical coordinates
-    QPoint newPhysicalPosition = qtToPhysicalCoordinates(newQtPosition);
-
-    // Calculate relative position based on current reference point
-    QPoint newRelativePosition = calculateRelativePosition(newPhysicalPosition, m_CurrentOptions.referencePoint);
-
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Qt Position:" << newQtPosition
-             << "Physical Position:" << newPhysicalPosition
-             << "Relative Position:" << newRelativePosition
-             << "Reference Point:" << getReferencePointName(m_CurrentOptions.referencePoint)
-             << "Current Tab Index:" << current_tabindex;
+    qDebug() << "[QFloatingIconWindow::onWindowPositionChanged] Floating Window new Relative Position ->" << newPosition
+             << ", Reference Point:" << getReferencePointName(m_CurrentOptions.referencePoint)
+             << ", Current Tab Index:" << current_tabindex;
 #endif
 
     // Validate the relative position (check if it's within reasonable bounds)
-    if (newRelativePosition.x() < FLOATINGWINDOW_POSITION_MIN_X || newRelativePosition.y() < FLOATINGWINDOW_POSITION_MIN_Y
-        || newRelativePosition.x() > FLOATINGWINDOW_POSITION_MAX_X || newRelativePosition.y() > FLOATINGWINDOW_POSITION_MAX_Y) {
+    if (newPosition.x() < FLOATINGWINDOW_POSITION_MIN_X || newPosition.y() < FLOATINGWINDOW_POSITION_MIN_Y
+        || newPosition.x() > FLOATINGWINDOW_POSITION_MAX_X || newPosition.y() > FLOATINGWINDOW_POSITION_MAX_Y) {
         return;
     }
 
-    // Save the relative position (not absolute position)
-    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Position = newRelativePosition;
+    // Save the new relative position
+    QKeyMapper::s_KeyMappingTabInfoList[current_tabindex].FloatingWindow_Position = newPosition;
 }
 
 void QFloatingIconWindow::onWindowSizeChanged(const QSize &newSize)
@@ -18188,7 +18180,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
             QPoint newRelativePos = calculateRelativePosition(newPhysicalPos, m_CurrentOptions.referencePoint);
             m_CurrentOptions.position = newRelativePos;
 
-            emit windowPositionChanged(newQtPos);
+            emit windowPositionChanged(newRelativePos);
             // emit windowSettingsChanged(m_CurrentOptions);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QFloatingIconWindow::mouseMoveEvent] Dragged to Qt pos:" << newQtPos
@@ -18209,27 +18201,34 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
 void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-#ifdef DEBUG_LOGOUT_ON
-        if (m_Dragging) {
-            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished dragging to position:" << pos();
-        }
-        if (m_Resizing) {
-            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished resizing to size:" << size();
-        }
-#endif
-        m_Dragging = false;
-        m_Resizing = false;
-
-        // After releasing mouse button, update cursor based on current position
-        updateCursorForPosition(event->pos());
-
         // Calculate the current relative position based on current reference point using physical coordinates
         QPoint currentPhysicalPos = qtToPhysicalCoordinates(pos());
         QPoint currentRelativePos = calculateRelativePosition(currentPhysicalPos, m_CurrentOptions.referencePoint);
         m_CurrentOptions.position = currentRelativePos;
 
-        emit windowPositionChanged(pos());
-        emit windowSizeChanged(size());
+        if (m_Dragging) {
+            emit windowPositionChanged(currentRelativePos);
+        }
+        if (m_Resizing) {
+            emit windowSizeChanged(size());
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        if (m_Dragging) {
+            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished dragging to Qt pos:" << pos()
+                     << "physical pos:" << currentPhysicalPos << "relative pos:" << currentRelativePos
+                     << "reference point:" << getReferencePointName(m_CurrentOptions.referencePoint);
+        }
+        if (m_Resizing) {
+            qDebug() << "[QFloatingIconWindow::mouseReleaseEvent] Finished resizing to size:" << size();
+        }
+#endif
+
+        m_Dragging = false;
+        m_Resizing = false;
+
+        // After releasing mouse button, update cursor based on current position
+        updateCursorForPosition(event->pos());
     }
     QWidget::mouseReleaseEvent(event);
 }
@@ -18582,8 +18581,9 @@ void QFloatingIconWindow::updatePositionForCurrentWindow()
 
 QPoint QFloatingIconWindow::qtToPhysicalCoordinates(const QPoint &qtPoint) const
 {
-    // Get DPI scaling factor
-    qreal dpiScale = QApplication::primaryScreen()->devicePixelRatio();
+    // Get DPI scaling factor of current screen which widget is showing
+    QScreen *screen = this->windowHandle() ? this->windowHandle()->screen() : QApplication::primaryScreen();
+    qreal dpiScale = screen->devicePixelRatio();
 
     // Convert Qt logical coordinates to physical coordinates
     return QPoint(qRound(qtPoint.x() * dpiScale), qRound(qtPoint.y() * dpiScale));
@@ -18591,8 +18591,9 @@ QPoint QFloatingIconWindow::qtToPhysicalCoordinates(const QPoint &qtPoint) const
 
 QPoint QFloatingIconWindow::physicalToQtCoordinates(const QPoint &physicalPoint) const
 {
-    // Get DPI scaling factor
-    qreal dpiScale = QApplication::primaryScreen()->devicePixelRatio();
+    // Get DPI scaling factor of current screen which widget is showing
+    QScreen *screen = this->windowHandle() ? this->windowHandle()->screen() : QApplication::primaryScreen();
+    qreal dpiScale = screen->devicePixelRatio();
 
     // Convert physical coordinates to Qt logical coordinates
     return QPoint(qRound(physicalPoint.x() / dpiScale), qRound(physicalPoint.y() / dpiScale));
