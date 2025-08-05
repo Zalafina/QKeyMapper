@@ -7170,7 +7170,7 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
                         emit QKeyMapper::getInstance()->showCarOrdinal_Signal(s_LastCarOrdinal);
                     }
             }
-            else if (keycodeString == SWITCH_MOUSE_PASSTHROUGH_KEY) {
+            else if (keycodeString == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT) {
                 emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
             }
         }
@@ -8090,7 +8090,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             emit QKeyMapper::getInstance()->showCarOrdinal_Signal(s_LastCarOrdinal);
                         }
                 }
-                else if (keycodeString == SWITCH_MOUSE_PASSTHROUGH_KEY) {
+                else if (keycodeString == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT) {
                     emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
                 }
             }

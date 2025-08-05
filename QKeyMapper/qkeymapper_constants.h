@@ -246,6 +246,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr bool FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
 
+    inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT[]  = "F11";
+
     inline constexpr const char CROSSHAIR_CENTERCOLOR_DEFAULT[] = "70a1ff";
     inline constexpr const char CROSSHAIR_CROSSHAIRCOLOR_DEFAULT[] = "70a1ff";
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -904,7 +906,6 @@ namespace QKeyMapperConstants {
     inline constexpr const char SENDTIMING_STR_NORMAL_AND_KEYUP[]     = "NORMAL_AND_KEYUP";
 
     inline constexpr const char SHOW_KEY_DEBUGINFO[]            = "Application";
-    inline constexpr const char SWITCH_MOUSE_PASSTHROUGH_KEY[]  = "F11";
     inline constexpr const char SHOW_POINTS_IN_WINDOW_KEY[]     = "F8";
     inline constexpr const char SHOW_POINTS_IN_SCREEN_KEY[]     = "F9";
     inline constexpr const char SHOW_CAR_ORDINAL_KEY[]          = "Home";
