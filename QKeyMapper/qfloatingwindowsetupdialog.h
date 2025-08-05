@@ -47,6 +47,8 @@ private slots:
 
     void on_windowRadiusSpinBox_valueChanged(int value);
 
+    void on_referencePointComboBox_currentIndexChanged(int index);
+
 private:
     static QFloatingWindowSetupDialog *m_instance;
     Ui::QFloatingWindowSetupDialog *ui;

@@ -17925,7 +17925,7 @@ void QFloatingIconWindow::setMousePassThroughEnabled(bool enabled)
 }
 
 #ifdef DEBUG_LOGOUT_ON
-QString QFloatingIconWindow::getReferencePointName(int referencePoint) const
+QString QFloatingIconWindow::getReferencePointName(int referencePoint)
 {
     switch (referencePoint) {
         case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT:

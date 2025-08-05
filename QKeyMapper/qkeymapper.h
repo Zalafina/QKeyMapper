@@ -385,13 +385,13 @@ public:
     void setMousePassThroughEnabled(bool enabled);
 
     // Getters for current state
-    QPoint getCurrentPosition() const { return pos(); }
+    QPoint getCurrentPosition() const { return m_CurrentOptions.position; }
     QSize getCurrentSize() const { return size(); }
     double getCurrentOpacity() const { return m_CurrentOpacity; }
     FloatingWindowOptions getCurrentOptions() const { return m_CurrentOptions; }
 
 #ifdef DEBUG_LOGOUT_ON
-    QString getReferencePointName(int referencePoint) const;
+    static QString getReferencePointName(int referencePoint);
 #endif
 
 public slots:

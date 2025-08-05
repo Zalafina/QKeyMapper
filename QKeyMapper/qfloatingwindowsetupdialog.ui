@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>430</width>
     <height>230</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>400</width>
+    <width>430</width>
     <height>230</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>400</width>
+    <width>430</width>
     <height>230</height>
    </size>
   </property>
@@ -182,7 +182,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Reference</string>
+    <string>RefPoint</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -193,7 +193,7 @@
     <rect>
      <x>250</x>
      <y>20</y>
-     <width>131</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>
@@ -206,7 +206,7 @@
     <rect>
      <x>250</x>
      <y>180</y>
-     <width>131</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>

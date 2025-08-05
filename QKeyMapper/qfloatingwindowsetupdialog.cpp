@@ -28,6 +28,22 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     m_FloatingWindow_BGColorPicker->setShowAlphaChannel(true);
     m_FloatingWindow_BGColorPicker->setColor(FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT);
 
+    QStringList referencePointList;
+    referencePointList.append(tr("ScreenTopLeft"));
+    referencePointList.append(tr("ScreenTopRight"));
+    referencePointList.append(tr("ScreenTopCenter"));
+    referencePointList.append(tr("ScreenBottomLeft"));
+    referencePointList.append(tr("ScreenBottomRight"));
+    referencePointList.append(tr("ScreenBottomCenter"));
+    referencePointList.append(tr("WindowTopLeft"));
+    referencePointList.append(tr("WindowTopRight"));
+    referencePointList.append(tr("WindowTopCenter"));
+    referencePointList.append(tr("WindowBottomLeft"));
+    referencePointList.append(tr("WindowBottomRight"));
+    referencePointList.append(tr("WindowBottomCenter"));
+    ui->referencePointComboBox->addItems(referencePointList);
+    ui->referencePointComboBox->setCurrentIndex(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT);
+
     ui->windowPositionXSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN_X,
                                          FLOATINGWINDOW_POSITION_MAX_X);
     ui->windowPositionYSpinBox->setRange(FLOATINGWINDOW_POSITION_MIN_Y,
@@ -70,6 +86,20 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     ui->windowRadiusLabel->setText(tr("Radius"));
     ui->windowOpacityLabel->setText(tr("Opacity"));
     ui->mousePassThroughCheckBox->setText(tr("MousePassThrough"));
+
+    ui->referencePointLabel->setText(tr("RefPoint"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT,        tr("ScreenTopLeft"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPRIGHT,       tr("ScreenTopRight"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPCENTER,      tr("ScreenTopCenter"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMLEFT,     tr("ScreenBottomLeft"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMRIGHT,    tr("ScreenBottomRight"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMCENTER,   tr("ScreenBottomCenter"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT,        tr("WindowTopLeft"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPRIGHT,       tr("WindowTopRight"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPCENTER,      tr("WindowTopCenter"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT,     tr("WindowBottomLeft"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT,    tr("WindowBottomRight"));
+    ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER,   tr("WindowBottomCenter"));
 }
 
 void QFloatingWindowSetupDialog::resetFontSize()
@@ -278,4 +308,20 @@ void QFloatingWindowSetupDialog::on_windowRadiusSpinBox_valueChanged(int value)
 #endif
 
     QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Radius = value;
+}
+
+void QFloatingWindowSetupDialog::on_referencePointComboBox_currentIndexChanged(int index)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Reference Point changed -> " << QFloatingIconWindow::getReferencePointName(index);
+#endif
+
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_ReferencePoint = index;
 }
