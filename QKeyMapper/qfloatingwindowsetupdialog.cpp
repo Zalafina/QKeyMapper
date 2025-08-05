@@ -65,8 +65,7 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     ui->windowOpacitySpinBox->setSingleStep(FLOATINGWINDOW_OPACITY_SINGLESTEP);
     ui->windowOpacitySpinBox->setValue(FLOATINGWINDOW_OPACITY_DEFAULT);
 
-    const QStringList keyboardKeyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
-    ui->mousePassThroughSwitchKeyComboBox->addItems(keyboardKeyList);
+    ui->mousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     ui->mousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 
     QObject::connect(m_FloatingWindow_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingWindowSetupDialog::onBackgroundColorChanged);
