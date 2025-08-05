@@ -141,12 +141,17 @@ void QFloatingWindowSetupDialog::closeEvent(QCloseEvent *event)
 void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
 {
     if (0 <= m_TabIndex && m_TabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        int PositionReferencePoint = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_ReferencePoint;
         QPoint WindowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Position;
         QSize WindowSize = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Size;
         QColor WindowBGColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_BackgroundColor;
         int WindowRadius = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Radius;
         double WindowOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
         bool MousePassThrough = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough;
+
+        if (!QFloatingIconWindow::isValidReferencePoint(PositionReferencePoint)) {
+            PositionReferencePoint = FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+        }
 
         if (WindowSize.isEmpty()) {
             WindowSize = FLOATINGWINDOW_SIZE_DEFAULT;
@@ -165,6 +170,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         }
 
         m_FloatingWindow_BGColorPicker->setColor(WindowBGColor);
+        ui->referencePointComboBox->setCurrentIndex(PositionReferencePoint);
         ui->windowPositionXSpinBox->setValue(WindowPosition.x());
         ui->windowPositionYSpinBox->setValue(WindowPosition.y());
         ui->windowSizeSpinBox->setValue(WindowSize.width());

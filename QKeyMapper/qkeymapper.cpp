@@ -7757,6 +7757,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabcustomimage_showastrayiconList;
     QStringList tabcustomimage_showasfloatingwindowList;
     QVariantList tabcustomimage_trayiconpixelList;
+    QStringList floatingwindow_referencepointList;
     QVariantList floatingwindow_positionList;
     QVariantList floatingwindow_sizeList;
     QStringList floatingwindow_bgcolorList;
@@ -7808,6 +7809,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsTrayIcon;
         bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowAsFloatingWindow;
         QSize tabCustomImage_TrayIconPixel = s_KeyMappingTabInfoList.at(index).TabCustomImage_TrayIconPixel;
+        int floatingWindow_ReferencePoint = s_KeyMappingTabInfoList.at(index).FloatingWindow_ReferencePoint;
         QPoint floatingWindow_Position = s_KeyMappingTabInfoList.at(index).FloatingWindow_Position;
         QSize floatingWindow_Size = s_KeyMappingTabInfoList.at(index).FloatingWindow_Size;
         QString floatingWindow_BGColor;
@@ -7839,6 +7841,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabcustomimage_showastrayiconList.append(tabCustomImage_ShowAsTrayIcon ? "ON" : "OFF");
         tabcustomimage_showasfloatingwindowList.append(tabCustomImage_ShowAsFloatingWindow ? "ON" : "OFF");
         tabcustomimage_trayiconpixelList.append(tabCustomImage_TrayIconPixel);
+        floatingwindow_referencepointList.append(QString::number(floatingWindow_ReferencePoint));
         floatingwindow_positionList.append(floatingWindow_Position);
         floatingwindow_sizeList.append(floatingWindow_Size);
         floatingwindow_bgcolorList.append(floatingWindow_BGColor);
@@ -8203,6 +8206,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST, tabcustomimage_showastrayiconList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST, tabcustomimage_showasfloatingwindowList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST, tabcustomimage_trayiconpixelList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_REFERENCEPOINTLIST, floatingwindow_referencepointList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST, floatingwindow_positionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST, floatingwindow_sizeList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST, floatingwindow_bgcolorList);
@@ -9323,6 +9327,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QStringList tabcustomimage_showastrayiconlist_loaded;
     QStringList tabcustomimage_showasfloatingwindowlist_loaded;
     QVariantList tabcustomimage_trayiconpixellist_loaded;
+    QStringList floatingwindow_referencepointlist_loaded;
     QVariantList floatingwindow_positionlist_loaded;
     QVariantList floatingwindow_sizelist_loaded;
     QStringList floatingwindow_bgcolorlist_loaded;
@@ -9423,6 +9428,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabcustomimage_showastrayiconlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST).toStringList();
         tabcustomimage_showasfloatingwindowlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST).toStringList();
         tabcustomimage_trayiconpixellist_loaded     = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST).toList();
+        floatingwindow_referencepointlist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_REFERENCEPOINTLIST).toStringList();
         floatingwindow_positionlist_loaded          = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST).toList();
         floatingwindow_sizelist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST).toList();
         floatingwindow_bgcolorlist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST).toStringList();
@@ -9514,6 +9520,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (tabcustomimage_trayiconpixellist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     tabcustomimage_trayiconpixellist_loaded.append(QSize());
+                }
+            }
+            if (floatingwindow_referencepointlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_referencepointlist_loaded.append(QString());
                 }
             }
             if (floatingwindow_positionlist_loaded.isEmpty()) {
@@ -10451,6 +10462,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 s_KeyMappingTabInfoList[index].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
             }
         }
+        if (index < floatingwindow_referencepointlist_loaded.size()) {
+            int floatingwindow_referencepoint = floatingwindow_referencepointlist_loaded.at(index).toInt();
+            if (QFloatingIconWindow::isValidReferencePoint(floatingwindow_referencepoint)) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_ReferencePoint = floatingwindow_referencepoint;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_ReferencePoint = FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+            }
+        }
         if (index < floatingwindow_positionlist_loaded.size()) {
             QPoint floatingwindow_position = floatingwindow_positionlist_loaded.at(index).toPoint();
             if (floatingwindow_position.x() < FLOATINGWINDOW_POSITION_MIN_X
@@ -10485,7 +10505,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
         }
         if (index < floatingwindow_radiuslist_loaded.size()) {
-            int floatingwindow_radius = floatingwindow_radiuslist_loaded.at(index).toDouble();
+            int floatingwindow_radius = floatingwindow_radiuslist_loaded.at(index).toInt();
             if (FLOATINGWINDOW_RADIUS_MIN <= floatingwindow_radius && floatingwindow_radius <= FLOATINGWINDOW_RADIUS_MAX) {
                 s_KeyMappingTabInfoList[index].FloatingWindow_Radius = floatingwindow_radius;
             }

@@ -800,6 +800,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST[] = "MappingTable_TabCustomImage_ShowAsTrayIconList";
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST[] = "MappingTable_TabCustomImage_ShowAsFloatingWindowList";
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST[] = "MappingTable_TabCustomImage_TrayIconPixelList";
+    inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_REFERENCEPOINTLIST[] = "MappingTable_FloatingWindow_ReferencePointList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST[] = "MappingTable_FloatingWindow_PositionList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_SIZELIST[] = "MappingTable_FloatingWindow_SizeList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST[] = "MappingTable_FloatingWindow_BackgroundColorList";
