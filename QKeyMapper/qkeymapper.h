@@ -274,6 +274,7 @@ struct KeyMappingTab_Info
     int FloatingWindow_Radius;
     double  FloatingWindow_Opacity;
     bool FloatingWindow_MousePassThrough;
+    QString FloatingWindow_MousePassThroughSwitchKey;
     KeyMappingDataTableWidget *KeyMappingDataTable;
     QList<MAP_KEYDATA> *KeyMappingData;
 };

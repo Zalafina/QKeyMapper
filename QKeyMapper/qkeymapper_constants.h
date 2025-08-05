@@ -247,6 +247,8 @@ namespace QKeyMapperConstants {
     inline constexpr bool FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
 
     inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT[]  = "F11";
+    inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE[]  = "None";
+    inline constexpr int FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX = 0;
 
     inline constexpr const char CROSSHAIR_CENTERCOLOR_DEFAULT[] = "70a1ff";
     inline constexpr const char CROSSHAIR_CROSSHAIRCOLOR_DEFAULT[] = "70a1ff";
@@ -809,6 +811,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST[] = "MappingTable_FloatingWindow_RadiusList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST[] = "MappingTable_FloatingWindow_OpacityList";
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST[] = "MappingTable_FloatingWindow_MousePassThroughList";
+    inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHSWITCHKEYLIST[] = "MappingTable_FloatingWindow_MousePassThroughSwitchKeyList";
     inline constexpr const char CLEARALL[] = "KeyMapData_ClearAll";
 
     inline constexpr const char PROCESSINFO_FILENAME[] = "ProcessInfo_FileName";

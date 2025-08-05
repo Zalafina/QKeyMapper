@@ -65,6 +65,7 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     ui->windowOpacitySpinBox->setSingleStep(FLOATINGWINDOW_OPACITY_SINGLESTEP);
     ui->windowOpacitySpinBox->setValue(FLOATINGWINDOW_OPACITY_DEFAULT);
 
+    ui->mousePassThroughSwitchKeyComboBox->addItem(tr(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE));
     ui->mousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     ui->mousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 
@@ -89,6 +90,8 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     ui->windowRadiusLabel->setText(tr("Radius"));
     ui->windowOpacityLabel->setText(tr("Opacity"));
     ui->mousePassThroughCheckBox->setText(tr("MousePassThrough"));
+    ui->mousePassThroughSwitchKeyLabel->setText(tr("MouseSwitchKey"));
+    ui->mousePassThroughSwitchKeyComboBox->setItemText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX, tr("None"));
 
     ui->referencePointLabel->setText(tr("RefPoint"));
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT,        tr("ScreenTopLeft"));
@@ -151,6 +154,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
         int WindowRadius = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Radius;
         double WindowOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
         bool MousePassThrough = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough;
+        QString MousePassThroughSwitchKey = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThroughSwitchKey;
 
         if (!QFloatingIconWindow::isValidReferencePoint(PositionReferencePoint)) {
             PositionReferencePoint = FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
@@ -170,6 +174,16 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
 
         if (WindowOpacity < FLOATINGWINDOW_OPACITY_MIN || WindowOpacity > FLOATINGWINDOW_OPACITY_MAX) {
             WindowOpacity = FLOATINGWINDOW_OPACITY_DEFAULT;
+        }
+
+        if (MousePassThroughSwitchKey == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE) {
+            ui->mousePassThroughSwitchKeyComboBox->setCurrentIndex(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX);
+        }
+        else if(QKeyMapper_Worker::MultiKeyboardInputList.contains(MousePassThroughSwitchKey)) {
+            ui->mousePassThroughSwitchKeyComboBox->setCurrentText(MousePassThroughSwitchKey);
+        }
+        else {
+            ui->mousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
         }
 
         m_FloatingWindow_BGColorPicker->setColor(WindowBGColor);
@@ -333,4 +347,25 @@ void QFloatingWindowSetupDialog::on_referencePointComboBox_currentIndexChanged(i
 #endif
 
     QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_ReferencePoint = index;
+}
+
+void QFloatingWindowSetupDialog::on_mousePassThroughSwitchKeyComboBox_currentIndexChanged(int index)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote()
+        << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
+        << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName
+        << "] Floating Window Mouse PassThrough SwitchKey changed -> " << ui->mousePassThroughSwitchKeyComboBox->currentText();
+#endif
+
+    if (index == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX) {
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThroughSwitchKey = FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE;
+    }
+    else {
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThroughSwitchKey = ui->mousePassThroughSwitchKeyComboBox->currentText();
+    }
 }

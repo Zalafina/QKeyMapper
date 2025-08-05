@@ -6488,6 +6488,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     tab_info.FloatingWindow_Radius = FLOATINGWINDOW_RADIUS_DEFAULT;
     tab_info.FloatingWindow_Opacity = FLOATINGWINDOW_OPACITY_DEFAULT;
     tab_info.FloatingWindow_MousePassThrough = FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
+    tab_info.FloatingWindow_MousePassThroughSwitchKey = FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
@@ -7895,6 +7896,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList floatingwindow_radiusList;
     QStringList floatingwindow_opacityList;
     QStringList floatingwindow_mousepassthroughList;
+    QStringList floatingwindow_mousepassthroughswitchkeyList;
     QString original_keys_forsave;
     QString mapping_keysList_forsave;
     QString mappingkeys_keyupList_forsave;
@@ -7947,6 +7949,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         int floatingWindow_Radius = s_KeyMappingTabInfoList.at(index).FloatingWindow_Radius;
         double floatingWindow_Opacity = s_KeyMappingTabInfoList.at(index).FloatingWindow_Opacity;
         bool floatingWindow_MousePassThrough = s_KeyMappingTabInfoList.at(index).FloatingWindow_MousePassThrough;
+        QString floatingWindow_MousePassThroughSwitchKey = s_KeyMappingTabInfoList.at(index).FloatingWindow_MousePassThroughSwitchKey;
         if (isTabTextDuplicateInStringList(tabName, tabnamelist)) {
             tabName.clear();
 #ifdef DEBUG_LOGOUT_ON
@@ -7979,6 +7982,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         floatingwindow_radiusList.append(QString::number(floatingWindow_Radius));
         floatingwindow_opacityList.append(QString::number(floatingWindow_Opacity, 'f', FLOATINGWINDOW_OPACITY_DECIMALS));
         floatingwindow_mousepassthroughList.append(floatingWindow_MousePassThrough ? "ON" : "OFF");
+        floatingwindow_mousepassthroughswitchkeyList.append(floatingWindow_MousePassThroughSwitchKey);
 
         QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
@@ -8344,6 +8348,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST, floatingwindow_radiusList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST, floatingwindow_opacityList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST, floatingwindow_mousepassthroughList);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHSWITCHKEYLIST, floatingwindow_mousepassthroughswitchkeyList);
 
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
@@ -9465,6 +9470,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QStringList floatingwindow_radiuslist_loaded;
     QStringList floatingwindow_opacitylist_loaded;
     QStringList floatingwindow_mousepassthroughlist_loaded;
+    QStringList floatingwindow_mousepassthroughswitchkeylist_loaded;
     if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
         && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))) {
         QStringList tabnamelist_loaded;
@@ -9563,9 +9569,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         floatingwindow_positionlist_loaded          = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST).toList();
         floatingwindow_sizelist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST).toList();
         floatingwindow_bgcolorlist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST).toStringList();
-        floatingwindow_radiuslist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST).toStringList();
+        floatingwindow_radiuslist_loaded            = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST).toStringList();
         floatingwindow_opacitylist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST).toStringList();
         floatingwindow_mousepassthroughlist_loaded  = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST).toStringList();
+        floatingwindow_mousepassthroughswitchkeylist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHSWITCHKEYLIST).toStringList();
 
         // Check if we have any tab configuration data to determine if we should initialize
         if (tabnamelist_loaded.isEmpty()) {
@@ -9686,6 +9693,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (floatingwindow_mousepassthroughlist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     floatingwindow_mousepassthroughlist_loaded.append(QString());
+                }
+            }
+            if (floatingwindow_mousepassthroughswitchkeylist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    floatingwindow_mousepassthroughswitchkeylist_loaded.append(QString());
                 }
             }
 
@@ -10673,6 +10685,18 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
                 (str == "ON") ? true :
                 (str == "OFF") ? false :
                 FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
+        }
+        if (index < floatingwindow_mousepassthroughswitchkeylist_loaded.size()) {
+            QString floatingwindow_mousepassthroughswitchkey = floatingwindow_mousepassthroughswitchkeylist_loaded.at(index);
+
+            if (floatingwindow_mousepassthroughswitchkey == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE
+                || QKeyMapper_Worker::MultiKeyboardInputList.contains(floatingwindow_mousepassthroughswitchkey)) {
+                s_KeyMappingTabInfoList[index].FloatingWindow_MousePassThroughSwitchKey = floatingwindow_mousepassthroughswitchkey;
+            }
+            else {
+                s_KeyMappingTabInfoList[index].FloatingWindow_MousePassThroughSwitchKey = FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
+            }
+
         }
         updateKeyMappingTabWidgetTabDisplay(index);
     }

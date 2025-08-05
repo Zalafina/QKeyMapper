@@ -7144,7 +7144,13 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
             }
 #endif
 
-            if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
+            QString mousePassThroughSwitchKey = QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey;
+            if ((QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
+                || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus)
+                && (keycodeString == mousePassThroughSwitchKey)) {
+                emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
+            }
+            else if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
                     if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[InterceptionKeyboardHookProc]" << "Show Mouse Points In Screen KEY_DOWN -> ON";
@@ -7169,9 +7175,6 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
 #endif
                         emit QKeyMapper::getInstance()->showCarOrdinal_Signal(s_LastCarOrdinal);
                     }
-            }
-            else if (keycodeString == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT) {
-                emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
             }
         }
         else {
@@ -8064,7 +8067,13 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
 #endif
 
-                if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
+                QString mousePassThroughSwitchKey = QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey;
+                if ((QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
+                    || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus)
+                    && (keycodeString == mousePassThroughSwitchKey)) {
+                    emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
+                }
+                else if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {
                         if (!show_screenpoints) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug() << "[LowLevelKeyboardHookProc]" << "Show Mouse Points In Screen KEY_DOWN -> ON";
@@ -8089,9 +8098,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #endif
                             emit QKeyMapper::getInstance()->showCarOrdinal_Signal(s_LastCarOrdinal);
                         }
-                }
-                else if (keycodeString == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT) {
-                    emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
                 }
             }
             else {

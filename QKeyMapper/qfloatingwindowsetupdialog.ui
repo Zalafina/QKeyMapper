@@ -217,14 +217,14 @@
   <widget class="QLabel" name="mousePassThroughSwitchKeyLabel">
    <property name="geometry">
     <rect>
-     <x>175</x>
+     <x>155</x>
      <y>180</y>
-     <width>71</width>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>SwitchKey</string>
+    <string>MouseSwitchKey</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
