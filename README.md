@@ -68,7 +68,8 @@
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20250810)
-    * 物理手柄按键检测方式优化，添加新支持按键。
+    * 物理手柄按键检测方式优化，PS4/5手柄按键检测名称与Xbox手柄保持一致。
+    * 物理手柄按键检测添加新支持按键。
         ##### 新支持的按键列表：
             Joy-Misc1       (Xbox Series X share button)
             Joy-Paddle1     (Xbox Elite paddle P1)
@@ -615,6 +616,11 @@
 | Back(后退)键   | Joy-Key7(Back)      |
 | Start(开始)键  | Joy-Key8(Start)     |
 | Guide(西瓜)键  | Joy-Key13(Guide)    |
+| X Share键      | Joy-Misc1           |
+| 左上背键       | Joy-Paddle1         |
+| 右上背键       | Joy-Paddle2         |
+| 左下背键       | Joy-Paddle3         |
+| 右下背键       | Joy-Paddle4         |
 
 ## 🎮 特殊物理手柄按键说明
 | QKeyMapper原始按键名称 | 功能                                                    |
@@ -633,7 +639,7 @@
 ## 🎮 扩展手柄按键
 | QKeyMapper原始按键名称 | 功能                                                              |
 |----------------------|------------------------------------------------------------------|
-| Joy-Key19~30         | 预留的手柄扩展按键检测，通常使用不到，但有可能特殊的手柄会支持更多的按键     |
+| Joy-Key14~30         | 预留的手柄扩展按键检测，通常使用不到，但有可能特殊的手柄会支持更多的按键     |
 
 ---------------
 ## 🎮 PS4-Dualshock手柄按键对照表
@@ -647,24 +653,24 @@
 | 右摇杆下       | Joy-RS-Down         |
 | 右摇杆左       | Joy-RS-Left         |
 | 右摇杆右       | Joy-RS-Right        |
-| 左摇杆按下     | Joy-Key8(Start)     |
-| 右摇杆按下     | Joy-Key9(LS-Click)  |
-| 十字方向键上    | Joy-Key14           |
-| 十字方向键下    | Joy-Key15           |
-| 十字方向键左    | Joy-Key16           |
-| 十字方向键右    | Joy-Key17           |
-| ×键           | Joy-Key1(A/×)       |
-| ○键           | Joy-Key2(B/○)       |
-| □键           | Joy-Key3(X/□)       |
-| △键           | Joy-Key4(Y/△)       |
-| 左侧肩键       | Joy-Key10(RS-Click) |
-| 右侧肩键       | Joy-Key13(Guide)    |
+| 左摇杆按下     | Joy-Key9(LS-Click)  |
+| 右摇杆按下     | Joy-Key10(RS-Click) |
+| 十字键上       | Joy-DPad-Up         |
+| 十字键下       | Joy-DPad-Down       |
+| 十字键左       | Joy-DPad-Left       |
+| 十字键右       | Joy-DPad-Right      |
+| ×键            | Joy-Key1(A/×)       |
+| ○键            | Joy-Key2(B/○)       |
+| □键            | Joy-Key3(X/□)       |
+| △键           | Joy-Key4(Y/△)      |
+| 左侧肩键       | Joy-Key5(LB)        |
+| 右侧肩键       | Joy-Key6(RB)        |
 | 左侧扳机键     | Joy-Key11(LT)       |
 | 右侧扳机键     | Joy-Key12(RT)       |
-| SHARE键       | Joy-Key5(LB)        |
-| OPTIONS键     | Joy-Key7(Back)      |
-| 触摸板键       | Joy-Key18           |
-| PS键          | Joy-Key6(RB)        |
+| SHARE键        | Joy-Key7(Back)      |
+| OPTIONS键      | Joy-Key8(Start)     |
+| 触摸板键       | Joy-Touchpad        |
+| PS键           | Joy-Key13(Guide)    |
 
 ---------------
 ## 🎮 Xbox360虚拟手柄按键对照表
