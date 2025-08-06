@@ -137,16 +137,16 @@ void SDL_Joysticks::rumble(const QJoystickRumble &request)
 void SDL_Joysticks::update()
 {
 #ifdef SDL_SUPPORTED
-   SDL_Event event;
+    SDL_Event event;
 
-   while (SDL_PollEvent(&event))
-   {
-      switch (event.type)
-      {
-         case SDL_JOYDEVICEADDED:
+    while (SDL_PollEvent(&event))
+    {
+        switch (event.type)
+        {
+        case SDL_JOYDEVICEADDED:
             configureJoystick(&event);
             break;
-         case SDL_JOYDEVICEREMOVED: {
+        case SDL_JOYDEVICEREMOVED: {
             if (m_joysticks.contains(event.jdevice.which)
                 && m_joysticks[event.jdevice.which] != nullptr) {
                 const QJoystickDevice joystick_removed = *m_joysticks[event.jdevice.which];
@@ -156,13 +156,13 @@ void SDL_Joysticks::update()
             SDL_Joystick *js = SDL_JoystickFromInstanceID(event.jdevice.which);
             if (js)
             {
-               SDL_JoystickClose(js);
+                SDL_JoystickClose(js);
             }
 
             SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.cdevice.which);
             if (gc)
             {
-               SDL_GameControllerClose(gc);
+                SDL_GameControllerClose(gc);
             }
 
             if (m_joysticks.contains(event.jdevice.which))
@@ -174,50 +174,61 @@ void SDL_Joysticks::update()
             }
 
             emit countChanged();
+        }
+        break;
+        case SDL_JOYAXISMOTION:
+        {
+            // SDL_JOY* events may also come from GameControllers, so we need to filter them out
+            SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.jaxis.which);
+            // Skip processing if the instance is already handled by the GameController API to avoid duplicate handling
+            if (gc == nullptr) {
+                emit axisEvent(getAxisEvent(&event));
             }
+        }
+        break;
+        case SDL_CONTROLLERAXISMOTION:
+            emit axisEvent(getAxisEvent(&event));
             break;
-         case SDL_JOYAXISMOTION:
-         {
-            int device_index = m_joysticks[event.cdevice.which]->id;
-            if (!SDL_IsGameController(device_index))
+        case SDL_CONTROLLERSENSORUPDATE:
+        {
+            SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.csensor.which);
+            if (gc != nullptr)
             {
-               emit axisEvent(getAxisEvent(&event));
+                if (event.csensor.sensor == SDL_SENSOR_GYRO || event.csensor.sensor == SDL_SENSOR_ACCEL) {
+                    emit sensorEvent(getSensorEvent(&event));
+                }
             }
-         }
+        }
+        break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            emit buttonEvent(getControllerButtonEvent(&event));
             break;
-         case SDL_CONTROLLERAXISMOTION:
-         {
-            int device_index = m_joysticks[event.cdevice.which]->id;
-            if (SDL_IsGameController(device_index))
-            {
-               emit axisEvent(getAxisEvent(&event));
+        case SDL_JOYBUTTONDOWN:
+        case SDL_JOYBUTTONUP:
+        {
+            // SDL_JOY* events may also come from GameControllers, so we need to filter them out
+            SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.jbutton.which);
+            // Skip processing if the instance is already handled by the GameController API to avoid duplicate handling
+            if (gc == nullptr) {
+                emit buttonEvent(getButtonEvent(&event));
             }
-         }
-            break;
-         case SDL_CONTROLLERSENSORUPDATE:
-         {
-             SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.csensor.which);
-             if (gc != nullptr)
-             {
-                 if (event.csensor.sensor == SDL_SENSOR_GYRO || event.csensor.sensor == SDL_SENSOR_ACCEL) {
-                     emit sensorEvent(getSensorEvent(&event));
-                 }
-             }
-         }
-             break;
-         case SDL_JOYBUTTONUP:
-            emit buttonEvent(getButtonEvent(&event));
-            break;
-         case SDL_JOYBUTTONDOWN:
-            emit buttonEvent(getButtonEvent(&event));
-            break;
-         case SDL_JOYHATMOTION:
-            emit POVEvent(getPOVEvent(&event));
-            break;
-      }
-   }
+        }
+        break;
+        case SDL_JOYHATMOTION:
+        {
+            // SDL_JOY* events may also come from GameControllers, so we need to filter them out
+            SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.jhat.which);
+            // Skip processing if the instance is already handled by the GameController API to avoid duplicate handling
+            if (gc == nullptr) {
+                emit POVEvent(getPOVEvent(&event));
+            }
+        }
+        break;
+        }
+    }
 
-   QTimer::singleShot(10, Qt::PreciseTimer, this, SLOT(update()));
+    QTimer::singleShot(10, Qt::PreciseTimer, this, SLOT(update()));
 #endif
 }
 
@@ -439,15 +450,37 @@ QJoystickButtonEvent SDL_Joysticks::getButtonEvent(const SDL_Event *sdl_event)
    }
 
 #ifdef SDL_SUPPORTED
+   event.button_type = JoystickButton;
    event.button = sdl_event->jbutton.button;
    event.pressed = sdl_event->jbutton.state == SDL_PRESSED;
    event.joystick = m_joysticks[sdl_event->jdevice.which];
-   event.joystick->buttons[event.button] = event.pressed;
+   // event.joystick->buttons[event.button] = event.pressed;
 #else
    Q_UNUSED(sdl_event);
 #endif
 
    return event;
+}
+
+QJoystickButtonEvent SDL_Joysticks::getControllerButtonEvent(const SDL_Event *sdl_event)
+{
+    QJoystickButtonEvent event;
+    event.button = SDL_CONTROLLER_BUTTON_INVALID;
+    event.pressed = SDL_RELEASED;
+    event.joystick = Q_NULLPTR;
+
+    if (!m_joysticks.contains(sdl_event->cdevice.which))
+    {
+        return event;
+    }
+
+    event.button_type = GameControllerButton;
+    event.button = sdl_event->cbutton.button;
+    event.pressed = sdl_event->cbutton.state == SDL_PRESSED;
+    event.joystick = m_joysticks[sdl_event->cdevice.which];
+    // event.joystick->buttons[event.button] = event.pressed;
+
+    return event;
 }
 
 QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)

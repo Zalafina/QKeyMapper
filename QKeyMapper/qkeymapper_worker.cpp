@@ -5740,22 +5740,51 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
     if (e.joystick == Q_NULLPTR)
         return;
 
-    JoystickButtonCode buttonCode = (JoystickButtonCode)e.button;
+    if (e.button_type == GameControllerButton) {
+        GameControllerButtonCode buttonCode = (GameControllerButtonCode)e.button;
 
-    if (m_JoystickButtonMap.contains(buttonCode)) {
-        bool pressed = e.pressed;
-        QString keycodeString = m_JoystickButtonMap.value(buttonCode);
-        int keyupdown;
-        if (pressed) {
-            keyupdown = KEY_DOWN;
+        if (m_ControllerButtonMap.contains(buttonCode)) {
+            QString keycodeString = m_ControllerButtonMap.value(buttonCode);
+            int keyupdown;
+            if (e.pressed) {
+                keyupdown = KEY_DOWN;
+            }
+            else {
+                keyupdown = KEY_UP;
+            }
+
+            bool returnFlag;
+            returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
+            Q_UNUSED(returnFlag);
         }
         else {
-            keyupdown = KEY_UP;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[checkJoystickButtons] Unknown Gamecontroller button:" << e.button;
+#endif
         }
+    }
+    else {
+        JoystickButtonCode buttonCode = (JoystickButtonCode)e.button;
 
-        bool returnFlag;
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
-        Q_UNUSED(returnFlag);
+        if (m_JoystickButtonMap.contains(buttonCode)) {
+            QString keycodeString = m_JoystickButtonMap.value(buttonCode);
+            int keyupdown;
+            if (e.pressed) {
+                keyupdown = KEY_DOWN;
+            }
+            else {
+                keyupdown = KEY_UP;
+            }
+
+            bool returnFlag;
+            returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[checkJoystickButtons] Unknown Joystick button:" << e.button;
+#endif
+        }
     }
 }
 
@@ -12110,6 +12139,12 @@ void QKeyMapper_Worker::initCombinationKeysList()
             << "Joy-DPad-Down"
             << "Joy-DPad-Left"
             << "Joy-DPad-Right"
+            << "Joy-Misc1"
+            << "Joy-Paddle1"
+            << "Joy-Paddle2"
+            << "Joy-Paddle3"
+            << "Joy-Paddle4"
+            << "Joy-Touchpad"
             << "Joy-Key1(A/×)"
             << "Joy-Key2(B/○)"
             << "Joy-Key3(X/□)"
@@ -12207,6 +12242,28 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-RS-Left"                 ,   (int)JOYSTICK_RS_LEFT           );
     JoyStickKeyMap.insert("Joy-RS-Right"                ,   (int)JOYSTICK_RS_RIGHT          );
 #endif
+
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_A,               "Joy-Key1(A/×)"                 );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_B,               "Joy-Key2(B/○)"                 );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_X,               "Joy-Key3(X/□)"                 );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_Y,               "Joy-Key4(Y/△)"                );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_BACK,            "Joy-Key7(Back)"                );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_GUIDE,           "Joy-Key13(Guide)"              );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_START,           "Joy-Key8(Start)"               );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_LEFTSTICK,       "Joy-Key9(LS-Click)"            );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_RIGHTSTICK,      "Joy-Key10(RS-Click)"           );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_LEFTSHOULDER,    "Joy-Key5(LB)"                  );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_RIGHTSHOULDER,   "Joy-Key6(RB)"                  );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_DPAD_UP,         "Joy-DPad-Up"                   );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_DPAD_DOWN,       "Joy-DPad-Down"                 );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_DPAD_LEFT,       "Joy-DPad-Left"                 );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_DPAD_RIGHT,      "Joy-DPad-Right"                );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_MISC1,           "Joy-Misc1"                     );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE1,         "Joy-Paddle1"                   );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE2,         "Joy-Paddle2"                   );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE3,         "Joy-Paddle3"                   );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE4,         "Joy-Paddle4"                   );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_TOUCHPAD,        "Joy-TouchPad"                  );
 
     /* Joystick Buttons Map */
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A/×)"                 );

@@ -71,6 +71,7 @@ private:
    QJoystickPOVEvent getPOVEvent(const SDL_Event *sdl_event);
    QJoystickAxisEvent getAxisEvent(const SDL_Event *sdl_event);
    QJoystickButtonEvent getButtonEvent(const SDL_Event *sdl_event);
+   QJoystickButtonEvent getControllerButtonEvent(const SDL_Event *sdl_event);
    QJoystickSensorEvent getSensorEvent(const SDL_Event *sdl_event);
 
    QMap<int, QJoystickDevice *> m_joysticks;

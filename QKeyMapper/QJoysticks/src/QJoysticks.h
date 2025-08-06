@@ -118,9 +118,9 @@ protected:
 private slots:
    void resetJoysticks();
    void addInputDevice(QJoystickDevice *device);
-   void onPOVEvent(const QJoystickPOVEvent &e);
-   void onAxisEvent(const QJoystickAxisEvent &e);
-   void onButtonEvent(const QJoystickButtonEvent &e);
+   // void onPOVEvent(const QJoystickPOVEvent &e);
+   // void onAxisEvent(const QJoystickAxisEvent &e);
+   // void onButtonEvent(const QJoystickButtonEvent &e);
 
 private:
    bool m_sortJoyticks;

@@ -54,9 +54,9 @@ QJoysticks::QJoysticks()
 #endif
 
    /* React to own signals to create QML signals */
-   connect(this, &QJoysticks::POVEvent, this, &QJoysticks::onPOVEvent);
-   connect(this, &QJoysticks::axisEvent, this, &QJoysticks::onAxisEvent);
-   connect(this, &QJoysticks::buttonEvent, this, &QJoysticks::onButtonEvent);
+   // connect(this, &QJoysticks::POVEvent, this, &QJoysticks::onPOVEvent);
+   // connect(this, &QJoysticks::axisEvent, this, &QJoysticks::onAxisEvent);
+   // connect(this, &QJoysticks::buttonEvent, this, &QJoysticks::onButtonEvent);
 
    connect(this, &QJoysticks::setGameControllersSensorEnabled_signal, this, &QJoysticks::setGameControllersSensorEnabled);
 
@@ -606,6 +606,7 @@ void QJoysticks::addInputDevice(QJoystickDevice *device)
    m_devices.append(device);
 }
 
+#if 0
 /**
  * Configures the QML-friendly signal based on the information given by the
  * \a event data and updates the joystick values
@@ -662,3 +663,4 @@ void QJoysticks::onButtonEvent(const QJoystickButtonEvent &e)
       }
    }
 }
+#endif

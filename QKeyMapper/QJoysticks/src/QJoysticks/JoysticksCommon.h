@@ -104,6 +104,12 @@ struct QJoystickAxisEvent
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 
+enum QJoystickButtonType
+{
+    JoystickButton = 0,         /**< Raw joystick button */
+    GameControllerButton = 1    /**< Mapped game controller button */
+};
+
 /**
  * @brief Represents a button event that can be triggered by a joystick
  *
@@ -116,6 +122,7 @@ struct QJoystickButtonEvent
 {
    int button; /**< The numerical ID of the button */
    bool pressed; /**< Set to \c true if the button is pressed */
+   QJoystickButtonType button_type; /**< Joystick button or Gamecontroller button */
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 

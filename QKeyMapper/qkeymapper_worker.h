@@ -537,6 +537,34 @@ public:
     };
     Q_ENUM(JoystickButtonCode)
 
+    enum GameControllerButtonCode
+    {
+        CONTROLLER_BUTTON_INVALID = -1,
+        CONTROLLER_BUTTON_A,
+        CONTROLLER_BUTTON_B,
+        CONTROLLER_BUTTON_X,
+        CONTROLLER_BUTTON_Y,
+        CONTROLLER_BUTTON_BACK,
+        CONTROLLER_BUTTON_GUIDE,
+        CONTROLLER_BUTTON_START,
+        CONTROLLER_BUTTON_LEFTSTICK,
+        CONTROLLER_BUTTON_RIGHTSTICK,
+        CONTROLLER_BUTTON_LEFTSHOULDER,
+        CONTROLLER_BUTTON_RIGHTSHOULDER,
+        CONTROLLER_BUTTON_DPAD_UP,
+        CONTROLLER_BUTTON_DPAD_DOWN,
+        CONTROLLER_BUTTON_DPAD_LEFT,
+        CONTROLLER_BUTTON_DPAD_RIGHT,
+        CONTROLLER_BUTTON_MISC1,    /* Xbox Series X share button, PS5 microphone button, Nintendo Switch Pro capture button, Amazon Luna microphone button */
+        CONTROLLER_BUTTON_PADDLE1,  /* Xbox Elite paddle P1 (upper left, facing the back) */
+        CONTROLLER_BUTTON_PADDLE2,  /* Xbox Elite paddle P3 (upper right, facing the back) */
+        CONTROLLER_BUTTON_PADDLE3,  /* Xbox Elite paddle P2 (lower left, facing the back) */
+        CONTROLLER_BUTTON_PADDLE4,  /* Xbox Elite paddle P4 (lower right, facing the back) */
+        CONTROLLER_BUTTON_TOUCHPAD, /* PS4/PS5 touchpad button */
+        CONTROLLER_BUTTON_MAX
+    };
+    Q_ENUM(GameControllerButtonCode)
+
     enum JoystickDPadCode
     {
         JOYSTICK_DPAD_RELEASE = 0,
@@ -1104,6 +1132,7 @@ private:
 //     QMutex m_BurstTimerMutex;
 // #endif
     QHash<JoystickButtonCode, QString> m_JoystickButtonMap;
+    QHash<GameControllerButtonCode, QString> m_ControllerButtonMap;
     QHash<JoystickDPadCode, QString> m_JoystickDPadMap;
     QHash<JoystickLStickCode, QString> m_JoystickLStickMap;
     QHash<JoystickRStickCode, QString> m_JoystickRStickMap;
