@@ -179,8 +179,6 @@ int main(int argc, char *argv[])
 
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
 
-    updateQtDisplayEnvironment();
-
     // Check if a scaling factor argument is passed to the program.
     if (argc > 1) {  // Ensure at least one additional argument is passed
         QString argument = QString(argv[1]);
@@ -195,6 +193,11 @@ int main(int argc, char *argv[])
 #endif
         }
     }
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+#endif
+    // updateQtDisplayEnvironment();
 
     QApplication::setApplicationName(QString(argv[0]));
     QApplication::setOrganizationName("AsukaVoV");

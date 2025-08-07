@@ -88,9 +88,6 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="buttonSymbols">
-    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
-   </property>
   </widget>
   <widget class="QSpinBox" name="windowPositionXSpinBox">
    <property name="geometry">
@@ -104,9 +101,6 @@
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
-   <property name="buttonSymbols">
-    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
-   </property>
   </widget>
   <widget class="QSpinBox" name="windowPositionYSpinBox">
    <property name="geometry">
@@ -119,9 +113,6 @@
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-   <property name="buttonSymbols">
-    <enum>QAbstractSpinBox::ButtonSymbols::PlusMinus</enum>
    </property>
   </widget>
   <widget class="QLabel" name="windowPositionXLabel">

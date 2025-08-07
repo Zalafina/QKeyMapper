@@ -11872,6 +11872,13 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //     ui->ProcessIconAsTrayIconCheckBox->setEnabled(status);
     // }
 
+    if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
+        ui->removeSettingButton->setEnabled(false);
+    }
+    else {
+        ui->removeSettingButton->setEnabled(status);
+    }
+
     //ui->processLineEdit->setEnabled(status);
     //ui->windowTitleLineEdit->setEnabled(status);
     // ui->processLineEdit->setReadOnly(!status);
@@ -12031,6 +12038,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mappingStopKeyLineEdit->setEnabled(status);
 
     // ui->refreshButton->setEnabled(status);
+    ui->savemaplistButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
 
     m_KeyMappingTabWidget->setEnabled(status);
@@ -15728,6 +15736,7 @@ void QKeyMapper::resetFontSize()
 {
     ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
 
+#if 0
     QFont customFont(FONTNAME_ENGLISH, 9);
     if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
         || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
@@ -15748,9 +15757,9 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadTypeComboBox->setFont(customFont);
         m_orikeyComboBox->setFont(customFont);
         m_mapkeyComboBox->setFont(customFont);
-        ui->keyboardSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
-        ui->mouseSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
-        ui->gamepadSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->keyboardSelectComboBox->setFont(customFont);
+        ui->mouseSelectComboBox->setFont(customFont);
+        ui->gamepadSelectComboBox->setFont(customFont);
         ui->settingselectComboBox->setFont(customFont);
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -15799,9 +15808,9 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadTypeComboBox->setFont(customFont);
         m_orikeyComboBox->setFont(customFont);
         m_mapkeyComboBox->setFont(customFont);
-        ui->keyboardSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
-        ui->mouseSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
-        ui->gamepadSelectComboBox->setFont(QFont(FONTNAME_ENGLISH, 8));
+        ui->keyboardSelectComboBox->setFont(customFont);
+        ui->mouseSelectComboBox->setFont(customFont);
+        ui->gamepadSelectComboBox->setFont(customFont);
         ui->settingselectComboBox->setFont(customFont);
         // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
@@ -15837,6 +15846,7 @@ void QKeyMapper::resetFontSize()
         ui->virtualGamepadNumberSpinBox->setFont(customFont);
         ui->virtualGamepadListComboBox->setFont(customFont);
     }
+#endif
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->resetFontSize();

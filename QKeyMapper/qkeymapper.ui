@@ -81,14 +81,6 @@
      <height>324</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="columnCount">
-    <number>0</number>
-   </property>
   </widget>
   <widget class="QPushButton" name="addmapdataButton">
    <property name="geometry">
