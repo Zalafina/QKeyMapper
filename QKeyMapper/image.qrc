@@ -16,9 +16,9 @@
         <file alias="White.ico">image\systrayicon_16px\White_16px.ico</file>
         <file alias="Yellow.ico">image\systrayicon_16px\Yellow_16px.ico</file>
 <!--    Button Images -->
-        <file alias="keyboard.png">image\button_image\keyboard_32px.png</file>
-        <file alias="mouse.png">image\button_image\mouse_32px.png</file>
-        <file alias="gamepad.png">image\button_image\gamepad_32px.png</file>
-        <file alias="function.png">image\button_image\computer_32px.png</file>
+        <file alias="keyboard.ico">image\button_image\keyboard.ico</file>
+        <file alias="mouse.ico">image\button_image\mouse.ico</file>
+        <file alias="gamepad.ico">image\button_image\gamepad.ico</file>
+        <file alias="function.ico">image\button_image\computer.ico</file>
     </qresource>
 </RCC>

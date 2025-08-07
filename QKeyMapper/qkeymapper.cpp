@@ -273,14 +273,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mapList_SelectMouseButton->setStyle(windowsStyle);
     ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
     ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
-    ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.png"));
-    ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.png"));
-    ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.png"));
-    ui->oriList_SelectFunctionButton->setIcon(QIcon(":/function.png"));
-    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.png"));
-    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.png"));
-    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.png"));
-    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.png"));
+    ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.ico"));
+    ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.ico"));
+    ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.ico"));
+    ui->oriList_SelectFunctionButton->setIcon(QIcon(":/function.ico"));
+    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.ico"));
+    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.ico"));
+    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.ico"));
+    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.ico"));
     ui->oriList_SelectKeyboardButton->setChecked(true);
     ui->oriList_SelectMouseButton->setChecked(true);
     ui->oriList_SelectGamepadButton->setChecked(true);
@@ -9150,7 +9150,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 //     QBrush colorBrush(Qt::darkMagenta);
 //     ui->settingselectComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
 // #endif
-    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.png"));
+    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.ico"));
     QStringList groups = settingFile.childGroups();
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
@@ -14766,28 +14766,28 @@ void QKeyMapper::updateOriginalKeyListComboBox()
         m_orikeyComboBox->clear();
         m_orikeyComboBox->addItem(QString());
         if (isMouseKeys_Selected) {
-            QIcon icon = QIcon(":/mouse.png");
+            QIcon icon = QIcon(":/mouse.ico");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_MOUSE);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
             }
         }
         if (isKeyboardKeys_Selected) {
-            QIcon icon = QIcon(":/keyboard.png");
+            QIcon icon = QIcon(":/keyboard.ico");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
             }
         }
         if (isGamepadKeys_Selected) {
-            QIcon icon = QIcon(":/gamepad.png");
+            QIcon icon = QIcon(":/gamepad.ico");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
             }
         }
         if (isFunctionKeys_Selected) {
-            QIcon icon = QIcon(":/function.png");
+            QIcon icon = QIcon(":/function.ico");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_FUNCTION);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
@@ -14818,28 +14818,28 @@ void QKeyMapper::updateMappingKeyListComboBox()
 
     if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
         if (isMouseKeys_Selected) {
-            QIcon icon = QIcon(":/mouse.png");
+            QIcon icon = QIcon(":/mouse.ico");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_MOUSE);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isKeyboardKeys_Selected) {
-            QIcon icon = QIcon(":/keyboard.png");
+            QIcon icon = QIcon(":/keyboard.ico");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isGamepadKeys_Selected) {
-            QIcon icon = QIcon(":/gamepad.png");
+            QIcon icon = QIcon(":/gamepad.ico");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isFunctionKeys_Selected) {
-            QIcon icon = QIcon(":/function.png");
+            QIcon icon = QIcon(":/function.ico");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_FUNCTION);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
