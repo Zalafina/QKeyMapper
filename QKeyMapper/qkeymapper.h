@@ -1054,6 +1054,7 @@ public:
     void hideFloatingIconWindow();
     void updateFloatingIconWindow(const FloatingWindowOptions &options);
     FloatingWindowOptions getCurrentFloatingWindowOptions() const;
+    void showFloatingIconWindowFromSettings(void);
     void initSelectColorDialog(void);
     void setParentForSelectColorDialog(QWidget *parent);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);

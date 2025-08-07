@@ -12131,6 +12131,8 @@ void QKeyMapper::mappingStartNotification()
 {
     ScopedTrayUpdater trayUpdater(this);
 
+    showFloatingIconWindowFromSettings();
+
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
     if (NOTIFICATION_POSITION_NONE == position) {
@@ -12209,28 +12211,6 @@ void QKeyMapper::mappingStartNotification()
         opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
     }
 
-    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
-    if (tabCustomImage_ShowAsFloatingWindow
-        && !tabCustomImage_Path.isEmpty()) {
-        FloatingWindowOptions options;
-        options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
-        options.referencePoint = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_ReferencePoint;
-        options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
-        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_BackgroundColor;
-        options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
-        options.mousePassThrough = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThrough;
-        if (!options.backgroundColor.isValid()) {
-            options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
-        }
-        options.borderRadius = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Radius;
-        options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
-
-        QKeyMapper::getInstance()->showFloatingIconWindow(options);
-    }
-    else {
-        QKeyMapper::getInstance()->hideFloatingIconWindow();
-    }
-
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
 }
@@ -12262,6 +12242,8 @@ void QKeyMapper::mappingStopNotification()
 void QKeyMapper::mappingTabSwitchNotification(bool isSame)
 {
     ScopedTrayUpdater trayUpdater(this);
+
+    showFloatingIconWindowFromSettings();
 
     QString popupNotification;
     int position = ui->notificationComboBox->currentIndex();
@@ -12337,28 +12319,6 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
         opts.iconPath = tabCustomImage_Path;
         opts.iconPosition = tabCustomImage_ShowPosition;
         opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
-    }
-
-    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
-    if (tabCustomImage_ShowAsFloatingWindow
-        && !tabCustomImage_Path.isEmpty()) {
-        FloatingWindowOptions options;
-        options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
-        options.referencePoint = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_ReferencePoint;
-        options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
-        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_BackgroundColor;
-        options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
-        options.mousePassThrough = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThrough;
-        if (!options.backgroundColor.isValid()) {
-            options.backgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
-        }
-        options.borderRadius = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Radius;
-        options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
-
-        QKeyMapper::getInstance()->showFloatingIconWindow(options);
-    }
-    else {
-        QKeyMapper::getInstance()->hideFloatingIconWindow();
     }
 
     // Show Notification Popup
@@ -13753,6 +13713,32 @@ FloatingWindowOptions QKeyMapper::getCurrentFloatingWindowOptions() const
         return FloatingWindowOptions();
     }
     return m_FloatingIconWindow->getCurrentOptions();
+}
+
+void QKeyMapper::showFloatingIconWindowFromSettings()
+{
+    QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
+    bool tabCustomImage_ShowAsFloatingWindow = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsFloatingWindow;
+    if (tabCustomImage_ShowAsFloatingWindow
+        && !tabCustomImage_Path.isEmpty()) {
+        FloatingWindowOptions options;
+        options.position = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Position;
+        options.referencePoint = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_ReferencePoint;
+        options.size = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Size;
+        options.backgroundColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_BackgroundColor;
+        options.windowOpacity = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Opacity;
+        options.mousePassThrough = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThrough;
+        if (!options.backgroundColor.isValid()) {
+            options.backgroundColor = FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
+        }
+        options.borderRadius = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_Radius;
+        options.iconPath = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
+
+        QKeyMapper::getInstance()->showFloatingIconWindow(options);
+    }
+    else {
+        QKeyMapper::getInstance()->hideFloatingIconWindow();
+    }
 }
 
 void QKeyMapper::initSelectColorDialog()
