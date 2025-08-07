@@ -12263,7 +12263,7 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE2,         "Joy-Paddle2"                   );
     m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE3,         "Joy-Paddle3"                   );
     m_ControllerButtonMap.insert(CONTROLLER_BUTTON_PADDLE4,         "Joy-Paddle4"                   );
-    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_TOUCHPAD,        "Joy-TouchPad"                  );
+    m_ControllerButtonMap.insert(CONTROLLER_BUTTON_TOUCHPAD,        "Joy-Touchpad"                  );
 
     /* Joystick Buttons Map */
     m_JoystickButtonMap.insert(JOYSTICK_BUTTON_0,       "Joy-Key1(A/×)"                 );
