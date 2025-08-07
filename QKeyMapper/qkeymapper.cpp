@@ -13093,9 +13093,9 @@ void QKeyMapper::updateKeyMappingTabWidgetTabName(int tabindex, const QString &t
         return;
     }
 
-    m_KeyMappingTabWidget->setTabText(tabindex, tabname);
     if (s_KeyMappingTabInfoList.at(tabindex).TabName != tabname) {
         s_KeyMappingTabInfoList[tabindex].TabName = tabname;
+        updateKeyMappingTabWidgetTabDisplay(tabindex);
     }
 }
 

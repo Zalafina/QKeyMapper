@@ -77,6 +77,7 @@
             Joy-Paddle3     (Xbox Elite paddle P3)
             Joy-Paddle4     (Xbox Elite paddle P4)
             Joy-Touchpad    (PS4/PS5 touchpad button)
+    * 修复更改Tab名称时候Tab标签显示更新问题。
 
 * v1.3.8(Build 20250806)
     * "悬浮窗口设定"窗口内添加坐标基准点设置，默认基准点为"屏幕左上角"。可以选择以屏幕特定位置为基准点或者以匹配窗口的特定位置为基准点，配合坐标信息来确定悬浮窗口显示位置。
