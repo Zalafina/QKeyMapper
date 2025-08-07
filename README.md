@@ -77,6 +77,7 @@
             Joy-Paddle3     (Xbox Elite paddle P3)
             Joy-Paddle4     (Xbox Elite paddle P4)
             Joy-Touchpad    (PS4/PS5 touchpad button)
+    * 修复设置提示信息不显示时，悬浮窗口也不显示问题。
     * 修复更改Tab名称时候Tab标签显示更新问题。
 
 * v1.3.8(Build 20250806)
