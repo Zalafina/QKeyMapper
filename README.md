@@ -72,11 +72,11 @@
     * 物理手柄按键检测添加新支持按键。
         ##### 新支持的按键列表：
             Joy-Misc1       (Xbox X share键等)
-            Joy-Paddle1     (Xbox精英手柄左上背键)
-            Joy-Paddle2     (Xbox精英手柄右上背键)
-            Joy-Paddle3     (Xbox精英手柄左下背键)
-            Joy-Paddle4     (Xbox精英手柄右下背键)
-            Joy-Touchpad    (PS4/PS5 touchpad按键)
+            Joy-Paddle1     (Xbox精英版左上背键)
+            Joy-Paddle2     (Xbox精英版右上背键)
+            Joy-Paddle3     (Xbox精英版左下背键)
+            Joy-Paddle4     (Xbox精英版右下背键)
+            Joy-Touchpad    (PS4/PS5 触摸板键)
     * 修复设置提示信息不显示时，悬浮窗口也不显示问题。
     * 修复更改Tab名称时候Tab标签显示更新问题。
 
@@ -619,10 +619,10 @@
 | Start(开始)键  | Joy-Key8(Start)     |
 | Guide(西瓜)键  | Joy-Key13(Guide)    |
 | X Share键      | Joy-Misc1           |
-| 左上背键       | Joy-Paddle1         |
-| 右上背键       | Joy-Paddle2         |
-| 左下背键       | Joy-Paddle3         |
-| 右下背键       | Joy-Paddle4         |
+| 精英版左上背键   | Joy-Paddle1         |
+| 精英版右上背键   | Joy-Paddle2         |
+| 精英版左下背键   | Joy-Paddle3         |
+| 精英版右下背键   | Joy-Paddle4         |
 
 ## 🎮 特殊物理手柄按键说明
 | QKeyMapper原始按键名称 | 功能                                                    |
