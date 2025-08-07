@@ -71,12 +71,12 @@
     * 物理手柄按键检测方式优化，PS4/5手柄按键检测名称与Xbox手柄保持一致。
     * 物理手柄按键检测添加新支持按键。
         ##### 新支持的按键列表：
-            Joy-Misc1       (Xbox Series X share button)
-            Joy-Paddle1     (Xbox Elite paddle P1)
-            Joy-Paddle2     (Xbox Elite paddle P2)
-            Joy-Paddle3     (Xbox Elite paddle P3)
-            Joy-Paddle4     (Xbox Elite paddle P4)
-            Joy-Touchpad    (PS4/PS5 touchpad button)
+            Joy-Misc1       (Xbox X share键等)
+            Joy-Paddle1     (Xbox精英手柄左上背键)
+            Joy-Paddle2     (Xbox精英手柄右上背键)
+            Joy-Paddle3     (Xbox精英手柄左下背键)
+            Joy-Paddle4     (Xbox精英手柄右下背键)
+            Joy-Touchpad    (PS4/PS5 touchpad按键)
     * 修复设置提示信息不显示时，悬浮窗口也不显示问题。
     * 修复更改Tab名称时候Tab标签显示更新问题。
 
