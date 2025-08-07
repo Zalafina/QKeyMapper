@@ -517,6 +517,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
 
     updateHWNDListProc();
     refreshProcessInfoTable();
@@ -6848,6 +6849,13 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList()
 #endif
 
     return inserted_count;
+}
+
+void QKeyMapper::updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] Joystick Key Pressed ->" << joystick_keystring;
+#endif
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()

@@ -815,6 +815,7 @@ signals:
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
+    void updateKeyComboBoxWithJoystickKey_Signal(const QString &joystick_keystring);
 
 protected:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -892,6 +893,7 @@ public slots:
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
     int insertKeyMappingDataFromCopiedList(void);
+    void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);

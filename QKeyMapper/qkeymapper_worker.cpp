@@ -11333,6 +11333,10 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
     }
 #endif
 
+    if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus && KEY_DOWN == keyupdown) {
+        emit QKeyMapper::getInstance()->updateKeyComboBoxWithJoystickKey_Signal(keycodeString);
+    }
+
     QString keycodeString_nochanged = keycodeString;
     int player_index = joystick->playerindex;
     if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
