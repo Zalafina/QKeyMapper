@@ -93,6 +93,7 @@ bool isWindowsDarkMode()
     return false; // Default to light mode
 }
 
+#if 0
 void updateQtDisplayEnvironment(void)
 {
     int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -189,6 +190,52 @@ void updateQtDisplayEnvironment(void)
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 }
+#endif
+
+void setupQtScaleEnvironment(const QString &program_dir)
+{
+    QString config_file_path = program_dir + "/" + CONFIG_FILENAME;
+    QSettings settingFile(config_file_path, QSettings::IniFormat);
+    int display_scale = settingFile.value(DISPLAY_SCALE, DISPLAY_SCALE_DEFAULT).toInt();
+
+    constexpr double SCALE_100 = 1.0;
+    constexpr double SCALE_125 = 1.25;
+    constexpr double SCALE_150 = 1.5;
+    constexpr double SCALE_175 = 1.75;
+    constexpr double SCALE_200 = 2.0;
+
+    double scale_value = 0;
+    switch (display_scale) {
+    case DISPLAY_SCALE_PERCENT_100:
+        scale_value = SCALE_100;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        break;
+    case DISPLAY_SCALE_PERCENT_125:
+        scale_value = SCALE_125;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        break;
+    case DISPLAY_SCALE_PERCENT_150:
+        scale_value = SCALE_150;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        break;
+    case DISPLAY_SCALE_PERCENT_175:
+        scale_value = SCALE_175;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        break;
+    case DISPLAY_SCALE_PERCENT_200:
+        scale_value = SCALE_200;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        break;
+    default:
+        break;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (scale_value > 0) {
+        qDebug() << "[setupQtScaleEnvironment] Set QT_SCALE_FACTOR from DisplayScale setting value ->" << scale_value;
+    }
+#endif
+}
 
 int main(int argc, char *argv[])
 {
@@ -202,6 +249,7 @@ int main(int argc, char *argv[])
     qSetMessagePattern("%{time [hh:mm:ss.zzz]} %{message}");
 
     // Check if a scaling factor argument is passed to the program.
+    bool scale_from_param = false;
     if (argc > 1) {  // Ensure at least one additional argument is passed
         QString argument = QString(argv[1]);
 #ifdef DEBUG_LOGOUT_ON
@@ -210,16 +258,21 @@ int main(int argc, char *argv[])
         if (argument.startsWith("--scale=")) {
             QString scaleValue = argument.mid(QString("--scale=").length());
             qputenv("QT_SCALE_FACTOR", scaleValue.toUtf8());
+            scale_from_param = true;
+
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Passed scale parameter ->" << scaleValue;
 #endif
         }
     }
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
-#endif
     // updateQtDisplayEnvironment();
+    if (!scale_from_param) {
+        QString programPath = QString::fromLocal8Bit(argv[0]);
+        QFileInfo fileInfo(programPath);
+        QString programDir = fileInfo.absolutePath();
+        setupQtScaleEnvironment(programDir);
+    }
 
     QApplication::setApplicationName(QString(argv[0]));
     QApplication::setOrganizationName("AsukaVoV");

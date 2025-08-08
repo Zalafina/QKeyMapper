@@ -74,8 +74,6 @@
 #include "qtrayiconselectdialog.h"
 #include "qnotificationsetupdialog.h"
 
-extern void updateQtDisplayEnvironment(void);
-
 struct InputDeviceInfo
 {
     QString hardwareid;

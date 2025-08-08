@@ -310,6 +310,15 @@ namespace QKeyMapperConstants {
     inline constexpr int UI_SCALE_4K_PERCENT_125 = 8;
     inline constexpr int UI_SCALE_4K_PERCENT_150 = 9;
 
+    inline constexpr int DISPLAY_SCALE_DEFAULT      = 0;
+    inline constexpr int DISPLAY_SCALE_PERCENT_100  = 1;
+    inline constexpr int DISPLAY_SCALE_PERCENT_125  = 2;
+    inline constexpr int DISPLAY_SCALE_PERCENT_150  = 3;
+    inline constexpr int DISPLAY_SCALE_PERCENT_175  = 4;
+    inline constexpr int DISPLAY_SCALE_PERCENT_200  = 5;
+    inline constexpr int DISPLAY_SCALE_MIN = DISPLAY_SCALE_DEFAULT;
+    inline constexpr int DISPLAY_SCALE_MAX = DISPLAY_SCALE_PERCENT_200;
+
     inline constexpr int MOUSE_POINT_RADIUS = 12;
 
     inline constexpr int SHOW_POINTSIN_SCREEN_OFF  = 0;
@@ -700,6 +709,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char NOTSHOW_FILTERKEYS_DISABLED[] = "NotShow_FilterKeysDisabled";
     inline constexpr const char CLOSETO_SYSTEMTRAY[] = "CloseToSystemtray";
     inline constexpr const char NOTIFICATION_POSITION[] = "NotificationPosition";
+    inline constexpr const char DISPLAY_SCALE[] = "DisplayScale";
 
     inline constexpr const char NOTIFICATION_FONTCOLOR[] = "Notification_FontColor";
     inline constexpr const char NOTIFICATION_FONTSIZE[] = "Notification_FontSize";

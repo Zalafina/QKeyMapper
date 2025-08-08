@@ -198,6 +198,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     defaultTitle.append(QChar(0x0034));
     DEFAULT_TITLE = defaultTitle;
 
+#if 0
     QByteArray win_scale_factor = qgetenv("WINDOWS_SCALE_FACTOR");
     if (win_scale_factor == QByteArray("4K_1.0")) {
         m_UI_Scale = UI_SCALE_4K_PERCENT_100;
@@ -229,6 +230,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     else {
         m_UI_Scale = UI_SCALE_NORMAL;
     }
+#endif
 
     int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
     HDC hdc = GetDC(NULL);
@@ -428,6 +430,17 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             ;
     ui->notificationComboBox->addItems(positoin_list);
     ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+
+    QStringList scale_list = QStringList() \
+            << tr("Default")
+            << "100%"
+            << "125%"
+            << "150%"
+            << "175%"
+            << "200%"
+            ;
+    ui->scaleComboBox->addItems(scale_list);
+    ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
 
     // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
@@ -7654,6 +7667,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(SHOW_NOTES, ui->showNotesButton->isChecked());
     settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
+    settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
 
     QColor notification_fontcolor;
     QString notification_fontcolor_name;
@@ -8729,7 +8743,23 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentIndex();
+        qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentText();
+#endif
+
+        if (true == settingFile.contains(DISPLAY_SCALE)){
+            int display_scale = settingFile.value(DISPLAY_SCALE).toInt();
+            if (DISPLAY_SCALE_MIN <= display_scale && display_scale <= DISPLAY_SCALE_MAX) {
+                ui->scaleComboBox->setCurrentIndex(display_scale);
+            }
+            else {
+                ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+            }
+        }
+        else {
+            ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();
 #endif
 
 #if 0
@@ -15366,6 +15396,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_LEFT,    tr("Bottom Left"));
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_CENTER,  tr("Bottom Center"));
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_RIGHT,   tr("Bottom Right"));
+
+    ui->scaleLabel->setText(tr("Scale"));
+    ui->scaleComboBox->setItemText(DISPLAY_SCALE_DEFAULT, tr("Default"));
 
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));
