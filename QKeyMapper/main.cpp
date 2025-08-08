@@ -238,6 +238,17 @@ void setupQtScaleEnvironment(const QString &program_dir)
         qDebug() << "[setupQtScaleEnvironment] Set QT_SCALE_FACTOR from DisplayScale setting value ->" << scale_value;
     }
 #endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // if (Flag_4K == true) {
+    //     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Ceil);
+    // }
+    // else {
+    //     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+    // }
+#else
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
 }
 
 int main(int argc, char *argv[])
