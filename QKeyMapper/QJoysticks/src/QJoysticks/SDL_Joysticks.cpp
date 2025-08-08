@@ -52,7 +52,7 @@ SDL_Joysticks::SDL_Joysticks(QObject *parent)
 {
 
 #ifdef SDL_SUPPORTED
-   if (SDL_Init(SDL_INIT_HAPTIC | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER))
+   if (SDL_Init(SDL_INIT_GAMECONTROLLER))
    {
       qDebug() << "Cannot initialize SDL:" << SDL_GetError();
       qApp->quit();
