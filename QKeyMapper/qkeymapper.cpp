@@ -6856,6 +6856,32 @@ void QKeyMapper::updateKeyComboBoxWithJoystickKey(const QString &joystick_keystr
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] Joystick Key Pressed ->" << joystick_keystring;
 #endif
+
+    if (m_orikeyComboBox->hasFocus()) {
+        m_orikeyComboBox->setCurrentText(joystick_keystring);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (m_orikeyComboBox->currentText() == joystick_keystring) {
+            qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] QKeyMapper OriginalKey ComboBox setCurrentText ->" << joystick_keystring;
+        }
+        else {
+            qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] QKeyMapper OriginalKey ComboBox setCurrentText failure :" << joystick_keystring;
+        }
+#endif
+    }
+
+    if (QItemSetupDialog::getInstance()->m_OriginalKeyListComboBox->hasFocus()) {
+        QItemSetupDialog::getInstance()->m_OriginalKeyListComboBox->setCurrentText(joystick_keystring);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (QItemSetupDialog::getInstance()->m_OriginalKeyListComboBox->currentText() == joystick_keystring) {
+            qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] QItemSetupDialog OriginalKey ComboBox setCurrentText ->" << joystick_keystring;
+        }
+        else {
+            qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] QItemSetupDialog OriginalKey ComboBox setCurrentText failure :" << joystick_keystring;
+        }
+#endif
+    }
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
