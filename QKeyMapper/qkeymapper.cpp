@@ -20164,3 +20164,23 @@ QKeyMapper::CategoryFilterStateGuard::~CategoryFilterStateGuard()
         m_parent->restoreCategoryFilterState(m_savedFilter, m_savedShowState);
     }
 }
+
+void QKeyMapper::on_keyboardSelectComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    ui->keyboardSelectComboBox->setToolTip(ui->keyboardSelectComboBox->currentText());
+}
+
+
+void QKeyMapper::on_mouseSelectComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    ui->mouseSelectComboBox->setToolTip(ui->mouseSelectComboBox->currentText());
+}
+
+
+void QKeyMapper::on_gamepadSelectComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    ui->gamepadSelectComboBox->setToolTip(ui->gamepadSelectComboBox->currentText());
+}

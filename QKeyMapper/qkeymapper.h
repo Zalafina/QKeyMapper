@@ -1007,6 +1007,12 @@ private slots:
 
     void on_processinfoTable_clicked(const QModelIndex &index);
 
+    void on_keyboardSelectComboBox_currentIndexChanged(int index);
+
+    void on_mouseSelectComboBox_currentIndexChanged(int index);
+
+    void on_gamepadSelectComboBox_currentIndexChanged(int index);
+
 private:
     // Helper methods for saving/restoring category filter state
     QString getCurrentCategoryFilter() const;
