@@ -70,7 +70,7 @@
 * v1.3.8(Build 20250808)
     * 物理手柄按键检测添加新支持按键。
         ##### 新支持的按键列表：
-            Joy-Misc1       (Xbox X share键等)
+            Joy-Misc1       (Xbox X share键，PS5 麦克风键，SwitchPro capture键, Amazon Luna 麦克风键)
             Joy-Paddle1     (Xbox精英版左上背键)
             Joy-Paddle2     (Xbox精英版右上背键)
             Joy-Paddle3     (Xbox精英版左下背键)
