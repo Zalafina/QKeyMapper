@@ -1274,6 +1274,7 @@ private:
     int m_CrosshairWindowInitialWidth;
     int m_CrosshairWindowInitialHeight;
     ULONG_PTR m_GdiplusToken;
+    bool m_TrayMenuQuit = false;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;

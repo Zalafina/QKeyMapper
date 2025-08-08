@@ -5843,6 +5843,14 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
         }
     }
 
+    if (m_TrayMenuQuit) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::closeEvent] TrayIconMenu QuitAction Triggered, quit application!";
+#endif
+        event->accept();
+        return;
+    }
+
     bool force_showdialog = false;
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
         force_showdialog = true;
@@ -7095,6 +7103,8 @@ void QKeyMapper::onTrayIconMenuQuitAction()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onTrayIconMenuQuitAction]" << "QuitAction Triggered.";
 #endif
+
+    m_TrayMenuQuit = true;
 
     QApplication::quit();
 }
