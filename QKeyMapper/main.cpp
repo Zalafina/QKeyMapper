@@ -217,14 +217,17 @@ void setupQtScaleEnvironment(const QString &program_dir)
     case DISPLAY_SCALE_PERCENT_150:
         scale_value = SCALE_150;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        // QKeyMapper::m_UI_Scale = UI_SCALE_4K_PERCENT_150;
         break;
     case DISPLAY_SCALE_PERCENT_175:
         scale_value = SCALE_175;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        // QKeyMapper::m_UI_Scale = UI_SCALE_4K_PERCENT_150;
         break;
     case DISPLAY_SCALE_PERCENT_200:
         scale_value = SCALE_200;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        // QKeyMapper::m_UI_Scale = UI_SCALE_4K_PERCENT_150;
         break;
     default:
         break;

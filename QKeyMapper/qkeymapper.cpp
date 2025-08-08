@@ -37,10 +37,11 @@ QList<MAP_KEYDATA> QKeyMapper::s_CopiedMappingData;
 QHash<int, QStringList> QKeyMapper::s_OriginalKeysCategoryMap;
 QHash<int, QStringList> QKeyMapper::s_MappingKeysCategoryMap;
 QIcon QKeyMapper::s_Icon_Blank;
+int QKeyMapper::m_UI_Scale = UI_SCALE_NORMAL;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
-    m_UI_Scale(UI_SCALE_NORMAL),
+    // m_UI_Scale(UI_SCALE_NORMAL),
     m_KeyMapStatus(KEYMAP_IDLE),
     ui(new Ui::QKeyMapper),
     m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
@@ -13278,16 +13279,16 @@ void QKeyMapper::updateSysTrayIconMenuText()
     }
     m_TrayIconMenu_QuitAction->setText(quitActionText);
 
-    QFont customFont = m_TrayIconMenu_ShowHideAction->font();
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_4K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_4K_PERCENT_100 == m_UI_Scale) {
-    }
-    else {
-        customFont.setPointSize(9);
-    }
-    m_TrayIconMenu_ShowHideAction->setFont(customFont);
-    m_TrayIconMenu_QuitAction->setFont(customFont);
+    // QFont customFont = m_TrayIconMenu_ShowHideAction->font();
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale
+    //     || UI_SCALE_4K_PERCENT_125 == m_UI_Scale
+    //     || UI_SCALE_4K_PERCENT_100 == m_UI_Scale) {
+    // }
+    // else {
+    //     customFont.setPointSize(9);
+    // }
+    // m_TrayIconMenu_ShowHideAction->setFont(customFont);
+    // m_TrayIconMenu_QuitAction->setFont(customFont);
 
 #ifdef DEBUG_LOGOUT_ON
     QFont ShowHideActionFont = m_TrayIconMenu_ShowHideAction->font();

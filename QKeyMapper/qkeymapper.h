@@ -1208,7 +1208,7 @@ public:
     static QHash<int, QStringList> s_OriginalKeysCategoryMap;
     static QHash<int, QStringList> s_MappingKeysCategoryMap;
     static QIcon s_Icon_Blank;
-    int m_UI_Scale;
+    static int m_UI_Scale;
     KeyMapStatus m_KeyMapStatus;
 
 private:
