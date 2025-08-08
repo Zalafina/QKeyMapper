@@ -828,7 +828,7 @@ protected:
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
-    bool eventFilter(QObject *object, QEvent *event);
+    bool eventFilter(QObject *object, QEvent *event) override;
 
 public slots:
     void on_keymapButton_clicked();
