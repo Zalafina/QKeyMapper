@@ -13231,11 +13231,7 @@ void QKeyMapper::initSysTrayIcon()
 
 void QKeyMapper::initPopupMessage()
 {
-    m_PopupMessageLabel = new QLabel(this);
-    m_PopupMessageLabel->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
-    m_PopupMessageLabel->setAttribute(Qt::WA_TranslucentBackground);
-    m_PopupMessageLabel->setAttribute(Qt::WA_ShowWithoutActivating);
-    m_PopupMessageLabel->setAlignment(Qt::AlignCenter);
+    m_PopupMessageLabel = new QPopupMessageLabel(this);
 
     m_PopupMessageAnimation = new QPropertyAnimation(m_PopupMessageLabel, "windowOpacity", this);
     // QObject::connect(m_PopupMessageAnimation, &QPropertyAnimation::finished, m_PopupMessageLabel, &QLabel::hide);
@@ -17818,6 +17814,37 @@ void KeyListComboBox::showPopup()
         view->setCurrentIndex(idx);
         // view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
     }
+}
+
+QPopupMessageLabel::QPopupMessageLabel(QWidget *parent)
+{
+    Q_UNUSED(parent);
+    setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_ShowWithoutActivating);
+    setAlignment(Qt::AlignCenter);
+
+    // Enable mouse pass-through while preserving transparent background
+    createWinId();
+    HWND hwnd = reinterpret_cast<HWND>(winId());
+    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+    exStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT;
+    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+}
+
+void QPopupMessageLabel::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+
+    // Create painter with transparency support
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // Fill with transparent background
+    painter.fillRect(rect(), Qt::transparent);
+
+    // Call parent's paint for text rendering
+    QLabel::paintEvent(event);
 }
 
 QPopupNotification::QPopupNotification(QWidget *parent)

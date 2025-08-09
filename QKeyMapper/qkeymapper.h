@@ -347,6 +347,17 @@ private:
     QWidget *m_KeyMapper_ptr;
 };
 
+class QPopupMessageLabel : public QLabel
+{
+    Q_OBJECT
+
+public:
+    explicit QPopupMessageLabel(QWidget *parent = Q_NULLPTR);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+};
+
 class QPopupNotification : public QWidget
 {
     Q_OBJECT
