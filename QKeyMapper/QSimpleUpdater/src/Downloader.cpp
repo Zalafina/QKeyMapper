@@ -71,10 +71,10 @@ Downloader::Downloader(QWidget *parent)
    m_ui->openButton->setEnabled(false);
    m_ui->openButton->setVisible(false);
    // connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownload()));
-   connect(m_ui->stopButton, SIGNAL(clicked()), this, SLOT(cancelDownloadForQKeyMapper()));
+   QObject::connect(m_ui->stopButton, &QPushButton::clicked, this, &Downloader::cancelDownloadForQKeyMapper);
    // connect(m_ui->openButton, SIGNAL(clicked()), this, SLOT(installUpdate()));
 
-   connect(&m_manager, &QNetworkAccessManager::authenticationRequired, this, &Downloader::authenticate);
+   QObject::connect(&m_manager, &QNetworkAccessManager::authenticationRequired, this, &Downloader::authenticate);
 
    /* Resize to fit */
    setFixedSize(minimumSizeHint());
@@ -146,7 +146,7 @@ void Downloader::startDownload(const QUrl &url)
        m_reply = Q_NULLPTR;
    });
 
-   m_startTime = QDateTime::currentDateTime().toSecsSinceEpoch();
+   m_startTime = QDateTime::currentSecsSinceEpoch();
 
    /* Ensure that downloads directory exists */
    if (!m_downloadDir.exists())
@@ -157,9 +157,9 @@ void Downloader::startDownload(const QUrl &url)
    QFile::remove(m_downloadDir.filePath(m_fileName + PARTIAL_DOWN));
 
    /* Update UI when download progress changes or download finishes */
-   connect(m_reply, SIGNAL(metaDataChanged()), this, SLOT(metaDataChanged()));
-   connect(m_reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(updateProgress(qint64, qint64)));
-   connect(m_reply, SIGNAL(finished()), this, SLOT(finished()));
+   QObject::connect(m_reply, &QNetworkReply::metaDataChanged, this, &Downloader::metaDataChanged);
+   QObject::connect(m_reply, &QNetworkReply::downloadProgress, this, &Downloader::updateProgress);
+   QObject::connect(m_reply, &QNetworkReply::finished, this, &Downloader::finished);
 
    showNormal();
 }
@@ -500,7 +500,7 @@ void Downloader::updateProgress(qint64 received, qint64 total)
  */
 void Downloader::calculateTimeRemaining(qint64 received, qint64 total)
 {
-   uint difference = QDateTime::currentDateTime().toSecsSinceEpoch() - m_startTime;
+   uint difference = QDateTime::currentSecsSinceEpoch() - m_startTime;
 
    if (received > 0 && difference > 0)
    {
