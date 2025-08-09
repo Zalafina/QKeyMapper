@@ -17863,6 +17863,13 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
 
+    // Enable mouse pass-through while preserving transparent background
+    createWinId();
+    HWND hwnd = reinterpret_cast<HWND>(winId());
+    LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+    exStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT;
+    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+
     // Config Layout
     m_Layout->setContentsMargins(0, 0, 0, 0);
     m_Layout->addWidget(m_IconLabel);
