@@ -147,30 +147,31 @@ void SDL_Joysticks::update()
             configureJoystick(&event);
             break;
         case SDL_JOYDEVICEREMOVED: {
-            if (m_joysticks.contains(event.jdevice.which)
-                && m_joysticks[event.jdevice.which] != nullptr) {
-                const QJoystickDevice joystick_removed = *m_joysticks[event.jdevice.which];
+            SDL_JoystickID instanceId = event.jdevice.which;
+            if (m_joysticks.contains(instanceId)
+                && m_joysticks[instanceId] != nullptr) {
+                const QJoystickDevice joystick_removed = *m_joysticks[instanceId];
                 emit joystickRemoved(joystick_removed);
             }
 
-            SDL_Joystick *js = SDL_JoystickFromInstanceID(event.jdevice.which);
+            SDL_Joystick *js = SDL_JoystickFromInstanceID(instanceId);
             if (js)
             {
                 SDL_JoystickClose(js);
             }
 
-            SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.cdevice.which);
+            SDL_GameController *gc = SDL_GameControllerFromInstanceID(instanceId);
             if (gc)
             {
                 SDL_GameControllerClose(gc);
             }
 
-            if (m_joysticks.contains(event.jdevice.which))
+            if (m_joysticks.contains(instanceId))
             {
-                if (m_joysticks[event.jdevice.which] != nullptr) {
-                    delete m_joysticks[event.jdevice.which];
+                if (m_joysticks[instanceId] != nullptr) {
+                    delete m_joysticks[instanceId];
                 }
-                m_joysticks.remove(event.jdevice.which);
+                m_joysticks.remove(instanceId);
             }
 
             emit countChanged();
@@ -240,44 +241,54 @@ void SDL_Joysticks::update()
 void SDL_Joysticks::configureJoystick(const SDL_Event *event)
 {
 #ifdef SDL_SUPPORTED
-   QJoystickDevice *joystick = getJoystick(event->jdevice.which);
+    int device_index = event->jdevice.which;
+    QJoystickDevice *joystick = getJoystick(device_index);
 
-   if (joystick != nullptr) {
-      if (!SDL_IsGameController(event->cdevice.which))
-      {
-         SDL_Joystick *js = SDL_JoystickFromInstanceID(joystick->instanceID);
-         if (js)
-         {
-               char guid[1024];
-               SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(js), guid, sizeof(guid));
+    if (joystick != nullptr) {
+        if (!SDL_IsGameController(device_index))
+        {
+            SDL_Joystick *js = SDL_JoystickFromInstanceID(joystick->instanceID);
+            if (js)
+            {
+                char guid[1024];
+                SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(js), guid, sizeof(guid));
 
-               QString mapping = QString("%1,%2,%3").arg(guid, SDL_JoystickName(js), GENERIC_MAPPINGS);
+                QString mapping = QString("%1,%2,%3").arg(guid, SDL_JoystickName(js), GENERIC_MAPPINGS);
 
-               SDL_GameControllerAddMapping(mapping.toStdString().c_str());
-         }
-      }
-      else {
-         SDL_GameController *gc = SDL_GameControllerOpen(event->cdevice.which);
-         if (gc != nullptr) {
-               bool has_gyro = SDL_GameControllerHasSensor(gc, SDL_SENSOR_GYRO);
-               bool has_accel = SDL_GameControllerHasSensor(gc, SDL_SENSOR_ACCEL);
+                SDL_GameControllerAddMapping(mapping.toStdString().c_str());
+            }
+        }
+        else {
+            QString gamecontroller_name = SDL_GameControllerNameForIndex(device_index);
+            if (!gamecontroller_name.isEmpty()) {
+                joystick->name = gamecontroller_name;
+            }
 
-               if (has_gyro)
-               {
-                  joystick->has_gyro = true;
-               }
-               if (has_accel)
-               {
-                  joystick->has_accel = true;
-               }
-         }
-      }
-      emit joystickAdded(joystick);
-   }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[SDL_Joysticks::configureJoystick] GameControllerName -> " << "Name = " << gamecontroller_name;
+#endif
 
-   emit countChanged();
+            SDL_GameController *gc = SDL_GameControllerOpen(device_index);
+            if (gc != nullptr) {
+                bool has_gyro = SDL_GameControllerHasSensor(gc, SDL_SENSOR_GYRO);
+                bool has_accel = SDL_GameControllerHasSensor(gc, SDL_SENSOR_ACCEL);
+
+                if (has_gyro)
+                {
+                    joystick->has_gyro = true;
+                }
+                if (has_accel)
+                {
+                    joystick->has_accel = true;
+                }
+            }
+        }
+        emit joystickAdded(joystick);
+    }
+
+    emit countChanged();
 #else
-   Q_UNUSED(event);
+    Q_UNUSED(event);
 #endif
 }
 
