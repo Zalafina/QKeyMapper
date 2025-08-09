@@ -5596,7 +5596,8 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
         .arg(joystick_added->name)
         .arg(joystick_added->playerindex)
         .arg(joystick_added->id)
-        .arg(vendorIdStr, productIdStr)
+        .arg(vendorIdStr)
+        .arg(productIdStr)
         .arg(joystick_added->numbuttons)
         .arg(joystick_added->serial,
              joystick_added->has_gyro ? "true" : "false",
@@ -5621,7 +5622,15 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
     if (virtualgamepad) {
         joystick_added->blacklisted = true;
 #ifdef DEBUG_LOGOUT_ON
-        QString debugmessage = QString("[onJoystickAdded] VirtualGamdpad[%1] PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, is Blacklisted!").arg(joystick_added->name).arg(joystick_added->playerindex).arg(joystick_added->id).arg(vendorIdStr, productIdStr);
+        // Build debug message for a blacklisted virtual gamepad.
+        // Note: use single-argument arg() chaining to avoid placeholder re-numbering issues.
+        QString debugmessage =
+            QString("[onJoystickAdded] VirtualGamepad[%1] PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, is Blacklisted!")
+                .arg(joystick_added->name)              // %1 -> device name
+                .arg(joystick_added->playerindex)       // %2 -> player index
+                .arg(joystick_added->id)                // %3 -> internal id
+                .arg(vendorIdStr)                       // %4 -> formatted vendor ID
+                .arg(productIdStr);                     // %5 -> formatted product ID
         qDebug().nospace().noquote() << debugmessage;
 #endif
     }
@@ -5635,7 +5644,18 @@ void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed
 #ifdef DEBUG_LOGOUT_ON
     QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_removed.vendorid, 16).toUpper(), 4, '0');
     QString productIdStr = QString("0x%1").arg(QString::number(joystick_removed.productid, 16).toUpper(), 4, '0');
-    QString debugmessage = QString("[onJoystickRemoved] Removed a Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7").arg(joystick_removed.name).arg(joystick_removed.playerindex).arg(joystick_removed.id).arg(vendorIdStr, productIdStr).arg(joystick_removed.numbuttons).arg(joystick_removed.serial);
+
+    // Build message with strictly ordered single-arg replacements
+    QString debugmessage =
+        QString("[onJoystickRemoved] Removed a Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7")
+            .arg(joystick_removed.name)
+            .arg(joystick_removed.playerindex)
+            .arg(joystick_removed.id)
+            .arg(vendorIdStr)
+            .arg(productIdStr)
+            .arg(joystick_removed.numbuttons)
+            .arg(joystick_removed.serial);
+
     qDebug().nospace().noquote() << debugmessage;
 #endif
 
