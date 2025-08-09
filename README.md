@@ -76,6 +76,7 @@
             Joy-Paddle3     (Xbox精英版左下背键)
             Joy-Paddle4     (Xbox精英版右下背键)
             Joy-Touchpad    (PS4/PS5 触摸板键)
+            ※Windows平台由于Xbox布局手柄默认走XInput输入，只有切换到Dinput模式才有可能检测到特殊按键，PS手柄和Switch手柄默认使用DInput所以可以检测到。
     * 物理手柄按键检测方式优化，PS4/5手柄按键检测名称与Xbox手柄保持一致。
     * 原始按键列表控件获得焦点状态下(例如通过滚轮或鼠标点击操作获得焦点时)，按下物理手柄按键，原始按键列表会自动切换为按下的手柄按键名称。
     * 检测Windows系统设置了默认应用模式为"暗色"时，仍然保持用"亮色"显示QKeyMapper程序界面。
@@ -621,11 +622,13 @@
 | Back(后退)键   | Joy-Key7(Back)      |
 | Start(开始)键  | Joy-Key8(Start)     |
 | Guide(西瓜)键  | Joy-Key13(Guide)    |
-| X Share键      | Joy-Misc1           |
-| 精英版左上背键   | Joy-Paddle1         |
-| 精英版右上背键   | Joy-Paddle2         |
-| 精英版左下背键   | Joy-Paddle3         |
-| 精英版右下背键   | Joy-Paddle4         |
+
+## 🎮 特殊手柄按键
+| PS麦克风键/Switch Capture键等 | Joy-Misc1           |
+| 1号背键                       | Joy-Paddle1         |
+| 2号背键                       | Joy-Paddle2         |
+| 3号背键                       | Joy-Paddle3         |
+| 4号背键                       | Joy-Paddle4         |
 
 ## 🎮 特殊物理手柄按键说明
 | QKeyMapper原始按键名称 | 功能                                                    |
