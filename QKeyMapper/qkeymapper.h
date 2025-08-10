@@ -754,6 +754,7 @@ public:
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);
     static QString getCurrentOriKeyText(void);
     static QString getCurrentOriCombinationKeyText(void);
+    static int getOriginalKeyEditMode(void);
     static QString getSendTextString(void);
     static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
     static int getMatchProcessNameIndex(void);
@@ -825,6 +826,7 @@ signals:
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
     void updateKeyComboBoxWithJoystickKey_Signal(const QString &joystick_keystring);
+    void updateKeyLineEditWithRealKeyListChanged_Signal(const QString &keycodeString, int keyupdown);
 
 protected:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -903,6 +905,7 @@ public slots:
     int copySelectedKeyMappingDataToCopiedList(void);
     int insertKeyMappingDataFromCopiedList(void);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
+    void updateKeyLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);
@@ -1023,6 +1026,8 @@ private slots:
     void on_mouseSelectComboBox_currentIndexChanged(int index);
 
     void on_gamepadSelectComboBox_currentIndexChanged(int index);
+
+    void on_originalKeyEditModeButton_clicked();
 
 private:
     // Helper methods for saving/restoring category filter state
@@ -1286,6 +1291,9 @@ private:
     int m_CrosshairWindowInitialHeight;
     ULONG_PTR m_GdiplusToken;
     bool m_TrayMenuQuit = false;
+    int m_OriginalKeyEditMode = QKeyMapperConstants::ORIGINALKEYEDITMODE_CAPTURE;
+    bool m_isOriginalKeyLineEdit_CapturingKey = false;
+    QTimer m_IgnoreMouseClickTimer;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;

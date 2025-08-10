@@ -9576,6 +9576,10 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
         }
         if (false == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
             pressedRealKeysListRemoveMultiInput.append(keycodeString_RemoveMultiInput);
+
+            if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+                emit QKeyMapper::getInstance()->updateKeyLineEditWithRealKeyListChanged_Signal(keycodeString_RemoveMultiInput, keyupdown);
+            }
         }
     }
     else {  /* KEY_UP == keyupdown */
@@ -9594,6 +9598,10 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
         }
         if (true == pressedRealKeysListRemoveMultiInput.contains(keycodeString_RemoveMultiInput)){
             pressedRealKeysListRemoveMultiInput.removeAll(keycodeString_RemoveMultiInput);
+
+            if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+                emit QKeyMapper::getInstance()->updateKeyLineEditWithRealKeyListChanged_Signal(keycodeString_RemoveMultiInput, keyupdown);
+            }
         }
     }
 
@@ -13094,7 +13102,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

@@ -42,6 +42,9 @@ namespace QKeyMapperConstants {
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
 
+    inline constexpr int ORIGINALKEYEDITMODE_CAPTURE = 0;
+    inline constexpr int ORIGINALKEYEDITMODE_EDIT = 1;
+
     inline constexpr int KEY_TYPE_COMMON       = 0;
     inline constexpr int KEY_TYPE_KEYBOARD     = 1;
     inline constexpr int KEY_TYPE_MOUSE        = 2;
