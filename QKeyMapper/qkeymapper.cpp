@@ -16200,14 +16200,14 @@ void QKeyMapper::setUITheme(int themeindex)
                 background-color: rgb(55, 55, 55);
             }
             QCheckBox::indicator:checked {
-                image: url(:/test.png);
+                image: url(:/checked.svg);
             }
             QCheckBox::indicator:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(48, 48, 48);
             }
             QCheckBox::indicator:checked:disabled {
-                image: url(:/test.png);
+                image: url(:/checked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
             QLineEdit, QSpinBox {
@@ -16230,14 +16230,14 @@ void QKeyMapper::setUITheme(int themeindex)
                 background-color: rgb(55, 55, 55);
             }
             QTableView::indicator:checked {
-                image: url(:/test.png);
+                image: url(:/checked.svg);
             }
             QTableView::indicator:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(48, 48, 48);
             }
             QTableView::indicator:checked:disabled {
-                image: url(:/test.png);
+                image: url(:/checked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
         )");

@@ -20,6 +20,7 @@
         <file alias="mouse.ico">image\button_image\mouse.ico</file>
         <file alias="gamepad.ico">image\button_image\gamepad.ico</file>
         <file alias="function.ico">image\button_image\computer.ico</file>
-        <file alias="test.png">image\button_image\mouse_16px.png</file>
+        <file alias="checked.svg">image\button_image\checked-enabled.svg</file>
+        <file alias="checked_disabled.svg">image\button_image\checked-disabled.svg</file>
     </qresource>
 </RCC>
