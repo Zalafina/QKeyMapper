@@ -5912,11 +5912,17 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
     if (m_KeyMapStatus == KEYMAP_IDLE
         && event->key() == Qt::Key_S
         && QT_KEY_L_CTRL == (event->nativeModifiers() & QT_KEY_L_CTRL)) {
+        if (ui->originalKeyRecordLineEdit->hasFocus()
+            && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+            /* OriginalKeyRecord Capture Mode need to skip L-Ctrl+S */
+        }
+        else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::keyPressEvent]" << "\"L-Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
+            qDebug() << "[QKeyMapper::keyPressEvent]" << "\"L-Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
 #endif
-        saveKeyMapSetting();
-        return;
+            saveKeyMapSetting();
+            return;
+        }
     }
     else if (m_KeyMapStatus == KEYMAP_IDLE && event->key() == KEY_REFRESH) {
 #ifdef DEBUG_LOGOUT_ON
