@@ -6084,17 +6084,25 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
     if (object == ui->originalKeyRecordLineEdit) {
-        qDebug() << "originalKeyRecordLineEdit eventFilter triggered ->" << event->type();
         if (event->type() == QEvent::FocusIn) {
-            ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+            if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+                ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+            }
+            else {
+                ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
+            }
         }
         else if (event->type() == QEvent::FocusOut) {
             ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
         }
         else if (event->type() == QEvent::ReadOnlyChange
-            && ui->originalKeyRecordLineEdit->hasFocus()
-            && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
-            ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+            && ui->originalKeyRecordLineEdit->hasFocus()) {
+            if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+                ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+            }
+            else {
+                ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
+            }
         }
     }
 
@@ -16844,9 +16852,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentMapKeyComboBoxText = currentMapKeyText;
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
-    QString currentOriKeyLineEditText = ui->originalKeyRecordLineEdit->text();
+    QString currentOriKeyRecordLineEditText = ui->originalKeyRecordLineEdit->text();
     // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
-    if (false == currentOriKeyComboBoxText.isEmpty()) {
+    if (false == currentOriKeyRecordLineEditText.isEmpty()) {
+        ValidationResult result = validateOriginalKeyString(currentOriKeyRecordLineEditText, -1);
+        if (result.isValid) {
+            currentOriKeyText = currentOriKeyRecordLineEditText;
+        }
+        else {
+            showFailurePopup(result.errorMessage);
+            return;
+        }
+    }
+    else if (false == currentOriKeyComboBoxText.isEmpty()) {
         currentOriKeyText = currentOriKeyComboBoxText;
 
         int keyboardselect_index = ui->keyboardSelectComboBox->currentIndex();
@@ -16876,89 +16894,33 @@ void QKeyMapper::on_addmapdataButton_clicked()
             }
         }
     }
-    else if (false == currentOriKeyLineEditText.isEmpty()) {
-        bool valid_combinationkey = true;
-        if (currentOriKeyLineEditText.startsWith(SEPARATOR_PLUS) || currentOriKeyLineEditText.endsWith(SEPARATOR_PLUS)) {
-            valid_combinationkey = false;
-        }
-        else {
-            QStringList combinationkeyslist = currentOriKeyLineEditText.split(SEPARATOR_PLUS);
-            if (combinationkeyslist.size() <= 1) {
-                valid_combinationkey = false;
-            }
-            else {
-                if (multiInputSupport) {
-                    static QRegularExpression reg("@[0-9]$");
-                    QStringList keyslist;
-                    for (const QString &key : std::as_const(combinationkeyslist)) {
-                        bool multi_input = false;
-                        QString pure_key;
-                        QRegularExpressionMatch match = reg.match(key);
-                        if (match.hasMatch()) {
-                            int atIndex = key.lastIndexOf('@');
-                            pure_key = key.mid(0, atIndex);
-                            multi_input = true;
-                        } else {
-                            pure_key = key;
-                        }
 
-                        if (keyslist.contains(pure_key)) {
-                            valid_combinationkey = false;
-                            break;
-                        }
-
-                        if (multi_input) {
-                            if (QKeyMapper_Worker::MultiKeyboardInputList.contains(pure_key)) {
-                            }
-                            else if (QKeyMapper_Worker::MultiMouseInputList.contains(pure_key)) {
-                            }
-                            else {
-                                valid_combinationkey = false;
-                                break;
-                            }
-                        }
-                        else {
-                            if (!QKeyMapper_Worker::CombinationKeysList.contains(pure_key)) {
-                                valid_combinationkey = false;
-                                break;
-                            }
-                        }
-                        keyslist.append(pure_key);
-                    }
-                }
-                else {
-                    QStringList keyslist;
-                    for (const QString &key : std::as_const(combinationkeyslist)) {
-                        if (keyslist.contains(key)) {
-                            valid_combinationkey = false;
-                            break;
-                        }
-                        if (false == QKeyMapper_Worker::CombinationKeysList.contains(key)) {
-                            valid_combinationkey = false;
-                            break;
-                        }
-                        keyslist.append(key);
-                    }
-                }
-            }
-        }
-
-        if (valid_combinationkey) {
-            currentOriKeyText = currentOriKeyLineEditText;
-        }
-        else {
-            showFailurePopup(tr("Invalid input format for the original key combination!"));
-            return;
+    // Determine the base key for special key checking
+    QString baseKeyForSpecialCheck;
+    if (false == currentOriKeyRecordLineEditText.isEmpty()) {
+        // For LineEdit input, use the original text or the first key if it's a combination
+        QStringList combinationkeyslist = currentOriKeyRecordLineEditText.split(SEPARATOR_PLUS);
+        if (combinationkeyslist.size() == 1) {
+            baseKeyForSpecialCheck = combinationkeyslist.first();
+            baseKeyForSpecialCheck = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(baseKeyForSpecialCheck);
         }
     }
+    else {
+        // For ComboBox input, use the original ComboBox text
+        baseKeyForSpecialCheck = currentOriKeyComboBoxText;
+    }
+    bool isSpecialOriginalKey = QKeyMapper_Worker::SpecialOriginalKeysList.contains(baseKeyForSpecialCheck);
 
-    if (currentOriKeyText.isEmpty() || (m_mapkeyComboBox->isEnabled() && currentMapKeyText.isEmpty() && ui->nextarrowCheckBox->isChecked() == false)) {
+    if (currentOriKeyText.isEmpty()
+        || (m_mapkeyComboBox->isEnabled()
+            && currentMapKeyText.isEmpty()
+            && ui->nextarrowCheckBox->isChecked() == false
+            && !isSpecialOriginalKey)) {
         return;
     }
 
     currentOriKeyTextWithoutPostfix = currentOriKeyText;
     int pressTime = ui->pressTimeSpinBox->value();
-    bool isSpecialOriginalKey = QKeyMapper_Worker::SpecialOriginalKeysList.contains(currentOriKeyComboBoxText);
     if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
     }
@@ -17218,7 +17180,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
         else {
             if (isSpecialOriginalKey) {
-                currentMapKeyText = currentOriKeyComboBoxText;
+                currentMapKeyText = baseKeyForSpecialCheck;
 
                 int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
                 if (virtualgamepad_index > 0) {
