@@ -686,6 +686,7 @@ public:
     static QString getExeProductVersion(void);
     static QString getPlatformString(void);
     static bool IsFilterKeysEnabled(void);
+    static bool isWindowsDarkMode(void);
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
@@ -1132,6 +1133,7 @@ private:
     // void setUILanguage_English(void);
     void resetFontSize(void);
     void sessionLockStateChanged(bool locked);
+    void setUITheme(int themeindex);
 
 #ifdef SETTINGSFILE_CONVERT
     bool checkSettingsFileNeedtoConvert(void);

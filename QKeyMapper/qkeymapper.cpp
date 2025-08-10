@@ -257,9 +257,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CheckGlobalSettingSwitchTimer.setSingleShot(true);
 #endif
 
-    // set QTableWidget selected background-color
-    setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
-
     ui->iconLabel->setStyle(windowsStyle);
     ui->pointDisplayLabel->setStyle(windowsStyle);
     // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
@@ -473,6 +470,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Interception_Worker::syncDisabledKeyboardList();
     Interception_Worker::syncDisabledMouseList();
 
+    setUITheme(UI_THEME_SYSTEMDEFAULT);
     updateSysTrayIconMenuText();
     reloadUILanguage();
     resetFontSize();
@@ -1623,6 +1621,28 @@ bool QKeyMapper::IsFilterKeysEnabled()
         return (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
     }
     return false;
+}
+
+bool QKeyMapper::isWindowsDarkMode()
+{
+    // Registry path for Windows app theme setting
+    HKEY hKey;
+    DWORD value = 1; // Default to light mode
+    DWORD valueSize = sizeof(DWORD);
+    // Read HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme
+    if (RegOpenKeyExW(HKEY_CURRENT_USER,
+                      L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                      0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        if (RegQueryValueExW(hKey, L"AppsUseLightTheme", nullptr, nullptr, (LPBYTE)&value, &valueSize) == ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            // value == 0 means dark mode is enabled
+            return value == 0;
+        }
+        RegCloseKey(hKey);
+    }
+    return false; // Default to light mode
 }
 
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
@@ -16053,6 +16073,185 @@ void QKeyMapper::resetFontSize()
 void QKeyMapper::sessionLockStateChanged(bool locked)
 {
     emit QKeyMapper_Worker::getInstance()->sessionLockStateChanged_Signal(locked);
+}
+
+void QKeyMapper::setUITheme(int themeindex)
+{
+    constexpr int SET_THEME_NONE    = 0;
+    constexpr int SET_THEME_LIGHT   = 1;
+    constexpr int SET_THEME_DARK    = 2;
+
+    int set_theme_value = SET_THEME_NONE;
+    bool system_dark_mode = isWindowsDarkMode();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::setUITheme] WindowsDarkMode =" << system_dark_mode;
+#endif
+
+    if (themeindex == UI_THEME_LIGHT) {
+        if (system_dark_mode) {
+            set_theme_value = SET_THEME_LIGHT;
+        }
+    }
+    else if (themeindex == UI_THEME_DARK) {
+        set_theme_value = SET_THEME_DARK;
+    }
+    else { /* UI_THEME_SYSTEMDEFAULT */
+        if (system_dark_mode) {
+            set_theme_value = SET_THEME_DARK;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::setUITheme] set_theme_value =" << set_theme_value;
+#endif
+
+    if (set_theme_value == SET_THEME_LIGHT) {
+
+        /* Light Theme Palette */
+        QPalette palette;
+        palette.setColor(QPalette::Window, QColor(240, 240, 240));
+        palette.setColor(QPalette::WindowText, Qt::black);
+        palette.setColor(QPalette::Base, Qt::white);
+        palette.setColor(QPalette::AlternateBase, QColor(225, 225, 225));
+        palette.setColor(QPalette::ToolTipBase, Qt::white);
+        palette.setColor(QPalette::ToolTipText, Qt::black);
+        palette.setColor(QPalette::Text, Qt::black);
+        palette.setColor(QPalette::Button, QColor(240, 240, 240));
+        palette.setColor(QPalette::ButtonText, Qt::black);
+        palette.setColor(QPalette::BrightText, Qt::red);
+        palette.setColor(QPalette::Highlight, QColor(76, 163, 224));
+        palette.setColor(QPalette::HighlightedText, Qt::white);
+
+        palette.setColor(QPalette::Shadow, QColor(160, 160, 160));
+        palette.setColor(QPalette::Mid, QColor(180, 180, 180));
+        palette.setColor(QPalette::Light, QColor(255, 255, 255));
+        palette.setColor(QPalette::Dark, QColor(120, 120, 120));
+        palette.setColor(QPalette::Midlight, QColor(200, 200, 200));
+
+        palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(160, 160, 160));
+        palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(160, 160, 160));
+        palette.setColor(QPalette::Disabled, QPalette::Text, QColor(160, 160, 160));
+
+        QApplication::setPalette(palette);
+
+        ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
+        m_KeyMappingTabWidget->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
+
+        // set QTableWidget selected background-color
+        setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
+    }
+    else if (set_theme_value == SET_THEME_DARK) {
+        /* Dark Theme Palette */
+        QPalette darkPalette;
+
+        QColor dark_theme_text_color = QColor(208, 210, 212);
+
+        // Main background colors - lighter dark gray for better comfort
+        darkPalette.setColor(QPalette::Window, QColor(55, 55, 55));
+        darkPalette.setColor(QPalette::Base, QColor(48, 48, 48));
+        darkPalette.setColor(QPalette::AlternateBase, QColor(62, 62, 62));
+
+        // Text colors - light but not too bright
+        darkPalette.setColor(QPalette::WindowText, dark_theme_text_color);
+        darkPalette.setColor(QPalette::Text, dark_theme_text_color);
+
+        // Button related colors
+        darkPalette.setColor(QPalette::Button, QColor(62, 62, 62));
+        darkPalette.setColor(QPalette::ButtonText, dark_theme_text_color);
+
+        // Tooltip colors
+        darkPalette.setColor(QPalette::ToolTipBase, QColor(70, 70, 70));
+        darkPalette.setColor(QPalette::ToolTipText, dark_theme_text_color);
+
+        // Highlight selection
+        darkPalette.setColor(QPalette::Highlight, QColor(64, 78, 81));
+        darkPalette.setColor(QPalette::HighlightedText, dark_theme_text_color);
+
+        // Bright accents
+        darkPalette.setColor(QPalette::BrightText, QColor(255, 85, 85));
+
+        // Border and shadow effects - use light shadows to enhance 3D effect
+        darkPalette.setColor(QPalette::Shadow, QColor(85, 85, 85));
+        darkPalette.setColor(QPalette::Mid, QColor(75, 75, 75));
+        darkPalette.setColor(QPalette::Light, QColor(95, 95, 95));
+        darkPalette.setColor(QPalette::Dark, QColor(40, 40, 40));
+        darkPalette.setColor(QPalette::Midlight, QColor(80, 80, 80));
+
+        // Colors for disabled state
+        darkPalette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(120, 120, 120));
+        darkPalette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(120, 120, 120));
+        darkPalette.setColor(QPalette::Disabled, QPalette::Text, QColor(120, 120, 120));
+        darkPalette.setColor(QPalette::Disabled, QPalette::Button, QColor(45, 45, 45));
+        darkPalette.setColor(QPalette::Disabled, QPalette::Base, QColor(40, 40, 40));
+
+        QApplication::setPalette(darkPalette);
+
+        ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
+        m_KeyMappingTabWidget->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
+
+        setStyleSheet("QTableWidget::item:selected { background-color: rgb(70, 100, 160); }");
+
+        setStyleSheet(R"(
+            QCheckBox::indicator {
+                width: 13px;
+                height: 13px;
+                border: 1px solid rgb(108, 108, 108);
+                background-color: rgb(55, 55, 55);
+            }
+            QCheckBox::indicator:checked {
+                image: url(:/test.png);
+            }
+            QCheckBox::indicator:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(48, 48, 48);
+            }
+            QCheckBox::indicator:checked:disabled {
+                image: url(:/test.png);
+                border: 1px solid rgb(86, 86, 86);
+            }
+            QLineEdit, QSpinBox {
+                border: 1px solid rgb(108, 108, 108);
+                border-radius: 2px;
+                background-color: rgb(55, 55, 55);
+            }
+            QLineEdit:disabled, QSpinBox:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(48, 48, 48);
+            }
+        )");
+
+        m_KeyMappingTabWidget->setStyleSheet(R"(
+            QTableView {
+                gridline-color: rgb(200, 200, 200);
+            }
+            QTableView::indicator {
+                border: 1px solid rgb(108, 108, 108);
+                background-color: rgb(55, 55, 55);
+            }
+            QTableView::indicator:checked {
+                image: url(:/test.png);
+            }
+            QTableView::indicator:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(48, 48, 48);
+            }
+            QTableView::indicator:checked:disabled {
+                image: url(:/test.png);
+                border: 1px solid rgb(86, 86, 86);
+            }
+        )");
+    }
+    else {
+        // ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
+        // m_KeyMappingTabWidget->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
+
+        // set QTableWidget selected background-color
+        setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
+    }
+
+    // ui->processinfoTable->->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
+    // ui->processinfoTable->setGridLineColor(QColor(100, 100, 100));
 }
 
 void QKeyMapper::checkOSVersionMatched()

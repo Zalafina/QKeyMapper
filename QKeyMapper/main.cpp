@@ -71,28 +71,6 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 }
 #endif
 
-bool isWindowsDarkMode()
-{
-    // Registry path for Windows app theme setting
-    HKEY hKey;
-    DWORD value = 1; // Default to light mode
-    DWORD valueSize = sizeof(DWORD);
-    // Read HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme
-    if (RegOpenKeyExW(HKEY_CURRENT_USER,
-                      L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-                      0, KEY_READ, &hKey) == ERROR_SUCCESS)
-    {
-        if (RegQueryValueExW(hKey, L"AppsUseLightTheme", nullptr, nullptr, (LPBYTE)&value, &valueSize) == ERROR_SUCCESS)
-        {
-            RegCloseKey(hKey);
-            // value == 0 means dark mode is enabled
-            return value == 0;
-        }
-        RegCloseKey(hKey);
-    }
-    return false; // Default to light mode
-}
-
 #if 0
 void updateQtDisplayEnvironment(void)
 {
@@ -310,38 +288,6 @@ int main(int argc, char *argv[])
 
     QApplication::setStyle(QStyleFactory::create("Fusion"));
     QApplication::setFont(QFont(FONTNAME_ENGLISH, 9));
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[main] WindowsDarkMode =" << isWindowsDarkMode();
-#endif
-
-    if (isWindowsDarkMode()) {
-        QPalette palette;
-        palette.setColor(QPalette::Window, QColor(240, 240, 240));
-        palette.setColor(QPalette::WindowText, Qt::black);
-        palette.setColor(QPalette::Base, Qt::white);
-        palette.setColor(QPalette::AlternateBase, QColor(225, 225, 225));
-        palette.setColor(QPalette::ToolTipBase, Qt::white);
-        palette.setColor(QPalette::ToolTipText, Qt::black);
-        palette.setColor(QPalette::Text, Qt::black);
-        palette.setColor(QPalette::Button, QColor(240, 240, 240));
-        palette.setColor(QPalette::ButtonText, Qt::black);
-        palette.setColor(QPalette::BrightText, Qt::red);
-        palette.setColor(QPalette::Highlight, QColor(76, 163, 224));
-        palette.setColor(QPalette::HighlightedText, Qt::white);
-
-        palette.setColor(QPalette::Shadow, QColor(160, 160, 160));
-        palette.setColor(QPalette::Mid, QColor(180, 180, 180));
-        palette.setColor(QPalette::Light, QColor(255, 255, 255));
-        palette.setColor(QPalette::Dark, QColor(120, 120, 120));
-        palette.setColor(QPalette::Midlight, QColor(200, 200, 200));
-
-        palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(160, 160, 160));
-        palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(160, 160, 160));
-        palette.setColor(QPalette::Disabled, QPalette::Text, QColor(160, 160, 160));
-
-        app.setPalette(palette);
-    }
 
     QThread::currentThread()->setObjectName("QKeyMapper");
 

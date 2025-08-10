@@ -87,6 +87,10 @@ namespace QKeyMapperConstants {
     inline constexpr int LANGUAGE_ENGLISH = 1;
     inline constexpr int LANGUAGE_JAPANESE = 2;
 
+    inline constexpr int UI_THEME_SYSTEMDEFAULT = 0;
+    inline constexpr int UI_THEME_LIGHT         = 1;
+    inline constexpr int UI_THEME_DARK          = 2;
+
     inline constexpr int UPDATE_SITE_GITHUB = 0;
     inline constexpr int UPDATE_SITE_GITEE = 1;
 
