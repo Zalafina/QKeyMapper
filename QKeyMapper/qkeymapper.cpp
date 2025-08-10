@@ -136,6 +136,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
+    ui->originalKeyRecordLineEdit->installEventFilter(this);
     ui->gamepadSelectComboBox->view()->installEventFilter(this);
 
 #ifdef QT_DEBUG
@@ -4321,9 +4322,9 @@ QString QKeyMapper::getCurrentOriKeyText()
     return getInstance()->m_orikeyComboBox->currentText();
 }
 
-QString QKeyMapper::getCurrentOriCombinationKeyText()
+QString QKeyMapper::getCurrentOriKeyRecordText()
 {
-    return getInstance()->ui->combinationKeyLineEdit->text();
+    return getInstance()->ui->originalKeyRecordLineEdit->text();
 }
 
 int QKeyMapper::getOriginalKeyEditMode()
@@ -4336,9 +4337,9 @@ QString QKeyMapper::getSendTextString()
     return getInstance()->ui->sendTextLineEdit->text();
 }
 
-void QKeyMapper::setCurrentOriCombinationKeyText(const QString &newcombinationkeytext)
+void QKeyMapper::setCurrentOriKeyRecordText(const QString &newcombinationkeytext)
 {
-    return getInstance()->ui->combinationKeyLineEdit->setText(newcombinationkeytext);
+    return getInstance()->ui->originalKeyRecordLineEdit->setText(newcombinationkeytext);
 }
 
 int QKeyMapper::getMatchProcessNameIndex()
@@ -6082,23 +6083,39 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
-    if (m_KeyMapStatus == KEYMAP_IDLE
-        && event->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
-        if (keyEvent->key() == Qt::Key_F2) {
-            int highlightedRow = -1;
-            QAbstractItemView *view = ui->gamepadSelectComboBox->view();
-            if (view->isVisible()) {
-                QModelIndex highlightedIndex = view->currentIndex();
-                if (highlightedIndex.isValid()) {
-                    highlightedRow = highlightedIndex.row();
+    if (object == ui->originalKeyRecordLineEdit) {
+        qDebug() << "originalKeyRecordLineEdit eventFilter triggered ->" << event->type();
+        if (event->type() == QEvent::FocusIn) {
+            ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+        }
+        else if (event->type() == QEvent::FocusOut) {
+            ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
+        }
+        else if (event->type() == QEvent::ReadOnlyChange
+            && ui->originalKeyRecordLineEdit->hasFocus()
+            && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+            ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+        }
+    }
 
-                    if (highlightedRow >= 1) {
+    if (m_KeyMapStatus == KEYMAP_IDLE) {
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_F2) {
+                int highlightedRow = -1;
+                QAbstractItemView *view = ui->gamepadSelectComboBox->view();
+                if (view->isVisible()) {
+                    QModelIndex highlightedIndex = view->currentIndex();
+                    if (highlightedIndex.isValid()) {
+                        highlightedRow = highlightedIndex.row();
+
+                        if (highlightedRow >= 1) {
 // #ifdef DEBUG_LOGOUT_ON
-//                         QString debugmessage = QString("[GamepadSelectComboBox] F2 Key pressed on item(%1) selected.").arg(highlightedRow);
-//                         qDebug().noquote() << debugmessage;
+//                             QString debugmessage = QString("[GamepadSelectComboBox] F2 Key pressed on item(%1) selected.").arg(highlightedRow);
+//                             qDebug().noquote() << debugmessage;
 // #endif
-                        emit QKeyMapper_Worker::getInstance()->gameControllerGyroEnabledSwitch_Signal(highlightedRow-1);
+                            emit QKeyMapper_Worker::getInstance()->gameControllerGyroEnabledSwitch_Signal(highlightedRow-1);
+                        }
                     }
                 }
             }
@@ -6918,7 +6935,7 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
         return;
     }
 
-    if (ui->combinationKeyLineEdit->hasFocus() && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+    if (ui->originalKeyRecordLineEdit->hasFocus() && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
         // Ignore mouse left clicks when cursor is over originalKeyEditModeButton to prevent unwanted input
         if (!m_isOriginalKeyLineEdit_CapturingKey
             && keycodeString.contains("Mouse-L") && keyupdown == KEY_DOWN) {
@@ -6927,13 +6944,13 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
             QPoint globalMousePos = QCursor::pos();
 
             // Get originalKeyEditModeButton's global position and size
-            QPoint lineEditGlobalPos = ui->combinationKeyLineEdit->mapToGlobal(QPoint(0, 0));
-            QRect lineEditGlobalRect(lineEditGlobalPos, ui->combinationKeyLineEdit->size());
+            QPoint lineEditGlobalPos = ui->originalKeyRecordLineEdit->mapToGlobal(QPoint(0, 0));
+            QRect lineEditGlobalRect(lineEditGlobalPos, ui->originalKeyRecordLineEdit->size());
 
             // Check if mouse cursor is within lineedit area
             if (!lineEditGlobalRect.contains(globalMousePos)) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Ignoring Mouse-L click outside combinationKeyLineEdit area";
+                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Ignoring Mouse-L click outside originalKeyRecordLineEdit area";
                 qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Mouse pos:" << globalMousePos << "Button rect:" << lineEditGlobalRect;
 #endif
                 return;
@@ -6947,7 +6964,7 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
 
         // Start capturing when first key is pressed
         if (!m_isOriginalKeyLineEdit_CapturingKey && keyupdown == KEY_DOWN) {
-            ui->combinationKeyLineEdit->clear();
+            ui->originalKeyRecordLineEdit->clear();
             m_isOriginalKeyLineEdit_CapturingKey = true;
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Start capturing keys";
@@ -6960,7 +6977,7 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
                 QStringList pressedRealKeys = QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
                 pressedRealKeys.removeAll(GAMEPAD_HOME_STR);
                 QString updatedOriginalKeyString = pressedRealKeys.join(SEPARATOR_PLUS);
-                ui->combinationKeyLineEdit->setText(updatedOriginalKeyString);
+                ui->originalKeyRecordLineEdit->setText(updatedOriginalKeyString);
 
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Updated OriginalKeyString :" << updatedOriginalKeyString;
@@ -6971,7 +6988,7 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
             if (m_isOriginalKeyLineEdit_CapturingKey && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.isEmpty()) {
                 m_isOriginalKeyLineEdit_CapturingKey = false;
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] End capturing keys, final OriginalKeyString:" << ui->combinationKeyLineEdit->text();
+                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] End capturing keys, final OriginalKeyString:" << ui->originalKeyRecordLineEdit->text();
 #endif
             }
         }
@@ -11623,7 +11640,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
-    ui->orikeyEditLabel->setFont(customFont);
+    ui->orikeyRecordLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
@@ -11761,7 +11778,7 @@ void QKeyMapper::setControlFontChinese()
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
-    ui->orikeyEditLabel->setFont(customFont);
+    ui->orikeyRecordLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
@@ -11899,7 +11916,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->settingNameLabel->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
-    ui->orikeyEditLabel->setFont(customFont);
+    ui->orikeyRecordLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
@@ -12085,9 +12102,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mapList_SelectGamepadButton->setEnabled(status);
     ui->mapList_SelectFunctionButton->setEnabled(status);
     ui->orikeyLabel->setEnabled(status);
-    ui->orikeyEditLabel->setEnabled(status);
+    ui->orikeyRecordLabel->setEnabled(status);
     // m_originalKeySeqEdit->setEnabled(status);
-    ui->combinationKeyLineEdit->setEnabled(status);
+    ui->originalKeyRecordLineEdit->setEnabled(status);
     ui->originalKeyEditModeButton->setEnabled(status);
     ui->sendTextLineEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
@@ -14894,17 +14911,17 @@ void QKeyMapper::initOriginalKeySeqEdit()
 void QKeyMapper::initCombinationKeyLineEdit()
 {
     // int left = m_orikeyComboBox->x();
-    // int top = ui->orikeyEditLabel->y();
+    // int top = ui->orikeyRecordLabel->y();
     // int width = m_orikeyComboBox->width();
     // int height = m_orikeyComboBox->height();
-    // ui->combinationKeyLineEdit->setGeometry(QRect(left, top, width, height));
-    ui->combinationKeyLineEdit->setReadOnly(true);
-    ui->combinationKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
+    // ui->originalKeyRecordLineEdit->setGeometry(QRect(left, top, width, height));
+    ui->originalKeyRecordLineEdit->setReadOnly(true);
+    ui->originalKeyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->originalKeyEditModeButton->setText(tr("Edit"));
-    QLineEdit *lineEdit = ui->combinationKeyLineEdit;
-    QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
-        lineEdit->setToolTip(lineEdit->text());
-    });
+    // QLineEdit *lineEdit = ui->originalKeyRecordLineEdit;
+    // QObject::connect(lineEdit, &QLineEdit::textChanged, [lineEdit]() {
+    //     lineEdit->setToolTip(lineEdit->text());
+    // });
 }
 
 void QKeyMapper::updateOriginalKeyListComboBox()
@@ -15405,6 +15422,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     else {
         ui->originalKeyEditModeButton->setText(tr("Edit"));
     }
+    if (!ui->originalKeyRecordLineEdit->placeholderText().isEmpty()) {
+        ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+    }
     // ui->processCheckBox->setText(tr("Process"));
     // ui->titleCheckBox->setText(tr("Title"));
     ui->processLabel->setText(tr("Process"));
@@ -15426,7 +15446,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->mapList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
     ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
     ui->orikeyLabel->setText(tr("OriKey"));
-    ui->orikeyEditLabel->setText(tr("OriKeyRecord"));
+    ui->orikeyRecordLabel->setText(tr("OriKeyRecord"));
     ui->mapkeyLabel->setText(tr("MapKey"));
     // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
     // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
@@ -15616,7 +15636,7 @@ void QKeyMapper::setUILanguage_Chinese()
     QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_CHINESE);
     ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
     ui->orikeyLabel->setText(ORIKEYLABEL_CHINESE);
-    ui->orikeyEditLabel->setText(ORIKEYSEQLABEL_CHINESE);
+    ui->orikeyRecordLabel->setText(ORIKEYSEQLABEL_CHINESE);
     ui->mapkeyLabel->setText(MAPKEYLABEL_CHINESE);
     // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
     // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
@@ -15768,7 +15788,7 @@ void QKeyMapper::setUILanguage_English()
     QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, GLOBALSETTING_DESC_ENGLISH);
     ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
     ui->orikeyLabel->setText(ORIKEYLABEL_ENGLISH);
-    ui->orikeyEditLabel->setText(ORIKEYSEQLABEL_ENGLISH);
+    ui->orikeyRecordLabel->setText(ORIKEYSEQLABEL_ENGLISH);
     ui->mapkeyLabel->setText(MAPKEYLABEL_ENGLISH);
     // ui->burstpressLabel->setText(BURSTPRESSLABEL_ENGLISH);
     // ui->burstreleaseLabel->setText(BURSTRELEASE_ENGLISH);
@@ -15922,7 +15942,7 @@ void QKeyMapper::resetFontSize()
         ui->mappingStartKeyLineEdit->setFont(customFont);
         ui->mappingStopKeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->combinationKeyLineEdit->setFont(customFont);
+        ui->originalKeyRecordLineEdit->setFont(customFont);
         ui->sendTextLineEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
         ui->pushLevelSpinBox->setFont(customFont);
@@ -15973,7 +15993,7 @@ void QKeyMapper::resetFontSize()
         ui->mappingStartKeyLineEdit->setFont(customFont);
         ui->mappingStopKeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->combinationKeyLineEdit->setFont(customFont);
+        ui->originalKeyRecordLineEdit->setFont(customFont);
         ui->sendTextLineEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
         ui->pushLevelSpinBox->setFont(customFont);
@@ -16824,7 +16844,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentMapKeyComboBoxText = currentMapKeyText;
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
-    QString currentOriKeyLineEditText = ui->combinationKeyLineEdit->text();
+    QString currentOriKeyLineEditText = ui->originalKeyRecordLineEdit->text();
     // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
     if (false == currentOriKeyComboBoxText.isEmpty()) {
         currentOriKeyText = currentOriKeyComboBoxText;
@@ -17284,7 +17304,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
                 else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
-                    // QString break_keysStr = ui->combinationKeyLineEdit->text();
+                    // QString break_keysStr = ui->originalKeyRecordLineEdit->text();
                     // if (break_keysStr.isEmpty()) {
                     //     currentMapKeyText = KEYSEQUENCEBREAK_STR;
                     // }
@@ -17750,17 +17770,17 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
         if (event->button() == Qt::RightButton
             && QKeyMapper::getOriginalKeyEditMode() == ORIGINALKEYEDITMODE_EDIT) {
             QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
-            QString currentOriCombinationKeyText = QKeyMapper::getCurrentOriCombinationKeyText();
+            QString currentOriKeyRecordText = QKeyMapper::getCurrentOriKeyRecordText();
             if (currentOriKeyText.isEmpty() == false
                 && QKeyMapper_Worker::CombinationKeysList.contains(currentOriKeyText)) {
                 QString newCombinationKeyText;
-                if (currentOriCombinationKeyText.isEmpty()) {
+                if (currentOriKeyRecordText.isEmpty()) {
                     newCombinationKeyText = currentOriKeyText;
                 }
                 else {
-                    newCombinationKeyText = currentOriCombinationKeyText + QString(SEPARATOR_PLUS) + currentOriKeyText;
+                    newCombinationKeyText = currentOriKeyRecordText + QString(SEPARATOR_PLUS) + currentOriKeyText;
                 }
-                QKeyMapper::getInstance()->setCurrentOriCombinationKeyText(newCombinationKeyText);
+                QKeyMapper::getInstance()->setCurrentOriKeyRecordText(newCombinationKeyText);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[KeyListComboBox_MousePress]" << "Set new CombinationKeyText ->" << newCombinationKeyText;
 #endif
@@ -20313,19 +20333,48 @@ void QKeyMapper::on_gamepadSelectComboBox_currentIndexChanged(int index)
 
 void QKeyMapper::on_originalKeyEditModeButton_clicked()
 {
+    m_isOriginalKeyLineEdit_CapturingKey = false;
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        ui->originalKeyRecordLineEdit->clear();
+        return;
+    }
+
     if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_EDIT) {
-        ui->combinationKeyLineEdit->clear();
-        ui->combinationKeyLineEdit->setReadOnly(true);
-        ui->combinationKeyLineEdit->setFocus();
         m_OriginalKeyEditMode = ORIGINALKEYEDITMODE_CAPTURE;
+        ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+        ui->originalKeyRecordLineEdit->clear();
+        ui->originalKeyRecordLineEdit->setReadOnly(true);
+        ui->originalKeyRecordLineEdit->setFocus();
         ui->originalKeyEditModeButton->setText(tr("Edit"));
     }
     else {
-        ui->combinationKeyLineEdit->setReadOnly(false);
-        ui->combinationKeyLineEdit->setFocus();
-        ui->combinationKeyLineEdit->setCursorPosition(ui->combinationKeyLineEdit->text().length());
         m_OriginalKeyEditMode = ORIGINALKEYEDITMODE_EDIT;
+        ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
+        ui->originalKeyRecordLineEdit->setReadOnly(false);
+        ui->originalKeyRecordLineEdit->setFocus();
+        ui->originalKeyRecordLineEdit->setCursorPosition(ui->originalKeyRecordLineEdit->text().length());
         ui->originalKeyEditModeButton->setText(tr("Capture"));
     }
-    m_isOriginalKeyLineEdit_CapturingKey = false;
+}
+
+void QKeyMapper::on_originalKeyRecordLineEdit_textChanged(const QString &text)
+{
+    Q_UNUSED(text);
+    bool set_place_holder = false;
+    if (m_KeyMapStatus == KEYMAP_IDLE) {
+        if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+            if (ui->originalKeyRecordLineEdit->hasFocus()) {
+                set_place_holder = true;
+            }
+        }
+    }
+
+    if (set_place_holder) {
+        ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+    }
+    else {
+        ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
+    }
+
+    ui->originalKeyRecordLineEdit->setToolTip(ui->originalKeyRecordLineEdit->text());
 }

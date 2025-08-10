@@ -254,7 +254,7 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QLabel" name="orikeyEditLabel">
+  <widget class="QLabel" name="orikeyRecordLabel">
    <property name="geometry">
     <rect>
      <x>500</x>
@@ -270,7 +270,7 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QLineEdit" name="combinationKeyLineEdit">
+  <widget class="QLineEdit" name="originalKeyRecordLineEdit">
    <property name="geometry">
     <rect>
      <x>586</x>

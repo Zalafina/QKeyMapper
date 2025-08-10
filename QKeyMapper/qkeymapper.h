@@ -753,10 +753,10 @@ public:
     static bool getKeyMappingDataTableItemBurstStatus(int rowindex);
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);
     static QString getCurrentOriKeyText(void);
-    static QString getCurrentOriCombinationKeyText(void);
+    static QString getCurrentOriKeyRecordText(void);
     static int getOriginalKeyEditMode(void);
     static QString getSendTextString(void);
-    static void setCurrentOriCombinationKeyText(const QString &newcombinationkeytext);
+    static void setCurrentOriKeyRecordText(const QString &newcombinationkeytext);
     static int getMatchProcessNameIndex(void);
     static int getMatchWindowTitleIndex(void);
     // static int getBurstPressTime(void);
@@ -1028,6 +1028,8 @@ private slots:
     void on_gamepadSelectComboBox_currentIndexChanged(int index);
 
     void on_originalKeyEditModeButton_clicked();
+
+    void on_originalKeyRecordLineEdit_textChanged(const QString &text);
 
 private:
     // Helper methods for saving/restoring category filter state
