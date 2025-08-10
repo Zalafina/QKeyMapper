@@ -264,7 +264,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>OriKeyEdit</string>
+    <string>OriKeyRecord</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>

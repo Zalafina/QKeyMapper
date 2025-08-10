@@ -879,8 +879,8 @@
     <message>
         <location filename="../qkeymapper.ui" line="267"/>
         <location filename="../qkeymapper.cpp" line="15402"/>
-        <source>OriKeyEdit</source>
-        <translation>原始键编辑</translation>
+        <source>OriKeyRecord</source>
+        <translation>原始键记录</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="293"/>

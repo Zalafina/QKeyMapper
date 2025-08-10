@@ -6919,14 +6919,25 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
     }
 
     if (ui->combinationKeyLineEdit->hasFocus() && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
-        // Ignore mouse left clicks for a short period after mode switch to prevent unwanted input
+        // Ignore mouse left clicks when cursor is over originalKeyEditModeButton to prevent unwanted input
         if (!m_isOriginalKeyLineEdit_CapturingKey
-            && keycodeString.contains("Mouse-L")
-            /* && mouse cursor position is in originalKeyEditModeButton area */) {
+            && keycodeString.contains("Mouse-L") && keyupdown == KEY_DOWN) {
+
+            // Get current mouse cursor position
+            QPoint globalMousePos = QCursor::pos();
+
+            // Get originalKeyEditModeButton's global position and size
+            QPoint lineEditGlobalPos = ui->combinationKeyLineEdit->mapToGlobal(QPoint(0, 0));
+            QRect lineEditGlobalRect(lineEditGlobalPos, ui->combinationKeyLineEdit->size());
+
+            // Check if mouse cursor is within lineedit area
+            if (!lineEditGlobalRect.contains(globalMousePos)) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Ignoring Mouse-L click after mode switch";
+                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Ignoring Mouse-L click outside combinationKeyLineEdit area";
+                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Mouse pos:" << globalMousePos << "Button rect:" << lineEditGlobalRect;
 #endif
-            return;
+                return;
+            }
         }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -6947,6 +6958,7 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
             // Handle key press - update the OriginalKey LineEdit display
             if (m_isOriginalKeyLineEdit_CapturingKey) {
                 QStringList pressedRealKeys = QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+                pressedRealKeys.removeAll(GAMEPAD_HOME_STR);
                 QString updatedOriginalKeyString = pressedRealKeys.join(SEPARATOR_PLUS);
                 ui->combinationKeyLineEdit->setText(updatedOriginalKeyString);
 
@@ -15414,7 +15426,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->mapList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
     ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
     ui->orikeyLabel->setText(tr("OriKey"));
-    ui->orikeyEditLabel->setText(tr("OriKeyEdit"));
+    ui->orikeyEditLabel->setText(tr("OriKeyRecord"));
     ui->mapkeyLabel->setText(tr("MapKey"));
     // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
     // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);

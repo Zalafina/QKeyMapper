@@ -1293,7 +1293,6 @@ private:
     bool m_TrayMenuQuit = false;
     int m_OriginalKeyEditMode = QKeyMapperConstants::ORIGINALKEYEDITMODE_CAPTURE;
     bool m_isOriginalKeyLineEdit_CapturingKey = false;
-    QTimer m_IgnoreMouseClickTimer;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
