@@ -274,14 +274,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mapList_SelectMouseButton->setStyle(windowsStyle);
     ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
     ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
-    ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.ico"));
-    ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.ico"));
-    ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.ico"));
-    ui->oriList_SelectFunctionButton->setIcon(QIcon(":/function.ico"));
-    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.ico"));
-    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.ico"));
-    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.ico"));
-    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.ico"));
+    ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.svg"));
+    ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.svg"));
+    ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.svg"));
+    ui->oriList_SelectFunctionButton->setIcon(QIcon(":/function.svg"));
+    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.svg"));
+    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.svg"));
+    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.svg"));
+    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.svg"));
     ui->oriList_SelectKeyboardButton->setChecked(true);
     ui->oriList_SelectMouseButton->setChecked(true);
     ui->oriList_SelectGamepadButton->setChecked(true);
@@ -9413,7 +9413,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 //     QBrush colorBrush(Qt::darkMagenta);
 //     ui->settingselectComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
 // #endif
-    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.ico"));
+    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.svg"));
     QStringList groups = settingFile.childGroups();
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
@@ -15036,28 +15036,28 @@ void QKeyMapper::updateOriginalKeyListComboBox()
         m_orikeyComboBox->clear();
         m_orikeyComboBox->addItem(QString());
         if (isMouseKeys_Selected) {
-            QIcon icon = QIcon(":/mouse.ico");
+            QIcon icon = QIcon(":/mouse.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_MOUSE);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
             }
         }
         if (isKeyboardKeys_Selected) {
-            QIcon icon = QIcon(":/keyboard.ico");
+            QIcon icon = QIcon(":/keyboard.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
             }
         }
         if (isGamepadKeys_Selected) {
-            QIcon icon = QIcon(":/gamepad.ico");
+            QIcon icon = QIcon(":/gamepad.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
             }
         }
         if (isFunctionKeys_Selected) {
-            QIcon icon = QIcon(":/function.ico");
+            QIcon icon = QIcon(":/function.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_FUNCTION);
             for (const QString &key : keyList) {
                 m_orikeyComboBox->addItem(icon, key);
@@ -15088,28 +15088,28 @@ void QKeyMapper::updateMappingKeyListComboBox()
 
     if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
         if (isMouseKeys_Selected) {
-            QIcon icon = QIcon(":/mouse.ico");
+            QIcon icon = QIcon(":/mouse.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_MOUSE);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isKeyboardKeys_Selected) {
-            QIcon icon = QIcon(":/keyboard.ico");
+            QIcon icon = QIcon(":/keyboard.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isGamepadKeys_Selected) {
-            QIcon icon = QIcon(":/gamepad.ico");
+            QIcon icon = QIcon(":/gamepad.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isFunctionKeys_Selected) {
-            QIcon icon = QIcon(":/function.ico");
+            QIcon icon = QIcon(":/function.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_FUNCTION);
             for (const QString &key : keyList) {
                 m_mapkeyComboBox->addItem(icon, key);
@@ -16225,38 +16225,42 @@ void QKeyMapper::setUITheme(int themeindex)
     if (set_palette_value == SET_PALETTE_CUSTOMLIGHT) {
 
         /* Light Theme Palette */
-        QPalette palette;
-        palette.setColor(QPalette::Window, QColor(240, 240, 240));
-        palette.setColor(QPalette::WindowText, Qt::black);
-        palette.setColor(QPalette::Base, Qt::white);
-        palette.setColor(QPalette::AlternateBase, QColor(225, 225, 225));
-        palette.setColor(QPalette::ToolTipBase, Qt::white);
-        palette.setColor(QPalette::ToolTipText, Qt::black);
-        palette.setColor(QPalette::Text, Qt::black);
-        palette.setColor(QPalette::Button, QColor(240, 240, 240));
-        palette.setColor(QPalette::ButtonText, Qt::black);
-        palette.setColor(QPalette::BrightText, Qt::red);
-        palette.setColor(QPalette::Highlight, QColor(76, 163, 224));
-        palette.setColor(QPalette::HighlightedText, Qt::white);
-        palette.setColor(QPalette::PlaceholderText, QColor(160, 160, 160));
+        QPalette lightPalette;
+        lightPalette.setColor(QPalette::Window, QColor(240, 240, 240));
+        lightPalette.setColor(QPalette::WindowText, Qt::black);
+        lightPalette.setColor(QPalette::Base, Qt::white);
+        lightPalette.setColor(QPalette::AlternateBase, QColor(225, 225, 225));
+        lightPalette.setColor(QPalette::ToolTipBase, Qt::white);
+        lightPalette.setColor(QPalette::ToolTipText, Qt::black);
+        lightPalette.setColor(QPalette::Text, Qt::black);
+        lightPalette.setColor(QPalette::Button, QColor(240, 240, 240));
+        lightPalette.setColor(QPalette::ButtonText, Qt::black);
+        lightPalette.setColor(QPalette::BrightText, Qt::red);
+        lightPalette.setColor(QPalette::Highlight, QColor(46, 134, 222));
+        lightPalette.setColor(QPalette::HighlightedText, Qt::white);
+        lightPalette.setColor(QPalette::PlaceholderText, QColor(160, 160, 160));
 
-        palette.setColor(QPalette::Shadow, QColor(160, 160, 160));
-        palette.setColor(QPalette::Mid, QColor(180, 180, 180));
-        palette.setColor(QPalette::Light, QColor(255, 255, 255));
-        palette.setColor(QPalette::Dark, QColor(120, 120, 120));
-        palette.setColor(QPalette::Midlight, QColor(200, 200, 200));
+        lightPalette.setColor(QPalette::Shadow, QColor(160, 160, 160));
+        lightPalette.setColor(QPalette::Mid, QColor(180, 180, 180));
+        lightPalette.setColor(QPalette::Light, QColor(255, 255, 255));
+        lightPalette.setColor(QPalette::Dark, QColor(120, 120, 120));
+        lightPalette.setColor(QPalette::Midlight, QColor(200, 200, 200));
 
-        palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(160, 160, 160));
-        palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(160, 160, 160));
-        palette.setColor(QPalette::Disabled, QPalette::Text, QColor(160, 160, 160));
+        lightPalette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(160, 160, 160));
+        lightPalette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(160, 160, 160));
+        lightPalette.setColor(QPalette::Disabled, QPalette::Text, QColor(160, 160, 160));
 
-        QApplication::setPalette(palette);
+        QApplication::setPalette(lightPalette);
 
-        ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
-        m_KeyMappingTabWidget->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
-
-        // set QTableWidget selected background-color
-        setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
+        setStyleSheet(R"(
+            QTableView {
+                gridline-color: rgb(200, 200, 200);
+            }
+            QTableWidget::item:selected {
+                background-color: rgb(173, 208, 255);
+                color: rgb(33, 33, 33);
+            }
+        )");
 
         m_Current_UIPalette = UI_PALETTE_CUSTOMLIGHT;
     }
@@ -16364,8 +16368,19 @@ void QKeyMapper::setUITheme(int themeindex)
         m_Current_UIPalette = UI_PALETTE_CUSTOMDARK;
     }
     else {
+        QPalette defaultPalette = QApplication::palette();
+
+        defaultPalette.setColor(QPalette::Highlight, QColor(46, 134, 222));
+
+        QApplication::setPalette(defaultPalette);
+
         // set QTableWidget selected background-color
-        setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
+        setStyleSheet(R"(
+            QTableWidget::item:selected {
+                background-color: rgb(173, 208, 255);
+                color: rgb(33, 33, 33);
+            }
+        )");
 
         m_Current_UIPalette = UI_PALETTE_SYSTEMDEFAULT;
     }
