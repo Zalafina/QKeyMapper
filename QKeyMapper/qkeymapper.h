@@ -828,6 +828,7 @@ signals:
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
     void updateKeyComboBoxWithJoystickKey_Signal(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged_Signal(const QString &keycodeString, int keyupdown);
+    void systemThemeChanged_Signal(void);
 
 protected:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -907,6 +908,7 @@ public slots:
     int insertKeyMappingDataFromCopiedList(void);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
+    void systemThemeChanged(void);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);
@@ -1031,6 +1033,8 @@ private slots:
     void on_originalKeyEditModeButton_clicked();
 
     void on_originalKeyRecordLineEdit_textChanged(const QString &text);
+
+    void on_themeComboBox_currentIndexChanged(int index);
 
 private:
     // Helper methods for saving/restoring category filter state
@@ -1297,6 +1301,8 @@ private:
     bool m_TrayMenuQuit = false;
     int m_OriginalKeyEditMode = QKeyMapperConstants::ORIGINALKEYEDITMODE_CAPTURE;
     bool m_isOriginalKeyLineEdit_CapturingKey = false;
+    bool m_isWindowsDarkMode = false;
+    int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_SYSTEMDEFAULT;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;

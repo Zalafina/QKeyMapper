@@ -935,9 +935,9 @@
     <widget class="QLabel" name="themeLabel">
      <property name="geometry">
       <rect>
-       <x>195</x>
+       <x>185</x>
        <y>130</y>
-       <width>61</width>
+       <width>71</width>
        <height>21</height>
       </rect>
      </property>

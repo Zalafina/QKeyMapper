@@ -441,6 +441,16 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->scaleComboBox->addItems(scale_list);
     ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
 
+    QStringList theme_list = QStringList() \
+            << tr("System Default")
+            << tr("Light")
+            << tr("Dark")
+            ;
+    ui->themeComboBox->blockSignals(true);
+    ui->themeComboBox->addItems(theme_list);
+    ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
+    ui->themeComboBox->blockSignals(false);
+
     // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
     // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
@@ -470,7 +480,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Interception_Worker::syncDisabledKeyboardList();
     Interception_Worker::syncDisabledMouseList();
 
-    setUITheme(UI_THEME_SYSTEMDEFAULT);
+    setUITheme(ui->themeComboBox->currentIndex());
     updateSysTrayIconMenuText();
     reloadUILanguage();
     resetFontSize();
@@ -532,6 +542,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
 
     updateHWNDListProc();
     refreshProcessInfoTable();
@@ -5823,6 +5834,22 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
                 sessionLockStateChanged(false);
             }
         }
+        else if (msg->message == WM_THEMECHANGED) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::nativeEvent]" << "Theme Changed";
+#endif
+        }
+        else if (msg->message == WM_SETTINGCHANGE) {
+            if (msg->lParam) {
+                QString param = QString::fromWCharArray(reinterpret_cast<const wchar_t*>(msg->lParam));
+                if (param == QStringLiteral("ImmersiveColorSet")) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[QKeyMapper::nativeEvent]" << "ImmersiveColorSet Theme Changed";
+#endif
+                    emit systemThemeChanged_Signal();
+                }
+            }
+        }
     }
 
     return QWidget::nativeEvent(eventType, message, result);
@@ -7026,6 +7053,25 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
 #endif
             }
         }
+    }
+}
+
+void QKeyMapper::systemThemeChanged()
+{
+    bool current_system_darkmode = isWindowsDarkMode();
+
+    if (current_system_darkmode != m_isWindowsDarkMode) {
+#ifdef DEBUG_LOGOUT_ON
+        QString theme_change_string = m_isWindowsDarkMode
+                                    ? QStringLiteral("Dark -> Light")
+                                    : QStringLiteral("Light -> Dark");
+        QString current_palette_string = (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) ? "UI_PALETTE_CUSTOMLIGHT" :
+                                        (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) ? "UI_PALETTE_CUSTOMDARK" :
+                                        "UI_PALETTE_SYSTEMDEFAULT";
+        qDebug() << "[QKeyMapper::setUITheme] WindowsThemeChanged" << theme_change_string << ", CurrentUIPalette =" << current_palette_string;
+#endif
+
+        setUITheme(ui->themeComboBox->currentIndex());
     }
 }
 
@@ -15542,6 +15588,11 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->scaleLabel->setText(tr("Scale"));
     ui->scaleComboBox->setItemText(DISPLAY_SCALE_DEFAULT, tr("Default"));
 
+    ui->themeLabel->setText(tr("Theme"));
+    ui->themeComboBox->setItemText(UI_THEME_SYSTEMDEFAULT,  tr("System Default"));
+    ui->themeComboBox->setItemText(UI_THEME_LIGHT,          tr("Light"));
+    ui->themeComboBox->setItemText(UI_THEME_DARK,           tr("Dark"));
+
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_CONTAINS,      tr("Contains"));
@@ -16077,36 +16128,82 @@ void QKeyMapper::sessionLockStateChanged(bool locked)
 
 void QKeyMapper::setUITheme(int themeindex)
 {
-    constexpr int SET_THEME_NONE    = 0;
-    constexpr int SET_THEME_LIGHT   = 1;
-    constexpr int SET_THEME_DARK    = 2;
+    constexpr int SET_PALETTE_SYSTEMDEFAULT = 0;
+    constexpr int SET_PALETTE_CUSTOMLIGHT   = 1;
+    constexpr int SET_PALETTE_CUSTOMDARK    = 2;
 
-    int set_theme_value = SET_THEME_NONE;
+    int set_palette_value = SET_PALETTE_SYSTEMDEFAULT;
     bool system_dark_mode = isWindowsDarkMode();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QKeyMapper::setUITheme] WindowsDarkMode =" << system_dark_mode;
+    QString current_palette_string = (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) ? "UI_PALETTE_CUSTOMLIGHT" :
+                                    (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) ? "UI_PALETTE_CUSTOMDARK" :
+                                    "UI_PALETTE_SYSTEMDEFAULT";
+    qDebug() << "[QKeyMapper::setUITheme] CurrentUIPalette =" << current_palette_string << ", WindowsDarkMode =" << system_dark_mode;
 #endif
 
     if (themeindex == UI_THEME_LIGHT) {
-        if (system_dark_mode) {
-            set_theme_value = SET_THEME_LIGHT;
+        if (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) {
+            ; /* Do Nothing */
+        }
+        else if (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) {
+            set_palette_value = SET_PALETTE_CUSTOMLIGHT;
+        }
+        else { /* UI_PALETTE_SYSTEMDEFAULT */
+            if (system_dark_mode) {
+                set_palette_value = SET_PALETTE_CUSTOMLIGHT;
+            }
+            else {
+                ; /* Do Nothing */
+            }
         }
     }
     else if (themeindex == UI_THEME_DARK) {
-        set_theme_value = SET_THEME_DARK;
+        if (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) {
+            set_palette_value = SET_PALETTE_CUSTOMDARK;
+        }
+        else if (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) {
+            ; /* Do Nothing */
+        }
+        else { /* UI_PALETTE_SYSTEMDEFAULT */
+            set_palette_value = SET_PALETTE_CUSTOMDARK;
+        }
     }
     else { /* UI_THEME_SYSTEMDEFAULT */
-        if (system_dark_mode) {
-            set_theme_value = SET_THEME_DARK;
+        if (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) {
+            if (system_dark_mode) {
+                set_palette_value = SET_PALETTE_CUSTOMDARK;
+            }
+            else {
+                ; /* Do Nothing*/
+            }
+        }
+        else if (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) {
+            if (system_dark_mode) {
+                ; /* Do Nothing */
+            }
+            else {
+                set_palette_value = SET_PALETTE_CUSTOMLIGHT;
+            }
+        }
+        else { /* UI_PALETTE_SYSTEMDEFAULT */
+            if (system_dark_mode) {
+                set_palette_value = SET_PALETTE_CUSTOMDARK;
+            }
+            else {
+                ; /* Do Nothing */
+            }
         }
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QKeyMapper::setUITheme] set_theme_value =" << set_theme_value;
+    QString palette_string = (set_palette_value == SET_PALETTE_CUSTOMLIGHT) ? "SET_PALETTE_CUSTOMLIGHT" :
+                            (set_palette_value == SET_PALETTE_CUSTOMDARK) ? "SET_PALETTE_CUSTOMDARK" :
+                            "SET_PALETTE_SYSTEMDEFAULT";
+    qDebug() << "[QKeyMapper::setUITheme] set_palette_value =" << palette_string;
 #endif
 
-    if (set_theme_value == SET_THEME_LIGHT) {
+    if (set_palette_value == SET_PALETTE_CUSTOMLIGHT) {
 
         /* Light Theme Palette */
         QPalette palette;
@@ -16140,8 +16237,10 @@ void QKeyMapper::setUITheme(int themeindex)
 
         // set QTableWidget selected background-color
         setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
+
+        m_Current_UIPalette = UI_PALETTE_CUSTOMLIGHT;
     }
-    else if (set_theme_value == SET_THEME_DARK) {
+    else if (set_palette_value == SET_PALETTE_CUSTOMDARK) {
         /* Dark Theme Palette */
         QPalette darkPalette;
 
@@ -16188,7 +16287,6 @@ void QKeyMapper::setUITheme(int themeindex)
         QApplication::setPalette(darkPalette);
 
         ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
-        m_KeyMappingTabWidget->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
 
         setStyleSheet("QTableWidget::item:selected { background-color: rgb(70, 100, 160); }");
 
@@ -16223,7 +16321,7 @@ void QKeyMapper::setUITheme(int themeindex)
 
         m_KeyMappingTabWidget->setStyleSheet(R"(
             QTableView {
-                gridline-color: rgb(200, 200, 200);
+                gridline-color: rgb(100, 100, 100);
             }
             QTableView::indicator {
                 border: 1px solid rgb(108, 108, 108);
@@ -16241,17 +16339,17 @@ void QKeyMapper::setUITheme(int themeindex)
                 border: 1px solid rgb(86, 86, 86);
             }
         )");
+
+        m_Current_UIPalette = UI_PALETTE_CUSTOMDARK;
     }
     else {
-        // ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
-        // m_KeyMappingTabWidget->setStyleSheet("QTableView { gridline-color: rgb(200, 200, 200); }");
-
         // set QTableWidget selected background-color
         setStyleSheet("QTableWidget::item:selected { background-color: rgb(190, 220, 255) }");
+
+        m_Current_UIPalette = UI_PALETTE_SYSTEMDEFAULT;
     }
 
-    // ui->processinfoTable->->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
-    // ui->processinfoTable->setGridLineColor(QColor(100, 100, 100));
+    m_isWindowsDarkMode = system_dark_mode;
 }
 
 void QKeyMapper::checkOSVersionMatched()
@@ -20544,4 +20642,10 @@ void QKeyMapper::on_originalKeyRecordLineEdit_textChanged(const QString &text)
     }
 
     ui->originalKeyRecordLineEdit->setToolTip(ui->originalKeyRecordLineEdit->text());
+}
+
+void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    setUITheme(ui->themeComboBox->currentIndex());
 }
