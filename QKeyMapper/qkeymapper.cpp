@@ -16248,8 +16248,8 @@ void QKeyMapper::setUITheme(int themeindex)
 
         // Main background colors - lighter dark gray for better comfort
         darkPalette.setColor(QPalette::Window, QColor(55, 55, 55));
-        darkPalette.setColor(QPalette::Base, QColor(48, 48, 48));
-        darkPalette.setColor(QPalette::AlternateBase, QColor(62, 62, 62));
+        darkPalette.setColor(QPalette::Base, QColor(60, 60, 60));
+        darkPalette.setColor(QPalette::AlternateBase, QColor(70, 70, 70));
 
         // Text colors - light but not too bright
         darkPalette.setColor(QPalette::WindowText, dark_theme_text_color);
@@ -16282,7 +16282,7 @@ void QKeyMapper::setUITheme(int themeindex)
         darkPalette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(120, 120, 120));
         darkPalette.setColor(QPalette::Disabled, QPalette::Text, QColor(120, 120, 120));
         darkPalette.setColor(QPalette::Disabled, QPalette::Button, QColor(45, 45, 45));
-        darkPalette.setColor(QPalette::Disabled, QPalette::Base, QColor(40, 40, 40));
+        darkPalette.setColor(QPalette::Disabled, QPalette::Base, QColor(50, 50, 50));
 
         QApplication::setPalette(darkPalette);
 
