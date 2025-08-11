@@ -16308,12 +16308,12 @@ void QKeyMapper::setUITheme(int themeindex)
                 image: url(:/checked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
-            QLineEdit, QSpinBox {
+            QLineEdit {
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
                 background-color: rgb(55, 55, 55);
             }
-            QLineEdit:disabled, QSpinBox:disabled {
+            QLineEdit:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(48, 48, 48);
             }
