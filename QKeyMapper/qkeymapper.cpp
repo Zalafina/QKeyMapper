@@ -16219,6 +16219,7 @@ void QKeyMapper::setUITheme(int themeindex)
         palette.setColor(QPalette::BrightText, Qt::red);
         palette.setColor(QPalette::Highlight, QColor(76, 163, 224));
         palette.setColor(QPalette::HighlightedText, Qt::white);
+        palette.setColor(QPalette::PlaceholderText, QColor(160, 160, 160));
 
         palette.setColor(QPalette::Shadow, QColor(160, 160, 160));
         palette.setColor(QPalette::Mid, QColor(180, 180, 180));
@@ -16254,6 +16255,8 @@ void QKeyMapper::setUITheme(int themeindex)
         // Text colors - light but not too bright
         darkPalette.setColor(QPalette::WindowText, dark_theme_text_color);
         darkPalette.setColor(QPalette::Text, dark_theme_text_color);
+
+        darkPalette.setColor(QPalette::PlaceholderText, QColor(120, 120, 120));
 
         // Button related colors
         darkPalette.setColor(QPalette::Button, QColor(62, 62, 62));
@@ -16316,6 +16319,9 @@ void QKeyMapper::setUITheme(int themeindex)
             QLineEdit:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(48, 48, 48);
+            }
+            QLineEdit:focus {
+                border: 1px solid rgb(46, 134, 222);
             }
         )");
 
