@@ -721,6 +721,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char CLOSETO_SYSTEMTRAY[] = "CloseToSystemtray";
     inline constexpr const char NOTIFICATION_POSITION[] = "NotificationPosition";
     inline constexpr const char DISPLAY_SCALE[] = "DisplayScale";
+    inline constexpr const char THEME_COLOR[] = "ThemeColor";
 
     inline constexpr const char NOTIFICATION_FONTCOLOR[] = "Notification_FontColor";
     inline constexpr const char NOTIFICATION_FONTSIZE[] = "Notification_FontSize";

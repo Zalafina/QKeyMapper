@@ -7848,6 +7848,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
+    settingFile.setValue(THEME_COLOR , ui->themeComboBox->currentIndex());
 
     QColor notification_fontcolor;
     QString notification_fontcolor_name;
@@ -8940,6 +8941,24 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();
+#endif
+
+        ui->themeComboBox->blockSignals(true);
+        if (true == settingFile.contains(THEME_COLOR)){
+            int theme_color = settingFile.value(THEME_COLOR).toInt();
+            if (UI_THEME_SYSTEMDEFAULT <= theme_color && theme_color <= UI_THEME_DARK) {
+                ui->themeComboBox->setCurrentIndex(theme_color);
+            }
+            else {
+                ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
+            }
+        }
+        else {
+            ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
+        }
+        ui->themeComboBox->blockSignals(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
 #endif
 
 #if 0
@@ -16267,7 +16286,7 @@ void QKeyMapper::setUITheme(int themeindex)
         darkPalette.setColor(QPalette::ToolTipText, dark_theme_text_color);
 
         // Highlight selection
-        darkPalette.setColor(QPalette::Highlight, QColor(64, 78, 81));
+        darkPalette.setColor(QPalette::Highlight, QColor(46, 134, 222));
         darkPalette.setColor(QPalette::HighlightedText, dark_theme_text_color);
 
         // Bright accents
@@ -16289,11 +16308,28 @@ void QKeyMapper::setUITheme(int themeindex)
 
         QApplication::setPalette(darkPalette);
 
-        ui->processinfoTable->setStyleSheet("QTableView { gridline-color: rgb(100, 100, 100); }");
-
-        setStyleSheet("QTableWidget::item:selected { background-color: rgb(70, 100, 160); }");
-
         setStyleSheet(R"(
+            QTableView {
+                gridline-color: rgb(100, 100, 100);
+            }
+            QTableView::indicator {
+                border: 1px solid rgb(108, 108, 108);
+                background-color: rgb(55, 55, 55);
+            }
+            QTableView::indicator:checked {
+                image: url(:/checked.svg);
+            }
+            QTableView::indicator:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(48, 48, 48);
+            }
+            QTableView::indicator:checked:disabled {
+                image: url(:/checked_disabled.svg);
+                border: 1px solid rgb(86, 86, 86);
+            }
+            QTableWidget::item:selected {
+                background-color: rgb(70, 100, 160);
+            }
             QCheckBox::indicator {
                 width: 13px;
                 height: 13px;
@@ -16322,27 +16358,6 @@ void QKeyMapper::setUITheme(int themeindex)
             }
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
-            }
-        )");
-
-        m_KeyMappingTabWidget->setStyleSheet(R"(
-            QTableView {
-                gridline-color: rgb(100, 100, 100);
-            }
-            QTableView::indicator {
-                border: 1px solid rgb(108, 108, 108);
-                background-color: rgb(55, 55, 55);
-            }
-            QTableView::indicator:checked {
-                image: url(:/checked.svg);
-            }
-            QTableView::indicator:disabled {
-                border: 1px solid rgb(86, 86, 86);
-                background-color: rgb(48, 48, 48);
-            }
-            QTableView::indicator:checked:disabled {
-                image: url(:/checked_disabled.svg);
-                border: 1px solid rgb(86, 86, 86);
             }
         )");
 
