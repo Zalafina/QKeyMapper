@@ -16260,6 +16260,9 @@ void QKeyMapper::setUITheme(int themeindex)
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
             }
+            QTableWidget::item:selected:disabled {
+                color: rgb(160, 160, 160);
+            }
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
                 border-radius: 2px;
@@ -16338,6 +16341,9 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected {
                 background-color: rgb(70, 100, 160);
             }
+            QTableWidget::item:selected:disabled {
+                color: rgb(120, 120, 120);
+            }
             QCheckBox::indicator {
                 width: 13px;
                 height: 13px;
@@ -16384,6 +16390,9 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected {
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
+            }
+            QTableWidget::item:selected:disabled {
+                color: rgb(160, 160, 160);
             }
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
