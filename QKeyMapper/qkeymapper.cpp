@@ -113,6 +113,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_instance = this;
     ui->setupUi(this);
 
+    m_CustomSpinBoxStyle = new CustomSpinBoxStyle(QApplication::style());
+
     // Explicitly create the native MainWindow HWND at startup.
     // This ensures that even if the application is minimized to system tray at startup,
     // and show() is never called, winId() will still return a valid HWND handle.
@@ -126,6 +128,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     ui->settingTabWidget->setStyle(windowsStyle);
     ui->pushLevelSlider->setStyle(windowsStyle);
+
+    ui->waitTimeSpinBox->setStyle(getCustomSpinBoxStyle());
 
     // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
     for (int tabindex = 0; tabindex < ui->settingTabWidget->count(); ++tabindex) {
@@ -1533,6 +1537,16 @@ QPushButton *QKeyMapper::getMapListSelectGamepadButton() const
 QPushButton *QKeyMapper::getMapListSelectFunctionButton() const
 {
     return ui->mapList_SelectFunctionButton;
+}
+
+int QKeyMapper::getCurrentUIPalette()
+{
+    return m_Current_UIPalette;
+}
+
+CustomSpinBoxStyle *QKeyMapper::getCustomSpinBoxStyle() const
+{
+    return m_CustomSpinBoxStyle;
 }
 
 QString QKeyMapper::getExeFileDescription()
@@ -20421,6 +20435,36 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
     }
 
     // QMenu::mouseReleaseEvent(event);
+}
+
+void CustomSpinBoxStyle::drawComplexControl(ComplexControl control, const QStyleOptionComplex *option, QPainter *painter, const QWidget *widget) const
+{
+    if (control == CC_SpinBox) {
+        int current_ui_palette = QKeyMapper::getInstance()->getCurrentUIPalette();
+
+        if (current_ui_palette == QKeyMapperConstants::UI_PALETTE_CUSTOMDARK) {
+            // Let the base style draw all the contents first
+            QProxyStyle::drawComplexControl(control, option, painter, widget);
+
+            // Then draw a custom border on top
+            QColor borderColor = (option->state & State_HasFocus) ?
+                        QColor(46, 134, 222) : // Focused state color
+                        QColor(108, 108, 108); // Normal state color
+
+            painter->save();
+            painter->setPen(QPen(borderColor, 1));
+            painter->setBrush(Qt::NoBrush);
+            QRect rect = option->rect;
+            rect.adjust(0, 1, -1, -2); // Adjust the rectangle boundaries slightly
+            // painter->drawRect(rect);
+            painter->drawRoundedRect(rect, 2, 2); // Draw with 2px corner radius
+            painter->restore();
+
+            return;
+        }
+    }
+
+    QProxyStyle::drawComplexControl(control, option, painter, widget);
 }
 
 void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()

@@ -21,6 +21,7 @@
 #endif
 #include <QOperatingSystemVersion>
 #include <QStyleFactory>
+#include <QProxyStyle>
 #include <QFontDatabase>
 #include <QStyledItemDelegate>
 #include <QMenu>
@@ -501,6 +502,14 @@ private:
     int m_MenuItem_Pressed;
 };
 
+class CustomSpinBoxStyle : public QProxyStyle
+{
+public:
+    using QProxyStyle::QProxyStyle;
+
+    void drawComplexControl(ComplexControl control, const QStyleOptionComplex *option, QPainter *painter, const QWidget *widget = nullptr) const override;
+};
+
 class CustomMessageBox : public QDialog {
     Q_OBJECT
 
@@ -681,6 +690,9 @@ public:
     QPushButton* getMapListSelectMouseButton(void) const;
     QPushButton* getMapListSelectGamepadButton(void) const;
     QPushButton* getMapListSelectFunctionButton(void) const;
+
+    int getCurrentUIPalette(void);
+    CustomSpinBoxStyle* getCustomSpinBoxStyle(void) const;
 
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);
@@ -1311,6 +1323,7 @@ private:
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
+    CustomSpinBoxStyle *m_CustomSpinBoxStyle = Q_NULLPTR;
 };
 
 class ScopedTrayUpdater {
