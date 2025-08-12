@@ -16322,14 +16322,14 @@ void QKeyMapper::setUITheme(int themeindex)
             }
             QTableView::indicator {
                 border: 1px solid rgb(108, 108, 108);
-                background-color: rgb(55, 55, 55);
+                background-color: rgb(60, 60, 60);
             }
             QTableView::indicator:checked {
                 image: url(:/checked.svg);
             }
             QTableView::indicator:disabled {
                 border: 1px solid rgb(86, 86, 86);
-                background-color: rgb(48, 48, 48);
+                background-color: rgb(50, 50, 50);
             }
             QTableView::indicator:checked:disabled {
                 image: url(:/checked_disabled.svg);
@@ -16342,14 +16342,14 @@ void QKeyMapper::setUITheme(int themeindex)
                 width: 13px;
                 height: 13px;
                 border: 1px solid rgb(108, 108, 108);
-                background-color: rgb(55, 55, 55);
+                background-color: rgb(60, 60, 60);
             }
             QCheckBox::indicator:checked {
                 image: url(:/checked.svg);
             }
             QCheckBox::indicator:disabled {
                 border: 1px solid rgb(86, 86, 86);
-                background-color: rgb(48, 48, 48);
+                background-color: rgb(50, 50, 50);
             }
             QCheckBox::indicator:checked:disabled {
                 image: url(:/checked_disabled.svg);
@@ -16358,11 +16358,11 @@ void QKeyMapper::setUITheme(int themeindex)
             QLineEdit {
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
-                background-color: rgb(55, 55, 55);
+                background-color: rgb(60, 60, 60);
             }
             QLineEdit:disabled {
                 border: 1px solid rgb(86, 86, 86);
-                background-color: rgb(48, 48, 48);
+                background-color: rgb(50, 50, 50);
             }
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
