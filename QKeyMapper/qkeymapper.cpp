@@ -14370,7 +14370,7 @@ void QKeyMapper::clearLockStatusDisplay()
     int rowCount = m_KeyMappingDataTable->rowCount();
 
     for (int row = 0; row < rowCount; ++row) {
-        m_KeyMappingDataTable->item(row, LOCK_COLUMN)->setForeground(Qt::black);
+        m_KeyMappingDataTable->item(row, LOCK_COLUMN)->setForeground(QBrush());
     }
 }
 
@@ -16461,13 +16461,13 @@ void QKeyMapper::updateLockStatusDisplay()
                     m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setForeground(QBrush(STATUS_ON_COLOR));
                 }
                 else {
-                    m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
+                    m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setForeground(QBrush());
                 }
             }
         }
         else {
             // m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setText(QString());
-            m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setForeground(Qt::black);
+            m_KeyMappingDataTable->item(rowindex, LOCK_COLUMN)->setForeground(QBrush());
         }
 
         rowindex += 1;
