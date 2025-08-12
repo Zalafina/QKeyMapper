@@ -502,6 +502,7 @@ private:
     int m_MenuItem_Pressed;
 };
 
+#ifdef USE_CUSTOMSTYLE
 class CustomSpinBoxStyle : public QProxyStyle
 {
 public:
@@ -509,6 +510,7 @@ public:
 
     void drawComplexControl(ComplexControl control, const QStyleOptionComplex *option, QPainter *painter, const QWidget *widget = nullptr) const override;
 };
+#endif
 
 class CustomMessageBox : public QDialog {
     Q_OBJECT
@@ -692,7 +694,9 @@ public:
     QPushButton* getMapListSelectFunctionButton(void) const;
 
     int getCurrentUIPalette(void);
+#ifdef USE_CUSTOMSTYLE
     CustomSpinBoxStyle* getCustomSpinBoxStyle(void) const;
+#endif
 
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);
@@ -1323,7 +1327,9 @@ private:
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
+#ifdef USE_CUSTOMSTYLE
     CustomSpinBoxStyle *m_CustomSpinBoxStyle = Q_NULLPTR;
+#endif
 };
 
 class ScopedTrayUpdater {

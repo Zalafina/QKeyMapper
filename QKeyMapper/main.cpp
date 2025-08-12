@@ -182,6 +182,13 @@ void setupQtScaleEnvironment(const QString &program_dir)
     constexpr double SCALE_175 = 1.75;
     constexpr double SCALE_200 = 2.0;
 
+    HDC hdc = GetDC(NULL);
+    int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
+    int height = GetDeviceCaps(hdc, DESKTOPVERTRES);
+    Q_UNUSED(height);
+    ReleaseDC(NULL, hdc);
+
+    bool high_dpi = false;
     double scale_value = 0;
     switch (display_scale) {
     case DISPLAY_SCALE_PERCENT_100:
@@ -191,23 +198,27 @@ void setupQtScaleEnvironment(const QString &program_dir)
     case DISPLAY_SCALE_PERCENT_125:
         scale_value = SCALE_125;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        high_dpi = true;
         break;
     case DISPLAY_SCALE_PERCENT_150:
         scale_value = SCALE_150;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        // QKeyMapper::m_UI_Scale = UI_SCALE_4K_PERCENT_150;
+        high_dpi = true;
         break;
     case DISPLAY_SCALE_PERCENT_175:
         scale_value = SCALE_175;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        // QKeyMapper::m_UI_Scale = UI_SCALE_4K_PERCENT_150;
+        high_dpi = true;
         break;
     case DISPLAY_SCALE_PERCENT_200:
         scale_value = SCALE_200;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        // QKeyMapper::m_UI_Scale = UI_SCALE_4K_PERCENT_150;
+        high_dpi = true;
         break;
     default:
+        if (width >= 3840) {
+            high_dpi = true;
+        }
         break;
     }
 
@@ -218,13 +229,14 @@ void setupQtScaleEnvironment(const QString &program_dir)
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    // if (Flag_4K == true) {
-    //     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Ceil);
-    // }
-    // else {
-    //     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
-    // }
+    if (high_dpi) {
+        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Ceil);
+    }
+    else {
+        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+    }
 #else
+    Q_UNUSED(high_dpi);
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 }

@@ -113,7 +113,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_instance = this;
     ui->setupUi(this);
 
+#ifdef USE_CUSTOMSTYLE
     m_CustomSpinBoxStyle = new CustomSpinBoxStyle(QApplication::style());
+#endif
 
     // Explicitly create the native MainWindow HWND at startup.
     // This ensures that even if the application is minimized to system tray at startup,
@@ -129,7 +131,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingTabWidget->setStyle(windowsStyle);
     ui->pushLevelSlider->setStyle(windowsStyle);
 
+#ifdef USE_CUSTOMSTYLE
     ui->waitTimeSpinBox->setStyle(getCustomSpinBoxStyle());
+#endif
 
     // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
     for (int tabindex = 0; tabindex < ui->settingTabWidget->count(); ++tabindex) {
@@ -1544,10 +1548,12 @@ int QKeyMapper::getCurrentUIPalette()
     return m_Current_UIPalette;
 }
 
+#ifdef USE_CUSTOMSTYLE
 CustomSpinBoxStyle *QKeyMapper::getCustomSpinBoxStyle() const
 {
     return m_CustomSpinBoxStyle;
 }
+#endif
 
 QString QKeyMapper::getExeFileDescription()
 {
@@ -20437,6 +20443,7 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
     // QMenu::mouseReleaseEvent(event);
 }
 
+#ifdef USE_CUSTOMSTYLE
 void CustomSpinBoxStyle::drawComplexControl(ComplexControl control, const QStyleOptionComplex *option, QPainter *painter, const QWidget *widget) const
 {
     if (control == CC_SpinBox) {
@@ -20452,12 +20459,22 @@ void CustomSpinBoxStyle::drawComplexControl(ComplexControl control, const QStyle
                         QColor(108, 108, 108); // Normal state color
 
             painter->save();
-            painter->setPen(QPen(borderColor, 1));
+
+            // painter->setPen(QPen(borderColor, 1));
+            // Get device pixel ratio (for high DPI scaling)
+            qreal dpr = painter->device()->devicePixelRatioF();
+
+            // Set line width in logical pixels (1px at 100% scaling)
+            QPen pen(borderColor);
+            pen.setWidthF(1.0 / dpr); // Keep visual thickness consistent
+            painter->setPen(pen);
+
             painter->setBrush(Qt::NoBrush);
             QRect rect = option->rect;
-            rect.adjust(0, 1, -1, -2); // Adjust the rectangle boundaries slightly
-            // painter->drawRect(rect);
-            painter->drawRoundedRect(rect, 2, 2); // Draw with 2px corner radius
+            rect.adjust(1, 2, -1, -2); // Adjust the rectangle boundaries slightly
+            // painter->setRenderHint(QPainter::Antialiasing, true);
+            painter->drawRect(rect);
+            // painter->drawRoundedRect(rect, 2, 2); // Draw with 2px corner radius
             painter->restore();
 
             return;
@@ -20466,6 +20483,7 @@ void CustomSpinBoxStyle::drawComplexControl(ComplexControl control, const QStyle
 
     QProxyStyle::drawComplexControl(control, option, painter, widget);
 }
+#endif
 
 void QKeyMapper::on_Gyro2MouseAdvancedSettingButton_clicked()
 {
