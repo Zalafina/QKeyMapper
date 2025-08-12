@@ -13308,7 +13308,7 @@ void QKeyMapper::updateGamepadSelectComboBox(int instance_id)
         for (int row = 0; row < model->rowCount(); ++row) {
             QStandardItem *item = model->item(row);
             if (item && item->text().endsWith("[ViGEM]")) {
-                item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
+                item->setData(SPECIAL_COLOR_COMBOBOX_TEXT, Qt::ForegroundRole);
             }
         }
     }

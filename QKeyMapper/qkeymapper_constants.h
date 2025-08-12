@@ -261,6 +261,14 @@ namespace QKeyMapperConstants {
     inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE[]  = "None";
     inline constexpr int FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX = 0;
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor SPECIAL_COLOR_COMBOBOX_TEXT = QColor(46, 134, 222);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor SPECIAL_COLOR_COMBOBOX_TEXT = QColor(46, 134, 222);
+#endif
+
     inline constexpr const char CROSSHAIR_CENTERCOLOR_DEFAULT[] = "70a1ff";
     inline constexpr const char CROSSHAIR_CROSSHAIRCOLOR_DEFAULT[] = "70a1ff";
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
