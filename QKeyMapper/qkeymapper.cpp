@@ -16236,8 +16236,8 @@ void QKeyMapper::setUITheme(int themeindex)
         lightPalette.setColor(QPalette::Button, QColor(240, 240, 240));
         lightPalette.setColor(QPalette::ButtonText, Qt::black);
         lightPalette.setColor(QPalette::BrightText, Qt::red);
-        lightPalette.setColor(QPalette::Highlight, QColor(46, 134, 222));
-        lightPalette.setColor(QPalette::HighlightedText, Qt::white);
+        lightPalette.setColor(QPalette::Highlight, QColor(173, 208, 255));
+        lightPalette.setColor(QPalette::HighlightedText, Qt::black);
         lightPalette.setColor(QPalette::PlaceholderText, QColor(160, 160, 160));
 
         lightPalette.setColor(QPalette::Shadow, QColor(160, 160, 160));
@@ -16259,6 +16259,10 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected {
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
+            }
+            QLineEdit:focus {
+                border: 1px solid rgb(46, 134, 222);
+                border-radius: 2px;
             }
         )");
 
@@ -16290,7 +16294,7 @@ void QKeyMapper::setUITheme(int themeindex)
         darkPalette.setColor(QPalette::ToolTipText, dark_theme_text_color);
 
         // Highlight selection
-        darkPalette.setColor(QPalette::Highlight, QColor(46, 134, 222));
+        darkPalette.setColor(QPalette::Highlight, QColor(70, 100, 160));
         darkPalette.setColor(QPalette::HighlightedText, dark_theme_text_color);
 
         // Bright accents
@@ -16370,7 +16374,8 @@ void QKeyMapper::setUITheme(int themeindex)
     else {
         QPalette defaultPalette = QApplication::palette();
 
-        defaultPalette.setColor(QPalette::Highlight, QColor(46, 134, 222));
+        defaultPalette.setColor(QPalette::Highlight, QColor(173, 208, 255));
+        defaultPalette.setColor(QPalette::HighlightedText, Qt::black);
 
         QApplication::setPalette(defaultPalette);
 
@@ -16379,6 +16384,10 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected {
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
+            }
+            QLineEdit:focus {
+                border: 1px solid rgb(46, 134, 222);
+                border-radius: 2px;
             }
         )");
 
