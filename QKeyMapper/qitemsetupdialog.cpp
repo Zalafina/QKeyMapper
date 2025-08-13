@@ -166,6 +166,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->itemNoteLabel->setText(tr(ITEMNOTELABEL_STR));
     ui->orikeyListLabel->setText(tr(ORIKEYLISTLABEL_STR));
     ui->mapkeyListLabel->setText(tr(MAPKEYLISTLABEL_STR));
+    ui->keyRecordLabel->setText(tr("KeyRecord"));
     ui->oriList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
     ui->oriList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
     ui->oriList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
