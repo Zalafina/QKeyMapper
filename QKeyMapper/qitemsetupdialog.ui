@@ -91,7 +91,7 @@
   <widget class="QSpinBox" name="burstpressSpinBox">
    <property name="geometry">
     <rect>
-     <x>320</x>
+     <x>315</x>
      <y>240</y>
      <width>85</width>
      <height>21</height>
@@ -107,7 +107,7 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>235</x>
+     <x>230</x>
      <y>240</y>
      <width>81</width>
      <height>21</height>
@@ -125,7 +125,7 @@
     <rect>
      <x>410</x>
      <y>240</y>
-     <width>101</width>
+     <width>91</width>
      <height>21</height>
     </rect>
    </property>
@@ -139,7 +139,7 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>515</x>
+     <x>505</x>
      <y>240</y>
      <width>85</width>
      <height>21</height>
@@ -267,7 +267,7 @@
   <widget class="QCheckBox" name="keySeqHoldDownCheckBox">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>270</x>
      <y>320</y>
      <width>141</width>
      <height>21</height>
@@ -305,7 +305,7 @@
   <widget class="QCheckBox" name="repeatByTimesCheckBox">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>270</x>
      <y>340</y>
      <width>91</width>
      <height>21</height>
@@ -324,7 +324,7 @@
   <widget class="QSpinBox" name="repeatTimesSpinBox">
    <property name="geometry">
     <rect>
-     <x>320</x>
+     <x>350</x>
      <y>340</y>
      <width>85</width>
      <height>22</height>
@@ -385,7 +385,7 @@
   <widget class="QCheckBox" name="mappingKeyUnlockCheckBox">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>270</x>
      <y>260</y>
      <width>161</width>
      <height>21</height>
@@ -512,7 +512,7 @@
   <widget class="QCheckBox" name="unbreakableCheckBox">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>270</x>
      <y>300</y>
      <width>131</width>
      <height>21</height>
@@ -531,7 +531,7 @@
   <widget class="QCheckBox" name="postMappingKeyCheckBox">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>270</x>
      <y>280</y>
      <width>141</width>
      <height>21</height>
@@ -793,7 +793,7 @@
   <widget class="QSpinBox" name="fixedVKeyCodeSpinBox">
    <property name="geometry">
     <rect>
-     <x>540</x>
+     <x>530</x>
      <y>280</y>
      <width>60</width>
      <height>21</height>
@@ -806,9 +806,9 @@
   <widget class="QLabel" name="fixedVKeyCodeLabel">
    <property name="geometry">
     <rect>
-     <x>415</x>
+     <x>425</x>
      <y>280</y>
-     <width>121</width>
+     <width>101</width>
      <height>21</height>
     </rect>
    </property>

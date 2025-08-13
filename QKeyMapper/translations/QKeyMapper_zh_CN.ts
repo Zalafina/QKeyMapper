@@ -701,7 +701,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="487"/>
         <source>Record Keys</source>
-        <translation>按键录制</translation>
+        <translation>连续按键录制</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="506"/>

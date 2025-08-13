@@ -6774,6 +6774,10 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
         return REMOVE_MAPPINGTAB_FAILED;
     }
 
+    if (m_ItemSetupDialog->isVisible()) {
+        m_ItemSetupDialog->close();
+    }
+
     m_KeyMappingTabWidget->blockSignals(true);
     disconnectKeyMappingDataTableConnection();
 
@@ -12714,32 +12718,34 @@ void QKeyMapper::showItemSetupDialog(int tabindex, int row)
         return;
     }
 
-    if (!m_ItemSetupDialog->isVisible()) {
-        // int y_offset = m_KeyMappingDataTable->rowViewportPosition(row);
-        // int width = m_ItemSetupDialog->width();
-        // int height = m_ItemSetupDialog->height();
-        // QPoint globalPos = m_KeyMappingDataTable->mapToGlobal(QPoint(0, 0));
-        // int top = globalPos.y() + y_offset + m_KeyMappingDataTable->horizontalHeader()->height();
-        // int left = globalPos.x() - width - 5;
-        // m_ItemSetupDialog->setGeometry(QRect(left, top, width, height));
-
-        // QRect windowGeometry = this->geometry();
-        // QRect tableGeometry = m_KeyMappingDataTable->geometry();
-        // int x = windowGeometry.x() + (windowGeometry.width() - m_ItemSetupDialog->width()) / 2;
-        // int y = windowGeometry.y() +  tableGeometry.y() + tableGeometry.height() + m_KeyMappingDataTable->horizontalHeader()->height();
-        // m_ItemSetupDialog->move(x, y);
-
-        QRect windowGeometry = this->geometry();
-        int x = windowGeometry.x() + (windowGeometry.width() - m_ItemSetupDialog->width()) / 2;
-        int y = windowGeometry.y() + (windowGeometry.height() - m_ItemSetupDialog->height()) / 2;
-        int y_offset = 50;
-        y += y_offset;
-        m_ItemSetupDialog->move(x, y);
-
-        m_ItemSetupDialog->setTabIndex(tabindex);
-        m_ItemSetupDialog->setItemRow(row);
-        m_ItemSetupDialog->show();
+    if (m_ItemSetupDialog->isVisible()) {
+        m_ItemSetupDialog->close();
     }
+
+    // int y_offset = m_KeyMappingDataTable->rowViewportPosition(row);
+    // int width = m_ItemSetupDialog->width();
+    // int height = m_ItemSetupDialog->height();
+    // QPoint globalPos = m_KeyMappingDataTable->mapToGlobal(QPoint(0, 0));
+    // int top = globalPos.y() + y_offset + m_KeyMappingDataTable->horizontalHeader()->height();
+    // int left = globalPos.x() - width - 5;
+    // m_ItemSetupDialog->setGeometry(QRect(left, top, width, height));
+
+    // QRect windowGeometry = this->geometry();
+    // QRect tableGeometry = m_KeyMappingDataTable->geometry();
+    // int x = windowGeometry.x() + (windowGeometry.width() - m_ItemSetupDialog->width()) / 2;
+    // int y = windowGeometry.y() +  tableGeometry.y() + tableGeometry.height() + m_KeyMappingDataTable->horizontalHeader()->height();
+    // m_ItemSetupDialog->move(x, y);
+
+    QRect windowGeometry = this->geometry();
+    int x = windowGeometry.x() + (windowGeometry.width() - m_ItemSetupDialog->width()) / 2;
+    int y = windowGeometry.y() + (windowGeometry.height() - m_ItemSetupDialog->height()) / 2;
+    int y_offset = 50;
+    y += y_offset;
+    m_ItemSetupDialog->move(x, y);
+
+    m_ItemSetupDialog->setTabIndex(tabindex);
+    m_ItemSetupDialog->setItemRow(row);
+    m_ItemSetupDialog->show();
 }
 
 void QKeyMapper::closeItemSetupDialog()
