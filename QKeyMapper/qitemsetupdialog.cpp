@@ -838,9 +838,36 @@ void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
             QString currentKeyRecordText = ui->keyRecordLineEdit->text();
             if (!currentKeyRecordText.isEmpty()) {
                 if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-                    QString currentMappingKeyText = m_MappingKeyLineEdit->text();
-                    QString currentMappingKey_KeyUpText = m_MappingKey_KeyUpLineEdit->text();
+                    if (s_editingMappingKeyLineEdit == ITEMSETUP_EDITING_KEYUPMAPPINGKEY) {
+                        QString currentMappingKey_KeyUpText = m_MappingKey_KeyUpLineEdit->text();
+                        QString newKeyText;
+                        if (currentMappingKey_KeyUpText.isEmpty()) {
+                            newKeyText = currentKeyRecordText;
+                        }
+                        else {
+                            newKeyText = currentMappingKey_KeyUpText + QString(SEPARATOR_PLUS) + currentKeyRecordText;
+                        }
+                        m_MappingKey_KeyUpLineEdit->setText(newKeyText);
 
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[QItemSetupDialog::mousePressEvent]" << "Set new MappingKey_KeyUp Text ->" << newKeyText;
+#endif
+                    }
+                    else {
+                        QString currentMappingKeyText = m_MappingKeyLineEdit->text();
+                        QString newKeyText;
+                        if (currentMappingKeyText.isEmpty()) {
+                            newKeyText = currentKeyRecordText;
+                        }
+                        else {
+                            newKeyText = currentMappingKeyText + QString(SEPARATOR_PLUS) + currentKeyRecordText;
+                        }
+                        m_MappingKeyLineEdit->setText(newKeyText);
+
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[QItemSetupDialog::mousePressEvent]" << "Set new MappingKey Text ->" << newKeyText;
+#endif
+                    }
                 }
                 else {
                     QString currentOriginalKeyText = ui->originalKeyLineEdit->text();
