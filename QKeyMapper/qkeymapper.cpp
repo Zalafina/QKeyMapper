@@ -6574,7 +6574,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
-    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
@@ -6687,7 +6687,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
-    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
@@ -16290,6 +16290,10 @@ void QKeyMapper::setUITheme(int themeindex)
                 border: 1px solid rgb(46, 134, 222);
                 border-radius: 2px;
             }
+            QCheckBox::indicator {
+                width: 1em;
+                height: 1em;
+            }
         )");
 
         m_Current_UIPalette = UI_PALETTE_CUSTOMLIGHT;
@@ -16368,8 +16372,8 @@ void QKeyMapper::setUITheme(int themeindex)
                 color: rgb(120, 120, 120);
             }
             QCheckBox::indicator {
-                width: 13px;
-                height: 13px;
+                width: 1em;
+                height: 1em;
                 border: 1px solid rgb(108, 108, 108);
                 background-color: rgb(60, 60, 60);
             }
@@ -16420,6 +16424,10 @@ void QKeyMapper::setUITheme(int themeindex)
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
                 border-radius: 2px;
+            }
+            QCheckBox::indicator {
+                width: 1em;
+                height: 1em;
             }
         )");
 
@@ -16810,6 +16818,9 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
 #endif
+    }
+    else if (columnindex == BURST_MODE_COLUMN || columnindex == LOCK_COLUMN) {
+        /* skip */
     }
     else {
         // For all other columns, show the item setup dialog as before
