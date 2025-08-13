@@ -16279,6 +16279,10 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableView {
                 gridline-color: rgb(200, 200, 200);
             }
+            QTableView::indicator {
+                width: 1em;
+                height: 1em;
+            }
             QTableWidget::item:selected {
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
@@ -16351,6 +16355,8 @@ void QKeyMapper::setUITheme(int themeindex)
                 gridline-color: rgb(100, 100, 100);
             }
             QTableView::indicator {
+                width: 1em;
+                height: 1em;
                 border: 1px solid rgb(108, 108, 108);
                 background-color: rgb(60, 60, 60);
             }
@@ -16414,6 +16420,10 @@ void QKeyMapper::setUITheme(int themeindex)
 
         // set QTableWidget selected background-color
         setStyleSheet(R"(
+            QTableView::indicator {
+                width: 1em;
+                height: 1em;
+            }
             QTableWidget::item:selected {
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
