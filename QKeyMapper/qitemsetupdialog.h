@@ -34,6 +34,7 @@ public:
     void updateOriginalKeyListComboBox(void);
     void updateMappingKeyListComboBox(void);
     bool isCrosshairSetupDialogVisible(void);
+    void updateKeyRecordLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
 
 public:
     static QString getOriginalKeyText(void);
@@ -46,12 +47,15 @@ public:
     static QString getCurrentMapKeyListText(void);
     static void setEditingMappingKeyLineEdit(int editing_lineedit);
 
+    QLineEdit *getKeyRecordLineEdit(void);
+
 protected:
     bool event(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    bool eventFilter(QObject *object, QEvent *event) override;
 
 private:
     void initKeyListComboBoxes(void);
@@ -72,6 +76,8 @@ public:
     KeyListComboBox *m_MappingKeyListComboBox;
     KeyStringLineEdit *m_MappingKeyLineEdit;
     KeyStringLineEdit *m_MappingKey_KeyUpLineEdit;
+    int m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
+    bool m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
 
 public:
     static QStringList s_valiedOriginalKeyList;
@@ -100,6 +106,8 @@ private slots:
     void on_unbreakableCheckBox_stateChanged(int state);
     void on_crosshairSetupButton_clicked();
     void on_fixedVKeyCodeSpinBox_valueChanged(int value);
+    void on_keyRecordEditModeButton_clicked();
+    void on_keyRecordLineEdit_textChanged(const QString &text);
 };
 
 class KeyStringLineEdit : public QLineEdit

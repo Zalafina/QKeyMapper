@@ -1315,7 +1315,7 @@ private:
     int m_CrosshairWindowInitialHeight;
     ULONG_PTR m_GdiplusToken;
     bool m_TrayMenuQuit = false;
-    int m_OriginalKeyEditMode = QKeyMapperConstants::ORIGINALKEYEDITMODE_CAPTURE;
+    int m_OriginalKeyEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
     bool m_isOriginalKeyLineEdit_CapturingKey = false;
     bool m_isWindowsDarkMode = false;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_SYSTEMDEFAULT;

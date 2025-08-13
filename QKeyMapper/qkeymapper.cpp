@@ -5980,7 +5980,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         && event->key() == Qt::Key_S
         && QT_KEY_L_CTRL == (event->nativeModifiers() & QT_KEY_L_CTRL)) {
         if (ui->originalKeyRecordLineEdit->hasFocus()
-            && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+            && m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
             /* OriginalKeyRecord Capture Mode need to skip L-Ctrl+S */
         }
         else {
@@ -6158,7 +6158,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
     if (object == ui->originalKeyRecordLineEdit) {
         if (event->type() == QEvent::FocusIn) {
-            if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+            if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
                 ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
             }
             else {
@@ -6170,7 +6170,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
         }
         else if (event->type() == QEvent::ReadOnlyChange
             && ui->originalKeyRecordLineEdit->hasFocus()) {
-            if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+            if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
                 ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
             }
             else {
@@ -7016,7 +7016,7 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
         return;
     }
 
-    if (ui->originalKeyRecordLineEdit->hasFocus() && m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+    if (ui->originalKeyRecordLineEdit->hasFocus() && m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
         // Ignore mouse left clicks when cursor is over originalKeyEditModeButton to prevent unwanted input
         if (!m_isOriginalKeyLineEdit_CapturingKey
             && keycodeString.contains("Mouse-L") && keyupdown == KEY_DOWN) {
@@ -7073,6 +7073,9 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
 #endif
             }
         }
+    }
+    else if (QItemSetupDialog::getInstance()->getKeyRecordLineEdit()->hasFocus() && QItemSetupDialog::getInstance()->m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_CAPTURE) {
+        QItemSetupDialog::getInstance()->updateKeyRecordLineEditWithRealKeyListChanged(keycodeString, keyupdown);
     }
 }
 
@@ -15535,7 +15538,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     updateCategoryFilterComboBox();
 
     ui->addmapdataButton->setText(tr("ADD"));
-    if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_EDIT) {
+    if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
         ui->originalKeyEditModeButton->setText(tr("Capture"));
     }
     else {
@@ -18107,7 +18110,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
 {
     if (objectName() == ORIKEY_COMBOBOX_NAME) {
         if (event->button() == Qt::RightButton
-            && QKeyMapper::getOriginalKeyEditMode() == ORIGINALKEYEDITMODE_EDIT) {
+            && QKeyMapper::getOriginalKeyEditMode() == KEYRECORD_EDITMODE_MANUALEDIT) {
             QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
             QString currentOriKeyRecordText = QKeyMapper::getCurrentOriKeyRecordText();
             if (currentOriKeyText.isEmpty() == false
@@ -20720,8 +20723,8 @@ void QKeyMapper::on_originalKeyEditModeButton_clicked()
         return;
     }
 
-    if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_EDIT) {
-        m_OriginalKeyEditMode = ORIGINALKEYEDITMODE_CAPTURE;
+    if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
+        m_OriginalKeyEditMode = KEYRECORD_EDITMODE_CAPTURE;
         ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
         ui->originalKeyRecordLineEdit->clear();
         ui->originalKeyRecordLineEdit->setReadOnly(true);
@@ -20729,7 +20732,7 @@ void QKeyMapper::on_originalKeyEditModeButton_clicked()
         ui->originalKeyEditModeButton->setText(tr("Edit"));
     }
     else {
-        m_OriginalKeyEditMode = ORIGINALKEYEDITMODE_EDIT;
+        m_OriginalKeyEditMode = KEYRECORD_EDITMODE_MANUALEDIT;
         ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
         ui->originalKeyRecordLineEdit->setReadOnly(false);
         ui->originalKeyRecordLineEdit->setFocus();
@@ -20743,7 +20746,7 @@ void QKeyMapper::on_originalKeyRecordLineEdit_textChanged(const QString &text)
     Q_UNUSED(text);
     bool set_place_holder = false;
     if (m_KeyMapStatus == KEYMAP_IDLE) {
-        if (m_OriginalKeyEditMode == ORIGINALKEYEDITMODE_CAPTURE) {
+        if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
             if (ui->originalKeyRecordLineEdit->hasFocus()) {
                 set_place_holder = true;
             }

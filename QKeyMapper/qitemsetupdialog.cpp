@@ -24,6 +24,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    ui->keyRecordLineEdit->installEventFilter(this);
+
     m_KeyRecordDialog = new QKeyRecord(this);
     m_KeyRecordDialog->setWindowFlags(Qt::Popup);
 
@@ -96,6 +98,10 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     // ui->mappingKeyLineEdit->setReadOnly(true);
     // ui->originalKeyUpdateButton->setVisible(false);
     // ui->mappingKeyUpdateButton->setVisible(false);
+
+    ui->keyRecordLineEdit->setReadOnly(true);
+    ui->keyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->keyRecordEditModeButton->setText(tr("Edit"));
 
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_originalKeyUpdateButton_clicked);
     QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
@@ -176,6 +182,16 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
     ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
+
+    if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
+        ui->keyRecordEditModeButton->setText(tr("Capture"));
+    }
+    else {
+        ui->keyRecordEditModeButton->setText(tr("Edit"));
+    }
+    if (!ui->keyRecordLineEdit->placeholderText().isEmpty()) {
+        ui->keyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+    }
 
     ui->burstpressSpinBox->setSuffix(tr(" ms"));
     ui->burstreleaseSpinBox->setSuffix(tr(" ms"));
@@ -319,6 +335,67 @@ bool QItemSetupDialog::isCrosshairSetupDialogVisible()
     }
 }
 
+void QItemSetupDialog::updateKeyRecordLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown)
+{
+    // Ignore mouse left clicks when cursor is over originalKeyEditModeButton to prevent unwanted input
+    if (!m_isItemSetupKeyRecordLineEdit_CapturingKey
+        && (keycodeString.contains("Mouse-L") || keycodeString.contains("Mouse-R"))
+        && keyupdown == KEY_DOWN) {
+
+        // Get current mouse cursor position
+        QPoint globalMousePos = QCursor::pos();
+
+        // Get originalKeyEditModeButton's global position and size
+        QPoint lineEditGlobalPos = ui->keyRecordLineEdit->mapToGlobal(QPoint(0, 0));
+        QRect lineEditGlobalRect(lineEditGlobalPos, ui->keyRecordLineEdit->size());
+
+        // Check if mouse cursor is within lineedit area
+        if (!lineEditGlobalRect.contains(globalMousePos)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Ignoring Mouse-L & Mouse-R click outside keyRecordLineEdit area";
+            qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Mouse pos:" << globalMousePos << "Button rect:" << lineEditGlobalRect;
+#endif
+            return;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << keycodeString << (keyupdown == KEY_DOWN?"KeyDown":"KeyUp");
+    qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << "pressedRealKeysListRemoveMultiInput ->" << QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+#endif
+
+    // Start capturing when first key is pressed
+    if (!m_isItemSetupKeyRecordLineEdit_CapturingKey && keyupdown == KEY_DOWN) {
+        ui->keyRecordLineEdit->clear();
+        m_isItemSetupKeyRecordLineEdit_CapturingKey = true;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Start capturing keys";
+#endif
+    }
+
+    if (keyupdown == KEY_DOWN) {
+        // Handle key press - update the OriginalKey LineEdit display
+        if (m_isItemSetupKeyRecordLineEdit_CapturingKey) {
+            QStringList pressedRealKeys = QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+            pressedRealKeys.removeAll(GAMEPAD_HOME_STR);
+            QString updatedOriginalKeyString = pressedRealKeys.join(SEPARATOR_PLUS);
+            ui->keyRecordLineEdit->setText(updatedOriginalKeyString);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Updated OriginalKeyString :" << updatedOriginalKeyString;
+#endif
+        }
+    }
+    else { /* keyupdown == KEY_UP */
+        if (m_isItemSetupKeyRecordLineEdit_CapturingKey && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.isEmpty()) {
+            m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] End capturing keys, final OriginalKeyString:" << ui->keyRecordLineEdit->text();
+#endif
+        }
+    }
+}
+
 QString QItemSetupDialog::getOriginalKeyText()
 {
     return getInstance()->ui->originalKeyLineEdit->text();
@@ -390,6 +467,11 @@ void QItemSetupDialog::setEditingMappingKeyLineEdit(int editing_lineedit)
     }
 }
 
+QLineEdit *QItemSetupDialog::getKeyRecordLineEdit()
+{
+    return ui->keyRecordLineEdit;
+}
+
 bool QItemSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -428,11 +510,23 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
         on_repeatTimesSpinBox_editingFinished();
     }
 
+    m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
+    m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
+    ui->keyRecordLineEdit->clear();
+    ui->keyRecordLineEdit->setReadOnly(true);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QItemSetupDialog::closeEvent]" << "Item Row initialize to -1, Tab Index initialize to -1";
 #endif
     m_ItemRow = -1;
     m_TabIndex = -1;
+
+    if (focusedWidget && focusedWidget != this) {
+        focusedWidget->clearFocus();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QItemSetupDialog::closeEvent]" << "Clear current Focus on closed.";
+#endif
+    }
 
     emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
 
@@ -642,6 +736,11 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
         }
 
+        m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
+        m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
+        ui->keyRecordLineEdit->clear();
+        ui->keyRecordLineEdit->setReadOnly(true);
+
         QTimer::singleShot(100, this, [=]() {
             QWidget *focused = focusWidget();
             if (focused && focused != this) {
@@ -722,8 +821,77 @@ void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
             focused->clearFocus();
         }
     }
+    else if (event->button() == Qt::RightButton) {
+        // Mouse position in dialog coordinates
+        QPoint localPos = event->position().toPoint();
+
+        // Map button's rect to dialog coordinates
+        QRect buttonRectInParent = QRect(
+            ui->keyRecordEditModeButton->mapTo(this, QPoint(0, 0)),
+            ui->keyRecordEditModeButton->size()
+            );
+
+        if (buttonRectInParent.contains(localPos)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QItemSetupDialog::mousePressEvent] Mouse-R click inside keyRecordEditModeButton area";
+#endif
+            QString currentKeyRecordText = ui->keyRecordLineEdit->text();
+            if (!currentKeyRecordText.isEmpty()) {
+                if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                    QString currentMappingKeyText = m_MappingKeyLineEdit->text();
+                    QString currentMappingKey_KeyUpText = m_MappingKey_KeyUpLineEdit->text();
+
+                }
+                else {
+                    QString currentOriginalKeyText = ui->originalKeyLineEdit->text();
+                    QString newKeyText;
+                    if (currentOriginalKeyText.isEmpty()) {
+                        newKeyText = currentKeyRecordText;
+                    }
+                    else {
+                        newKeyText = currentOriginalKeyText + QString(SEPARATOR_PLUS) + currentKeyRecordText;
+                    }
+                    ui->originalKeyLineEdit->setText(newKeyText);
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[QItemSetupDialog::mousePressEvent]" << "Set new OriginalKeyText ->" << newKeyText;
+#endif
+                }
+            }
+
+            return;
+        }
+    }
 
     QDialog::mousePressEvent(event);
+}
+
+bool QItemSetupDialog::eventFilter(QObject *object, QEvent *event)
+{
+    if (object == ui->keyRecordLineEdit) {
+        if (event->type() == QEvent::FocusIn) {
+            if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_CAPTURE) {
+                ui->keyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+            }
+            else {
+                ui->keyRecordLineEdit->setPlaceholderText(QString());
+            }
+        }
+        else if (event->type() == QEvent::FocusOut) {
+            ui->keyRecordLineEdit->setPlaceholderText(QString());
+        }
+        else if (event->type() == QEvent::ReadOnlyChange
+                 && ui->keyRecordLineEdit->hasFocus()) {
+            if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_CAPTURE) {
+                ui->keyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+            }
+            else {
+                ui->keyRecordLineEdit->setPlaceholderText(QString());
+            }
+        }
+    }
+
+    return QDialog::eventFilter(object, event);
 }
 
 void QItemSetupDialog::initKeyListComboBoxes()
@@ -1842,4 +2010,52 @@ void QItemSetupDialog::on_fixedVKeyCodeSpinBox_valueChanged(int value)
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] FixedVKeyCode -> " << fixedvkeycodeStr;
 #endif
     }
+}
+
+void QItemSetupDialog::on_keyRecordEditModeButton_clicked()
+{
+    m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        ui->keyRecordLineEdit->clear();
+        return;
+    }
+
+    if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
+        m_ItemSetupKeyRecordEditMode = KEYRECORD_EDITMODE_CAPTURE;
+        ui->keyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+        ui->keyRecordLineEdit->clear();
+        ui->keyRecordLineEdit->setReadOnly(true);
+        ui->keyRecordLineEdit->setFocus();
+        ui->keyRecordEditModeButton->setText(tr("Edit"));
+    }
+    else {
+        m_ItemSetupKeyRecordEditMode = KEYRECORD_EDITMODE_MANUALEDIT;
+        ui->keyRecordLineEdit->setPlaceholderText(QString());
+        ui->keyRecordLineEdit->setReadOnly(false);
+        ui->keyRecordLineEdit->setFocus();
+        ui->keyRecordLineEdit->setCursorPosition(ui->keyRecordLineEdit->text().length());
+        ui->keyRecordEditModeButton->setText(tr("Capture"));
+    }
+}
+
+void QItemSetupDialog::on_keyRecordLineEdit_textChanged(const QString &text)
+{
+    Q_UNUSED(text);
+    bool set_place_holder = false;
+    if (QKeyMapper::getInstance()->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE) {
+        if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_CAPTURE) {
+            if (ui->keyRecordLineEdit->hasFocus()) {
+                set_place_holder = true;
+            }
+        }
+    }
+
+    if (set_place_holder) {
+        ui->keyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
+    }
+    else {
+        ui->keyRecordLineEdit->setPlaceholderText(QString());
+    }
+
+    ui->keyRecordLineEdit->setToolTip(ui->keyRecordLineEdit->text());
 }
