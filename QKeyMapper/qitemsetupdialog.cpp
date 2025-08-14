@@ -1535,10 +1535,16 @@ void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
 
+    int tabindex = m_TabIndex;
     bool burst = ui->burstCheckBox->isChecked();
     if (burst != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = burst;
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst -> " << burst;
 #endif
@@ -1552,10 +1558,16 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
 
+    int tabindex = m_TabIndex;
     bool lock = ui->lockCheckBox->isChecked();
     if (lock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = lock;
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Lock -> " << lock;
 #endif
@@ -1604,10 +1616,16 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
 
+    int tabindex = m_TabIndex;
     bool passthrough = ui->passThroughCheckBox->isChecked();
     if (passthrough != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PassThrough) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PassThrough = passthrough;
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
 #endif
