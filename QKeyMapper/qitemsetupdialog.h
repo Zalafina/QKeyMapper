@@ -87,8 +87,8 @@ public:
     static int s_editingMappingKeyLineEdit;
 
 private slots:
-    void on_burstpressSpinBox_editingFinished();
-    void on_burstreleaseSpinBox_editingFinished();
+    void on_burstpressSpinBox_valueChanged(int value);
+    void on_burstreleaseSpinBox_valueChanged(int value);
     void on_burstCheckBox_stateChanged(int state);
     void on_lockCheckBox_stateChanged(int state);
     void on_sendTimingComboBox_currentIndexChanged(int index);
@@ -101,7 +101,7 @@ private slots:
     void on_recordKeysButton_clicked();
     void on_repeatByKeyCheckBox_stateChanged(int state);
     void on_repeatByTimesCheckBox_stateChanged(int state);
-    void on_repeatTimesSpinBox_editingFinished();
+    void on_repeatTimesSpinBox_valueChanged(int value);
     void on_itemNoteUpdateButton_clicked();
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
     void on_postMappingKeyCheckBox_stateChanged(int state);

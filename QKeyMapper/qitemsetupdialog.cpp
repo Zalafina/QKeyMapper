@@ -492,27 +492,6 @@ bool QItemSetupDialog::event(QEvent *event)
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)
 {
-    QWidget *focusedWidget = this->focusWidget();
-
-    if (focusedWidget == ui->burstpressSpinBox) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QItemSetupDialog::closeEvent]" << "burstpressSpinBox focused, call editingFinished()";
-#endif
-        on_burstpressSpinBox_editingFinished();
-    }
-    else if (focusedWidget == ui->burstreleaseSpinBox) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QItemSetupDialog::closeEvent]" << "burstreleaseSpinBox focused, call editingFinished()";
-#endif
-        on_burstreleaseSpinBox_editingFinished();
-    }
-    else if (focusedWidget == ui->repeatTimesSpinBox) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QItemSetupDialog::closeEvent]" << "repeatTimesSpinBox focused, call editingFinished()";
-#endif
-        on_repeatTimesSpinBox_editingFinished();
-    }
-
     m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
     m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
     ui->keyRecordLineEdit->clear();
@@ -524,6 +503,7 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
     m_ItemRow = -1;
     m_TabIndex = -1;
 
+    QWidget *focusedWidget = focusWidget();
     if (focusedWidget && focusedWidget != this) {
         focusedWidget->clearFocus();
 #ifdef DEBUG_LOGOUT_ON
@@ -1514,8 +1494,9 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
     return value_changed;
 }
 
-void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
+void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)
 {
+    Q_UNUSED(value);
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
@@ -1525,14 +1506,15 @@ void QItemSetupDialog::on_burstpressSpinBox_editingFinished()
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstPressTime) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstPressTime = current_value;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_burstpressSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
+        qDebug().nospace().noquote() << "[on_burstpressSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
 #endif
     }
 }
 
 
-void QItemSetupDialog::on_burstreleaseSpinBox_editingFinished()
+void QItemSetupDialog::on_burstreleaseSpinBox_valueChanged(int value)
 {
+    Q_UNUSED(value);
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
@@ -1542,11 +1524,10 @@ void QItemSetupDialog::on_burstreleaseSpinBox_editingFinished()
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstReleaseTime) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstReleaseTime = current_value;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
+        qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
 #endif
     }
 }
-
 
 void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
 {
@@ -1886,8 +1867,9 @@ void QItemSetupDialog::on_repeatByTimesCheckBox_stateChanged(int state)
     }
 }
 
-void QItemSetupDialog::on_repeatTimesSpinBox_editingFinished()
+void QItemSetupDialog::on_repeatTimesSpinBox_valueChanged(int value)
 {
+    Q_UNUSED(value);
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
@@ -1897,7 +1879,7 @@ void QItemSetupDialog::on_repeatTimesSpinBox_editingFinished()
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatTimes) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatTimes = current_value;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_repeatTimesSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") Repeat Times -> " << current_value;
+        qDebug().nospace().noquote() << "[on_repeatTimesSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") Repeat Times -> " << current_value;
 #endif
     }
 }
