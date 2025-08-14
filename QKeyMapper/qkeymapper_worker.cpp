@@ -8116,10 +8116,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 }
 #endif
 
-                QString mousePassThroughSwitchKey = QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey;
                 if ((QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
                     || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus)
-                    && (keycodeString == mousePassThroughSwitchKey)) {
+                    && (keycodeString == QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey)) {
                     emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
                 }
                 else if (keycodeString == SHOW_POINTS_IN_SCREEN_KEY) {

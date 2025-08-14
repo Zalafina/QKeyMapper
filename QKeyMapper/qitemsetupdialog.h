@@ -86,6 +86,9 @@ public:
     static QStringList s_valiedMappingKeyList;
     static int s_editingMappingKeyLineEdit;
 
+public slots:
+    void keyMappingTableItemCheckStateChanged(int row, int col, bool checked);
+
 private slots:
     void on_burstpressSpinBox_valueChanged(int value);
     void on_burstreleaseSpinBox_valueChanged(int value);

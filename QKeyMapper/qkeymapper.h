@@ -848,6 +848,7 @@ signals:
     void updateKeyComboBoxWithJoystickKey_Signal(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged_Signal(const QString &keycodeString, int keyupdown);
     void systemThemeChanged_Signal(void);
+    void keyMappingTableItemCheckStateChanged_Signal(int row, int col, bool checked);
 
 protected:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

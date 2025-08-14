@@ -551,6 +551,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal, m_ItemSetupDialog, &QItemSetupDialog::keyMappingTableItemCheckStateChanged);
 
     updateHWNDListProc();
     refreshProcessInfoTable();
@@ -7374,6 +7375,8 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
         if (burst != KeyMappingDataList->at(row).Burst) {
             (*KeyMappingDataList)[row].Burst = burst;
+            emit keyMappingTableItemCheckStateChanged_Signal(row, col, burst);
+
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) burst changed to (%s)", __func__, row, burst == true?"ON":"OFF");
 #endif
@@ -7390,6 +7393,8 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
         if (lock != KeyMappingDataList->at(row).Lock) {
             (*KeyMappingDataList)[row].Lock = lock;
+            emit keyMappingTableItemCheckStateChanged_Signal(row, col, lock);
+
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
 #endif

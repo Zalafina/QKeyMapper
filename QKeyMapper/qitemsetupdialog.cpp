@@ -1494,6 +1494,39 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
     return value_changed;
 }
 
+void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bool checked)
+{
+    Q_UNUSED(checked);
+    if (row < 0 || row >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    if (row != m_ItemRow) {
+        return;
+    }
+
+    if (col == BURST_MODE_COLUMN) {
+        bool burst = ui->burstCheckBox->isChecked();
+        if (burst != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst) {
+            ui->burstCheckBox->setChecked(QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Sync Burst check state -> " << QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst;
+#endif
+        }
+    }
+    else if (col == LOCK_COLUMN) {
+        bool lock = ui->lockCheckBox->isChecked();
+        if (lock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock) {
+            ui->lockCheckBox->setChecked(QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Sync Lock checkstate -> " << QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock;
+#endif
+        }
+    }
+}
+
 void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)
 {
     Q_UNUSED(value);
