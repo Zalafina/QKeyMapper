@@ -343,6 +343,7 @@ bool QTableSetupDialog::isFloatingWindowSetupDialogVisible()
     }
 }
 
+#ifndef CLOSE_SETUPDIALOG_ONDATACHANGED
 bool QTableSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -358,6 +359,7 @@ bool QTableSetupDialog::event(QEvent *event)
     }
     return QDialog::event(event);
 }
+#endif
 
 void QTableSetupDialog::closeEvent(QCloseEvent *event)
 {

@@ -473,6 +473,7 @@ QLineEdit *QItemSetupDialog::getKeyRecordLineEdit()
     return ui->keyRecordLineEdit;
 }
 
+#ifndef CLOSE_SETUPDIALOG_ONDATACHANGED
 bool QItemSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -487,6 +488,7 @@ bool QItemSetupDialog::event(QEvent *event)
     }
     return QDialog::event(event);
 }
+#endif
 
 void QItemSetupDialog::closeEvent(QCloseEvent *event)
 {

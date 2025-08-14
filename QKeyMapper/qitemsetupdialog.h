@@ -50,7 +50,9 @@ public:
     QLineEdit *getKeyRecordLineEdit(void);
 
 protected:
+#ifndef CLOSE_SETUPDIALOG_ONDATACHANGED
     bool event(QEvent *event) override;
+#endif
     void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;

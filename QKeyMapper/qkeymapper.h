@@ -697,6 +697,9 @@ public:
 #ifdef USE_CUSTOMSTYLE
     CustomSpinBoxStyle* getCustomSpinBoxStyle(void) const;
 #endif
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    void closeSetupDialog_OnDataChanged(void);
+#endif
 
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);

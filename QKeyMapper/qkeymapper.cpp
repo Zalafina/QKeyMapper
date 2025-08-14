@@ -1548,6 +1548,23 @@ int QKeyMapper::getCurrentUIPalette()
     return m_Current_UIPalette;
 }
 
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+void QKeyMapper::closeSetupDialog_OnDataChanged()
+{
+    if (m_ItemSetupDialog != Q_NULLPTR) {
+        if (m_ItemSetupDialog->isVisible()) {
+            m_ItemSetupDialog->close();
+        }
+    }
+
+    if (m_TableSetupDialog != Q_NULLPTR) {
+        if (m_TableSetupDialog->isVisible()) {
+            m_TableSetupDialog->close();
+        }
+    }
+}
+#endif
+
 #ifdef USE_CUSTOMSTYLE
 CustomSpinBoxStyle *QKeyMapper::getCustomSpinBoxStyle() const
 {
@@ -6774,9 +6791,9 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
         return REMOVE_MAPPINGTAB_FAILED;
     }
 
-    if (m_ItemSetupDialog->isVisible()) {
-        m_ItemSetupDialog->close();
-    }
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
 
     m_KeyMappingTabWidget->blockSignals(true);
     disconnectKeyMappingDataTableConnection();
@@ -6830,6 +6847,10 @@ void QKeyMapper::moveTabInKeyMappingTabWidget(int from, int to)
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[moveTabInKeyMappingTabWidget] Moving tab from" << from << "to" << to;
+#endif
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
 #endif
 
     // Block signals to prevent recursion
@@ -6910,6 +6931,10 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList()
     if (s_CopiedMappingData.isEmpty()) {
         return inserted_count;
     }
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
 
     QList<MAP_KEYDATA> insertMappingDataList;
     for (const MAP_KEYDATA &keymapdata : s_CopiedMappingData) {
@@ -7817,6 +7842,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 {
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -8775,6 +8804,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 
 QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 {
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
     bool loadDefault = false;
     bool loadGlobalSetting = false;
     bool initKeyMappingTable = false;
@@ -12795,18 +12828,20 @@ void QKeyMapper::showTableSetupDialog(int tabindex)
         return;
     }
 
-    if (!m_TableSetupDialog->isVisible()) {
-        QRect windowGeometry = this->geometry();
-        int x = windowGeometry.x() + (windowGeometry.width() - m_TableSetupDialog->width()) / 2;
-        int y = windowGeometry.y() + (windowGeometry.height() - m_TableSetupDialog->height()) / 2;
-        int y_offset = -150;
-        y += y_offset;
-        m_TableSetupDialog->move(x, y);
-
-        m_TableSetupDialog->setTabIndex(tabindex);
-        m_TableSetupDialog->setSettingSelectIndex(ui->settingselectComboBox->currentIndex());
-        m_TableSetupDialog->show();
+    if (m_TableSetupDialog->isVisible()) {
+        m_TableSetupDialog->close();
     }
+
+    QRect windowGeometry = this->geometry();
+    int x = windowGeometry.x() + (windowGeometry.width() - m_TableSetupDialog->width()) / 2;
+    int y = windowGeometry.y() + (windowGeometry.height() - m_TableSetupDialog->height()) / 2;
+    int y_offset = 50;
+    y += y_offset;
+    m_TableSetupDialog->move(x, y);
+
+    m_TableSetupDialog->setTabIndex(tabindex);
+    m_TableSetupDialog->setSettingSelectIndex(ui->settingselectComboBox->currentIndex());
+    m_TableSetupDialog->show();
 }
 
 void QKeyMapper::closeTableSetupDialog()
@@ -16754,6 +16789,10 @@ void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
 
 void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
 {
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
     if (0 <= index && index < m_KeyMappingTabWidget->count()) {
         disconnectKeyMappingDataTableConnection();
         switchKeyMappingTabIndex(index);
@@ -16785,6 +16824,11 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
     int mappingdata_size = KeyMappingDataList->size();
     if (top_row >= 0 && bottom_row < mappingdata_size && dragged_to >= 0 && dragged_to < mappingdata_size
         && (dragged_to > bottom_row || dragged_to < top_row)) {
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+        closeSetupDialog_OnDataChanged();
+#endif
+
         int draged_row_count = bottom_row - top_row + 1;
         bool isDraggedToBottom = (dragged_to > bottom_row);
 
@@ -17798,6 +17842,10 @@ void QKeyMapper::selectedItemsMoveUp()
         return;
     }
 
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
     bool move_to_top = false;
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
         move_to_top = true;
@@ -17886,6 +17934,10 @@ void QKeyMapper::selectedItemsMoveDown()
 #endif
         return;
     }
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
 
     bool move_to_bottom = false;
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
@@ -17993,6 +18045,10 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
         return;
     }
 
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
     // Get the first selected range
     QTableWidgetSelectionRange range = selectedRanges.first();
     int topRow = range.topRow();
@@ -18035,6 +18091,9 @@ void QKeyMapper::on_clearallButton_clicked()
     QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+        closeSetupDialog_OnDataChanged();
+#endif
         m_KeyMappingDataTable->clearContents();
         m_KeyMappingDataTable->setRowCount(0);
         KeyMappingDataList->clear();
@@ -19571,6 +19630,10 @@ void QKeyMapper::on_removeSettingButton_clicked()
             // User cancelled, don't remove
             return;
         }
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+        closeSetupDialog_OnDataChanged();
+#endif
 
         settingFile.remove(settingSelectStr);
         ui->settingselectComboBox->removeItem(currentSettingIndex);
