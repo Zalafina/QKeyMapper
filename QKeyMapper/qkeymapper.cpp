@@ -1322,7 +1322,7 @@ void QKeyMapper::checkGlobalSettingSwitchTimeout()
         if (checkGlobalSettingAutoStart()) {
             loadSetting_flag = true;
             QString loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
-            ui->settingNameLineEdit->setText(loadresult);
+            ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
             matchForegroundWindow();
@@ -7946,9 +7946,9 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
     }
 
-    if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
+    if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
         saveGlobalSetting = true;
-        saveSettingSelectStr = cursettingSelectStr;
+        saveSettingSelectStr = GROUPNAME_GLOBALSETTING;
         settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
         saveSettingSelectStr = saveSettingSelectStr + "/";
     }
@@ -7993,8 +7993,9 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
 
         // Check if the setting name matches current selection
-        if (settingNameString == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
-            showFailurePopup(tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(GROUPNAME_GLOBALSETTING));
+        if ((settingNameString == GROUPNAME_GLOBALSETTING || settingNameString == tr(DISPLAYNAME_GLOBALSETTING))
+            && ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
+            showFailurePopup(tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(tr(DISPLAYNAME_GLOBALSETTING)));
             return;
         }
         else if (currentSelectedSetting == settingNameString) {
@@ -8747,13 +8748,17 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (loadresult == savedSettingName) {
-        ui->settingNameLineEdit->setText(loadresult);
-        popupMessage = tr("Save success : ") + savedSettingName;
+        QString displaySettingName = savedSettingName;
+        if (displaySettingName == GROUPNAME_GLOBALSETTING) {
+            displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
+        }
+        ui->settingNameLineEdit->setText(displaySettingName);
+        popupMessage = tr("Save success : ") + displaySettingName;
         popupMessageColor = SUCCESS_COLOR;
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
         if (backupRet) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << savedSettingName;
+            qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << displaySettingName;
 #endif
         }
     }
@@ -9428,9 +9433,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     ui->settingselectComboBox->clear();
     ui->settingselectComboBox->addItem(QString());
     m_SettingSelectListWithoutDescription.append(QString());
-    QString globalSettingNameWithDescStr;
-    globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, tr("Global keymapping setting"));
-    ui->settingselectComboBox->addItem(globalSettingNameWithDescStr);
+    QString globalSettingName = tr("GlobalKeyMapping");
+    ui->settingselectComboBox->addItem(globalSettingName);
     m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
 // #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 //     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
@@ -11023,12 +11027,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     refreshAllKeyMappingTagWidget();
 
     if (loadGlobalSetting && loadDefault != true) {
-        ui->settingNameLineEdit->setText(GROUPNAME_GLOBALSETTING);
+        ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
         ui->settingNameLineEdit->setReadOnly(true);
         ui->processLineEdit->setText(QString());
         ui->windowTitleLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
-        ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
+        ui->descriptionLineEdit->clear();
+        ui->descriptionLineEdit->setEnabled(false);
+        ui->descriptionLabel->setEnabled(false);
         // ui->processCheckBox->setChecked(false);
         // ui->titleCheckBox->setChecked(false);
         ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
@@ -11099,6 +11105,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->iconLabel->clear();
 
         ui->descriptionLineEdit->setReadOnly(false);
+        ui->descriptionLineEdit->setEnabled(true);
+        ui->descriptionLabel->setEnabled(true);
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_DESCRIPTION)){
             ui->descriptionLineEdit->setText(settingFile.value(settingSelectStr+PROCESSINFO_DESCRIPTION).toString());
         }
@@ -15561,10 +15569,12 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->settingNameLabel->setText(tr("SettingName"));
     ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
-        ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
+        // ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
+        ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
+        ui->descriptionLineEdit->clear();
     }
-    QString globalSettingNameWithDescStr = QString(SETTING_DESCRIPTION_FORMAT).arg(GROUPNAME_GLOBALSETTING, tr("Global keymapping setting"));
-    ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingNameWithDescStr);
+    QString globalSettingName = tr("GlobalKeyMapping");
+    ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingName);
     ui->oriList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
     ui->oriList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
     ui->oriList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
@@ -19500,7 +19510,11 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 #endif
         }
         QString loadresult = loadKeyMapSetting(curSettingSelectStr);
-        ui->settingNameLineEdit->setText(loadresult);
+        QString displaySettingName = loadresult;
+        if (displaySettingName == GROUPNAME_GLOBALSETTING) {
+            displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
+        }
+        ui->settingNameLineEdit->setText(displaySettingName);
         Q_UNUSED(loadresult);
         loadSetting_flag = false;
     }
@@ -19523,6 +19537,8 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->descriptionLineEdit->clear();
         ui->descriptionLineEdit->setReadOnly(false);
+        ui->descriptionLineEdit->setEnabled(true);
+        ui->descriptionLabel->setEnabled(true);
     }
 }
 
@@ -19579,7 +19595,11 @@ void QKeyMapper::on_removeSettingButton_clicked()
 #endif
             loadSetting_flag = true;
             QString loadresult = loadKeyMapSetting(curSettingSelectStr);
-            ui->settingNameLineEdit->setText(loadresult);
+            QString displaySettingName = loadresult;
+            if (displaySettingName == GROUPNAME_GLOBALSETTING) {
+                displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
+            }
+            ui->settingNameLineEdit->setText(displaySettingName);
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
         }
