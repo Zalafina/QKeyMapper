@@ -2063,7 +2063,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
     <message>
         <location filename="../qkeymapper.cpp" line="16569"/>
         <source>Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.</source>
-        <translation>QKeyMapperを使用する際は、Windowsのフィルターキー機能を有効にすることを強くお勧めします。さまざまな予期しない問題を回避するためです。</translation>
+        <translation>QKeyMapperのキーマッピングを使用する際は、Windows の「フィルターキー」機能を有効にすることを強く推奨します。キーを押し続けた際にシステムが同じキー入力を繰り返し送信し、さまざまな不具合が発生するのを防ぐためです。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="16965"/>

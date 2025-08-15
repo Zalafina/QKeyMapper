@@ -850,6 +850,7 @@ signals:
     void updateKeyComboBoxWithJoystickKey_Signal(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged_Signal(const QString &keycodeString, int keyupdown);
     void systemThemeChanged_Signal(void);
+    void systemFilterKeysSettingChanged_Signal(void);
     void keyMappingTableItemCheckStateChanged_Signal(int row, int col, bool checked);
 
 protected:
@@ -931,6 +932,7 @@ public slots:
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
     void systemThemeChanged(void);
+    void systemFilterKeysSettingChanged(void);
 
 private slots:
     void onHotKeyLineEditEditingFinished(void);

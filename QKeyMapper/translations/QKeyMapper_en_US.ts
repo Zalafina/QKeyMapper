@@ -1943,7 +1943,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
     <message>
         <location filename="../qkeymapper.cpp" line="16569"/>
         <source>Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.</source>
-        <translation>Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.</translation>
+        <translation>It is strongly recommended to enable the Windows Filter Keys feature when using QKeyMapper&apos;s keymapping function. This helps prevent unexpected issues caused by the system repeatedly sending key presses when a key is held down.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="16965"/>

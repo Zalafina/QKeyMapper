@@ -551,6 +551,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::systemFilterKeysSettingChanged_Signal, this, &QKeyMapper::systemFilterKeysSettingChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal, m_ItemSetupDialog, &QItemSetupDialog::keyMappingTableItemCheckStateChanged);
 
     updateHWNDListProc();
@@ -5898,19 +5899,37 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
                 sessionLockStateChanged(false);
             }
         }
-        else if (msg->message == WM_THEMECHANGED) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::nativeEvent]" << "Theme Changed";
-#endif
-        }
         else if (msg->message == WM_SETTINGCHANGE) {
             if (msg->lParam) {
+                // Try reading as wide-char string
                 QString param = QString::fromWCharArray(reinterpret_cast<const wchar_t*>(msg->lParam));
+
+                // If failed (empty) and Windows might have sent ANSI string
+                if (param.isEmpty()) {
+                    param = QString::fromLocal8Bit(reinterpret_cast<const char*>(msg->lParam));
+                }
+
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[QKeyMapper::nativeEvent]" << "WM_SETTINGCHANGE ->" << param;
+#endif
+
                 if (param == QStringLiteral("ImmersiveColorSet")) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[QKeyMapper::nativeEvent]" << "ImmersiveColorSet Theme Changed";
 #endif
                     emit systemThemeChanged_Signal();
+                }
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[QKeyMapper::nativeEvent]" << "WM_SETTINGCHANGE -> (NULL lParam), wParam =" << msg->wParam;
+#endif
+
+                if (msg->wParam == SPI_SETFILTERKEYS) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[QKeyMapper::nativeEvent]" << "Filter Keys settings changed";
+#endif
+                    emit systemFilterKeysSettingChanged_Signal();
                 }
             }
         }
@@ -7152,6 +7171,16 @@ void QKeyMapper::systemThemeChanged()
 
         setUITheme(ui->themeComboBox->currentIndex());
     }
+}
+
+void QKeyMapper::systemFilterKeysSettingChanged()
+{
+    bool current_system_filterkeys_enabled = isWindowsFilterKeysEnabled();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::systemFilterKeysSettingChanged] WindowsFilterKeysEnabledChanged ->" << current_system_filterkeys_enabled;
+#endif
+
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
