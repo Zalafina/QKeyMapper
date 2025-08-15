@@ -1662,7 +1662,7 @@ QString QKeyMapper::getPlatformString()
     return platform_string;
 }
 
-bool QKeyMapper::IsFilterKeysEnabled()
+bool QKeyMapper::isWindowsFilterKeysEnabled()
 {
     FILTERKEYS filterKeys = { sizeof(FILTERKEYS) };
     if (SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0)) {
@@ -1670,6 +1670,27 @@ bool QKeyMapper::IsFilterKeysEnabled()
         return (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
     }
     return false;
+}
+
+void QKeyMapper::setWindowsFilterKeysEnabled(bool enable)
+{
+    FILTERKEYS filterKeys;
+    filterKeys.cbSize = sizeof(FILTERKEYS);
+
+    // Get current settings
+    if (!SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0)) {
+        return; // Failed to get settings
+    }
+
+    // Only change FKF_FILTERKEYSON bit
+    if (enable) {
+        filterKeys.dwFlags |= FKF_FILTERKEYSON;
+    } else {
+        filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
+    }
+
+    // Apply settings
+    SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, SPIF_SENDCHANGE);
 }
 
 bool QKeyMapper::isWindowsDarkMode()
@@ -16529,7 +16550,7 @@ void QKeyMapper::checkOSVersionMatched()
 
 void QKeyMapper::checkFilterKeysEnabled()
 {
-    if (IsFilterKeysEnabled()) {
+    if (isWindowsFilterKeysEnabled()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "\033[1;34m[checkFilterKeysEnabled]" << "FilterKeys -> Enabled\033[0m";
 #endif
@@ -20882,4 +20903,16 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     setUITheme(ui->themeComboBox->currentIndex());
+}
+
+void QKeyMapper::on_systemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)
+{
+    Q_UNUSED(state);
+
+    if (ui->systemFilterKeyCheckBox->isChecked()) {
+        setWindowsFilterKeysEnabled(true);
+    }
+    else {
+        setWindowsFilterKeysEnabled(false);
+    }
 }

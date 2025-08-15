@@ -433,7 +433,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -975,9 +975,9 @@
     <widget class="QLineEdit" name="mappingStartKeyLineEdit">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>100</x>
        <y>10</y>
-       <width>110</width>
+       <width>161</width>
        <height>21</height>
       </rect>
      </property>
@@ -985,9 +985,9 @@
     <widget class="QLabel" name="mappingStartKeyLabel">
      <property name="geometry">
       <rect>
-       <x>-6</x>
+       <x>4</x>
        <y>10</y>
-       <width>81</width>
+       <width>91</width>
        <height>21</height>
       </rect>
      </property>
@@ -1001,9 +1001,9 @@
     <widget class="QCheckBox" name="autoStartMappingCheckBox">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>70</y>
-       <width>181</width>
+       <x>290</x>
+       <y>10</y>
+       <width>191</width>
        <height>21</height>
       </rect>
      </property>
@@ -1017,9 +1017,9 @@
     <widget class="QSpinBox" name="mouseYSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>260</x>
-       <y>40</y>
-       <width>35</width>
+       <x>100</x>
+       <y>100</y>
+       <width>51</width>
        <height>21</height>
       </rect>
      </property>
@@ -1033,9 +1033,9 @@
     <widget class="QLabel" name="mouseXSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>194</x>
-       <y>10</y>
-       <width>61</width>
+       <x>4</x>
+       <y>70</y>
+       <width>91</width>
        <height>22</height>
       </rect>
      </property>
@@ -1049,9 +1049,9 @@
     <widget class="QSpinBox" name="mouseXSpeedSpinBox">
      <property name="geometry">
       <rect>
-       <x>260</x>
-       <y>10</y>
-       <width>35</width>
+       <x>100</x>
+       <y>70</y>
+       <width>51</width>
        <height>21</height>
       </rect>
      </property>
@@ -1065,9 +1065,9 @@
     <widget class="QLabel" name="mouseYSpeedLabel">
      <property name="geometry">
       <rect>
-       <x>194</x>
-       <y>40</y>
-       <width>61</width>
+       <x>4</x>
+       <y>100</y>
+       <width>91</width>
        <height>22</height>
       </rect>
      </property>
@@ -1081,9 +1081,9 @@
     <widget class="QCheckBox" name="sendToSameTitleWindowsCheckBox">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>40</y>
-       <width>181</width>
+       <x>290</x>
+       <y>100</y>
+       <width>191</width>
        <height>21</height>
       </rect>
      </property>
@@ -1097,9 +1097,9 @@
     <widget class="QLabel" name="mappingStopKeyLabel">
      <property name="geometry">
       <rect>
-       <x>-6</x>
+       <x>4</x>
        <y>40</y>
-       <width>81</width>
+       <width>91</width>
        <height>21</height>
       </rect>
      </property>
@@ -1113,9 +1113,9 @@
     <widget class="QLineEdit" name="mappingStopKeyLineEdit">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>100</x>
        <y>40</y>
-       <width>110</width>
+       <width>161</width>
        <height>21</height>
       </rect>
      </property>
@@ -1123,9 +1123,9 @@
     <widget class="QCheckBox" name="acceptVirtualGamepadInputCheckBox">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>10</y>
-       <width>181</width>
+       <x>290</x>
+       <y>130</y>
+       <width>191</width>
        <height>21</height>
       </rect>
      </property>
@@ -1139,9 +1139,9 @@
     <widget class="QCheckBox" name="ProcessIconAsTrayIconCheckBox">
      <property name="geometry">
       <rect>
-       <x>200</x>
+       <x>290</x>
        <y>70</y>
-       <width>181</width>
+       <width>191</width>
        <height>21</height>
       </rect>
      </property>
@@ -1150,6 +1150,22 @@
      </property>
      <property name="text">
       <string>ProcessIcon as TrayIcon</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="systemFilterKeyCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>290</x>
+       <y>40</y>
+       <width>191</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>SystemFilterKey</string>
      </property>
     </widget>
    </widget>

@@ -704,7 +704,8 @@ public:
     static QString getExeFileDescription(void);
     static QString getExeProductVersion(void);
     static QString getPlatformString(void);
-    static bool IsFilterKeysEnabled(void);
+    static bool isWindowsFilterKeysEnabled(void);
+    static void setWindowsFilterKeysEnabled(bool enable);
     static bool isWindowsDarkMode(void);
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
@@ -1055,6 +1056,8 @@ private slots:
     void on_originalKeyRecordLineEdit_textChanged(const QString &text);
 
     void on_themeComboBox_currentIndexChanged(int index);
+
+    void on_systemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state);
 
 private:
     // Helper methods for saving/restoring category filter state
