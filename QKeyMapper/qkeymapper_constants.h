@@ -856,6 +856,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char GRIP_THRESHOLD_BRAKE[] = "GripThresholdBrake";
     inline constexpr const char GRIP_THRESHOLD_ACCEL[] = "GripThresholdAccel";
     inline constexpr const char AUTOSTARTMAPPING_CHECKED[] = "AutoStartMappingChecked";
+    inline constexpr const char SYSTEMFILTERKEY_CHECKED[] = "SystemFilterKeyChecked";
     inline constexpr const char SENDTOSAMEWINDOWS_CHECKED[] = "SendToSameWindowsChecked";
     inline constexpr const char ACCEPTVIRTUALGAMEPADINPUT_CHECKED[] = "AcceptVirtualGamdpadInputChecked";
     inline constexpr const char PROCESSICON_AS_TRAYICON_CHECKED[] = "ProcessIconAsTrayIconChecked";
