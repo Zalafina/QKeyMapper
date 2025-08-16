@@ -806,7 +806,11 @@ void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
     }
     else if (event->button() == Qt::RightButton) {
         // Mouse position in dialog coordinates
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         QPoint localPos = event->position().toPoint();
+#else
+        QPoint localPos = event->pos();
+#endif
 
         // Map button's rect to dialog coordinates
         QRect buttonRectInParent = QRect(
