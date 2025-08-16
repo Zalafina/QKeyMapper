@@ -20964,6 +20964,9 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
 void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)
 {
     Q_UNUSED(state)
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[enableSystemFilterKeyCheckBox] Check state changed to" << state;
+#endif
 
     if (!ui->enableSystemFilterKeyCheckBox->isChecked()) {
         QString message = tr("QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?");
@@ -20971,9 +20974,10 @@ void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::Ch
                                                                    QMessageBox::Yes | QMessageBox::No,
                                                                    QMessageBox::No);
         if (reply != QMessageBox::Yes) {
-            ui->enableSystemFilterKeyCheckBox->blockSignals(true);
-            ui->enableSystemFilterKeyCheckBox->setChecked(true);
-            ui->enableSystemFilterKeyCheckBox->blockSignals(false);
+            // Use QTimer::singleShot to defer the state change to avoid signal recursion
+            QTimer::singleShot(0, this, [this]() {
+                ui->enableSystemFilterKeyCheckBox->setChecked(true);
+            });
         }
     }
 }
