@@ -806,7 +806,7 @@ public:
     static bool getSendToSameTitleWindowsStatus(void);
     static bool getAcceptVirtualGamepadInputStatus(void);
     static bool getProcessIconAsTrayIconStatus(void);
-    static bool getSystemFilterKeyChecked(void);
+    static bool getEnableSystemFilterKeyChecked(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static bool validateCombinationKey(QString &input);
@@ -1059,8 +1059,6 @@ private slots:
     void on_originalKeyRecordLineEdit_textChanged(const QString &text);
 
     void on_themeComboBox_currentIndexChanged(int index);
-
-    void on_systemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state);
 
 private:
     // Helper methods for saving/restoring category filter state

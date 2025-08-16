@@ -4608,9 +4608,9 @@ bool QKeyMapper::getProcessIconAsTrayIconStatus()
     return getInstance()->ui->ProcessIconAsTrayIconCheckBox->isChecked();
 }
 
-bool QKeyMapper::getSystemFilterKeyChecked()
+bool QKeyMapper::getEnableSystemFilterKeyChecked()
 {
-    return getInstance()->ui->systemFilterKeyCheckBox->isChecked();
+    return getInstance()->ui->enableSystemFilterKeyCheckBox->isChecked();
 }
 
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
@@ -8770,7 +8770,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
-    settingFile.setValue(saveSettingSelectStr+SYSTEMFILTERKEY_CHECKED, ui->systemFilterKeyCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED, ui->enableSystemFilterKeyCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, ui->acceptVirtualGamepadInputCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, ui->ProcessIconAsTrayIconCheckBox->isChecked());
@@ -11218,7 +11218,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             // ui->titleCheckBox->setChecked(false);
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
-            ui->systemFilterKeyCheckBox->setChecked(true);
+            ui->enableSystemFilterKeyCheckBox->setChecked(true);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
@@ -11629,20 +11629,20 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         ui->autoStartMappingCheckBox->setCheckState(Qt::Unchecked);
     }
 
-    if (true == settingFile.contains(settingSelectStr+SYSTEMFILTERKEY_CHECKED)){
-        bool systemFilterKeyChecked = settingFile.value(settingSelectStr+SYSTEMFILTERKEY_CHECKED).toBool();
-        if (true == systemFilterKeyChecked) {
-            ui->systemFilterKeyCheckBox->setChecked(true);
+    if (true == settingFile.contains(settingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED)){
+        bool enableSystemFilterKeyChecked = settingFile.value(settingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED).toBool();
+        if (true == enableSystemFilterKeyChecked) {
+            ui->enableSystemFilterKeyCheckBox->setChecked(true);
         }
         else {
-            ui->systemFilterKeyCheckBox->setChecked(false);
+            ui->enableSystemFilterKeyCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "SystemFilterKeyChecked =" << systemFilterKeyChecked;
+        qDebug() << "[loadKeyMapSetting]" << "EnableSystemFilterKeyChecked =" << enableSystemFilterKeyChecked;
 #endif
     }
     else {
-        ui->systemFilterKeyCheckBox->setChecked(true);
+        ui->enableSystemFilterKeyCheckBox->setChecked(true);
     }
 
     if (true == settingFile.contains(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED)){
@@ -15722,7 +15722,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->brakeThresholdLabel->setText(tr("BrakeValue"));
     ui->accelThresholdLabel->setText(tr("AccelValue"));
     ui->autoStartMappingCheckBox->setText(tr("Auto Match Foreground"));
-    ui->systemFilterKeyCheckBox->setText(tr("SystemFilterKey"));
+    ui->enableSystemFilterKeyCheckBox->setText(tr("SystemFilterKey"));
     ui->sendToSameTitleWindowsCheckBox->setText(tr("Send To Same Windows"));
     ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
@@ -20956,16 +20956,4 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     setUITheme(ui->themeComboBox->currentIndex());
-}
-
-void QKeyMapper::on_systemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)
-{
-    Q_UNUSED(state);
-
-    if (ui->systemFilterKeyCheckBox->isChecked()) {
-        // setWindowsFilterKeysEnabled(true);
-    }
-    else {
-        // setWindowsFilterKeysEnabled(false);
-    }
 }

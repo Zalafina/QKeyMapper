@@ -1152,7 +1152,7 @@
       <string>ProcessIcon as TrayIcon</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="systemFilterKeyCheckBox">
+    <widget class="QCheckBox" name="enableSystemFilterKeyCheckBox">
      <property name="geometry">
       <rect>
        <x>290</x>
