@@ -1133,14 +1133,14 @@
         <location filename="../qkeymapper.ui" line="1434"/>
         <location filename="../qkeymapper.cpp" line="15717"/>
         <source>X Speed</source>
-        <translation>X Speed</translation>
+        <translation>X CursorSpeed</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1075"/>
         <location filename="../qkeymapper.ui" line="1450"/>
         <location filename="../qkeymapper.cpp" line="15718"/>
         <source>Y Speed</source>
-        <translation>Y Speed</translation>
+        <translation>Y CursorSpeed</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1094"/>
@@ -1587,7 +1587,7 @@
         <translation>The update file name %1 does not match the platform string %2 !</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20969"/>
+        <location filename="../qkeymapper.cpp" line="20972"/>
         <source>QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?</source>
         <translation>When using QKeyMapper&apos;s keymapping, it is strongly recommended to let the program automatically enable the Windows Filter Keys feature. This helps avoid various unexpected issues that may occur when the system repeatedly sends key presses while a key is held down.
 Are you sure you do not want to automatically enable Filter Keys during the mapping process?</translation>

@@ -1079,14 +1079,14 @@
         <location filename="../qkeymapper.ui" line="1434"/>
         <location filename="../qkeymapper.cpp" line="15717"/>
         <source>X Speed</source>
-        <translation>X軸速度</translation>
+        <translation>水平カーソル速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1075"/>
         <location filename="../qkeymapper.ui" line="1450"/>
         <location filename="../qkeymapper.cpp" line="15718"/>
         <source>Y Speed</source>
-        <translation>Y軸速度</translation>
+        <translation>垂直カーソル速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1094"/>
@@ -1575,7 +1575,7 @@
         <translation>アップグレードプログラム %1 の起動に失敗しました！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20969"/>
+        <location filename="../qkeymapper.cpp" line="20972"/>
         <source>QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?</source>
         <translation>QKeyMapperのキーマッピングを使用する際は、プログラムにより自動的に Windows の「フィルターキー」機能を有効にすることを強く推奨します。キーを押し続けた際にシステムが同じキー入力を繰り返し送信し、さまざまな不具合が発生するのを防ぐためです。
 マッピング中にフィルターキーを自動的に有効化しなくてもよろしいですか？</translation>

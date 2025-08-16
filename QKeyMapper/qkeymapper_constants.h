@@ -315,7 +315,7 @@ namespace QKeyMapperConstants {
     inline constexpr double GRIP_THRESHOLD_SINGLE_STEP = 0.01;
 
     inline constexpr int MOUSE_SPEED_MIN = 1;
-    inline constexpr int MOUSE_SPEED_MAX = 15;
+    inline constexpr int MOUSE_SPEED_MAX = 99;
     inline constexpr int MOUSE_SPEED_DEFAULT = 3;
 
     inline constexpr int UI_SCALE_NORMAL = 0;

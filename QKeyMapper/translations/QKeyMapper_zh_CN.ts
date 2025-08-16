@@ -1133,14 +1133,14 @@
         <location filename="../qkeymapper.ui" line="1434"/>
         <location filename="../qkeymapper.cpp" line="15717"/>
         <source>X Speed</source>
-        <translation>X轴速度</translation>
+        <translation>水平鼠标速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1075"/>
         <location filename="../qkeymapper.ui" line="1450"/>
         <location filename="../qkeymapper.cpp" line="15718"/>
         <source>Y Speed</source>
-        <translation>Y轴速度</translation>
+        <translation>垂直鼠标速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1094"/>
@@ -1587,7 +1587,7 @@
         <translation>升级文件 %1 与当前版本平台标识 %2 不匹配！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20969"/>
+        <location filename="../qkeymapper.cpp" line="20972"/>
         <source>QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?</source>
         <translation>使用QKeyMapper按键映射时强烈建议让程序自动开启Windows系统筛选键，避免由于键盘按键保持按下时系统连续发送按键触发导致的各种异常问题。
 您确定不希望在映射过程中自动开启系统筛选键吗？</translation>
