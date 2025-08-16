@@ -534,7 +534,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::HotKeyMappingTableSwitchTab_Signal, this, &QKeyMapper::HotKeyMappingTableSwitchTab, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::checkOSVersionMatched_Signal, this, &QKeyMapper::checkOSVersionMatched, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper::checkFilterKeysEnabled_Signal, this, &QKeyMapper::checkFilterKeysEnabled, Qt::QueuedConnection);
+    // QObject::connect(this, &QKeyMapper::checkFilterKeysEnabled_Signal, this, &QKeyMapper::checkFilterKeysEnabled, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
@@ -7175,12 +7175,13 @@ void QKeyMapper::systemThemeChanged()
 
 void QKeyMapper::systemFilterKeysSettingChanged()
 {
-    bool current_system_filterkeys_enabled = isWindowsFilterKeysEnabled();
-
 #ifdef DEBUG_LOGOUT_ON
+    bool current_system_filterkeys_enabled = isWindowsFilterKeysEnabled();
     qDebug() << "[QKeyMapper::systemFilterKeysSettingChanged] WindowsFilterKeysEnabledChanged ->" << current_system_filterkeys_enabled;
 #endif
 
+    // Notify QKeyMapper_Worker that user changed FilterKeys during mapping
+    QKeyMapper_Worker::getInstance()->notifyUserChangedFilterKeys();
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
@@ -16601,6 +16602,7 @@ void QKeyMapper::checkOSVersionMatched()
     }
 }
 
+#if 0
 void QKeyMapper::checkFilterKeysEnabled()
 {
     if (isWindowsFilterKeysEnabled()) {
@@ -16619,7 +16621,7 @@ void QKeyMapper::checkFilterKeysEnabled()
         }
 
         if (notshow_filterkeys_disabled != true) {
-            QString message = tr("Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.");
+            QString message = "Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.";
             QString checkbox_message = tr("Do not show this message again");
             bool ischecked = showMessageBoxWithCheckbox(this, message, checkbox_message, CustomMessageBox::Warning);
             if (ischecked) {
@@ -16628,6 +16630,7 @@ void QKeyMapper::checkFilterKeysEnabled()
         }
     }
 }
+#endif
 
 void QKeyMapper::updateLockStatusDisplay()
 {
@@ -20956,4 +20959,21 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     setUITheme(ui->themeComboBox->currentIndex());
+}
+
+void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)
+{
+    Q_UNUSED(state)
+
+    if (!ui->enableSystemFilterKeyCheckBox->isChecked()) {
+        QString message = tr("QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?");
+        QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message,
+                                                                   QMessageBox::Yes | QMessageBox::No,
+                                                                   QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+            ui->enableSystemFilterKeyCheckBox->blockSignals(true);
+            ui->enableSystemFilterKeyCheckBox->setChecked(true);
+            ui->enableSystemFilterKeyCheckBox->blockSignals(false);
+        }
+    }
 }

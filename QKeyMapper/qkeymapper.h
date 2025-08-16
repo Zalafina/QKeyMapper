@@ -829,7 +829,7 @@ signals:
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab_Signal(const QString &hotkey_string);
     void checkOSVersionMatched_Signal(void);
-    void checkFilterKeysEnabled_Signal(void);
+    // void checkFilterKeysEnabled_Signal(void);
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
@@ -873,7 +873,7 @@ public slots:
 
     void checkOSVersionMatched(void);
 
-    void checkFilterKeysEnabled(void);
+    // void checkFilterKeysEnabled(void);
 
     void updateLockStatusDisplay(void);
 
@@ -1059,6 +1059,8 @@ private slots:
     void on_originalKeyRecordLineEdit_textChanged(const QString &text);
 
     void on_themeComboBox_currentIndexChanged(int index);
+
+    void on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state);
 
 private:
     // Helper methods for saving/restoring category filter state
