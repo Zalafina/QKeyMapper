@@ -13785,13 +13785,56 @@ void QKeyMapper::updateProcessInfoDisplay()
 
 void QKeyMapper::showQKeyMapperWindowToTop()
 {
-    /* BringWindowToTopEx() may cause OBS program registered shortcut be invalid. >>> */
-    // BringWindowToTopEx(reinterpret_cast<HWND>(winId()));
-    SetWindowPos(reinterpret_cast<HWND>(winId()), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    /* BringWindowToTopEx() may cause OBS program registered shortcut be invalid. <<< */
+    HWND hwnd = reinterpret_cast<HWND>(winId());
+
+    // Method 1: Try to restore from minimized state first
+    if (IsIconic(hwnd)) {
+        ShowWindow(hwnd, SW_RESTORE);
+    }
+
+    // Method 2: Use SetWindowPos with HWND_TOP and proper flags
+    SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE);
+
+    // Method 3: Qt methods in proper sequence
+    show();
     showNormal();
-    activateWindow();
     raise();
+    activateWindow();
+
+    // Method 4: Additional Windows API calls for better reliability
+    HWND foregroundWindow = GetForegroundWindow();
+    DWORD foregroundThreadId = GetWindowThreadProcessId(foregroundWindow, NULL);
+    DWORD currentThreadId = GetCurrentThreadId();
+
+    // Only try thread attachment if we're not already the foreground window
+    if (foregroundWindow != hwnd && foregroundThreadId != currentThreadId) {
+        // Temporarily attach to foreground thread
+        if (AttachThreadInput(foregroundThreadId, currentThreadId, TRUE)) {
+            // Now we can set foreground window
+            SetForegroundWindow(hwnd);
+            BringWindowToTop(hwnd);
+            // Detach thread input
+            AttachThreadInput(foregroundThreadId, currentThreadId, FALSE);
+        } else {
+            // If attachment fails, try alternative method
+            // Flash the window to get user attention if we can't bring it to front
+            FLASHWINFO fwi;
+            fwi.cbSize = sizeof(FLASHWINFO);
+            fwi.hwnd = hwnd;
+            fwi.dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG;
+            fwi.uCount = 3;
+            fwi.dwTimeout = 0;
+            FlashWindowEx(&fwi);
+
+            // Try SetForegroundWindow anyway
+            SetForegroundWindow(hwnd);
+        }
+    }
+
+    // Method 5: Final Qt activation
+    setWindowState(windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
+    activateWindow();
 }
 
 void QKeyMapper::switchShowHide()
