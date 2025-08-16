@@ -47,7 +47,8 @@
 ---------------
 ## 🔧 软件使用建议
 #### ※通常情况下建议先运行QKeyMapper映射工具再运行需要使用按键映射的游戏或软件，避免按键被其他软件拦截导致映射工具无法检测到。
-#### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。
+#### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。<br>v1.3.8.20250816版本增加了"开启系统筛选键"设定勾选框，只要保持勾选状态，开始映射时如果系统没有开启筛选键，程序会自动开启系统筛选键，映射结束后会自动恢复映射开始前的系统筛选键关闭状态。
+
   - #### Win10系统筛选键开启方式
     Windows设置 -> 轻松使用 -> 键盘 -> 筛选键
     <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win10_FilterKey.png" width="1839" height="auto"/></div>
