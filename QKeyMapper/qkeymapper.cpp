@@ -11646,7 +11646,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
     else {
-        ui->enableSystemFilterKeyCheckBox->setChecked(false);
+        ui->enableSystemFilterKeyCheckBox->setChecked(true);
     }
     ui->enableSystemFilterKeyCheckBox->blockSignals(false);
 
