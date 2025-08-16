@@ -6436,6 +6436,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
 }
 #endif
 
+#if 0
 static void BringWindowToTopEx(HWND hwnd)
 {
     AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), true);
@@ -6443,6 +6444,7 @@ static void BringWindowToTopEx(HWND hwnd)
     // SetForegroundWindow(hwnd);
     AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), false);
 }
+#endif
 
 void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
 {
