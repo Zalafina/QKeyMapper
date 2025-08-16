@@ -13797,9 +13797,11 @@ void QKeyMapper::showQKeyMapperWindowToTop()
                  SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
     // Method 3: Qt methods in proper sequence
-    show();
+    // showNormal() handles both hidden and minimized states
     showNormal();
+    // Bring to front in Qt's window order
     raise();
+    // Request focus and activation
     activateWindow();
 
     // Method 4: Additional Windows API calls for better reliability
