@@ -13880,7 +13880,11 @@ void QKeyMapper::switchShowHide()
         return;
     }
 
-    if (false == isHidden()) {
+#ifdef DISPLAY_SWITCHKEY_MINIMIZED
+    if (!isHidden() && !isMinimized()) {
+#else
+    if (!isHidden()) {
+#endif
         m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
         closeTableSetupDialog();
@@ -13890,7 +13894,13 @@ void QKeyMapper::switchShowHide()
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+
+#ifdef DISPLAY_SWITCHKEY_MINIMIZED
+        showMinimized();
+#else
         hide();
+#endif
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
 #endif
