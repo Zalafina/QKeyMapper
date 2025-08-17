@@ -14456,12 +14456,13 @@ void QKeyMapper::initKeyMappingTabWidget(void)
         left    = KEYMAPPINGTABWIDGET_WIDE_LEFT;
         width   = KEYMAPPINGTABWIDGET_WIDE_WIDTH;
     }
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        m_KeyMappingTabWidget->setGeometry(QRect(left, 11, width, 346));
-    }
-    else {
-        m_KeyMappingTabWidget->setGeometry(QRect(left, 7, width, 346));
-    }
+    // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+    //     m_KeyMappingTabWidget->setGeometry(QRect(left, 11, width, 346));
+    // }
+    // else {
+    //     m_KeyMappingTabWidget->setGeometry(QRect(left, 7, width, 346));
+    // }
+    m_KeyMappingTabWidget->setGeometry(QRect(left, 11, width, 346));
     QStyle* windowsStyle = QStyleFactory::create("windows");
     m_KeyMappingTabWidget->setStyle(windowsStyle);
     ui->addTabButton->setStyle(windowsStyle);
