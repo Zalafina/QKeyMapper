@@ -614,6 +614,7 @@ QKeyMapper::~QKeyMapper()
     exitDeleteKeyMappingTabWidget();
 }
 
+#if 0
 void QKeyMapper::WindowStateChangedProc(void)
 {
     if (true == isMinimized()){
@@ -631,6 +632,7 @@ void QKeyMapper::WindowStateChangedProc(void)
         // hide();
     }
 }
+#endif
 
 #if 0
 void QKeyMapper::cycleCheckProcessProc(void)
@@ -5938,6 +5940,23 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
     return QWidget::nativeEvent(eventType, message, result);
 }
 
+bool QKeyMapper::event(QEvent *event)
+{
+    if (event->type() == QEvent::ActivationChange) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::event]" << "QKeyMapper ActivationChange";
+#endif
+        m_isOriginalKeyLineEdit_CapturingKey = false;
+        closeSelectColorDialog();
+        closeFloatingWindowSetupDialog();
+        closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
+        closeTrayIconSelectDialog();
+        closeNotificationSetupDialog();
+    }
+    return QDialog::event(event);
+}
+
 void QKeyMapper::showEvent(QShowEvent *event)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -6026,6 +6045,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
     }
 }
 
+#if 0
 void QKeyMapper::changeEvent(QEvent *event)
 {
     if (event->type() == QEvent::WindowStateChange)
@@ -6035,6 +6055,7 @@ void QKeyMapper::changeEvent(QEvent *event)
 
     QDialog::changeEvent(event);
 }
+#endif
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
 {
@@ -7108,15 +7129,20 @@ void QKeyMapper::updateKeyLineEditWithRealKeyListChanged(const QString &keycodeS
             // Check if mouse cursor is within lineedit area
             if (!lineEditGlobalRect.contains(globalMousePos)) {
 #ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Mouse pos(" << globalMousePos << ") is outside Button rect(" << lineEditGlobalRect << ")";
                 qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Ignoring Mouse-L click outside originalKeyRecordLineEdit area";
-                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Mouse pos:" << globalMousePos << "Button rect:" << lineEditGlobalRect;
 #endif
                 return;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] Mouse pos(" << globalMousePos << ") is inside Button rect(" << lineEditGlobalRect << ")";
+#endif
             }
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << keycodeString << (keyupdown == KEY_DOWN?"KeyDown":"KeyUp");
+        qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << keycodeString << (keyupdown == KEY_DOWN?"KeyDown":"KeyUp") << ", m_isOriginalKeyLineEdit_CapturingKey =" << m_isOriginalKeyLineEdit_CapturingKey;
         qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << "pressedRealKeysListRemoveMultiInput ->" << QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 #endif
 

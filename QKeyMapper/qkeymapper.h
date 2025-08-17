@@ -665,7 +665,7 @@ public:
     Q_ENUM(MappingStartMode)
 
 public slots:
-    void WindowStateChangedProc(void);
+    // void WindowStateChangedProc(void);
     // void cycleCheckProcessProc(void);
     void matchForegroundWindow(void);
 #ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
@@ -859,9 +859,10 @@ protected:
 #else
     bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
 #endif
+    bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
-    void changeEvent(QEvent *event) override;
+    // void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *object, QEvent *event) override;
