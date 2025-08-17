@@ -725,7 +725,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char SHOW_NOTES[] = "ShowNotes";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";
     inline constexpr const char NOTSHOW_VERSION_UNMATCHED[] = "NotShow_VersionUnmatched";
+#ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     inline constexpr const char NOTSHOW_FILTERKEYS_DISABLED[] = "NotShow_FilterKeysDisabled";
+#endif
     inline constexpr const char CLOSETO_SYSTEMTRAY[] = "CloseToSystemtray";
     inline constexpr const char NOTIFICATION_POSITION[] = "NotificationPosition";
     inline constexpr const char DISPLAY_SCALE[] = "DisplayScale";

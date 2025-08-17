@@ -331,7 +331,9 @@ int main(int argc, char *argv[])
     QKeyMapper w;
     emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(QKeyMapperConstants::JOYSTICK_INVALID_INSTANCE_ID);
     emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
+#ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     emit QKeyMapper::getInstance()->checkFilterKeysEnabled_Signal();
+#endif
 
 #ifdef SINGLE_APPLICATION
     QObject::connect(&app, &SingleApplication::showUp, &w, &QKeyMapper::otherInstancesStarted);

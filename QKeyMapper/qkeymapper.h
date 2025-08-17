@@ -829,7 +829,9 @@ signals:
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab_Signal(const QString &hotkey_string);
     void checkOSVersionMatched_Signal(void);
+#ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     void checkFilterKeysEnabled_Signal(void);
+#endif
     void updateLockStatus_Signal(void);
     void updateMousePointLabelDisplay_Signal(const QPoint &point);
     void showMousePoints_Signal(int showpoints_trigger);
@@ -874,7 +876,9 @@ public slots:
 
     void checkOSVersionMatched(void);
 
+#ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     void checkFilterKeysEnabled(void);
+#endif
 
     void updateLockStatusDisplay(void);
 

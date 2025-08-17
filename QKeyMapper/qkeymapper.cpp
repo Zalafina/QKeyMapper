@@ -534,7 +534,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::HotKeyMappingTableSwitchTab_Signal, this, &QKeyMapper::HotKeyMappingTableSwitchTab, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::checkOSVersionMatched_Signal, this, &QKeyMapper::checkOSVersionMatched, Qt::QueuedConnection);
+#ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     QObject::connect(this, &QKeyMapper::checkFilterKeysEnabled_Signal, this, &QKeyMapper::checkFilterKeysEnabled, Qt::QueuedConnection);
+#endif
     QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
@@ -11672,7 +11674,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
     else {
+#ifdef ENABLE_SYSTEMFILTERKEYS_DEFAULT
+        ui->enableSystemFilterKeyCheckBox->setChecked(true);
+#else
         ui->enableSystemFilterKeyCheckBox->setChecked(false);
+#endif
     }
     ui->enableSystemFilterKeyCheckBox->blockSignals(false);
 
@@ -16677,6 +16683,7 @@ void QKeyMapper::checkOSVersionMatched()
     }
 }
 
+#ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
 void QKeyMapper::checkFilterKeysEnabled()
 {
     if (isWindowsFilterKeysEnabled()) {
@@ -16704,6 +16711,7 @@ void QKeyMapper::checkFilterKeysEnabled()
         }
     }
 }
+#endif
 
 void QKeyMapper::updateLockStatusDisplay()
 {
