@@ -13880,67 +13880,22 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
         return;
     }
 
+    // Determine current visibility state and hide method
+    bool shouldHide = false;
+
 #ifdef DISPLAY_SWITCHKEY_MINIMIZED
     if (hotkey_switch) {
-        if (!isHidden() && !isMinimized()) {
-            m_LastWindowPosition = pos(); // Save the current position before hiding
-            closeSelectColorDialog();
-            closeTableSetupDialog();
-            closeFloatingWindowSetupDialog();
-            closeItemSetupDialog();
-            closeCrosshairSetupDialog();
-            closeGyro2MouseAdvancedSettingDialog();
-            closeTrayIconSelectDialog();
-            closeNotificationSetupDialog();
-            showMinimized();
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-        }
-        else {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-
-            if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
-                move(m_LastWindowPosition); // Restore the position before showing
-            }
-
-            showQKeyMapperWindowToTop();
-        }
-    }
-    else {
-        if (!isHidden()) {
-            m_LastWindowPosition = pos(); // Save the current position before hiding
-            closeSelectColorDialog();
-            closeTableSetupDialog();
-            closeFloatingWindowSetupDialog();
-            closeItemSetupDialog();
-            closeCrosshairSetupDialog();
-            closeGyro2MouseAdvancedSettingDialog();
-            closeTrayIconSelectDialog();
-            closeNotificationSetupDialog();
-            hide();
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-        }
-        else {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
-#endif
-
-            if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
-                move(m_LastWindowPosition); // Restore the position before showing
-            }
-
-            showQKeyMapperWindowToTop();
-        }
+        shouldHide = !isHidden() && !isMinimized();
+    } else {
+        shouldHide = !isHidden();
     }
 #else
-    if (!isHidden()) {
+    Q_UNUSED(hotkey_switch);
+    shouldHide = !isHidden();
+#endif
+
+    if (shouldHide) {
+        // Common hide logic
         m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
         closeTableSetupDialog();
@@ -13950,13 +13905,23 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+
+#ifdef DISPLAY_SWITCHKEY_MINIMIZED
+        if (hotkey_switch) {
+            showMinimized();
+        } else {
+            hide();
+        }
+#else
         hide();
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
 #endif
     }
     else {
+        // Common show logic
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
 #endif
@@ -13967,7 +13932,6 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
 
         showQKeyMapperWindowToTop();
     }
-#endif
 }
 
 void QKeyMapper::forceHide()
