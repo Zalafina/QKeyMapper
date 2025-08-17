@@ -1095,7 +1095,7 @@ private:
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void showQKeyMapperWindowToTop(void);
-    void switchShowHide(void);
+    void switchShowHide(bool hotkey_switch = false);
     void forceHide(void);
     void hideProcessList(void);
     void showProcessList(void);
