@@ -26,7 +26,7 @@ namespace QKeyMapperConstants {
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
     inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 5;
 
-    inline constexpr int INITIAL_WINDOW_POSITION = -1;
+    inline constexpr int INITIAL_WINDOW_POSITION = -10000;
 
     inline constexpr int PROCESS_NAME_COLUMN = 0;
     inline constexpr int PROCESS_PID_COLUMN = 1;

@@ -44,7 +44,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // m_UI_Scale(UI_SCALE_NORMAL),
     m_KeyMapStatus(KEYMAP_IDLE),
     ui(new Ui::QKeyMapper),
-    m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
+    // m_LastWindowPosition(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION),
 #ifdef CYCLECHECKTIMER_ENABLED
     m_CycleCheckTimer(this),
 #endif
@@ -5949,12 +5949,12 @@ bool QKeyMapper::event(QEvent *event)
         qDebug() << "[QKeyMapper::event]" << "QKeyMapper ActivationChange";
 #endif
         m_isOriginalKeyLineEdit_CapturingKey = false;
-        closeSelectColorDialog();
-        closeFloatingWindowSetupDialog();
-        closeCrosshairSetupDialog();
-        closeGyro2MouseAdvancedSettingDialog();
-        closeTrayIconSelectDialog();
-        closeNotificationSetupDialog();
+        // closeSelectColorDialog();
+        // closeFloatingWindowSetupDialog();
+        // closeCrosshairSetupDialog();
+        // closeGyro2MouseAdvancedSettingDialog();
+        // closeTrayIconSelectDialog();
+        // closeNotificationSetupDialog();
     }
     return QDialog::event(event);
 }
@@ -6025,7 +6025,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
         }
 
         if (false == isHidden()) {
-            m_LastWindowPosition = pos(); // Save the current position before hiding
+            // m_LastWindowPosition = pos(); // Save the current position before hiding
             closeSelectColorDialog();
             closeTableSetupDialog();
             closeFloatingWindowSetupDialog();
@@ -6036,7 +6036,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeNotificationSetupDialog();
             hide();
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << m_LastWindowPosition;
+            qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << pos();
 #endif
         }
 
@@ -7965,8 +7965,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     int languageIndex = ui->languageComboBox->currentIndex();
     bool saveGlobalSetting = false;
 
-    m_LastWindowPosition = pos();
-    settingFile.setValue(LAST_WINDOWPOSITION, m_LastWindowPosition);
+    // m_LastWindowPosition = pos();
+    settingFile.setValue(LAST_WINDOWPOSITION, pos());
 
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
@@ -8912,8 +8912,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 
     if (settingtext.isEmpty()) {
         if (true == settingFile.contains(LAST_WINDOWPOSITION)){
-            m_LastWindowPosition = settingFile.value(LAST_WINDOWPOSITION, QPoint()).toPoint();
-            move(m_LastWindowPosition);
+            QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
+            if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
+                // m_LastWindowPosition = last_windowposition;
+                move(last_windowposition);
+            }
         }
 
         if (true == settingFile.contains(LANGUAGE_INDEX)){
@@ -13895,40 +13898,51 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
 #endif
 
     if (shouldHide) {
-        // Common hide logic
-        m_LastWindowPosition = pos(); // Save the current position before hiding
-        closeSelectColorDialog();
-        closeTableSetupDialog();
-        closeFloatingWindowSetupDialog();
-        closeItemSetupDialog();
-        closeCrosshairSetupDialog();
-        closeGyro2MouseAdvancedSettingDialog();
-        closeTrayIconSelectDialog();
-        closeNotificationSetupDialog();
-
 #ifdef DISPLAY_SWITCHKEY_MINIMIZED
         if (hotkey_switch) {
             showMinimized();
         } else {
+            // Common hide logic
+            // m_LastWindowPosition = pos(); // Save the current position before hiding
+            closeSelectColorDialog();
+            closeFloatingWindowSetupDialog();
+            closeCrosshairSetupDialog();
+            closeGyro2MouseAdvancedSettingDialog();
+            closeTrayIconSelectDialog();
+            closeNotificationSetupDialog();
+            closeTableSetupDialog();
+            closeItemSetupDialog();
             hide();
         }
 #else
+        // Common hide logic
+        // m_LastWindowPosition = pos(); // Save the current position before hiding
+        closeSelectColorDialog();
+        closeFloatingWindowSetupDialog();
+        closeCrosshairSetupDialog();
+        closeGyro2MouseAdvancedSettingDialog();
+        closeTrayIconSelectDialog();
+        closeNotificationSetupDialog();
+        closeTableSetupDialog();
+        closeItemSetupDialog();
         hide();
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << m_LastWindowPosition;
+        qDebug() << "[switchShowHide] Hide Window, LastWindowPosition ->" << pos();
 #endif
     }
     else {
         // Common show logic
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << m_LastWindowPosition;
+        qDebug() << "[switchShowHide] Show Window, LastWindowPosition ->" << pos();
 #endif
 
-        if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
-            move(m_LastWindowPosition); // Restore the position before showing
-        }
+        // if (m_LastWindowPosition.x() != INITIAL_WINDOW_POSITION && m_LastWindowPosition.y() != INITIAL_WINDOW_POSITION) {
+        //     if (isHidden()) {
+        //         move(m_LastWindowPosition); // Restore the position before showing
+        //     }
+        // }
 
         showQKeyMapperWindowToTop();
     }
@@ -13937,7 +13951,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
 void QKeyMapper::forceHide()
 {
     if (false == isHidden()) {
-        m_LastWindowPosition = pos(); // Save the current position before hiding
+        // m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
         closeInputDeviceListWindow();
         closeTableSetupDialog();
@@ -13949,7 +13963,7 @@ void QKeyMapper::forceHide()
         closeNotificationSetupDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << m_LastWindowPosition;
+        qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << pos();
 #endif
     }
 }

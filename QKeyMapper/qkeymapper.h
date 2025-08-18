@@ -1276,7 +1276,7 @@ private:
     static QKeyMapper *m_instance;
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
-    QPoint m_LastWindowPosition;
+    // QPoint m_LastWindowPosition;
 #ifdef CYCLECHECKTIMER_ENABLED
     QTimer m_CycleCheckTimer;
 #endif
