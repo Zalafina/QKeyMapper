@@ -4,7 +4,7 @@
     <img src="https://img.shields.io/badge/QKeyMapper-a55eea?style=plastic">
     <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper?style=plastic&labelColor=474787"></a>
     <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?style=plastic&color=09e&labelColor=474787"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=82589F&style=plastic&labelColor=474787"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=B53471&style=plastic&labelColor=474787"></a>
     <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg?style=plastic&labelColor=474787"/></a>
 </p>
 
