@@ -14087,7 +14087,8 @@ void QKeyMapper::updateSystemTrayDisplay()
         m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getMonitoringStateQIcon());
         systray_tooltip_status = tr("Monitoring : ") + TrayInfo;
     }
-    else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+    else if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus
+        || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
         QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
         bool tabCustomImage_ShowAsTrayIcon = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowAsTrayIcon;
 
@@ -14131,16 +14132,22 @@ void QKeyMapper::updateSystemTrayDisplay()
             trayicon = m_MapProcessInfo.WindowIcon;
         }
         else {
-            trayicon = m_TrayIconSelectDialog->getMatchedStateQIcon();
+            if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
+                trayicon = m_TrayIconSelectDialog->getGlobalStateQIcon();
+            }
+            else {
+                trayicon = m_TrayIconSelectDialog->getMatchedStateQIcon();
+            }
         }
 
         m_SysTrayIcon->setIcon(trayicon);
-        systray_tooltip_status = tr("Mapping : ") + TrayInfo;
-    }
-    else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
-        /* Need to make a new global mapping status ICO */
-        m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getGlobalStateQIcon());
-        systray_tooltip_status = tr("Mapping : Global");
+
+        if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus) {
+            systray_tooltip_status = tr("Mapping : Global");
+        }
+        else {
+            systray_tooltip_status = tr("Mapping : ") + TrayInfo;
+        }
     }
     else {
         m_SysTrayIcon->setIcon(m_TrayIconSelectDialog->getIdleStateQIcon());
