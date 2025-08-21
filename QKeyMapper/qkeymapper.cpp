@@ -4027,7 +4027,7 @@ HWND QKeyMapper::createTransparentWindow()
 
     // Create layered window
     HWND hwnd = CreateWindowEx(
-        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
         L"QKeyMapper_TransparentWindow",
         NULL,
         WS_POPUP,
@@ -4277,7 +4277,7 @@ HWND QKeyMapper::createCrosshairWindow()
 
     // Create layered window
     HWND hwnd = CreateWindowEx(
-        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
         L"QKeyMapper_CrosshairWindow",
         NULL,
         WS_POPUP,
@@ -18573,6 +18573,7 @@ QPopupMessageLabel::QPopupMessageLabel(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_DeleteOnClose, false);
     setAlignment(Qt::AlignCenter);
 
     // Enable mouse pass-through while preserving transparent background
@@ -18613,6 +18614,7 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_DeleteOnClose, false);
 
     // Enable mouse pass-through while preserving transparent background
     createWinId();
