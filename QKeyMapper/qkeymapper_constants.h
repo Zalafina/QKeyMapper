@@ -869,15 +869,15 @@ namespace QKeyMapperConstants {
     inline constexpr const char SAO_FONTFILENAME[] = ":/sao_ui.otf";
 #endif
 
-    inline constexpr const char *USBIDS_QRC = ":/usb.ids";
+    inline constexpr const char USBIDS_QRC[] = ":/usb.ids";
 
-    inline constexpr const char *SOUNDFILE_START_QRC = ":/QKeyMapperStart.wav";
-    inline constexpr const char *SOUNDFILE_START = "QKeyMapperStart.wav";
-    inline constexpr const char *SOUNDFILE_STOP_QRC = ":/QKeyMapperStop.wav";
-    inline constexpr const char *SOUNDFILE_STOP = "QKeyMapperStop.wav";
+    inline constexpr const char SOUNDFILE_START_QRC[] = ":/QKeyMapperStart.wav";
+    inline constexpr const char SOUNDFILE_START[] = "QKeyMapperStart.wav";
+    inline constexpr const char SOUNDFILE_STOP_QRC[] = ":/QKeyMapperStop.wav";
+    inline constexpr const char SOUNDFILE_STOP[] = "QKeyMapperStop.wav";
 
-    inline constexpr const char *FONTNAME_ENGLISH = "Microsoft YaHei UI";
-    inline constexpr const char *FONTNAME_CHINESE = "NSimSun";
+    inline constexpr const char FONTNAME_ENGLISH[] = "Microsoft YaHei UI";
+    inline constexpr const char FONTNAME_CHINESE[] = "NSimSun";
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
@@ -889,45 +889,45 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char REGEX_PATTERN_SENDTEXT[] = R"(^SendText\(([\s\S]+)\)$)";
 
-    inline constexpr const char *ORIKEY_COMBOBOX_NAME = "orikeyComboBox";
-    inline constexpr const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
-    inline constexpr const char *SETUPDIALOG_ORIKEY_COMBOBOX_NAME = "SetupDialog_OriginalKeyListComboBox";
-    inline constexpr const char *SETUPDIALOG_MAPKEY_COMBOBOX_NAME = "SetupDialog_MappingKeyListComboBox";
+    inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
+    inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
+    inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";
+    inline constexpr const char SETUPDIALOG_MAPKEY_COMBOBOX_NAME[] = "SetupDialog_MappingKeyListComboBox";
 
-    inline constexpr const char *SETUPDIALOG_MAPKEY_LINEEDIT_NAME        = "SetupDialog_MappingKeyLineEdit";
-    inline constexpr const char *SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME  = "SetupDialog_MappingKey_KeyUpLineEdit";
+    inline constexpr const char SETUPDIALOG_MAPKEY_LINEEDIT_NAME[]        = "SetupDialog_MappingKeyLineEdit";
+    inline constexpr const char SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME[]  = "SetupDialog_MappingKey_KeyUpLineEdit";
 
-    inline constexpr const char *WINDOWSWITCHKEY_LINEEDIT_NAME = "windowswitchkeyLineEdit";
-    inline constexpr const char *MAPPINGSTARTKEY_LINEEDIT_NAME = "mappingStartKeyLineEdit";
-    inline constexpr const char *MAPPINGSTOPKEY_LINEEDIT_NAME = "mappingStopKeyLineEdit";
+    inline constexpr const char WINDOWSWITCHKEY_LINEEDIT_NAME[] = "windowswitchkeyLineEdit";
+    inline constexpr const char MAPPINGSTARTKEY_LINEEDIT_NAME[] = "mappingStartKeyLineEdit";
+    inline constexpr const char MAPPINGSTOPKEY_LINEEDIT_NAME[] = "mappingStopKeyLineEdit";
 
-    inline constexpr const char *MAPPINGTABLE_TAB_TEXT = "Tab";
+    inline constexpr const char MAPPINGTABLE_TAB_TEXT[] = "Tab";
 
-    inline constexpr const char *KEY_NONE_STR = "NONE";
-    inline constexpr const char *KEY_BLOCKED_STR = "BLOCKED";
-    inline constexpr const char *GAMEPAD_HOME_STR = "GamepadHome";
+    inline constexpr const char KEY_NONE_STR[] = "NONE";
+    inline constexpr const char KEY_BLOCKED_STR[] = "BLOCKED";
+    inline constexpr const char GAMEPAD_HOME_STR[] = "GamepadHome";
 
-    inline constexpr const char *MOUSE_MOVE_PREFIX  = "Mouse-Move";
-    inline constexpr const char *MOUSE_BUTTON_PREFIX  = "Mouse-";
-    inline constexpr const char *MOUSE_WINDOWPOINT_POSTFIX  = "_WindowPoint";
-    inline constexpr const char *MOUSE_SCREENPOINT_POSTFIX  = "_ScreenPoint";
-    inline constexpr const char *MOUSE_L_STR  = "Mouse-L";
-    inline constexpr const char *MOUSE_R_STR  = "Mouse-R";
-    inline constexpr const char *MOUSE_M_STR  = "Mouse-M";
-    inline constexpr const char *MOUSE_X1_STR = "Mouse-X1";
-    inline constexpr const char *MOUSE_X2_STR = "Mouse-X2";
-    inline constexpr const char *MOUSE_L_WINDOWPOINT_STR  = "Mouse-L_WindowPoint";
-    inline constexpr const char *MOUSE_R_WINDOWPOINT_STR  = "Mouse-R_WindowPoint";
-    inline constexpr const char *MOUSE_M_WINDOWPOINT_STR  = "Mouse-M_WindowPoint";
-    inline constexpr const char *MOUSE_X1_WINDOWPOINT_STR = "Mouse-X1_WindowPoint";
-    inline constexpr const char *MOUSE_X2_WINDOWPOINT_STR = "Mouse-X2_WindowPoint";
-    inline constexpr const char *MOUSE_L_SCREENPOINT_STR  = "Mouse-L_ScreenPoint";
-    inline constexpr const char *MOUSE_R_SCREENPOINT_STR  = "Mouse-R_ScreenPoint";
-    inline constexpr const char *MOUSE_M_SCREENPOINT_STR  = "Mouse-M_ScreenPoint";
-    inline constexpr const char *MOUSE_X1_SCREENPOINT_STR = "Mouse-X1_ScreenPoint";
-    inline constexpr const char *MOUSE_X2_SCREENPOINT_STR = "Mouse-X2_ScreenPoint";
-    inline constexpr const char *MOUSE_MOVE_WINDOWPOINT_STR  = "Mouse-Move_WindowPoint";
-    inline constexpr const char *MOUSE_MOVE_SCREENPOINT_STR  = "Mouse-Move_ScreenPoint";
+    inline constexpr const char MOUSE_MOVE_PREFIX[]  = "Mouse-Move";
+    inline constexpr const char MOUSE_BUTTON_PREFIX[]  = "Mouse-";
+    inline constexpr const char MOUSE_WINDOWPOINT_POSTFIX[]  = "_WindowPoint";
+    inline constexpr const char MOUSE_SCREENPOINT_POSTFIX[]  = "_ScreenPoint";
+    inline constexpr const char MOUSE_L_STR[]  = "Mouse-L";
+    inline constexpr const char MOUSE_R_STR[]  = "Mouse-R";
+    inline constexpr const char MOUSE_M_STR[]  = "Mouse-M";
+    inline constexpr const char MOUSE_X1_STR[] = "Mouse-X1";
+    inline constexpr const char MOUSE_X2_STR[] = "Mouse-X2";
+    inline constexpr const char MOUSE_L_WINDOWPOINT_STR[]  = "Mouse-L_WindowPoint";
+    inline constexpr const char MOUSE_R_WINDOWPOINT_STR[]  = "Mouse-R_WindowPoint";
+    inline constexpr const char MOUSE_M_WINDOWPOINT_STR[]  = "Mouse-M_WindowPoint";
+    inline constexpr const char MOUSE_X1_WINDOWPOINT_STR[] = "Mouse-X1_WindowPoint";
+    inline constexpr const char MOUSE_X2_WINDOWPOINT_STR[] = "Mouse-X2_WindowPoint";
+    inline constexpr const char MOUSE_L_SCREENPOINT_STR[]  = "Mouse-L_ScreenPoint";
+    inline constexpr const char MOUSE_R_SCREENPOINT_STR[]  = "Mouse-R_ScreenPoint";
+    inline constexpr const char MOUSE_M_SCREENPOINT_STR[]  = "Mouse-M_ScreenPoint";
+    inline constexpr const char MOUSE_X1_SCREENPOINT_STR[] = "Mouse-X1_ScreenPoint";
+    inline constexpr const char MOUSE_X2_SCREENPOINT_STR[] = "Mouse-X2_ScreenPoint";
+    inline constexpr const char MOUSE_MOVE_WINDOWPOINT_STR[]  = "Mouse-Move_WindowPoint";
+    inline constexpr const char MOUSE_MOVE_SCREENPOINT_STR[]  = "Mouse-Move_ScreenPoint";
 
     inline constexpr const int SHOW_MODE_NONE                = 0;
     inline constexpr const int SHOW_MODE_SCREEN_MOUSEPOINTS  = 1;
