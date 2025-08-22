@@ -229,7 +229,7 @@
    <property name="geometry">
     <rect>
      <x>810</x>
-     <y>490</y>
+     <y>460</y>
      <width>100</width>
      <height>22</height>
     </rect>
@@ -242,7 +242,7 @@
    <property name="geometry">
     <rect>
      <x>754</x>
-     <y>490</y>
+     <y>460</y>
      <width>51</width>
      <height>22</height>
     </rect>
@@ -283,7 +283,7 @@
   <widget class="QLabel" name="pointLabel">
    <property name="geometry">
     <rect>
-     <x>764</x>
+     <x>904</x>
      <y>460</y>
      <width>41</width>
      <height>22</height>
@@ -299,7 +299,7 @@
   <widget class="QLabel" name="pointDisplayLabel">
    <property name="geometry">
     <rect>
-     <x>810</x>
+     <x>950</x>
      <y>462</y>
      <width>100</width>
      <height>20</height>
@@ -1857,21 +1857,11 @@
     </widget>
    </widget>
   </widget>
-  <widget class="QLineEdit" name="sendTextLineEdit">
-   <property name="geometry">
-    <rect>
-     <x>810</x>
-     <y>550</y>
-     <width>231</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QLabel" name="sendTextLabel">
    <property name="geometry">
     <rect>
      <x>754</x>
-     <y>550</y>
+     <y>520</y>
      <width>51</width>
      <height>22</height>
     </rect>
@@ -1966,7 +1956,7 @@
    <property name="geometry">
     <rect>
      <x>810</x>
-     <y>523</y>
+     <y>493</y>
      <width>151</width>
      <height>16</height>
     </rect>
@@ -1982,7 +1972,7 @@
    <property name="geometry">
     <rect>
      <x>744</x>
-     <y>520</y>
+     <y>490</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -1998,7 +1988,7 @@
    <property name="geometry">
     <rect>
      <x>970</x>
-     <y>520</y>
+     <y>490</y>
      <width>51</width>
      <height>22</height>
     </rect>
@@ -2334,6 +2324,16 @@
    </property>
    <property name="autoDefault">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="sendTextPlainTextEdit">
+   <property name="geometry">
+    <rect>
+     <x>810</x>
+     <y>520</y>
+     <width>231</width>
+     <height>51</height>
+    </rect>
    </property>
   </widget>
  </widget>

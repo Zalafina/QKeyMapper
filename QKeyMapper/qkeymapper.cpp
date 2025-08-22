@@ -309,7 +309,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->processLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->windowTitleLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->descriptionLineEdit->setFocusPolicy(Qt::ClickFocus);
-    ui->sendTextLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->sendTextPlainTextEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->dataPortSpinBox->setRange(DATA_PORT_MIN, DATA_PORT_MAX);
     ui->brakeThresholdDoubleSpinBox->setDecimals(GRIP_THRESHOLD_DECIMALS);
@@ -4429,7 +4429,7 @@ int QKeyMapper::getOriginalKeyEditMode()
 
 QString QKeyMapper::getSendTextString()
 {
-    return getInstance()->ui->sendTextLineEdit->text();
+    return getInstance()->ui->sendTextPlainTextEdit->toPlainText();
 }
 
 void QKeyMapper::setCurrentOriKeyRecordText(const QString &newcombinationkeytext)
@@ -12391,7 +12391,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // m_originalKeySeqEdit->setEnabled(status);
     ui->originalKeyRecordLineEdit->setEnabled(status);
     ui->originalKeyEditModeButton->setEnabled(status);
-    ui->sendTextLineEdit->setEnabled(status);
+    ui->sendTextPlainTextEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     m_orikeyComboBox->setEnabled(status);
 
@@ -16330,7 +16330,7 @@ void QKeyMapper::resetFontSize()
         ui->mappingStopKeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->originalKeyRecordLineEdit->setFont(customFont);
-        ui->sendTextLineEdit->setFont(customFont);
+        ui->sendTextPlainTextEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
         ui->pushLevelSpinBox->setFont(customFont);
         ui->pressTimeSpinBox->setFont(customFont);
@@ -16381,7 +16381,7 @@ void QKeyMapper::resetFontSize()
         ui->mappingStopKeyLineEdit->setFont(customFont);
         // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
         ui->originalKeyRecordLineEdit->setFont(customFont);
-        ui->sendTextLineEdit->setFont(customFont);
+        ui->sendTextPlainTextEdit->setFont(customFont);
         ui->waitTimeSpinBox->setFont(customFont);
         ui->pushLevelSpinBox->setFont(customFont);
         ui->pressTimeSpinBox->setFont(customFont);
@@ -17767,7 +17767,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else if (currentMapKeyText == SENDTEXT_STR) {
-                QString sendtext = ui->sendTextLineEdit->text();
+                QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
                 if (sendtext.isEmpty()) {
                     QString message = tr("Please input the text to send!");
                     showFailurePopup(message);
@@ -17920,7 +17920,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
                 else if (currentMapKeyText == SENDTEXT_STR) {
-                    QString sendtext = ui->sendTextLineEdit->text();
+                    QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
                     if (sendtext.isEmpty()) {
                         QString message = tr("Please input the text to send!");
                         showFailurePopup(message);
