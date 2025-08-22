@@ -887,6 +887,8 @@ namespace QKeyMapperConstants {
     inline const QColor STATUS_ON_COLOR = QColor(236, 165, 56);
 #endif
 
+    inline constexpr const char REGEX_PATTERN_SENDTEXT[] = R"(^SendText\(([\s\S]+)\)$)";
+
     inline constexpr const char *ORIKEY_COMBOBOX_NAME = "orikeyComboBox";
     inline constexpr const char *MAPKEY_COMBOBOX_NAME = "mapkeyComboBox";
     inline constexpr const char *SETUPDIALOG_ORIKEY_COMBOBOX_NAME = "SetupDialog_OriginalKeyListComboBox";

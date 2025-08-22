@@ -1046,7 +1046,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
 
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
-    static QRegularExpression sendTextRegexp(R"(^SendText\((.+)\)$)"); // RegularExpression to match "SendText(string)"
+    static QRegularExpression sendTextRegexp(REGEX_PATTERN_SENDTEXT); // RegularExpression to match "SendText(string)"
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
