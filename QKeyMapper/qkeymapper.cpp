@@ -21112,3 +21112,8 @@ void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::Ch
         }
     }
 }
+
+void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
+{
+    ui->sendTextPlainTextEdit->setToolTip(ui->sendTextPlainTextEdit->toPlainText());
+}

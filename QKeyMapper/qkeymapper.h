@@ -1067,6 +1067,8 @@ private slots:
 
     void on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state);
 
+    void on_sendTextPlainTextEdit_textChanged();
+
 private:
     // Helper methods for saving/restoring category filter state
     QString getCurrentCategoryFilter() const;
