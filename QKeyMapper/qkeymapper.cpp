@@ -613,6 +613,18 @@ QKeyMapper::~QKeyMapper()
         m_FloatingIconWindow = Q_NULLPTR;
     }
 
+    // Fix memory leak: explicitly delete popup message objects
+    if (m_PopupMessageAnimation != Q_NULLPTR) {
+        m_PopupMessageAnimation->stop();
+        delete m_PopupMessageAnimation;
+        m_PopupMessageAnimation = Q_NULLPTR;
+    }
+
+    if (m_PopupMessageLabel != Q_NULLPTR) {
+        delete m_PopupMessageLabel;
+        m_PopupMessageLabel = Q_NULLPTR;
+    }
+
     exitDeleteKeyMappingTabWidget();
 }
 
@@ -18573,6 +18585,7 @@ QPopupMessageLabel::QPopupMessageLabel(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    // Prevent auto-deletion on close since this widget is reused frequently
     setAttribute(Qt::WA_DeleteOnClose, false);
     setAlignment(Qt::AlignCenter);
 
@@ -18614,6 +18627,7 @@ QPopupNotification::QPopupNotification(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    // Prevent auto-deletion on close since this notification widget is reused frequently
     setAttribute(Qt::WA_DeleteOnClose, false);
 
     // Enable mouse pass-through while preserving transparent background
@@ -18805,6 +18819,7 @@ QFloatingIconWindow::QFloatingIconWindow(QWidget *parent)
     setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_ShowWithoutActivating);
+    // Prevent auto-deletion on close since this floating window is reused frequently
     setAttribute(Qt::WA_DeleteOnClose, false);
 
     // Enable mouse tracking to receive mouse move events even without mouse button pressed
