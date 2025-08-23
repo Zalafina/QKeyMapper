@@ -887,14 +887,15 @@ namespace QKeyMapperConstants {
     inline const QColor STATUS_ON_COLOR = QColor(236, 165, 56);
 #endif
 
-    // Use non-greedy matching for SendText to handle nested parentheses correctly
-    // e.g., SendText(abc()) should capture "abc()" not "abc())"
-    // Keep anchors (^$) for exact string matching, MultilineOption allows newlines in content
-    inline constexpr const char REGEX_PATTERN_SENDTEXT[] = R"(^SendText\(([\s\S]+?)\)$)";
+    // Use pattern that matches everything between SendText( and the last ) for complete content capture
+    // This handles complex nested content including multiple parentheses levels and newlines
+    // For proper bracket matching, the application logic should handle bracket balancing
+    inline constexpr const char REGEX_PATTERN_SENDTEXT[] = R"(^SendText\(([\s\S]*)\)$)";
 
     // Pattern for finding SendText parts in a composite string (without anchors)
     // Used when searching for SendText segments within a longer mapping string
-    inline constexpr const char REGEX_PATTERN_SENDTEXT_FIND[] = R"(SendText\(([^()]*(?:\([^()]*\)[^()]*)*)\))";
+    // Uses non-greedy matching to find individual SendText parts, but may need special handling for nested brackets
+    inline constexpr const char REGEX_PATTERN_SENDTEXT_FIND[] = R"(SendText\(([\s\S]*?)\))";
 
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
