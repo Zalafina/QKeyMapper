@@ -11341,12 +11341,15 @@ ParsedCommand QKeyMapper_Worker::parseUserInput(const QString &input)
     );
     QRegularExpressionMatch mDir = reWorkDir.match(str);
     if (mDir.hasMatch()) {
-        result.workDir = mDir.captured(1);
+        QString workdir = mDir.captured(1);
+        if (!workdir.isEmpty() && QFileInfo::exists(workdir) && QFileInfo(workdir).isDir()) {
+            result.workDir = workdir;
+        }
         str.remove(mDir.captured(0)); // Remove this part from the command line
     }
 
     // 2. Extract ShowOption=Max|Min|Hide
-    QRegularExpression reShowOpt(
+    static QRegularExpression reShowOpt(
         R"(ShowOption=(\w+))",
         QRegularExpression::CaseInsensitiveOption
     );
