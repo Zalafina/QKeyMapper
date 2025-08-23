@@ -3509,7 +3509,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
             static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
             static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((\d+),(\d+)\)$)");
-            static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT); // RegularExpression to match "SendText(string)"
+            // Use non-greedy matching and multiline support for SendText
+            static QRegularExpression sendtext_regex(
+                REGEX_PATTERN_SENDTEXT,
+                QRegularExpression::MultilineOption
+            );
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
