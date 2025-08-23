@@ -11332,7 +11332,7 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
 ParsedCommand QKeyMapper_Worker::parseUserInput(const QString &input)
 {
     ParsedCommand result;
-    QString str = input.trimmed();
+    QString str = input.simplified();
 
     // 1. Extract WorkingDir="..."
     static QRegularExpression reWorkDir(
@@ -11383,7 +11383,7 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.wShowWindow = static_cast<WORD>(showCmd);
 
-    PROCESS_INFORMATION pi;
+    PROCESS_INFORMATION pi = {};
     std::wstring cmd = cmdLine.toStdWString(); // Persist command line
     std::wstring wdir = workDir.isEmpty() ? L"" : workDir.toStdWString();
 
@@ -11415,14 +11415,12 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
     std::wstring wdir2 = wdir; // Already persisted
 
     // Base fMask
-    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
 
-    // If it is a CLSID or Shell Namespace object, add SEE_MASK_INVOKEIDLIST
-    if (!wfile.empty() && wfile.rfind(L"::", 0) == 0) {
+    sei.lpVerb = wverb.empty() ? nullptr : wverb.c_str();
+    if (wverb == SYSTEM_VERB_PROPERTIES) {
         sei.fMask |= SEE_MASK_INVOKEIDLIST;
     }
-
-    sei.lpVerb      = wverb.empty() ? nullptr : wverb.c_str();
     sei.lpFile      = wfile.c_str();
     sei.lpDirectory = wdir2.empty() ? nullptr : wdir2.c_str();
     sei.nShow       = showCmd;

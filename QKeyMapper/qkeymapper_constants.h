@@ -973,6 +973,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char RUNWAIT_STR[]     = "RunWait";
     inline constexpr const char KEYSEQUENCEBREAK_STR[] = "KeySequenceBreak";
 
+    inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";
+
     inline constexpr const char JOY_KEY_PREFIX[]  = "Joy-";
     inline constexpr const char VJOY_KEY_PREFIX[]  = "vJoy-";
 
