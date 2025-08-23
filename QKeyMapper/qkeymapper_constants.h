@@ -665,6 +665,8 @@ namespace QKeyMapperConstants {
     inline constexpr const int MAPPING_KEYS_MAX = 1000;
     inline constexpr const int KEY_SEQUENCE_MAX = 20000;
 
+    inline constexpr const int RUNWAIT_TIMEOUT = 15000;
+
     /* constant chars for QKeyMapper */
     inline constexpr const char PROGRAM_NAME[] = "QKeyMapper";
     inline constexpr const char CHECK_UPDATES_URL_GITHUB[] = "https://api.github.com/repos/Zalafina/QKeyMapper/releases/latest";
@@ -967,6 +969,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char ORIKEY_WITHNOTE_FORMAT[] = "%1【%2】";
 
     inline constexpr const char SENDTEXT_STR[]    = "SendText";
+    inline constexpr const char RUN_STR[]         = "Run";
+    inline constexpr const char RUNWAIT_STR[]     = "RunWait";
     inline constexpr const char KEYSEQUENCEBREAK_STR[] = "KeySequenceBreak";
 
     inline constexpr const char JOY_KEY_PREFIX[]  = "Joy-";

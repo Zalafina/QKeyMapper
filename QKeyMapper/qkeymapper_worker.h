@@ -390,6 +390,12 @@ struct SendInputTaskController {
     bool task_keyup_sent;
 };
 
+struct ParsedCommand {
+    QString cmdLine;
+    QString workDir;
+    int showCmd = SW_SHOWNORMAL;
+};
+
 #ifdef DINPUT_TEST
 typedef HRESULT(WINAPI* GetDeviceStateT)(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
 typedef HRESULT(WINAPI* GetDeviceDataT)(IDirectInputDevice8*, DWORD, LPDIDEVICEOBJECTDATA, LPDWORD, DWORD);
@@ -950,6 +956,20 @@ public:
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
     static void breakAllRunningKeySequence(void);
+
+    static ParsedCommand parseUserInput(const QString &input);
+    // Run an external command with optional wait, working directory, window show mode, and verb.
+    // Parameters:
+    //   cmdLine  - Command line string (program + arguments, URL, CLSID, etc.)
+    //   runWait  - If true, wait until the process finishes
+    //   workDir  - Working directory (empty string = current directory)
+    //   showCmd  - Window show mode (SW_SHOWNORMAL, SW_SHOWMAXIMIZED, SW_SHOWMINIMIZED, SW_HIDE)
+    //   verb     - Shell verb (e.g., "open", "edit", "print"), empty = default verb
+    static bool runCommand(const QString &cmdLine,
+                           bool runWait = false,
+                           const QString &workDir = QString(),
+                           int showCmd = SW_SHOWNORMAL,
+                           const QString &verb = QString());
 
 public slots:
     static void onLongPressTimeOut(const QString keycodeStringWithPressTime);

@@ -1306,7 +1306,8 @@
         <location filename="../qkeymapper.ui" line="1880"/>
         <location filename="../qkeymapper.cpp" line="15713"/>
         <source>Text</source>
-        <translation>テキスト</translation>
+        <translation>テキスト
+/ コマンド</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1896"/>

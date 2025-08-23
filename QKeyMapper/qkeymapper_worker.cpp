@@ -11329,6 +11329,113 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
     }
 }
 
+ParsedCommand QKeyMapper_Worker::parseUserInput(const QString &input)
+{
+    ParsedCommand result;
+    QString str = input.trimmed();
+
+    // 1. Extract WorkingDir="..."
+    static QRegularExpression reWorkDir(
+        "WorkingDir=\"([^\"]+)\"",
+        QRegularExpression::CaseInsensitiveOption
+    );
+    QRegularExpressionMatch mDir = reWorkDir.match(str);
+    if (mDir.hasMatch()) {
+        result.workDir = mDir.captured(1);
+        str.remove(mDir.captured(0)); // Remove this part from the command line
+    }
+
+    // 2. Extract ShowOption=Max|Min|Hide
+    QRegularExpression reShowOpt(
+        R"(ShowOption=(\w+))",
+        QRegularExpression::CaseInsensitiveOption
+    );
+    QRegularExpressionMatch mShow = reShowOpt.match(str);
+    if (mShow.hasMatch()) {
+        QString opt = mShow.captured(1).toLower();
+        if (opt == "max") {
+            result.showCmd = SW_MAXIMIZE;
+        } else if (opt == "min") {
+            result.showCmd = SW_MINIMIZE;
+        } else if (opt == "hide") {
+            result.showCmd = SW_HIDE;
+        }
+        str.remove(mShow.captured(0));
+    }
+
+    // 3. The remaining part is treated as cmdLine
+    result.cmdLine = str.trimmed();
+
+    return result;
+}
+
+bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
+                                   bool runWait,
+                                   const QString &workDir,
+                                   int showCmd,
+                                   const QString &verb)
+{
+    // Prepare STARTUPINFO for CreateProcess
+    STARTUPINFOW si = { sizeof(si) };
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = static_cast<WORD>(showCmd);
+
+    PROCESS_INFORMATION pi;
+    std::wstring cmd = cmdLine.toStdWString(); // Persist command line
+    std::wstring wdir = workDir.isEmpty() ? L"" : workDir.toStdWString();
+
+    // Try CreateProcessW first (direct executable launch)
+    if (CreateProcessW(
+            nullptr,                        // Application name
+            cmd.data(),                     // Command line (must be writable)
+            nullptr, nullptr,               // Security attributes
+            FALSE,                          // No handle inheritance
+            0,                              // Creation flags
+            nullptr,                        // Environment
+            wdir.empty() ? nullptr : wdir.c_str(), // Working directory
+            &si, &pi))
+    {
+        if (runWait) {
+            WaitForSingleObject(pi.hProcess, INFINITE);
+        }
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        return true;
+    }
+
+    // If CreateProcess fails, try ShellExecuteExW
+    SHELLEXECUTEINFOW sei = { sizeof(sei) };
+
+    // Persist verb / file / directory
+    std::wstring wverb = verb.isEmpty() ? L"" : verb.toStdWString();
+    std::wstring wfile = cmdLine.toStdWString(); // Must be persisted
+    std::wstring wdir2 = wdir; // Already persisted
+
+    // Base fMask
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+
+    // If it is a CLSID or Shell Namespace object, add SEE_MASK_INVOKEIDLIST
+    if (!wfile.empty() && wfile.rfind(L"::", 0) == 0) {
+        sei.fMask |= SEE_MASK_INVOKEIDLIST;
+    }
+
+    sei.lpVerb      = wverb.empty() ? nullptr : wverb.c_str();
+    sei.lpFile      = wfile.c_str();
+    sei.lpDirectory = wdir2.empty() ? nullptr : wdir2.c_str();
+    sei.nShow       = showCmd;
+
+    if (ShellExecuteExW(&sei)) {
+        if (runWait && sei.hProcess) {
+            WaitForSingleObject(sei.hProcess, INFINITE);
+            CloseHandle(sei.hProcess);
+        }
+        return true;
+    }
+
+    // Both methods failed
+    return false;
+}
+
 void QKeyMapper_Worker::onLongPressTimeOut(const QString keycodeStringWithPressTime)
 {
 #ifdef DEBUG_LOGOUT_ON

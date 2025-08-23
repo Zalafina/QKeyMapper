@@ -1863,14 +1863,14 @@
      <x>754</x>
      <y>520</y>
      <width>51</width>
-     <height>22</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="text">
     <string>Text</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTop|Qt::AlignmentFlag::AlignTrailing</set>
    </property>
   </widget>
   <widget class="QLabel" name="gamepadSelectLabel">

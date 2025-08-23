@@ -1312,7 +1312,8 @@
         <location filename="../qkeymapper.ui" line="1880"/>
         <location filename="../qkeymapper.cpp" line="15713"/>
         <source>Text</source>
-        <translation>Text</translation>
+        <translation>Text
+/ CMD</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1896"/>
