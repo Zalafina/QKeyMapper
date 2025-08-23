@@ -1,0 +1,235 @@
+[1mdiff --git a/QKeyMapper/qitemsetupdialog.cpp b/QKeyMapper/qitemsetupdialog.cpp[m
+[1mindex 09274c3..4c03ba2 100644[m
+[1m--- a/QKeyMapper/qitemsetupdialog.cpp[m
+[1m+++ b/QKeyMapper/qitemsetupdialog.cpp[m
+[36m@@ -473,6 +473,74 @@[m [mQLineEdit *QItemSetupDialog::getKeyRecordLineEdit()[m
+     return ui->keyRecordLineEdit;[m
+ }[m
+ [m
+[32m+[m[32mQPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex)[m
+[32m+[m[32m{[m
+[32m+[m[32m    QStringList sendTextParts;[m
+[32m+[m[32m    QString tempMappingKey = mappingKey;[m
+[32m+[m[32m    int currentPos = 0;[m
+[32m+[m[32m    int replacementIndex = 0;[m
+[32m+[m
+[32m+[m[32m    while (currentPos < mappingKey.length()) {[m
+[32m+[m[32m        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);[m
+[32m+[m[32m        if (!match.hasMatch()) {[m
+[32m+[m[32m            break;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        // Check if brackets are balanced in the captured content[m
+[32m+[m[32m        QString captured = match.captured(1);[m
+[32m+[m[32m        int bracketCount = 0;[m
+[32m+[m[32m        bool isBalanced = true;[m
+[32m+[m
+[32m+[m[32m        for (const QChar &ch : captured) {[m
+[32m+[m[32m            if (ch == '(') bracketCount++;[m
+[32m+[m[32m            else if (ch == ')') bracketCount--;[m
+[32m+[m[32m            if (bracketCount < 0) {[m
+[32m+[m[32m                isBalanced = false;[m
+[32m+[m[32m                break;[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m[32m        isBalanced = isBalanced && (bracketCount == 0);[m
+[32m+[m
+[32m+[m[32m        if (isBalanced) {[m
+[32m+[m[32m            // Brackets are balanced, use this match[m
+[32m+[m[32m            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);[m
+[32m+[m[32m            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part[m
+[32m+[m[32m            tempMappingKey.replace(match.captured(0), placeholder);[m
+[32m+[m[32m            currentPos = match.capturedEnd();[m
+[32m+[m[32m        } else {[m
+[32m+[m[32m            // Brackets not balanced, try to find the correct closing bracket[m
+[32m+[m[32m            int startPos = match.capturedStart();[m
+[32m+[m[32m            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"[m
+[32m+[m[32m            if (openPos != -1) {[m
+[32m+[m[32m                int closePos = openPos + 1;[m
+[32m+[m[32m                int depth = 1;[m
+[32m+[m
+[32m+[m[32m                while (closePos < mappingKey.length() && depth > 0) {[m
+[32m+[m[32m                    if (mappingKey[closePos] == '(') depth++;[m
+[32m+[m[32m                    else if (mappingKey[closePos] == ')') depth--;[m
+[32m+[m[32m                    closePos++;[m
+[32m+[m[32m                }[m
+[32m+[m
+[32m+[m[32m                if (depth == 0) {[m
+[32m+[m[32m                    // Found balanced brackets[m
+[32m+[m[32m                    QString fullMatch = mappingKey.mid(startPos, closePos - startPos);[m
+[32m+[m[32m                    QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);[m
+[32m+[m[32m                    sendTextParts.append(fullMatch);[m
+[32m+[m[32m                    tempMappingKey.replace(fullMatch, placeholder);[m
+[32m+[m[32m                    currentPos = closePos;[m
+[32m+[m[32m                } else {[m
+[32m+[m[32m                    // Still unbalanced, move past this match[m
+[32m+[m[32m                    currentPos = match.capturedEnd();[m
+[32m+[m[32m                }[m
+[32m+[m[32m            } else {[m
+[32m+[m[32m                currentPos = match.capturedEnd();[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    return qMakePair(tempMappingKey, sendTextParts);[m
+[32m+[m[32m}[m
+[32m+[m
+ #ifndef CLOSE_SETUPDIALOG_ONDATACHANGED[m
+ bool QItemSetupDialog::event(QEvent *event)[m
+ {[m
+[36m@@ -1748,68 +1816,9 @@[m [mvoid QItemSetupDialog::on_mappingKeyUpdateButton_clicked()[m
+     QString mappingKey = m_MappingKeyLineEdit->text();[m
+ [m
+     // Find and temporarily replace SendText content to preserve spaces with bracket balancing[m
+[31m-    QStringList sendTextParts;[m
+[31m-    QString tempMappingKey = mappingKey;[m
+[31m-    int currentPos = 0;[m
+[31m-    int replacementIndex = 0;[m
+[31m-[m
+[31m-    while (currentPos < mappingKey.length()) {[m
+[31m-        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);[m
+[31m-        if (!match.hasMatch()) {[m
+[31m-            break;[m
+[31m-        }[m
+[31m-[m
+[31m-        // Check if brackets are balanced in the captured content[m
+[31m-        QString captured = match.captured(1);[m
+[31m-        int bracketCount = 0;[m
+[31m-        bool isBalanced = true;[m
+[31m-[m
+[31m-        for (const QChar &ch : captured) {[m
+[31m-            if (ch == '(') bracketCount++;[m
+[31m-            else if (ch == ')') bracketCount--;[m
+[31m-            if (bracketCount < 0) {[m
+[31m-                isBalanced = false;[m
+[31m-                break;[m
+[31m-            }[m
+[31m-        }[m
+[31m-        isBalanced = isBalanced && (bracketCount == 0);[m
+[31m-[m
+[31m-        if (isBalanced) {[m
+[31m-            // Brackets are balanced, use this match[m
+[31m-            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);[m
+[31m-            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part[m
+[31m-            tempMappingKey.replace(match.captured(0), placeholder);[m
+[31m-            currentPos = match.capturedEnd();[m
+[31m-        } else {[m
+[31m-            // Brackets not balanced, try to find the correct closing bracket[m
+[31m-            int startPos = match.capturedStart();[m
+[31m-            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"[m
+[31m-            if (openPos != -1) {[m
+[31m-                int closePos = openPos + 1;[m
+[31m-                int depth = 1;[m
+[31m-[m
+[31m-                while (closePos < mappingKey.length() && depth > 0) {[m
+[31m-                    if (mappingKey[closePos] == '(') depth++;[m
+[31m-                    else if (mappingKey[closePos] == ')') depth--;[m
+[31m-                    closePos++;[m
+[31m-                }[m
+[31m-[m
+[31m-                if (depth == 0) {[m
+[31m-                    // Found balanced brackets[m
+[31m-                    QString fullMatch = mappingKey.mid(startPos, closePos - startPos);[m
+[31m-                    QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);[m
+[31m-                    sendTextParts.append(fullMatch);[m
+[31m-                    tempMappingKey.replace(fullMatch, placeholder);[m
+[31m-                    currentPos = closePos;[m
+[31m-                } else {[m
+[31m-                    // Still unbalanced, move past this match[m
+[31m-                    currentPos = match.capturedEnd();[m
+[31m-                }[m
+[31m-            } else {[m
+[31m-                currentPos = match.capturedEnd();[m
+[31m-            }[m
+[31m-        }[m
+[31m-    }[m
+[32m+[m[32m    QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);[m
+[32m+[m[32m    QString tempMappingKey = extractResult.first;[m
+[32m+[m[32m    QStringList sendTextParts = extractResult.second;[m
+ [m
+     // Remove whitespace from the temporary string (excluding SendText content)[m
+     tempMappingKey.remove(whitespace_reg);[m
+[36m@@ -1866,68 +1875,9 @@[m [mvoid QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()[m
+     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();[m
+ [m
+     // Find and temporarily replace SendText content to preserve spaces with bracket balancing[m
+[31m-    QStringList sendTextParts;[m
+[31m-    QString tempMappingKey = mappingKey;[m
+[31m-    int currentPos = 0;[m
+[31m-    int replacementIndex = 0;[m
+[31m-[m
+[31m-    while (currentPos < mappingKey.length()) {[m
+[31m-        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);[m
+[31m-        if (!match.hasMatch()) {[m
+[31m-            break;[m
+[31m-        }[m
+[31m-[m
+[31m-        // Check if brackets are balanced in the captured content[m
+[31m-        QString captured = match.captured(1);[m
+[31m-        int bracketCount = 0;[m
+[31m-        bool isBalanced = true;[m
+[31m-[m
+[31m-        for (const QChar &ch : captured) {[m
+[31m-            if (ch == '(') bracketCount++;[m
+[31m-            else if (ch == ')') bracketCount--;[m
+[31m-            if (bracketCount < 0) {[m
+[31m-                isBalanced = false;[m
+[31m-                break;[m
+[31m-            }[m
+[31m-        }[m
+[31m-        isBalanced = isBalanced && (bracketCount == 0);[m
+[31m-[m
+[31m-        if (isBalanced) {[m
+[31m-            // Brackets are balanced, use this match[m
+[31m-            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);[m
+[31m-            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part[m
+[31m-            tempMappingKey.replace(match.captured(0), placeholder);[m
+[31m-            currentPos = match.capturedEnd();[m
+[31m-        } else {[m
+[31m-            // Brackets not balanced, try to find the correct closing bracket[m
+[31m-            int startPos = match.capturedStart();[m
+[31m-            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"[m
+[31m-            if (openPos != -1) {[m
+[31m-                int closePos = openPos + 1;[m
+[31m-                int depth = 1;[m
+[31m-[m
+[31m-                while (closePos < mappingKey.length() && depth > 0) {[m
+[31m-                    if (mappingKey[closePos] == '(') depth++;[m
+[31m-                    else if (mappingKey[closePos] == ')') depth--;[m
+[31m-                    closePos++;[m
+[31m-                }[m
+[31m-[m
+[31m-                if (depth == 0) {[m
+[31m-                    // Found balanced brackets[m
+[31m-                    QString fullMatch = mappingKey.mid(startPos, closePos - startPos);[m
+[31m-                    QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);[m
+[31m-                    sendTextParts.append(fullMatch);[m
+[31m-                    tempMappingKey.replace(fullMatch, placeholder);[m
+[31m-                    currentPos = closePos;[m
+[31m-                } else {[m
+[31m-                    // Still unbalanced, move past this match[m
+[31m-                    currentPos = match.capturedEnd();[m
+[31m-                }[m
+[31m-            } else {[m
+[31m-                currentPos = match.capturedEnd();[m
+[31m-            }[m
+[31m-        }[m
+[31m-    }[m
+[32m+[m[32m    QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);[m
+[32m+[m[32m    QString tempMappingKey = extractResult.first;[m
+[32m+[m[32m    QStringList sendTextParts = extractResult.second;[m
+ [m
+     // Remove whitespace from the temporary string (excluding SendText content)[m
+     tempMappingKey.remove(whitespace_reg);[m
+[1mdiff --git a/QKeyMapper/qitemsetupdialog.h b/QKeyMapper/qitemsetupdialog.h[m
+[1mindex a45b3fc..ae75170 100644[m
+[1m--- a/QKeyMapper/qitemsetupdialog.h[m
+[1m+++ b/QKeyMapper/qitemsetupdialog.h[m
+[36m@@ -46,6 +46,7 @@[m [mpublic:[m
+     static QString getCurrentOriKeyListText(void);[m
+     static QString getCurrentMapKeyListText(void);[m
+     static void setEditingMappingKeyLineEdit(int editing_lineedit);[m
+[32m+[m[32m    static QPair<QString, QStringList> extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex);[m
+ [m
+     QLineEdit *getKeyRecordLineEdit(void);[m
+ [m

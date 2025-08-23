@@ -473,6 +473,74 @@ QLineEdit *QItemSetupDialog::getKeyRecordLineEdit()
     return ui->keyRecordLineEdit;
 }
 
+QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex)
+{
+    QStringList sendTextParts;
+    QString tempMappingKey = mappingKey;
+    int currentPos = 0;
+    int replacementIndex = 0;
+
+    while (currentPos < mappingKey.length()) {
+        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // Check if brackets are balanced in the captured content
+        QString captured = match.captured(1);
+        int bracketCount = 0;
+        bool isBalanced = true;
+
+        for (const QChar &ch : captured) {
+            if (ch == '(') bracketCount++;
+            else if (ch == ')') bracketCount--;
+            if (bracketCount < 0) {
+                isBalanced = false;
+                break;
+            }
+        }
+        isBalanced = isBalanced && (bracketCount == 0);
+
+        if (isBalanced) {
+            // Brackets are balanced, use this match
+            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
+            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part
+            tempMappingKey.replace(match.captured(0), placeholder);
+            currentPos = match.capturedEnd();
+        } else {
+            // Brackets not balanced, try to find the correct closing bracket
+            int startPos = match.capturedStart();
+            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"
+            if (openPos != -1) {
+                int closePos = openPos + 1;
+                int depth = 1;
+
+                while (closePos < mappingKey.length() && depth > 0) {
+                    if (mappingKey[closePos] == '(') depth++;
+                    else if (mappingKey[closePos] == ')') depth--;
+                    closePos++;
+                }
+
+                if (depth == 0) {
+                    // Found balanced brackets
+                    QString fullMatch = mappingKey.mid(startPos, closePos - startPos);
+                    QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
+                    sendTextParts.append(fullMatch);
+                    tempMappingKey.replace(fullMatch, placeholder);
+                    currentPos = closePos;
+                } else {
+                    // Still unbalanced, move past this match
+                    currentPos = match.capturedEnd();
+                }
+            } else {
+                currentPos = match.capturedEnd();
+            }
+        }
+    }
+
+    return qMakePair(tempMappingKey, sendTextParts);
+}
+
 #ifndef CLOSE_SETUPDIALOG_ONDATACHANGED
 bool QItemSetupDialog::event(QEvent *event)
 {
@@ -1748,68 +1816,9 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     QString mappingKey = m_MappingKeyLineEdit->text();
 
     // Find and temporarily replace SendText content to preserve spaces with bracket balancing
-    QStringList sendTextParts;
-    QString tempMappingKey = mappingKey;
-    int currentPos = 0;
-    int replacementIndex = 0;
-
-    while (currentPos < mappingKey.length()) {
-        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);
-        if (!match.hasMatch()) {
-            break;
-        }
-
-        // Check if brackets are balanced in the captured content
-        QString captured = match.captured(1);
-        int bracketCount = 0;
-        bool isBalanced = true;
-
-        for (const QChar &ch : captured) {
-            if (ch == '(') bracketCount++;
-            else if (ch == ')') bracketCount--;
-            if (bracketCount < 0) {
-                isBalanced = false;
-                break;
-            }
-        }
-        isBalanced = isBalanced && (bracketCount == 0);
-
-        if (isBalanced) {
-            // Brackets are balanced, use this match
-            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
-            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part
-            tempMappingKey.replace(match.captured(0), placeholder);
-            currentPos = match.capturedEnd();
-        } else {
-            // Brackets not balanced, try to find the correct closing bracket
-            int startPos = match.capturedStart();
-            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"
-            if (openPos != -1) {
-                int closePos = openPos + 1;
-                int depth = 1;
-
-                while (closePos < mappingKey.length() && depth > 0) {
-                    if (mappingKey[closePos] == '(') depth++;
-                    else if (mappingKey[closePos] == ')') depth--;
-                    closePos++;
-                }
-
-                if (depth == 0) {
-                    // Found balanced brackets
-                    QString fullMatch = mappingKey.mid(startPos, closePos - startPos);
-                    QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
-                    sendTextParts.append(fullMatch);
-                    tempMappingKey.replace(fullMatch, placeholder);
-                    currentPos = closePos;
-                } else {
-                    // Still unbalanced, move past this match
-                    currentPos = match.capturedEnd();
-                }
-            } else {
-                currentPos = match.capturedEnd();
-            }
-        }
-    }
+    QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList sendTextParts = extractResult.second;
 
     // Remove whitespace from the temporary string (excluding SendText content)
     tempMappingKey.remove(whitespace_reg);
@@ -1866,68 +1875,9 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 
     // Find and temporarily replace SendText content to preserve spaces with bracket balancing
-    QStringList sendTextParts;
-    QString tempMappingKey = mappingKey;
-    int currentPos = 0;
-    int replacementIndex = 0;
-
-    while (currentPos < mappingKey.length()) {
-        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);
-        if (!match.hasMatch()) {
-            break;
-        }
-
-        // Check if brackets are balanced in the captured content
-        QString captured = match.captured(1);
-        int bracketCount = 0;
-        bool isBalanced = true;
-
-        for (const QChar &ch : captured) {
-            if (ch == '(') bracketCount++;
-            else if (ch == ')') bracketCount--;
-            if (bracketCount < 0) {
-                isBalanced = false;
-                break;
-            }
-        }
-        isBalanced = isBalanced && (bracketCount == 0);
-
-        if (isBalanced) {
-            // Brackets are balanced, use this match
-            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
-            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part
-            tempMappingKey.replace(match.captured(0), placeholder);
-            currentPos = match.capturedEnd();
-        } else {
-            // Brackets not balanced, try to find the correct closing bracket
-            int startPos = match.capturedStart();
-            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"
-            if (openPos != -1) {
-                int closePos = openPos + 1;
-                int depth = 1;
-
-                while (closePos < mappingKey.length() && depth > 0) {
-                    if (mappingKey[closePos] == '(') depth++;
-                    else if (mappingKey[closePos] == ')') depth--;
-                    closePos++;
-                }
-
-                if (depth == 0) {
-                    // Found balanced brackets
-                    QString fullMatch = mappingKey.mid(startPos, closePos - startPos);
-                    QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
-                    sendTextParts.append(fullMatch);
-                    tempMappingKey.replace(fullMatch, placeholder);
-                    currentPos = closePos;
-                } else {
-                    // Still unbalanced, move past this match
-                    currentPos = match.capturedEnd();
-                }
-            } else {
-                currentPos = match.capturedEnd();
-            }
-        }
-    }
+    QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList sendTextParts = extractResult.second;
 
     // Remove whitespace from the temporary string (excluding SendText content)
     tempMappingKey.remove(whitespace_reg);

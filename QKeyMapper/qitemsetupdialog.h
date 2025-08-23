@@ -46,6 +46,7 @@ public:
     static QString getCurrentOriKeyListText(void);
     static QString getCurrentMapKeyListText(void);
     static void setEditingMappingKeyLineEdit(int editing_lineedit);
+    static QPair<QString, QStringList> extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex);
 
     QLineEdit *getKeyRecordLineEdit(void);
 
