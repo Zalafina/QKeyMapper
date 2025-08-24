@@ -1600,6 +1600,20 @@
 您确定不希望在映射过程中自动开启系统筛选键吗？</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="21188"/>
+        <source>Total characters (without spaces) : %1
+</source>
+        <translation>总字数(不含空格) : %1
+</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="21189"/>
+        <source>Total characters (with spaces) : %2
+</source>
+        <translation>总字数(含空格) : %2
+</translation>
+    </message>
+    <message>
         <source>Please doubleclick process info table to select valid processinfo for key mapping.</source>
         <translation type="vanished">请双击进程列表为按键映射选择有效的进程信息。</translation>
     </message>

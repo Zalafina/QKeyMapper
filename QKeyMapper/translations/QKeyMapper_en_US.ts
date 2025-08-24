@@ -1600,6 +1600,20 @@
 Are you sure you do not want to automatically enable Filter Keys during the mapping process?</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="21188"/>
+        <source>Total characters (without spaces) : %1
+</source>
+        <translation>Total characters (without spaces) : %1
+</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="21189"/>
+        <source>Total characters (with spaces) : %2
+</source>
+        <translation>Total characters (with spaces) : %2
+</translation>
+    </message>
+    <message>
         <source>Please doubleclick process info table to select valid processinfo for key mapping.</source>
         <translation type="vanished">Please doubleclick process info table to select valid processinfo for key mapping.</translation>
     </message>

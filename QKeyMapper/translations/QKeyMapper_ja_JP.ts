@@ -1588,6 +1588,20 @@
 マッピング中にフィルターキーを自動的に有効化しなくてもよろしいですか？</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="21188"/>
+        <source>Total characters (without spaces) : %1
+</source>
+        <translation>文字数(スペースを含まない) : %1
+</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="21189"/>
+        <source>Total characters (with spaces) : %2
+</source>
+        <translation>文字数(スペースを含む) : %2
+</translation>
+    </message>
+    <message>
         <source>Please doubleclick process info table to select valid processinfo for key mapping.</source>
         <translation type="vanished">キーマッピングに有効なプロセス情報を選択するために、プロセスリストをダブルクリックしてください。</translation>
     </message>

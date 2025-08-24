@@ -21173,5 +21173,24 @@ void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::Ch
 
 void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
 {
-    ui->sendTextPlainTextEdit->setToolTip(ui->sendTextPlainTextEdit->toPlainText());
+    QString text = ui->sendTextPlainTextEdit->toPlainText();
+
+    // Calculate total number of characters (including spaces)
+    int totalWithSpaces = text.length();
+
+    // Calculate total number of characters (excluding spaces)
+    static QRegularExpression space_regex("\\s");
+    QString textNoSpaces = text;
+    textNoSpaces.remove(space_regex); // Remove all whitespace characters (spaces, newlines, tabs, etc.)
+    int totalWithoutSpaces = textNoSpaces.length();
+
+    // Generate ToolTip content
+    QString tooltip = QString(tr("Total characters (without spaces) : %1\n") +
+                              tr("Total characters (with spaces) : %2\n") +
+                              "%3")
+                              .arg(totalWithoutSpaces)
+                              .arg(totalWithSpaces)
+                              .arg(text);
+
+    ui->sendTextPlainTextEdit->setToolTip(tooltip);
 }
