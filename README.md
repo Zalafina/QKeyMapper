@@ -71,7 +71,10 @@
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20250824)
     * 添加"Run"映射键用于将按键映射到特定命令执行。
-      - "Run(E:\ABC\def\XYZ\abcd.exe param1 param2)"  可以运行指定程序可以通过空格指定执行参数。
+      - "Run(E:\ABC\def\XYZ\abcd.exe param1 param2 [WorkingDir="<dir_path>"] [ShowOption=Max|Min|Hide])"  可以运行指定的命令，并且可以通过空格指定执行参数。
+      - 可以加入特定参数指定运行状态：
+        - WorkingDir="C:\Path With Spaces" 指定工作目录。必须使用双引号包裹包含空格的路径；会校验目录是否存在。
+        - ShowOption=Max|Min|Hide 启动窗口显示模式：Max（最大化）、Min（最小化）、Hide（隐藏）。若不指定默认正常显示(注意不是所有程序都支持这些ShowOption参数)。
     * SendText增加多行文本支持。
     * 修正"Crosshair"十字准星映射显示时候不应该抢夺当前窗口焦点问题。
 * v1.3.8(Build 20250816)
