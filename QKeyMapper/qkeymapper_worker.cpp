@@ -11329,16 +11329,77 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
     }
 }
 
+#ifdef DEBUG_LOGOUT_ON
+static QString showCmdToString(int showCmd)
+{
+    switch (showCmd) {
+    case SW_HIDE:           return "Hide";
+    case SW_SHOWNORMAL:     return "Normal";
+    case SW_SHOWMINIMIZED:  return "Min";
+    case SW_SHOWMAXIMIZED:  return "Max";
+    default:                return QString("Unknown(%1)").arg(showCmd);
+    }
+}
+#endif
+
 ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &input)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[parseRunCommandUserInput] Input ->" << input;
 #endif
 
+    // System verbs for ShellExecute - based on Microsoft lpVerb documentation
+    // edit: Launches an editor and opens the document for editing
+    // explore: Explores the folder specified by lpFile
+    // find: Initiates a search starting from the specified directory
+    // open: Opens the file specified by the lpFile parameter
+    // openas: Launches a picker UI allowing the user to select an app to open the file
+    // print: Prints the document file specified by lpFile
+    // properties: Displays the file or folder's properties
+    // runas: Launches an application as Administrator (UAC prompt)
+    static const QStringList systemVerbs{"find", "explore", "open", "edit", "openas", "print", "properties", "runas"};
+
     ParsedRunCommand result;
     QString str = input.simplified();
 
-    // 1. Extract WorkingDir="..."
+    // 1. Extract SystemVerb (find, explore, open, edit, openas, print, properties, runas)
+    // Check if the input starts with a system verb followed by whitespace
+    static QRegularExpression verbPattern(R"(^(\w+)(\s+.*|$))", QRegularExpression::CaseInsensitiveOption);
+    QRegularExpressionMatch verbMatch = verbPattern.match(str);
+
+    if (verbMatch.hasMatch()) {
+        QString firstWord = verbMatch.captured(1);
+        if (systemVerbs.contains(firstWord, Qt::CaseInsensitive)) {
+            result.systemVerb = firstWord.toLower();
+            // Remove the verb and any following whitespace from the command line
+            str = verbMatch.captured(2).trimmed(); // Everything after the verb
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[parseRunCommandUserInput] SystemVerb extracted ->" << result.systemVerb << ", remaining str ->" << str;
+#endif
+        }
+        // If not a system verb, str remains unchanged (the whole original string)
+    }
+
+    // 2. Extract Wait=True|False from remaining string
+    static QRegularExpression reRunWait(
+        R"(Wait=(\w+))",
+        QRegularExpression::CaseInsensitiveOption
+    );
+    QRegularExpressionMatch mRunWait = reRunWait.match(str);
+    if (mRunWait.hasMatch()) {
+        QString wait_state = mRunWait.captured(1).toLower();
+        if (wait_state == "true") {
+            result.runWait = true;
+        } else if (wait_state == "false") {
+            result.runWait = false;
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[parseRunCommandUserInput] Wait extracted ->" << wait_state << ", runWait =" << result.runWait;
+#endif
+        str.remove(mRunWait.captured(0));
+    }
+
+    // 3. Extract WorkingDir="..." from remaining string
     static QRegularExpression reWorkDir(
         "WorkingDir=\"([^\"]+)\"",
         QRegularExpression::CaseInsensitiveOption
@@ -11360,7 +11421,7 @@ ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &inpu
         str.remove(mDir.captured(0)); // Remove this part from the command line
     }
 
-    // 2. Extract ShowOption=Max|Min|Hide
+    // 4. Extract ShowOption=Max|Min|Hide from remaining string
     static QRegularExpression reShowOpt(
         R"(ShowOption=(\w+))",
         QRegularExpression::CaseInsensitiveOption
@@ -11381,34 +11442,8 @@ ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &inpu
         str.remove(mShow.captured(0));
     }
 
-    // 3. Extract Wait=True|False
-    static QRegularExpression reRunWait(
-        R"(Wait=(\w+))",
-        QRegularExpression::CaseInsensitiveOption
-    );
-    QRegularExpressionMatch mRunWait = reRunWait.match(str);
-    if (mRunWait.hasMatch()) {
-        QString wait_state = mRunWait.captured(1).toLower();
-        if (wait_state == "true") {
-            result.runWait = true;
-        } else if (wait_state == "false") {
-            result.runWait = false;
-        }
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[parseRunCommandUserInput] Wait extracted ->" << wait_state << ", runWait =" << result.runWait;
-#endif
-        str.remove(mRunWait.captured(0));
-    }
-
-    // 4. The remaining part is treated as cmdLine
+    // 5. The remaining part is treated as cmdLine
     result.cmdLine = str.trimmed();
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[parseRunCommandUserInput] Final result: cmdLine=\"" << result.cmdLine
-                                << "\", runWait=" << result.runWait
-                                << ", workDir=\"" << result.workDir
-                                << "\", showCmd=" << result.showCmd;
-#endif
 
     return result;
 }
@@ -11419,6 +11454,15 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
                                    int showCmd,
                                    const QString &verb)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote()
+        << "[runCommand] cmdLine=\"" << cmdLine
+        << "\", runWait=" << runWait
+        << ", workDir=\"" << workDir
+        << "\", verb=" << verb
+        << ", showCmd=" << showCmdToString(showCmd);
+#endif
+
     // Prepare STARTUPINFO for CreateProcess
     STARTUPINFOW si = { sizeof(si) };
     si.dwFlags = STARTF_USESHOWWINDOW;
@@ -11428,26 +11472,42 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
     std::wstring cmd = cmdLine.toStdWString(); // Persist command line
     std::wstring wdir = workDir.isEmpty() ? L"" : workDir.toStdWString();
 
-    // Try CreateProcessW first (direct executable launch)
-    if (CreateProcessW(
-            nullptr,                        // Application name
-            cmd.data(),                     // Command line (must be writable)
-            nullptr, nullptr,               // Security attributes
-            FALSE,                          // No handle inheritance
-            0,                              // Creation flags
-            nullptr,                        // Environment
-            wdir.empty() ? nullptr : wdir.c_str(), // Working directory
-            &si, &pi))
-    {
-        if (runWait) {
-            WaitForSingleObject(pi.hProcess, INFINITE);
+    // If we have a system verb, skip CreateProcess and go directly to ShellExecute
+    // This matches AutoHotkey's behavior where system verbs bypass CreateProcess
+    if (!verb.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[runCommand] System verb detected, skipping CreateProcess ->" << verb;
+#endif
+    } else {
+        // Try CreateProcessW first (direct executable launch) - only when no system verb
+        if (CreateProcessW(
+                nullptr,                        // Application name
+                cmd.data(),                     // Command line (must be writable)
+                nullptr, nullptr,               // Security attributes
+                FALSE,                          // No handle inheritance
+                0,                              // Creation flags
+                nullptr,                        // Environment
+                wdir.empty() ? nullptr : wdir.c_str(), // Working directory
+                &si, &pi))
+        {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[runCommand] CreateProcess succeeded";
+#endif
+            if (runWait) {
+                WaitForSingleObject(pi.hProcess, INFINITE);
+            }
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            return true;
         }
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-        return true;
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            qDebug() << "[runCommand] CreateProcess failed, trying ShellExecute";
+        }
+#endif
     }
 
-    // If CreateProcess fails, try ShellExecuteExW
+    // If CreateProcess fails or we have a system verb, try ShellExecuteExW
     SHELLEXECUTEINFOW sei = { sizeof(sei) };
 
     // Persist verb / file / directory
@@ -11460,12 +11520,18 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
     sei.lpVerb = wverb.empty() ? nullptr : wverb.c_str();
     if (wverb == SYSTEM_VERB_PROPERTIES) {
         sei.fMask |= SEE_MASK_INVOKEIDLIST;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[runCommand] Properties verb detected, adding SEE_MASK_INVOKEIDLIST flag";
+#endif
     }
     sei.lpFile      = wfile.c_str();
     sei.lpDirectory = wdir.empty() ? nullptr : wdir.c_str();
     sei.nShow       = showCmd;
 
     if (ShellExecuteExW(&sei)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[runCommand] ShellExecute succeeded";
+#endif
         if (runWait && sei.hProcess) {
             WaitForSingleObject(sei.hProcess, INFINITE);
             CloseHandle(sei.hProcess);
@@ -11473,6 +11539,9 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
         return true;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[runCommand] Both CreateProcess and ShellExecute failed";
+#endif
     // Both methods failed
     return false;
 }
