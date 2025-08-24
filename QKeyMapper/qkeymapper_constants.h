@@ -899,6 +899,12 @@ namespace QKeyMapperConstants {
     // Uses non-greedy matching to find individual SendText parts, but may need special handling for nested brackets
     inline constexpr const char REGEX_PATTERN_SENDTEXT_FIND[] = R"(SendText\(([\s\S]*?)\))";
 
+    // Use pattern that matches everything between Run( and the last ) for complete content capture
+    inline constexpr const char REGEX_PATTERN_RUN[] = R"(^Run\((.+)\)$)";
+
+    // Pattern for finding Run( and the last ) parts in a composite string (without anchors)
+    inline constexpr const char REGEX_PATTERN_RUN_FIND[] = R"(Run\((.+)\))";
+
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
     inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";

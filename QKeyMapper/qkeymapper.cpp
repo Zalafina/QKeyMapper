@@ -3514,10 +3514,12 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                 REGEX_PATTERN_SENDTEXT,
                 QRegularExpression::MultilineOption
             );
+            static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
+            QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
@@ -3547,7 +3549,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             else if (joy2vjoy_mapkey_match.hasMatch()) {
                 result.isValid = true;
             }
-            else if (mousepoint_match.hasMatch() || sendtext_match.hasMatch()) {
+            else if (mousepoint_match.hasMatch() || sendtext_match.hasMatch() || runcmd_match.hasMatch()) {
                 result.isValid = true;
             }
             else {
@@ -14732,6 +14734,7 @@ void QKeyMapper::initKeysCategoryMap()
         << KEY_BLOCKED_STR
         << KEY_NONE_STR
         << SENDTEXT_STR
+        << RUN_STR
         << KEYSEQUENCEBREAK_STR
         ;
 
@@ -15536,6 +15539,14 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 || keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_ACCEL_STR)
                 || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_ACCEL_STR)) {
                 disable_burst = true;
+                disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
+                // disable_burst = true;
+                disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(RUN_STR)) {
+                // disable_burst = true;
                 disable_lock = true;
             }
 
@@ -17793,6 +17804,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     currentMapKeyText = QString("SendText(%1)").arg(sendtext);
                 }
             }
+            else if (currentMapKeyText == RUN_STR) {
+                QString run_cmd = ui->sendTextPlainTextEdit->toPlainText().simplified();;
+                if (run_cmd.isEmpty()) {
+                    QString message = tr("Please input the command to run!");
+                    showFailurePopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("Run(%1)").arg(run_cmd);
+                }
+            }
             else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
                 QString message = tr("KeySequenceBreak key can not be set duplicated!");
                 showFailurePopup(message);
@@ -17944,6 +17966,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("SendText(%1)").arg(sendtext);
+                    }
+                }
+                else if (currentMapKeyText == RUN_STR) {
+                    QString run_cmd = ui->sendTextPlainTextEdit->toPlainText().simplified();;
+                    if (run_cmd.isEmpty()) {
+                        QString message = tr("Please input the command to run!");
+                        showFailurePopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("Run(%1)").arg(run_cmd);
                     }
                 }
                 else if (currentMapKeyText == KEY_BLOCKED_STR) {

@@ -1812,28 +1812,54 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string
 
     QString mappingKey = m_MappingKeyLineEdit->text();
 
-    // Find and temporarily replace SendText content to preserve spaces with bracket balancing
-    QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
-    QString tempMappingKey = extractResult.first;
-    QStringList sendTextParts = extractResult.second;
+    // First, check for Run(...) content (higher priority)
+    QRegularExpressionMatch runMatch = run_regex.match(mappingKey);
+    if (runMatch.hasMatch()) {
+        // Run(...) content found, only remove whitespace from non-Run parts
+        QString runPart = runMatch.captured(0); // The entire Run(...) part
+        QString placeholder = "__RUN_PLACEHOLDER__";
 
-    // Remove whitespace from the temporary string (excluding SendText content)
-    tempMappingKey.remove(whitespace_reg);
+        // Temporarily replace Run(...) with placeholder
+        QString tempMappingKey = mappingKey;
+        tempMappingKey.replace(runPart, placeholder);
 
-    // Restore SendText parts
-    for (int i = 0; i < sendTextParts.size(); ++i) {
-        QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
-        tempMappingKey.replace(placeholder, sendTextParts[i]);
-    }
+        // Remove whitespace from the temporary string (excluding Run content)
+        tempMappingKey.remove(whitespace_reg);
 
-    mappingKey = tempMappingKey;
+        // Restore Run part (completely unchanged)
+        tempMappingKey.replace(placeholder, runPart);
+
+        mappingKey = tempMappingKey;
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Run(...) found, MappingKeyText after whitespace removal -> " << mappingKey;
 #endif
+    }
+    else {
+        // No Run(...) content, proceed with SendText processing
+        QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
+        QString tempMappingKey = extractResult.first;
+        QStringList sendTextParts = extractResult.second;
+
+        // Remove whitespace from the temporary string (excluding SendText content)
+        tempMappingKey.remove(whitespace_reg);
+
+        // Restore SendText parts
+        for (int i = 0; i < sendTextParts.size(); ++i) {
+            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
+            tempMappingKey.replace(placeholder, sendTextParts[i]);
+        }
+
+        mappingKey = tempMappingKey;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
+#endif
+    }
 
     QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
     ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
@@ -1871,28 +1897,54 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
     int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string
 
     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 
-    // Find and temporarily replace SendText content to preserve spaces with bracket balancing
-    QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
-    QString tempMappingKey = extractResult.first;
-    QStringList sendTextParts = extractResult.second;
+    // First, check for Run(...) content (higher priority)
+    QRegularExpressionMatch runMatch = run_regex.match(mappingKey);
+    if (runMatch.hasMatch()) {
+        // Run(...) content found, only remove whitespace from non-Run parts
+        QString runPart = runMatch.captured(0); // The entire Run(...) part
+        QString placeholder = "__RUN_PLACEHOLDER__";
 
-    // Remove whitespace from the temporary string (excluding SendText content)
-    tempMappingKey.remove(whitespace_reg);
+        // Temporarily replace Run(...) with placeholder
+        QString tempMappingKey = mappingKey;
+        tempMappingKey.replace(runPart, placeholder);
 
-    // Restore SendText parts
-    for (int i = 0; i < sendTextParts.size(); ++i) {
-        QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
-        tempMappingKey.replace(placeholder, sendTextParts[i]);
-    }
+        // Remove whitespace from the temporary string (excluding Run content)
+        tempMappingKey.remove(whitespace_reg);
 
-    mappingKey = tempMappingKey;
+        // Restore Run part (completely unchanged)
+        tempMappingKey.replace(placeholder, runPart);
+
+        mappingKey = tempMappingKey;
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText remove whitespace -> " << mappingKey;
+        qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp Run(...) found, MappingKeyText after whitespace removal -> " << mappingKey;
 #endif
+    }
+    else {
+        // No Run(...) content, proceed with SendText processing
+        QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
+        QString tempMappingKey = extractResult.first;
+        QStringList sendTextParts = extractResult.second;
+
+        // Remove whitespace from the temporary string (excluding SendText content)
+        tempMappingKey.remove(whitespace_reg);
+
+        // Restore SendText parts
+        for (int i = 0; i < sendTextParts.size(); ++i) {
+            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
+            tempMappingKey.replace(placeholder, sendTextParts[i]);
+        }
+
+        mappingKey = tempMappingKey;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText remove whitespace -> " << mappingKey;
+#endif
+    }
 
     ValidationResult result;
     if (mappingKey.isEmpty()) {
