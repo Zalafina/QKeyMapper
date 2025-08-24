@@ -75,6 +75,15 @@
       - 可以加入特定参数指定运行状态：
         - WorkingDir="C:\Path With Spaces" 指定工作目录。必须使用双引号包裹包含空格的路径；会校验目录是否存在。
         - ShowOption=Max|Min|Hide 启动窗口显示模式：Max（最大化）、Min（最小化）、Hide（隐藏）。若不指定默认正常显示(注意不是所有程序都支持这些ShowOption参数)。
+      - 支持在命令开头指定系统动作，系统动作列表如下：
+        - find(查找)
+        - explore(用资源管理器打开)
+        - open(打开文件)
+        - edit(用默认编辑器编辑)
+        - openas(选择程序打开)
+        - print(打印)
+        - properties(显示文件属性)
+        - runas(管理员权限运行)
     * SendText增加多行文本支持。
     * 修正"Crosshair"十字准星映射显示时候不应该抢夺当前窗口焦点问题。
 * v1.3.8(Build 20250816)
