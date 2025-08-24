@@ -20885,12 +20885,13 @@ void QKeyMapper::on_oriList_SelectFunctionButton_toggled(bool checked)
 
     if (!checked) {
         QString command_line = ui->sendTextPlainTextEdit->toPlainText().simplified();
-        ParsedCommand pc = QKeyMapper_Worker::parseUserInput(command_line);
+        ParsedRunCommand pc = QKeyMapper_Worker::parseRunCommandUserInput(command_line);
         QKeyMapper_Worker::runCommand(
             pc.cmdLine,
-            false,
+            pc.runWait,
             pc.workDir,
-            pc.showCmd
+            pc.showCmd,
+            pc.systemVerb
         );
     }
 }

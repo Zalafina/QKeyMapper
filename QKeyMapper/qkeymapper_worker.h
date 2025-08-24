@@ -390,9 +390,11 @@ struct SendInputTaskController {
     bool task_keyup_sent;
 };
 
-struct ParsedCommand {
+struct ParsedRunCommand {
     QString cmdLine;
+    bool runWait = false;
     QString workDir;
+    QString systemVerb;
     int showCmd = SW_SHOWNORMAL;
 };
 
@@ -957,7 +959,7 @@ public:
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
     static void breakAllRunningKeySequence(void);
 
-    static ParsedCommand parseUserInput(const QString &input);
+    static ParsedRunCommand parseRunCommandUserInput(const QString &input);
     // Run an external command with optional wait, working directory, window show mode, and verb.
     // Parameters:
     //   cmdLine  - Command line string (program + arguments, URL, CLSID, etc.)

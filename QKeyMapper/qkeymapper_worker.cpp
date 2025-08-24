@@ -11329,9 +11329,13 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
     }
 }
 
-ParsedCommand QKeyMapper_Worker::parseUserInput(const QString &input)
+ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &input)
 {
-    ParsedCommand result;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[parseRunCommandUserInput] Input ->" << input;
+#endif
+
+    ParsedRunCommand result;
     QString str = input.simplified();
 
     // 1. Extract WorkingDir="..."
@@ -11344,7 +11348,15 @@ ParsedCommand QKeyMapper_Worker::parseUserInput(const QString &input)
         QString workdir = mDir.captured(1);
         if (!workdir.isEmpty() && QFileInfo::exists(workdir) && QFileInfo(workdir).isDir()) {
             result.workDir = workdir;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[parseRunCommandUserInput] WorkingDir extracted ->" << workdir;
+#endif
         }
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            qDebug() << "[parseRunCommandUserInput] WorkingDir invalid or not found ->" << workdir;
+        }
+#endif
         str.remove(mDir.captured(0)); // Remove this part from the command line
     }
 
@@ -11363,11 +11375,40 @@ ParsedCommand QKeyMapper_Worker::parseUserInput(const QString &input)
         } else if (opt == "hide") {
             result.showCmd = SW_HIDE;
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[parseRunCommandUserInput] ShowOption extracted ->" << opt << ", showCmd =" << result.showCmd;
+#endif
         str.remove(mShow.captured(0));
     }
 
-    // 3. The remaining part is treated as cmdLine
+    // 3. Extract Wait=True|False
+    static QRegularExpression reRunWait(
+        R"(Wait=(\w+))",
+        QRegularExpression::CaseInsensitiveOption
+    );
+    QRegularExpressionMatch mRunWait = reRunWait.match(str);
+    if (mRunWait.hasMatch()) {
+        QString wait_state = mRunWait.captured(1).toLower();
+        if (wait_state == "true") {
+            result.runWait = true;
+        } else if (wait_state == "false") {
+            result.runWait = false;
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[parseRunCommandUserInput] Wait extracted ->" << wait_state << ", runWait =" << result.runWait;
+#endif
+        str.remove(mRunWait.captured(0));
+    }
+
+    // 4. The remaining part is treated as cmdLine
     result.cmdLine = str.trimmed();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[parseRunCommandUserInput] Final result: cmdLine=\"" << result.cmdLine
+                                << "\", runWait=" << result.runWait
+                                << ", workDir=\"" << result.workDir
+                                << "\", showCmd=" << result.showCmd;
+#endif
 
     return result;
 }
@@ -11412,7 +11453,6 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
     // Persist verb / file / directory
     std::wstring wverb = verb.isEmpty() ? L"" : verb.toStdWString();
     std::wstring wfile = cmdLine.toStdWString(); // Must be persisted
-    std::wstring wdir2 = wdir; // Already persisted
 
     // Base fMask
     sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
@@ -11422,7 +11462,7 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
         sei.fMask |= SEE_MASK_INVOKEIDLIST;
     }
     sei.lpFile      = wfile.c_str();
-    sei.lpDirectory = wdir2.empty() ? nullptr : wdir2.c_str();
+    sei.lpDirectory = wdir.empty() ? nullptr : wdir.c_str();
     sei.nShow       = showCmd;
 
     if (ShellExecuteExW(&sei)) {
