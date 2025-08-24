@@ -473,6 +473,7 @@ QLineEdit *QItemSetupDialog::getKeyRecordLineEdit()
     return ui->keyRecordLineEdit;
 }
 
+#if 0
 QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex)
 {
     QStringList sendTextParts;
@@ -491,7 +492,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
         int bracketCount = 0;
         bool isBalanced = true;
 
-        for (const QChar &ch : captured) {
+        for (const QChar &ch : std::as_const(captured)) {
             if (ch == '(') bracketCount++;
             else if (ch == ')') bracketCount--;
             if (bracketCount < 0) {
@@ -539,6 +540,173 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
     }
 
     return qMakePair(tempMappingKey, sendTextParts);
+}
+#endif
+
+QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex)
+{
+    QStringList preservedParts;
+    QString tempMappingKey = mappingKey;
+
+    // Create a list of all matches (both SendText and Run) with their positions
+    struct MatchInfo {
+        int start;
+        int end;
+        QString content;
+        QString type; // "sendtext" or "run"
+    };
+
+    QList<MatchInfo> allMatches;
+
+    // Find all SendText matches
+    int currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // Check if brackets are balanced in the captured content for SendText
+        QString captured = match.captured(1);
+        int bracketCount = 0;
+        bool isBalanced = true;
+
+        for (const QChar &ch : std::as_const(captured)) {
+            if (ch == '(') bracketCount++;
+            else if (ch == ')') bracketCount--;
+            if (bracketCount < 0) {
+                isBalanced = false;
+                break;
+            }
+        }
+        isBalanced = isBalanced && (bracketCount == 0);
+
+        if (isBalanced) {
+            // Brackets are balanced, use this match
+            MatchInfo info;
+            info.start = match.capturedStart();
+            info.end = match.capturedEnd();
+            info.content = match.captured(0);
+            info.type = "sendtext";
+            allMatches.append(info);
+            currentPos = match.capturedEnd();
+        } else {
+            // Brackets not balanced, try to find the correct closing bracket
+            int startPos = match.capturedStart();
+            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"
+            if (openPos != -1) {
+                int closePos = openPos + 1;
+                int depth = 1;
+
+                while (closePos < mappingKey.length() && depth > 0) {
+                    if (mappingKey[closePos] == '(') depth++;
+                    else if (mappingKey[closePos] == ')') depth--;
+                    closePos++;
+                }
+
+                if (depth == 0) {
+                    // Found balanced brackets
+                    MatchInfo info;
+                    info.start = startPos;
+                    info.end = closePos;
+                    info.content = mappingKey.mid(startPos, closePos - startPos);
+                    info.type = "sendtext";
+                    allMatches.append(info);
+                    currentPos = closePos;
+                } else {
+                    // Still unbalanced, move past this match
+                    currentPos = match.capturedEnd();
+                }
+            } else {
+                currentPos = match.capturedEnd();
+            }
+        }
+    }
+
+    // Find all Run matches (need bracket balancing like SendText)
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        QRegularExpressionMatch match = run_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // Check if brackets are balanced in the captured content for Run
+        QString captured = match.captured(1);
+        int bracketCount = 0;
+        bool isBalanced = true;
+
+        for (const QChar &ch : captured) {
+            if (ch == '(') bracketCount++;
+            else if (ch == ')') bracketCount--;
+            if (bracketCount < 0) {
+                isBalanced = false;
+                break;
+            }
+        }
+        isBalanced = isBalanced && (bracketCount == 0);
+
+        if (isBalanced) {
+            // Brackets are balanced, use this match
+            MatchInfo info;
+            info.start = match.capturedStart();
+            info.end = match.capturedEnd();
+            info.content = match.captured(0);
+            info.type = "run";
+            allMatches.append(info);
+            currentPos = match.capturedEnd();
+        } else {
+            // Brackets not balanced, try to find the correct closing bracket
+            int startPos = match.capturedStart();
+            int openPos = mappingKey.indexOf('(', startPos + 3); // Skip "Run"
+            if (openPos != -1) {
+                int closePos = openPos + 1;
+                int depth = 1;
+
+                while (closePos < mappingKey.length() && depth > 0) {
+                    if (mappingKey[closePos] == '(') depth++;
+                    else if (mappingKey[closePos] == ')') depth--;
+                    closePos++;
+                }
+
+                if (depth == 0) {
+                    // Found balanced brackets
+                    MatchInfo info;
+                    info.start = startPos;
+                    info.end = closePos;
+                    info.content = mappingKey.mid(startPos, closePos - startPos);
+                    info.type = "run";
+                    allMatches.append(info);
+                    currentPos = closePos;
+                } else {
+                    // Still unbalanced, move past this match
+                    currentPos = match.capturedEnd();
+                }
+            } else {
+                currentPos = match.capturedEnd();
+            }
+        }
+    }
+
+    // Sort matches by start position
+    std::sort(allMatches.begin(), allMatches.end(), [](const MatchInfo &a, const MatchInfo &b) {
+        return a.start < b.start;
+    });
+
+    // Store content in order and create a map for placeholder-to-content mapping
+    preservedParts.clear();
+    for (int i = 0; i < allMatches.size(); ++i) {
+        preservedParts.append(allMatches[i].content);
+    }
+
+    // Replace all matches with placeholders (from end to start to maintain positions)
+    for (int i = allMatches.size() - 1; i >= 0; --i) {
+        const MatchInfo &info = allMatches[i];
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(info.start, info.end - info.start, placeholder);
+    }
+
+    return qMakePair(tempMappingKey, preservedParts);
 }
 
 #ifndef CLOSE_SETUPDIALOG_ONDATACHANGED
@@ -1812,54 +1980,29 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
     int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
-    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string (no MultilineOption needed)
 
     QString mappingKey = m_MappingKeyLineEdit->text();
 
-    // First, check for Run(...) content (higher priority)
-    QRegularExpressionMatch runMatch = run_regex.match(mappingKey);
-    if (runMatch.hasMatch()) {
-        // Run(...) content found, only remove whitespace from non-Run parts
-        QString runPart = runMatch.captured(0); // The entire Run(...) part
-        QString placeholder = "__RUN_PLACEHOLDER__";
+    // Extract both Run(...) and SendText(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
 
-        // Temporarily replace Run(...) with placeholder
-        QString tempMappingKey = mappingKey;
-        tempMappingKey.replace(runPart, placeholder);
+    // Remove whitespace from the temporary string (excluding Run and SendText content)
+    tempMappingKey.remove(whitespace_reg);
 
-        // Remove whitespace from the temporary string (excluding Run content)
-        tempMappingKey.remove(whitespace_reg);
+    // Restore all preserved parts
+    for (int i = 0; i < preservedParts.size(); ++i) {
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, preservedParts[i]);
+    }
 
-        // Restore Run part (completely unchanged)
-        tempMappingKey.replace(placeholder, runPart);
-
-        mappingKey = tempMappingKey;
+    mappingKey = tempMappingKey;
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Run(...) found, MappingKeyText after whitespace removal -> " << mappingKey;
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingKey;
 #endif
-    }
-    else {
-        // No Run(...) content, proceed with SendText processing
-        QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
-        QString tempMappingKey = extractResult.first;
-        QStringList sendTextParts = extractResult.second;
-
-        // Remove whitespace from the temporary string (excluding SendText content)
-        tempMappingKey.remove(whitespace_reg);
-
-        // Restore SendText parts
-        for (int i = 0; i < sendTextParts.size(); ++i) {
-            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
-            tempMappingKey.replace(placeholder, sendTextParts[i]);
-        }
-
-        mappingKey = tempMappingKey;
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText remove whitespace -> " << mappingKey;
-#endif
-    }
 
     QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
     ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
@@ -1897,54 +2040,29 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
     int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
-    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string (no MultilineOption needed)
 
     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 
-    // First, check for Run(...) content (higher priority)
-    QRegularExpressionMatch runMatch = run_regex.match(mappingKey);
-    if (runMatch.hasMatch()) {
-        // Run(...) content found, only remove whitespace from non-Run parts
-        QString runPart = runMatch.captured(0); // The entire Run(...) part
-        QString placeholder = "__RUN_PLACEHOLDER__";
+    // Extract both Run(...) and SendText(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
 
-        // Temporarily replace Run(...) with placeholder
-        QString tempMappingKey = mappingKey;
-        tempMappingKey.replace(runPart, placeholder);
+    // Remove whitespace from the temporary string (excluding Run and SendText content)
+    tempMappingKey.remove(whitespace_reg);
 
-        // Remove whitespace from the temporary string (excluding Run content)
-        tempMappingKey.remove(whitespace_reg);
+    // Restore all preserved parts
+    for (int i = 0; i < preservedParts.size(); ++i) {
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, preservedParts[i]);
+    }
 
-        // Restore Run part (completely unchanged)
-        tempMappingKey.replace(placeholder, runPart);
-
-        mappingKey = tempMappingKey;
+    mappingKey = tempMappingKey;
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp Run(...) found, MappingKeyText after whitespace removal -> " << mappingKey;
+    qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingKey;
 #endif
-    }
-    else {
-        // No Run(...) content, proceed with SendText processing
-        QPair<QString, QStringList> extractResult = extractSendTextWithBracketBalancing(mappingKey, sendtext_regex);
-        QString tempMappingKey = extractResult.first;
-        QStringList sendTextParts = extractResult.second;
-
-        // Remove whitespace from the temporary string (excluding SendText content)
-        tempMappingKey.remove(whitespace_reg);
-
-        // Restore SendText parts
-        for (int i = 0; i < sendTextParts.size(); ++i) {
-            QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(i);
-            tempMappingKey.replace(placeholder, sendTextParts[i]);
-        }
-
-        mappingKey = tempMappingKey;
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText remove whitespace -> " << mappingKey;
-#endif
-    }
 
     ValidationResult result;
     if (mappingKey.isEmpty()) {

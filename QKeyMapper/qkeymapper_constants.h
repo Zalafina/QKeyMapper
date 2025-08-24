@@ -902,8 +902,8 @@ namespace QKeyMapperConstants {
     // Use pattern that matches everything between Run( and the last ) for complete content capture
     inline constexpr const char REGEX_PATTERN_RUN[] = R"(^Run\((.+)\)$)";
 
-    // Pattern for finding Run( and the last ) parts in a composite string (without anchors)
-    inline constexpr const char REGEX_PATTERN_RUN_FIND[] = R"(Run\((.+)\))";
+    // Pattern for finding Run( and the first ) parts in a composite string (non-greedy matching)
+    inline constexpr const char REGEX_PATTERN_RUN_FIND[] = R"(Run\((.+?)\))";
 
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
