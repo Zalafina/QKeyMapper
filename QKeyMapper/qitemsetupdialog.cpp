@@ -636,7 +636,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBa
         int bracketCount = 0;
         bool isBalanced = true;
 
-        for (const QChar &ch : captured) {
+        for (const QChar &ch : std::as_const(captured)) {
             if (ch == '(') bracketCount++;
             else if (ch == ')') bracketCount--;
             if (bracketCount < 0) {
@@ -696,7 +696,23 @@ QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBa
     // Store content in order and create a map for placeholder-to-content mapping
     preservedParts.clear();
     for (int i = 0; i < allMatches.size(); ++i) {
-        preservedParts.append(allMatches[i].content);
+        QString content = allMatches[i].content;
+
+        // Apply simplified() to Run(...) content only, keep SendText(...) unchanged
+        if (allMatches[i].type == "run") {
+            // Extract the content inside Run(...) and apply simplified()
+            // Format: Run(content) -> find content between first ( and last )
+            int firstParen = content.indexOf('(');
+            int lastParen = content.lastIndexOf(')');
+            if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
+                QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
+                QString simplifiedInnerContent = innerContent.simplified();
+                content = QString("Run(%1)").arg(simplifiedInnerContent);
+            }
+        }
+        // SendText(...) content remains completely unchanged
+
+        preservedParts.append(content);
     }
 
     // Replace all matches with placeholders (from end to start to maintain positions)
