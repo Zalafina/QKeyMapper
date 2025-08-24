@@ -21175,6 +21175,11 @@ void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
 {
     QString text = ui->sendTextPlainTextEdit->toPlainText();
 
+    if (text.isEmpty()) {
+        ui->sendTextPlainTextEdit->setToolTip(QString());
+        return;
+    }
+
     // Calculate total number of characters (including spaces)
     int totalWithSpaces = text.length();
 
