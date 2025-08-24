@@ -1046,11 +1046,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
 
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
-    // Use non-greedy matching and multiline support for SendText
-    static QRegularExpression sendTextRegexp(
+    static QRegularExpression sendtext_regex(
         REGEX_PATTERN_SENDTEXT,
         QRegularExpression::MultilineOption
     );
+    static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
@@ -1253,9 +1253,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
 #endif
 
-            QRegularExpressionMatch sendTextMatch = sendTextRegexp.match(key);
-            if (sendTextMatch.hasMatch()) {
+            QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
+            QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
+            if (sendtext_match.hasMatch()) {
                 /* SendText KeyUp do nothing. */
+            }
+            else if (runcmd_match.hasMatch()) {
+                /* Run command KeyUp do nothing. */
             }
             else if (vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
@@ -1706,19 +1710,31 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
 
-                QRegularExpressionMatch sendTextMatch = sendTextRegexp.match(key);
+                QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
+                QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
 #endif
                 }
-                else if (sendTextMatch.hasMatch()) {
-                    QString text = sendTextMatch.captured(1);
+                else if (sendtext_match.hasMatch()) {
+                    QString text = sendtext_match.captured(1);
 
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
                     releaseKeyboardModifiersDirect(modifiers_arg);
 
                     sendText(QKeyMapper::s_CurrentMappingHWND, text);
+                }
+                else if (runcmd_match.hasMatch()) {
+                    QString run_cmd = runcmd_match.captured(1);
+                    ParsedRunCommand parsed_cmd = QKeyMapper_Worker::parseRunCommandUserInput(run_cmd);
+                    QKeyMapper_Worker::runCommand(
+                        parsed_cmd.cmdLine,
+                        parsed_cmd.runWait,
+                        parsed_cmd.workDir,
+                        parsed_cmd.showCmd,
+                        parsed_cmd.systemVerb
+                    );
                 }
                 else if (vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -11375,7 +11391,7 @@ ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &inpu
         if (systemVerbs.contains(firstWord, Qt::CaseInsensitive)) {
             result.systemVerb = firstWord.toLower();
             // Remove the verb and any following whitespace from the command line
-            str = verbMatch.captured(2).trimmed(); // Everything after the verb
+            str = verbMatch.captured(2); // Everything after the verb
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[parseRunCommandUserInput] SystemVerb extracted ->" << result.systemVerb << ", remaining str ->" << str;
 #endif

@@ -20921,21 +20921,6 @@ void QKeyMapper::on_oriList_SelectFunctionButton_toggled(bool checked)
 #endif
     Q_UNUSED(checked);
     updateOriginalKeyListComboBox();
-
-    if (!checked) {
-        QString command_line = ui->sendTextPlainTextEdit->toPlainText();
-        static QRegularExpression simplified_regex(R"([\r\n]+)");
-        command_line.replace(simplified_regex, " ");
-        command_line = command_line.trimmed();
-        ParsedRunCommand pc = QKeyMapper_Worker::parseRunCommandUserInput(command_line);
-        QKeyMapper_Worker::runCommand(
-            pc.cmdLine,
-            pc.runWait,
-            pc.workDir,
-            pc.showCmd,
-            pc.systemVerb
-        );
-    }
 }
 
 
