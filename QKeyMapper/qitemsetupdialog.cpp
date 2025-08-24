@@ -698,15 +698,17 @@ QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBa
     for (int i = 0; i < allMatches.size(); ++i) {
         QString content = allMatches[i].content;
 
-        // Apply simplified() to Run(...) content only, keep SendText(...) unchanged
+        // Apply custom simplified() to Run(...) content only, keep SendText(...) unchanged
         if (allMatches[i].type == "run") {
-            // Extract the content inside Run(...) and apply simplified()
+            // Extract the content inside Run(...) and apply custom simplified()
             // Format: Run(content) -> find content between first ( and last )
             int firstParen = content.indexOf('(');
             int lastParen = content.lastIndexOf(')');
             if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
                 QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
-                QString simplifiedInnerContent = innerContent.simplified();
+                static QRegularExpression simplified_regex(R"([\r\n]+)");
+                innerContent.replace(simplified_regex, " ");
+                QString simplifiedInnerContent = innerContent.trimmed();
                 content = QString("Run(%1)").arg(simplifiedInnerContent);
             }
         }

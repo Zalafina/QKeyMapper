@@ -11360,7 +11360,10 @@ ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &inpu
     static const QStringList systemVerbs{"find", "explore", "open", "edit", "openas", "print", "properties", "runas"};
 
     ParsedRunCommand result;
-    QString str = input.simplified();
+    QString str = input;
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
+    str.replace(simplified_regex, " ");
+    str = str.trimmed();
 
     // 1. Extract SystemVerb (find, explore, open, edit, openas, print, properties, runas)
     // Check if the input starts with a system verb followed by whitespace

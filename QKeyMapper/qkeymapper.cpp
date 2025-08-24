@@ -17805,7 +17805,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else if (currentMapKeyText == RUN_STR) {
-                QString run_cmd = ui->sendTextPlainTextEdit->toPlainText().simplified();;
+                QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
+                static QRegularExpression simplified_regex(R"([\r\n]+)");
+                run_cmd.replace(simplified_regex, " ");
+                run_cmd = run_cmd.trimmed();
                 if (run_cmd.isEmpty()) {
                     QString message = tr("Please input the command to run!");
                     showFailurePopup(message);
@@ -17969,7 +17972,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
                 else if (currentMapKeyText == RUN_STR) {
-                    QString run_cmd = ui->sendTextPlainTextEdit->toPlainText().simplified();;
+                    QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
+                    static QRegularExpression simplified_regex(R"([\r\n]+)");
+                    run_cmd.replace(simplified_regex, " ");
+                    run_cmd = run_cmd.trimmed();
                     if (run_cmd.isEmpty()) {
                         QString message = tr("Please input the command to run!");
                         showFailurePopup(message);
@@ -20917,7 +20923,10 @@ void QKeyMapper::on_oriList_SelectFunctionButton_toggled(bool checked)
     updateOriginalKeyListComboBox();
 
     if (!checked) {
-        QString command_line = ui->sendTextPlainTextEdit->toPlainText().simplified();
+        QString command_line = ui->sendTextPlainTextEdit->toPlainText();
+        static QRegularExpression simplified_regex(R"([\r\n]+)");
+        command_line.replace(simplified_regex, " ");
+        command_line = command_line.trimmed();
         ParsedRunCommand pc = QKeyMapper_Worker::parseRunCommandUserInput(command_line);
         QKeyMapper_Worker::runCommand(
             pc.cmdLine,
