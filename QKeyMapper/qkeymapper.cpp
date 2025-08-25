@@ -1691,23 +1691,24 @@ bool QKeyMapper::isWindowsFilterKeysEnabled()
 
 void QKeyMapper::setWindowsFilterKeysEnabled(bool enable)
 {
-    FILTERKEYS filterKeys;
-    filterKeys.cbSize = sizeof(FILTERKEYS);
+    FILTERKEYS filterKeys = { sizeof(FILTERKEYS) };
 
     // Get current settings
     if (!SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0)) {
         return; // Failed to get settings
     }
 
-    // Only change FKF_FILTERKEYSON bit
-    if (enable) {
-        filterKeys.dwFlags |= FKF_FILTERKEYSON;
-    } else {
-        filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
-    }
+    // Only modify FKF_FILTERKEYSON bit if the system supports FilterKeys
+    if (filterKeys.dwFlags & FKF_AVAILABLE) {
+        if (enable) {
+            filterKeys.dwFlags |= FKF_FILTERKEYSON;
+        } else {
+            filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
+        }
 
-    // Apply settings
-    SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, SPIF_SENDCHANGE);
+        // Apply the settings
+        SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, SPIF_SENDCHANGE);
+    }
 }
 
 bool QKeyMapper::isWindowsDarkMode()
