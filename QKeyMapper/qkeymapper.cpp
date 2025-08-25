@@ -142,7 +142,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
     ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
 
-    ui->settingTabWidget->setFocusPolicy(Qt::NoFocus);
+    ui->settingTabWidget->setFocusPolicy(Qt::ClickFocus);
     QTabBar *bar = ui->settingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
@@ -14525,7 +14525,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     QStyle* windowsStyle = QStyleFactory::create("windows");
     m_KeyMappingTabWidget->setStyle(windowsStyle);
     ui->addTabButton->setStyle(windowsStyle);
-    m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
+    m_KeyMappingTabWidget->setFocusPolicy(Qt::ClickFocus);
     QTabBar *bar = m_KeyMappingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {

@@ -433,7 +433,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -1462,6 +1462,9 @@
        <height>21</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
+     </property>
     </widget>
     <widget class="QDoubleSpinBox" name="Gyro2MouseYSpeedSpinBox">
      <property name="geometry">
@@ -1471,6 +1474,9 @@
        <width>66</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
     </widget>
     <widget class="QLabel" name="Gyro2MouseMinXSensLabel">
@@ -1497,6 +1503,9 @@
        <width>66</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
      <property name="decimals">
       <number>1</number>
@@ -1527,6 +1536,9 @@
        <height>21</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
+     </property>
      <property name="decimals">
       <number>1</number>
      </property>
@@ -1555,6 +1567,9 @@
        <width>66</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
      <property name="decimals">
       <number>1</number>
@@ -1585,6 +1600,9 @@
        <height>21</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
+     </property>
      <property name="decimals">
       <number>1</number>
      </property>
@@ -1614,6 +1632,9 @@
        <height>21</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
+     </property>
      <property name="decimals">
       <number>1</number>
      </property>
@@ -1642,6 +1663,9 @@
        <width>66</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::ClickFocus</enum>
      </property>
      <property name="decimals">
       <number>1</number>
