@@ -6006,17 +6006,17 @@ void QKeyMapper::showEvent(QShowEvent *event)
 #endif
         QSimpleUpdater::getInstance()->setGeometryWithParentWidget(this);
 
-        QTimer::singleShot(100, this, [=]() {
-            if (m_KeyMapStatus == KEYMAP_IDLE){
-                QWidget *focused = QApplication::focusWidget();
-                if (focused && focused != this) {
-                    focused->clearFocus();
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[QKeyMapper::showEvent]" << "Clear initial Focus.";
-#endif
-                }
-            }
-        });
+//         QTimer::singleShot(100, this, [=]() {
+//             if (m_KeyMapStatus == KEYMAP_IDLE){
+//                 QWidget *focused = QApplication::focusWidget();
+//                 if (focused && focused != this) {
+//                     focused->clearFocus();
+// #ifdef DEBUG_LOGOUT_ON
+//                     qDebug() << "[QKeyMapper::showEvent]" << "Clear initial Focus.";
+// #endif
+//                 }
+//             }
+//         });
     }
 
     QDialog::showEvent(event);

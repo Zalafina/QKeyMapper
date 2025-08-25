@@ -978,15 +978,15 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         ui->keyRecordLineEdit->clear();
         ui->keyRecordLineEdit->setReadOnly(true);
 
-        QTimer::singleShot(100, this, [=]() {
-            QWidget *focused = focusWidget();
-            if (focused && focused != this) {
-                focused->clearFocus();
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[QItemSetupDialog::showEvent]" << "Clear initial Focus.";
-#endif
-            }
-        });
+//         QTimer::singleShot(100, this, [=]() {
+//             QWidget *focused = focusWidget();
+//             if (focused && focused != this) {
+//                 focused->clearFocus();
+// #ifdef DEBUG_LOGOUT_ON
+//                 qDebug() << "[QItemSetupDialog::showEvent]" << "Clear initial Focus.";
+// #endif
+//             }
+//         });
 
         bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
         bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
@@ -1410,13 +1410,13 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
         }
 
-        QWidget *focused = focusWidget();
-        if (focused && focused != this) {
-            focused->clearFocus();
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI]" << "Clear initial Focus.";
-#endif
-        }
+//         QWidget *focused = focusWidget();
+//         if (focused && focused != this) {
+//             focused->clearFocus();
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI]" << "Clear initial Focus.";
+// #endif
+//         }
 
         bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
         bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
@@ -1740,13 +1740,13 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
         }
 
-        QWidget *focused = focusWidget();
-        if (focused && focused != this) {
-            focused->clearFocus();
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QItemSetupDialog::refreshMappingKeyRelatedUI]" << "Clear initial Focus.";
-#endif
-        }
+//         QWidget *focused = focusWidget();
+//         if (focused && focused != this) {
+//             focused->clearFocus();
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug() << "[QItemSetupDialog::refreshMappingKeyRelatedUI]" << "Clear initial Focus.";
+// #endif
+//         }
     }
 
     return value_changed;
