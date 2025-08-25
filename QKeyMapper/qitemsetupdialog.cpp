@@ -1157,6 +1157,12 @@ bool QItemSetupDialog::eventFilter(QObject *object, QEvent *event)
                 ui->keyRecordLineEdit->setPlaceholderText(QString());
             }
         }
+        else if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+                return true;
+            }
+        }
     }
 
     return QDialog::eventFilter(object, event);

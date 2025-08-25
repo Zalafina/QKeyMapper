@@ -69,6 +69,8 @@
 
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
+* v1.3.8(Build 20250826)
+    * 按键捕获编辑框中按下Tab和Shift+Tab按键不会切换焦点到其他控件。
 * v1.3.8(Build 20250824)
     * 添加"Run"映射键用于将按键映射到特定命令执行。
       - "Run(E:\ABC\def\XYZ\abcd.exe param1 param2 [WorkingDir="<dir_path>"] [ShowOption=Max|Min|Hide])"  可以运行指定的命令，并且可以通过空格指定执行参数。
