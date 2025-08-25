@@ -141,6 +141,15 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         tabPage->setStyle(fusionStyle);
     }
     ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
+
+    ui->settingTabWidget->setFocusPolicy(Qt::NoFocus);
+    QTabBar *bar = ui->settingTabWidget->tabBar();
+    for (QObject *child : bar->children()) {
+        if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
+            btn->setFocusPolicy(Qt::NoFocus);
+        }
+    }
+
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
@@ -14510,7 +14519,13 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     QStyle* windowsStyle = QStyleFactory::create("windows");
     m_KeyMappingTabWidget->setStyle(windowsStyle);
     ui->addTabButton->setStyle(windowsStyle);
-    m_KeyMappingTabWidget->setFocusPolicy(Qt::ClickFocus);
+    m_KeyMappingTabWidget->setFocusPolicy(Qt::NoFocus);
+    QTabBar *bar = m_KeyMappingTabWidget->tabBar();
+    for (QObject *child : bar->children()) {
+        if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
+            btn->setFocusPolicy(Qt::NoFocus);
+        }
+    }
     m_KeyMappingTabWidget->setFont(QFont(FONTNAME_ENGLISH, 9));
 
     bool addtab_result = addTabToKeyMappingTabWidget();

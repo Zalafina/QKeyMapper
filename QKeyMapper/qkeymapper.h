@@ -26,6 +26,7 @@
 #include <QStyledItemDelegate>
 #include <QMenu>
 #include <QTableWidget>
+#include <QToolButton>
 #include <QPropertyAnimation>
 #include <QComboBox>
 #include <QCheckBox>
