@@ -1705,6 +1705,10 @@ void QKeyMapper::setWindowsFilterKeysEnabled(bool enable)
         } else {
             filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
         }
+        filterKeys.iWaitMSec = 0;
+        filterKeys.iDelayMSec = 0;
+        filterKeys.iRepeatMSec = 0;
+        filterKeys.iBounceMSec = 0;
 
         // Apply the settings
         SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, SPIF_SENDCHANGE);
