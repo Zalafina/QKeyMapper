@@ -153,8 +153,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
-    ui->originalKeyRecordLineEdit->installEventFilter(this);
-    ui->gamepadSelectComboBox->view()->installEventFilter(this);
+    qApp->installEventFilter(this);
+    // ui->originalKeyRecordLineEdit->installEventFilter(this);
+    // ui->gamepadSelectComboBox->view()->installEventFilter(this);
 
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
@@ -6274,6 +6275,13 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+            return true;
+        }
+    }
+
     if (object == ui->originalKeyRecordLineEdit) {
         if (event->type() == QEvent::FocusIn) {
             if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
@@ -6293,12 +6301,6 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
             }
             else {
                 ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
-            }
-        }
-        else if (event->type() == QEvent::KeyPress) {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
-            if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
-                return true;
             }
         }
     }
