@@ -142,7 +142,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
     ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
 
-    ui->settingTabWidget->setFocusPolicy(Qt::ClickFocus);
+    ui->settingTabWidget->setFocusPolicy(Qt::StrongFocus);
     QTabBar *bar = ui->settingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
@@ -153,9 +153,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
-    qApp->installEventFilter(this);
-    // ui->originalKeyRecordLineEdit->installEventFilter(this);
-    // ui->gamepadSelectComboBox->view()->installEventFilter(this);
+    // qApp->installEventFilter(this);
+    ui->originalKeyRecordLineEdit->installEventFilter(this);
+    ui->gamepadSelectComboBox->view()->installEventFilter(this);
 
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
@@ -6275,13 +6275,6 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
-    if (event->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
-        if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
-            return true;
-        }
-    }
-
     if (object == ui->originalKeyRecordLineEdit) {
         if (event->type() == QEvent::FocusIn) {
             if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
@@ -6301,6 +6294,12 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
             }
             else {
                 ui->originalKeyRecordLineEdit->setPlaceholderText(QString());
+            }
+        }
+        else if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+                return true;
             }
         }
     }
@@ -14527,7 +14526,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     QStyle* windowsStyle = QStyleFactory::create("windows");
     m_KeyMappingTabWidget->setStyle(windowsStyle);
     ui->addTabButton->setStyle(windowsStyle);
-    m_KeyMappingTabWidget->setFocusPolicy(Qt::ClickFocus);
+    m_KeyMappingTabWidget->setFocusPolicy(Qt::StrongFocus);
     QTabBar *bar = m_KeyMappingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
@@ -15095,13 +15094,13 @@ void QKeyMapper::initAddKeyComboBoxes(void)
     int top = ui->orikeyLabel->y();
     m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_NAME);
     m_orikeyComboBox->setGeometry(QRect(left, top, 161, 22));
-    m_orikeyComboBox->setFocusPolicy(Qt::WheelFocus);
+    m_orikeyComboBox->setFocusPolicy(Qt::ClickFocus);
     // m_orikeyComboBox->setEditable(true);
     left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
     top = ui->mapkeyLabel->y();
     m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_NAME);
     m_mapkeyComboBox->setGeometry(QRect(left, top, 151, 22));
-    m_mapkeyComboBox->setFocusPolicy(Qt::WheelFocus);
+    m_mapkeyComboBox->setFocusPolicy(Qt::ClickFocus);
     // m_mapkeyComboBox->setEditable(true);
 
     updateOriginalKeyListComboBox();
@@ -18636,6 +18635,16 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
     }
 
     QComboBox::mousePressEvent(event);
+}
+
+void KeyListComboBox::wheelEvent(QWheelEvent *event)
+{
+    // If the widget does not currently have focus, set focus due to mouse interaction
+    if (!hasFocus()) {
+        setFocus(Qt::MouseFocusReason);
+    }
+
+    QComboBox::wheelEvent(event);
 }
 
 void KeyListComboBox::showPopup()

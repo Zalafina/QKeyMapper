@@ -1157,6 +1157,12 @@ bool QItemSetupDialog::eventFilter(QObject *object, QEvent *event)
                 ui->keyRecordLineEdit->setPlaceholderText(QString());
             }
         }
+        else if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+                return true;
+            }
+        }
     }
 
     return QDialog::eventFilter(object, event);
@@ -1198,13 +1204,13 @@ void QItemSetupDialog::initKeyListComboBoxes()
     int top = ui->orikeyListLabel->y();
     m_OriginalKeyListComboBox->setObjectName(SETUPDIALOG_ORIKEY_COMBOBOX_NAME);
     m_OriginalKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
-    m_OriginalKeyListComboBox->setFocusPolicy(Qt::WheelFocus);
+    m_OriginalKeyListComboBox->setFocusPolicy(Qt::ClickFocus);
 
     left = ui->mapkeyListLabel->x() + ui->mapkeyListLabel->width() + 5;
     top = ui->mapkeyListLabel->y();
     m_MappingKeyListComboBox->setObjectName(SETUPDIALOG_MAPKEY_COMBOBOX_NAME);
     m_MappingKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
-    m_MappingKeyListComboBox->setFocusPolicy(Qt::WheelFocus);
+    m_MappingKeyListComboBox->setFocusPolicy(Qt::ClickFocus);
 }
 
 void QItemSetupDialog::initKeyStringLineEdit()

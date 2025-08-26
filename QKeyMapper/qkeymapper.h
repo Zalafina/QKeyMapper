@@ -343,6 +343,7 @@ public:
 protected:
     void keyPressEvent(QKeyEvent *keyevent) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
     void showPopup(void) override;
 
 private:
