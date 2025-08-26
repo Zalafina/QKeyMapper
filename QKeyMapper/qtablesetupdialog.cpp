@@ -742,7 +742,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
 
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
     QString currentTabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
-    QString filter = tr("Image files") + "(*.ico;*.png)";
+    QString filter = tr("Image files") + "(*.ico;*.png;*.svg)";
     QString caption_string;
     caption_string = tr("Select Custom Image") + (" : ") +TabName;
 
