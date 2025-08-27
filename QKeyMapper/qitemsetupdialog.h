@@ -107,7 +107,7 @@ private slots:
     void on_repeatByKeyCheckBox_stateChanged(int state);
     void on_repeatByTimesCheckBox_stateChanged(int state);
     void on_repeatTimesSpinBox_valueChanged(int value);
-    void on_itemNoteUpdateButton_clicked();
+    // void on_itemNoteUpdateButton_clicked();
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
     void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
@@ -115,6 +115,8 @@ private slots:
     void on_fixedVKeyCodeSpinBox_valueChanged(int value);
     void on_keyRecordEditModeButton_clicked();
     void on_keyRecordLineEdit_textChanged(const QString &text);
+    void on_itemNoteLineEdit_textChanged(const QString &text);
+    void on_mappingTextUpdateButton_clicked();
 };
 
 class KeyStringLineEdit : public QLineEdit

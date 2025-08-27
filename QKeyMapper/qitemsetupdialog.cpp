@@ -103,10 +103,10 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->keyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->keyRecordEditModeButton->setText(tr("Edit"));
 
-    QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_originalKeyUpdateButton_clicked);
-    QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKeyUpdateButton_clicked);
-    QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked);
-    QObject::connect(ui->itemNoteLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemNoteUpdateButton_clicked);
+    QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingTextUpdateButton_clicked);
+    QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingTextUpdateButton_clicked);
+    QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingTextUpdateButton_clicked);
+    // QObject::connect(ui->itemNoteLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemNoteUpdateButton_clicked);
 
     // Synchronize button states between main window and sub window:
     // Use bidirectional connect to ensure the four category buttons (Keyboard, Mouse, Gamepad, Function) in both windows always have the same checked state.
@@ -178,7 +178,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->originalKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
-    ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    // ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
@@ -261,7 +261,7 @@ void QItemSetupDialog::resetFontSize()
     ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
     ui->recordKeysButton->setFont(customFont);
     ui->crosshairSetupButton->setFont(customFont);
-    ui->itemNoteUpdateButton->setFont(customFont);
+    // ui->itemNoteUpdateButton->setFont(customFont);
     ui->sendTimingLabel->setFont(customFont);
     ui->sendTimingComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
 
@@ -2210,6 +2210,7 @@ void QItemSetupDialog::on_repeatTimesSpinBox_valueChanged(int value)
     }
 }
 
+#if 0
 void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -2242,6 +2243,7 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
 
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
+#endif
 
 void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
 {
@@ -2396,4 +2398,32 @@ void QItemSetupDialog::on_keyRecordLineEdit_textChanged(const QString &text)
     }
 
     ui->keyRecordLineEdit->setToolTip(ui->keyRecordLineEdit->text());
+}
+
+void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
+{
+    Q_UNUSED(text);
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int tabindex = m_TabIndex;
+    QString note_str = ui->itemNoteLineEdit->text();
+
+    if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note != note_str) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Item note -> " << note_str;
+#endif
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
+        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+    }
+}
+
+void QItemSetupDialog::on_mappingTextUpdateButton_clicked()
+{
+
 }
