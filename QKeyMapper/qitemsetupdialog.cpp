@@ -179,6 +179,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     // ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     // ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
     // ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    ui->updateMappingInfoButton->setText(tr(UPDATEBUTTON_STR));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
@@ -259,6 +260,7 @@ void QItemSetupDialog::resetFontSize()
     // ui->originalKeyUpdateButton->setFont(customFont);
     // ui->mappingKeyUpdateButton->setFont(customFont);
     // ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
+    ui->updateMappingInfoButton->setFont(customFont);
     ui->recordKeysButton->setFont(customFont);
     ui->crosshairSetupButton->setFont(customFont);
     // ui->itemNoteUpdateButton->setFont(customFont);
@@ -1771,6 +1773,7 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
     // Define update priorities based on focus or specified order
     QList<int> updatePriorities;
 
+#if 0
     // Determine focus-based priority if available
     QWidget* focusWidget = QApplication::focusWidget();
     if (focusWidget) {
@@ -1798,9 +1801,16 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
         if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
         if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
     }
+#endif
+
+    updatePriorities << update_order;
+    if (update_order != ORIGINAL_KEY_FIRST) updatePriorities << ORIGINAL_KEY_FIRST;
+    if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
+    if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
 
     // Execute updates in priority order, stopping on first validation error
-    for (int priority : updatePriorities) {
+    bool allUpdatesSuccessful = true;
+    for (int priority : std::as_const(updatePriorities)) {
         bool success = false;
 
         switch (priority) {
@@ -1819,8 +1829,20 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
 
         // Stop on first validation error
         if (!success) {
+            allUpdatesSuccessful = false;
             break;
         }
+    }
+
+    // Show unified success message if all updates were successful
+    if (allUpdatesSuccessful && !updatePriorities.isEmpty()) {
+        QString popupMessage;
+        QString popupMessageColor;
+        int popupMessageDisplayTime = 3000;
+
+        popupMessageColor = SUCCESS_COLOR;
+        popupMessage = tr("Key mapping updated successfully");
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
 
@@ -1854,7 +1876,7 @@ bool QItemSetupDialog::updateOriginalKey()
     }
     else {
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = result.errorMessage;
+        popupMessage = tr(ORIGINALKEYLABEL_STR) + ": " + result.errorMessage;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
@@ -1906,7 +1928,7 @@ bool QItemSetupDialog::updateMappingKey()
     }
     else {
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = result.errorMessage;
+        popupMessage = tr(MAPPINGKEYLABEL_STR) + ": " + result.errorMessage;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
@@ -1971,7 +1993,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
     }
     else {
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = result.errorMessage;
+        popupMessage = tr(KEYUPMAPPINGLABEL_STR) + ": " + result.errorMessage;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
