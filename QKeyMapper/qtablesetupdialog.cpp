@@ -226,6 +226,7 @@ void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSi
         qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBox]" << "Icon availableSizes is empty.";
 #endif
         clearTrayIconPixelComboBox();
+        ui->customImageTrayIconPixelComboBox->setItemIcon(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT, icon);
         return;
     }
 
