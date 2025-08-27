@@ -103,9 +103,9 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->keyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->keyRecordEditModeButton->setText(tr("Edit"));
 
-    QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingTextUpdateButton_clicked);
-    QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingTextUpdateButton_clicked);
-    QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_mappingTextUpdateButton_clicked);
+    QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_OriginalKeyFirst);
+    QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKeyFirst);
+    QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst);
     // QObject::connect(ui->itemNoteLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemNoteUpdateButton_clicked);
 
     // Synchronize button states between main window and sub window:
@@ -175,9 +175,9 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->mapList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
     ui->mapList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
     ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
-    ui->originalKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
-    ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
-    ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    // ui->originalKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    // ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
+    // ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
     // ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
@@ -256,9 +256,9 @@ void QItemSetupDialog::resetFontSize()
     ui->itemNoteLabel->setFont(customFont);
     ui->orikeyListLabel->setFont(customFont);
     ui->mapkeyListLabel->setFont(customFont);
-    ui->originalKeyUpdateButton->setFont(customFont);
-    ui->mappingKeyUpdateButton->setFont(customFont);
-    ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
+    // ui->originalKeyUpdateButton->setFont(customFont);
+    // ui->mappingKeyUpdateButton->setFont(customFont);
+    // ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
     ui->recordKeysButton->setFont(customFont);
     ui->crosshairSetupButton->setFont(customFont);
     // ui->itemNoteUpdateButton->setFont(customFont);
@@ -1758,6 +1758,225 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
     return value_changed;
 }
 
+void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    // Define update priorities based on focus or specified order
+    QList<int> updatePriorities;
+
+    // Determine focus-based priority if available
+    QWidget* focusWidget = QApplication::focusWidget();
+    if (focusWidget) {
+        if (focusWidget == ui->originalKeyLineEdit) {
+            updatePriorities << ORIGINAL_KEY_FIRST << MAPPING_KEY_FIRST << MAPPING_KEY_KEYUP_FIRST;
+        }
+        else if (focusWidget == m_MappingKeyLineEdit) {
+            updatePriorities << MAPPING_KEY_FIRST << ORIGINAL_KEY_FIRST << MAPPING_KEY_KEYUP_FIRST;
+        }
+        else if (focusWidget == m_MappingKey_KeyUpLineEdit) {
+            updatePriorities << MAPPING_KEY_KEYUP_FIRST << ORIGINAL_KEY_FIRST << MAPPING_KEY_FIRST;
+        }
+        else {
+            // Default priority order if no relevant widget has focus
+            updatePriorities << update_order;
+            if (update_order != ORIGINAL_KEY_FIRST) updatePriorities << ORIGINAL_KEY_FIRST;
+            if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
+            if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
+        }
+    }
+    else {
+        // No focus widget, use specified order first, then defaults
+        updatePriorities << update_order;
+        if (update_order != ORIGINAL_KEY_FIRST) updatePriorities << ORIGINAL_KEY_FIRST;
+        if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
+        if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
+    }
+
+    // Execute updates in priority order, stopping on first validation error
+    for (int priority : updatePriorities) {
+        bool success = false;
+
+        switch (priority) {
+            case ORIGINAL_KEY_FIRST:
+                success = updateOriginalKey();
+                break;
+            case MAPPING_KEY_FIRST:
+                success = updateMappingKey();
+                break;
+            case MAPPING_KEY_KEYUP_FIRST:
+                success = updateMappingKeyKeyUp();
+                break;
+            default:
+                continue; // Skip unknown priorities
+        }
+
+        // Stop on first validation error
+        if (!success) {
+            break;
+        }
+    }
+}
+
+bool QItemSetupDialog::updateOriginalKey()
+{
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    QString originalKey = ui->originalKeyLineEdit->text();
+    originalKey.remove(whitespace_reg);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] OriginalKeyText remove whitespace -> " << originalKey;
+#endif
+
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey, m_ItemRow);
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (result.isValid) {
+        if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
+        }
+
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+        refreshOriginalKeyRelatedUI();
+
+        // popupMessageColor = SUCCESS_COLOR;
+        // popupMessage = tr("OriginalKey update success");
+        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return true;
+    }
+    else {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = result.errorMessage;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return false;
+    }
+}
+
+bool QItemSetupDialog::updateMappingKey()
+{
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
+
+    QString mappingKey = m_MappingKeyLineEdit->text();
+
+    // Extract both Run(...) and SendText(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
+
+    // Remove whitespace from the temporary string (excluding Run and SendText content)
+    tempMappingKey.remove(whitespace_reg);
+
+    // Restore all preserved parts
+    for (int i = 0; i < preservedParts.size(); ++i) {
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, preservedParts[i]);
+    }
+
+    mappingKey = tempMappingKey;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingKey;
+#endif
+
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (result.isValid) {
+        QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
+        (void)refreshMappingKeyRelatedUI();
+
+        // popupMessageColor = SUCCESS_COLOR;
+        // popupMessage = tr("MappingKey update success");
+        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return true;
+    }
+    else {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = result.errorMessage;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return false;
+    }
+}
+
+bool QItemSetupDialog::updateMappingKeyKeyUp()
+{
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
+
+    QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
+
+    // Extract both Run(...) and SendText(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
+
+    // Remove whitespace from the temporary string (excluding Run and SendText content)
+    tempMappingKey.remove(whitespace_reg);
+
+    // Restore all preserved parts
+    for (int i = 0; i < preservedParts.size(); ++i) {
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, preservedParts[i]);
+    }
+
+    mappingKey = tempMappingKey;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingKey;
+#endif
+
+    ValidationResult result;
+    if (mappingKey.isEmpty()) {
+        result.isValid = true;
+    }
+    else {
+        QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
+        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
+    }
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (result.isValid) {
+        if (mappingKey.isEmpty()) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys;
+        }
+        else {
+            QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey);
+        }
+
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
+        (void)refreshMappingKeyRelatedUI();
+
+        // popupMessageColor = SUCCESS_COLOR;
+        // popupMessage = tr("KeyUp MappingKey update success");
+        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return true;
+    }
+    else {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = result.errorMessage;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return false;
+    }
+}
+
 void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bool checked)
 {
     Q_UNUSED(checked);
@@ -1945,6 +2164,7 @@ void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
     (void)refreshMappingKeyRelatedUI();
 }
 
+#if 0
 void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -2116,6 +2336,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
+#endif
 
 void QItemSetupDialog::on_recordKeysButton_clicked()
 {
@@ -2415,7 +2636,22 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
     }
 }
 
-void QItemSetupDialog::on_mappingTextUpdateButton_clicked()
+void QItemSetupDialog::updateMappingInfo_OriginalKeyFirst()
 {
+    updateMappingInfoByOrder(ORIGINAL_KEY_FIRST);
+}
 
+void QItemSetupDialog::updateMappingInfo_MappingKeyFirst()
+{
+    updateMappingInfoByOrder(MAPPING_KEY_FIRST);
+}
+
+void QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst()
+{
+    updateMappingInfoByOrder(MAPPING_KEY_KEYUP_FIRST);
+}
+
+void QItemSetupDialog::on_updateMappingInfoButton_clicked()
+{
+    updateMappingInfoByOrder();
 }

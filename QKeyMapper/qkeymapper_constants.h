@@ -42,6 +42,10 @@ namespace QKeyMapperConstants {
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
 
+    inline constexpr int ORIGINAL_KEY_FIRST         = 0;
+    inline constexpr int MAPPING_KEY_FIRST          = 1;
+    inline constexpr int MAPPING_KEY_KEYUP_FIRST    = 2;
+
     inline constexpr int KEYRECORD_EDITMODE_CAPTURE = 0;
     inline constexpr int KEYRECORD_EDITMODE_MANUALEDIT = 1;
 

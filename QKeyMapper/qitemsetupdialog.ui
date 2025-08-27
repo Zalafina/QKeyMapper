@@ -157,7 +157,7 @@
     <rect>
      <x>100</x>
      <y>10</y>
-     <width>641</width>
+     <width>611</width>
      <height>22</height>
     </rect>
    </property>
@@ -224,44 +224,6 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="originalKeyUpdateButton">
-   <property name="geometry">
-    <rect>
-     <x>750</x>
-     <y>10</y>
-     <width>61</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Update</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="mappingKeyUpdateButton">
-   <property name="geometry">
-    <rect>
-     <x>750</x>
-     <y>45</y>
-     <width>61</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Update</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
    </property>
   </widget>
   <widget class="QCheckBox" name="keySeqHoldDownCheckBox">
@@ -379,25 +341,6 @@
     <string>MappingKeyUnlock</string>
    </property>
    <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="mappingKey_KeyUpUpdateButton">
-   <property name="geometry">
-    <rect>
-     <x>750</x>
-     <y>80</y>
-     <width>61</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Update</string>
-   </property>
-   <property name="autoDefault">
     <bool>false</bool>
    </property>
   </widget>
@@ -845,12 +788,12 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="mappingStringsUpdateButton">
+  <widget class="QPushButton" name="updateMappingInfoButton">
    <property name="geometry">
     <rect>
-     <x>750</x>
-     <y>120</y>
-     <width>61</width>
+     <x>720</x>
+     <y>35</y>
+     <width>91</width>
      <height>41</height>
     </rect>
    </property>
@@ -876,8 +819,6 @@
   <zorder>mappingKeyLabel</zorder>
   <zorder>orikeyListLabel</zorder>
   <zorder>mapkeyListLabel</zorder>
-  <zorder>originalKeyUpdateButton</zorder>
-  <zorder>mappingKeyUpdateButton</zorder>
   <zorder>keySeqHoldDownCheckBox</zorder>
   <zorder>repeatByKeyCheckBox</zorder>
   <zorder>repeatByTimesCheckBox</zorder>
@@ -885,7 +826,6 @@
   <zorder>itemNoteLabel</zorder>
   <zorder>itemNoteLineEdit</zorder>
   <zorder>mappingKeyUnlockCheckBox</zorder>
-  <zorder>mappingKey_KeyUpUpdateButton</zorder>
   <zorder>mappingKey_KeyUpLabel</zorder>
   <zorder>sendTimingComboBox</zorder>
   <zorder>sendTimingLabel</zorder>
@@ -907,7 +847,7 @@
   <zorder>keyRecordEditModeButton</zorder>
   <zorder>keyRecordLineEdit</zorder>
   <zorder>keyRecordLabel</zorder>
-  <zorder>mappingStringsUpdateButton</zorder>
+  <zorder>updateMappingInfoButton</zorder>
  </widget>
  <resources/>
  <connections/>

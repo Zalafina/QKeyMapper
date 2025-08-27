@@ -67,6 +67,11 @@ private:
     void refreshOriginalKeyRelatedUI(void);
     bool refreshMappingKeyRelatedUI(void);
 
+    // Unified update system helper methods
+    bool updateOriginalKey(void);
+    bool updateMappingKey(void);
+    bool updateMappingKeyKeyUp(void);
+
 private:
     static QItemSetupDialog *m_instance;
     Ui::QItemSetupDialog *ui;
@@ -100,9 +105,9 @@ private slots:
     void on_checkCombKeyOrderCheckBox_stateChanged(int state);
     void on_passThroughCheckBox_stateChanged(int state);
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
-    void on_originalKeyUpdateButton_clicked();
-    void on_mappingKeyUpdateButton_clicked();
-    void on_mappingKey_KeyUpUpdateButton_clicked();
+    // void on_originalKeyUpdateButton_clicked();
+    // void on_mappingKeyUpdateButton_clicked();
+    // void on_mappingKey_KeyUpUpdateButton_clicked();
     void on_recordKeysButton_clicked();
     void on_repeatByKeyCheckBox_stateChanged(int state);
     void on_repeatByTimesCheckBox_stateChanged(int state);
@@ -116,7 +121,11 @@ private slots:
     void on_keyRecordEditModeButton_clicked();
     void on_keyRecordLineEdit_textChanged(const QString &text);
     void on_itemNoteLineEdit_textChanged(const QString &text);
-    void on_mappingTextUpdateButton_clicked();
+    void updateMappingInfo_OriginalKeyFirst();
+    void updateMappingInfo_MappingKeyFirst();
+    void updateMappingInfo_MappingKey_KeyUpFirst();
+    void updateMappingInfoByOrder(int update_order = QKeyMapperConstants::ORIGINAL_KEY_FIRST);
+    void on_updateMappingInfoButton_clicked();
 };
 
 class KeyStringLineEdit : public QLineEdit
