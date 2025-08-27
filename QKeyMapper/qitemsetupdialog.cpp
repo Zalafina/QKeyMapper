@@ -1836,11 +1836,10 @@ void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
         return;
     }
 
-    int tabindex = m_TabIndex;
     bool burst = ui->burstCheckBox->isChecked();
     if (burst != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = burst;
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst -> " << burst;
@@ -1859,11 +1858,10 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
         return;
     }
 
-    int tabindex = m_TabIndex;
     bool lock = ui->lockCheckBox->isChecked();
     if (lock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = lock;
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, LOCK_COLUMN);
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Lock -> " << lock;
@@ -1917,11 +1915,10 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
         return;
     }
 
-    int tabindex = m_TabIndex;
     bool passthrough = ui->passThroughCheckBox->isChecked();
     if (passthrough != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PassThrough) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PassThrough = passthrough;
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
@@ -1958,7 +1955,6 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
         return;
     }
 
-    int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     QString originalKey = ui->originalKeyLineEdit->text();
     originalKey.remove(whitespace_reg);
@@ -1980,7 +1976,7 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
         }
 
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
 
         refreshOriginalKeyRelatedUI();
     }
@@ -2001,7 +1997,6 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
         return;
     }
 
-    int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string (no MultilineOption needed)
@@ -2040,7 +2035,7 @@ void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 
         QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
 
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
 
         (void)refreshMappingKeyRelatedUI();
     }
@@ -2061,7 +2056,6 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
         return;
     }
 
-    int tabindex = m_TabIndex;
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string (no MultilineOption needed)
@@ -2112,7 +2106,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
             QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey);
         }
 
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
 
         (void)refreshMappingKeyRelatedUI();
     }
@@ -2221,7 +2215,6 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
         return;
     }
 
-    int tabindex = m_TabIndex;
     QString note_str = ui->itemNoteLineEdit->text();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -2239,7 +2232,7 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
     }
 
-    QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+    QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
 
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
@@ -2411,7 +2404,6 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
         return;
     }
 
-    int tabindex = m_TabIndex;
     QString note_str = ui->itemNoteLineEdit->text();
 
     if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note != note_str) {
@@ -2419,7 +2411,7 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
         qDebug().nospace().noquote() << "[" << __func__ << "] Item note -> " << note_str;
 #endif
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
     }
 }
 

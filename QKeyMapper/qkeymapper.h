@@ -1162,7 +1162,9 @@ private:
 public:
     void refreshKeyMappingDataTableByTabIndex(int tabindex);
     void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);
+    void updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, int row, int column);
     void updateKeyMappingTabWidgetTabDisplay(int tabindex);
+    void updateTableWidgetItem(int tabindex, int row, int column);
 private:
     void refreshAllKeyMappingTagWidget(void);
     void updateMousePointsList(void);

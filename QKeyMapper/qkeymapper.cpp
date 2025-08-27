@@ -15672,6 +15672,186 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     }
 }
 
+void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, int row, int column)
+{
+    // Validate input parameters
+    if (!mappingDataTable || !mappingDataList) {
+        return;
+    }
+
+    if (row < 0 || row >= mappingDataList->size() || row >= mappingDataTable->rowCount()) {
+        return;
+    }
+
+    if (column < 0 || column >= KEYMAPPINGDATA_TABLE_COLUMN_COUNT) {
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(row);
+
+    // Determine disable flags based on the same logic as refreshKeyMappingDataTable
+    bool disable_burst = false;
+    bool disable_lock = false;
+
+    if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+
+    if (keymapdata.Original_Key == JOY_LS2VJOYLS_STR
+        || keymapdata.Original_Key == JOY_RS2VJOYRS_STR
+        || keymapdata.Original_Key == JOY_LS2VJOYRS_STR
+        || keymapdata.Original_Key == JOY_RS2VJOYLS_STR
+        || keymapdata.Original_Key == JOY_LT2VJOYLT_STR
+        || keymapdata.Original_Key == JOY_RT2VJOYRT_STR) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+
+    if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
+        || keymapdata.Original_Key == JOY_RS2MOUSE_STR
+        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+
+    if (keymapdata.Original_Key.contains(MOUSE_WHEEL_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+
+    if (keymapdata.Mapping_Keys.size() > 1) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(SEPARATOR_WAITTIME)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)) {
+        disable_burst = true;
+        // disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(FUNC_PREFIX)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
+        disable_burst = true;
+        // disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
+        disable_burst = true;
+        // disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
+        || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
+        disable_burst = true;
+        // disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_BRAKE_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_ACCEL_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_ACCEL_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
+        // disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(RUN_STR)) {
+        // disable_burst = true;
+        disable_lock = true;
+    }
+
+    // Update the specific column
+    switch (column) {
+        case ORIGINAL_KEY_COLUMN: {
+            QString mapdata_note = keymapdata.Note;
+            QString orikey_withnote;
+            if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
+                orikey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(keymapdata.Original_Key, mapdata_note);
+            }
+            else {
+                orikey_withnote = keymapdata.Original_Key;
+            }
+            if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+                orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
+            }
+            QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
+            ori_TableItem->setToolTip(orikey_withnote);
+            ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            if (keymapdata.PassThrough) {
+                ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
+            }
+            mappingDataTable->setItem(row, ORIGINAL_KEY_COLUMN, ori_TableItem);
+            break;
+        }
+        case MAPPING_KEY_COLUMN: {
+            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+            QTableWidgetItem *mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
+            mapping_TableItem->setToolTip(mappingkeys_str);
+            mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            mappingDataTable->setItem(row, MAPPING_KEY_COLUMN, mapping_TableItem);
+            break;
+        }
+        case BURST_MODE_COLUMN: {
+            QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
+            if (keymapdata.Burst == true) {
+                burstCheckBox->setCheckState(Qt::Checked);
+            }
+            else {
+                burstCheckBox->setCheckState(Qt::Unchecked);
+            }
+
+            if (disable_burst) {
+                burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
+            }
+            mappingDataTable->setItem(row, BURST_MODE_COLUMN, burstCheckBox);
+            break;
+        }
+        case LOCK_COLUMN: {
+            QTableWidgetItem *lockCheckBox = new QTableWidgetItem();
+            if (keymapdata.Lock == true) {
+                lockCheckBox->setCheckState(Qt::Checked);
+            }
+            else {
+                lockCheckBox->setCheckState(Qt::Unchecked);
+            }
+
+            if (disable_lock) {
+                lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
+            }
+            mappingDataTable->setItem(row, LOCK_COLUMN, lockCheckBox);
+            break;
+        }
+        case CATEGORY_COLUMN: {
+            QTableWidgetItem *categoryItem = new QTableWidgetItem(keymapdata.Category);
+            categoryItem->setToolTip(keymapdata.Category);
+            // Category column should be editable when visible
+            if (mappingDataTable->isCategoryColumnVisible()) {
+                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+            } else {
+                categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+            }
+            mappingDataTable->setItem(row, CATEGORY_COLUMN, categoryItem);
+            break;
+        }
+        default:
+            // Invalid column, do nothing
+            break;
+    }
+}
+
 void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
 {
     if ((tabindex < 0) || (tabindex >= m_KeyMappingTabWidget->count()) || (tabindex >= s_KeyMappingTabInfoList.size())) {
@@ -15713,6 +15893,19 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
         tooltip_str = tr("Hotkey : %1").arg(tab_hotkey);
     }
     m_KeyMappingTabWidget->tabBar()->setTabToolTip(tabindex, tooltip_str);
+}
+
+void QKeyMapper::updateTableWidgetItem(int tabindex, int row, int column)
+{
+    if (0 <= tabindex && tabindex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        if (0 <= row && row < QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable->rowCount()
+            && 0 <= column && column < KEYMAPPINGDATA_TABLE_COLUMN_COUNT) {
+            KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable;
+            QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+
+            updateKeyMappingDataTableItem(mappingDataTable, mappingDataList, row, column);
+        }
+    }
 }
 
 void QKeyMapper::refreshAllKeyMappingTagWidget()
