@@ -124,7 +124,7 @@ private slots:
     void updateMappingInfo_OriginalKeyFirst();
     void updateMappingInfo_MappingKeyFirst();
     void updateMappingInfo_MappingKey_KeyUpFirst();
-    void updateMappingInfoByOrder(int update_order = QKeyMapperConstants::ORIGINAL_KEY_FIRST);
+    void updateMappingInfoByOrder(int update_order = QKeyMapperConstants::MAPPING_UPDATE_ORDER_DEFAULT);
     void on_updateMappingInfoButton_clicked();
 };
 

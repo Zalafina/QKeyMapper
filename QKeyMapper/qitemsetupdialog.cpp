@@ -179,7 +179,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     // ui->mappingKeyUpdateButton->setText(tr(UPDATEBUTTON_STR));
     // ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
     // ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
-    ui->updateMappingInfoButton->setText(tr(UPDATEBUTTON_STR));
+    ui->updateMappingInfoButton->setText(tr("Mapping\nUpdate"));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
@@ -1560,6 +1560,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
 
         keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
 
+#if 0
         /* Load Mapping Keys String */
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
         m_MappingKeyLineEdit->setText(mappingkeys_str);
@@ -1573,6 +1574,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
             m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
         }
+#endif
 
         /* Load Burst */
         if (true == keymapdata.Burst) {
@@ -1772,41 +1774,40 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
 
     // Define update priorities based on focus or specified order
     QList<int> updatePriorities;
-
-#if 0
-    // Determine focus-based priority if available
-    QWidget* focusWidget = QApplication::focusWidget();
-    if (focusWidget) {
-        if (focusWidget == ui->originalKeyLineEdit) {
-            updatePriorities << ORIGINAL_KEY_FIRST << MAPPING_KEY_FIRST << MAPPING_KEY_KEYUP_FIRST;
+    if (update_order != MAPPING_UPDATE_ORDER_DEFAULT) {
+        if (update_order == MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST) {
+            updatePriorities << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
         }
-        else if (focusWidget == m_MappingKeyLineEdit) {
-            updatePriorities << MAPPING_KEY_FIRST << ORIGINAL_KEY_FIRST << MAPPING_KEY_KEYUP_FIRST;
-        }
-        else if (focusWidget == m_MappingKey_KeyUpLineEdit) {
-            updatePriorities << MAPPING_KEY_KEYUP_FIRST << ORIGINAL_KEY_FIRST << MAPPING_KEY_FIRST;
+        else if (update_order == MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST) {
+            updatePriorities << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST;
         }
         else {
-            // Default priority order if no relevant widget has focus
-            updatePriorities << update_order;
-            if (update_order != ORIGINAL_KEY_FIRST) updatePriorities << ORIGINAL_KEY_FIRST;
-            if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
-            if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
+            updatePriorities << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
         }
     }
     else {
-        // No focus widget, use specified order first, then defaults
-        updatePriorities << update_order;
-        if (update_order != ORIGINAL_KEY_FIRST) updatePriorities << ORIGINAL_KEY_FIRST;
-        if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
-        if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
+        // Determine focus-based priority if available
+        QWidget* focusWidget = QApplication::focusWidget();
+        if (focusWidget) {
+            if (focusWidget == ui->originalKeyLineEdit) {
+                updatePriorities << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
+            }
+            else if (focusWidget == m_MappingKeyLineEdit) {
+                updatePriorities << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
+            }
+            else if (focusWidget == m_MappingKey_KeyUpLineEdit) {
+                updatePriorities << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST;
+            }
+            else {
+                // Default priority order if no relevant widget has focus
+                updatePriorities << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
+            }
+        }
+        else {
+            // No focus widget, use defaults order
+            updatePriorities << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
+        }
     }
-#endif
-
-    updatePriorities << update_order;
-    if (update_order != ORIGINAL_KEY_FIRST) updatePriorities << ORIGINAL_KEY_FIRST;
-    if (update_order != MAPPING_KEY_FIRST) updatePriorities << MAPPING_KEY_FIRST;
-    if (update_order != MAPPING_KEY_KEYUP_FIRST) updatePriorities << MAPPING_KEY_KEYUP_FIRST;
 
     // Execute updates in priority order, stopping on first validation error
     bool allUpdatesSuccessful = true;
@@ -1814,13 +1815,13 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
         bool success = false;
 
         switch (priority) {
-            case ORIGINAL_KEY_FIRST:
+            case MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST:
                 success = updateOriginalKey();
                 break;
-            case MAPPING_KEY_FIRST:
+            case MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST:
                 success = updateMappingKey();
                 break;
-            case MAPPING_KEY_KEYUP_FIRST:
+            case MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST:
                 success = updateMappingKeyKeyUp();
                 break;
             default:
@@ -2660,17 +2661,17 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
 
 void QItemSetupDialog::updateMappingInfo_OriginalKeyFirst()
 {
-    updateMappingInfoByOrder(ORIGINAL_KEY_FIRST);
+    updateMappingInfoByOrder(MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST);
 }
 
 void QItemSetupDialog::updateMappingInfo_MappingKeyFirst()
 {
-    updateMappingInfoByOrder(MAPPING_KEY_FIRST);
+    updateMappingInfoByOrder(MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST);
 }
 
 void QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst()
 {
-    updateMappingInfoByOrder(MAPPING_KEY_KEYUP_FIRST);
+    updateMappingInfoByOrder(MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST);
 }
 
 void QItemSetupDialog::on_updateMappingInfoButton_clicked()

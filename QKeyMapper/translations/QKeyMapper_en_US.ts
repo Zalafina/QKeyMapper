@@ -656,9 +656,8 @@
         <translation>MappingKeyList</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.ui" line="804"/>
         <source>Update</source>
-        <translation>Update</translation>
+        <translation type="vanished">Update</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="242"/>
@@ -739,6 +738,14 @@
         <location filename="../qitemsetupdialog.cpp" line="169"/>
         <source>KeyRecord</source>
         <translation>KeyRecord</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.ui" line="804"/>
+        <location filename="../qitemsetupdialog.cpp" line="182"/>
+        <source>Mapping
+Update</source>
+        <translation>Mapping
+Update</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="170"/>

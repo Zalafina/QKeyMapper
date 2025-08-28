@@ -801,7 +801,8 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
-    <string>Update</string>
+    <string>Mapping
+Update</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
