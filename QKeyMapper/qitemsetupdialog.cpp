@@ -1922,6 +1922,11 @@ bool QItemSetupDialog::updateMappingKey()
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
         (void)refreshMappingKeyRelatedUI();
 
+        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+        /* Load Mapping Keys String */
+        QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        m_MappingKeyLineEdit->setText(mappingkeys_str);
+
         // popupMessageColor = SUCCESS_COLOR;
         // popupMessage = tr("MappingKey update success");
         // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
@@ -1986,6 +1991,18 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
 
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
         (void)refreshMappingKeyRelatedUI();
+
+        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+        /* Load KeyUp MappingKeys String */
+        if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
+            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+            keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
+            m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+        }
+        else {
+            QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+            m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+        }
 
         // popupMessageColor = SUCCESS_COLOR;
         // popupMessage = tr("KeyUp MappingKey update success");
