@@ -320,7 +320,7 @@
     <rect>
      <x>100</x>
      <y>210</y>
-     <width>641</width>
+     <width>611</width>
      <height>22</height>
     </rect>
    </property>
@@ -398,7 +398,7 @@
   <widget class="QPushButton" name="recordKeysButton">
    <property name="geometry">
     <rect>
-     <x>630</x>
+     <x>610</x>
      <y>140</y>
      <width>101</width>
      <height>22</height>
@@ -474,8 +474,8 @@
   <widget class="QPushButton" name="crosshairSetupButton">
    <property name="geometry">
     <rect>
-     <x>630</x>
-     <y>240</y>
+     <x>610</x>
+     <y>260</y>
      <width>101</width>
      <height>21</height>
     </rect>
