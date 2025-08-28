@@ -15586,9 +15586,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             else {
                 orikey_withnote = keymapdata.Original_Key;
             }
-            if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
-                orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
-            }
+            // if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+            //     orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
+            // }
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
             ori_TableItem->setToolTip(orikey_withnote);
             ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
@@ -15784,9 +15784,9 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             else {
                 orikey_withnote = keymapdata.Original_Key;
             }
-            if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
-                orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
-            }
+            // if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+            //     orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
+            // }
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
             ori_TableItem->setToolTip(orikey_withnote);
             ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
