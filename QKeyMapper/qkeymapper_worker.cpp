@@ -13589,49 +13589,75 @@ bool DisablePrivilege(LPCWSTR privilege)
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys)
 {
-    // Modify the regex to capture SendText(…) followed by any non-separator characters
-    static QRegularExpression plusandnext_split_regex(R"((SendText\([^)]+\)[^+»]*)|([^+»]+))");
-    static QRegularExpression next_split_regex(R"((SendText\([^)]+\)[^»]*)|([^»]+))");
-    static QRegularExpression plus_split_regex(R"((SendText\([^)]+\)[^+]*)|([^+]+))");
+    static QRegularExpression sendtext_regex(QKeyMapperConstants::REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
+    static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
-    QStringList splitted_mappingkeys;
-    QString remainingString = mappingkeystr;
+    // Extract both Run(...) and SendText(...) content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractRunAndSendTextWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
 
-    // Use a global match to capture both SendText(…) and normal keys
-    QRegularExpressionMatchIterator iter;
+    // Determine separators for splitting
+    QStringList separators;
     if (SPLIT_WITH_PLUSANDNEXT == split_type) {
-        iter = plusandnext_split_regex.globalMatch(remainingString);
+        separators << SEPARATOR_PLUS << SEPARATOR_NEXTARROW;
     }
     else if (SPLIT_WITH_NEXT == split_type) {
-        iter = next_split_regex.globalMatch(remainingString);
+        separators << SEPARATOR_NEXTARROW;
     }
-    else {
-        iter = plus_split_regex.globalMatch(remainingString);
+    else { // SPLIT_WITH_PLUS
+        separators << SEPARATOR_PLUS;
     }
 
-    QString sendtext_start = "SendText(";
-    QString sendtext_end = ")";
-    while (iter.hasNext()) {
-        QRegularExpressionMatch match = iter.next();
-        if (match.hasMatch()) {
-            QString keystr = match.captured(0);
-            if (pure_keys) {
-                QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
-                if (mapkey_match.hasMatch()) {
-                    keystr = mapkey_match.captured(2);
-                }
-            }
+    // Perform splitting on the temporary string (without SendText and Run content)
+    QStringList splitted_mappingkeys;
+    int currentPos = 0;
 
-            if (SPLIT_WITH_NEXT == split_type
-                && !splitted_mappingkeys.isEmpty()
-                && splitted_mappingkeys.constLast().contains(sendtext_start)
-                && !splitted_mappingkeys.constLast().contains(sendtext_end)) {
-                splitted_mappingkeys.last().append(SEPARATOR_NEXTARROW + keystr);
+    while (currentPos <= tempMappingKey.length()) {
+        int nextSeparatorPos = tempMappingKey.length();
+        QString foundSeparator;
+
+        // Find the nearest separator
+        for (const QString &separator : std::as_const(separators)) {
+            int pos = tempMappingKey.indexOf(separator, currentPos);
+            if (pos != -1 && pos < nextSeparatorPos) {
+                nextSeparatorPos = pos;
+                foundSeparator = separator;
             }
-            else {
-                splitted_mappingkeys.append(keystr);
+        }
+
+        // Extract current part
+        QString keystr;
+        if (nextSeparatorPos == tempMappingKey.length()) {
+            // Last part or no separator found
+            keystr = tempMappingKey.mid(currentPos);
+            currentPos = tempMappingKey.length() + 1; // End loop
+        } else {
+            // Separator found, extract substring before it
+            keystr = tempMappingKey.mid(currentPos, nextSeparatorPos - currentPos);
+            currentPos = nextSeparatorPos + foundSeparator.length();
+        }
+
+        // Restore all preserved parts in the current key string
+        for (int i = 0; i < preservedParts.size(); ++i) {
+            QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+            keystr.replace(placeholder, preservedParts[i]);
+        }
+
+        // Handle pure_keys
+        if (pure_keys && !keystr.isEmpty()) {
+            QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
+            if (mapkey_match.hasMatch()) {
+                keystr = mapkey_match.captured(2);
             }
+        }
+
+        splitted_mappingkeys.append(keystr);
+
+        // If the whole string has been processed, break loop
+        if (currentPos > tempMappingKey.length()) {
+            break;
         }
     }
 

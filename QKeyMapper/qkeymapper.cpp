@@ -3413,7 +3413,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
             QString foundSpecialOriginalKey;
             QString foundSpecialMappingKey;
             // Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList
-            for (const QString& mapkey : Mapping_Keys) {
+            for (const QString& mapkey : std::as_const(Mapping_Keys)) {
                 QString mapkey_noindex = mapkey;
                 mapkey_noindex.remove(removeindex_regex);
                 if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
@@ -3436,7 +3436,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                 return result;
             }
 
-            for (const QString& mapkey : Mapping_Keys)
+            for (const QString& mapkey : std::as_const(Mapping_Keys))
             {
                 result = validateSingleMappingKey(mapkey);
                 if (result.isValid == false) {
