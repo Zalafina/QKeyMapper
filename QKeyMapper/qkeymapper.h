@@ -1166,7 +1166,7 @@ public:
     void updateKeyMappingTabWidgetTabDisplay(int tabindex);
     void updateTableWidgetItem(int tabindex, int row, int column);
 private:
-    void refreshAllKeyMappingTagWidget(void);
+    void refreshAllKeyMappingTabWidget(void);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage(int languageindex);
@@ -1190,6 +1190,7 @@ public:
     void saveKeyMapSetting(void);
 private:
     QString loadKeyMapSetting(const QString &settingtext);
+    void loadEmptyMapSetting(void);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT

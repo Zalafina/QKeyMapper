@@ -572,7 +572,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         hideProcessList();
         setKeyMappingTabWidgetWideMode();
     }
-    refreshAllKeyMappingTagWidget();
+    refreshAllKeyMappingTabWidget();
     // resizeAllKeyMappingTabWidgetColumnWidth();
 #ifdef QT_NO_DEBUG
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
@@ -11191,7 +11191,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "refreshKeyMappingDataTable()";
 #endif
-    refreshAllKeyMappingTagWidget();
+    refreshAllKeyMappingTabWidget();
 
     if (loadGlobalSetting && loadDefault != true) {
         ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
@@ -11291,7 +11291,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             // ui->titleCheckBox->setChecked(false);
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
-            ui->enableSystemFilterKeyCheckBox->setChecked(true);
+            ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
@@ -11699,7 +11699,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
     else {
-        ui->autoStartMappingCheckBox->setCheckState(Qt::Unchecked);
+        ui->autoStartMappingCheckBox->setCheckState(Qt::Checked);
     }
 
     ui->enableSystemFilterKeyCheckBox->blockSignals(true);
@@ -11716,11 +11716,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
     }
     else {
-#ifdef ENABLE_SYSTEMFILTERKEYS_DEFAULT
-        ui->enableSystemFilterKeyCheckBox->setChecked(true);
-#else
-        ui->enableSystemFilterKeyCheckBox->setChecked(false);
-#endif
+        ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
     }
     ui->enableSystemFilterKeyCheckBox->blockSignals(false);
 
@@ -11854,6 +11850,65 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         }
         return loadedSettingString;
     }
+}
+
+void QKeyMapper::loadEmptyMapSetting()
+{
+    clearKeyMappingTabWidget();
+    KeyMappingDataList->clear();
+
+    // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
+    ui->settingNameLineEdit->setText(QString());
+    ui->processLineEdit->setText(QString());
+    ui->windowTitleLineEdit->setText(QString());
+    ui->descriptionLineEdit->setText(QString());
+    ui->iconLabel->clear();
+    ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    m_MapProcessInfo = MAP_PROCESSINFO();
+
+    ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
+    ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
+    ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMinYSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMaxXSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMaxYSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    ui->Gyro2MouseMinThresholdSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT);
+    ui->Gyro2MouseMaxThresholdSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
+    m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXSource(GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT);
+    m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYSource(GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT);
+    m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXRevert(false);
+    m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYRevert(false);
+    ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->vJoyRecenterSpinBox->setValue(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
+    ui->lockCursorCheckBox->setChecked(false);
+    ui->directModeCheckBox->setChecked(false);
+    ui->filterKeysCheckBox->setChecked(true);
+    ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
+    ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
+    ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
+
+    ui->autoStartMappingCheckBox->setCheckState(Qt::Checked);
+    ui->enableSystemFilterKeyCheckBox->blockSignals(true);
+    ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
+    ui->enableSystemFilterKeyCheckBox->blockSignals(false);
+    ui->sendToSameTitleWindowsCheckBox->setChecked(false);
+    ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
+    ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
+
+    QString loadedmappingStartKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
+    updateMappingStartKeyString(loadedmappingStartKeyStr);
+    ui->mappingStartKeyLineEdit->setText(s_MappingStartKeyString);
+
+    QString loadedmappingStopKeyStr;
+    loadedmappingStopKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
+    updateMappingStopKeyString(loadedmappingStopKeyStr);
+    ui->mappingStopKeyLineEdit->setText(s_MappingStopKeyString);
+
+    refreshAllKeyMappingTabWidget();
 }
 
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
@@ -14576,6 +14631,8 @@ void QKeyMapper::clearKeyMappingTabWidget()
         s_KeyMappingTabInfoList[0].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowAsFloatingWindow = TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
+
+        updateKeyMappingTabWidgetTabDisplay(0);
     }
 
     m_KeyMappingTabWidget->setTabText(0, "Tab1");
@@ -15908,7 +15965,7 @@ void QKeyMapper::updateTableWidgetItem(int tabindex, int row, int column)
     }
 }
 
-void QKeyMapper::refreshAllKeyMappingTagWidget()
+void QKeyMapper::refreshAllKeyMappingTabWidget()
 {
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
@@ -20087,18 +20144,17 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
         ui->restoreProcessPathButton->setEnabled(true);
-        // ui->processCheckBox->setEnabled(true);
-        // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
-        // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->descriptionLineEdit->clear();
         ui->descriptionLineEdit->setReadOnly(false);
         ui->descriptionLineEdit->setEnabled(true);
         ui->descriptionLabel->setEnabled(true);
+
+        loadEmptyMapSetting();
     }
 }
 
@@ -20939,11 +20995,11 @@ void QKeyMapper::on_processListButton_toggled(bool checked)
     if (!checked) {
         hideProcessList();
         setKeyMappingTabWidgetWideMode();
-        refreshAllKeyMappingTagWidget();
+        refreshAllKeyMappingTabWidget();
     }
     else {
         setKeyMappingTabWidgetNarrowMode();
-        refreshAllKeyMappingTagWidget();
+        refreshAllKeyMappingTabWidget();
         showProcessList();
     }
 }
@@ -20951,7 +21007,7 @@ void QKeyMapper::on_processListButton_toggled(bool checked)
 void QKeyMapper::on_showNotesButton_toggled(bool checked)
 {
     Q_UNUSED(checked);
-    refreshAllKeyMappingTagWidget();
+    refreshAllKeyMappingTabWidget();
 }
 
 void QKeyMapper::on_showCategoryButton_toggled(bool checked)
