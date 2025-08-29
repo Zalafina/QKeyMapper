@@ -11291,7 +11291,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             // ui->titleCheckBox->setChecked(false);
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->enableSystemFilterKeyCheckBox->blockSignals(true);
             ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
+            ui->enableSystemFilterKeyCheckBox->blockSignals(false);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
@@ -21451,7 +21453,9 @@ void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::Ch
         if (reply != QMessageBox::Yes) {
             // Use QTimer::singleShot to defer the state change to avoid signal recursion
             QTimer::singleShot(0, this, [this]() {
+                ui->enableSystemFilterKeyCheckBox->blockSignals(true);
                 ui->enableSystemFilterKeyCheckBox->setChecked(true);
+                ui->enableSystemFilterKeyCheckBox->blockSignals(false);
             });
         }
     }
