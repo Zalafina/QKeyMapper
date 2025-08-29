@@ -499,6 +499,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Interception_Worker::syncDisabledMouseList();
 
     setUITheme(ui->themeComboBox->currentIndex());
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        updateKeyMappingTabWidgetTabDisplay(index);
+    }
     updateSysTrayIconMenuText();
     reloadUILanguage();
     resetFontSize();
@@ -7239,6 +7242,9 @@ void QKeyMapper::systemThemeChanged()
 #endif
 
         setUITheme(ui->themeComboBox->currentIndex());
+        for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+            updateKeyMappingTabWidgetTabDisplay(index);
+        }
     }
 }
 
@@ -15924,21 +15930,19 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
     const QString tab_name = s_KeyMappingTabInfoList.at(tabindex).TabName;
     // const QColor tab_color = s_KeyMappingTabInfoList.at(tabindex).TabFontColor;
     const QString tab_customimage_path = s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_Path;
-    if (false == tab_hotkey.isEmpty()) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Set Tabbar textcolor & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
-#endif
 
-        QString tabText = QString(PREFIX_SHORTCUT) + tab_name;
-        m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tabText);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Set Tabbar border color & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
+#endif
+    if (false == tab_hotkey.isEmpty()) {
+        const QColor tab_text_color = QColor(46, 134, 222);
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_text_color);
     }
     else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Clear Tabbar prefix & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
-#endif
-
-        m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tab_name);
+        QColor btnTextColor = QApplication::palette().color(QPalette::ButtonText);
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, btnTextColor);
     }
+    m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tab_name);
 
     // m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
     QIcon icon_loaded;
@@ -21436,6 +21440,9 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
 {
     Q_UNUSED(index);
     setUITheme(ui->themeComboBox->currentIndex());
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        updateKeyMappingTabWidgetTabDisplay(index);
+    }
 }
 
 void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)
