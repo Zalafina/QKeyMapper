@@ -15935,12 +15935,10 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
     qDebug().nospace() << "[updateKeyMappingTabWidgetTabDisplay] Tabindex[" << tabindex << "] Set Tabbar border color & tooltips, TabHotkey : " << s_KeyMappingTabInfoList.at(tabindex).TabHotkey;
 #endif
     if (false == tab_hotkey.isEmpty()) {
-        const QColor tab_text_color = QColor(46, 134, 222);
-        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_text_color);
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, HOTKEY_TABBAR_TEXT_COLOR);
     }
     else {
-        QColor btnTextColor = QApplication::palette().color(QPalette::ButtonText);
-        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, btnTextColor);
+        m_KeyMappingTabWidget->tabBar()->setTabTextColor(tabindex, QApplication::palette().color(QPalette::ButtonText));
     }
     m_KeyMappingTabWidget->tabBar()->setTabText(tabindex, tab_name);
 

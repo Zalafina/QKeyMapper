@@ -901,6 +901,14 @@ namespace QKeyMapperConstants {
     inline const QColor STATUS_ON_COLOR = QColor(236, 165, 56);
 #endif
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
+#endif
+
     // Use pattern that matches everything between SendText( and the last ) for complete content capture
     // This handles complex nested content including multiple parentheses levels and newlines
     // For proper bracket matching, the application logic should handle bracket balancing
