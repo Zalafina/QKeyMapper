@@ -171,6 +171,7 @@ HEADERS     += \
     qitemsetupdialog.h \
     qkeyrecord.h \
     qnotificationsetupdialog.h \
+    qstartuppositiondialog.h \
     qtablesetupdialog.h \
     qtrayiconselectdialog.h
 # Interception Driver Support <<<
@@ -192,6 +193,7 @@ SOURCES     += \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
     qnotificationsetupdialog.cpp \
+    qstartuppositiondialog.cpp \
     qtablesetupdialog.cpp \
     qtrayiconselectdialog.cpp
 
@@ -221,6 +223,7 @@ FORMS       += \
     qkeymapper.ui \
     qkeyrecord.ui \
     qnotificationsetupdialog.ui \
+    qstartuppositiondialog.ui \
     qtablesetupdialog.ui \
     qtrayiconselectdialog.ui
 

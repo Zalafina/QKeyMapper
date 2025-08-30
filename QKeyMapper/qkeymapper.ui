@@ -433,7 +433,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -948,6 +948,25 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
+    <widget class="QPushButton" name="startupPositonSettingButton">
+     <property name="geometry">
+      <rect>
+       <x>360</x>
+       <y>100</y>
+       <width>111</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Startup Position</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
+     </property>
+    </widget>
     <zorder>startupMinimizedCheckBox</zorder>
     <zorder>autoStartupCheckBox</zorder>
     <zorder>notificationLabel</zorder>
@@ -967,6 +986,7 @@
     <zorder>scaleComboBox</zorder>
     <zorder>themeComboBox</zorder>
     <zorder>themeLabel</zorder>
+    <zorder>startupPositonSettingButton</zorder>
    </widget>
    <widget class="QWidget" name="mapping">
     <attribute name="title">

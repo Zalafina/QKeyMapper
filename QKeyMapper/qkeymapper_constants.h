@@ -365,6 +365,18 @@ namespace QKeyMapperConstants {
     inline constexpr int NOTIFICATION_POSITION_BOTTOM_CENTER   = 5;
     inline constexpr int NOTIFICATION_POSITION_BOTTOM_RIGHT    = 6;
 
+    inline constexpr int STARTUP_POSITION_DEFAULT   = 0;
+    inline constexpr int STARTUP_POSITION_LASTSAVED = 1;
+    inline constexpr int STARTUP_POSITION_SPECIFY   = 2;
+    inline constexpr int STARTUP_POSITION_MIN = STARTUP_POSITION_DEFAULT;
+    inline constexpr int STARTUP_POSITION_MAX = STARTUP_POSITION_SPECIFY;
+
+    inline constexpr int STARTUP_SPECIFY_POSITION_MIN_X = -50000;
+    inline constexpr int STARTUP_SPECIFY_POSITION_MIN_Y = -50000;
+    inline constexpr int STARTUP_SPECIFY_POSITION_MAX_X = 50000;
+    inline constexpr int STARTUP_SPECIFY_POSITION_MAX_Y = 50000;
+    inline constexpr QPoint STARTUP_SPECIFY_POSITION_DEFAULT = QPoint(0, 0);
+
     inline constexpr int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 
     inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 10;
@@ -760,6 +772,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char NOTIFICATION_OPACITY[] = "Notification_Opacity";
     inline constexpr const char NOTIFICATION_X_OFFSET[] = "Notification_X_Offset";
     inline constexpr const char NOTIFICATION_Y_OFFSET[] = "Notification_Y_Offset";
+
+    inline constexpr const char STARTUP_POSITION_INDEX[] = "StartupPosition_Index";
+    inline constexpr const char STARTUP_POSITION_SPECIFYPOINT[] = "StartupPosition_SpecifyPoint";
 
     inline constexpr const char TRAYICON_IDLE[] = "TrayIcon_Idle";
     inline constexpr const char TRAYICON_MONITORING[] = "TrayIcon_Monitoring";

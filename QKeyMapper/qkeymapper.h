@@ -75,6 +75,7 @@
 #include "qtablesetupdialog.h"
 #include "qtrayiconselectdialog.h"
 #include "qnotificationsetupdialog.h"
+#include "qstartuppositiondialog.h"
 
 struct InputDeviceInfo
 {
@@ -1074,6 +1075,8 @@ private slots:
 
     void on_sendTextPlainTextEdit_textChanged();
 
+    void on_startupPositonSettingButton_clicked();
+
 private:
     // Helper methods for saving/restoring category filter state
     QString getCurrentCategoryFilter() const;
@@ -1222,6 +1225,8 @@ private:
     void closeTrayIconSelectDialog(void);
     void showNotificationSetupDialog(void);
     void closeNotificationSetupDialog(void);
+    void showStartupPositonSettingDialog(void);
+    void closeStartupPositonSettingDialog(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
@@ -1348,6 +1353,7 @@ private:
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
     QNotificationSetupDialog *m_NotificationSetupDialog = Q_NULLPTR;
+    QStartupPositionDialog *m_StartupPositionDialog = Q_NULLPTR;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;

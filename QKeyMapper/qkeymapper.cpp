@@ -482,6 +482,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
+    m_StartupPositionDialog = new QStartupPositionDialog(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
@@ -8113,6 +8114,9 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(NOTIFICATION_X_OFFSET,         m_NotificationSetupDialog->getNotification_X_Offset());
     settingFile.setValue(NOTIFICATION_Y_OFFSET,         m_NotificationSetupDialog->getNotification_Y_Offset());
 
+    settingFile.setValue(STARTUP_POSITION_INDEX,        m_StartupPositionDialog->getStartupPosition());
+    settingFile.setValue(STARTUP_POSITION_SPECIFYPOINT, m_StartupPositionDialog->getSpecifyStartupPosition());
+
     settingFile.setValue(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
     settingFile.setValue(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
     settingFile.setValue(TRAYICON_GLOBAL , m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon());
@@ -8999,12 +9003,53 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
 #endif
 
     if (settingtext.isEmpty()) {
-        if (true == settingFile.contains(LAST_WINDOWPOSITION)){
-            QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
-            if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
-                // m_LastWindowPosition = last_windowposition;
-                move(last_windowposition);
+        if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
+            int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
+            if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
+                m_StartupPositionDialog->setStartupPosition(startup_position);
             }
+            else {
+                m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+            }
+        }
+        else {
+            m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Startup Position ->" << m_StartupPositionDialog->getStartupPosition();
+#endif
+        if (true == settingFile.contains(STARTUP_POSITION_SPECIFYPOINT)){
+            QPoint startup_specify_position = settingFile.value(STARTUP_POSITION_SPECIFYPOINT).toPoint();
+            if (startup_specify_position.x() < STARTUP_SPECIFY_POSITION_MIN_X
+                || startup_specify_position.y() < STARTUP_SPECIFY_POSITION_MIN_Y
+                || startup_specify_position.x() > STARTUP_SPECIFY_POSITION_MAX_X
+                || startup_specify_position.y() > STARTUP_SPECIFY_POSITION_MAX_Y) {
+                m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+            }
+            else {
+                m_StartupPositionDialog->setSpecifyStartupPosition(startup_specify_position);
+            }
+        }
+        else {
+            m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
+#endif
+
+        int startup_position = m_StartupPositionDialog->getStartupPosition();
+        if (startup_position == STARTUP_POSITION_LASTSAVED) {
+            if (true == settingFile.contains(LAST_WINDOWPOSITION)){
+                QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
+                if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
+                    // m_LastWindowPosition = last_windowposition;
+                    move(last_windowposition);
+                }
+            }
+        }
+        else if (startup_position == STARTUP_POSITION_SPECIFY) {
+            QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
+            move(startup_specify_position);
         }
 
         if (true == settingFile.contains(LANGUAGE_INDEX)){
@@ -12102,6 +12147,7 @@ void QKeyMapper::setControlFontEnglish()
     // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
+    ui->startupPositonSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -12240,6 +12286,7 @@ void QKeyMapper::setControlFontChinese()
     // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
+    ui->startupPositonSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -12378,6 +12425,7 @@ void QKeyMapper::setControlFontJapanese()
     // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
+    ui->startupPositonSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -12624,6 +12672,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->windowswitchkeyLabel->setEnabled(status);
     ui->checkUpdateButton->setEnabled(status);
+    ui->startupPositonSettingButton->setEnabled(status);
     // m_windowswitchKeySeqEdit->setEnabled(status);
     ui->windowswitchkeyLineEdit->setEnabled(status);
     ui->mappingStartKeyLabel->setEnabled(status);
@@ -13013,6 +13062,24 @@ void QKeyMapper::closeNotificationSetupDialog()
 
     if (m_NotificationSetupDialog->isVisible()) {
         m_NotificationSetupDialog->close();
+    }
+}
+
+void QKeyMapper::showStartupPositonSettingDialog()
+{
+    if (!m_StartupPositionDialog->isVisible()) {
+        m_StartupPositionDialog->show();
+    }
+}
+
+void QKeyMapper::closeStartupPositonSettingDialog()
+{
+    if (Q_NULLPTR == m_StartupPositionDialog) {
+        return;
+    }
+
+    if (m_StartupPositionDialog->isVisible()) {
+        m_StartupPositionDialog->close();
     }
 }
 
@@ -16222,6 +16289,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->notificationLabel->setText(tr("Notification"));
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
+    ui->startupPositonSettingButton->setText(tr("Startup Position"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
     ui->checkUpdateButton->setText(tr("Check Updates"));
     ui->mappingStartKeyLabel->setText(tr("MappingStart"));
@@ -16343,6 +16411,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_NotificationSetupDialog != Q_NULLPTR) {
         m_NotificationSetupDialog->setUILanguage(languageindex);
+    }
+
+    if (m_StartupPositionDialog != Q_NULLPTR) {
+        m_StartupPositionDialog->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
@@ -21571,4 +21643,9 @@ void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
                               .arg(text);
 
     ui->sendTextPlainTextEdit->setToolTip(tooltip);
+}
+
+void QKeyMapper::on_startupPositonSettingButton_clicked()
+{
+    showStartupPositonSettingDialog();
 }
