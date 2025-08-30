@@ -47,7 +47,7 @@ public:
     static QString getCurrentMapKeyListText(void);
     static void setEditingMappingKeyLineEdit(int editing_lineedit);
     // static QPair<QString, QStringList> extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex);
-    static QPair<QString, QStringList> extractRunAndSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex);
+    static QPair<QString, QStringList> extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex);
 
     QLineEdit *getKeyRecordLineEdit(void);
 

@@ -545,17 +545,17 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
 
-    // Create a list of all matches (both SendText and Run) with their positions
+    // Create a list of all matches (SendText, Run, and SwitchTab) with their positions
     struct MatchInfo {
         int start;
         int end;
         QString content;
-        QString type; // "sendtext" or "run"
+        QString type; // "sendtext", "run", or "switchtab"
     };
 
     QList<MatchInfo> allMatches;
@@ -690,6 +690,71 @@ QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBa
         }
     }
 
+    // Find all SwitchTab matches (need bracket balancing like Run)
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        QRegularExpressionMatch match = switchtab_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // Check if brackets are balanced in the captured content for SwitchTab
+        QString captured = match.captured(1);
+        int bracketCount = 0;
+        bool isBalanced = true;
+
+        for (const QChar &ch : std::as_const(captured)) {
+            if (ch == '(') bracketCount++;
+            else if (ch == ')') bracketCount--;
+            if (bracketCount < 0) {
+                isBalanced = false;
+                break;
+            }
+        }
+        isBalanced = isBalanced && (bracketCount == 0);
+
+        if (isBalanced) {
+            // Brackets are balanced, use this match
+            MatchInfo info;
+            info.start = match.capturedStart();
+            info.end = match.capturedEnd();
+            info.content = match.captured(0);
+            info.type = "switchtab";
+            allMatches.append(info);
+            currentPos = match.capturedEnd();
+        } else {
+            // Brackets not balanced, try to find the correct closing bracket
+            int startPos = match.capturedStart();
+            int openPos = mappingKey.indexOf('(', startPos + 9); // Skip "SwitchTab"
+            if (openPos != -1) {
+                int closePos = openPos + 1;
+                int depth = 1;
+
+                while (closePos < mappingKey.length() && depth > 0) {
+                    if (mappingKey[closePos] == '(') depth++;
+                    else if (mappingKey[closePos] == ')') depth--;
+                    closePos++;
+                }
+
+                if (depth == 0) {
+                    // Found balanced brackets
+                    MatchInfo info;
+                    info.start = startPos;
+                    info.end = closePos;
+                    info.content = mappingKey.mid(startPos, closePos - startPos);
+                    info.type = "switchtab";
+                    allMatches.append(info);
+                    currentPos = closePos;
+                } else {
+                    // Still unbalanced, move past this match
+                    currentPos = match.capturedEnd();
+                }
+            } else {
+                currentPos = match.capturedEnd();
+            }
+        }
+    }
+
     // Sort matches by start position
     std::sort(allMatches.begin(), allMatches.end(), [](const MatchInfo &a, const MatchInfo &b) {
         return a.start < b.start;
@@ -700,7 +765,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBa
     for (int i = 0; i < allMatches.size(); ++i) {
         QString content = allMatches[i].content;
 
-        // Apply custom simplified() to Run(...) content only, keep SendText(...) unchanged
+        // Apply custom simplified() to Run(...) and SwitchTab(...) content only, keep SendText(...) unchanged
         if (allMatches[i].type == "run") {
             // Extract the content inside Run(...) and apply custom simplified()
             // Format: Run(content) -> find content between first ( and last )
@@ -712,6 +777,19 @@ QPair<QString, QStringList> QItemSetupDialog::extractRunAndSendTextWithBracketBa
                 innerContent.replace(simplified_regex, " ");
                 QString simplifiedInnerContent = innerContent.trimmed();
                 content = QString("Run(%1)").arg(simplifiedInnerContent);
+            }
+        }
+        else if (allMatches[i].type == "switchtab") {
+            // Extract the content inside SwitchTab(...) and apply custom simplified()
+            // Format: SwitchTab(content) -> find content between first ( and last )
+            int firstParen = content.indexOf('(');
+            int lastParen = content.lastIndexOf(')');
+            if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
+                QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
+                static QRegularExpression simplified_regex(R"([\r\n]+)");
+                innerContent.replace(simplified_regex, " ");
+                // QString simplifiedInnerContent = innerContent.trimmed();
+                content = QString("SwitchTab(%1)").arg(innerContent);
             }
         }
         // SendText(...) content remains completely unchanged
@@ -1892,8 +1970,8 @@ bool QItemSetupDialog::updateMappingKey()
 
     QString mappingKey = m_MappingKeyLineEdit->text();
 
-    // Extract both Run(...) and SendText(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
+    // Extract SendText(...), Run(...), and SwitchTab(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -1950,8 +2028,8 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
 
     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 
-    // Extract both Run(...) and SendText(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
+    // Extract SendText(...), Run(...), and SwitchTab(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -2251,132 +2329,12 @@ void QItemSetupDialog::on_originalKeyUpdateButton_clicked()
 
 void QItemSetupDialog::on_mappingKeyUpdateButton_clicked()
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    static QRegularExpression whitespace_reg(R"(\s+)");
-    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
-    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string (no MultilineOption needed)
-
-    QString mappingKey = m_MappingKeyLineEdit->text();
-
-    // Extract both Run(...) and SendText(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
-    QString tempMappingKey = extractResult.first;
-    QStringList preservedParts = extractResult.second;
-
-    // Remove whitespace from the temporary string (excluding Run and SendText content)
-    tempMappingKey.remove(whitespace_reg);
-
-    // Restore all preserved parts
-    for (int i = 0; i < preservedParts.size(); ++i) {
-        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
-        tempMappingKey.replace(placeholder, preservedParts[i]);
-    }
-
-    mappingKey = tempMappingKey;
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingKey;
-#endif
-
-    QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
-
-    QString popupMessage;
-    QString popupMessageColor;
-    int popupMessageDisplayTime = 3000;
-    if (result.isValid) {
-        popupMessageColor = SUCCESS_COLOR;
-        popupMessage = tr("MappingKey update success");
-
-        QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
-
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
-
-        (void)refreshMappingKeyRelatedUI();
-    }
-    else {
-        popupMessageColor = FAILURE_COLOR;
-        popupMessage = result.errorMessage;
-    }
-    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    updateMappingInfoByOrder(MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST);
 }
 
 void QItemSetupDialog::on_mappingKey_KeyUpUpdateButton_clicked()
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    static QRegularExpression whitespace_reg(R"(\s+)");
-    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption); // Pattern for finding SendText parts in composite string
-    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND); // Pattern for finding Run parts in composite string (no MultilineOption needed)
-
-    QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
-
-    // Extract both Run(...) and SendText(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractRunAndSendTextWithBracketBalancing(mappingKey, sendtext_regex, run_regex);
-    QString tempMappingKey = extractResult.first;
-    QStringList preservedParts = extractResult.second;
-
-    // Remove whitespace from the temporary string (excluding Run and SendText content)
-    tempMappingKey.remove(whitespace_reg);
-
-    // Restore all preserved parts
-    for (int i = 0; i < preservedParts.size(); ++i) {
-        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
-        tempMappingKey.replace(placeholder, preservedParts[i]);
-    }
-
-    mappingKey = tempMappingKey;
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[" << __func__ << "] KeyUp MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingKey;
-#endif
-
-    ValidationResult result;
-    if (mappingKey.isEmpty()) {
-        result.isValid = true;
-    }
-    else {
-        QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
-        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
-    }
-
-    QString popupMessage;
-    QString popupMessageColor;
-    int popupMessageDisplayTime = 3000;
-    if (result.isValid) {
-        popupMessageColor = SUCCESS_COLOR;
-        popupMessage = tr("KeyUp MappingKey update success");
-
-        if (mappingKey.isEmpty()) {
-            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
-            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys;
-        }
-        else {
-            QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey);
-        }
-
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
-
-        (void)refreshMappingKeyRelatedUI();
-    }
-    else {
-        popupMessageColor = FAILURE_COLOR;
-        popupMessage = result.errorMessage;
-    }
-    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    updateMappingInfoByOrder(MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST);
 }
 #endif
 

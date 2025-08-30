@@ -13608,8 +13608,8 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
-    // Extract both Run(...) and SendText(...) content to preserve them
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractRunAndSendTextWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex);
+    // Extract SendText(...), Run(...), and SwitchTab(...) content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
