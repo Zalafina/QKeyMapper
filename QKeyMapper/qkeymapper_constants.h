@@ -925,6 +925,12 @@ namespace QKeyMapperConstants {
     // Pattern for finding Run( and the first ) parts in a composite string (non-greedy matching)
     inline constexpr const char REGEX_PATTERN_RUN_FIND[] = R"(Run\((.+?)\))";
 
+    // Use pattern that matches everything between SwitchTab( and the last ) for complete content capture
+    inline constexpr const char REGEX_PATTERN_SWITCHTAB[] = R"(^SwitchTab\((.+)\)$)";
+
+    // Pattern for finding SwitchTab( and the first ) parts in a composite string (non-greedy matching)
+    inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab\((.+?)\))";
+
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
     inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";
@@ -994,8 +1000,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char SETTING_DESCRIPTION_FORMAT[] = "%1【%2】";
     inline constexpr const char ORIKEY_WITHNOTE_FORMAT[] = "%1【%2】";
 
-    inline constexpr const char SENDTEXT_STR[]    = "SendText";
-    inline constexpr const char RUN_STR[]         = "Run";
+    inline constexpr const char SENDTEXT_STR[]      = "SendText";
+    inline constexpr const char RUN_STR[]           = "Run";
+    inline constexpr const char SWITCHTAB_STR[]     = "SwitchTab";
     inline constexpr const char KEYSEQUENCEBREAK_STR[] = "KeySequenceBreak";
 
     inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";

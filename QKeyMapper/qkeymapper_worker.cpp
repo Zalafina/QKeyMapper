@@ -1051,6 +1051,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         QRegularExpression::MultilineOption
     );
     static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
+    static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
@@ -1255,11 +1256,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
+            QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
             if (sendtext_match.hasMatch()) {
                 /* SendText KeyUp do nothing. */
             }
             else if (runcmd_match.hasMatch()) {
                 /* Run command KeyUp do nothing. */
+            }
+            else if (switchtab_match.hasMatch()) {
+                /* SwitchTab KeyUp do nothing. */
             }
             else if (vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
@@ -1712,6 +1717,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
                 QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
+                QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
@@ -1735,6 +1741,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         parsed_cmd.showCmd,
                         parsed_cmd.systemVerb
                     );
+                }
+                else if (switchtab_match.hasMatch()) {
+                    QString switchtab_name = switchtab_match.captured(1);
+                    emit QKeyMapper::getInstance()->MappingTableSwitchByTabName_Signal(switchtab_name);
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[sendInputKeys] SwitchTab() TabName -> " << switchtab_name;
+#endif
                 }
                 else if (vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -13591,6 +13605,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
 {
     static QRegularExpression sendtext_regex(QKeyMapperConstants::REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
+    static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
     // Extract both Run(...) and SendText(...) content to preserve them

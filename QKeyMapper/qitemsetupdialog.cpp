@@ -1888,6 +1888,7 @@ bool QItemSetupDialog::updateMappingKey()
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
+    static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
 
     QString mappingKey = m_MappingKeyLineEdit->text();
 
@@ -1945,6 +1946,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
+    static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
 
     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 

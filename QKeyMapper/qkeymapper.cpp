@@ -545,6 +545,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::HotKeyMappingStart_Signal, this, &QKeyMapper::HotKeyMappingStart, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::HotKeyMappingStop_Signal, this, &QKeyMapper::HotKeyMappingStop, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::HotKeyMappingTableSwitchTab_Signal, this, &QKeyMapper::HotKeyMappingTableSwitchTab, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::MappingTableSwitchByTabName_Signal, this, &QKeyMapper::MappingTableSwitchByTabName, Qt::QueuedConnection);
 
     QObject::connect(this, &QKeyMapper::checkOSVersionMatched_Signal, this, &QKeyMapper::checkOSVersionMatched, Qt::QueuedConnection);
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
@@ -3533,11 +3534,13 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                 QRegularExpression::MultilineOption
             );
             static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
+            static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
+            QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
@@ -3567,7 +3570,10 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             else if (joy2vjoy_mapkey_match.hasMatch()) {
                 result.isValid = true;
             }
-            else if (mousepoint_match.hasMatch() || sendtext_match.hasMatch() || runcmd_match.hasMatch()) {
+            else if (mousepoint_match.hasMatch()
+                || sendtext_match.hasMatch()
+                || runcmd_match.hasMatch()
+                || switchtab_match.hasMatch()) {
                 result.isValid = true;
             }
             else {
@@ -4737,6 +4743,17 @@ int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *
     }
 
     return tabindex_toswitch;
+}
+
+int QKeyMapper::tabIndexToSwitchByTabName(const QString &tabName)
+{
+    // Iterate through tabinfolist to check if there is a duplicate tabname
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (s_KeyMappingTabInfoList.at(index).TabName == tabName) {
+            return index;
+        }
+    }
+    return -1;
 }
 
 bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filename)
@@ -6631,6 +6648,32 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
                 mappingTabSwitchNotification(true);
             }
         }
+    }
+}
+
+void QKeyMapper::MappingTableSwitchByTabName(const QString &tabName)
+{
+    int tabindex_toswitch = tabIndexToSwitchByTabName(tabName);
+
+    if (tabindex_toswitch >= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[MappingTableSwitchByTabName] SwitchTab(" << tabName << ") TabIndex(" << s_KeyMappingTabWidgetCurrentIndex << "->" << tabindex_toswitch << ")";
+#endif
+        clearLockStatusDisplay();
+        forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
+        updateCategoryFilterByShowCategoryState();
+
+        if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
+            || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
+            /* Key Mapping Restart */
+            setKeyMappingRestart();
+            mappingTabSwitchNotification(false);
+        }
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[MappingTableSwitchByTabName] SwitchTab(" << tabName << ") TabName Not Found!";
+#endif
     }
 }
 
@@ -14827,6 +14870,7 @@ void QKeyMapper::initKeysCategoryMap()
         << KEY_NONE_STR
         << SENDTEXT_STR
         << RUN_STR
+        << SWITCHTAB_STR
         << KEYSEQUENCEBREAK_STR
         ;
 
@@ -15641,6 +15685,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 // disable_burst = true;
                 disable_lock = true;
             }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)) {
+                disable_burst = true;
+                disable_lock = true;
+            }
 
             /* ORIGINAL_KEY_COLUMN */
             QString mapdata_note = keymapdata.Note;
@@ -15835,6 +15883,10 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(RUN_STR)) {
         // disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)) {
+        disable_burst = true;
         disable_lock = true;
     }
 
@@ -18099,6 +18151,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     currentMapKeyText = QString("Run(%1)").arg(run_cmd);
                 }
             }
+            else if (currentMapKeyText == SWITCHTAB_STR) {
+                QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
+                static QRegularExpression simplified_regex(R"([\r\n]+)");
+                switchtab_name.replace(simplified_regex, " ");
+                if (switchtab_name.isEmpty()) {
+                    QString message = tr("Please input the tabname to switch!");
+                    showFailurePopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("SwitchTab(%1)").arg(switchtab_name);
+                }
+            }
             else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
                 QString message = tr("KeySequenceBreak key can not be set duplicated!");
                 showFailurePopup(message);
@@ -18264,6 +18329,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("Run(%1)").arg(run_cmd);
+                    }
+                }
+                else if (currentMapKeyText == SWITCHTAB_STR) {
+                    QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
+                    static QRegularExpression simplified_regex(R"([\r\n]+)");
+                    switchtab_name.replace(simplified_regex, " ");
+                    if (switchtab_name.isEmpty()) {
+                        QString message = tr("Please input the tabname to switch!");
+                        showFailurePopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("SwitchTab(%1)").arg(switchtab_name);
                     }
                 }
                 else if (currentMapKeyText == KEY_BLOCKED_STR) {

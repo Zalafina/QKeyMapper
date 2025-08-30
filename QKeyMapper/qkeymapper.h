@@ -813,6 +813,7 @@ public:
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static bool validateCombinationKey(QString &input);
     static int tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame = nullptr);
+    static int tabIndexToSwitchByTabName(const QString &tabName);
     static bool exportKeyMappingDataToFile(int tabindex, const QString &filename);
     static bool importKeyMappingDataFromFile(int tabindex, const QString &filename);
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
@@ -830,6 +831,7 @@ signals:
     void HotKeyMappingStart_Signal(const QString &hotkey_string);
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab_Signal(const QString &hotkey_string);
+    void MappingTableSwitchByTabName_Signal(const QString &tabName);
     void checkOSVersionMatched_Signal(void);
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     void checkFilterKeysEnabled_Signal(void);
@@ -929,6 +931,7 @@ public slots:
     void HotKeyMappingStart(const QString &hotkey_string);
     void HotKeyMappingStop(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
+    void MappingTableSwitchByTabName(const QString &tabName);
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
     bool copyCurrentTabToKeyMappingTabWidget(void);
