@@ -12792,6 +12792,11 @@ void QKeyMapper::mappingStartNotification()
     if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
+    bool tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
+    if (tabHideNotification) {
+        return;
+    }
+
     QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
@@ -12904,6 +12909,11 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
+    bool tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
+    if (tabHideNotification) {
+        return;
+    }
+
     // QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();
     QString tabName = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName;
