@@ -75,6 +75,8 @@ private slots:
 
     void on_floatingWindowSetupButton_clicked();
 
+    void on_hideNotificationCheckBox_stateChanged(int state);
+
 private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;

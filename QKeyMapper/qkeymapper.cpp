@@ -6779,6 +6779,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTab_Info tab_info;
     QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
     tab_info.TabName = tabName;
+    tab_info.TabHideNotification = TAB_HIDE_NOTIFICATION_DEFAULT;
     tab_info.TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
     tab_info.TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;
     tab_info.TabCustomImage_ShowAsTrayIcon = TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
@@ -6905,6 +6906,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     tab_info.TabHotkey = sourceTabInfo.TabHotkey;
     tab_info.TabFontColor = sourceTabInfo.TabFontColor;
     tab_info.TabBackgroundColor = sourceTabInfo.TabBackgroundColor;
+    tab_info.TabHideNotification = sourceTabInfo.TabHideNotification;
     tab_info.TabCustomImage_Path = sourceTabInfo.TabCustomImage_Path;
     tab_info.TabCustomImage_ShowPosition = sourceTabInfo.TabCustomImage_ShowPosition;
     tab_info.TabCustomImage_Padding = sourceTabInfo.TabCustomImage_Padding;
@@ -14744,6 +14746,7 @@ void QKeyMapper::clearKeyMappingTabWidget()
         s_KeyMappingTabInfoList[0].TabHotkey.clear();
         s_KeyMappingTabInfoList[0].TabFontColor = QColor();
         s_KeyMappingTabInfoList[0].TabBackgroundColor = QColor();
+        s_KeyMappingTabInfoList[0].TabHideNotification = TAB_HIDE_NOTIFICATION_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_Path.clear();
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_Padding = TAB_CUSTOMIMAGE_PADDING_DEFAULT;

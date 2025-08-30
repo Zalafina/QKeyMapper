@@ -391,6 +391,22 @@
     <number>-1</number>
    </property>
   </widget>
+  <widget class="QCheckBox" name="hideNotificationCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>117</y>
+     <width>151</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Hide Notification</string>
+   </property>
+  </widget>
   <zorder>tabCustomImageGroupBox</zorder>
   <zorder>tabHotkeyUpdateButton</zorder>
   <zorder>tabHotkeyLabel</zorder>
@@ -412,6 +428,7 @@
   <zorder>floatingWindowSetupButton</zorder>
   <zorder>customImageTrayIconPixelComboBox</zorder>
   <zorder>customImageTrayIconPixelLabel</zorder>
+  <zorder>hideNotificationCheckBox</zorder>
  </widget>
  <resources/>
  <connections/>

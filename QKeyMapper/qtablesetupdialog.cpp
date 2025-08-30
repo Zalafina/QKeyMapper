@@ -28,8 +28,8 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->tabNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->tabHotkeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
-    ui->tabNameLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
-    ui->tabHotkeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    // ui->tabNameLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    // ui->tabHotkeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
 
     ui->customImagePaddingSpinBox->setRange(TAB_CUSTOMIMAGE_PADDING_MIN, TAB_CUSTOMIMAGE_PADDING_MAX);
     ui->customImagePaddingSpinBox->setValue(TAB_CUSTOMIMAGE_PADDING_DEFAULT);
@@ -38,7 +38,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     int y_offset;
     QRect exportTableButtonGeometry = ui->exportTableButton->geometry();
 
-    x_offset = 0;
+    x_offset = -50;
     y_offset = 30;
     int tabfont_color_x = exportTableButtonGeometry.x();
     int tabfont_color_y = exportTableButtonGeometry.y();
@@ -48,7 +48,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
     m_NotificationFontColorPicker->raise();
 
-    x_offset = 200;
+    x_offset = 160;
     y_offset = 0;
     int tabbg_color_x = tabfont_color_x;
     int tabbg_color_y = tabfont_color_y;
@@ -96,6 +96,7 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->exportTableButton->setText(tr(EXPORTTABLEBUTTON_STR));
     ui->importTableButton->setText(tr(IMPORTTABLEBUTTON_STR));
     ui->removeTableButton->setText(tr(REMOVETABLEBUTTON_STR));
+    ui->hideNotificationCheckBox->setText(tr("Hide Notification"));
 
     ui->tabCustomImageGroupBox->setTitle(tr("Tab Custom Image"));
     ui->selectCustomImageButton->setText(tr("Select Custom Image"));
@@ -123,11 +124,14 @@ void QTableSetupDialog::resetFontSize()
 
     ui->tabNameLabel->setFont(customFont);
     ui->tabHotkeyLabel->setFont(customFont);
+    ui->tabNameLineEdit->setFont(customFont);
+    ui->tabHotkeyLineEdit->setFont(customFont);
     ui->tabNameUpdateButton->setFont(customFont);
     ui->tabHotkeyUpdateButton->setFont(customFont);
     ui->exportTableButton->setFont(customFont);
     ui->importTableButton->setFont(customFont);
     ui->removeTableButton->setFont(customFont);
+    ui->hideNotificationCheckBox->setFont(customFont);
 
     if (m_FloatingWindowSetupDialog != Q_NULLPTR) {
         m_FloatingWindowSetupDialog->resetFontSize();
@@ -380,6 +384,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         QString TabHotkey = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey;
         QColor TabFontColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor;
         QColor TabBackgroundColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabBackgroundColor;
+        bool TabHideNotification = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHideNotification;
         QString TabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
         int TabCustomImage_ShowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowPosition;
         int TabCustomImage_Padding = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Padding;
@@ -395,6 +400,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             << "Hotkey: " << TabHotkey << ", "
             << "FontColor: " << TabFontColor.name() << ", "
             << "BackgroundColor: (" << TabBackgroundColor.name(QColor::HexArgb) << ", Alpha: " << TabBackgroundColor.alpha() << "), "
+            << "HideNotification: " << (TabHideNotification ? "true" : "false") << ", "
             << "ShowPosition: " << TabCustomImage_ShowPosition << ", "
             << "Padding: " << TabCustomImage_Padding << ", "
             << "ShowAsTrayIcon: " << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ", "
@@ -426,6 +432,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             TabBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
         }
         m_NotificationBackgroundColorPicker->setColor(TabBackgroundColor);
+
+        // Load TabHideNotification
+        ui->hideNotificationCheckBox->setChecked(TabHideNotification);
 
         // Load Custom Image
         QIcon icon_loaded;
@@ -902,5 +911,24 @@ void QTableSetupDialog::on_floatingWindowSetupButton_clicked()
     if (!m_FloatingWindowSetupDialog->isVisible()) {
         m_FloatingWindowSetupDialog->setTabIndex(m_TabIndex);
         m_FloatingWindowSetupDialog->show();
+    }
+}
+
+void QTableSetupDialog::on_hideNotificationCheckBox_stateChanged(int state)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[HideNotification] Hide Notification state changed ->" << (Qt::CheckState)state;
+#endif
+
+    int tabindex = m_TabIndex;
+    if (Qt::Checked == state) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabHideNotification = true;
+    }
+    else {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabHideNotification = false;
     }
 }
