@@ -12,28 +12,6 @@
 ## QKeyMapper是兼容Win7/Win10/Win11的开源按键映射工具，使用Qt Widget 和 WinAPI 基于C++语言开发。可支持键盘、鼠标、游戏手柄、虚拟游戏手柄之间各种互相按键映射。软件下载解压后直接运行，不修改注册表、不需重新启动系统，依靠程序在内存中运行完成按键映射转换。程序运行中可随时控制映射功能生效和停止，软件退出后映射功能自动停止。适用于各种游戏或办公等目的的Windows PC端改键场景。
 
 ---------------
-## ✨ 功能特性
-| 设备     | 输入检测   | 输入映射   | 组合键支持  | 多键鼠支持 | 多手柄支持    |
-| -------- | -------- | --------- | --------- | --------- | ----------- |
-| 键盘     | ✅       | ✅        | ✅       | ✅       |             |
-| 鼠标     | ✅       | ✅        | ✅       | ✅       |             |
-| 物理手柄  | ✅       |           | ✅       |          | ✅          |
-| 虚拟手柄  |          | ✅        | ✅       |          | ✅          |
-
----------------
-### 📦 最新Release版本压缩包下载:
-### https://github.com/Zalafina/QKeyMapper/releases/latest
-### https://gitee.com/asukavov/QKeyMapper/releases/latest
-### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
-
----------------
-## ⭐ Star 趋势图
-
-如果 **QKeyMapper** 按键映射软件对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 **QKeyMapper**
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
-
----------------
 ## ⚠️ 免责声明
 
 **QKeyMapper** 是一个开源软件项目，基于 [GPLv3](./LICENSE) 协议发布。使用本软件前请您仔细阅读并理解以下条款：
@@ -64,6 +42,28 @@
 - 协议详情请参阅 [GPLv3 完整条款](./LICENSE)
 
 **继续使用本软件即表示您已阅读、理解并同意上述免责条款。**
+
+---------------
+## ✨ 功能特性
+| 设备     | 输入检测   | 输入映射   | 组合键支持  | 多键鼠支持 | 多手柄支持    |
+| -------- | -------- | --------- | --------- | --------- | ----------- |
+| 键盘     | ✅       | ✅        | ✅       | ✅       |             |
+| 鼠标     | ✅       | ✅        | ✅       | ✅       |             |
+| 物理手柄  | ✅       |           | ✅       |          | ✅          |
+| 虚拟手柄  |          | ✅        | ✅       |          | ✅          |
+
+---------------
+### 📦 最新Release版本压缩包下载:
+### https://github.com/Zalafina/QKeyMapper/releases/latest
+### https://gitee.com/asukavov/QKeyMapper/releases/latest
+### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
+
+---------------
+## ⭐ Star 趋势图
+
+如果 **QKeyMapper** 按键映射软件对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 **QKeyMapper**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
 
 ---------------
 ## 💡 软件使用须知
@@ -526,6 +526,7 @@
     * "Auto Startup"勾选框可以让QKeyMapper按键映射程序在Windows用户登录的时候自动启动，配合"Auto Start Mapping"勾选框开机启动后可以自动最小化到系统托盘图标，取消勾选框则取消开机登录自动启动。
 * v1.3.0
     * 开始支持"SaveMapData"可以将多个程序的不同按键映射配置都保存到"keymapdata.ini"文件中。如果配置了"Auto Start Mapping"功能，那么在"KeyMappingStart"状态下会根据当前前台窗口的进程可执行文件名进行自动匹配切换到对应的按键映射配置。
+
 ---------------
 ### 🔋 基本功能列表
 1. 左侧显示当前正在运行的可见的窗口进程列表，进程可执行exe文件的文件名和对应的窗口标题名都会显示出来，信息会用于匹配当前处于前台的窗口。
