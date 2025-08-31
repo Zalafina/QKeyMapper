@@ -8354,6 +8354,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QStringList tabhotkeylist;
     QStringList tabfontcolorlist;
     QStringList tabbgcolorlist;
+    QStringList tabhidenotificationList;
     QStringList tabcustomimage_pathList;
     QStringList tabcustomimage_showpositionList;
     QStringList tabcustomimage_paddingList;
@@ -8407,6 +8408,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
         QString tabFontColor;
         QString tabBGColor;
+        int tabHideNotification = s_KeyMappingTabInfoList.at(index).TabHideNotification;
         QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(index).TabCustomImage_Path;
         int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(index).TabCustomImage_ShowPosition;
         int tabCustomImage_Padding = s_KeyMappingTabInfoList.at(index).TabCustomImage_Padding;
@@ -8440,6 +8442,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         tabhotkeylist.append(tabHotkey);
         tabfontcolorlist.append(tabFontColor);
         tabbgcolorlist.append(tabBGColor);
+        tabhidenotificationList.append(QString::number(tabHideNotification));
         tabcustomimage_pathList.append(tabCustomImage_Path);
         tabcustomimage_showpositionList.append(QString::number(tabCustomImage_ShowPosition));
         tabcustomimage_paddingList.append(QString::number(tabCustomImage_Padding));
@@ -8806,6 +8809,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABBGCOLORLIST, tabbgcolorlist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHIDENOTIFICATIONLIST, tabhidenotificationList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST, tabcustomimage_pathList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
@@ -10014,6 +10018,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     QStringList tabhotkeylist_loaded;
     QStringList tabfontcolorlist_loaded;
     QStringList tabbgcolorlist_loaded;
+    QStringList tabhidenotificationlist_loaded;
     QStringList tabcustomimage_pathlist_loaded;
     QStringList tabcustomimage_showpositionlist_loaded;
     QStringList tabcustomimage_paddinglist_loaded;
@@ -10116,6 +10121,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
         tabfontcolorlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
         tabbgcolorlist_loaded   = settingFile.value(settingSelectStr+MAPPINGTABLE_TABBGCOLORLIST).toStringList();
+        tabhidenotificationlist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHIDENOTIFICATIONLIST).toStringList();
         tabcustomimage_pathlist_loaded              = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST).toStringList();
         tabcustomimage_showpositionlist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST).toStringList();
         tabcustomimage_paddinglist_loaded           = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST).toStringList();
@@ -10185,6 +10191,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             if (tabbgcolorlist_loaded.isEmpty()) {
                 for (int i = 0; i < table_count; ++i) {
                     tabbgcolorlist_loaded.append(QString());
+                }
+            }
+            if (tabhidenotificationlist_loaded.isEmpty()) {
+                for (int i = 0; i < table_count; ++i) {
+                    tabhidenotificationlist_loaded.append(QString());
                 }
             }
             if (tabcustomimage_pathlist_loaded.isEmpty()) {
@@ -11116,6 +11127,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             }
             else {
                 s_KeyMappingTabInfoList[index].TabBackgroundColor = QColor();
+            }
+        }
+        if (index < tabhidenotificationlist_loaded.size()) {
+            int tabhidenotification = tabhidenotificationlist_loaded.at(index).toInt();
+            if (Qt::Unchecked <= tabhidenotification && tabhidenotification <= Qt::Checked) {
+                s_KeyMappingTabInfoList[index].TabHideNotification = static_cast<Qt::CheckState>(tabhidenotification);
+            }
+            else {
+                s_KeyMappingTabInfoList[index].TabHideNotification = TAB_HIDE_NOTIFICATION_DEFAULT;
             }
         }
         if (index < tabcustomimage_trayiconpixellist_loaded.size()) {
@@ -12792,8 +12812,8 @@ void QKeyMapper::mappingStartNotification()
     if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
-    bool tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
-    if (tabHideNotification) {
+    Qt::CheckState tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
+    if (tabHideNotification != Qt::Unchecked) {
         return;
     }
 
@@ -12909,10 +12929,10 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
-    // bool tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
-    // if (tabHideNotification) {
-    //     return;
-    // }
+    Qt::CheckState tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
+    if (tabHideNotification == Qt::Checked) {
+        return;
+    }
 
     // QString currentSelectedSetting = ui->settingselectComboBox->currentText();
     int currentSelectedIndex = ui->settingselectComboBox->currentIndex();

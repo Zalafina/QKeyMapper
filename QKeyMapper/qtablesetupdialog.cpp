@@ -386,7 +386,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         QString TabHotkey = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey;
         QColor TabFontColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor;
         QColor TabBackgroundColor = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabBackgroundColor;
-        bool TabHideNotification = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHideNotification;
+        Qt::CheckState TabHideNotification = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHideNotification;
         QString TabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
         int TabCustomImage_ShowPosition = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowPosition;
         int TabCustomImage_Padding = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Padding;
@@ -402,7 +402,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             << "Hotkey: " << TabHotkey << ", "
             << "FontColor: " << TabFontColor.name() << ", "
             << "BackgroundColor: (" << TabBackgroundColor.name(QColor::HexArgb) << ", Alpha: " << TabBackgroundColor.alpha() << "), "
-            << "HideNotification: " << (TabHideNotification ? "true" : "false") << ", "
+            << "HideNotification: " << TabHideNotification << ","
             << "ShowPosition: " << TabCustomImage_ShowPosition << ", "
             << "Padding: " << TabCustomImage_Padding << ", "
             << "ShowAsTrayIcon: " << (TabCustomImage_ShowAsTrayIcon ? "true" : "false") << ", "
@@ -436,7 +436,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         m_NotificationBackgroundColorPicker->setColor(TabBackgroundColor);
 
         // Load TabHideNotification
-        ui->hideNotificationCheckBox->setChecked(TabHideNotification);
+        ui->hideNotificationCheckBox->setCheckState(TabHideNotification);
 
         // Load Custom Image
         QIcon icon_loaded;
@@ -923,14 +923,8 @@ void QTableSetupDialog::on_hideNotificationCheckBox_stateChanged(int state)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[HideNotification] Hide Notification state changed ->" << (Qt::CheckState)state;
+    qDebug() << "[HideNotification] Hide Notification state changed ->" << static_cast<Qt::CheckState>(state);
 #endif
 
-    int tabindex = m_TabIndex;
-    if (Qt::Checked == state) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabHideNotification = true;
-    }
-    else {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabHideNotification = false;
-    }
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabHideNotification = static_cast<Qt::CheckState>(state);
 }

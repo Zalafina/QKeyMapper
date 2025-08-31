@@ -205,7 +205,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char TRAYICON_GLOBAL_DEFAULT_FILE[] = ":/Green1.ico";
     inline constexpr const char TRAYICON_MATCHED_DEFAULT_FILE[] = ":/Purple.ico";
 
-    inline constexpr bool TAB_HIDE_NOTIFICATION_DEFAULT = false;
+    inline constexpr Qt::CheckState TAB_HIDE_NOTIFICATION_DEFAULT = Qt::Unchecked;
 
     inline constexpr int TAB_CUSTOMIMAGE_WIDTH_DEFAULT = 48;
     inline constexpr int TAB_CUSTOMIMAGE_HEIGHT_DEFAULT = 48;
@@ -862,6 +862,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_TABHOTKEYLIST[] = "MappingTable_TabHotkeyList";
     inline constexpr const char MAPPINGTABLE_TABFONTCOLORLIST[] = "MappingTable_TabFontColorList";
     inline constexpr const char MAPPINGTABLE_TABBGCOLORLIST[] = "MappingTable_TabBackgroundColorList";
+    inline constexpr const char MAPPINGTABLE_TABHIDENOTIFICATIONLIST[] = "MappingTable_TabHideNotificationList";
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST[] = "MappingTable_TabCustomImage_PathList";
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST[] = "MappingTable_TabCustomImage_ShowPositionList";
     inline constexpr const char MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST[] = "MappingTable_TabCustomImage_PaddingList";

@@ -262,7 +262,7 @@ struct KeyMappingTab_Info
     QString TabHotkey;
     QColor TabFontColor;
     QColor TabBackgroundColor;
-    bool TabHideNotification;
+    Qt::CheckState TabHideNotification;
     QString TabCustomImage_Path;
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;
