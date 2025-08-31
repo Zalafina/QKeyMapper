@@ -22,14 +22,14 @@
   </defs>
 
   <!-- 外边框 -->
-  <rect x="50" y="50" width="320" height="320"
+  <rect x="40" y="40" width="340" height="340"
         fill="none" stroke="url(#outerBorderGradDisabledDark)" stroke-width="8" rx="10" ry="10"/>
-
+  
   <!-- 方块填充 -->
-  <rect x="56" y="56" width="308" height="308"
+  <rect x="46" y="46" width="328" height="328"
         fill="url(#fillGradDisabledDark)" rx="8" ry="8"/>
-
+  
   <!-- 内边框 -->
-  <rect x="56" y="56" width="308" height="308"
+  <rect x="46" y="46" width="328" height="328"
         fill="none" stroke="url(#innerBorderGradDisabledDark)" stroke-width="12" rx="8" ry="8"/>
 </svg>
