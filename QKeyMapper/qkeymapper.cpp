@@ -17807,7 +17807,11 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
         getProcessInfoFromPID(dwProcessId, ProcessPath);
 
-        QString loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle);
+        QString loadSettingSelectStr;
+        if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
+            loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle);
+        }
+
         if (loadSettingSelectStr.isEmpty()) {
             ui->settingselectComboBox->setCurrentText(QString());
             ui->descriptionLineEdit->clear();
@@ -17837,22 +17841,18 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 loadSetting_flag = false;
 
                 if (loadresult == loadSettingSelectStr) {
-                    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
-                        switchToWindowInfoTab();
-                        return;
-                    }
+                    switchToWindowInfoTab();
+                    return;
                 }
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[on_processinfoTable_doubleClicked]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
-                if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
-                    switchToWindowInfoTab();
-                    QString message = tr("The current selected setting is already \"%1\"").arg(curSettingSelectStr);
-                    QKeyMapper::getInstance()->showInformationPopup(message);
-                    return;
-                }
+                switchToWindowInfoTab();
+                QString message = tr("The current selected setting is already \"%1\"").arg(curSettingSelectStr);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+                return;
             }
         }
 
