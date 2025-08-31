@@ -22,5 +22,7 @@
         <file alias="function.svg">image\button_image\computer_01.svg</file>
         <file alias="checked.svg">image\button_image\checked-enabled.svg</file>
         <file alias="checked_disabled.svg">image\button_image\checked-disabled.svg</file>
+        <file alias="partiallychecked.svg">image\button_image\partiallychecked-enabled.svg</file>
+        <file alias="partiallychecked_disabled.svg">image\button_image\partiallychecked-disabled.svg</file>
     </qresource>
 </RCC>

@@ -25,6 +25,8 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->tabCustomImageGroupBox->setStyle(windowsStyle);
     ui->customImageLabel->setStyle(windowsStyle);
 
+    ui->hideNotificationCheckBox->setTristate(true);
+
     ui->tabNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->tabHotkeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 

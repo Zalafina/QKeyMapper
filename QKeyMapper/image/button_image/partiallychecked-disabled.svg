@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="-61.0251 -61.0251 528.884 528.884"
+     width="13px" height="13px">
+  <defs>
+    <!-- 内部填充渐变：更暗灰 -->
+    <linearGradient id="fillGradDisabledDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9A9A9A"/>   <!-- 顶部亮灰（降低亮度） -->
+      <stop offset="100%" stop-color="#5F5F5F"/> <!-- 底部深灰 -->
+    </linearGradient>
+
+    <!-- 内边框渐变：更暗的光影 -->
+    <linearGradient id="innerBorderGradDisabledDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D0D0D0" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
+    </linearGradient>
+
+    <!-- 外边框渐变：浅灰到中灰 -->
+    <linearGradient id="outerBorderGradDisabledDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B0B0B0" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#787878" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 外边框 -->
+  <rect x="50" y="50" width="320" height="320"
+        fill="none" stroke="url(#outerBorderGradDisabledDark)" stroke-width="8" rx="10" ry="10"/>
+
+  <!-- 方块填充 -->
+  <rect x="56" y="56" width="308" height="308"
+        fill="url(#fillGradDisabledDark)" rx="8" ry="8"/>
+
+  <!-- 内边框 -->
+  <rect x="56" y="56" width="308" height="308"
+        fill="none" stroke="url(#innerBorderGradDisabledDark)" stroke-width="12" rx="8" ry="8"/>
+</svg>

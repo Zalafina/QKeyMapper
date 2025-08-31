@@ -17076,6 +17076,13 @@ void QKeyMapper::setUITheme(int themeindex)
                 image: url(:/checked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
+            QTableView::indicator:indeterminate {
+                image: url(:/partiallychecked.svg);
+            }
+            QTableView::indicator:indeterminate:disabled {
+                image: url(:/partiallychecked_disabled.svg);
+                border: 1px solid rgb(86, 86, 86);
+            }
             QTableWidget::item:selected {
                 background-color: rgb(70, 100, 160);
             }
@@ -17097,6 +17104,13 @@ void QKeyMapper::setUITheme(int themeindex)
             }
             QCheckBox::indicator:checked:disabled {
                 image: url(:/checked_disabled.svg);
+                border: 1px solid rgb(86, 86, 86);
+            }
+            QCheckBox::indicator:indeterminate {
+                image: url(:/partiallychecked.svg);
+            }
+            QCheckBox::indicator:indeterminate:disabled {
+                image: url(:/partiallychecked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
             QLineEdit {
