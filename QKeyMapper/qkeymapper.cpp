@@ -1357,9 +1357,9 @@ void QKeyMapper::matchForegroundWindow()
                                 } else {
                                     setKeyHook(hwnd);
                                 }
+                                m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
                                 mappingStartNotification();
-
-                                // Keep KEYMAP_MAPPING_MATCHED status, no sound notification needed for seamless switch
+                                m_CheckGlobalSettingSwitchTimer.stop();
                                 emit updateLockStatus_Signal();
 #ifdef DEBUG_LOGOUT_ON
                                 qDebug().nospace() << "[matchForegroundWindow]" << " Seamless switching completed, maintained KEYMAP_MAPPING_MATCHED status";
