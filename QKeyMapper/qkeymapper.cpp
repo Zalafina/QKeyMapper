@@ -1299,6 +1299,89 @@ void QKeyMapper::matchForegroundWindow()
                 qDebug().nospace() << "[matchForegroundWindow]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
                 qDebug().nospace() << "[matchForegroundWindow]" << " isToolbarWindow = " << isToolbarWindow;
 #endif
+
+                // Seamless switching check: When currently in mapping state, check if new window also has matching settings
+                if (!processName.isEmpty()) {
+                    QString newAutoMatchSetting = matchAutoStartSaveSettings(processName, windowTitle);
+
+                    if (!newAutoMatchSetting.isEmpty()) {
+                        // New window also has matching settings, check if we should perform seamless switching
+                        QString curSettingSelectStr;
+                        int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+                        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+                            curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+                        }
+
+                        if (curSettingSelectStr != newAutoMatchSetting) {
+                            // Check if seamless switching should be allowed for this window type
+                            bool allowSeamlessSwitching = true;
+                            if (isToolbarWindow) {
+                                allowSeamlessSwitching = false;
+                                // Allow seamless switching for specific toolbar windows
+                                if ((filename == "explorer.exe" && windowTitle == "Program Manager") ||
+                                    (filename == "PixPin.exe" && windowTitle == "PixPin")) {
+                                    allowSeamlessSwitching = true;
+                                }
+                            }
+
+                            if (allowSeamlessSwitching) {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace() << "[matchForegroundWindow]" << " Seamless switching detected! From [" << curSettingSelectStr << "] to [" << newAutoMatchSetting << "], ForegroundWindow: " << windowTitle << "(" << filename << ")";
+#endif
+                                // Load new settings without stopping mapping
+                                loadSetting_flag = true;
+                                QString loadresult = loadKeyMapSetting(newAutoMatchSetting);
+                                ui->settingNameLineEdit->setText(loadresult);
+                                Q_UNUSED(loadresult)
+                                loadSetting_flag = false;
+
+                                // Re-calculate match result for the new settings
+                                MatchResult newMatchResult = MatchResult::ProcessMatched; // Default for matched cases
+
+                                // Check if both checks should be ignored for new settings
+                                int newMatchProcessIndex = ui->checkProcessComboBox->currentIndex();
+                                int newMatchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+                                bool newMatchProcess = (newMatchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
+                                bool newMatchWindowTitle = (newMatchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
+
+                                if (!newMatchProcess && !newMatchWindowTitle) {
+                                    newMatchResult = MatchResult::IgnoreBothChecks;
+                                } else if (getSendToSameTitleWindowsStatus() && newMatchWindowTitle) {
+                                    newMatchResult = MatchResult::SendToSameWindows;
+                                }
+
+                                // Update hook to new window but keep mapping status
+                                playStartSound();
+                                if (newMatchResult == MatchResult::IgnoreBothChecks || newMatchResult == MatchResult::SendToSameWindows) {
+                                    setKeyHook(NULL);
+                                } else {
+                                    setKeyHook(hwnd);
+                                }
+                                mappingStartNotification();
+
+                                // Keep KEYMAP_MAPPING_MATCHED status, no sound notification needed for seamless switch
+                                emit updateLockStatus_Signal();
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace() << "[matchForegroundWindow]" << " Seamless switching completed, maintained KEYMAP_MAPPING_MATCHED status";
+#endif
+                                return; // Skip the normal stop mapping logic below
+                            } else {
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace() << "[matchForegroundWindow]" << " Seamless switching skipped for ToolbarWindow, proceeding with normal stop logic";
+#endif
+                            }
+                        } else {
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace() << "[matchForegroundWindow]" << " Seamless switching candidate found but settings are the same [" << newAutoMatchSetting << "], proceeding with normal logic";
+#endif
+                        }
+                    } else {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[matchForegroundWindow]" << " No seamless switching possible, new window has no matching settings, proceeding with normal stop logic";
+#endif
+                    }
+                }
+
                 if (isToolbarWindow) {
                     /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
                     if (filename == "explorer.exe"
