@@ -1112,6 +1112,11 @@ void QKeyMapper::matchForegroundWindow()
                         ui->settingNameLineEdit->setText(loadresult);
                         Q_UNUSED(loadresult)
                         loadSetting_flag = false;
+
+                        matchProcessIndex = ui->checkProcessComboBox->currentIndex();
+                        matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+                        matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
+                        matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
                     }
                     else {
 #ifdef DEBUG_LOGOUT_ON
