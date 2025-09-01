@@ -621,7 +621,7 @@ namespace QKeyMapperConstants {
     inline constexpr int VJOY_UPDATE_JOYSTICKS      = 2;
     inline constexpr int VJOY_UPDATE_AUTO_BUTTONS   = 3;
 
-    inline constexpr int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 1;
+    inline constexpr int VIRTUAL_JOYSTICK_SENSITIVITY_MIN = 0;
     inline constexpr int VIRTUAL_JOYSTICK_SENSITIVITY_MAX = 50000;
     inline constexpr int VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT = 4000;
 

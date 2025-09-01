@@ -3786,6 +3786,11 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         short leftX = 0;
         short leftY = 0;
 
+        // Skip processing if both X and Y sensitivity are 0 (no movement allowed)
+        if (vJoy_X_Sensitivity == 0 && vJoy_Y_Sensitivity == 0) {
+            return;
+        }
+
         if (QKeyMapper::getvJoyDirectModeStatus()) {
             int direct_x;
             int direct_y;
@@ -3798,8 +3803,13 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
                 direct_y = ViGEmTarget_Report.sThumbRY;
             }
 
-            direct_x += delta_x * vJoy_X_Sensitivity;
-            direct_y -= delta_y * vJoy_X_Sensitivity;
+            // Apply sensitivity only if not zero (0 means no movement in that direction)
+            if (vJoy_X_Sensitivity > 0) {
+                direct_x += delta_x * vJoy_X_Sensitivity;
+            }
+            if (vJoy_Y_Sensitivity > 0) {
+                direct_y -= delta_y * vJoy_Y_Sensitivity;
+            }
 
             // Clamp values to the joystick range (-32767, 32767)
             if (direct_x > 32767) {
@@ -3821,18 +3831,33 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
         else {
             // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
-            int adjustedXSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_X_Sensitivity;
-            int adjustedYSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_Y_Sensitivity;
-            #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            qreal x = -qExp((-1.0 / adjustedXSensitivity) * qAbs(delta_x)) + 1.0;
-            qreal y = -qExp((-1.0 / adjustedYSensitivity) * qAbs(delta_y)) + 1.0;
-            #else
-            qreal x = -std::exp((-1.0 / adjustedXSensitivity) * std::abs(delta_x)) + 1.0;
-            qreal y = -std::exp((-1.0 / adjustedYSensitivity) * std::abs(delta_y)) + 1.0;
-            #endif
-            // take the sign into account, expanding the range to (-1, 1)
-            x *= sign(delta_x);
-            y *= -sign(delta_y);
+            qreal x = 0.0;
+            qreal y = 0.0;
+
+            // Calculate X movement only if X sensitivity is not zero
+            if (vJoy_X_Sensitivity > 0) {
+                int adjustedXSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_X_Sensitivity;
+                #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                x = -qExp((-1.0 / adjustedXSensitivity) * qAbs(delta_x)) + 1.0;
+                #else
+                x = -std::exp((-1.0 / adjustedXSensitivity) * std::abs(delta_x)) + 1.0;
+                #endif
+                // take the sign into account, expanding the range to (-1, 1)
+                x *= sign(delta_x);
+            }
+
+            // Calculate Y movement only if Y sensitivity is not zero
+            if (vJoy_Y_Sensitivity > 0) {
+                int adjustedYSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_Y_Sensitivity;
+                #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+                y = -qExp((-1.0 / adjustedYSensitivity) * qAbs(delta_y)) + 1.0;
+                #else
+                y = -std::exp((-1.0 / adjustedYSensitivity) * std::abs(delta_y)) + 1.0;
+                #endif
+                // take the sign into account, expanding the range to (-1, 1)
+                y *= -sign(delta_y);
+            }
+
             // XInput joystick coordinates are signed shorts, so convert to (-32767, 32767)
             leftX = (short)(32767.0 * x);
             leftY = (short)(32767.0 * y);
