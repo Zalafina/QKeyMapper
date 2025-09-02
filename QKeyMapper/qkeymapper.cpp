@@ -184,6 +184,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     extractSoundFiles();
     initAddKeyComboBoxes();
     initWindowInfoMatchComboBoxes();
+    initSettingBackupActionPopup();
     initWindowSwitchKeyLineEdit();
     initMappingSwitchKeyLineEdit();
     // initOriginalKeySeqEdit();
@@ -8108,6 +8109,55 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
     return readresult;
 }
 
+bool QKeyMapper::exportSettingToFile()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[exportSettingToFile] Export setting to file";
+#endif
+
+    // Export
+    SettingTransferDialog dlg(SettingTransferDialog::ExportMode, this);
+    if (dlg.exec() == QDialog::Accepted) {
+        exportSelectedGroups(CONFIG_FILENAME,
+                             dlg.selectedFilePath(),
+                             dlg.selectedGroups());
+    }
+
+    return true;
+}
+
+bool QKeyMapper::importSettingFromFile()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[importSettingFromFile] Import setting from file";
+#endif
+
+    // Import
+    SettingTransferDialog dlg(SettingTransferDialog::ImportMode, this);
+    if (dlg.exec() == QDialog::Accepted) {
+        importSelectedGroups(dlg.selectedFilePath(),
+                             dlg.selectedGroups());
+    }
+
+    return true;
+}
+
+void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &targetIni, const QStringList &groups)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[exportSelectedGroups] Exporting selected groups from" << sourceIni << "to" << targetIni;
+    qDebug() << "[exportSelectedGroups] Exporting groups: " << groups;
+#endif
+}
+
+void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringList &groups)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[importSelectedGroups] Importing selected groups from" << sourceIni;
+    qDebug() << "[importSelectedGroups] Importing groups: " << groups;
+#endif
+}
+
 void QKeyMapper::saveKeyMapSetting(void)
 {
     // Create RAII guard to automatically save and restore category filter state
@@ -12223,6 +12273,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->windowTitleLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
+    ui->backupSettingButton->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeyRecordLabel->setFont(customFont);
@@ -12362,6 +12413,7 @@ void QKeyMapper::setControlFontChinese()
     ui->windowTitleLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
+    ui->backupSettingButton->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeyRecordLabel->setFont(customFont);
@@ -12501,6 +12553,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->windowTitleLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
+    ui->backupSettingButton->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeyRecordLabel->setFont(customFont);
@@ -12639,6 +12692,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->descriptionLineEdit->setEnabled(status);
     ui->settingNameLabel->setEnabled(status);
     ui->settingNameLineEdit->setEnabled(status);
+    ui->backupSettingButton->setEnabled(status);
     ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
@@ -12792,7 +12846,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mappingStopKeyLineEdit->setEnabled(status);
 
     // ui->refreshButton->setEnabled(status);
-    ui->savemaplistButton->setEnabled(status);
     ui->savemaplistButton->setEnabled(status);
 
     m_KeyMappingTabWidget->setEnabled(status);
@@ -13976,6 +14029,23 @@ void QKeyMapper::initWindowInfoMatchComboBoxes()
     ui->checkWindowTitleComboBox->addItems(windowinfoMatchList);
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+}
+
+void QKeyMapper::initSettingBackupActionPopup()
+{
+    QStringList settingBackupActionList;
+    settingBackupActionList.append(SETTING_BACKUP_ACTION_EXPORT);
+    settingBackupActionList.append(SETTING_BACKUP_ACTION_IMPORT);
+
+    m_SettingBackupActionPopup = new ActionPopup(settingBackupActionList, this);
+    m_SettingBackupActionPopup->setObjectName(SETTING_BACKUP_ACTION_POPUP_NAME);
+
+    QStringList settingBackupButtonTextList;
+    settingBackupButtonTextList.append(tr("Setting Export"));
+    settingBackupButtonTextList.append(tr("Setting Import"));
+    m_SettingBackupActionPopup->setButtonTexts(settingBackupButtonTextList);
+
+    QObject::connect(m_SettingBackupActionPopup, &ActionPopup::actionTriggered, this, &QKeyMapper::settingBackupActionTriggered);
 }
 
 void QKeyMapper::updateSysTrayIconMenuText()
@@ -16357,7 +16427,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->processLabel->setText(tr("Process"));
     ui->windowTitleLabel->setText(tr("Title"));
     ui->restoreProcessPathButton->setText(tr("Restore"));
-    ui->settingNameLabel->setText(tr("SettingName"));
+    ui->settingNameLabel->setText(tr("Setting"));
     ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
         // ui->descriptionLineEdit->setText(tr("Global keymapping setting"));
@@ -16366,6 +16436,13 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
     QString globalSettingName = tr("GlobalKeyMapping");
     ui->settingselectComboBox->setItemText(GLOBALSETTING_INDEX, globalSettingName);
+
+    ui->backupSettingButton->setText(tr("Backup"));
+    QStringList settingBackupButtonTextList;
+    settingBackupButtonTextList.append(tr("Setting Export"));
+    settingBackupButtonTextList.append(tr("Setting Import"));
+    m_SettingBackupActionPopup->setButtonTexts(settingBackupButtonTextList);
+
     ui->oriList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
     ui->oriList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
     ui->oriList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
@@ -17331,6 +17408,20 @@ void QKeyMapper::checkOSVersionMatched()
                 }
             }
         }
+    }
+}
+
+void QKeyMapper::settingBackupActionTriggered(const QString &actionName)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[settingBackupActionTriggered]" << "ActionName:" << actionName;
+#endif
+
+    if (actionName == SETTING_BACKUP_ACTION_EXPORT) {
+        exportSettingToFile();
+    }
+    else if (actionName == SETTING_BACKUP_ACTION_IMPORT) {
+        importSettingFromFile();
     }
 }
 
@@ -21819,4 +21910,118 @@ void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
 void QKeyMapper::on_startupPositonSettingButton_clicked()
 {
     showStartupPositonSettingDialog();
+}
+
+void QKeyMapper::on_backupSettingButton_clicked()
+{
+    // Calculate the starting position (to the right of the main button)
+    QPoint globalPos = ui->backupSettingButton->mapToGlobal(QPoint(ui->backupSettingButton->width(), 0));
+    int popupWidth = 120;
+    int popupHeight = 80;
+
+    // Initial geometry: positioned to the right but with zero width (invisible)
+    QRect startRect(globalPos.x(), globalPos.y(), 0, popupHeight);
+    QRect endRect(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+
+    m_SettingBackupActionPopup->setGeometry(startRect);
+    m_SettingBackupActionPopup->show();
+
+    // Animation: smoothly expand the popup from zero width to full width
+    QPropertyAnimation *anim = new QPropertyAnimation(m_SettingBackupActionPopup, "geometry");
+    anim->setDuration(200);
+    anim->setStartValue(startRect);
+    anim->setEndValue(endRect);
+    anim->setEasingCurve(QEasingCurve::OutCubic);
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
+    : QWidget(parent),
+      m_listWidget(new QListWidget(this))
+{
+    // Disable row selection, use checkboxes instead
+    m_listWidget->setSelectionMode(QAbstractItemView::NoSelection);
+
+    // Keep uniform item height for consistent DPI scaling
+    m_listWidget->setUniformItemSizes(true);
+
+    // Alternate row colors for better readability
+    m_listWidget->setAlternatingRowColors(true);
+
+    // Disable word wrapping to keep layout predictable
+    m_listWidget->setWordWrap(false);
+
+    // Layout setup
+    auto layout = new QVBoxLayout(this);
+    layout->addWidget(m_listWidget);
+    layout->setContentsMargins(0, 0, 0, 0);
+    setLayout(layout);
+
+    // Emit selectionChanged whenever a checkbox state changes
+    connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *){
+        emit selectionChanged(selectedGroups());
+    });
+}
+
+// Add "Select All" item at the top
+void GroupSelectionWidget::setGroups(const QStringList &groups)
+{
+    m_listWidget->clear();
+
+    // Create "Select All" item
+    auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget);
+    selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
+    selectAllItem->setCheckState(Qt::Unchecked);
+
+    // Create group items
+    for (const QString &group : groups) {
+        auto *item = new QListWidgetItem(group, m_listWidget);
+        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        item->setCheckState(Qt::Unchecked);
+    }
+
+    // Connect itemChanged signal
+    connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *item){
+        if (item == m_listWidget->item(0)) {
+            // "Select All" item changed
+            Qt::CheckState state = item->checkState();
+            for (int i = 1; i < m_listWidget->count(); ++i) {
+                m_listWidget->item(i)->setCheckState(state);
+            }
+        } else {
+            // Update "Select All" state based on children
+            int checkedCount = 0;
+            int total = m_listWidget->count() - 1;
+            for (int i = 1; i < m_listWidget->count(); ++i) {
+                if (m_listWidget->item(i)->checkState() == Qt::Checked)
+                    ++checkedCount;
+            }
+            if (checkedCount == 0)
+                m_listWidget->item(0)->setCheckState(Qt::Unchecked);
+            else if (checkedCount == total)
+                m_listWidget->item(0)->setCheckState(Qt::Checked);
+            else
+                m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
+        }
+    });
+}
+
+QStringList GroupSelectionWidget::selectedGroups() const
+{
+    QStringList selected;
+    for (int i = 0; i < m_listWidget->count(); ++i) {
+        auto *item = m_listWidget->item(i);
+        if (item->checkState() == Qt::Checked) {
+            selected << item->text();
+        }
+    }
+    return selected;
+}
+
+void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
+{
+    for (int i = 0; i < m_listWidget->count(); ++i) {
+        auto *item = m_listWidget->item(i);
+        item->setCheckState(groups.contains(item->text()) ? Qt::Checked : Qt::Unchecked);
+    }
 }

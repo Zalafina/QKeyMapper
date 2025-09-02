@@ -14,6 +14,7 @@
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QFileInfo>
+#include <QListWidget>
 #include <QFileIconProvider>
 #include <QHash>
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -585,6 +586,185 @@ private:
     QCheckBox *checkBox;
 };
 
+class ActionPopup : public QFrame {
+    Q_OBJECT
+public:
+    // Constructor takes a list of button labels
+    explicit ActionPopup(const QStringList &buttonLabels, QWidget *parent = nullptr)
+        : QFrame(parent)
+    {
+        setWindowFlags(Qt::Popup);
+        setFrameShape(QFrame::Box);
+        setFrameShadow(QFrame::Raised);
+
+        QVBoxLayout *layout = new QVBoxLayout(this);
+        layout->setContentsMargins(8, 8, 8, 8);
+
+        // Create buttons dynamically from the provided labels
+        for (const QString &label : buttonLabels) {
+            QPushButton *btn = new QPushButton(this);
+            m_buttons.append(btn);
+            layout->addWidget(btn);
+
+            // Optional: connect each button's clicked signal to a common slot
+            connect(btn, &QPushButton::clicked, this, [this, label]() {
+                emit actionTriggered(label);
+            });
+        }
+    }
+
+    QList<QPushButton*> getButtonsList(void) {
+        return m_buttons;
+    }
+
+    // Public method to update button text by index
+    void setButtonText(int index, const QString &text) {
+        if (index >= 0 && index < m_buttons.size()) {
+            m_buttons[index]->setText(text);
+        }
+    }
+
+    // Public method to update all button texts at once
+    void setButtonTexts(const QStringList &texts) {
+        int count = qMin(texts.size(), m_buttons.size());
+        for (int i = 0; i < count; ++i) {
+            m_buttons[i]->setText(texts[i]);
+        }
+    }
+
+signals:
+    void actionTriggered(const QString &actionName);
+
+private:
+    QList<QPushButton*> m_buttons;
+};
+
+class GroupSelectionWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit GroupSelectionWidget(QWidget *parent = nullptr);
+
+    // Set the list of available groups
+    void setGroups(const QStringList &groups);
+
+    // Get the list of currently selected groups
+    QStringList selectedGroups() const;
+
+    // Set which groups should be checked (e.g., restoring previous state)
+    void setSelectedGroups(const QStringList &groups);
+
+signals:
+    // Emitted when the selection changes
+    void selectionChanged(const QStringList &selected);
+
+private:
+    QListWidget *m_listWidget;
+};
+
+class SettingTransferDialog : public QDialog {
+    Q_OBJECT
+public:
+    enum Mode { ImportMode, ExportMode };
+
+    explicit SettingTransferDialog(Mode mode, QWidget *parent = nullptr)
+        : QDialog(parent), m_mode(mode)
+    {
+        setWindowTitle(mode == ExportMode ? tr("Export Settings") : tr("Import Settings"));
+
+        QVBoxLayout *mainLayout = new QVBoxLayout(this);
+
+        // File selection row
+        QHBoxLayout *fileLayout = new QHBoxLayout;
+        filePathEdit = new QLineEdit(this);
+        QPushButton *browseBtn = new QPushButton(tr("Browse..."), this);
+        fileLayout->addWidget(new QLabel(tr("INI File:"), this));
+        fileLayout->addWidget(filePathEdit);
+        fileLayout->addWidget(browseBtn);
+        mainLayout->addLayout(fileLayout);
+
+        // Group selection widget
+        groupWidget = new GroupSelectionWidget(this);
+        mainLayout->addWidget(groupWidget);
+
+        // OK / Cancel buttons
+        QDialogButtonBox *buttonBox = new QDialogButtonBox(
+            QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+        mainLayout->addWidget(buttonBox);
+
+        // Connections
+        connect(browseBtn, &QPushButton::clicked, this, &SettingTransferDialog::onBrowseFile);
+        connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingTransferDialog::onAccept);
+        connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+        // Initialize UI based on mode
+        if (m_mode == ExportMode) {
+            // Default export file name
+            QString defaultPath = QCoreApplication::applicationDirPath() + "/qkm_setting.ini";
+            filePathEdit->setText(defaultPath);
+
+            // Load groups from fixed source INI
+            QStringList groups = readGroupsFromIni(QKeyMapperConstants::CONFIG_FILENAME);
+            groupWidget->setGroups(groups);
+        } else {
+            // Import mode: group list will be loaded after file selection
+            groupWidget->setGroups({});
+        }
+    }
+
+    QString selectedFilePath() const { return filePathEdit->text(); }
+    QStringList selectedGroups() const { return groupWidget->selectedGroups(); }
+
+private slots:
+    void onBrowseFile() {
+        QString fileName;
+        if (m_mode == ExportMode) {
+            fileName = QFileDialog::getSaveFileName(
+                this, tr("Select Export File"),
+                filePathEdit->text(),
+                tr("INI Files (*.ini)"));
+        } else {
+            fileName = QFileDialog::getOpenFileName(
+                this, tr("Select Import File"),
+                QDir::homePath(),
+                tr("INI Files (*.ini)"));
+            if (!fileName.isEmpty()) {
+                // Load groups from selected INI
+                QStringList groups = readGroupsFromIni(fileName);
+                groupWidget->setGroups(groups);
+            }
+        }
+        if (!fileName.isEmpty()) {
+            filePathEdit->setText(fileName);
+        }
+    }
+
+    void onAccept() {
+        if (filePathEdit->text().isEmpty()) {
+            QMessageBox::warning(this, tr("Warning"), tr("Please select a file."));
+            return;
+        }
+        if (groupWidget->selectedGroups().isEmpty()) {
+            QMessageBox::warning(this, tr("Warning"), tr("Please select at least one group."));
+            return;
+        }
+        accept();
+    }
+
+private:
+    Mode m_mode;
+    QLineEdit *filePathEdit;
+    GroupSelectionWidget *groupWidget;
+
+    // Helper: read group names from an INI file
+    QStringList readGroupsFromIni(const QString &filePath) {
+        QStringList groups;
+        QSettings settings(filePath, QSettings::IniFormat);
+        groups = settings.childGroups();
+        return groups;
+    }
+};
+
 #if 0
 class KeySequenceEditOnlyOne : public QKeySequenceEdit
 {
@@ -882,6 +1062,8 @@ public slots:
 
     void checkOSVersionMatched(void);
 
+    void settingBackupActionTriggered(const QString &actionName);
+
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     void checkFilterKeysEnabled(void);
 #endif
@@ -1078,6 +1260,8 @@ private slots:
 
     void on_startupPositonSettingButton_clicked();
 
+    void on_backupSettingButton_clicked();
+
 private:
     // Helper methods for saving/restoring category filter state
     QString getCurrentCategoryFilter() const;
@@ -1101,6 +1285,7 @@ private:
     void initPopupMessage(void);
     void initPushLevelSlider(void);
     void initWindowInfoMatchComboBoxes(void);
+    void initSettingBackupActionPopup(void);
     void updateSysTrayIconMenuText(void);
     void refreshProcessInfoTable(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
@@ -1192,6 +1377,10 @@ private:
     // int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchSavedSettings(const QString &processpath, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
+    bool exportSettingToFile(void);
+    bool importSettingFromFile(void);
+    void exportSelectedGroups(const QString &sourceIni, const QString &targetIni, const QStringList &groups);
+    void importSelectedGroups(const QString &sourceIni, const QStringList &groups);
 
 public:
     void saveKeyMapSetting(void);
@@ -1350,6 +1539,7 @@ private:
     bool m_isOriginalKeyLineEdit_CapturingKey = false;
     bool m_isWindowsDarkMode = false;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_SYSTEMDEFAULT;
+    ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;

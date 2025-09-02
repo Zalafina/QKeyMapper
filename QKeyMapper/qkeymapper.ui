@@ -2328,9 +2328,9 @@
   <widget class="QLineEdit" name="settingNameLineEdit">
    <property name="geometry">
     <rect>
-     <x>100</x>
+     <x>80</x>
      <y>370</y>
-     <width>331</width>
+     <width>346</width>
      <height>22</height>
     </rect>
    </property>
@@ -2340,12 +2340,12 @@
     <rect>
      <x>4</x>
      <y>370</y>
-     <width>91</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
    <property name="text">
-    <string>SettingName</string>
+    <string>Setting</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -2378,6 +2378,25 @@
      <width>231</width>
      <height>51</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="backupSettingButton">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>370</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Backup</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

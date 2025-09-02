@@ -949,6 +949,11 @@ namespace QKeyMapperConstants {
     // Pattern for finding SwitchTab( and the first ) parts in a composite string (non-greedy matching)
     inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab\((.+?)\))";
 
+    inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
+
+    inline constexpr const char SETTING_BACKUP_ACTION_EXPORT[] = "SettingBackupActionExport";
+    inline constexpr const char SETTING_BACKUP_ACTION_IMPORT[] = "SettingBackupActionImport";
+
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
     inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";
