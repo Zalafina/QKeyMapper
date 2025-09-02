@@ -17113,6 +17113,18 @@ void QKeyMapper::setUITheme(int themeindex)
             }
         )");
 
+        // Ensure QTabBar's disabled tab text color matches the light theme palette.
+        // We only set the disabled state to not override per-tab enabled colors set via setTabTextColor.
+        if (m_KeyMappingTabWidget) {
+            if (auto tabBar = m_KeyMappingTabWidget->tabBar()) {
+                const QColor disabledText = lightPalette.color(QPalette::Disabled, QPalette::ButtonText);
+                const QString tabbar_ss = QStringLiteral(
+                    "QTabBar::tab:disabled { color: %1; }"
+                ).arg(disabledText.name());
+                tabBar->setStyleSheet(tabbar_ss);
+            }
+        }
+
         m_Current_UIPalette = UI_PALETTE_CUSTOMLIGHT;
     }
     else if (set_palette_value == SET_PALETTE_CUSTOMDARK) {
@@ -17235,6 +17247,18 @@ void QKeyMapper::setUITheme(int themeindex)
             }
         )");
 
+        // Ensure QTabBar's disabled tab text color matches the dark theme palette.
+        // We only set the disabled state to not override per-tab enabled colors set via setTabTextColor.
+        if (m_KeyMappingTabWidget) {
+            if (auto tabBar = m_KeyMappingTabWidget->tabBar()) {
+                const QColor disabledText = darkPalette.color(QPalette::Disabled, QPalette::ButtonText);
+                const QString tabbar_ss = QStringLiteral(
+                    "QTabBar::tab:disabled { color: %1; }"
+                ).arg(disabledText.name());
+                tabBar->setStyleSheet(tabbar_ss);
+            }
+        }
+
         m_Current_UIPalette = UI_PALETTE_CUSTOMDARK;
     }
     else {
@@ -17267,6 +17291,18 @@ void QKeyMapper::setUITheme(int themeindex)
                 height: 1em;
             }
         )");
+
+        // Ensure QTabBar's disabled tab text color matches the current system palette in System Default mode.
+        // We only set the disabled state to not override per-tab enabled colors set via setTabTextColor.
+        if (m_KeyMappingTabWidget) {
+            if (auto tabBar = m_KeyMappingTabWidget->tabBar()) {
+                const QColor disabledText = defaultPalette.color(QPalette::Disabled, QPalette::ButtonText);
+                const QString tabbar_ss = QStringLiteral(
+                    "QTabBar::tab:disabled { color: %1; }"
+                ).arg(disabledText.name());
+                tabBar->setStyleSheet(tabbar_ss);
+            }
+        }
 
         m_Current_UIPalette = UI_PALETTE_SYSTEMDEFAULT;
     }
