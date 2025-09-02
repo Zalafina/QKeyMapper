@@ -8154,14 +8154,14 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
         return;
     }
 
-    // Ensure the General group is always included if it exists in source, while preserving order
+    // Only export user-selected groups, no automatic inclusion of General
     QSettings src(sourceIni, QSettings::IniFormat);
     QStringList srcGroups = src.childGroups();
     QStringList exportList = groups; // keep UI/childGroups order
-    if (!src.childKeys().isEmpty() && !exportList.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
-        // Append General to keep caller-provided order intact
-        exportList << CONFIG_FILE_TOPLEVEL_GROUPNAME;
-    }
+    // if (!src.childKeys().isEmpty() && !exportList.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+    //     // Append General to keep caller-provided order intact
+    //     exportList << CONFIG_FILE_TOPLEVEL_GROUPNAME;
+    // }
     if (exportList.isEmpty()) {
         showFailurePopup(tr("No groups selected for export."));
         return;
@@ -22287,17 +22287,17 @@ void SettingTransferDialog::onAccept() {
         QMessageBox::warning(this, tr("Warning"), tr("Please select at least one group."));
         return;
     }
-    // Ensure "General" is included on export, if available in source
-    if (m_mode == ExportMode) {
-        QStringList all = groupWidget->allGroups();
-        if (all.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
-            QStringList sel = groupWidget->selectedGroups();
-            if (!sel.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
-                sel << CONFIG_FILE_TOPLEVEL_GROUPNAME;
-                groupWidget->setSelectedGroups(sel);
-            }
-        }
-    }
+    // Remove automatic General inclusion logic - only export what user selects
+    // if (m_mode == ExportMode) {
+    //     QStringList all = groupWidget->allGroups();
+    //     if (all.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+    //         QStringList sel = groupWidget->selectedGroups();
+    //         if (!sel.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+    //             sel << CONFIG_FILE_TOPLEVEL_GROUPNAME;
+    //             groupWidget->setSelectedGroups(sel);
+    //         }
+    //     }
+    // }
     accept();
 }
 
