@@ -949,6 +949,7 @@ namespace QKeyMapperConstants {
     // Pattern for finding SwitchTab( and the first ) parts in a composite string (non-greedy matching)
     inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab\((.+?)\))";
 
+    inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
 
     inline constexpr const char SETTING_BACKUP_ACTION_EXPORT[] = "SettingBackupActionExport";

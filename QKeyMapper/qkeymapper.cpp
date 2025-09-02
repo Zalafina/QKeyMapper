@@ -8148,6 +8148,47 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
     qDebug() << "[exportSelectedGroups] Exporting selected groups from" << sourceIni << "to" << targetIni;
     qDebug() << "[exportSelectedGroups] Exporting groups: " << groups;
 #endif
+
+    if (sourceIni.isEmpty() || targetIni.isEmpty()) {
+        showFailurePopup(tr("Invalid file path(s)."));
+        return;
+    }
+
+    // Ensure the General group is always included if it exists in source, while preserving order
+    QSettings src(sourceIni, QSettings::IniFormat);
+    QStringList srcGroups = src.childGroups();
+    QStringList exportList = groups; // keep UI/childGroups order
+    if (!src.childKeys().isEmpty() && !exportList.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+        // Append General to keep caller-provided order intact
+        exportList << CONFIG_FILE_TOPLEVEL_GROUPNAME;
+    }
+    if (exportList.isEmpty()) {
+        showFailurePopup(tr("No groups selected for export."));
+        return;
+    }
+
+    // Write selected groups to target file
+    QSettings dst(targetIni, QSettings::IniFormat);
+    for (const QString &g : exportList) {
+        if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
+            // Copy top-level keys (General)
+            for (const QString &key : src.childKeys()) {
+                dst.setValue(key, src.value(key));
+            }
+        } else {
+            if (!srcGroups.contains(g)) continue; // Skip unknown real group
+            src.beginGroup(g);
+            dst.beginGroup(g);
+            for (const QString &key : src.childKeys()) {
+                dst.setValue(key, src.value(key));
+            }
+            src.endGroup();
+            dst.endGroup();
+        }
+    }
+
+    dst.sync();
+    QMessageBox::information(this, tr("Info"), tr("Export completed."));
 }
 
 void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringList &groups)
@@ -8156,6 +8197,74 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     qDebug() << "[importSelectedGroups] Importing selected groups from" << sourceIni;
     qDebug() << "[importSelectedGroups] Importing groups: " << groups;
 #endif
+
+    if (sourceIni.isEmpty()) {
+        showFailurePopup(tr("Invalid file path(s)."));
+        return;
+    }
+
+    // Read source and destination INIs
+    QSettings src(sourceIni, QSettings::IniFormat);
+    QSettings dst(QKeyMapperConstants::CONFIG_FILENAME, QSettings::IniFormat);
+
+    QStringList srcGroups = src.childGroups();
+    if (srcGroups.isEmpty()) {
+        // Reuse existing styled failure popup pattern
+        QString message = tr("No valid groups found in the selected INI file.");
+        showFailurePopup(message);
+        return;
+    }
+
+    // If user selected duplicates, confirm overwrite
+    QStringList dstGroups = dst.childGroups();
+    QSet<QString> dstExisting;
+    for (const QString &group : dstGroups) {
+        dstExisting.insert(group);
+    }
+    bool hasDuplicate = false;
+    for (const QString &g : groups) { if (dstExisting.contains(g)) { hasDuplicate = true; break; } }
+    if (hasDuplicate) {
+        QMessageBox::StandardButton btn = QMessageBox::warning(
+            this,
+            tr("Warning"),
+            tr("Importing settings with the same name will overwrite the existing settings in the current configuration file. Do you want to continue?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (btn != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    // Perform import (copy selected groups)
+    int copied = 0;
+    for (const QString &g : groups) {
+        if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
+            // Import top-level keys into destination top-level
+            for (const QString &key : src.childKeys()) {
+                dst.setValue(key, src.value(key));
+            }
+            ++copied;
+        } else {
+            if (!srcGroups.contains(g)) continue;
+            src.beginGroup(g);
+            dst.beginGroup(g);
+            for (const QString &key : src.childKeys()) {
+                dst.setValue(key, src.value(key));
+            }
+            src.endGroup();
+            dst.endGroup();
+            ++copied;
+        }
+    }
+    dst.sync();
+
+    if (copied == 0) {
+        QString message = tr("No valid groups were imported.");
+        showFailurePopup(message);
+        return;
+    }
+
+    QMessageBox::information(this, tr("Info"), tr("Import completed."));
 }
 
 void QKeyMapper::saveKeyMapSetting(void)
@@ -21966,27 +22075,35 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
 // Add "Select All" item at the top
 void GroupSelectionWidget::setGroups(const QStringList &groups)
 {
+    QSignalBlocker blocker(m_listWidget);
     m_listWidget->clear();
 
-    // Create "Select All" item
+    // Create "Select All" item (tri-state behavior will be managed on children state changes)
     auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget);
     selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
     selectAllItem->setCheckState(Qt::Unchecked);
 
-    // Create group items
+    // Create group items in the exact order provided by caller
     for (const QString &group : groups) {
         auto *item = new QListWidgetItem(group, m_listWidget);
-        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        // Only user-checkable; do not set tri-state on children
+        item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsAutoTristate);
         item->setCheckState(Qt::Unchecked);
     }
 
-    // Connect itemChanged signal
-    connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *item){
+    // Connect itemChanged signal (once)
+    if (!m_setupConnectionsDone) {
+        m_setupConnectionsDone = true;
+        connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *item){
         if (item == m_listWidget->item(0)) {
             // "Select All" item changed
             Qt::CheckState state = item->checkState();
+            // Only allow Checked/Unchecked for Select All
+            if (state == Qt::PartiallyChecked) state = Qt::Checked;
+            QSignalBlocker blocker2(m_listWidget);
             for (int i = 1; i < m_listWidget->count(); ++i) {
-                m_listWidget->item(i)->setCheckState(state);
+                // Children should not be PartiallyChecked
+                m_listWidget->item(i)->setCheckState(state == Qt::Checked ? Qt::Checked : Qt::Unchecked);
             }
         } else {
             // Update "Select All" state based on children
@@ -21996,6 +22113,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
                 if (m_listWidget->item(i)->checkState() == Qt::Checked)
                     ++checkedCount;
             }
+            QSignalBlocker blocker2(m_listWidget);
             if (checkedCount == 0)
                 m_listWidget->item(0)->setCheckState(Qt::Unchecked);
             else if (checkedCount == total)
@@ -22003,13 +22121,15 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
             else
                 m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
         }
-    });
+        });
+    }
 }
 
 QStringList GroupSelectionWidget::selectedGroups() const
 {
     QStringList selected;
-    for (int i = 0; i < m_listWidget->count(); ++i) {
+    // Skip index 0 (Select All pseudo item)
+    for (int i = 1; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
         if (item->checkState() == Qt::Checked) {
             selected << item->text();
@@ -22020,8 +22140,183 @@ QStringList GroupSelectionWidget::selectedGroups() const
 
 void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
 {
-    for (int i = 0; i < m_listWidget->count(); ++i) {
+    QSignalBlocker blocker(m_listWidget);
+    for (int i = 1; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
         item->setCheckState(groups.contains(item->text()) ? Qt::Checked : Qt::Unchecked);
     }
+
+    // Update Select All tri-state
+    int checkedCount = 0;
+    int total = m_listWidget->count() - 1;
+    for (int i = 1; i < m_listWidget->count(); ++i) {
+        if (m_listWidget->item(i)->checkState() == Qt::Checked)
+            ++checkedCount;
+    }
+    if (total <= 0) return;
+    if (checkedCount == 0)
+        m_listWidget->item(0)->setCheckState(Qt::Unchecked);
+    else if (checkedCount == total)
+        m_listWidget->item(0)->setCheckState(Qt::Checked);
+    else
+        m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
+}
+
+QStringList GroupSelectionWidget::allGroups() const
+{
+    QStringList all;
+    for (int i = 1; i < m_listWidget->count(); ++i) {
+        all << m_listWidget->item(i)->text();
+    }
+    return all;
+}
+
+void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, const QColor &color)
+{
+    QSignalBlocker blocker(m_listWidget);
+    for (int i = 1; i < m_listWidget->count(); ++i) {
+        auto *item = m_listWidget->item(i);
+        if (duplicates.contains(item->text())) {
+            item->setForeground(QBrush(color));
+        } else {
+            item->setForeground(QBrush());
+        }
+    }
+}
+
+SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
+    : QDialog(parent), m_mode(mode)
+{
+    setWindowTitle(mode == ExportMode ? tr("Export Settings") : tr("Import Settings"));
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+
+    // File selection row
+    QHBoxLayout *fileLayout = new QHBoxLayout;
+    filePathEdit = new QLineEdit(this);
+    filePathEdit->setReadOnly(true);
+    filePathEdit->setFocusPolicy(Qt::NoFocus);
+    QPushButton *browseBtn = new QPushButton(tr("Browse..."), this);
+    browseBtn->setFocusPolicy(Qt::NoFocus);
+    fileLayout->addWidget(new QLabel(tr("INI File:"), this));
+    fileLayout->addWidget(filePathEdit);
+    fileLayout->addWidget(browseBtn);
+    mainLayout->addLayout(fileLayout);
+
+    // Group selection widget
+    groupWidget = new GroupSelectionWidget(this);
+    mainLayout->addWidget(groupWidget);
+
+    // OK / Cancel buttons
+    QDialogButtonBox *buttonBox = new QDialogButtonBox(
+                QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    mainLayout->addWidget(buttonBox);
+
+    // Connections
+    connect(browseBtn, &QPushButton::clicked, this, &SettingTransferDialog::onBrowseFile);
+    connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingTransferDialog::onAccept);
+    connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    // Initialize UI based on mode
+    if (m_mode == ExportMode) {
+        // Default export file name
+        QString defaultPath = QCoreApplication::applicationDirPath() + "/qkm_setting.ini";
+        filePathEdit->setText(defaultPath);
+
+        // Load groups from fixed source INI
+        QStringList groups = readGroupsFromIni(QKeyMapperConstants::CONFIG_FILENAME);
+        groupWidget->setGroups(groups);
+    } else {
+        // Import mode: group list will be loaded after file selection
+        groupWidget->setGroups({});
+    }
+}
+
+void SettingTransferDialog::onBrowseFile() {
+    QString fileName;
+    if (m_mode == ExportMode) {
+        fileName = QFileDialog::getSaveFileName(
+                    this, tr("Select Export File"),
+                    filePathEdit->text(),
+                    tr("INI Files (*.ini)"));
+    } else {
+        fileName = QFileDialog::getOpenFileName(
+                    this, tr("Select Import File"),
+                    QCoreApplication::applicationDirPath(),
+                    tr("INI Files (*.ini)"));
+        if (!fileName.isEmpty()) {
+            // Load groups from selected INI
+            QStringList groups = readGroupsFromIni(fileName);
+            if (groups.isEmpty()) {
+                QMessageBox::warning(this, tr("Warning"), tr("No valid groups found in the selected INI file."));
+            }
+            groupWidget->setGroups(groups);
+            // Default select only non-duplicated groups, highlight duplicates
+            if (!groups.isEmpty()) {
+                QSettings curIni(QKeyMapperConstants::CONFIG_FILENAME, QSettings::IniFormat);
+                QStringList existingGroups = curIni.childGroups();
+                QSet<QString> existing;
+                for (const QString &group : existingGroups) {
+                    existing.insert(group);
+                }
+                // Consider destination top-level keys as existing General
+                if (!curIni.childKeys().isEmpty()) {
+                    existing.insert(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILE_TOPLEVEL_GROUPNAME));
+                }
+                QStringList nonDup;
+                QSet<QString> dups;
+                for (const QString &g : groups) {
+                    if (existing.contains(g)) dups.insert(g); else nonDup << g;
+                }
+                groupWidget->setSelectedGroups(nonDup);
+                groupWidget->highlightDuplicates(dups, QColor(0, 168, 138));
+            }
+        }
+    }
+    if (!fileName.isEmpty()) {
+        filePathEdit->setText(fileName);
+    }
+}
+
+void SettingTransferDialog::onAccept() {
+    if (filePathEdit->text().isEmpty()) {
+        QMessageBox::warning(this, tr("Warning"), tr("Please select a file."));
+        return;
+    }
+    if (groupWidget->selectedGroups().isEmpty()) {
+        QMessageBox::warning(this, tr("Warning"), tr("Please select at least one group."));
+        return;
+    }
+    // Ensure "General" is included on export, if available in source
+    if (m_mode == ExportMode) {
+        QStringList all = groupWidget->allGroups();
+        if (all.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+            QStringList sel = groupWidget->selectedGroups();
+            if (!sel.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+                sel << CONFIG_FILE_TOPLEVEL_GROUPNAME;
+                groupWidget->setSelectedGroups(sel);
+            }
+        }
+    }
+    accept();
+}
+
+QStringList SettingTransferDialog::readGroupsFromIni(const QString &filePath) {
+    QSettings settings(filePath, QSettings::IniFormat);
+    QStringList childGroups = settings.childGroups();
+
+    // Move GlobalSetting to the first.
+    if (childGroups.contains(GROUPNAME_GLOBALSETTING)) {
+        childGroups.removeAll(GROUPNAME_GLOBALSETTING);
+        childGroups.prepend(GROUPNAME_GLOBALSETTING);
+    }
+
+    // Detect top-level keys -> represent as General
+    const bool hasTopLevel = !settings.childKeys().isEmpty();
+    // General (if any), then GlobalSetting (if exists), then other groups
+    if (hasTopLevel) {
+        childGroups.prepend(CONFIG_FILE_TOPLEVEL_GROUPNAME);
+    }
+
+    return childGroups;
 }

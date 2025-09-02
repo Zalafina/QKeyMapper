@@ -654,12 +654,19 @@ public:
     // Set which groups should be checked (e.g., restoring previous state)
     void setSelectedGroups(const QStringList &groups);
 
+    // Get all groups (excluding the "Select All" pseudo item)
+    QStringList allGroups() const;
+
+    // Highlight duplicate group names with given color (e.g., during import)
+    void highlightDuplicates(const QSet<QString> &duplicates, const QColor &color);
+
 signals:
     // Emitted when the selection changes
     void selectionChanged(const QStringList &selected);
 
 private:
     QListWidget *m_listWidget;
+    bool m_setupConnectionsDone { false }; // Ensure we only connect signals once
 };
 
 class SettingTransferDialog : public QDialog {
@@ -667,102 +674,24 @@ class SettingTransferDialog : public QDialog {
 public:
     enum Mode { ImportMode, ExportMode };
 
-    explicit SettingTransferDialog(Mode mode, QWidget *parent = nullptr)
-        : QDialog(parent), m_mode(mode)
-    {
-        setWindowTitle(mode == ExportMode ? tr("Export Settings") : tr("Import Settings"));
-
-        QVBoxLayout *mainLayout = new QVBoxLayout(this);
-
-        // File selection row
-        QHBoxLayout *fileLayout = new QHBoxLayout;
-        filePathEdit = new QLineEdit(this);
-        QPushButton *browseBtn = new QPushButton(tr("Browse..."), this);
-        fileLayout->addWidget(new QLabel(tr("INI File:"), this));
-        fileLayout->addWidget(filePathEdit);
-        fileLayout->addWidget(browseBtn);
-        mainLayout->addLayout(fileLayout);
-
-        // Group selection widget
-        groupWidget = new GroupSelectionWidget(this);
-        mainLayout->addWidget(groupWidget);
-
-        // OK / Cancel buttons
-        QDialogButtonBox *buttonBox = new QDialogButtonBox(
-            QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-        mainLayout->addWidget(buttonBox);
-
-        // Connections
-        connect(browseBtn, &QPushButton::clicked, this, &SettingTransferDialog::onBrowseFile);
-        connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingTransferDialog::onAccept);
-        connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
-        // Initialize UI based on mode
-        if (m_mode == ExportMode) {
-            // Default export file name
-            QString defaultPath = QCoreApplication::applicationDirPath() + "/qkm_setting.ini";
-            filePathEdit->setText(defaultPath);
-
-            // Load groups from fixed source INI
-            QStringList groups = readGroupsFromIni(QKeyMapperConstants::CONFIG_FILENAME);
-            groupWidget->setGroups(groups);
-        } else {
-            // Import mode: group list will be loaded after file selection
-            groupWidget->setGroups({});
-        }
-    }
+    explicit SettingTransferDialog(Mode mode, QWidget *parent = nullptr);
 
     QString selectedFilePath() const { return filePathEdit->text(); }
     QStringList selectedGroups() const { return groupWidget->selectedGroups(); }
 
 private slots:
-    void onBrowseFile() {
-        QString fileName;
-        if (m_mode == ExportMode) {
-            fileName = QFileDialog::getSaveFileName(
-                this, tr("Select Export File"),
-                filePathEdit->text(),
-                tr("INI Files (*.ini)"));
-        } else {
-            fileName = QFileDialog::getOpenFileName(
-                this, tr("Select Import File"),
-                QDir::homePath(),
-                tr("INI Files (*.ini)"));
-            if (!fileName.isEmpty()) {
-                // Load groups from selected INI
-                QStringList groups = readGroupsFromIni(fileName);
-                groupWidget->setGroups(groups);
-            }
-        }
-        if (!fileName.isEmpty()) {
-            filePathEdit->setText(fileName);
-        }
-    }
+    void onBrowseFile();
 
-    void onAccept() {
-        if (filePathEdit->text().isEmpty()) {
-            QMessageBox::warning(this, tr("Warning"), tr("Please select a file."));
-            return;
-        }
-        if (groupWidget->selectedGroups().isEmpty()) {
-            QMessageBox::warning(this, tr("Warning"), tr("Please select at least one group."));
-            return;
-        }
-        accept();
-    }
+    void onAccept();
+
+private:
+    // Helper: read group names from an INI file
+    QStringList readGroupsFromIni(const QString &filePath);
 
 private:
     Mode m_mode;
     QLineEdit *filePathEdit;
     GroupSelectionWidget *groupWidget;
-
-    // Helper: read group names from an INI file
-    QStringList readGroupsFromIni(const QString &filePath) {
-        QStringList groups;
-        QSettings settings(filePath, QSettings::IniFormat);
-        groups = settings.childGroups();
-        return groups;
-    }
 };
 
 #if 0
