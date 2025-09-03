@@ -8146,7 +8146,7 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
 #endif
 
     if (sourceIni.isEmpty() || targetIni.isEmpty()) {
-        showFailurePopup(tr("Invalid file path(s)."));
+        showFailurePopup(tr("Invalid file path."));
         return;
     }
 
@@ -8159,7 +8159,6 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
     //     exportList << CONFIG_FILE_TOPLEVEL_GROUPNAME;
     // }
     if (exportList.isEmpty()) {
-        showFailurePopup(tr("No groups selected for export."));
         return;
     }
 
@@ -8224,7 +8223,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     if (hasDuplicate) {
         QMessageBox::StandardButton btn = QMessageBox::warning(
             this,
-            tr("Warning"),
+            tr("Setting Import"),
             tr("Importing setting with the same name will overwrite the existing setting in the current configuration file. Do you want to continue?"),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
@@ -22820,16 +22819,19 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     });
 }
 
-// Add "Select All" item at the top
+// Add "Select All" item at the top only when groups are not empty
 void GroupSelectionWidget::setGroups(const QStringList &groups)
 {
     QSignalBlocker blocker(m_listWidget);
     m_listWidget->clear();
 
-    // Create "Select All" item (tri-state behavior will be managed on children state changes)
-    auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget);
-    selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
-    selectAllItem->setCheckState(Qt::Unchecked);
+    // Only create "Select All" item if there are groups to select
+    bool hasGroups = !groups.isEmpty();
+    if (hasGroups) {
+        auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget);
+        selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
+        selectAllItem->setCheckState(Qt::Unchecked);
+    }
 
     // Create group items in the exact order provided by caller
     for (const QString &group : groups) {
@@ -22843,7 +22845,11 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
     if (!m_setupConnectionsDone) {
         m_setupConnectionsDone = true;
         connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *item){
-        if (item == m_listWidget->item(0)) {
+        // Check if "Select All" item exists (only when groups are not empty)
+        bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                                m_listWidget->item(0)->text() == tr("Select All"));
+
+        if (hasSelectAllItem && item == m_listWidget->item(0)) {
             // "Select All" item changed
             Qt::CheckState state = item->checkState();
             // Only allow Checked/Unchecked for Select All
@@ -22853,7 +22859,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
                 // Children should not be PartiallyChecked
                 m_listWidget->item(i)->setCheckState(state == Qt::Checked ? Qt::Checked : Qt::Unchecked);
             }
-        } else {
+        } else if (hasSelectAllItem) {
             // Update "Select All" state based on children
             int checkedCount = 0;
             int total = m_listWidget->count() - 1;
@@ -22876,8 +22882,12 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
 QStringList GroupSelectionWidget::selectedGroups() const
 {
     QStringList selected;
-    // Skip index 0 (Select All pseudo item)
-    for (int i = 1; i < m_listWidget->count(); ++i) {
+    // Skip index 0 if it's the "Select All" item, otherwise start from index 0
+    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                            m_listWidget->item(0)->text() == tr("Select All"));
+    int startIndex = hasSelectAllItem ? 1 : 0;
+
+    for (int i = startIndex; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
         if (item->checkState() == Qt::Checked) {
             selected << item->text();
@@ -22889,31 +22899,44 @@ QStringList GroupSelectionWidget::selectedGroups() const
 void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
 {
     QSignalBlocker blocker(m_listWidget);
-    for (int i = 1; i < m_listWidget->count(); ++i) {
+
+    // Check if "Select All" item exists
+    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                            m_listWidget->item(0)->text() == tr("Select All"));
+    int startIndex = hasSelectAllItem ? 1 : 0;
+
+    for (int i = startIndex; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
         item->setCheckState(groups.contains(item->text()) ? Qt::Checked : Qt::Unchecked);
     }
 
-    // Update Select All tri-state
-    int checkedCount = 0;
-    int total = m_listWidget->count() - 1;
-    for (int i = 1; i < m_listWidget->count(); ++i) {
-        if (m_listWidget->item(i)->checkState() == Qt::Checked)
-            ++checkedCount;
+    // Update Select All tri-state only if it exists
+    if (hasSelectAllItem) {
+        int checkedCount = 0;
+        int total = m_listWidget->count() - 1;
+        for (int i = 1; i < m_listWidget->count(); ++i) {
+            if (m_listWidget->item(i)->checkState() == Qt::Checked)
+                ++checkedCount;
+        }
+        if (total <= 0) return;
+        if (checkedCount == 0)
+            m_listWidget->item(0)->setCheckState(Qt::Unchecked);
+        else if (checkedCount == total)
+            m_listWidget->item(0)->setCheckState(Qt::Checked);
+        else
+            m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
     }
-    if (total <= 0) return;
-    if (checkedCount == 0)
-        m_listWidget->item(0)->setCheckState(Qt::Unchecked);
-    else if (checkedCount == total)
-        m_listWidget->item(0)->setCheckState(Qt::Checked);
-    else
-        m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
 }
 
 QStringList GroupSelectionWidget::allGroups() const
 {
     QStringList all;
-    for (int i = 1; i < m_listWidget->count(); ++i) {
+    // Skip index 0 if it's the "Select All" item, otherwise start from index 0
+    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                            m_listWidget->item(0)->text() == tr("Select All"));
+    int startIndex = hasSelectAllItem ? 1 : 0;
+
+    for (int i = startIndex; i < m_listWidget->count(); ++i) {
         all << m_listWidget->item(i)->text();
     }
     return all;
@@ -22922,7 +22945,12 @@ QStringList GroupSelectionWidget::allGroups() const
 void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, const QColor &color)
 {
     QSignalBlocker blocker(m_listWidget);
-    for (int i = 1; i < m_listWidget->count(); ++i) {
+    // Skip index 0 if it's the "Select All" item, otherwise start from index 0
+    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                            m_listWidget->item(0)->text() == tr("Select All"));
+    int startIndex = hasSelectAllItem ? 1 : 0;
+
+    for (int i = startIndex; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
         if (duplicates.contains(item->text())) {
             item->setForeground(QBrush(color));
@@ -22944,7 +22972,7 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     filePathEdit = new QLineEdit(this);
     filePathEdit->setReadOnly(true);
     filePathEdit->setFocusPolicy(Qt::NoFocus);
-    QPushButton *browseBtn = new QPushButton(tr("Browse..."), this);
+    QPushButton *browseBtn = new QPushButton(tr("FileSelect"), this);
     browseBtn->setFocusPolicy(Qt::NoFocus);
     fileLayout->addWidget(new QLabel(tr("INI File:"), this));
     fileLayout->addWidget(filePathEdit);
@@ -23004,19 +23032,19 @@ void SettingTransferDialog::onBrowseFile() {
     QString fileName;
     if (m_mode == ExportMode) {
         fileName = QFileDialog::getSaveFileName(
-                    this, tr("Select Export File"),
+                    this, tr("Select Export INI File"),
                     filePathEdit->text(),
                     tr("INI Files (*.ini)"));
     } else {
         fileName = QFileDialog::getOpenFileName(
-                    this, tr("Select Import File"),
+                    this, tr("Select Import INI File"),
                     QCoreApplication::applicationDirPath(),
                     tr("INI Files (*.ini)"));
         if (!fileName.isEmpty()) {
             // Load groups from selected INI
             QStringList groups = readGroupsFromIni(fileName);
             if (groups.isEmpty()) {
-                QMessageBox::warning(this, tr("Warning"), tr("No valid groups found in the selected INI file."));
+                QMessageBox::warning(this, tr("Setting Import"), tr("No valid groups found in the selected INI file."));
             }
             groupWidget->setGroups(groups);
             // Default select only non-duplicated groups, highlight duplicates
@@ -23047,12 +23075,20 @@ void SettingTransferDialog::onBrowseFile() {
 }
 
 void SettingTransferDialog::onAccept() {
+    QString title = (m_mode == ExportMode ? tr("Setting Export") : tr("Setting Import"));
     if (filePathEdit->text().isEmpty()) {
-        QMessageBox::warning(this, tr("Warning"), tr("Please select a INI file."));
+        QMessageBox::warning(this, title, tr("Please select a INI file."));
         return;
     }
     if (groupWidget->selectedGroups().isEmpty()) {
-        QMessageBox::warning(this, tr("Warning"), tr("Please select at least one group."));
+        QString message;
+        if (m_mode == ExportMode) {
+            message = tr("Please select one or more settings to export.");
+        }
+        else {
+            message = tr("Please select one or more settings to import.");
+        }
+        QMessageBox::warning(this, title, message);
         return;
     }
     // Remove automatic General inclusion logic - only export what user selects
