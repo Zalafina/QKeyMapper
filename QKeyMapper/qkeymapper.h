@@ -687,6 +687,8 @@ private slots:
 
     void onAccept();
 
+    void onFilePathChanged(const QString &path);
+
 private:
     Mode m_mode;
     QLineEdit *filePathEdit;

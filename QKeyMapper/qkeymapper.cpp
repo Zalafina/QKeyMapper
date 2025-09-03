@@ -18034,6 +18034,13 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected:disabled {
                 color: rgb(160, 160, 160);
             }
+            QListWidget::indicator {
+                width: 1em;
+                height: 1em;
+            }
+            QListWidget::item {
+                margin: 2px 0px;
+            }
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
                 border-radius: 2px;
@@ -18140,6 +18147,33 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected:disabled {
                 color: rgb(120, 120, 120);
             }
+            QListWidget::indicator {
+                width: 1em;
+                height: 1em;
+                border: 1px solid rgb(108, 108, 108);
+                background-color: rgb(60, 60, 60);
+            }
+            QListWidget::indicator:checked {
+                image: url(:/checked.svg);
+            }
+            QListWidget::indicator:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(50, 50, 50);
+            }
+            QListWidget::indicator:checked:disabled {
+                image: url(:/checked_disabled.svg);
+                border: 1px solid rgb(86, 86, 86);
+            }
+            QListWidget::indicator:indeterminate {
+                image: url(:/partiallychecked.svg);
+            }
+            QListWidget::indicator:indeterminate:disabled {
+                image: url(:/partiallychecked_disabled.svg);
+                border: 1px solid rgb(86, 86, 86);
+            }
+            QListWidget::item {
+                margin: 2px 0px;
+            }
             QCheckBox::indicator {
                 width: 1em;
                 height: 1em;
@@ -18212,6 +18246,13 @@ void QKeyMapper::setUITheme(int themeindex)
             }
             QTableWidget::item:selected:disabled {
                 color: rgb(160, 160, 160);
+            }
+            QListWidget::indicator {
+                width: 1em;
+                height: 1em;
+            }
+            QListWidget::item {
+                margin: 2px 0px;
             }
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
@@ -22807,6 +22848,9 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     // Disable word wrapping to keep layout predictable
     m_listWidget->setWordWrap(false);
 
+    // Set spacing between items for better visual comfort
+    m_listWidget->setSpacing(2);
+
     // Layout setup
     auto layout = new QVBoxLayout(this);
     layout->addWidget(m_listWidget);
@@ -23010,6 +23054,7 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     // File selection row
     QHBoxLayout *fileLayout = new QHBoxLayout;
     filePathEdit = new QLineEdit(this);
+    filePathEdit->setMinimumWidth(280);
     filePathEdit->setReadOnly(true);
     filePathEdit->setFocusPolicy(Qt::NoFocus);
     QPushButton *browseBtn = new QPushButton(tr("FileSelect"), this);
@@ -23032,6 +23077,7 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     connect(browseBtn, &QPushButton::clicked, this, &SettingTransferDialog::onBrowseFile);
     connect(buttonBox, &QDialogButtonBox::accepted, this, &SettingTransferDialog::onAccept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(filePathEdit, &QLineEdit::textChanged, this, &SettingTransferDialog::onFilePathChanged);
 
     // Initialize UI based on mode
     if (m_mode == ExportMode) {
@@ -23143,4 +23189,10 @@ void SettingTransferDialog::onAccept() {
     //     }
     // }
     accept();
+}
+
+void SettingTransferDialog::onFilePathChanged(const QString &path)
+{
+    Q_UNUSED(path);
+    filePathEdit->setToolTip(filePathEdit->text());
 }
