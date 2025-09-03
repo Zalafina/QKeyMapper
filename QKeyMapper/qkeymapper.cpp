@@ -8109,7 +8109,7 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
     return readresult;
 }
 
-bool QKeyMapper::exportSettingToFile()
+void QKeyMapper::exportSettingToFile()
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[exportSettingToFile] Export setting to file";
@@ -8122,11 +8122,9 @@ bool QKeyMapper::exportSettingToFile()
                              dlg.selectedFilePath(),
                              dlg.selectedGroups());
     }
-
-    return true;
 }
 
-bool QKeyMapper::importSettingFromFile()
+void QKeyMapper::importSettingFromFile()
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[importSettingFromFile] Import setting from file";
@@ -8138,8 +8136,6 @@ bool QKeyMapper::importSettingFromFile()
         importSelectedGroups(dlg.selectedFilePath(),
                              dlg.selectedGroups());
     }
-
-    return true;
 }
 
 void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &targetIni, const QStringList &groups)
@@ -8172,14 +8168,16 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
     for (const QString &g : exportList) {
         if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
             // Copy top-level keys (General)
-            for (const QString &key : src.childKeys()) {
+            QStringList keyList = src.childKeys();
+            for (const QString &key : std::as_const(keyList)) {
                 dst.setValue(key, src.value(key));
             }
         } else {
             if (!srcGroups.contains(g)) continue; // Skip unknown real group
             src.beginGroup(g);
             dst.beginGroup(g);
-            for (const QString &key : src.childKeys()) {
+            QStringList keyList = src.childKeys();
+            for (const QString &key : std::as_const(keyList)) {
                 dst.setValue(key, src.value(key));
             }
             src.endGroup();
@@ -8188,7 +8186,7 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
     }
 
     dst.sync();
-    QMessageBox::information(this, tr("Info"), tr("Export completed."));
+    QMessageBox::information(this, tr("Setting Export"), tr("Export completed."));
 }
 
 void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringList &groups)
@@ -8199,7 +8197,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 #endif
 
     if (sourceIni.isEmpty()) {
-        showFailurePopup(tr("Invalid file path(s)."));
+        showFailurePopup(tr("Invalid file path."));
         return;
     }
 
@@ -8218,7 +8216,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     // If user selected duplicates, confirm overwrite
     QStringList dstGroups = dst.childGroups();
     QSet<QString> dstExisting;
-    for (const QString &group : dstGroups) {
+    for (const QString &group : std::as_const(dstGroups)) {
         dstExisting.insert(group);
     }
     bool hasDuplicate = false;
@@ -8227,7 +8225,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         QMessageBox::StandardButton btn = QMessageBox::warning(
             this,
             tr("Warning"),
-            tr("Importing settings with the same name will overwrite the existing settings in the current configuration file. Do you want to continue?"),
+            tr("Importing setting with the same name will overwrite the existing setting in the current configuration file. Do you want to continue?"),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
         if (btn != QMessageBox::Yes) {
@@ -8240,7 +8238,8 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     for (const QString &g : groups) {
         if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
             // Import top-level keys into destination top-level
-            for (const QString &key : src.childKeys()) {
+            QStringList keyList = src.childKeys();
+            for (const QString &key : std::as_const(keyList)) {
                 dst.setValue(key, src.value(key));
             }
             ++copied;
@@ -8248,7 +8247,8 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
             if (!srcGroups.contains(g)) continue;
             src.beginGroup(g);
             dst.beginGroup(g);
-            for (const QString &key : src.childKeys()) {
+            QStringList keyList = src.childKeys();
+            for (const QString &key : std::as_const(keyList)) {
                 dst.setValue(key, src.value(key));
             }
             src.endGroup();
@@ -8259,12 +8259,57 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     dst.sync();
 
     if (copied == 0) {
-        QString message = tr("No valid groups were imported.");
+        QString message = tr("No valid setting found.");
         showFailurePopup(message);
         return;
     }
 
-    QMessageBox::information(this, tr("Info"), tr("Import completed."));
+    QMessageBox::information(this, tr("Setting Import"), tr("Import completed."));
+
+    if (loadSetting_flag) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[importSelectedGroups] Import completed, previous loading Setting not finished!";
+#endif
+        return;
+    }
+
+    QString curSettingSelectStr;
+    int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+    if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+        curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[importSelectedGroups]" << "Change to setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+    }
+
+    if (curSettingSelectStr.isEmpty()) {
+        loadSetting_flag = true;
+        loadGeneralSetting();
+        loadSetting_flag = false;
+    }
+    else {
+        loadSetting_flag = true;
+        QString loadresult = loadKeyMapSetting(curSettingSelectStr, true);
+        QString displaySettingName = loadresult;
+        if (displaySettingName == GROUPNAME_GLOBALSETTING) {
+            displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
+        }
+        ui->settingNameLineEdit->setText(displaySettingName);
+        Q_UNUSED(loadresult);
+        loadSetting_flag = false;
+    }
+
+    setUITheme(ui->themeComboBox->currentIndex());
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        updateKeyMappingTabWidgetTabDisplay(index);
+    }
+    updateSysTrayIconMenuText();
+    reloadUILanguage();
+    ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
+    updateSystemTrayDisplay();
+    m_SysTrayIcon->show();
 }
 
 void QKeyMapper::saveKeyMapSetting(void)
@@ -9239,7 +9284,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
 
-QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
+QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 {
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
@@ -9255,7 +9300,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
     settingFile.setIniCodec("UTF-8");
 #endif
 
-    if (settingtext.isEmpty()) {
+    if (settingtext.isEmpty() || load_all) {
         if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
             int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
             if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
@@ -9290,19 +9335,21 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
         qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
 #endif
 
-        int startup_position = m_StartupPositionDialog->getStartupPosition();
-        if (startup_position == STARTUP_POSITION_LASTSAVED) {
-            if (true == settingFile.contains(LAST_WINDOWPOSITION)){
-                QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
-                if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
-                    // m_LastWindowPosition = last_windowposition;
-                    move(last_windowposition);
+        if (settingtext.isEmpty()) {
+            int startup_position = m_StartupPositionDialog->getStartupPosition();
+            if (startup_position == STARTUP_POSITION_LASTSAVED) {
+                if (true == settingFile.contains(LAST_WINDOWPOSITION)){
+                    QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
+                    if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
+                        // m_LastWindowPosition = last_windowposition;
+                        move(last_windowposition);
+                    }
                 }
             }
-        }
-        else if (startup_position == STARTUP_POSITION_SPECIFY) {
-            QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
-            move(startup_specify_position);
+            else if (startup_position == STARTUP_POSITION_SPECIFY) {
+                QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
+                move(startup_specify_position);
+            }
         }
 
         if (true == settingFile.contains(LANGUAGE_INDEX)){
@@ -9937,7 +9984,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext)
             Interception_Worker::loadDisabledMouseList(disabledMouseList);
         }
     }
-    else if (GROUPNAME_GLOBALSETTING == settingtext) {
+
+    if (GROUPNAME_GLOBALSETTING == settingtext) {
         loadGlobalSetting = true;
     }
 
@@ -12274,6 +12322,704 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->mappingStopKeyLineEdit->setText(s_MappingStopKeyString);
 
     refreshAllKeyMappingTabWidget();
+}
+
+void QKeyMapper::loadGeneralSetting()
+{
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+
+    if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
+        int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
+        if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
+            m_StartupPositionDialog->setStartupPosition(startup_position);
+        }
+        else {
+            m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+        }
+    }
+    else {
+        m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Startup Position ->" << m_StartupPositionDialog->getStartupPosition();
+#endif
+    if (true == settingFile.contains(STARTUP_POSITION_SPECIFYPOINT)){
+        QPoint startup_specify_position = settingFile.value(STARTUP_POSITION_SPECIFYPOINT).toPoint();
+        if (startup_specify_position.x() < STARTUP_SPECIFY_POSITION_MIN_X
+            || startup_specify_position.y() < STARTUP_SPECIFY_POSITION_MIN_Y
+            || startup_specify_position.x() > STARTUP_SPECIFY_POSITION_MAX_X
+            || startup_specify_position.y() > STARTUP_SPECIFY_POSITION_MAX_Y) {
+            m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+        }
+        else {
+            m_StartupPositionDialog->setSpecifyStartupPosition(startup_specify_position);
+        }
+    }
+    else {
+        m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
+#endif
+
+    // if (settingtext.isEmpty()) {
+    //     int startup_position = m_StartupPositionDialog->getStartupPosition();
+    //     if (startup_position == STARTUP_POSITION_LASTSAVED) {
+    //         if (true == settingFile.contains(LAST_WINDOWPOSITION)){
+    //             QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
+    //             if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
+    //                 // m_LastWindowPosition = last_windowposition;
+    //                 move(last_windowposition);
+    //             }
+    //         }
+    //     }
+    //     else if (startup_position == STARTUP_POSITION_SPECIFY) {
+    //         QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
+    //         move(startup_specify_position);
+    //     }
+    // }
+
+    if (true == settingFile.contains(LANGUAGE_INDEX)){
+        int languageIndex = settingFile.value(LANGUAGE_INDEX).toInt();
+        if (languageIndex >= 0 && languageIndex < ui->languageComboBox->count()) {
+            ui->languageComboBox->setCurrentIndex(languageIndex);
+        }
+        else {
+            ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
+        }
+    }
+    else {
+        ui->languageComboBox->setCurrentIndex(LANGUAGE_CHINESE);
+    }
+
+    if (true == settingFile.contains(SHOW_PROCESSLIST)){
+        bool showProcessList = settingFile.value(SHOW_PROCESSLIST).toBool();
+        if (!showProcessList) {
+            ui->processListButton->setChecked(false);
+        }
+        else {
+            ui->processListButton->setChecked(true);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Show ProcessList Button ->" << showProcessList;
+#endif
+    }
+    else {
+        ui->processListButton->setChecked(true);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
+#endif
+    }
+
+    if (true == settingFile.contains(SHOW_NOTES)){
+        bool showNotes = settingFile.value(SHOW_NOTES).toBool();
+        if (showNotes) {
+            ui->showNotesButton->setChecked(true);
+        }
+        else {
+            ui->showNotesButton->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Show Notes Button ->" << showNotes;
+#endif
+    }
+    else {
+        ui->showNotesButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
+#endif
+    }
+
+    if (true == settingFile.contains(SHOW_CATEGORYS)){
+        bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
+        if (showCategorys) {
+            ui->showCategoryButton->setChecked(true);
+        }
+        else {
+            ui->showCategoryButton->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Show Categorys Button ->" << showCategorys;
+#endif
+    }
+    else {
+        ui->showCategoryButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
+#endif
+    }
+
+    if (true == settingFile.contains(VIRTUALGAMEPAD_TYPE)){
+        QString virtualGamepadType = settingFile.value(VIRTUALGAMEPAD_TYPE).toString();
+        if (virtualGamepadType == VIRTUAL_GAMEPAD_X360 || virtualGamepadType == VIRTUAL_GAMEPAD_DS4) {
+            ui->virtualGamepadTypeComboBox->setCurrentText(virtualGamepadType);
+        }
+        else {
+            ui->virtualGamepadTypeComboBox->setCurrentText(VIRTUAL_GAMEPAD_X360);
+        }
+    }
+    else {
+        ui->virtualGamepadTypeComboBox->setCurrentText(VIRTUAL_GAMEPAD_X360);
+    }
+
+    QStringList virtualGamepadList;
+    if (true == settingFile.contains(VIRTUAL_GAMEPADLIST)){
+        virtualGamepadList = settingFile.value(VIRTUAL_GAMEPADLIST).toStringList();
+        if (!virtualGamepadList.isEmpty()) {
+            if (virtualGamepadList.size() == 1
+                && virtualGamepadList.constFirst() != getVirtualGamepadType()) {
+                virtualGamepadList[0] = getVirtualGamepadType();
+            }
+        }
+        else {
+            virtualGamepadList = QStringList() << getVirtualGamepadType();
+        }
+    }
+    else {
+        virtualGamepadList = QStringList() << getVirtualGamepadType();
+    }
+    QKeyMapper_Worker::loadVirtualGamepadList(virtualGamepadList);
+
+    QString loadedwindowswitchKeySeqStr;
+    if (true == settingFile.contains(WINDOWSWITCH_KEYSEQ)){
+        loadedwindowswitchKeySeqStr = settingFile.value(WINDOWSWITCH_KEYSEQ).toString();
+        if (loadedwindowswitchKeySeqStr.isEmpty()) {
+            loadedwindowswitchKeySeqStr = DISPLAYSWITCH_KEY_DEFAULT;
+        }
+    }
+    else {
+        loadedwindowswitchKeySeqStr = DISPLAYSWITCH_KEY_DEFAULT;
+    }
+    updateWindowSwitchKeyString(loadedwindowswitchKeySeqStr);
+    ui->windowswitchkeyLineEdit->setText(s_WindowSwitchKeyString);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Load & Set Window Switch Key ->" << s_WindowSwitchKeyString;
+#endif
+
+    if (true == settingFile.contains(PLAY_SOUNDEFFECT)){
+        bool soundeffectChecked = settingFile.value(PLAY_SOUNDEFFECT).toBool();
+        if (true == soundeffectChecked) {
+            ui->soundEffectCheckBox->setChecked(true);
+        }
+        else {
+            ui->soundEffectCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Sound Effect Checkbox ->" << soundeffectChecked;
+#endif
+    }
+    else {
+        ui->soundEffectCheckBox->setChecked(true);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
+#endif
+    }
+
+    if (true == settingFile.contains(NOTIFICATION_POSITION)){
+        int notification_position = settingFile.value(NOTIFICATION_POSITION).toInt();
+        if (notification_position >= 0 && notification_position <= NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+            ui->notificationComboBox->setCurrentIndex(notification_position);
+        }
+        else {
+            ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+        }
+    }
+    else {
+        ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentText();
+#endif
+
+    if (true == settingFile.contains(DISPLAY_SCALE)){
+        int display_scale = settingFile.value(DISPLAY_SCALE).toInt();
+        if (DISPLAY_SCALE_MIN <= display_scale && display_scale <= DISPLAY_SCALE_MAX) {
+            ui->scaleComboBox->setCurrentIndex(display_scale);
+        }
+        else {
+            ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+        }
+    }
+    else {
+        ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();
+#endif
+
+    ui->themeComboBox->blockSignals(true);
+    if (true == settingFile.contains(THEME_COLOR)){
+        int theme_color = settingFile.value(THEME_COLOR).toInt();
+        if (UI_THEME_SYSTEMDEFAULT <= theme_color && theme_color <= UI_THEME_DARK) {
+            ui->themeComboBox->setCurrentIndex(theme_color);
+        }
+        else {
+            ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
+        }
+    }
+    else {
+        ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
+    }
+    ui->themeComboBox->blockSignals(false);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
+        QString notification_fontcolor_str = settingFile.value(NOTIFICATION_FONTCOLOR).toString();
+        QColor notification_fontcolor(notification_fontcolor_str);
+        if (notification_fontcolor.isValid()) {
+            m_NotificationSetupDialog->setNotification_FontColor(notification_fontcolor);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Font Color ->" << m_NotificationSetupDialog->getNotification_FontColor().name();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_BACKGROUNDCOLOR)){
+        QString notification_bgcolor_str = settingFile.value(NOTIFICATION_BACKGROUNDCOLOR).toString();
+        QColor notification_bgcolor(notification_bgcolor_str);
+        if (notification_bgcolor.isValid()) {
+            m_NotificationSetupDialog->setNotification_BackgroundColor(notification_bgcolor);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_BackgroundColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_BackgroundColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote()
+        << "[loadKeyMapSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name(QColor::HexArgb)
+        << ", Alpha: " << m_NotificationSetupDialog->getNotification_BackgroundColor().alpha();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FONTSIZE)){
+        int notification_fontsize = settingFile.value(NOTIFICATION_FONTSIZE).toInt();
+        if (NOTIFICATION_FONT_SIZE_MIN <= notification_fontsize && notification_fontsize <= NOTIFICATION_FONT_SIZE_MAX) {
+            m_NotificationSetupDialog->setNotification_FontSize(notification_fontsize);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontSize(NOTIFICATION_FONT_SIZE_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FontSize(NOTIFICATION_FONT_SIZE_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Font Size ->" << m_NotificationSetupDialog->getNotification_FontSize();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FONTWEIGHT)){
+        int notification_fontweight = settingFile.value(NOTIFICATION_FONTWEIGHT).toInt();
+        if (NOTIFICATION_FONT_WEIGHT_MIN <= notification_fontweight && notification_fontweight <= NOTIFICATION_FONT_WEIGHT_MAX) {
+            m_NotificationSetupDialog->setNotification_FontWeight(notification_fontweight);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontWeight(NOTIFICATION_FONT_WEIGHT_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FontWeight(NOTIFICATION_FONT_WEIGHT_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Font Weight ->" << m_NotificationSetupDialog->getNotification_FontWeight();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FONTITALIC)){
+        bool notification_fontitalic = settingFile.value(NOTIFICATION_FONTITALIC).toBool();
+        m_NotificationSetupDialog->setNotification_FontIsItalic(notification_fontitalic);
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FontIsItalic(NOTIFICATION_FONT_ITALIC_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Font Italic Checkbox ->" << m_NotificationSetupDialog->getNotification_FontIsItalic();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_DISPLAYDURATION)){
+        int notification_displayduration = settingFile.value(NOTIFICATION_DISPLAYDURATION).toInt();
+        if (NOTIFICATION_DURATION_MIN <= notification_displayduration && notification_displayduration <= NOTIFICATION_DURATION_MAX) {
+            m_NotificationSetupDialog->setNotification_DisplayDuration(notification_displayduration);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_DisplayDuration(NOTIFICATION_DISPLAY_DURATION_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_DisplayDuration(NOTIFICATION_DISPLAY_DURATION_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Display Duration ->" << m_NotificationSetupDialog->getNotification_DisplayDuration();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FADEINDURATION)){
+        int notification_fadeinduration = settingFile.value(NOTIFICATION_FADEINDURATION).toInt();
+        if (NOTIFICATION_DURATION_MIN <= notification_fadeinduration && notification_fadeinduration <= NOTIFICATION_DURATION_MAX) {
+            m_NotificationSetupDialog->setNotification_FadeInDuration(notification_fadeinduration);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FadeInDuration(NOTIFICATION_FADEIN_DURATION_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FadeInDuration(NOTIFICATION_FADEIN_DURATION_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification FadeIn Duration ->" << m_NotificationSetupDialog->getNotification_FadeInDuration();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FADEOUTDURATION)){
+        int notification_fadeoutduration = settingFile.value(NOTIFICATION_FADEOUTDURATION).toInt();
+        if (NOTIFICATION_DURATION_MIN <= notification_fadeoutduration && notification_fadeoutduration <= NOTIFICATION_DURATION_MAX) {
+            m_NotificationSetupDialog->setNotification_FadeOutDuration(notification_fadeoutduration);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FadeOutDuration(NOTIFICATION_FADEOUT_DURATION_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FadeOutDuration(NOTIFICATION_FADEOUT_DURATION_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification FadeOut Duration ->" << m_NotificationSetupDialog->getNotification_FadeOutDuration();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_BORDERRADIUS)){
+        int notification_border_radius = settingFile.value(NOTIFICATION_BORDERRADIUS).toInt();
+        if (NOTIFICATION_BORDER_RADIUS_MIN <= notification_border_radius && notification_border_radius <= NOTIFICATION_BORDER_RADIUS_MAX) {
+            m_NotificationSetupDialog->setNotification_BorderRadius(notification_border_radius);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_BorderRadius(NOTIFICATION_BORDER_RADIUS_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_BorderRadius(NOTIFICATION_BORDER_RADIUS_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Border Radius ->" << m_NotificationSetupDialog->getNotification_BorderRadius();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_PADDING)){
+        int notification_padding = settingFile.value(NOTIFICATION_PADDING).toInt();
+        if (NOTIFICATION_PADDING_MIN <= notification_padding && notification_padding <= NOTIFICATION_PADDING_MAX) {
+            m_NotificationSetupDialog->setNotification_Padding(notification_padding);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_Padding(NOTIFICATION_PADDING_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_Padding(NOTIFICATION_PADDING_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Padding ->" << m_NotificationSetupDialog->getNotification_Padding();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_OPACITY)){
+        double notification_opacity = settingFile.value(NOTIFICATION_OPACITY).toDouble();
+        if (NOTIFICATION_OPACITY_MIN <= notification_opacity && notification_opacity <= NOTIFICATION_OPACITY_MAX) {
+            m_NotificationSetupDialog->setNotification_Opacity(notification_opacity);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_Opacity(NOTIFICATION_OPACITY_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_Opacity(NOTIFICATION_OPACITY_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Opacity ->" << m_NotificationSetupDialog->getNotification_Opacity();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_X_OFFSET)){
+        int notification_x_offset = settingFile.value(NOTIFICATION_X_OFFSET).toInt();
+        if (NOTIFICATION_OFFSET_MIN <= notification_x_offset && notification_x_offset <= NOTIFICATION_OFFSET_MAX) {
+            m_NotificationSetupDialog->setNotification_X_Offset(notification_x_offset);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_X_Offset(NOTIFICATION_X_OFFSET_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_X_Offset(NOTIFICATION_X_OFFSET_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification X Offset ->" << m_NotificationSetupDialog->getNotification_X_Offset();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_Y_OFFSET)){
+        int notification_y_offset = settingFile.value(NOTIFICATION_Y_OFFSET).toInt();
+        if (NOTIFICATION_OFFSET_MIN <= notification_y_offset && notification_y_offset <= NOTIFICATION_OFFSET_MAX) {
+            m_NotificationSetupDialog->setNotification_Y_Offset(notification_y_offset);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_Y_Offset(NOTIFICATION_Y_OFFSET_DEFAULT);
+        }
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_Y_Offset(NOTIFICATION_Y_OFFSET_DEFAULT);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Notification Y Offset ->" << m_NotificationSetupDialog->getNotification_Y_Offset();
+#endif
+
+    if (true == settingFile.contains(TRAYICON_IDLE)){
+        QString trayicon_idle = settingFile.value(TRAYICON_IDLE).toString();
+        if (!trayicon_idle.isEmpty() && trayicon_idle.endsWith(ICON_FILE_SUFFIX)) {
+            m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(trayicon_idle);
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(TRAYICON_IDLE_DEFAULT_FILE);
+        }
+    }
+    else {
+        m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(TRAYICON_IDLE_DEFAULT_FILE);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Idle ->" << m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon();
+#endif
+
+    if (true == settingFile.contains(TRAYICON_MONITORING)){
+        QString trayicon_monitoring = settingFile.value(TRAYICON_MONITORING).toString();
+        if (!trayicon_monitoring.isEmpty() && trayicon_monitoring.endsWith(ICON_FILE_SUFFIX)) {
+            m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(trayicon_monitoring);
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(TRAYICON_MONITORING_DEFAULT_FILE);
+        }
+    }
+    else {
+        m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(TRAYICON_MONITORING_DEFAULT_FILE);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Monitoring ->" << m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon();
+#endif
+
+    if (true == settingFile.contains(TRAYICON_GLOBAL)){
+        QString trayicon_global = settingFile.value(TRAYICON_GLOBAL).toString();
+        if (!trayicon_global.isEmpty() && trayicon_global.endsWith(ICON_FILE_SUFFIX)) {
+            m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(trayicon_global);
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(TRAYICON_GLOBAL_DEFAULT_FILE);
+        }
+    }
+    else {
+        m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(TRAYICON_GLOBAL_DEFAULT_FILE);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Global ->" << m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon();
+#endif
+
+    if (true == settingFile.contains(TRAYICON_MATCHED)){
+        QString trayicon_matched = settingFile.value(TRAYICON_MATCHED).toString();
+        if (!trayicon_matched.isEmpty() && trayicon_matched.endsWith(ICON_FILE_SUFFIX)) {
+            m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(trayicon_matched);
+        }
+        else {
+            m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(TRAYICON_MATCHED_DEFAULT_FILE);
+        }
+    }
+    else {
+        m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(TRAYICON_MATCHED_DEFAULT_FILE);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Matched ->" << m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon();
+#endif
+
+    if (true == settingFile.contains(UPDATE_SITE)){
+        int update_site = settingFile.value(UPDATE_SITE).toInt();
+        if (UPDATE_SITE_GITEE == update_site) {
+            ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITEE);
+        }
+        else {
+            ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITHUB);
+        }
+    }
+    else {
+        ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITHUB);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadKeyMapSetting]" << "Update Site ->" << (ui->updateSiteComboBox->currentIndex() == UPDATE_SITE_GITEE ? "Gitee" : "GitHub");
+#endif
+
+    if (true == settingFile.contains(AUTO_STARTUP)){
+        bool autostartupChecked = settingFile.value(AUTO_STARTUP).toBool();
+        if (true == autostartupChecked) {
+            ui->autoStartupCheckBox->setChecked(true);
+        }
+        else {
+            ui->autoStartupCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Auto Startup Checkbox ->" << autostartupChecked;
+#endif
+    }
+    else {
+        ui->autoStartupCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains AutoStartup, AutoStartup set to Unchecked.";
+#endif
+    }
+
+    if (true == settingFile.contains(STARTUP_MINIMIZED)){
+        bool startupminimizedChecked = settingFile.value(STARTUP_MINIMIZED).toBool();
+        if (true == startupminimizedChecked) {
+            ui->startupMinimizedCheckBox->setChecked(true);
+        }
+        else {
+            ui->startupMinimizedCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Startup Minimized Checkbox ->" << startupminimizedChecked;
+#endif
+    }
+    else {
+        ui->startupMinimizedCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupMinimized, StartupMinimized set to Unchecked.";
+#endif
+    }
+
+    if (true == settingFile.contains(STARTUP_AUTOMONITORING)){
+        bool startupautomonitoringChecked = settingFile.value(STARTUP_AUTOMONITORING).toBool();
+        if (true == startupautomonitoringChecked) {
+            ui->startupAutoMonitoringCheckBox->setChecked(true);
+        }
+        else {
+            ui->startupAutoMonitoringCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Startup AutoMonitoring Checkbox ->" << startupautomonitoringChecked;
+#endif
+    }
+    else {
+        ui->startupAutoMonitoringCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
+#endif
+    }
+
+#ifdef VIGEM_CLIENT_SUPPORT
+    if (true == settingFile.contains(VIRTUALGAMEPAD_ENABLE)){
+        bool virtualjoystickenableChecked = settingFile.value(VIRTUALGAMEPAD_ENABLE).toBool();
+        if (true == virtualjoystickenableChecked) {
+            ui->enableVirtualJoystickCheckBox->setChecked(true);
+        }
+        else {
+            ui->enableVirtualJoystickCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Virtual Joystick Enable Checkbox ->" << virtualjoystickenableChecked;
+#endif
+    }
+    else {
+        ui->enableVirtualJoystickCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualGamepadEnable, VirtualGamepadEnable set to Unchecked.";
+#endif
+    }
+#endif
+
+    if (true == settingFile.contains(MULTI_INPUT_ENABLE)){
+        bool multiInputEnableChecked = settingFile.value(MULTI_INPUT_ENABLE).toBool();
+        if (true == multiInputEnableChecked) {
+            ui->multiInputEnableCheckBox->setChecked(true);
+        }
+        else {
+            ui->multiInputEnableCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "MultiInput Enable Checkbox ->" << multiInputEnableChecked;
+#endif
+    }
+    else {
+        ui->multiInputEnableCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
+#endif
+    }
+
+    if (true == settingFile.contains(DISABLED_KEYBOARDLIST)){
+        QStringList disabledKeyboardList = settingFile.value(DISABLED_KEYBOARDLIST).toStringList();
+        Interception_Worker::loadDisabledKeyboardList(disabledKeyboardList);
+    }
+
+    if (true == settingFile.contains(DISABLED_MOUSELIST)){
+        QStringList disabledMouseList = settingFile.value(DISABLED_MOUSELIST).toStringList();
+        Interception_Worker::loadDisabledMouseList(disabledMouseList);
+    }
+
+
+    m_SettingSelectListWithoutDescription.clear();
+    ui->settingselectComboBox->clear();
+    ui->settingselectComboBox->addItem(QString());
+    m_SettingSelectListWithoutDescription.append(QString());
+    QString globalSettingName = tr("GlobalKeyMapping");
+    ui->settingselectComboBox->addItem(globalSettingName);
+    m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
+    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.svg"));
+    QStringList groups = settingFile.childGroups();
+
+    QStringList validgroups;
+    for (const QString &group : std::as_const(groups)){
+        if (group == GROUPNAME_GLOBALSETTING) {
+            continue;
+        }
+
+        QString tempSettingSelectStr = group + "/";
+
+        QIcon settingIcon = QKeyMapper::s_Icon_Blank;
+        QString filepathString;
+        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
+            filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+        }
+        if (!filepathString.isEmpty()
+            && QFileInfo::exists(filepathString)){
+            QIcon fileicon;
+            fileicon = extractIconFromExecutable(filepathString);
+
+            if (fileicon.isNull()) {
+                QFileIconProvider icon_provider;
+                fileicon = icon_provider.icon(QFileInfo(filepathString));
+            }
+
+            if (!fileicon.isNull()) {
+                settingIcon = fileicon;
+            }
+        }
+
+        QString descriptionString;
+        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
+            descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
+        }
+        QString groupnameWithDescription = group;
+        if (!descriptionString.isEmpty()) {
+            groupnameWithDescription = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
+        }
+
+        ui->settingselectComboBox->addItem(settingIcon, groupnameWithDescription);
+        m_SettingSelectListWithoutDescription.append(group);
+        validgroups.append(group);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadGeneralSetting]" << "validgroups >>" << validgroups;
+#endif
+
 }
 
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
@@ -20640,7 +21386,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Change to Setting ->" << text;
 #endif
-        loadSetting_flag = true;
+
         QString curSettingSelectStr;
         int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
         if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
@@ -20648,9 +21394,11 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().noquote().nospace() << "[on_settingselectComboBox_textActivated/textChanged]" << "Change to setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+            qDebug().noquote().nospace() << "[on_settingselectComboBox_textActivated/textChanged]" << "Change to setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription.size() ->" << m_SettingSelectListWithoutDescription.size();
 #endif
+            return;
         }
+        loadSetting_flag = true;
         QString loadresult = loadKeyMapSetting(curSettingSelectStr);
         QString displaySettingName = loadresult;
         if (displaySettingName == GROUPNAME_GLOBALSETTING) {
@@ -22187,7 +22935,7 @@ void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, 
 SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     : QDialog(parent), m_mode(mode)
 {
-    setWindowTitle(mode == ExportMode ? tr("Export Settings") : tr("Import Settings"));
+    setWindowTitle(mode == ExportMode ? tr("Setting Export") : tr("Setting Import"));
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
@@ -22220,7 +22968,7 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     // Initialize UI based on mode
     if (m_mode == ExportMode) {
         // Default export file name
-        QString defaultPath = QCoreApplication::applicationDirPath() + "/qkm_setting.ini";
+        QString defaultPath = QCoreApplication::applicationDirPath() + "/" + SETTING_BACKUP_EXPORT_DEFAULT_FILENAME;
         filePathEdit->setText(defaultPath);
 
         // Load groups from fixed source INI
@@ -22230,6 +22978,26 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
         // Import mode: group list will be loaded after file selection
         groupWidget->setGroups({});
     }
+}
+
+QStringList SettingTransferDialog::readGroupsFromIni(const QString &filePath) {
+    QSettings settings(filePath, QSettings::IniFormat);
+    QStringList childGroups = settings.childGroups();
+
+    // Move GlobalSetting to the first.
+    if (childGroups.contains(GROUPNAME_GLOBALSETTING)) {
+        childGroups.removeAll(GROUPNAME_GLOBALSETTING);
+        childGroups.prepend(GROUPNAME_GLOBALSETTING);
+    }
+
+    // Detect top-level keys -> represent as General
+    const bool hasTopLevel = !settings.childKeys().isEmpty();
+    // General (if any), then GlobalSetting (if exists), then other groups
+    if (hasTopLevel) {
+        childGroups.prepend(CONFIG_FILE_TOPLEVEL_GROUPNAME);
+    }
+
+    return childGroups;
 }
 
 void SettingTransferDialog::onBrowseFile() {
@@ -22256,7 +23024,7 @@ void SettingTransferDialog::onBrowseFile() {
                 QSettings curIni(QKeyMapperConstants::CONFIG_FILENAME, QSettings::IniFormat);
                 QStringList existingGroups = curIni.childGroups();
                 QSet<QString> existing;
-                for (const QString &group : existingGroups) {
+                for (const QString &group : std::as_const(existingGroups)) {
                     existing.insert(group);
                 }
                 // Consider destination top-level keys as existing General
@@ -22265,11 +23033,11 @@ void SettingTransferDialog::onBrowseFile() {
                 }
                 QStringList nonDup;
                 QSet<QString> dups;
-                for (const QString &g : groups) {
+                for (const QString &g : std::as_const(groups)) {
                     if (existing.contains(g)) dups.insert(g); else nonDup << g;
                 }
                 groupWidget->setSelectedGroups(nonDup);
-                groupWidget->highlightDuplicates(dups, QColor(0, 168, 138));
+                groupWidget->highlightDuplicates(dups, SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR);
             }
         }
     }
@@ -22280,7 +23048,7 @@ void SettingTransferDialog::onBrowseFile() {
 
 void SettingTransferDialog::onAccept() {
     if (filePathEdit->text().isEmpty()) {
-        QMessageBox::warning(this, tr("Warning"), tr("Please select a file."));
+        QMessageBox::warning(this, tr("Warning"), tr("Please select a INI file."));
         return;
     }
     if (groupWidget->selectedGroups().isEmpty()) {
@@ -22299,24 +23067,4 @@ void SettingTransferDialog::onAccept() {
     //     }
     // }
     accept();
-}
-
-QStringList SettingTransferDialog::readGroupsFromIni(const QString &filePath) {
-    QSettings settings(filePath, QSettings::IniFormat);
-    QStringList childGroups = settings.childGroups();
-
-    // Move GlobalSetting to the first.
-    if (childGroups.contains(GROUPNAME_GLOBALSETTING)) {
-        childGroups.removeAll(GROUPNAME_GLOBALSETTING);
-        childGroups.prepend(GROUPNAME_GLOBALSETTING);
-    }
-
-    // Detect top-level keys -> represent as General
-    const bool hasTopLevel = !settings.childKeys().isEmpty();
-    // General (if any), then GlobalSetting (if exists), then other groups
-    if (hasTopLevel) {
-        childGroups.prepend(CONFIG_FILE_TOPLEVEL_GROUPNAME);
-    }
-
-    return childGroups;
 }

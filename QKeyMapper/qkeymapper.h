@@ -679,14 +679,13 @@ public:
     QString selectedFilePath() const { return filePathEdit->text(); }
     QStringList selectedGroups() const { return groupWidget->selectedGroups(); }
 
+    // Helper: read group names from an INI file
+    static QStringList readGroupsFromIni(const QString &filePath);
+
 private slots:
     void onBrowseFile();
 
     void onAccept();
-
-private:
-    // Helper: read group names from an INI file
-    QStringList readGroupsFromIni(const QString &filePath);
 
 private:
     Mode m_mode;
@@ -1306,16 +1305,17 @@ private:
     // int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchSavedSettings(const QString &processpath, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
-    bool exportSettingToFile(void);
-    bool importSettingFromFile(void);
+    void exportSettingToFile(void);
+    void importSettingFromFile(void);
     void exportSelectedGroups(const QString &sourceIni, const QString &targetIni, const QStringList &groups);
     void importSelectedGroups(const QString &sourceIni, const QStringList &groups);
 
 public:
     void saveKeyMapSetting(void);
 private:
-    QString loadKeyMapSetting(const QString &settingtext);
+    QString loadKeyMapSetting(const QString &settingtext, bool load_all = false);
     void loadEmptyMapSetting(void);
+    void loadGeneralSetting(void);
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT

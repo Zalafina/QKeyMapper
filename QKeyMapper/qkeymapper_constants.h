@@ -955,6 +955,16 @@ namespace QKeyMapperConstants {
     inline constexpr const char SETTING_BACKUP_ACTION_EXPORT[] = "SettingBackupActionExport";
     inline constexpr const char SETTING_BACKUP_ACTION_IMPORT[] = "SettingBackupActionImport";
 
+    inline constexpr const char SETTING_BACKUP_EXPORT_DEFAULT_FILENAME[] = "setting_export.ini";
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(0, 168, 138);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(0, 168, 138);
+#endif
+
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
     inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";
