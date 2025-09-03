@@ -168,13 +168,23 @@
     <name>GroupSelectionWidget</name>
     <message>
         <location filename="../qkeymapper.cpp" line="22831"/>
-        <location filename="../qkeymapper.cpp" line="22850"/>
-        <location filename="../qkeymapper.cpp" line="22887"/>
-        <location filename="../qkeymapper.cpp" line="22905"/>
-        <location filename="../qkeymapper.cpp" line="22936"/>
-        <location filename="../qkeymapper.cpp" line="22950"/>
+        <location filename="../qkeymapper.cpp" line="22864"/>
+        <location filename="../qkeymapper.cpp" line="22901"/>
+        <location filename="../qkeymapper.cpp" line="22926"/>
+        <location filename="../qkeymapper.cpp" line="22964"/>
+        <location filename="../qkeymapper.cpp" line="22986"/>
         <source>Select All</source>
         <translation>Select All</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="22843"/>
+        <source>TopLevelGroup</source>
+        <translation>GeneralSetting</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="22846"/>
+        <source>GlobalKeyMapping</source>
+        <translation>GlobalKeyMapping</translation>
     </message>
 </context>
 <context>
@@ -2757,61 +2767,61 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
 <context>
     <name>SettingTransferDialog</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="22966"/>
-        <location filename="../qkeymapper.cpp" line="23078"/>
+        <location filename="../qkeymapper.cpp" line="23006"/>
+        <location filename="../qkeymapper.cpp" line="23118"/>
         <source>Setting Export</source>
         <translation>Setting Export</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22966"/>
-        <location filename="../qkeymapper.cpp" line="23047"/>
-        <location filename="../qkeymapper.cpp" line="23078"/>
+        <location filename="../qkeymapper.cpp" line="23006"/>
+        <location filename="../qkeymapper.cpp" line="23087"/>
+        <location filename="../qkeymapper.cpp" line="23118"/>
         <source>Setting Import</source>
         <translation>Setting Import</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22975"/>
+        <location filename="../qkeymapper.cpp" line="23015"/>
         <source>FileSelect</source>
         <translation>FileSelect</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22977"/>
+        <location filename="../qkeymapper.cpp" line="23017"/>
         <source>INI File:</source>
         <translation>INI File:</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23035"/>
+        <location filename="../qkeymapper.cpp" line="23075"/>
         <source>Select Export INI File</source>
         <translation>Select Export INI File</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23040"/>
+        <location filename="../qkeymapper.cpp" line="23080"/>
         <source>Select Import INI File</source>
         <translation>Select Import INI File</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23086"/>
+        <location filename="../qkeymapper.cpp" line="23126"/>
         <source>Please select one or more settings to export.</source>
         <translation>Please select one or more settings to export.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23089"/>
+        <location filename="../qkeymapper.cpp" line="23129"/>
         <source>Please select one or more settings to import.</source>
         <translation>Please select one or more settings to import.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23037"/>
-        <location filename="../qkeymapper.cpp" line="23042"/>
+        <location filename="../qkeymapper.cpp" line="23077"/>
+        <location filename="../qkeymapper.cpp" line="23082"/>
         <source>INI Files (*.ini)</source>
         <translation>INI Files (*.ini)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23047"/>
+        <location filename="../qkeymapper.cpp" line="23087"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>No valid settings found in the selected INI file.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23080"/>
+        <location filename="../qkeymapper.cpp" line="23120"/>
         <source>Please select a INI file.</source>
         <translation>Please select a INI file.</translation>
     </message>

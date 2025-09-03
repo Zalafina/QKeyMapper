@@ -22828,14 +22828,28 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
     // Only create "Select All" item if there are groups to select
     bool hasGroups = !groups.isEmpty();
     if (hasGroups) {
-        auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget);
+        auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget, SETTING_BACKUP_LIST_TYPE_SELECT_ALL);
         selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
         selectAllItem->setCheckState(Qt::Unchecked);
     }
 
     // Create group items in the exact order provided by caller
     for (const QString &group : groups) {
-        auto *item = new QListWidgetItem(group, m_listWidget);
+        QString displayText = group;
+        QListWidgetItem::ItemType itemType = QListWidgetItem::Type;
+
+        // Set display text and type for special groups
+        if (group == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
+            displayText = tr("TopLevelGroup");
+            itemType = SETTING_BACKUP_LIST_TYPE_TOPLEVEL;
+        } else if (group == GROUPNAME_GLOBALSETTING) {
+            displayText = tr("GlobalKeyMapping");
+            itemType = SETTING_BACKUP_LIST_TYPE_GLOBALSETTING;
+        }
+
+        auto *item = new QListWidgetItem(displayText, m_listWidget, itemType);
+        // Store the original group name in UserRole for later retrieval
+        item->setData(Qt::UserRole, group);
         // Only user-checkable; do not set tri-state on children
         item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsAutoTristate);
         item->setCheckState(Qt::Unchecked);
@@ -22890,7 +22904,14 @@ QStringList GroupSelectionWidget::selectedGroups() const
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
         if (item->checkState() == Qt::Checked) {
-            selected << item->text();
+            // Use stored original group name instead of display text
+            QString originalName = item->data(Qt::UserRole).toString();
+            if (!originalName.isEmpty()) {
+                selected << originalName;
+            } else {
+                // Fallback to display text for backward compatibility
+                selected << item->text();
+            }
         }
     }
     return selected;
@@ -22907,7 +22928,14 @@ void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
-        item->setCheckState(groups.contains(item->text()) ? Qt::Checked : Qt::Unchecked);
+        // Use stored original group name for matching
+        QString originalName = item->data(Qt::UserRole).toString();
+        if (!originalName.isEmpty()) {
+            item->setCheckState(groups.contains(originalName) ? Qt::Checked : Qt::Unchecked);
+        } else {
+            // Fallback to display text for backward compatibility
+            item->setCheckState(groups.contains(item->text()) ? Qt::Checked : Qt::Unchecked);
+        }
     }
 
     // Update Select All tri-state only if it exists
@@ -22937,7 +22965,15 @@ QStringList GroupSelectionWidget::allGroups() const
     int startIndex = hasSelectAllItem ? 1 : 0;
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
-        all << m_listWidget->item(i)->text();
+        auto *item = m_listWidget->item(i);
+        // Use stored original group name instead of display text
+        QString originalName = item->data(Qt::UserRole).toString();
+        if (!originalName.isEmpty()) {
+            all << originalName;
+        } else {
+            // Fallback to display text for backward compatibility
+            all << item->text();
+        }
     }
     return all;
 }
@@ -22952,7 +22988,11 @@ void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, 
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
         auto *item = m_listWidget->item(i);
-        if (duplicates.contains(item->text())) {
+        // Use stored original group name for duplicate checking
+        QString originalName = item->data(Qt::UserRole).toString();
+        QString nameToCheck = originalName.isEmpty() ? item->text() : originalName;
+
+        if (duplicates.contains(nameToCheck)) {
             item->setForeground(QBrush(color));
         } else {
             item->setForeground(QBrush());

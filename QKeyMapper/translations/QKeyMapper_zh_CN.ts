@@ -168,13 +168,23 @@
     <name>GroupSelectionWidget</name>
     <message>
         <location filename="../qkeymapper.cpp" line="22831"/>
-        <location filename="../qkeymapper.cpp" line="22850"/>
-        <location filename="../qkeymapper.cpp" line="22887"/>
-        <location filename="../qkeymapper.cpp" line="22905"/>
-        <location filename="../qkeymapper.cpp" line="22936"/>
-        <location filename="../qkeymapper.cpp" line="22950"/>
+        <location filename="../qkeymapper.cpp" line="22864"/>
+        <location filename="../qkeymapper.cpp" line="22901"/>
+        <location filename="../qkeymapper.cpp" line="22926"/>
+        <location filename="../qkeymapper.cpp" line="22964"/>
+        <location filename="../qkeymapper.cpp" line="22986"/>
         <source>Select All</source>
         <translation>全选</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="22843"/>
+        <source>TopLevelGroup</source>
+        <translation>通用设定</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="22846"/>
+        <source>GlobalKeyMapping</source>
+        <translation>全局按键映射</translation>
     </message>
 </context>
 <context>
@@ -2756,61 +2766,61 @@ Do you confirm to continue installing Interception driver?</source>
 <context>
     <name>SettingTransferDialog</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="22966"/>
-        <location filename="../qkeymapper.cpp" line="23078"/>
+        <location filename="../qkeymapper.cpp" line="23006"/>
+        <location filename="../qkeymapper.cpp" line="23118"/>
         <source>Setting Export</source>
         <translation>设定导出</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22966"/>
-        <location filename="../qkeymapper.cpp" line="23047"/>
-        <location filename="../qkeymapper.cpp" line="23078"/>
+        <location filename="../qkeymapper.cpp" line="23006"/>
+        <location filename="../qkeymapper.cpp" line="23087"/>
+        <location filename="../qkeymapper.cpp" line="23118"/>
         <source>Setting Import</source>
         <translation>设定导入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22975"/>
+        <location filename="../qkeymapper.cpp" line="23015"/>
         <source>FileSelect</source>
         <translation>文件选择</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22977"/>
+        <location filename="../qkeymapper.cpp" line="23017"/>
         <source>INI File:</source>
         <translation>INI 文件:</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23035"/>
+        <location filename="../qkeymapper.cpp" line="23075"/>
         <source>Select Export INI File</source>
         <translation>选择导出的 INI 文件</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23040"/>
+        <location filename="../qkeymapper.cpp" line="23080"/>
         <source>Select Import INI File</source>
         <translation>选择导入的 INI 文件</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23086"/>
+        <location filename="../qkeymapper.cpp" line="23126"/>
         <source>Please select one or more settings to export.</source>
         <translation>请选择一个或多个设定进行导出。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23089"/>
+        <location filename="../qkeymapper.cpp" line="23129"/>
         <source>Please select one or more settings to import.</source>
         <translation>请选择一个或多个设定进行导入。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23037"/>
-        <location filename="../qkeymapper.cpp" line="23042"/>
+        <location filename="../qkeymapper.cpp" line="23077"/>
+        <location filename="../qkeymapper.cpp" line="23082"/>
         <source>INI Files (*.ini)</source>
         <translation>INI 文件 (*.ini)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23047"/>
+        <location filename="../qkeymapper.cpp" line="23087"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>在所选的 INI 文件中未找到有效的设定。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23080"/>
+        <location filename="../qkeymapper.cpp" line="23120"/>
         <source>Please select a INI file.</source>
         <translation>请选择一个 INI 文件。</translation>
     </message>

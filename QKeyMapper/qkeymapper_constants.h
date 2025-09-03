@@ -4,6 +4,7 @@
 #include <QPoint>
 #include <QSize>
 #include <QColor>
+#include <QListWidgetItem>
 
 namespace QKeyMapperConstants {
 
@@ -951,6 +952,10 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
+
+    inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_SELECT_ALL = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 1);
+    inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_TOPLEVEL = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 2);
+    inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_GLOBALSETTING = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 3);
 
     inline constexpr const char SETTING_BACKUP_ACTION_EXPORT[] = "SettingBackupActionExport";
     inline constexpr const char SETTING_BACKUP_ACTION_IMPORT[] = "SettingBackupActionImport";
