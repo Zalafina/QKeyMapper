@@ -20841,6 +20841,9 @@ void QFloatingIconWindow::mouseDoubleClickEvent(QMouseEvent *event)
     qDebug() << "[QFloatingIconWindow::mouseDoubleClickEvent] Floating window mouse left button double clicked.";
 #endif
 
+        if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+            QKeyMapper::getInstance()->saveKeyMapSetting();
+        }
     }
     else if (event->button() == Qt::RightButton) {
 #ifdef DEBUG_LOGOUT_ON
