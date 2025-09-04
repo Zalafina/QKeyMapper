@@ -20834,6 +20834,22 @@ void QFloatingIconWindow::paintEvent(QPaintEvent *event)
     // }
 }
 
+void QFloatingIconWindow::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::mouseDoubleClickEvent] Floating window mouse left button double clicked.";
+#endif
+
+    }
+    else if (event->button() == Qt::RightButton) {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QFloatingIconWindow::mouseDoubleClickEvent] Floating window mouse right button double clicked.";
+#endif
+
+    }
+}
+
 void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
