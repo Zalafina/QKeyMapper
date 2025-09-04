@@ -914,10 +914,18 @@ namespace QKeyMapperConstants {
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
-    inline constexpr QColor STATUS_ON_COLOR = QColor(236, 165, 56);
+    inline constexpr QColor STATUS_ON_COLOR = QColor(214, 149, 69);
 #else
     // Fallback for Qt5: QColor is not constexpr
-    inline const QColor STATUS_ON_COLOR = QColor(236, 165, 56);
+    inline const QColor STATUS_ON_COLOR = QColor(214, 149, 69);
+#endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor PASS_THROUGH_COLOR = QColor(214, 149, 69);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor PASS_THROUGH_COLOR = QColor(214, 149, 69);
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -957,6 +965,9 @@ namespace QKeyMapperConstants {
     inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_TOPLEVEL = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 2);
     inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_GLOBALSETTING = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 3);
 
+    inline constexpr const int GROUPSELECTWIDGET_ITEM_HEIGHT = 23;
+    inline constexpr const int GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN = 13;
+
     inline constexpr const char SETTING_BACKUP_ACTION_EXPORT[] = "SettingBackupActionExport";
     inline constexpr const char SETTING_BACKUP_ACTION_IMPORT[] = "SettingBackupActionImport";
 
@@ -964,10 +975,10 @@ namespace QKeyMapperConstants {
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
-    inline constexpr QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(0, 168, 138);
+    inline constexpr QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(214, 149, 69);
 #else
     // Fallback for Qt5: QColor is not constexpr
-    inline const QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(0, 168, 138);
+    inline const QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(214, 149, 69);
 #endif
 
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";

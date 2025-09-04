@@ -553,7 +553,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     QObject::connect(this, &QKeyMapper::checkFilterKeysEnabled_Signal, this, &QKeyMapper::checkFilterKeysEnabled, Qt::QueuedConnection);
 #endif
-    QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
+    // QObject::connect(this, &QKeyMapper::updateLockStatus_Signal, this, &QKeyMapper::updateLockStatusDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateMousePointLabelDisplay_Signal, this, &QKeyMapper::updateMousePointLabelDisplay, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showMousePoints_Signal, this, &QKeyMapper::showMousePoints, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
@@ -16818,7 +16818,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             ori_TableItem->setToolTip(orikey_withnote);
             ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             if (keymapdata.PassThrough) {
-                ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
+                ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
             }
             mappingDataTable->setItem(rowindex, ORIGINAL_KEY_COLUMN  , ori_TableItem);
 
@@ -17020,7 +17020,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             ori_TableItem->setToolTip(orikey_withnote);
             ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             if (keymapdata.PassThrough) {
-                ori_TableItem->setForeground(QBrush(STATUS_ON_COLOR));
+                ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
             }
             mappingDataTable->setItem(row, ORIGINAL_KEY_COLUMN, ori_TableItem);
             break;
@@ -23066,6 +23066,7 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
 
     // Group selection widget
     groupWidget = new GroupSelectionWidget(this);
+    groupWidget->setMinimumHeight(GROUPSELECTWIDGET_ITEM_HEIGHT * GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN + 2);
     mainLayout->addWidget(groupWidget);
 
     // OK / Cancel buttons
