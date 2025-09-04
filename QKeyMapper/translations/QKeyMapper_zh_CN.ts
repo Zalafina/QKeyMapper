@@ -921,7 +921,7 @@ Update</source>
         <location filename="../qkeymapper.ui" line="203"/>
         <location filename="../qkeymapper.cpp" line="17328"/>
         <source>Remove</source>
-        <translation>移除</translation>
+        <translation>设定移除</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="222"/>
