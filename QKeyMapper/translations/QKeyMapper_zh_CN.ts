@@ -1133,7 +1133,7 @@ Update</source>
         <location filename="../qkeymapper.ui" line="2396"/>
         <location filename="../qkeymapper.cpp" line="17294"/>
         <source>Backup</source>
-        <translation>备份</translation>
+        <translation>设定备份</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="17271"/>

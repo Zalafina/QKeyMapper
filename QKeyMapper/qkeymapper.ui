@@ -190,9 +190,9 @@
   <widget class="QPushButton" name="removeSettingButton">
    <property name="geometry">
     <rect>
-     <x>439</x>
+     <x>440</x>
      <y>404</y>
-     <width>61</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
@@ -2385,7 +2385,7 @@
     <rect>
      <x>440</x>
      <y>370</y>
-     <width>61</width>
+     <width>71</width>
      <height>22</height>
     </rect>
    </property>
