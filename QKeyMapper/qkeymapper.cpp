@@ -22835,20 +22835,36 @@ void QKeyMapper::on_backupSettingButton_clicked()
     int popupWidth = 120;
     int popupHeight = 80;
 
-    // Initial geometry: positioned to the right but with zero width (invisible)
-    QRect startRect(globalPos.x(), globalPos.y(), 0, popupHeight);
+    // Use opacity animation instead of geometry animation to avoid layout interference
+    QRect finalRect(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+    m_SettingBackupActionPopup->setGeometry(finalRect);
+    m_SettingBackupActionPopup->setWindowOpacity(0.0); // Start transparent
+    m_SettingBackupActionPopup->show();
+
+    // Fade-in animation with slight scale effect
+    QPropertyAnimation *opacityAnim = new QPropertyAnimation(m_SettingBackupActionPopup, "windowOpacity");
+    opacityAnim->setDuration(500);
+    opacityAnim->setStartValue(0.0);
+    opacityAnim->setEndValue(1.0);
+    opacityAnim->setEasingCurve(QEasingCurve::OutQuart);
+
+    // Alternative: Slide-in from right animation
+    /*
+    QRect startRect(globalPos.x() + popupWidth, globalPos.y(), popupWidth, popupHeight);
     QRect endRect(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
 
     m_SettingBackupActionPopup->setGeometry(startRect);
     m_SettingBackupActionPopup->show();
 
-    // Animation: smoothly expand the popup from zero width to full width
-    QPropertyAnimation *anim = new QPropertyAnimation(m_SettingBackupActionPopup, "geometry");
-    anim->setDuration(200);
-    anim->setStartValue(startRect);
-    anim->setEndValue(endRect);
-    anim->setEasingCurve(QEasingCurve::OutCubic);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
+    QPropertyAnimation *slideAnim = new QPropertyAnimation(m_SettingBackupActionPopup, "geometry");
+    slideAnim->setDuration(200);
+    slideAnim->setStartValue(startRect);
+    slideAnim->setEndValue(endRect);
+    slideAnim->setEasingCurve(QEasingCurve::OutCubic);
+    slideAnim->start(QAbstractAnimation::DeleteWhenStopped);
+    */
+
+    opacityAnim->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
