@@ -968,6 +968,8 @@ namespace QKeyMapperConstants {
     inline constexpr const int GROUPSELECTWIDGET_ITEM_HEIGHT = 23;
     inline constexpr const int GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN = 13;
 
+    inline constexpr const char GROUPSELECTWIDGET_SELECT_ALL_PREFIX[] = "☑️ ";
+
     inline constexpr const char SETTING_BACKUP_ACTION_EXPORT[] = "SettingBackupActionExport";
     inline constexpr const char SETTING_BACKUP_ACTION_IMPORT[] = "SettingBackupActionImport";
 

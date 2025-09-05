@@ -22907,7 +22907,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
     // Only create "Select All" item if there are groups to select
     bool hasGroups = !groups.isEmpty();
     if (hasGroups) {
-        auto *selectAllItem = new QListWidgetItem(tr("Select All"), m_listWidget, SETTING_BACKUP_LIST_TYPE_SELECT_ALL);
+        auto *selectAllItem = new QListWidgetItem((GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")), m_listWidget, SETTING_BACKUP_LIST_TYPE_SELECT_ALL);
         selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
         selectAllItem->setCheckState(Qt::Unchecked);
     }
@@ -22940,7 +22940,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
         connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *item){
         // Check if "Select All" item exists (only when groups are not empty)
         bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                                m_listWidget->item(0)->text() == tr("Select All"));
+                                m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
 
         if (hasSelectAllItem && item == m_listWidget->item(0)) {
             // "Select All" item changed
@@ -22977,7 +22977,7 @@ QStringList GroupSelectionWidget::selectedGroups() const
     QStringList selected;
     // Skip index 0 if it's the "Select All" item, otherwise start from index 0
     bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == tr("Select All"));
+                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
@@ -23002,7 +23002,7 @@ void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
 
     // Check if "Select All" item exists
     bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == tr("Select All"));
+                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
@@ -23040,7 +23040,7 @@ QStringList GroupSelectionWidget::allGroups() const
     QStringList all;
     // Skip index 0 if it's the "Select All" item, otherwise start from index 0
     bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == tr("Select All"));
+                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
@@ -23062,7 +23062,7 @@ void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, 
     QSignalBlocker blocker(m_listWidget);
     // Skip index 0 if it's the "Select All" item, otherwise start from index 0
     bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == tr("Select All"));
+                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
     for (int i = startIndex; i < m_listWidget->count(); ++i) {
