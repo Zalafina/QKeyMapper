@@ -33,7 +33,8 @@
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QKeyEvent>
-#include <QKeySequenceEdit>
+#include <QDialogButtonBox>
+// #include <QKeySequenceEdit>
 #include <QStandardItemModel>
 #include <QValidator>
 #include <QDir>
