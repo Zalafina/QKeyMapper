@@ -3285,7 +3285,10 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
             }
         }
 
-        result = validateSingleOriginalKeyWithoutTimeSuffix(orikey, update_rowindex);
+        // For double-press and long-press keys, skip duplicate check in validateSingleOriginalKeyWithoutTimeSuffix
+        // since we will handle them with special logic later
+        int validation_rowindex = (!doublePressTimeString.isEmpty() || !longPressTimeString.isEmpty()) ? -1 : update_rowindex;
+        result = validateSingleOriginalKeyWithoutTimeSuffix(orikey, validation_rowindex);
         if (!result.isValid) {
             return result;
         }
@@ -3311,6 +3314,33 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
             result.isValid = false;
             result.errorMessage = tr("Invalid time suffix \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
             return result;
+        }
+    }
+
+    // Check for duplicate based on key type (normal, double-press, long-press)
+    if (result.isValid && update_rowindex >= 0) {
+        if (isDoublePress) {
+            // For double-press keys, check if another double-press key with same base key exists
+            QString doublepress_prefix = key_without_suffix + SEPARATOR_DOUBLEPRESS;
+            QHash<QString, int> existingDoublePressKeys = QKeyMapper_Worker::currentDoublePressOriginalKeysMap();
+
+            if (existingDoublePressKeys.contains(doublepress_prefix)) {
+                int existing_index = existingDoublePressKeys.value(doublepress_prefix);
+                if (existing_index != update_rowindex) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Duplicate original key \"%1\"").arg(doublepress_prefix);
+                    return result;
+                }
+            }
+        }
+        else {
+            // For normal keys and long-press keys, check exact match
+            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(originalkeystr);
+            if (findindex != -1 && findindex != update_rowindex) {
+                result.isValid = false;
+                result.errorMessage = tr("Duplicate original key \"%1\"").arg(originalkeystr);
+                return result;
+            }
         }
     }
 
