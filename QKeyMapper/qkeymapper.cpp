@@ -3392,7 +3392,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
-                result.errorMessage = tr("Duplicate key \"%1\"").arg(orikey);
+                result.errorMessage = tr("Duplicate original key \"%1\"").arg(orikey);
             }
         }
     }
@@ -3452,7 +3452,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
             int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
             if (findindex != -1 && findindex != update_rowindex) {
                 result.isValid = false;
-                result.errorMessage = tr("Duplicate key \"%1\"").arg(orikey);
+                result.errorMessage = tr("Duplicate original key \"%1\"").arg(orikey);
             }
         }
     }
