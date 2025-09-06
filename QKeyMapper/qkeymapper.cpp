@@ -8313,6 +8313,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 #endif
     }
 
+    int last_themeindex = ui->themeComboBox->currentIndex();
     if (curSettingSelectStr.isEmpty()) {
         loadSetting_flag = true;
         loadGeneralSetting();
@@ -8330,15 +8331,27 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         loadSetting_flag = false;
     }
 
-    setUITheme(ui->themeComboBox->currentIndex());
-    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-        updateKeyMappingTabWidgetTabDisplay(index);
+    if (last_themeindex != ui->themeComboBox->currentIndex()) {
+        setUITheme(ui->themeComboBox->currentIndex());
+        for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+            updateKeyMappingTabWidgetTabDisplay(index);
+        }
     }
     updateSysTrayIconMenuText();
     reloadUILanguage();
     ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
     updateSystemTrayDisplay();
     m_SysTrayIcon->show();
+
+    updateMultiInputStatus();
+    updateViGEmBusStatus();
+    updateVirtualGamepadListDisplay();
+
+    if (!ui->processListButton->isChecked()) {
+        hideProcessList();
+        setKeyMappingTabWidgetWideMode();
+    }
+    refreshAllKeyMappingTabWidget();
 }
 
 void QKeyMapper::saveKeyMapSetting(void)
