@@ -11671,6 +11671,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     else {
         if (KEYMAP_IDLE == m_KeyMapStatus){
             ui->settingNameLineEdit->setEnabled(true);
+            ui->removeSettingButton->setEnabled(true);
         }
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
@@ -11682,7 +11683,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->windowTitleLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
-        ui->removeSettingButton->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
         ui->ProcessIconAsTrayIconCheckBox->setEnabled(true);
