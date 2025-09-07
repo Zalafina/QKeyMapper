@@ -22,6 +22,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 
+    inline constexpr unsigned int SWITCH_BACKTO_LAST_MATCHED_SETTING_TIMEOUT = 20000U;
+
     inline constexpr int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 3;

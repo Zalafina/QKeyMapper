@@ -72,11 +72,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SelectColorDialog(Q_NULLPTR),
     m_GamepadInfoMap(),
     m_SettingSelectListWithoutDescription(),
-    // m_windowswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    // m_mappingswitchKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    // m_originalKeySeqEdit(new KeySequenceEditOnlyOne(this)),
-    // m_HotKey_ShowHide(new QHotkey(this)),
-    // m_HotKey_StartStop(new QHotkey(this)),
+    m_LastAutoMatchedSetting(),
+    m_LastAutoMatchedSettingTimer(this),
     loadSetting_flag(false),
     m_qt_Translator(new QTranslator(this)),
 #ifdef USE_QTRANSLATOR
@@ -526,6 +523,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(&m_CheckGlobalSettingSwitchTimer, &QTimer::timeout, this, &QKeyMapper::checkGlobalSettingSwitchTimeout);
 #endif
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
+
+    // Configure timer for last auto matched setting management
+    m_LastAutoMatchedSettingTimer.setSingleShot(true);
+    m_LastAutoMatchedSettingTimer.setInterval(SWITCH_BACKTO_LAST_MATCHED_SETTING_TIMEOUT);
+    QObject::connect(&m_LastAutoMatchedSettingTimer, &QTimer::timeout, this, &QKeyMapper::onLastAutoMatchedSettingTimerTimeout);
 
     QObject::connect(m_KeyMappingTabWidget, &QTabWidget::currentChanged, this, &QKeyMapper::keyMappingTabWidgetCurrentChanged);
     QObject::connect(m_KeyMappingTabWidget, &QTabWidget::tabBarDoubleClicked, this, &QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked);
@@ -1114,6 +1116,9 @@ void QKeyMapper::matchForegroundWindow()
                         Q_UNUSED(loadresult)
                         loadSetting_flag = false;
 
+                        // Record this as the last auto matched setting
+                        recordLastAutoMatchedSetting(autoMatchSettingGroup);
+
                         matchProcessIndex = ui->checkProcessComboBox->currentIndex();
                         matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
                         matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
@@ -1340,6 +1345,9 @@ void QKeyMapper::matchForegroundWindow()
                                 ui->settingNameLineEdit->setText(loadresult);
                                 Q_UNUSED(loadresult)
                                 loadSetting_flag = false;
+
+                                // Record this as the last auto matched setting
+                                recordLastAutoMatchedSetting(newAutoMatchSetting);
 
                                 // Re-calculate match result for the new settings
                                 MatchResult newMatchResult = MatchResult::ProcessMatched; // Default for matched cases
@@ -6522,6 +6530,20 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
 #else
         m_CheckGlobalSettingSwitchTimer.stop();
 #endif
+
+        // Check if we should switch back to last matched setting
+        // This only applies when current setting is GlobalSetting and auto start is enabled
+        int currentSettingIndex = ui->settingselectComboBox->currentIndex();
+        if (currentSettingIndex == GLOBALSETTING_INDEX
+            && checkGlobalSettingAutoStart()
+            && m_LastAutoMatchedSettingTimer.isActive()) {
+            if (switchBackToLastMatchedSetting()) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[MappingSwitch]" << "Successfully switched back to last matched setting after stopping mapping";
+#endif
+            }
+        }
+
         emit updateLockStatus_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -6555,6 +6577,8 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         emit updateViGEmBusStatus_Signal();
 #endif
     }
+
+    clearLastAutoMatchedSetting();
 
     if (true == startKeyMap) {
         matchForegroundWindow();
@@ -23285,4 +23309,76 @@ void SettingTransferDialog::onFilePathChanged(const QString &path)
 {
     Q_UNUSED(path);
     filePathEdit->setToolTip(filePathEdit->text());
+}
+
+// Last Auto Matched Setting Management Implementation
+void QKeyMapper::recordLastAutoMatchedSetting(const QString &settingName)
+{
+    if (settingName.isEmpty() || settingName == GROUPNAME_GLOBALSETTING) {
+        return; // Don't record empty or GlobalSetting
+    }
+
+    m_LastAutoMatchedSetting = settingName;
+
+    // Start/restart the timer
+    m_LastAutoMatchedSettingTimer.stop();
+    m_LastAutoMatchedSettingTimer.start();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[recordLastAutoMatchedSetting]" << "Recorded last auto matched setting:" << settingName;
+#endif
+}
+
+void QKeyMapper::clearLastAutoMatchedSetting()
+{
+    m_LastAutoMatchedSetting.clear();
+    m_LastAutoMatchedSettingTimer.stop();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[clearLastAutoMatchedSetting]" << "Cleared last auto matched setting";
+#endif
+}
+
+bool QKeyMapper::switchBackToLastMatchedSetting()
+{
+    if (m_LastAutoMatchedSetting.isEmpty()) {
+        return false;
+    }
+
+    QString settingToRestore = m_LastAutoMatchedSetting;
+
+    // Clear the record first to avoid recursion
+    clearLastAutoMatchedSetting();
+
+    // Find the setting in the list
+    int settingIndex = m_SettingSelectListWithoutDescription.indexOf(settingToRestore);
+    if (settingIndex < 0 || settingIndex >= m_SettingSelectListWithoutDescription.size()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[switchBackToLastMatchedSetting]" << "Setting not found:" << settingToRestore;
+#endif
+        return false;
+    }
+
+    // Switch to the last matched setting
+    ui->settingselectComboBox->setCurrentIndex(settingIndex);
+    loadSetting_flag = true;
+    QString loadresult = loadKeyMapSetting(settingToRestore);
+    ui->settingNameLineEdit->setText(loadresult);
+    Q_UNUSED(loadresult)
+    loadSetting_flag = false;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[switchBackToLastMatchedSetting]" << "Successfully switched back to:" << settingToRestore;
+#endif
+
+    return true;
+}
+
+void QKeyMapper::onLastAutoMatchedSettingTimerTimeout()
+{
+    clearLastAutoMatchedSetting();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onLastAutoMatchedSettingTimerTimeout]" << "Timer timeout, cleared last auto matched setting";
+#endif
 }

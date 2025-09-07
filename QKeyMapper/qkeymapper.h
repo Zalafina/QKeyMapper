@@ -1128,6 +1128,8 @@ private slots:
 
     void on_virtualGamepadNumberSpinBox_valueChanged(int number);
 
+    void onLastAutoMatchedSettingTimerTimeout();
+
     void on_filterKeysCheckBox_stateChanged(int state);
 
     void keyMappingTabl_ItemSelectionChanged();
@@ -1196,6 +1198,10 @@ private slots:
 
 private:
     // Helper methods for saving/restoring category filter state
+    // Helper methods for last auto matched setting management
+    void recordLastAutoMatchedSetting(const QString &settingName);
+    void clearLastAutoMatchedSetting();
+    bool switchBackToLastMatchedSetting();
     QString getCurrentCategoryFilter() const;
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QString& filter, bool showState);
@@ -1445,6 +1451,8 @@ public:
     QColorDialog *m_SelectColorDialog;
     QMap<int, Gamepad_Info> m_GamepadInfoMap;
     QStringList m_SettingSelectListWithoutDescription;
+    QString m_LastAutoMatchedSetting;
+    QTimer m_LastAutoMatchedSettingTimer;
     bool loadSetting_flag;
 private:
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
