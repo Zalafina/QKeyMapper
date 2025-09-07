@@ -97,6 +97,7 @@ namespace QKeyMapperConstants {
     inline constexpr int UI_THEME_LIGHT         = 1;
     inline constexpr int UI_THEME_DARK          = 2;
 
+    inline constexpr int UI_PALETTE_INITIAL         = -1;
     inline constexpr int UI_PALETTE_SYSTEMDEFAULT   = 0;
     inline constexpr int UI_PALETTE_CUSTOMLIGHT     = 1;
     inline constexpr int UI_PALETTE_CUSTOMDARK      = 2;

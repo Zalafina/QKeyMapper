@@ -8313,7 +8313,6 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 #endif
     }
 
-    int last_themeindex = ui->themeComboBox->currentIndex();
     if (curSettingSelectStr.isEmpty()) {
         loadSetting_flag = true;
         loadGeneralSetting();
@@ -8331,14 +8330,13 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         loadSetting_flag = false;
     }
 
-    if (last_themeindex != ui->themeComboBox->currentIndex()) {
-        setUITheme(ui->themeComboBox->currentIndex());
-        for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-            updateKeyMappingTabWidgetTabDisplay(index);
-        }
+    setUITheme(ui->themeComboBox->currentIndex());
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        updateKeyMappingTabWidgetTabDisplay(index);
     }
     updateSysTrayIconMenuText();
     reloadUILanguage();
+    resetFontSize();
     ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
     updateSystemTrayDisplay();
     m_SysTrayIcon->show();
@@ -17957,17 +17955,20 @@ void QKeyMapper::sessionLockStateChanged(bool locked)
 
 void QKeyMapper::setUITheme(int themeindex)
 {
+    constexpr int SET_PALETTE_NONE          = -1;
     constexpr int SET_PALETTE_SYSTEMDEFAULT = 0;
     constexpr int SET_PALETTE_CUSTOMLIGHT   = 1;
     constexpr int SET_PALETTE_CUSTOMDARK    = 2;
 
-    int set_palette_value = SET_PALETTE_SYSTEMDEFAULT;
+    int set_palette_value = SET_PALETTE_NONE;
     bool system_dark_mode = isWindowsDarkMode();
+    m_isWindowsDarkMode = system_dark_mode;
 
 #ifdef DEBUG_LOGOUT_ON
     QString current_palette_string = (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) ? "UI_PALETTE_CUSTOMLIGHT" :
                                     (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) ? "UI_PALETTE_CUSTOMDARK" :
-                                    "UI_PALETTE_SYSTEMDEFAULT";
+                                    (m_Current_UIPalette == UI_PALETTE_SYSTEMDEFAULT) ? "UI_PALETTE_SYSTEMDEFAULT" :
+                                    "UI_PALETTE_INITIAL";
     qDebug() << "[QKeyMapper::setUITheme] CurrentUIPalette =" << current_palette_string << ", WindowsDarkMode =" << system_dark_mode;
 #endif
 
@@ -17978,7 +17979,7 @@ void QKeyMapper::setUITheme(int themeindex)
         else if (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) {
             set_palette_value = SET_PALETTE_CUSTOMLIGHT;
         }
-        else { /* UI_PALETTE_SYSTEMDEFAULT */
+        else if (m_Current_UIPalette == UI_PALETTE_SYSTEMDEFAULT) {
             if (system_dark_mode) {
                 set_palette_value = SET_PALETTE_CUSTOMLIGHT;
             }
@@ -17986,19 +17987,22 @@ void QKeyMapper::setUITheme(int themeindex)
                 ; /* Do Nothing */
             }
         }
+        else { /* UI_PALETTE_INITIAL */
+            set_palette_value = SET_PALETTE_CUSTOMLIGHT;
+        }
     }
     else if (themeindex == UI_THEME_DARK) {
-        if (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) {
-            set_palette_value = SET_PALETTE_CUSTOMDARK;
-        }
-        else if (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) {
+        if (m_Current_UIPalette == UI_PALETTE_CUSTOMDARK) {
             ; /* Do Nothing */
         }
-        else { /* UI_PALETTE_SYSTEMDEFAULT */
+        else {
+            // UI_PALETTE_INITIAL
+            // UI_PALETTE_CUSTOMLIGHT
+            // UI_PALETTE_SYSTEMDEFAULT
             set_palette_value = SET_PALETTE_CUSTOMDARK;
         }
     }
-    else { /* UI_THEME_SYSTEMDEFAULT */
+    else if (themeindex == UI_THEME_SYSTEMDEFAULT) {
         if (m_Current_UIPalette == UI_PALETTE_CUSTOMLIGHT) {
             if (system_dark_mode) {
                 set_palette_value = SET_PALETTE_CUSTOMDARK;
@@ -18015,7 +18019,7 @@ void QKeyMapper::setUITheme(int themeindex)
                 set_palette_value = SET_PALETTE_CUSTOMLIGHT;
             }
         }
-        else { /* UI_PALETTE_SYSTEMDEFAULT */
+        else if (m_Current_UIPalette == UI_PALETTE_SYSTEMDEFAULT) {
             if (system_dark_mode) {
                 set_palette_value = SET_PALETTE_CUSTOMDARK;
             }
@@ -18023,12 +18027,21 @@ void QKeyMapper::setUITheme(int themeindex)
                 ; /* Do Nothing */
             }
         }
+        else { /* UI_PALETTE_INITIAL */
+            if (system_dark_mode) {
+                set_palette_value = SET_PALETTE_CUSTOMDARK;
+            }
+            else {
+                set_palette_value = SET_PALETTE_SYSTEMDEFAULT;
+            }
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
     QString palette_string = (set_palette_value == SET_PALETTE_CUSTOMLIGHT) ? "SET_PALETTE_CUSTOMLIGHT" :
                             (set_palette_value == SET_PALETTE_CUSTOMDARK) ? "SET_PALETTE_CUSTOMDARK" :
-                            "SET_PALETTE_SYSTEMDEFAULT";
+                            (set_palette_value == SET_PALETTE_SYSTEMDEFAULT) ? "SET_PALETTE_SYSTEMDEFAULT" :
+                            "SET_PALETTE_NONE";
     qDebug() << "[QKeyMapper::setUITheme] set_palette_value =" << palette_string;
 #endif
 
@@ -18269,7 +18282,7 @@ void QKeyMapper::setUITheme(int themeindex)
 
         m_Current_UIPalette = UI_PALETTE_CUSTOMDARK;
     }
-    else {
+    else if (set_palette_value == SET_PALETTE_SYSTEMDEFAULT) {
         QPalette defaultPalette = QApplication::palette();
 
         defaultPalette.setColor(QPalette::Highlight, QColor(173, 208, 255));
@@ -18321,8 +18334,6 @@ void QKeyMapper::setUITheme(int themeindex)
 
         m_Current_UIPalette = UI_PALETTE_SYSTEMDEFAULT;
     }
-
-    m_isWindowsDarkMode = system_dark_mode;
 }
 
 void QKeyMapper::checkOSVersionMatched()

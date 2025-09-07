@@ -1471,7 +1471,7 @@ private:
     int m_OriginalKeyEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
     bool m_isOriginalKeyLineEdit_CapturingKey = false;
     bool m_isWindowsDarkMode = false;
-    int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_SYSTEMDEFAULT;
+    int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
