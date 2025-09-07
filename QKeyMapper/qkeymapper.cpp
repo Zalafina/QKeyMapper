@@ -128,6 +128,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingTabWidget->setStyle(windowsStyle);
     ui->pushLevelSlider->setStyle(windowsStyle);
 
+    ui->MappingAdvancedSettingButton->setVisible(false);
+
 #ifdef USE_CUSTOMSTYLE
     ui->waitTimeSpinBox->setStyle(getCustomSpinBoxStyle());
 #endif
