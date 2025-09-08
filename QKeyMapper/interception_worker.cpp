@@ -1003,6 +1003,9 @@ void Interception_Worker::saveDisabledKeyboardList()
 #endif
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
     settingFile.setValue(DISABLED_KEYBOARDLIST , disabledKeyboardList);
 }
 
@@ -1013,6 +1016,9 @@ void Interception_Worker::saveDisabledMouseList()
 #endif
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
     settingFile.setValue(DISABLED_MOUSELIST , disabledMouseList);
 }
 

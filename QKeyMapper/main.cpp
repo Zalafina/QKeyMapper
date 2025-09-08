@@ -174,6 +174,9 @@ void setupQtScaleEnvironment(const QString &program_dir)
 {
     QString config_file_path = program_dir + "/" + CONFIG_FILENAME;
     QSettings settingFile(config_file_path, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
     int display_scale = settingFile.value(DISPLAY_SCALE, DISPLAY_SCALE_DEFAULT).toInt();
 
     constexpr double SCALE_100 = 1.0;

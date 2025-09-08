@@ -1322,6 +1322,7 @@ private:
 
 public:
     void saveKeyMapSetting(void);
+    void saveCurrentSettingLastTabName(const QString &tabName);
 private:
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false);
     void loadEmptyMapSetting(void);
