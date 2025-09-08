@@ -3784,9 +3784,11 @@ void QKeyMapper::collectMappingTableTabHotkeys()
             continue;
         }
 
-        // Check if it starts with PREFIX_PASSTHROUGH, if so, remove the prefix
-        if (tabHotkey.startsWith(PREFIX_PASSTHROUGH)) {
-            tabHotkey.remove(0, 1);
+        // Extract the hotkey using REGEX_PATTERN_TABHOTKEY
+        static QRegularExpression tabhotkey_regex(REGEX_PATTERN_TABHOTKEY);
+        QRegularExpressionMatch tabhotkey_match = tabhotkey_regex.match(tabHotkey);
+        if (tabhotkey_match.hasMatch()) {
+            tabHotkey = tabhotkey_match.captured(3); // Extract the actual hotkey part
         }
 
         // Check if s_MappingTableTabHotkeyMap contains the TabHotkey as a key
@@ -6785,6 +6787,19 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
         clearLockStatusDisplay();
         forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
         updateCategoryFilterByShowCategoryState();
+
+        bool remember_tabname = false;
+        QString tabname_toswitch = s_KeyMappingTabInfoList.at(tabindex_toswitch).TabName;
+        QString tabhotkey_toswitch = s_KeyMappingTabInfoList.at(tabindex_toswitch).TabHotkey;
+        static QRegularExpression tabhotkey_regex(REGEX_PATTERN_TABHOTKEY);
+        QRegularExpressionMatch tabhotkey_match = tabhotkey_regex.match(tabhotkey_toswitch);
+        if (tabhotkey_match.hasMatch()) {
+            remember_tabname = !tabhotkey_match.captured(2).isEmpty();
+        }
+        // Save the tab name as last tab if remember_tabname is true
+        if (remember_tabname) {
+            saveCurrentSettingLastTabName(tabname_toswitch);
+        }
 
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
@@ -11522,8 +11537,12 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         if (index < tabhotkeylist_loaded.size()) {
             QString tabhotkeystring = tabhotkeylist_loaded.at(index);
             QString ori_tabhotkeystring = tabhotkeystring;
-            if (tabhotkeystring.startsWith(PREFIX_PASSTHROUGH)) {
-                tabhotkeystring.remove(0, 1);
+
+            // Extract the hotkey using REGEX_PATTERN_TABHOTKEY
+            static QRegularExpression tabhotkey_regex(REGEX_PATTERN_TABHOTKEY);
+            QRegularExpressionMatch tabhotkey_match = tabhotkey_regex.match(tabhotkeystring);
+            if (tabhotkey_match.hasMatch()) {
+                tabhotkeystring = tabhotkey_match.captured(3); // Extract the actual hotkey part
             }
 
             if (tabhotkeystring.isEmpty() == false

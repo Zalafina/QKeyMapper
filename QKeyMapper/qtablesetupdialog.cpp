@@ -593,8 +593,12 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
 
     QString ori_tabhotkeystring = ui->tabHotkeyLineEdit->text();
     QString tabhotkeystring = ori_tabhotkeystring;
-    if (tabhotkeystring.startsWith(PREFIX_PASSTHROUGH)) {
-        tabhotkeystring.remove(0, 1);
+
+    // Extract the hotkey using REGEX_PATTERN_TABHOTKEY
+    static QRegularExpression tabhotkey_regex(REGEX_PATTERN_TABHOTKEY);
+    QRegularExpressionMatch tabhotkey_match = tabhotkey_regex.match(tabhotkeystring);
+    if (tabhotkey_match.hasMatch()) {
+        tabhotkeystring = tabhotkey_match.captured(3); // Extract the actual hotkey part
     }
 
     QString popupMessage;

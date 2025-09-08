@@ -940,6 +940,8 @@ namespace QKeyMapperConstants {
     inline const QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
 #endif
 
+    inline constexpr const char REGEX_PATTERN_TABHOTKEY[] = R"(^($)?(💾)?(.+)$)";
+
     // Use pattern that matches everything between SendText( and the last ) for complete content capture
     // This handles complex nested content including multiple parentheses levels and newlines
     // For proper bracket matching, the application logic should handle bracket balancing
