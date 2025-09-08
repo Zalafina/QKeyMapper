@@ -1743,11 +1743,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     );
                 }
                 else if (switchtab_match.hasMatch()) {
-                    QString switchtab_name = switchtab_match.captured(1);
-                    emit QKeyMapper::getInstance()->MappingTableSwitchByTabName_Signal(switchtab_name);
+                    bool remember_tabname = !switchtab_match.captured(1).isEmpty();
+                    QString switchtab_name = switchtab_match.captured(2);
+                    emit QKeyMapper::getInstance()->MappingTableSwitchByTabName_Signal(switchtab_name, remember_tabname);
 
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[sendInputKeys] SwitchTab() TabName -> " << switchtab_name;
+                    qDebug().nospace() << "[sendInputKeys] SwitchTab() TabName = " << switchtab_name << ", remember_tabname = " << remember_tabname;
 #endif
                 }
                 else if (vjoy_match.hasMatch()) {

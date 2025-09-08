@@ -6797,7 +6797,7 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
     }
 }
 
-void QKeyMapper::MappingTableSwitchByTabName(const QString &tabName)
+void QKeyMapper::MappingTableSwitchByTabName(const QString &tabName, bool remember_tabname)
 {
     int tabindex_toswitch = tabIndexToSwitchByTabName(tabName);
 
@@ -16078,6 +16078,7 @@ void QKeyMapper::initKeysCategoryMap()
         << SENDTEXT_STR
         << RUN_STR
         << SWITCHTAB_STR
+        << SWITCHTAB_SAVE_STR
         << KEYSEQUENCEBREAK_STR
         ;
 
@@ -16892,7 +16893,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 // disable_burst = true;
                 disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)) {
+            else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)
+                || keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_SAVE_STR)) {
                 disable_burst = true;
                 disable_lock = true;
             }
@@ -17092,7 +17094,8 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         // disable_burst = true;
         disable_lock = true;
     }
-    else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)) {
+    else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)
+        || keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_SAVE_STR)) {
         disable_burst = true;
         disable_lock = true;
     }
@@ -19488,7 +19491,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     currentMapKeyText = QString("Run(%1)").arg(run_cmd);
                 }
             }
-            else if (currentMapKeyText == SWITCHTAB_STR) {
+            else if (currentMapKeyText == SWITCHTAB_STR
+                || currentMapKeyText == SWITCHTAB_SAVE_STR) {
                 QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
                 static QRegularExpression simplified_regex(R"([\r\n]+)");
                 switchtab_name.replace(simplified_regex, " ");
@@ -19498,7 +19502,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     return;
                 }
                 else {
-                    currentMapKeyText = QString("SwitchTab(%1)").arg(switchtab_name);
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
                 }
             }
             else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
@@ -19668,7 +19672,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         currentMapKeyText = QString("Run(%1)").arg(run_cmd);
                     }
                 }
-                else if (currentMapKeyText == SWITCHTAB_STR) {
+                else if (currentMapKeyText == SWITCHTAB_STR
+                    || currentMapKeyText == SWITCHTAB_SAVE_STR) {
                     QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
                     static QRegularExpression simplified_regex(R"([\r\n]+)");
                     switchtab_name.replace(simplified_regex, " ");
@@ -19678,7 +19683,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         return;
                     }
                     else {
-                        currentMapKeyText = QString("SwitchTab(%1)").arg(switchtab_name);
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
                     }
                 }
                 else if (currentMapKeyText == KEY_BLOCKED_STR) {

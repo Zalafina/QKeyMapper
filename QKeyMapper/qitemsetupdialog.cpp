@@ -699,7 +699,8 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         }
 
         // Check if brackets are balanced in the captured content for SwitchTab
-        QString captured = match.captured(1);
+        // Note: For new pattern SwitchTab(💾)?\((.+?)\), captured(1) is optional 💾, captured(2) is content
+        QString captured = match.captured(2);
         int bracketCount = 0;
         bool isBalanced = true;
 
@@ -719,14 +720,22 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             info.start = match.capturedStart();
             info.end = match.capturedEnd();
             info.content = match.captured(0);
-            info.type = "switchtab";
+            // Distinguish between SwitchTab(...) and SwitchTab💾(...) to preserve original format
+            if (!match.captured(1).isEmpty()) {
+                info.type = "switchtab_save"; // SwitchTab💾(...) format
+            } else {
+                info.type = "switchtab"; // SwitchTab(...) format
+            }
             allMatches.append(info);
             currentPos = match.capturedEnd();
         } else {
             // Brackets not balanced, try to find the correct closing bracket
             int startPos = match.capturedStart();
-            int openPos = mappingKey.indexOf('(', startPos + 9); // Skip "SwitchTab"
+            // Find the first opening bracket in the matched text (after "SwitchTab" with or without 💾)
+            QString matchedText = match.captured(0);
+            int openPos = matchedText.indexOf('(');
             if (openPos != -1) {
+                openPos += startPos; // Convert to absolute position
                 int closePos = openPos + 1;
                 int depth = 1;
 
@@ -742,7 +751,12 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
                     info.start = startPos;
                     info.end = closePos;
                     info.content = mappingKey.mid(startPos, closePos - startPos);
-                    info.type = "switchtab";
+                    // Distinguish between SwitchTab(...) and SwitchTab💾(...) to preserve original format
+                    if (!match.captured(1).isEmpty()) {
+                        info.type = "switchtab_save"; // SwitchTab💾(...) format
+                    } else {
+                        info.type = "switchtab"; // SwitchTab(...) format
+                    }
                     allMatches.append(info);
                     currentPos = closePos;
                 } else {
@@ -788,8 +802,21 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
                 QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
                 static QRegularExpression simplified_regex(R"([\r\n]+)");
                 innerContent.replace(simplified_regex, " ");
-                // QString simplifiedInnerContent = innerContent.trimmed();
+                // Don't trim to preserve user's spacing - only replace line breaks
                 content = QString("SwitchTab(%1)").arg(innerContent);
+            }
+        }
+        else if (allMatches[i].type == "switchtab_save") {
+            // Extract the content inside SwitchTab💾(...) and apply custom simplified()
+            // Format: SwitchTab💾(content) -> find content between first ( and last )
+            int firstParen = content.indexOf('(');
+            int lastParen = content.lastIndexOf(')');
+            if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
+                QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
+                static QRegularExpression simplified_regex(R"([\r\n]+)");
+                innerContent.replace(simplified_regex, " ");
+                // Don't trim to preserve user's spacing - only replace line breaks
+                content = QString("SwitchTab💾(%1)").arg(innerContent);
             }
         }
         // SendText(...) content remains completely unchanged

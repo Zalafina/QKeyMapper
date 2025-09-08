@@ -945,7 +945,7 @@ signals:
     void HotKeyMappingStart_Signal(const QString &hotkey_string);
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab_Signal(const QString &hotkey_string);
-    void MappingTableSwitchByTabName_Signal(const QString &tabName);
+    void MappingTableSwitchByTabName_Signal(const QString &tabName, bool remember_tabname = false);
     void checkOSVersionMatched_Signal(void);
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     void checkFilterKeysEnabled_Signal(void);
@@ -1047,7 +1047,7 @@ public slots:
     void HotKeyMappingStart(const QString &hotkey_string);
     void HotKeyMappingStop(const QString &hotkey_string);
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
-    void MappingTableSwitchByTabName(const QString &tabName);
+    void MappingTableSwitchByTabName(const QString &tabName, bool remember_tabname = false);
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
     bool copyCurrentTabToKeyMappingTabWidget(void);
