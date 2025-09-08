@@ -591,7 +591,9 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
         return;
     }
 
-    QString ori_tabhotkeystring = ui->tabHotkeyLineEdit->text();
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    QString ori_tabhotkeystring = ui->tabHotkeyLineEdit->text().simplified();
+    ori_tabhotkeystring.remove(whitespace_reg);
     QString tabhotkeystring = ori_tabhotkeystring;
 
     // Extract the hotkey using REGEX_PATTERN_TABHOTKEY
@@ -627,12 +629,12 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
     }
     else
     {
-        ui->tabHotkeyLineEdit->setText(QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey);
-
         popupMessageColor = FAILURE_COLOR;
         popupMessage = tr("Invalid input format for TabHotkey: %1").arg(ori_tabhotkeystring);
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+
+    ui->tabHotkeyLineEdit->setText(QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey);
 }
 
 void QTableSetupDialog::on_exportTableButton_clicked()
