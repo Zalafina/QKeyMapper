@@ -8706,7 +8706,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 #endif
 
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, s_KeyMappingTabWidgetCurrentIndex);
+    // settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, s_KeyMappingTabWidgetCurrentIndex);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABNAME, s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName);
 
     QStringList tabnamelist;
     QStringList tabhotkeylist;
@@ -11641,6 +11642,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 
     collectMappingTableTabHotkeys();
 
+#if 0
     int last_mappingtable_index = 0;
     if (true == settingFile.contains(settingSelectStr+MAPPINGTABLE_LASTTABINDEX)){
         last_mappingtable_index = settingFile.value(settingSelectStr+MAPPINGTABLE_LASTTABINDEX).toInt();
@@ -11662,8 +11664,34 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         qDebug() << "[loadKeyMapSetting]" << "Do not contains MappingTable_LastTabIndex, set last tabindex =" << last_mappingtable_index;
 #endif
     }
+#endif
 
-    forceSwitchKeyMappingTabWidgetIndex(last_mappingtable_index);
+    int last_tabindex = 0;
+    QString last_tabname;
+    if (true == settingFile.contains(settingSelectStr+MAPPINGTABLE_LASTTABNAME)){
+        last_tabname = settingFile.value(settingSelectStr+MAPPINGTABLE_LASTTABNAME).toString();
+
+        if (!last_tabname.isEmpty()) {
+            last_tabindex = tabIndexToSwitchByTabName(last_tabname);
+            if (last_tabindex < 0) {
+                last_tabindex = 0;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[loadKeyMapSetting]" << "Not found MappingTable_LastTabName = " << last_tabname << ", set last tabindex = " << last_tabindex;
+#endif
+            }
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[loadKeyMapSetting]" << "MappingTable_LastTabName = " << last_tabname << ", last_tabindex = " << last_tabindex;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Do not contains MappingTable_LastTabName, set last tabindex =" << last_tabindex;
+#endif
+    }
+
+    forceSwitchKeyMappingTabWidgetIndex(last_tabindex);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "refreshKeyMappingDataTable()";

@@ -861,7 +861,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char MOUSE2VJOY_DIRECTMODE[] = "Mouse2vJoy_DirectMode";
     inline constexpr const char MOUSE2VJOY_RECENTER_TIMEOUT[] = "Mouse2vJoy_Recenter_Timeout";
 
-    inline constexpr const char MAPPINGTABLE_LASTTABINDEX[] = "MappingTable_LastTabIndex";
+    // inline constexpr const char MAPPINGTABLE_LASTTABINDEX[] = "MappingTable_LastTabIndex";
+    inline constexpr const char MAPPINGTABLE_LASTTABNAME[] = "MappingTable_LastTabName";
     inline constexpr const char MAPPINGTABLE_TABNAMELIST[] = "MappingTable_TabNameList";
     inline constexpr const char MAPPINGTABLE_TABHOTKEYLIST[] = "MappingTable_TabHotkeyList";
     inline constexpr const char MAPPINGTABLE_TABFONTCOLORLIST[] = "MappingTable_TabFontColorList";
