@@ -620,6 +620,11 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
         }
     }
+    else if (ori_tabhotkeystring == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_tabHotkeyUpdateButton_clicked]" << "TabHotkey was not modified, no action required.";
+#endif
+    }
     else
     {
         ValidationResult validationResult = QKeyMapper::validateCombinationKey(tabhotkeystring);
@@ -636,7 +641,9 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             popupMessage = tr("Invalid TabHotkey: %1").arg(validationResult.errorMessage);
         }
     }
-    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    if (!popupMessage.isEmpty()) {
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    }
 
     ui->tabHotkeyLineEdit->setText(QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey);
 }
