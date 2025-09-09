@@ -128,8 +128,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingTabWidget->setStyle(windowsStyle);
     ui->pushLevelSlider->setStyle(windowsStyle);
 
-    ui->MappingAdvancedSettingButton->setVisible(false);
-
 #ifdef USE_CUSTOMSTYLE
     ui->waitTimeSpinBox->setStyle(getCustomSpinBoxStyle());
 #endif
@@ -4812,36 +4810,39 @@ bool QKeyMapper::isTabTextDuplicateInStringList(const QString &tabName, const QS
     return false;
 }
 
-bool QKeyMapper::validateCombinationKey(QString &input)
+ValidationResult QKeyMapper::validateCombinationKey(QString &input)
 {
-    bool isvalid = true;
+    ValidationResult result;
+    result.isValid = true;
 
     QStringList keylist = input.split(SEPARATOR_PLUS);
     if (keylist.isEmpty())
     {
-        isvalid = false;
+        result.isValid = false;
+        result.errorMessage = tr("Hotkey is empty.");
+        return result;
     }
-    else
+
+    // Check if each key is valid
+    for (const QString& key : std::as_const(keylist))
     {
-        for (const QString& key : keylist)
+        if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
         {
-            if (!QKeyMapper_Worker::CombinationKeysList.contains(key))
-            {
-                isvalid = false;
-                break;
-            }
-        }
-
-        if (isvalid) {
-            // Check for duplicate keys
-            int numRemoved = keylist.removeDuplicates();
-            if (numRemoved > 0) {
-                isvalid = false;
-            }
+            result.isValid = false;
+            result.errorMessage = tr("Invalid key \"%1\"").arg(key);
+            return result;
         }
     }
 
-    return isvalid;
+    // Check for duplicate keys
+    int numRemoved = keylist.removeDuplicates();
+    if (numRemoved > 0) {
+        result.isValid = false;
+        result.errorMessage = tr("Hotkey key contains duplicate keys.");
+        return result;
+    }
+
+    return result;
 }
 
 int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame)
@@ -7484,36 +7485,56 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
     if (lineEdit)
     {
-        QString ori_inputstring = lineEdit->text();
-        QString inputstring = ori_inputstring;
-        if (inputstring.startsWith(PREFIX_PASSTHROUGH)) {
-            inputstring.remove(0, 1);
+        static QRegularExpression whitespace_reg(R"(\s+)");
+        QString ori_hotkeystring = lineEdit->text().simplified();
+        ori_hotkeystring.remove(whitespace_reg);
+        QString hotkeystring = ori_hotkeystring;
+
+        // Extract the hotkey using REGEX_PATTERN_NORMALHOTKEY
+        static QRegularExpression normalhotkey_regex(REGEX_PATTERN_NORMALHOTKEY);
+        QRegularExpressionMatch normalhotkey_match = normalhotkey_regex.match(hotkeystring);
+        if (normalhotkey_match.hasMatch()) {
+            hotkeystring = normalhotkey_match.captured(2); // Extract the actual hotkey part
         }
-        if (validateCombinationKey(inputstring))
+
+        ValidationResult validationResult = validateCombinationKey(hotkeystring);
+        if (validationResult.isValid)
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
-                updateWindowSwitchKeyString(ori_inputstring);
+                if (s_WindowSwitchKeyString != ori_hotkeystring) {
+                    updateWindowSwitchKeyString(ori_hotkeystring);
+                    showInformationPopup(tr("WindowSwitchKey update success : ") + ori_hotkeystring);
+                }
+                lineEdit->setText(s_WindowSwitchKeyString);
             }
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
-                updateMappingStartKeyString(ori_inputstring);
+                if (s_MappingStartKeyString != ori_hotkeystring) {
+                    updateMappingStartKeyString(ori_hotkeystring);
+                    showInformationPopup(tr("MappingStartKey update success : ") + ori_hotkeystring);
+                }
+                lineEdit->setText(s_MappingStartKeyString);
             }
             else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
-                updateMappingStopKeyString(ori_inputstring);
+                if (s_MappingStopKeyString != ori_hotkeystring) {
+                    updateMappingStopKeyString(ori_hotkeystring);
+                    showInformationPopup(tr("MappingStopKey update success : ") + ori_hotkeystring);
+                }
+                lineEdit->setText(s_MappingStopKeyString);
             }
         }
         else
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_WindowSwitchKeyString);
-                showFailurePopup(tr("Invalid input format for WindowSwitchKey!"));
+                showFailurePopup(tr("Invalid WindowSwitchKey: %1").arg(validationResult.errorMessage));
             }
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_MappingStartKeyString);
-                showFailurePopup(tr("Invalid input format for MappingStartKey!"));
+                showFailurePopup(tr("Invalid MappingStartKey: %1").arg(validationResult.errorMessage));
             }
             else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
                 lineEdit->setText(s_MappingStopKeyString);
-                showFailurePopup(tr("Invalid input format for MappingStopKey!"));
+                showFailurePopup(tr("Invalid MappingStopKey: %1").arg(validationResult.errorMessage));
             }
         }
     }
@@ -11542,9 +11563,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                 tabhotkeystring = tabhotkey_match.captured(3); // Extract the actual hotkey part
             }
 
-            if (tabhotkeystring.isEmpty() == false
-                && QKeyMapper::validateCombinationKey(tabhotkeystring)) {
-                s_KeyMappingTabInfoList[index].TabHotkey = ori_tabhotkeystring;
+            if (!tabhotkeystring.isEmpty()) {
+                ValidationResult validationResult = QKeyMapper::validateCombinationKey(tabhotkeystring);
+                if (validationResult.isValid) {
+                    s_KeyMappingTabInfoList[index].TabHotkey = ori_tabhotkeystring;
+                }
+                else {
+                    s_KeyMappingTabInfoList[index].TabHotkey.clear();
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote() << "[loadKeyMapSetting] Invalid tab hotkey:" << validationResult.errorMessage;
+#endif
+                }
             }
             else {
                 s_KeyMappingTabInfoList[index].TabHotkey.clear();

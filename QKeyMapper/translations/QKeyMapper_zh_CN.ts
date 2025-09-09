@@ -49,7 +49,7 @@
         <translation type="vanished">不再显示此消息</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="570"/>
+        <location filename="../qkeymapper.h" line="571"/>
         <source>OK</source>
         <translation>确认</translation>
     </message>
@@ -167,22 +167,22 @@
 <context>
     <name>GroupSelectionWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="22910"/>
-        <location filename="../qkeymapper.cpp" line="22943"/>
-        <location filename="../qkeymapper.cpp" line="22980"/>
-        <location filename="../qkeymapper.cpp" line="23005"/>
-        <location filename="../qkeymapper.cpp" line="23043"/>
-        <location filename="../qkeymapper.cpp" line="23065"/>
+        <location filename="../qkeymapper.cpp" line="23154"/>
+        <location filename="../qkeymapper.cpp" line="23187"/>
+        <location filename="../qkeymapper.cpp" line="23224"/>
+        <location filename="../qkeymapper.cpp" line="23249"/>
+        <location filename="../qkeymapper.cpp" line="23287"/>
+        <location filename="../qkeymapper.cpp" line="23309"/>
         <source>Select All</source>
         <translation>全选</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22922"/>
+        <location filename="../qkeymapper.cpp" line="23166"/>
         <source>TopLevelGroup</source>
         <translation>通用设定</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22925"/>
+        <location filename="../qkeymapper.cpp" line="23169"/>
         <source>GlobalKeyMapping</source>
         <translation>全局按键映射</translation>
     </message>
@@ -190,18 +190,18 @@
 <context>
     <name>KeyMappingDataTableWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="22146"/>
+        <location filename="../qkeymapper.cpp" line="22390"/>
         <source>Cannot move items while the mapping table is filtered!</source>
         <translation>映射表筛选显示时无法进行映射项移动！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22203"/>
+        <location filename="../qkeymapper.cpp" line="22447"/>
         <source>All</source>
         <translation>(全选)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22215"/>
-        <location filename="../qkeymapper.cpp" line="22269"/>
+        <location filename="../qkeymapper.cpp" line="22459"/>
+        <location filename="../qkeymapper.cpp" line="22513"/>
         <source>Blank</source>
         <translation>(空白)</translation>
     </message>
@@ -209,22 +209,22 @@
 <context>
     <name>KeyMappingTabWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="22072"/>
+        <location filename="../qkeymapper.cpp" line="22316"/>
         <source>%1 selected mapping data copied.</source>
         <translation>复制 %1 条当前选中映射表内容。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22081"/>
+        <location filename="../qkeymapper.cpp" line="22325"/>
         <source>%1 copied mapping data are completely duplicated and could not be inserted!</source>
         <translation>%1 条复制内容全部与当前映射表已有原始按键重复，未能插入！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22087"/>
+        <location filename="../qkeymapper.cpp" line="22331"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</source>
         <translation>插入 %1 条复制内容到当前映射表中，其余 %2 条由于原始按键重复未能插入。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22092"/>
+        <location filename="../qkeymapper.cpp" line="22336"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>插入 %1 条复制的映射表内容到当前映射表中。</translation>
     </message>
@@ -752,7 +752,7 @@
         <location filename="../qitemsetupdialog.ui" line="759"/>
         <location filename="../qitemsetupdialog.cpp" line="104"/>
         <location filename="../qitemsetupdialog.cpp" line="192"/>
-        <location filename="../qitemsetupdialog.cpp" line="2583"/>
+        <location filename="../qitemsetupdialog.cpp" line="2610"/>
         <source>Edit</source>
         <translation>按键编辑</translation>
     </message>
@@ -831,26 +831,26 @@ Update</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="189"/>
-        <location filename="../qitemsetupdialog.cpp" line="2591"/>
+        <location filename="../qitemsetupdialog.cpp" line="2618"/>
         <source>Capture</source>
         <translation>按键捕获</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="195"/>
-        <location filename="../qitemsetupdialog.cpp" line="1222"/>
-        <location filename="../qitemsetupdialog.cpp" line="1234"/>
-        <location filename="../qitemsetupdialog.cpp" line="2579"/>
-        <location filename="../qitemsetupdialog.cpp" line="2608"/>
+        <location filename="../qitemsetupdialog.cpp" line="1249"/>
+        <location filename="../qitemsetupdialog.cpp" line="1261"/>
+        <location filename="../qitemsetupdialog.cpp" line="2606"/>
+        <location filename="../qitemsetupdialog.cpp" line="2635"/>
         <source>Press any key to record...</source>
         <translation>请按下按键进行记录...</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="1923"/>
+        <location filename="../qitemsetupdialog.cpp" line="1950"/>
         <source>Key mapping updated successfully</source>
         <translation>按键映射更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="2313"/>
+        <location filename="../qitemsetupdialog.cpp" line="2340"/>
         <source>OriginalKey update success</source>
         <translation>原始按键更新成功</translation>
     </message>
@@ -863,7 +863,7 @@ Update</source>
         <translation type="vanished">抬起映射更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="2450"/>
+        <location filename="../qitemsetupdialog.cpp" line="2477"/>
         <source>Mapping item note update success</source>
         <translation>映射项备注更新成功</translation>
     </message>
@@ -877,49 +877,49 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="69"/>
-        <location filename="../qkeymapper.cpp" line="17257"/>
+        <location filename="../qkeymapper.cpp" line="17468"/>
         <source>SaveSetting</source>
         <translation>保存设定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="580"/>
-        <location filename="../qkeymapper.cpp" line="17282"/>
+        <location filename="../qkeymapper.cpp" line="17493"/>
         <source>Title</source>
         <translation>标题</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="98"/>
-        <location filename="../qkeymapper.cpp" line="17269"/>
+        <location filename="../qkeymapper.cpp" line="17480"/>
         <source>ADD</source>
         <translation>添加</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="114"/>
-        <location filename="../qkeymapper.cpp" line="17308"/>
+        <location filename="../qkeymapper.cpp" line="17519"/>
         <source>OriKey</source>
         <translation>原始按键</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="130"/>
-        <location filename="../qkeymapper.cpp" line="17310"/>
+        <location filename="../qkeymapper.cpp" line="17521"/>
         <source>MapKey</source>
         <translation>映射按键</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="149"/>
-        <location filename="../qkeymapper.cpp" line="17260"/>
+        <location filename="../qkeymapper.cpp" line="17471"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="168"/>
-        <location filename="../qkeymapper.cpp" line="17261"/>
+        <location filename="../qkeymapper.cpp" line="17472"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="203"/>
-        <location filename="../qkeymapper.cpp" line="17328"/>
+        <location filename="../qkeymapper.cpp" line="17539"/>
         <source>Remove</source>
         <translation>设定移除</translation>
     </message>
@@ -930,67 +930,67 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="251"/>
-        <location filename="../qkeymapper.cpp" line="17315"/>
+        <location filename="../qkeymapper.cpp" line="17526"/>
         <source>Delay</source>
         <translation>延时</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="267"/>
-        <location filename="../qkeymapper.cpp" line="17309"/>
+        <location filename="../qkeymapper.cpp" line="17520"/>
         <source>OriKeyRecord</source>
         <translation>原始键记录</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="293"/>
-        <location filename="../qkeymapper.cpp" line="17323"/>
+        <location filename="../qkeymapper.cpp" line="17534"/>
         <source>Point</source>
         <translation>坐标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="369"/>
-        <location filename="../qkeymapper.cpp" line="17424"/>
+        <location filename="../qkeymapper.cpp" line="17635"/>
         <source>Keyboard</source>
         <translation>键盘</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="385"/>
-        <location filename="../qkeymapper.cpp" line="17425"/>
+        <location filename="../qkeymapper.cpp" line="17636"/>
         <source>Mouse</source>
         <translation>鼠标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="440"/>
-        <location filename="../qkeymapper.cpp" line="17390"/>
+        <location filename="../qkeymapper.cpp" line="17601"/>
         <source>WindowInfo</source>
         <translation>窗口信息</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="599"/>
-        <location filename="../qkeymapper.cpp" line="17283"/>
+        <location filename="../qkeymapper.cpp" line="17494"/>
         <source>Restore</source>
         <translation>恢复</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="608"/>
-        <location filename="../qkeymapper.cpp" line="17391"/>
+        <location filename="../qkeymapper.cpp" line="17602"/>
         <source>General</source>
         <translation>通用设定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="623"/>
-        <location filename="../qkeymapper.cpp" line="17338"/>
+        <location filename="../qkeymapper.cpp" line="17549"/>
         <source>Startup Minimized</source>
         <translation>启动时最小化</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="658"/>
-        <location filename="../qkeymapper.cpp" line="17337"/>
+        <location filename="../qkeymapper.cpp" line="17548"/>
         <source>Auto Startup</source>
         <translation>开机自启动</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="674"/>
-        <location filename="../qkeymapper.cpp" line="17341"/>
+        <location filename="../qkeymapper.cpp" line="17552"/>
         <source>Notification</source>
         <translation>提示信息</translation>
     </message>
@@ -1012,19 +1012,19 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="769"/>
-        <location filename="../qkeymapper.cpp" line="17342"/>
+        <location filename="../qkeymapper.cpp" line="17553"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="788"/>
-        <location filename="../qkeymapper.cpp" line="17346"/>
+        <location filename="../qkeymapper.cpp" line="17557"/>
         <source>Check Updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="804"/>
-        <location filename="../qkeymapper.cpp" line="17343"/>
+        <location filename="../qkeymapper.cpp" line="17554"/>
         <source>UpdateSite</source>
         <translation>更新网站</translation>
     </message>
@@ -1041,119 +1041,119 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="852"/>
-        <location filename="../qkeymapper.cpp" line="17358"/>
+        <location filename="../qkeymapper.cpp" line="17569"/>
         <source>Select Tray Icon</source>
         <translation>选择托盘图标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="871"/>
-        <location filename="../qkeymapper.cpp" line="17359"/>
+        <location filename="../qkeymapper.cpp" line="17570"/>
         <source>Noti Advanced</source>
         <translation>提示高级设定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="890"/>
-        <location filename="../qkeymapper.cpp" line="17339"/>
+        <location filename="../qkeymapper.cpp" line="17550"/>
         <source>Startup AutoMonitoring</source>
         <translation>启动时自动开始</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="903"/>
-        <location filename="../qkeymapper.cpp" line="17370"/>
+        <location filename="../qkeymapper.cpp" line="17581"/>
         <source>Scale</source>
         <translation>缩放比例</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="945"/>
-        <location filename="../qkeymapper.cpp" line="17373"/>
+        <location filename="../qkeymapper.cpp" line="17584"/>
         <source>Theme</source>
         <translation>外观颜色</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="964"/>
-        <location filename="../qkeymapper.cpp" line="17344"/>
+        <location filename="../qkeymapper.cpp" line="17555"/>
         <source>Startup Position</source>
         <translation>启动位置设定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="993"/>
-        <location filename="../qkeymapper.cpp" line="17392"/>
+        <location filename="../qkeymapper.cpp" line="17603"/>
         <source>Mapping</source>
         <translation>映射设定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1172"/>
-        <location filename="../qkeymapper.cpp" line="17360"/>
+        <location filename="../qkeymapper.cpp" line="17571"/>
         <source>ProcessIcon as TrayIcon</source>
         <translation>进程图标作为托盘图标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1188"/>
-        <location filename="../qkeymapper.cpp" line="17334"/>
+        <location filename="../qkeymapper.cpp" line="17545"/>
         <source>SystemFilterKey</source>
         <translation>开启系统筛选键</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1512"/>
-        <location filename="../qkeymapper.cpp" line="17351"/>
+        <location filename="../qkeymapper.cpp" line="17562"/>
         <source>MinXSens</source>
         <translation>低速X灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1544"/>
-        <location filename="../qkeymapper.cpp" line="17352"/>
+        <location filename="../qkeymapper.cpp" line="17563"/>
         <source>MinYSens</source>
         <translation>低速Y灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1640"/>
-        <location filename="../qkeymapper.cpp" line="17354"/>
+        <location filename="../qkeymapper.cpp" line="17565"/>
         <source>MaxYSens</source>
         <translation>高速Y灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1672"/>
-        <location filename="../qkeymapper.cpp" line="17353"/>
+        <location filename="../qkeymapper.cpp" line="17564"/>
         <source>MaxXSens</source>
         <translation>高速X灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2322"/>
-        <location filename="../qkeymapper.cpp" line="17259"/>
+        <location filename="../qkeymapper.cpp" line="17470"/>
         <source>AddTab</source>
         <translation>添加Tab</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2348"/>
-        <location filename="../qkeymapper.cpp" line="17284"/>
+        <location filename="../qkeymapper.cpp" line="17495"/>
         <source>Setting</source>
         <translation>设定名称</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2396"/>
-        <location filename="../qkeymapper.cpp" line="17294"/>
+        <location filename="../qkeymapper.cpp" line="17505"/>
         <source>Backup</source>
         <translation>设定备份</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17271"/>
-        <location filename="../qkeymapper.cpp" line="22739"/>
+        <location filename="../qkeymapper.cpp" line="17482"/>
+        <location filename="../qkeymapper.cpp" line="22983"/>
         <source>Capture</source>
         <translation>按键捕获</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="47"/>
         <location filename="../qkeymapper.ui" line="1015"/>
-        <location filename="../qkeymapper.cpp" line="6481"/>
-        <location filename="../qkeymapper.cpp" line="17253"/>
-        <location filename="../qkeymapper.cpp" line="17347"/>
+        <location filename="../qkeymapper.cpp" line="6530"/>
+        <location filename="../qkeymapper.cpp" line="17464"/>
+        <location filename="../qkeymapper.cpp" line="17558"/>
         <source>MappingStart</source>
         <translation>映射开始</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="564"/>
-        <location filename="../qkeymapper.cpp" line="17281"/>
-        <location filename="../qkeymapper.cpp" line="17448"/>
+        <location filename="../qkeymapper.cpp" line="17492"/>
+        <location filename="../qkeymapper.cpp" line="17659"/>
         <source>Process</source>
         <translation>进程</translation>
     </message>
@@ -1163,67 +1163,67 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="719"/>
-        <location filename="../qkeymapper.cpp" line="17345"/>
+        <location filename="../qkeymapper.cpp" line="17556"/>
         <source>ShowHideKey</source>
         <translation>显示切换键</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1034"/>
-        <location filename="../qkeymapper.cpp" line="17333"/>
+        <location filename="../qkeymapper.cpp" line="17544"/>
         <source>Auto Match Foreground</source>
         <translation>自动匹配前台进程</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1063"/>
         <location filename="../qkeymapper.ui" line="1454"/>
-        <location filename="../qkeymapper.cpp" line="17325"/>
+        <location filename="../qkeymapper.cpp" line="17536"/>
         <source>X Speed</source>
         <translation>水平鼠标速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1095"/>
         <location filename="../qkeymapper.ui" line="1470"/>
-        <location filename="../qkeymapper.cpp" line="17326"/>
+        <location filename="../qkeymapper.cpp" line="17537"/>
         <source>Y Speed</source>
         <translation>垂直鼠标速度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1114"/>
-        <location filename="../qkeymapper.cpp" line="17335"/>
+        <location filename="../qkeymapper.cpp" line="17546"/>
         <source>Send To Same Windows</source>
         <translation>发送到同名窗口</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1127"/>
-        <location filename="../qkeymapper.cpp" line="6461"/>
-        <location filename="../qkeymapper.cpp" line="17250"/>
-        <location filename="../qkeymapper.cpp" line="17348"/>
+        <location filename="../qkeymapper.cpp" line="6510"/>
+        <location filename="../qkeymapper.cpp" line="17461"/>
+        <location filename="../qkeymapper.cpp" line="17559"/>
         <source>MappingStop</source>
         <translation>映射停止</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1156"/>
-        <location filename="../qkeymapper.cpp" line="17336"/>
+        <location filename="../qkeymapper.cpp" line="17547"/>
         <source>Accept Virtual Gamepad Input</source>
         <translation>接受虚拟手柄输入</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1222"/>
-        <location filename="../qkeymapper.cpp" line="17409"/>
+        <location filename="../qkeymapper.cpp" line="17620"/>
         <source>Lock Cursor</source>
         <translation>锁定光标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1194"/>
         <location filename="../qkeymapper.ui" line="1241"/>
-        <location filename="../qkeymapper.cpp" line="17393"/>
-        <location filename="../qkeymapper.cpp" line="17408"/>
+        <location filename="../qkeymapper.cpp" line="17604"/>
+        <location filename="../qkeymapper.cpp" line="17619"/>
         <source>VirtualGamepad</source>
         <translation>虚拟手柄</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="639"/>
-        <location filename="../qkeymapper.cpp" line="17340"/>
+        <location filename="../qkeymapper.cpp" line="17551"/>
         <source>Sound</source>
         <translation>提示音</translation>
     </message>
@@ -1244,306 +1244,309 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1305"/>
-        <location filename="../qkeymapper.cpp" line="14498"/>
-        <location filename="../qkeymapper.cpp" line="17420"/>
+        <location filename="../qkeymapper.cpp" line="14703"/>
+        <location filename="../qkeymapper.cpp" line="17631"/>
         <source>InstallViGEm</source>
         <translation>安装ViGEm</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1369"/>
-        <location filename="../qkeymapper.cpp" line="17412"/>
+        <location filename="../qkeymapper.cpp" line="17623"/>
         <source>Y Sens</source>
         <translation>Y轴灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1385"/>
-        <location filename="../qkeymapper.cpp" line="17411"/>
+        <location filename="../qkeymapper.cpp" line="17622"/>
         <source>X Sens</source>
         <translation>X轴灵敏度</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1414"/>
-        <location filename="../qkeymapper.cpp" line="17413"/>
+        <location filename="../qkeymapper.cpp" line="17624"/>
         <source>Recenter</source>
         <translation>回中延时</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1433"/>
-        <location filename="../qkeymapper.cpp" line="17410"/>
+        <location filename="../qkeymapper.cpp" line="17621"/>
         <source>Direct Mode</source>
         <translation>直控模式</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1442"/>
-        <location filename="../qkeymapper.cpp" line="17394"/>
+        <location filename="../qkeymapper.cpp" line="17605"/>
         <source>Gyro2Mouse</source>
         <translation>陀螺仪鼠标</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1576"/>
-        <location filename="../qkeymapper.cpp" line="17355"/>
+        <location filename="../qkeymapper.cpp" line="17566"/>
         <source>MinThres</source>
         <translation>低速阈值</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1608"/>
-        <location filename="../qkeymapper.cpp" line="17356"/>
+        <location filename="../qkeymapper.cpp" line="17567"/>
         <source>MaxThres</source>
         <translation>高速阈值</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1707"/>
-        <location filename="../qkeymapper.cpp" line="17357"/>
+        <location filename="../qkeymapper.cpp" line="17568"/>
         <source>Advanced</source>
         <translation>高级设置</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1716"/>
-        <location filename="../qkeymapper.cpp" line="17395"/>
+        <location filename="../qkeymapper.cpp" line="17606"/>
         <source>Multi-Input</source>
         <translation>多键鼠支持</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1750"/>
-        <location filename="../qkeymapper.cpp" line="14606"/>
-        <location filename="../qkeymapper.cpp" line="14623"/>
-        <location filename="../qkeymapper.cpp" line="17435"/>
+        <location filename="../qkeymapper.cpp" line="14811"/>
+        <location filename="../qkeymapper.cpp" line="14828"/>
+        <location filename="../qkeymapper.cpp" line="17646"/>
         <source>Install Driver</source>
         <translation>安装驱动</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1769"/>
-        <location filename="../qkeymapper.cpp" line="17429"/>
+        <location filename="../qkeymapper.cpp" line="17640"/>
         <source>FilterKeys</source>
         <translation>筛选键</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1788"/>
-        <location filename="../qkeymapper.cpp" line="17428"/>
+        <location filename="../qkeymapper.cpp" line="17639"/>
         <source>MultiDevice</source>
         <translation>多键鼠支持</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1804"/>
-        <location filename="../qkeymapper.cpp" line="17430"/>
+        <location filename="../qkeymapper.cpp" line="17641"/>
         <source>DeviceList</source>
         <translation>设备列表</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1813"/>
-        <location filename="../qkeymapper.cpp" line="17396"/>
+        <location filename="../qkeymapper.cpp" line="17607"/>
         <source>Forza</source>
         <translation>极限竞速</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1864"/>
-        <location filename="../qkeymapper.cpp" line="17330"/>
+        <location filename="../qkeymapper.cpp" line="17541"/>
         <source>DataPort</source>
         <translation>数据端口</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1880"/>
-        <location filename="../qkeymapper.cpp" line="17332"/>
+        <location filename="../qkeymapper.cpp" line="17543"/>
         <source>AccelValue</source>
         <translation>油门阈值</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1896"/>
-        <location filename="../qkeymapper.cpp" line="17331"/>
+        <location filename="../qkeymapper.cpp" line="17542"/>
         <source>BrakeValue</source>
         <translation>刹车阈值</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1914"/>
-        <location filename="../qkeymapper.cpp" line="17319"/>
+        <location filename="../qkeymapper.cpp" line="17530"/>
         <source>Text</source>
         <translation>文本
 / 命令</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1930"/>
-        <location filename="../qkeymapper.cpp" line="17426"/>
+        <location filename="../qkeymapper.cpp" line="17637"/>
         <source>Gamepad</source>
         <translation>游戏手柄</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="462"/>
-        <location filename="../qkeymapper.cpp" line="17285"/>
+        <location filename="../qkeymapper.cpp" line="17496"/>
         <source>Description</source>
         <translation>设定描述</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1965"/>
-        <location filename="../qkeymapper.cpp" line="17262"/>
+        <location filename="../qkeymapper.cpp" line="17473"/>
         <source>ProcessList</source>
         <translation>进程列表</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1990"/>
-        <location filename="../qkeymapper.cpp" line="17263"/>
+        <location filename="../qkeymapper.cpp" line="17474"/>
         <source>ShowNotes</source>
         <translation>显示备注</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2025"/>
-        <location filename="../qkeymapper.cpp" line="17318"/>
+        <location filename="../qkeymapper.cpp" line="17529"/>
         <source>PushLevel</source>
         <translation>轻推值</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17258"/>
+        <location filename="../qkeymapper.cpp" line="17469"/>
         <source>Hotkey : L-Ctrl+S</source>
         <translation>快捷键 : L-Ctrl+S</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17316"/>
-        <location filename="../qkeymapper.cpp" line="17317"/>
-        <location filename="../qkeymapper.cpp" line="17414"/>
+        <location filename="../qkeymapper.cpp" line="17527"/>
+        <location filename="../qkeymapper.cpp" line="17528"/>
+        <location filename="../qkeymapper.cpp" line="17625"/>
         <source> ms</source>
         <translation> 毫秒</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17321"/>
+        <location filename="../qkeymapper.cpp" line="17532"/>
         <source>LongPress</source>
         <translation>长按</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17322"/>
+        <location filename="../qkeymapper.cpp" line="17533"/>
         <source>DoublePress</source>
         <translation>双击</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="441"/>
-        <location filename="../qkeymapper.cpp" line="17362"/>
+        <location filename="../qkeymapper.cpp" line="438"/>
+        <location filename="../qkeymapper.cpp" line="17573"/>
         <source>None</source>
         <translation>不显示</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="442"/>
-        <location filename="../qkeymapper.cpp" line="17363"/>
+        <location filename="../qkeymapper.cpp" line="439"/>
+        <location filename="../qkeymapper.cpp" line="17574"/>
         <source>Top Left</source>
         <translation>顶部左侧</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="443"/>
-        <location filename="../qkeymapper.cpp" line="17364"/>
+        <location filename="../qkeymapper.cpp" line="440"/>
+        <location filename="../qkeymapper.cpp" line="17575"/>
         <source>Top Center</source>
         <translation>顶部居中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="444"/>
-        <location filename="../qkeymapper.cpp" line="17365"/>
+        <location filename="../qkeymapper.cpp" line="441"/>
+        <location filename="../qkeymapper.cpp" line="17576"/>
         <source>Top Right</source>
         <translation>顶部右侧</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="445"/>
-        <location filename="../qkeymapper.cpp" line="17366"/>
+        <location filename="../qkeymapper.cpp" line="442"/>
+        <location filename="../qkeymapper.cpp" line="17577"/>
         <source>Bottom Left</source>
         <translation>底部左侧</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="446"/>
-        <location filename="../qkeymapper.cpp" line="17367"/>
+        <location filename="../qkeymapper.cpp" line="443"/>
+        <location filename="../qkeymapper.cpp" line="17578"/>
         <source>Bottom Center</source>
         <translation>底部居中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="447"/>
-        <location filename="../qkeymapper.cpp" line="17368"/>
+        <location filename="../qkeymapper.cpp" line="444"/>
+        <location filename="../qkeymapper.cpp" line="17579"/>
         <source>Bottom Right</source>
         <translation>底部右侧</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="453"/>
-        <location filename="../qkeymapper.cpp" line="17371"/>
+        <location filename="../qkeymapper.cpp" line="450"/>
+        <location filename="../qkeymapper.cpp" line="17582"/>
         <source>Default</source>
         <translation>默认</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="464"/>
-        <location filename="../qkeymapper.cpp" line="17374"/>
+        <location filename="../qkeymapper.cpp" line="461"/>
+        <location filename="../qkeymapper.cpp" line="17585"/>
         <source>System Default</source>
         <translation>系统默认</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="465"/>
-        <location filename="../qkeymapper.cpp" line="17375"/>
+        <location filename="../qkeymapper.cpp" line="462"/>
+        <location filename="../qkeymapper.cpp" line="17586"/>
         <source>Light</source>
         <translation>浅色</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="466"/>
-        <location filename="../qkeymapper.cpp" line="17376"/>
+        <location filename="../qkeymapper.cpp" line="463"/>
+        <location filename="../qkeymapper.cpp" line="17587"/>
         <source>Dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3215"/>
+        <location filename="../qkeymapper.cpp" line="3223"/>
         <source>Invalid original key format.</source>
         <translation>无效的原始按键格式。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3226"/>
+        <location filename="../qkeymapper.cpp" line="3234"/>
         <source>OriginalKey is empty.</source>
         <translation>原始按键为空。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3234"/>
+        <location filename="../qkeymapper.cpp" line="3242"/>
         <source>OriginalKey contains duplicate keys.</source>
         <translation>原始按键中存在重复按键。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3243"/>
+        <location filename="../qkeymapper.cpp" line="3251"/>
         <source>Oricombinationkey contains specialkey &quot;%1&quot;</source>
         <translation>原始组合键包含特殊按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3262"/>
-        <location filename="../qkeymapper.cpp" line="3395"/>
-        <location filename="../qkeymapper.cpp" line="3455"/>
+        <location filename="../qkeymapper.cpp" line="3270"/>
+        <location filename="../qkeymapper.cpp" line="3339"/>
+        <location filename="../qkeymapper.cpp" line="3349"/>
+        <location filename="../qkeymapper.cpp" line="3433"/>
+        <location filename="../qkeymapper.cpp" line="3493"/>
         <source>Duplicate original key &quot;%1&quot;</source>
         <translation>已存在相同的原始按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3282"/>
+        <location filename="../qkeymapper.cpp" line="3290"/>
         <source>Originalkey &quot;%1&quot; does not match special mappingkey &quot;%2&quot;</source>
         <translation>原始按键 &quot;%1&quot; 与映射特殊按键 &quot;%2&quot; 不匹配</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3307"/>
-        <location filename="../qkeymapper.cpp" line="3387"/>
+        <location filename="../qkeymapper.cpp" line="3318"/>
+        <location filename="../qkeymapper.cpp" line="3425"/>
         <source>Invalid press time &quot;%1&quot;</source>
         <translation>无效的按压时间 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3312"/>
+        <location filename="../qkeymapper.cpp" line="3323"/>
         <source>Invalid time suffix &quot;%1&quot;</source>
         <translation>无效的时间后缀 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3323"/>
-        <location filename="../qkeymapper.cpp" line="3574"/>
-        <location filename="../qkeymapper.cpp" line="19578"/>
+        <location filename="../qkeymapper.cpp" line="3361"/>
+        <location filename="../qkeymapper.cpp" line="3612"/>
+        <location filename="../qkeymapper.cpp" line="19810"/>
         <source>Game controller keys could not be blocked!</source>
         <translation>游戏手柄按键无法被屏蔽！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3328"/>
-        <location filename="../qkeymapper.cpp" line="3579"/>
+        <location filename="../qkeymapper.cpp" line="3366"/>
+        <location filename="../qkeymapper.cpp" line="3617"/>
         <source>Could not block original key with time suffix!</source>
         <translation>不能屏蔽带有时间后缀的原始按键！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3349"/>
-        <location filename="../qkeymapper.cpp" line="3415"/>
+        <location filename="../qkeymapper.cpp" line="3387"/>
+        <location filename="../qkeymapper.cpp" line="3453"/>
         <source>Invalid key format &quot;%1&quot;</source>
         <translation>无效按键格式 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3376"/>
-        <location filename="../qkeymapper.cpp" line="3438"/>
-        <location filename="../qkeymapper.cpp" line="3671"/>
+        <location filename="../qkeymapper.cpp" line="3414"/>
+        <location filename="../qkeymapper.cpp" line="3476"/>
+        <location filename="../qkeymapper.cpp" line="3709"/>
+        <location filename="../qkeymapper.cpp" line="4832"/>
         <source>Invalid key &quot;%1&quot;</source>
         <translation>无效按键 &quot;%1&quot;</translation>
     </message>
@@ -1552,159 +1555,199 @@ Update</source>
         <translation type="vanished">已存在相同的按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3445"/>
+        <location filename="../qkeymapper.cpp" line="3483"/>
         <source>Invalid key format &quot;%1&quot;, do not add Player suffix to Joy-Gyro2Mouse.</source>
         <translation>无效按键格式 &quot;%1&quot;，Joy-Gyro2Mouse不需要添加Player编号后缀。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3471"/>
+        <location filename="../qkeymapper.cpp" line="3509"/>
         <source>MappingKeys is empty.</source>
         <translation>映射按键为空。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3476"/>
+        <location filename="../qkeymapper.cpp" line="3514"/>
         <source>Mapping key sequence exceeds the maximum length!</source>
         <translation>映射按键序列超过最大长度！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3481"/>
+        <location filename="../qkeymapper.cpp" line="3519"/>
         <source>After override prefix &quot;%1&quot; could not be used in keysequence</source>
         <translation>后覆盖前缀&quot;%1&quot;不能使用在按键序列中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3494"/>
-        <location filename="../qkeymapper.cpp" line="3502"/>
+        <location filename="../qkeymapper.cpp" line="3532"/>
+        <location filename="../qkeymapper.cpp" line="3540"/>
         <source>MappingKeys contains duplicate key &quot;%1&quot;</source>
         <translation>映射按键中包含重复按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3524"/>
+        <location filename="../qkeymapper.cpp" line="3562"/>
         <source>MappingKeys contains specialkey &quot;%1&quot;</source>
         <translation>映射按键中包含特殊按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3529"/>
+        <location filename="../qkeymapper.cpp" line="3567"/>
         <source>MappingCombinationKeys contains specialkey &quot;%1&quot;</source>
         <translation>映射组合按键中包含特殊按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3555"/>
+        <location filename="../qkeymapper.cpp" line="3593"/>
         <source>Mappingkey &quot;%1&quot; does not match special originalkey &quot;%2&quot;</source>
         <translation>映射按键 &quot;%1&quot; 与原始特殊按键 &quot;%2&quot; 不匹配</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3651"/>
+        <location filename="../qkeymapper.cpp" line="3689"/>
         <source>Invalid pushlevel[%1] of vJoy-Key &quot;%2&quot;, valid range 1~254</source>
         <translation>轻推值 [%1] 对于虚拟游戏手柄按键 &quot;%2&quot; 无效，有效范围 1~254</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3657"/>
+        <location filename="../qkeymapper.cpp" line="3695"/>
         <source>Invalid vJoy-Key &quot;%1&quot;</source>
         <translation>无效虚拟游戏手柄按键 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3678"/>
+        <location filename="../qkeymapper.cpp" line="3716"/>
         <source>Invalid waittime &quot;%1&quot;</source>
         <translation>无效延时时间 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="3684"/>
+        <location filename="../qkeymapper.cpp" line="3722"/>
         <source>Invalid format &quot;%1&quot;</source>
         <translation>无效格式 &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="5869"/>
+        <location filename="../qkeymapper.cpp" line="4822"/>
+        <source>Hotkey is empty.</source>
+        <translation>快捷键为空。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="4841"/>
+        <source>Hotkey key contains duplicate keys.</source>
+        <translation>快捷键中存在重复按键。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="5918"/>
         <source>ZipUpdater program file %1 does not exist!</source>
         <translation>ZipUpdater程序文件 %1 不存在！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="5878"/>
+        <location filename="../qkeymapper.cpp" line="5927"/>
         <source>Update directory %1 does not exist!</source>
         <translation>升级目录 %1 不存在！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="5901"/>
+        <location filename="../qkeymapper.cpp" line="5950"/>
         <source>Failed to copy update program file %1 to %2!</source>
         <translation>复制升级程序文件 %1 到 %2 失败！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="5918"/>
+        <location filename="../qkeymapper.cpp" line="5967"/>
         <source>The update file name %1 does not match the platform string %2 !</source>
         <translation>升级文件 %1 与当前版本平台标识 %2 不匹配！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8188"/>
-        <location filename="../qkeymapper.cpp" line="14898"/>
-        <location filename="../qkeymapper.cpp" line="17296"/>
+        <location filename="../qkeymapper.cpp" line="7506"/>
+        <source>WindowSwitchKey update success : </source>
+        <translation>显示切换键更新成功: </translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="7511"/>
+        <source>MappingStartKey update success : </source>
+        <translation>映射开始键更新成功: </translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="7516"/>
+        <source>MappingStopKey update success : </source>
+        <translation>映射停止键更新成功: </translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="7523"/>
+        <source>Invalid WindowSwitchKey: %1</source>
+        <translation>无效的显示切换键 : %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="7527"/>
+        <source>Invalid MappingStartKey: %1</source>
+        <translation>无效的映射开始键 : %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="7531"/>
+        <source>Invalid MappingStopKey: %1</source>
+        <translation>无效的映射停止键 : %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="8303"/>
+        <location filename="../qkeymapper.cpp" line="15103"/>
+        <location filename="../qkeymapper.cpp" line="17507"/>
         <source>Setting Export</source>
         <translation>设定导出</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8188"/>
+        <location filename="../qkeymapper.cpp" line="8303"/>
         <source>Export completed.</source>
         <translation>导出完成。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8149"/>
-        <location filename="../qkeymapper.cpp" line="8199"/>
+        <location filename="../qkeymapper.cpp" line="8258"/>
+        <location filename="../qkeymapper.cpp" line="8314"/>
         <source>Invalid file path.</source>
         <translation>无效的文件路径。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8210"/>
+        <location filename="../qkeymapper.cpp" line="8331"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>在所选的 INI 文件中未找到有效的设定。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8227"/>
+        <location filename="../qkeymapper.cpp" line="8348"/>
         <source>Importing setting with the same name will overwrite the existing setting in the current configuration file. Do you want to continue?</source>
         <translation>导入同名设定将覆盖当前配置文件中的现有设定。确定要继续吗？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8261"/>
+        <location filename="../qkeymapper.cpp" line="8382"/>
         <source>No valid setting found.</source>
         <translation>未发现有效设定。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8226"/>
-        <location filename="../qkeymapper.cpp" line="8266"/>
-        <location filename="../qkeymapper.cpp" line="14899"/>
-        <location filename="../qkeymapper.cpp" line="17297"/>
+        <location filename="../qkeymapper.cpp" line="8347"/>
+        <location filename="../qkeymapper.cpp" line="8387"/>
+        <location filename="../qkeymapper.cpp" line="15104"/>
+        <location filename="../qkeymapper.cpp" line="17508"/>
         <source>Setting Import</source>
         <translation>设定导入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8266"/>
+        <location filename="../qkeymapper.cpp" line="8387"/>
         <source>Import completed.</source>
         <translation>导入完成。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19375"/>
-        <location filename="../qkeymapper.cpp" line="19555"/>
+        <location filename="../qkeymapper.cpp" line="19605"/>
+        <location filename="../qkeymapper.cpp" line="19786"/>
         <source>Please input the command to run!</source>
         <translation>请输入要执行的命令！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19388"/>
-        <location filename="../qkeymapper.cpp" line="19568"/>
+        <location filename="../qkeymapper.cpp" line="19619"/>
+        <location filename="../qkeymapper.cpp" line="19800"/>
         <source>Please input the tabname to switch!</source>
         <translation>请输入要切换的映射表名！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22782"/>
+        <location filename="../qkeymapper.cpp" line="23026"/>
         <source>QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?</source>
         <translation>使用QKeyMapper按键映射时强烈建议让程序自动开启Windows系统筛选键，避免由于键盘按键保持按下时系统连续发送按键触发导致的各种异常问题。
 您确定不希望在映射过程中自动开启系统筛选键吗？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22816"/>
+        <location filename="../qkeymapper.cpp" line="23060"/>
         <source>Total characters (without spaces) : %1
 </source>
         <translation>总字数(不含空格) : %1
 </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22817"/>
+        <location filename="../qkeymapper.cpp" line="23061"/>
         <source>Total characters (with spaces) : %2
 </source>
         <translation>总字数(含空格) : %2
@@ -1715,64 +1758,61 @@ Update</source>
         <translation type="vanished">请双击进程列表为按键映射选择有效的进程信息。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6850"/>
-        <location filename="../qkeymapper.cpp" line="6964"/>
-        <location filename="../qkeymapper.cpp" line="17445"/>
+        <location filename="../qkeymapper.cpp" line="6936"/>
+        <location filename="../qkeymapper.cpp" line="7050"/>
+        <location filename="../qkeymapper.cpp" line="17656"/>
         <source>Category</source>
         <translation>分类</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6901"/>
+        <location filename="../qkeymapper.cpp" line="6987"/>
         <source>_copy</source>
         <translation>_复制</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="7423"/>
         <source>Invalid input format for WindowSwitchKey!</source>
-        <translation>显示切换键输入格式错误！</translation>
+        <translation type="vanished">显示切换键输入格式错误！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="7427"/>
         <source>Invalid input format for MappingStartKey!</source>
-        <translation>映射开始键输入格式错误！</translation>
+        <translation type="vanished">映射开始键输入格式错误！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="7431"/>
         <source>Invalid input format for MappingStopKey!</source>
-        <translation>映射停止键输入格式错误！</translation>
+        <translation type="vanished">映射停止键输入格式错误！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8466"/>
+        <location filename="../qkeymapper.cpp" line="8598"/>
         <source>Setting name cannot be empty. Please enter a valid setting name.</source>
         <translation>设定名称不能为空，请输入有效的设定名称。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8487"/>
+        <location filename="../qkeymapper.cpp" line="8619"/>
         <source>newline characters</source>
         <translation>换行符</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8490"/>
+        <location filename="../qkeymapper.cpp" line="8622"/>
         <source>Setting name cannot contain the following characters: %1</source>
         <translation>设定名称不能包含以下字符：%1</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8503"/>
+        <location filename="../qkeymapper.cpp" line="8635"/>
         <source>Please select &quot;%1&quot;, if you want to modify the global keymapping setting.</source>
         <translation>如果您要修改全局映射设定，请在设定列表中选择「%1」。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="8514"/>
+        <location filename="../qkeymapper.cpp" line="8646"/>
         <source>Setting &quot;%1&quot; already exists. Do you want to overwrite it?</source>
         <translation>设定「%1」已存在，是否覆盖保存？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9266"/>
+        <location filename="../qkeymapper.cpp" line="9399"/>
         <source>Save success : </source>
         <translation>保存成功 : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9277"/>
+        <location filename="../qkeymapper.cpp" line="9410"/>
         <source>Save failure : </source>
         <translation>映射数据保存失败 : </translation>
     </message>
@@ -1781,66 +1821,66 @@ Update</source>
         <translation type="vanished">全局映射设定</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12237"/>
+        <location filename="../qkeymapper.cpp" line="12439"/>
         <source>Invalid mapping data : </source>
         <translation>无效的映射数据 : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13831"/>
+        <location filename="../qkeymapper.cpp" line="14036"/>
         <source>StartMapping [</source>
         <translation>映射开始 [</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13899"/>
-        <location filename="../qkeymapper.cpp" line="15410"/>
+        <location filename="../qkeymapper.cpp" line="14104"/>
+        <location filename="../qkeymapper.cpp" line="15618"/>
         <source>Idle</source>
         <translation>空闲</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14877"/>
-        <location filename="../qkeymapper.cpp" line="17378"/>
-        <location filename="../qkeymapper.cpp" line="17383"/>
+        <location filename="../qkeymapper.cpp" line="15082"/>
+        <location filename="../qkeymapper.cpp" line="17589"/>
+        <location filename="../qkeymapper.cpp" line="17594"/>
         <source>Ignore</source>
         <translation>忽略</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14878"/>
-        <location filename="../qkeymapper.cpp" line="17379"/>
-        <location filename="../qkeymapper.cpp" line="17384"/>
+        <location filename="../qkeymapper.cpp" line="15083"/>
+        <location filename="../qkeymapper.cpp" line="17590"/>
+        <location filename="../qkeymapper.cpp" line="17595"/>
         <source>Equals</source>
         <translation>等于</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14879"/>
-        <location filename="../qkeymapper.cpp" line="17380"/>
-        <location filename="../qkeymapper.cpp" line="17385"/>
+        <location filename="../qkeymapper.cpp" line="15084"/>
+        <location filename="../qkeymapper.cpp" line="17591"/>
+        <location filename="../qkeymapper.cpp" line="17596"/>
         <source>Contains</source>
         <translation>包含</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14880"/>
-        <location filename="../qkeymapper.cpp" line="17381"/>
-        <location filename="../qkeymapper.cpp" line="17386"/>
+        <location filename="../qkeymapper.cpp" line="15085"/>
+        <location filename="../qkeymapper.cpp" line="17592"/>
+        <location filename="../qkeymapper.cpp" line="17597"/>
         <source>StartsWith</source>
         <translation>以...开头</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14881"/>
-        <location filename="../qkeymapper.cpp" line="17382"/>
-        <location filename="../qkeymapper.cpp" line="17387"/>
+        <location filename="../qkeymapper.cpp" line="15086"/>
+        <location filename="../qkeymapper.cpp" line="17593"/>
+        <location filename="../qkeymapper.cpp" line="17598"/>
         <source>EndsWith</source>
         <translation>以...结尾</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2367"/>
-        <location filename="../qkeymapper.cpp" line="16566"/>
-        <location filename="../qkeymapper.cpp" line="17274"/>
-        <location filename="../qkeymapper.cpp" line="22731"/>
+        <location filename="../qkeymapper.cpp" line="16775"/>
+        <location filename="../qkeymapper.cpp" line="17485"/>
+        <location filename="../qkeymapper.cpp" line="22975"/>
         <source>Edit</source>
         <translation>按键编辑</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17398"/>
+        <location filename="../qkeymapper.cpp" line="17609"/>
         <source>WindowInfo setting tab tooltip.</source>
         <translation>「窗口信息」设定页显示当前选择设定的进程和标题信息：
 1. 显示和自定义修改当前设定的进程路径和窗口检查时的匹配方式。
@@ -1850,18 +1890,18 @@ Update</source>
 5. 显示和自定义修改设定描述信息。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18963"/>
+        <location filename="../qkeymapper.cpp" line="19193"/>
         <source>The current selected setting is already &quot;%1&quot;</source>
         <translation>当前选择的设定已经是「%1」</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19674"/>
-        <location filename="../qkeymapper.cpp" line="19767"/>
+        <location filename="../qkeymapper.cpp" line="19906"/>
+        <location filename="../qkeymapper.cpp" line="19999"/>
         <source>Cannot move items while the mapping table is filtered!</source>
         <translation>映射表筛选显示时无法进行映射项移动！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22598"/>
+        <location filename="../qkeymapper.cpp" line="22842"/>
         <source>Restore to absolute process path &quot;%1&quot;?</source>
         <translation>是否恢复为进程绝对路径 &quot;%1&quot;？</translation>
     </message>
@@ -1870,77 +1910,77 @@ Update</source>
         <translation type="vanished">监测中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13909"/>
+        <location filename="../qkeymapper.cpp" line="14114"/>
         <source>StopMapping [</source>
         <translation>映射停止 [</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14493"/>
+        <location filename="../qkeymapper.cpp" line="14698"/>
         <source>ViGEmAvailable</source>
         <translation>ViGEm可用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14501"/>
+        <location filename="../qkeymapper.cpp" line="14706"/>
         <source>ViGEmUnavailable</source>
         <translation>ViGEm不可用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14592"/>
+        <location filename="../qkeymapper.cpp" line="14797"/>
         <source>Available</source>
         <translation>多键鼠可用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14609"/>
+        <location filename="../qkeymapper.cpp" line="14814"/>
         <source>RebootRequired</source>
         <translation>需要重启系统</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14626"/>
+        <location filename="../qkeymapper.cpp" line="14831"/>
         <source>Unavailable</source>
         <translation>多键鼠不可用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14662"/>
+        <location filename="../qkeymapper.cpp" line="14867"/>
         <source> GyroDisabled</source>
         <translation> 陀螺仪已禁用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14665"/>
+        <location filename="../qkeymapper.cpp" line="14870"/>
         <source> GyroEnabled</source>
         <translation> 陀螺仪已启用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14911"/>
+        <location filename="../qkeymapper.cpp" line="15116"/>
         <source>Show</source>
         <translation>显示</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14912"/>
+        <location filename="../qkeymapper.cpp" line="15117"/>
         <source>Hide</source>
         <translation>隐藏</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14913"/>
+        <location filename="../qkeymapper.cpp" line="15118"/>
         <source>Quit</source>
         <translation>退出</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15344"/>
+        <location filename="../qkeymapper.cpp" line="15552"/>
         <source>Monitoring : </source>
         <translation>监测中 : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15405"/>
+        <location filename="../qkeymapper.cpp" line="15613"/>
         <source>Mapping : </source>
         <translation>映射中 : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15402"/>
+        <location filename="../qkeymapper.cpp" line="15610"/>
         <source>Mapping : Global</source>
         <translation>映射中 : 全局映射</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15310"/>
+        <location filename="../qkeymapper.cpp" line="15518"/>
         <source>If you want the program to be hidden to the system tray when you click the close button, please check the option below.
 If you do not check it and click &quot;OK&quot;, the program will close directly when you click the close button in the future.
 Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog again.</source>
@@ -1949,54 +1989,54 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 按住&quot;L-Ctrl&quot;键点击关闭按钮会再次显示此选择对话框。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15315"/>
+        <location filename="../qkeymapper.cpp" line="15523"/>
         <source>Hide the program to the system tray when clicking the close button</source>
         <translation>点击关闭按钮将程序隐藏到系统托盘图标显示</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15639"/>
-        <location filename="../qkeymapper.cpp" line="15652"/>
-        <location filename="../qkeymapper.cpp" line="15665"/>
+        <location filename="../qkeymapper.cpp" line="15847"/>
+        <location filename="../qkeymapper.cpp" line="15860"/>
+        <location filename="../qkeymapper.cpp" line="15873"/>
         <source>Blank</source>
         <translation>(空白)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17118"/>
+        <location filename="../qkeymapper.cpp" line="17329"/>
         <source>Hotkey : %1</source>
         <translation>快捷键 : %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2281"/>
-        <location filename="../qkeymapper.cpp" line="17264"/>
+        <location filename="../qkeymapper.cpp" line="17475"/>
         <source>ShowCategory</source>
         <translation>分类筛选</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17300"/>
-        <location filename="../qkeymapper.cpp" line="17304"/>
+        <location filename="../qkeymapper.cpp" line="17511"/>
+        <location filename="../qkeymapper.cpp" line="17515"/>
         <source>Keyboard Keys</source>
         <translation>键盘按键</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17301"/>
-        <location filename="../qkeymapper.cpp" line="17305"/>
+        <location filename="../qkeymapper.cpp" line="17512"/>
+        <location filename="../qkeymapper.cpp" line="17516"/>
         <source>Mouse Keys</source>
         <translation>鼠标按键</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17302"/>
-        <location filename="../qkeymapper.cpp" line="17306"/>
+        <location filename="../qkeymapper.cpp" line="17513"/>
+        <location filename="../qkeymapper.cpp" line="17517"/>
         <source>Gamepad Keys</source>
         <translation>手柄按键</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17303"/>
-        <location filename="../qkeymapper.cpp" line="17307"/>
+        <location filename="../qkeymapper.cpp" line="17514"/>
+        <location filename="../qkeymapper.cpp" line="17518"/>
         <source>Function Keys</source>
         <translation>功能按键</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17399"/>
+        <location filename="../qkeymapper.cpp" line="17610"/>
         <source>General setting tab tooltip.</source>
         <translation>「通用设定」页包含各种与软件整体功能相关的设定：
 1. 设置软件窗口正常显示与隐藏到系统托盘状态之间项目切换的快捷键。
@@ -2011,7 +2051,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 10. 检查软件更新并提示用户选择是否进行软件升级，可以选择Github和Gitee(免梯子)两个不同网站。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17400"/>
+        <location filename="../qkeymapper.cpp" line="17611"/>
         <source>Mapping setting tab tooltip.</source>
         <translation>「映射设定」页包含与映射功能相关的设定：
 1. &quot;映射开始&quot;和&quot;映射停止&quot;的快捷键，可分别设置。
@@ -2022,7 +2062,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 5. 可以选择是否接受软件自己创建的虚拟手柄的按键输入。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17401"/>
+        <location filename="../qkeymapper.cpp" line="17612"/>
         <source>VirtualGamepad setting tab tooltip.</source>
         <translation>「虚拟手柄」设定页包含由QKeyMapper创建的虚拟手柄的映射功能相关设定：
 1. 可以安装和卸载虚拟手柄ViGEm Bus驱动。
@@ -2035,14 +2075,14 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 8. 可以设置鼠标控制虚拟手柄摇杆的&quot;回中延时&quot;，设置为0时不进行回中。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17402"/>
+        <location filename="../qkeymapper.cpp" line="17613"/>
         <source>Gyro2Mouse setting tab tooltip.</source>
         <translation>「陀螺仪鼠标」设定页包含使用游戏手柄陀螺仪控制鼠标指针移动相关的设定：
 1. 可以设置陀螺仪控制鼠标指针移动时水平和垂直方向的速度快慢，数值越大速度越快，数值范围0.00~99.99。
 2. 可以设置陀螺仪控制鼠标指针移动的其他高级选项。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17404"/>
+        <location filename="../qkeymapper.cpp" line="17615"/>
         <source>Forza setting tab tooltip.</source>
         <translation>「极限竞速」设定页包含对极限竞速系列游戏按键自动控制刹车和油门力度相关的设定：
 1. 设置踩刹车时检测车轮打滑抓地力不足的检测阈值。
@@ -2050,38 +2090,38 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 3. 设置接收游戏数据的本地端口号。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17415"/>
+        <location filename="../qkeymapper.cpp" line="17626"/>
         <source>Unrecenter</source>
         <translation>不回中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18298"/>
+        <location filename="../qkeymapper.cpp" line="18525"/>
         <source>For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.</source>
         <translation>Win10以上64位系统推荐使用&quot;Qt6_x64&quot;版本，Qt5版本仅用于兼容Win7操作系统。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18299"/>
-        <location filename="../qkeymapper.cpp" line="18343"/>
+        <location filename="../qkeymapper.cpp" line="18526"/>
+        <location filename="../qkeymapper.cpp" line="18573"/>
         <source>Do not show this message again</source>
         <translation>不再显示此消息</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18342"/>
+        <location filename="../qkeymapper.cpp" line="18572"/>
         <source>Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.</source>
         <translation>使用QKeyMapper按键映射功能时强烈建议开启Windows系统筛选键设定，避免由于键盘按键保持按下时系统连续发送按键触发导致的各种异常问题。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18739"/>
+        <location filename="../qkeymapper.cpp" line="18969"/>
         <source>The upgrade package %1 does not exist in the directory %2. Download failed!</source>
         <translation>升级包 %1 在目录 %2 中不存在。下载失败！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18744"/>
+        <location filename="../qkeymapper.cpp" line="18974"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;The upgrade package &lt;b&gt;%1&lt;/b&gt; has been successfully downloaded to the directory &lt;b&gt;%2&lt;/b&gt;.&lt;/p&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;升级包 &lt;b&gt;%1&lt;/b&gt; 已成功下载至 &lt;b&gt;%2&lt;/b&gt; 目录&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18746"/>
+        <location filename="../qkeymapper.cpp" line="18976"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Click [Yes] to automatically close the program and upgrade&lt;/b&gt;, otherwise handle it manually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;点击 [Yes] 按钮自动关闭程序并升级替换&lt;/b&gt;，否则请自行解压替换。&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -2090,82 +2130,82 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <translation type="vanished">原始组合键输入格式错误！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19278"/>
+        <location filename="../qkeymapper.cpp" line="19508"/>
         <source>Key sequence mapping to &quot;%1&quot; exceeds the maximum length!</source>
         <translation>映射到&quot;%1&quot;的按键序列超过最大长度！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19311"/>
-        <location filename="../qkeymapper.cpp" line="19507"/>
+        <location filename="../qkeymapper.cpp" line="19541"/>
+        <location filename="../qkeymapper.cpp" line="19738"/>
         <source>Need to set a screen mouse point with &quot;%1&quot; click!</source>
         <translation>需要使用&quot;%1&quot;设置一个屏幕坐标点！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19311"/>
-        <location filename="../qkeymapper.cpp" line="19507"/>
+        <location filename="../qkeymapper.cpp" line="19541"/>
+        <location filename="../qkeymapper.cpp" line="19738"/>
         <source>L-Ctrl+Mouse-Left Click</source>
         <translation>L-Ctrl+鼠标左键点击</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19326"/>
+        <location filename="../qkeymapper.cpp" line="19556"/>
         <source>Already set a same screen mouse point!</source>
         <translation>已经保存了一个相同的屏幕坐标点！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19336"/>
-        <location filename="../qkeymapper.cpp" line="19524"/>
+        <location filename="../qkeymapper.cpp" line="19566"/>
+        <location filename="../qkeymapper.cpp" line="19755"/>
         <source>Need to set a window mouse point with &quot;%1&quot; click!</source>
         <translation>需要使用&quot;%1&quot;设置一个窗口坐标点！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19336"/>
-        <location filename="../qkeymapper.cpp" line="19524"/>
+        <location filename="../qkeymapper.cpp" line="19566"/>
+        <location filename="../qkeymapper.cpp" line="19755"/>
         <source>L-Alt+Mouse-Left Click</source>
         <translation>L-Alt+鼠标左键点击</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19351"/>
+        <location filename="../qkeymapper.cpp" line="19581"/>
         <source>Already set a same window mouse point!</source>
         <translation>已经保存了一个相同的窗口坐标点！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19361"/>
-        <location filename="../qkeymapper.cpp" line="19541"/>
+        <location filename="../qkeymapper.cpp" line="19591"/>
+        <location filename="../qkeymapper.cpp" line="19772"/>
         <source>Please input the text to send!</source>
         <translation>请输入要发送的文本！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19397"/>
+        <location filename="../qkeymapper.cpp" line="19628"/>
         <source>KeySequenceBreak key can not be set duplicated!</source>
         <translation>按键映射序列打断键不能重复设置！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19666"/>
+        <location filename="../qkeymapper.cpp" line="19898"/>
         <source>Conflict with exist Keys!</source>
         <translation>与已存在的按键映射冲突！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="19943"/>
+        <location filename="../qkeymapper.cpp" line="20175"/>
         <source>Are you sure you want to clear all data in the mapping table?</source>
         <translation>请确认是否要清除映射表中全部数据？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21514"/>
+        <location filename="../qkeymapper.cpp" line="21749"/>
         <source>Are you sure you want to remove the setting &quot;%1&quot;?</source>
         <translation>您是否真的要移除设定【%1】？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21865"/>
+        <location filename="../qkeymapper.cpp" line="22106"/>
         <source>System reboot is required for the changes to take effect after uninstalling Interception driver.</source>
         <translation>卸载多键鼠输入支持驱动后需要重新启动操作系统生效。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21911"/>
+        <location filename="../qkeymapper.cpp" line="22152"/>
         <source>System reboot is required for the changes to take effect after installing Interception driver.</source>
         <translation>安装多键鼠输入支持驱动后需要重新启动操作系统生效。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21871"/>
+        <location filename="../qkeymapper.cpp" line="22112"/>
         <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
 
 Do you confirm to continue installing Interception driver?</source>
@@ -2174,104 +2214,104 @@ Do you confirm to continue installing Interception driver?</source>
 是否确认继续安装多键鼠输入支持驱动？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13902"/>
+        <location filename="../qkeymapper.cpp" line="14107"/>
         <source>Monitoring</source>
         <translation>监测中</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14490"/>
-        <location filename="../qkeymapper.cpp" line="17417"/>
+        <location filename="../qkeymapper.cpp" line="14695"/>
+        <location filename="../qkeymapper.cpp" line="17628"/>
         <source>UninstallViGEm</source>
         <translation>卸载ViGEm</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14589"/>
-        <location filename="../qkeymapper.cpp" line="17432"/>
+        <location filename="../qkeymapper.cpp" line="14794"/>
+        <location filename="../qkeymapper.cpp" line="17643"/>
         <source>Uninstall Driver</source>
         <translation>卸载驱动</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6846"/>
-        <location filename="../qkeymapper.cpp" line="6960"/>
-        <location filename="../qkeymapper.cpp" line="17441"/>
+        <location filename="../qkeymapper.cpp" line="6932"/>
+        <location filename="../qkeymapper.cpp" line="7046"/>
+        <location filename="../qkeymapper.cpp" line="17652"/>
         <source>OriginalKey</source>
         <translation>原始按键</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="5894"/>
+        <location filename="../qkeymapper.cpp" line="5943"/>
         <source>Failed to remove existing update program file %1!</source>
         <translation>删除旧的升级程序文件 %1 失败！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="5946"/>
+        <location filename="../qkeymapper.cpp" line="5995"/>
         <source>Failed to start update program %1!</source>
         <translation>启动升级程序 %1 失败！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6391"/>
-        <location filename="../qkeymapper.cpp" line="6403"/>
-        <location filename="../qkeymapper.cpp" line="17277"/>
-        <location filename="../qkeymapper.cpp" line="22727"/>
-        <location filename="../qkeymapper.cpp" line="22756"/>
+        <location filename="../qkeymapper.cpp" line="6440"/>
+        <location filename="../qkeymapper.cpp" line="6452"/>
+        <location filename="../qkeymapper.cpp" line="17488"/>
+        <location filename="../qkeymapper.cpp" line="22971"/>
+        <location filename="../qkeymapper.cpp" line="23000"/>
         <source>Press any key to record...</source>
         <translation>请按下按键进行记录...</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6847"/>
-        <location filename="../qkeymapper.cpp" line="6961"/>
-        <location filename="../qkeymapper.cpp" line="17442"/>
+        <location filename="../qkeymapper.cpp" line="6933"/>
+        <location filename="../qkeymapper.cpp" line="7047"/>
+        <location filename="../qkeymapper.cpp" line="17653"/>
         <source>MappingKey</source>
         <translation>映射按键</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6848"/>
-        <location filename="../qkeymapper.cpp" line="6962"/>
-        <location filename="../qkeymapper.cpp" line="17443"/>
+        <location filename="../qkeymapper.cpp" line="6934"/>
+        <location filename="../qkeymapper.cpp" line="7048"/>
+        <location filename="../qkeymapper.cpp" line="17654"/>
         <source>Burst</source>
         <translation>连发</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="6849"/>
-        <location filename="../qkeymapper.cpp" line="6963"/>
-        <location filename="../qkeymapper.cpp" line="17444"/>
+        <location filename="../qkeymapper.cpp" line="6935"/>
+        <location filename="../qkeymapper.cpp" line="7049"/>
+        <location filename="../qkeymapper.cpp" line="17655"/>
         <source>Lock</source>
         <translation>锁定</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9997"/>
-        <location filename="../qkeymapper.cpp" line="12970"/>
-        <location filename="../qkeymapper.cpp" line="17291"/>
+        <location filename="../qkeymapper.cpp" line="10160"/>
+        <location filename="../qkeymapper.cpp" line="13175"/>
+        <location filename="../qkeymapper.cpp" line="17502"/>
         <source>GlobalKeyMapping</source>
         <translation>全局按键映射</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13942"/>
+        <location filename="../qkeymapper.cpp" line="14147"/>
         <source>TabisAlready</source>
         <translation>当前已是</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13945"/>
+        <location filename="../qkeymapper.cpp" line="14150"/>
         <source>MappingTabSwitch</source>
         <translation>映射切换</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15630"/>
-        <location filename="../qkeymapper.cpp" line="16341"/>
+        <location filename="../qkeymapper.cpp" line="15838"/>
+        <location filename="../qkeymapper.cpp" line="16550"/>
         <source>All</source>
         <translation>(全选)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17349"/>
+        <location filename="../qkeymapper.cpp" line="17560"/>
         <source>Gyro2Mouse X Speed</source>
         <translation>水平速度</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17350"/>
+        <location filename="../qkeymapper.cpp" line="17561"/>
         <source>Gyro2Mouse Y Speed</source>
         <translation>垂直速度</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17403"/>
+        <location filename="../qkeymapper.cpp" line="17614"/>
         <source>Multi-Input setting tab tooltip</source>
         <translation>&lt;html&gt;
 &lt;body&gt;
@@ -2285,12 +2325,12 @@ Do you confirm to continue installing Interception driver?</source>
 &lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17449"/>
+        <location filename="../qkeymapper.cpp" line="17660"/>
         <source>PID</source>
         <translation>进程号</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="17450"/>
+        <location filename="../qkeymapper.cpp" line="17661"/>
         <source>Window Title</source>
         <translation>窗口标题</translation>
     </message>
@@ -2558,7 +2598,7 @@ Do you confirm to continue installing Interception driver?</source>
     <message>
         <location filename="../qtablesetupdialog.ui" line="222"/>
         <location filename="../qtablesetupdialog.cpp" line="104"/>
-        <location filename="../qtablesetupdialog.cpp" line="759"/>
+        <location filename="../qtablesetupdialog.cpp" line="769"/>
         <source>Select Custom Image</source>
         <translation>选择自定义图片</translation>
     </message>
@@ -2670,62 +2710,66 @@ Do you confirm to continue installing Interception driver?</source>
         <translation>映射表名更新成功: </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="612"/>
+        <location filename="../qtablesetupdialog.cpp" line="618"/>
         <source>TabHotkey clear success</source>
         <translation>映射表快捷键清除成功</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="620"/>
+        <location filename="../qtablesetupdialog.cpp" line="629"/>
         <source>TabHotkey update success: </source>
         <translation>映射表快捷键更新成功: </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="629"/>
         <source>Invalid input format for TabHotkey: %1</source>
-        <translation>映射表快捷键输入格式错误: %1</translation>
+        <translation type="vanished">映射表快捷键输入格式错误: %1</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="644"/>
+        <location filename="../qtablesetupdialog.cpp" line="636"/>
+        <source>Invalid TabHotkey: %1</source>
+        <translation>无效的映射表快捷键 : %1</translation>
+    </message>
+    <message>
+        <location filename="../qtablesetupdialog.cpp" line="654"/>
         <source>Export mapping data table : </source>
         <translation>导出映射表 : </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="663"/>
+        <location filename="../qtablesetupdialog.cpp" line="673"/>
         <source>Mapping data of table &quot;%1&quot; export successfully</source>
         <translation>映射表&quot;%1&quot;数据导出成功</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="679"/>
+        <location filename="../qtablesetupdialog.cpp" line="689"/>
         <source>Import mapping data table : </source>
         <translation>导入映射表 : </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="700"/>
+        <location filename="../qtablesetupdialog.cpp" line="710"/>
         <source>Import mapping data to table &quot;%1&quot; successfully</source>
         <translation>映射表&quot;%1&quot;导入映射数据成功</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="715"/>
+        <location filename="../qtablesetupdialog.cpp" line="725"/>
         <source>Are you sure you want to remove the mapping table &quot;%1&quot;?</source>
         <translation>请确认是否要删除映射表&quot;%1&quot;？</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="726"/>
+        <location filename="../qtablesetupdialog.cpp" line="736"/>
         <source>Mapping table &quot;%1&quot; removed successfully</source>
         <translation>映射表&quot;%1&quot;删除成功</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="731"/>
+        <location filename="../qtablesetupdialog.cpp" line="741"/>
         <source>Cannot remove the last mapping table!</source>
         <translation>无法删除最后一个映射表！</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="757"/>
+        <location filename="../qtablesetupdialog.cpp" line="767"/>
         <source>Image files</source>
         <translation>图片文件</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="816"/>
+        <location filename="../qtablesetupdialog.cpp" line="826"/>
         <source>Unable to load the image!</source>
         <translation>无法加载图片文件！</translation>
     </message>
@@ -2766,61 +2810,61 @@ Do you confirm to continue installing Interception driver?</source>
 <context>
     <name>SettingTransferDialog</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="23085"/>
-        <location filename="../qkeymapper.cpp" line="23200"/>
+        <location filename="../qkeymapper.cpp" line="23329"/>
+        <location filename="../qkeymapper.cpp" line="23450"/>
         <source>Setting Export</source>
         <translation>设定导出</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23085"/>
-        <location filename="../qkeymapper.cpp" line="23169"/>
-        <location filename="../qkeymapper.cpp" line="23200"/>
+        <location filename="../qkeymapper.cpp" line="23329"/>
+        <location filename="../qkeymapper.cpp" line="23416"/>
+        <location filename="../qkeymapper.cpp" line="23450"/>
         <source>Setting Import</source>
         <translation>设定导入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23095"/>
+        <location filename="../qkeymapper.cpp" line="23339"/>
         <source>FileSelect</source>
         <translation>文件选择</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23097"/>
+        <location filename="../qkeymapper.cpp" line="23341"/>
         <source>INI File:</source>
         <translation>INI 文件:</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23157"/>
+        <location filename="../qkeymapper.cpp" line="23404"/>
         <source>Select Export INI File</source>
         <translation>选择导出的 INI 文件</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23162"/>
+        <location filename="../qkeymapper.cpp" line="23409"/>
         <source>Select Import INI File</source>
         <translation>选择导入的 INI 文件</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23208"/>
+        <location filename="../qkeymapper.cpp" line="23458"/>
         <source>Please select one or more settings to export.</source>
         <translation>请选择一个或多个设定进行导出。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23211"/>
+        <location filename="../qkeymapper.cpp" line="23461"/>
         <source>Please select one or more settings to import.</source>
         <translation>请选择一个或多个设定进行导入。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23159"/>
-        <location filename="../qkeymapper.cpp" line="23164"/>
+        <location filename="../qkeymapper.cpp" line="23406"/>
+        <location filename="../qkeymapper.cpp" line="23411"/>
         <source>INI Files (*.ini)</source>
         <translation>INI 文件 (*.ini)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23169"/>
+        <location filename="../qkeymapper.cpp" line="23416"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>在所选的 INI 文件中未找到有效的设定。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23202"/>
+        <location filename="../qkeymapper.cpp" line="23452"/>
         <source>Please select a INI file.</source>
         <translation>请选择一个 INI 文件。</translation>
     </message>

@@ -925,7 +925,7 @@ public:
     static bool getEnableSystemFilterKeyChecked(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
-    static bool validateCombinationKey(QString &input);
+    static ValidationResult validateCombinationKey(QString &input);
     static int tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame = nullptr);
     static int tabIndexToSwitchByTabName(const QString &tabName);
     static bool exportKeyMappingDataToFile(int tabindex, const QString &filename);

@@ -620,17 +620,21 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
         }
     }
-    else if (QKeyMapper::validateCombinationKey(tabhotkeystring))
-    {
-        popupMessageColor = SUCCESS_COLOR;
-        popupMessage = tr("TabHotkey update success: ") + ori_tabhotkeystring;
-
-        QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
-    }
     else
     {
-        popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr("Invalid input format for TabHotkey: %1").arg(ori_tabhotkeystring);
+        ValidationResult validationResult = QKeyMapper::validateCombinationKey(tabhotkeystring);
+        if (validationResult.isValid)
+        {
+            popupMessageColor = SUCCESS_COLOR;
+            popupMessage = tr("TabHotkey update success: ") + ori_tabhotkeystring;
+
+            QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+        }
+        else
+        {
+            popupMessageColor = FAILURE_COLOR;
+            popupMessage = tr("Invalid TabHotkey: %1").arg(validationResult.errorMessage);
+        }
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 
