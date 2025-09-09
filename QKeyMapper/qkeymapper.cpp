@@ -6781,13 +6781,6 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
     int tabindex_toswitch = tabIndexToSwitchByTabHotkey(hotkey_string, &isSame);
 
     if (tabindex_toswitch >= 0) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[HotKeyMappingTableSwitchTab] Switch tab index(" << s_KeyMappingTabWidgetCurrentIndex << "->" << tabindex_toswitch << ")";
-#endif
-        clearLockStatusDisplay();
-        forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
-        updateCategoryFilterByShowCategoryState();
-
         bool remember_tabname = false;
         QString tabname_toswitch = s_KeyMappingTabInfoList.at(tabindex_toswitch).TabName;
         QString tabhotkey_toswitch = s_KeyMappingTabInfoList.at(tabindex_toswitch).TabHotkey;
@@ -6796,10 +6789,19 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
         if (tabhotkey_match.hasMatch()) {
             remember_tabname = !tabhotkey_match.captured(2).isEmpty();
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[HotKeyMappingTableSwitchTab] Switch tab index(" << s_KeyMappingTabWidgetCurrentIndex << "->" << tabindex_toswitch << "), remember_tabname =" << remember_tabname;
+#endif
+
         // Save the tab name as last tab if remember_tabname is true
         if (remember_tabname) {
             saveCurrentSettingLastTabName(tabname_toswitch);
         }
+
+        clearLockStatusDisplay();
+        forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
+        updateCategoryFilterByShowCategoryState();
 
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
@@ -6824,16 +6826,17 @@ void QKeyMapper::MappingTableSwitchByTabName(const QString &tabName, bool rememb
 
     if (tabindex_toswitch >= 0) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().noquote().nospace() << "[MappingTableSwitchByTabName] SwitchTab(" << tabName << ") TabIndex(" << s_KeyMappingTabWidgetCurrentIndex << "->" << tabindex_toswitch << ")";
+        qDebug().noquote().nospace() << "[MappingTableSwitchByTabName] SwitchTab(" << tabName << "), TabIndex(" << s_KeyMappingTabWidgetCurrentIndex << "->" << tabindex_toswitch << "), remember_tabname =" << remember_tabname;
 #endif
-        clearLockStatusDisplay();
-        forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
-        updateCategoryFilterByShowCategoryState();
 
         // Save the tab name as last tab if remember_tabname is true
         if (remember_tabname) {
             saveCurrentSettingLastTabName(tabName);
         }
+
+        clearLockStatusDisplay();
+        forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
+        updateCategoryFilterByShowCategoryState();
 
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
             || m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
@@ -9405,7 +9408,6 @@ void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
     settingFile.setIniCodec("UTF-8");
 #endif
 
-    QString saveSettingSelectStr;
     QString cursettingSelectStr;
     int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
     if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
@@ -9419,18 +9421,13 @@ void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
     }
 
     // Determine save path based on current setting selection
-    if (curSettingSelectIndex == GLOBALSETTING_INDEX) {
-        saveSettingSelectStr = QString("%1/").arg(GROUPNAME_GLOBALSETTING);
-    }
-    else {
-        saveSettingSelectStr = QString("%1/").arg(cursettingSelectStr);
-    }
+    QString saveSettingSelectStr = QString("%1/").arg(cursettingSelectStr);
 
     // Save the last tab name for the current setting
     settingFile.setValue(saveSettingSelectStr + MAPPINGTABLE_LASTTABNAME, tabName);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().noquote().nospace() << "[saveCurrentSettingLastTabName] Saved LastTabName [" << saveSettingSelectStr + MAPPINGTABLE_LASTTABNAME << "] -> \"" << tabName << "\"";
+    qDebug().noquote().nospace() << "\033[1;34m[saveCurrentSettingLastTabName] Saved LastTabName [" << cursettingSelectStr << "] -> \"" << tabName << "\"\033[0m";
 #endif
 }
 
