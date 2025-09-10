@@ -3761,7 +3761,7 @@ ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &orig
     if (orikeylist.isEmpty())
     {
         result.isValid = false;
-        result.errorMessage = tr("Unlock(...) is empty.");
+        result.errorMessage = tr("It is empty.");
         return result;
     }
 
@@ -3788,7 +3788,7 @@ ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &orig
     int numRemoved = orikeylist.removeDuplicates();
     if (numRemoved > 0) {
         result.isValid = false;
-        result.errorMessage = tr("Unlock(...) contains duplicate keys.");
+        result.errorMessage = tr("It contains duplicate keys.");
         return result;
     }
 
