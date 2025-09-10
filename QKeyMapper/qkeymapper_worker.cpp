@@ -1739,8 +1739,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 else if (runcmd_match.hasMatch()) {
                     QString run_cmd = runcmd_match.captured(1);
-                    ParsedRunCommand parsed_cmd = QKeyMapper_Worker::parseRunCommandUserInput(run_cmd);
-                    QKeyMapper_Worker::runCommand(
+                    ParsedRunCommand parsed_cmd = parseRunCommandUserInput(run_cmd);
+                    runCommand(
                         parsed_cmd.cmdLine,
                         parsed_cmd.runWait,
                         parsed_cmd.workDir,
@@ -1763,6 +1763,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     QString baseKey = unlock_match.captured(2);        // Base key without suffix (e.g., "L-Ctrl+1", "R", "Y+B")
                     QString suffix = unlock_match.captured(3);         // Suffix (✖ or ⏲number)
                     QString timeString = unlock_match.captured(4);     // Number for ⏲ suffix
+                    Q_UNUSED(timeString);
 
                     // Construct the key to search in pressedLockKeysMap
                     QString lockMapKey;
@@ -1789,16 +1790,23 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
 #ifdef DEBUG_LOGOUT_ON
                             QString debugmessage = QString("[sendInputKeys] Unlock key \"%1\" (mapped from \"%2\"), rowindex(%3)").arg(lockMapKey, key).arg(locked_rowindex);
-                            qDebug().nospace().noquote() << "\033[1;33m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
+                            qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
 #endif
 
                             // Stop burst timer if Lock+Burst is enabled for the unlocked key
-                            if ((*keyMappingDataList)[locked_rowindex].Burst) {
-                                emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(lockMapKey, locked_rowindex, keyMappingDataList);
+                            bool burst = keyMappingDataList->at(locked_rowindex).Burst;
+                            bool lock = keyMappingDataList->at(locked_rowindex).Lock;
+                            if (burst && lock) {
+                                emit stopBurstKeyTimer_Signal(lockMapKey, locked_rowindex, keyMappingDataList);
 #ifdef DEBUG_LOGOUT_ON
                                 QString burstmessage = QString("[sendInputKeys] Stop burst timer for unlocked key \"%1\"").arg(lockMapKey);
                                 qDebug().nospace().noquote() << "\033[1;32m" << burstmessage << "\033[0m";
 #endif
+                            }
+                            else if (lock) {
+                                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(locked_rowindex).Mapping_Keys;
+                                QString original_key = QKeyMapper::KeyMappingDataList->at(locked_rowindex).Original_Key;
+                                emit_sendInputKeysSignal_Wrapper(locked_rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             }
 
                             // updateLockStatus();
@@ -13525,7 +13533,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

@@ -2011,7 +2011,7 @@ bool QItemSetupDialog::updateOriginalKey()
     }
     else {
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr(ORIGINALKEYLABEL_STR) + ": " + result.errorMessage;
+        popupMessage = tr(ORIGINALKEYLABEL_STR) + " -> " + result.errorMessage;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
@@ -2070,7 +2070,7 @@ bool QItemSetupDialog::updateMappingKey()
     }
     else {
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr(MAPPINGKEYLABEL_STR) + ": " + result.errorMessage;
+        popupMessage = tr(MAPPINGKEYLABEL_STR) + " -> " + result.errorMessage;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
@@ -2149,7 +2149,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
     }
     else {
         popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr(KEYUPMAPPINGLABEL_STR) + ": " + result.errorMessage;
+        popupMessage = tr(KEYUPMAPPINGLABEL_STR) + " -> " + result.errorMessage;
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
