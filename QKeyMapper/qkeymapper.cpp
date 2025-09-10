@@ -17533,7 +17533,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->waitTimeSpinBox->setSuffix(tr(" ms"));
     ui->pressTimeSpinBox->setSuffix(tr(" ms"));
     ui->pushLevelLabel->setText(tr("PushLevel"));
-    ui->sendTextLabel->setText(tr("Text"));
+    ui->sendTextLabel->setText(tr("Param"));
     ui->keyPressTypeComboBox->clear();
     ui->keyPressTypeComboBox->addItem(tr("LongPress"));
     ui->keyPressTypeComboBox->addItem(tr("DoublePress"));

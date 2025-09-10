@@ -1911,7 +1911,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Text</string>
+    <string>Param</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTop|Qt::AlignmentFlag::AlignTrailing</set>
