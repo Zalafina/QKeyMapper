@@ -1052,6 +1052,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     );
     static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
+    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
@@ -1257,6 +1258,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
+            QRegularExpressionMatch unlock_match = unlock_regex.match(key);
             if (sendtext_match.hasMatch()) {
                 /* SendText KeyUp do nothing. */
             }
@@ -1265,6 +1267,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
             else if (switchtab_match.hasMatch()) {
                 /* SwitchTab KeyUp do nothing. */
+            }
+            else if (unlock_match.hasMatch()) {
+                /* Unlock KeyUp do nothing. */
             }
             else if (vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
@@ -1718,6 +1723,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
                 QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
                 QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
+                QRegularExpressionMatch unlock_match = unlock_regex.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
@@ -1750,6 +1756,60 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace() << "[sendInputKeys] SwitchTab() TabName = " << switchtab_name << ", remember_tabname = " << remember_tabname;
 #endif
+                }
+                else if (unlock_match.hasMatch()) {
+                    // Process Unlock(...) mapping key
+                    QString fullKey = unlock_match.captured(1);        // Full key string (e.g., "L-Ctrl+1", "R✖", "Y+B⏲500")
+                    QString baseKey = unlock_match.captured(2);        // Base key without suffix (e.g., "L-Ctrl+1", "R", "Y+B")
+                    QString suffix = unlock_match.captured(3);         // Suffix (✖ or ⏲number)
+                    QString timeString = unlock_match.captured(4);     // Number for ⏲ suffix
+
+                    // Construct the key to search in pressedLockKeysMap
+                    QString lockMapKey;
+                    if (suffix.isEmpty()) {
+                        // Normal key: use as is (e.g., "L-Ctrl+1", "F3")
+                        lockMapKey = fullKey;
+                    }
+                    else if (suffix == "✖") {
+                        // Double-press key: remove any trailing numbers and use ✖ (e.g., "R✖" not "R✖300")
+                        lockMapKey = baseKey + "✖";
+                    }
+                    else if (suffix.startsWith("⏲")) {
+                        // Long-press key: keep the time parameter (e.g., "Y+B⏲500")
+                        lockMapKey = fullKey;
+                    }
+
+                    // Check if the key exists in pressedLockKeysMap and unlock it
+                    if (pressedLockKeysMap.contains(lockMapKey)) {
+                        int locked_rowindex = pressedLockKeysMap.value(lockMapKey);
+                        if (locked_rowindex >= 0 && locked_rowindex < keyMappingDataList->size()) {
+                            // Set lock state to off and remove from pressedLockKeysMap
+                            (*keyMappingDataList)[locked_rowindex].LockState = LOCK_STATE_LOCKOFF;
+                            pressedLockKeysMap.remove(lockMapKey);
+
+#ifdef DEBUG_LOGOUT_ON
+                            QString debugmessage = QString("[sendInputKeys] Unlock key \"%1\" (mapped from \"%2\"), rowindex(%3)").arg(lockMapKey, key).arg(locked_rowindex);
+                            qDebug().nospace().noquote() << "\033[1;33m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
+#endif
+
+                            // Stop burst timer if Lock+Burst is enabled for the unlocked key
+                            if ((*keyMappingDataList)[locked_rowindex].Burst) {
+                                emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(lockMapKey, locked_rowindex, keyMappingDataList);
+#ifdef DEBUG_LOGOUT_ON
+                                QString burstmessage = QString("[sendInputKeys] Stop burst timer for unlocked key \"%1\"").arg(lockMapKey);
+                                qDebug().nospace().noquote() << "\033[1;32m" << burstmessage << "\033[0m";
+#endif
+                            }
+
+                            // updateLockStatus();
+                        }
+                    }
+                    else {
+#ifdef DEBUG_LOGOUT_ON
+                        QString debugmessage = QString("[sendInputKeys] Unlock key \"%1\" not found in pressedLockKeysMap").arg(lockMapKey);
+                        qDebug().nospace().noquote() << "\033[1;31m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
+#endif
+                    }
                 }
                 else if (vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -9679,9 +9739,10 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
         }
     }
 
-    if (update_lockstatus) {
-        updateLockStatus();
-    }
+    Q_UNUSED(update_lockstatus);
+    // if (update_lockstatus) {
+    //     updateLockStatus();
+    // }
 
     return keyproc;
 }
@@ -13654,10 +13715,11 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression sendtext_regex(QKeyMapperConstants::REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
+    static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK);
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
-    // Extract SendText(...), Run(...), and SwitchTab(...) content to preserve them
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

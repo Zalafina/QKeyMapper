@@ -968,6 +968,12 @@ namespace QKeyMapperConstants {
     // inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab\((.+?)\))";
     inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab(💾)?\((.+?)\))";
 
+    // Pattern for matching Unlock(...) mapping keys
+    // Matches: Unlock(L-Ctrl+1), Unlock(F3), Unlock(R✖), Unlock(Y+B⏲500)
+    // Does not match: Unlock(R✖300), Unlock(Y+B⏲)
+    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖|⏲number), (4) = number for ⏲
+    inline constexpr const char REGEX_PATTERN_UNLOCK[] = R"(^Unlock\((([^\s✖⏲)]+)(✖|⏲(\d+))?)\)$)";
+
     inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
 

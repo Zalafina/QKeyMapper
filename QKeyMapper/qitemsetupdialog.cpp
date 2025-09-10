@@ -545,17 +545,17 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
 
-    // Create a list of all matches (SendText, Run, and SwitchTab) with their positions
+    // Create a list of all matches (SendText, Run, SwitchTab, and Unlock) with their positions
     struct MatchInfo {
         int start;
         int end;
         QString content;
-        QString type; // "sendtext", "run", or "switchtab"
+        QString type; // "sendtext", "run", "switchtab", "switchtab_save", or "unlock"
     };
 
     QList<MatchInfo> allMatches;
@@ -769,6 +769,24 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         }
     }
 
+    // Find all Unlock matches (simple pattern without bracket balancing issues)
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        QRegularExpressionMatch match = unlock_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // Unlock pattern is simple: Unlock(...) with no nested brackets expected
+        MatchInfo info;
+        info.start = match.capturedStart();
+        info.end = match.capturedEnd();
+        info.content = match.captured(0);
+        info.type = "unlock";
+        allMatches.append(info);
+        currentPos = match.capturedEnd();
+    }
+
     // Sort matches by start position
     std::sort(allMatches.begin(), allMatches.end(), [](const MatchInfo &a, const MatchInfo &b) {
         return a.start < b.start;
@@ -818,6 +836,10 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
                 // Don't trim to preserve user's spacing - only replace line breaks
                 content = QString("SwitchTab💾(%1)").arg(innerContent);
             }
+        }
+        else if (allMatches[i].type == "unlock") {
+            // Unlock(...) content remains unchanged - no processing needed
+            // The Unlock pattern is simple and doesn't need simplified processing
         }
         // SendText(...) content remains completely unchanged
 
@@ -1994,11 +2016,12 @@ bool QItemSetupDialog::updateMappingKey()
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
+    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
 
     QString mappingKey = m_MappingKeyLineEdit->text();
 
-    // Extract SendText(...), Run(...), and SwitchTab(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -2052,11 +2075,12 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
+    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
 
     QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 
-    // Extract SendText(...), Run(...), and SwitchTab(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

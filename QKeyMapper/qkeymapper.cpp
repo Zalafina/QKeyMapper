@@ -3663,12 +3663,14 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             );
             static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
             static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
+            static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
+            QRegularExpressionMatch unlock_match = unlock_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
@@ -3703,6 +3705,29 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                 || runcmd_match.hasMatch()
                 || switchtab_match.hasMatch()) {
                 result.isValid = true;
+            }
+            else if (unlock_match.hasMatch()) {
+                // Validate Unlock(...) mapping key
+                QString fullKey = unlock_match.captured(1);        // Full key string (e.g., "L-Ctrl+1", "R✖", "Y+B⏲500")
+                QString baseKey = unlock_match.captured(2);        // Base key without suffix (e.g., "L-Ctrl+1", "R", "Y+B")
+                QString suffix = unlock_match.captured(3);         // Suffix (✖ or ⏲number)
+                QString timeString = unlock_match.captured(4);     // Number for ⏲ suffix
+
+                // Validate that the base key is a valid original key
+                ValidationResult baseKeyValidation = validateSingleOriginalKeyWithoutTimeSuffix(baseKey, -1);
+                if (!baseKeyValidation.isValid) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid key in Unlock(...): %1").arg(baseKeyValidation.errorMessage);
+                }
+                else if (!timeString.isEmpty()) {
+                    // Validate ⏲ time parameter using the same rules as validateSingleOriginalKey
+                    bool ok;
+                    int pressTime = timeString.toInt(&ok);
+                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Invalid press time in Unlock(...): \"%1\"").arg(timeString);
+                    }
+                }
             }
             else {
                 result.isValid = false;
