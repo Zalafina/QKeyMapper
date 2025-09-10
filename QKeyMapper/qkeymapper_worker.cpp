@@ -10248,6 +10248,13 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
         {
             bool combinationkey_matched = true;
             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(combinationkey);
+
+            // Check if index is valid before accessing the list
+            if (findindex < 0) {
+                // Skip this combination key if no valid mapping found
+                continue;
+            }
+
             bool checkcombkeyorder = QKeyMapper::KeyMappingDataList->at(findindex).CheckCombKeyOrder;
             if (checkcombkeyorder) {
                 bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
@@ -10861,7 +10868,7 @@ void QKeyMapper_Worker::collectCombinationOriginalKeysList()
         if (keymapdata.Original_Key.contains(SEPARATOR_PLUS))
         {
             QString combinationkey = QKeyMapper::getOriginalKeyStringWithoutSuffix(keymapdata.Original_Key);
-            if (!combinationkey.isEmpty()) {
+            if (!combinationkey.isEmpty() && !combinationOriginalKeysList.contains(combinationkey)) {
                 combinationOriginalKeysList.append(combinationkey);
             }
         }
