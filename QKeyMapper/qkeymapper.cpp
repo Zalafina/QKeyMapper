@@ -3712,9 +3712,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                 QString baseKey = unlock_match.captured(2);        // Base key without suffix (e.g., "L-Ctrl+1", "R", "Y+B")
                 QString suffix = unlock_match.captured(3);         // Suffix (✖ or ⏲number)
                 QString timeString = unlock_match.captured(4);     // Number for ⏲ suffix
+                Q_UNUSED(fullKey);
+                Q_UNUSED(suffix);
 
                 // Validate that the base key is a valid original key
-                ValidationResult baseKeyValidation = validateSingleOriginalKeyWithoutTimeSuffix(baseKey, -1);
+                ValidationResult baseKeyValidation = validateUnlockOriginalKeyString(baseKey);
                 if (!baseKeyValidation.isValid) {
                     result.isValid = false;
                     result.errorMessage = tr("Invalid key in Unlock(...): %1").arg(baseKeyValidation.errorMessage);
@@ -3745,6 +3747,49 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     else {
         result.isValid = false;
         result.errorMessage = tr("Invalid format \"%1\"").arg(mapkey);
+    }
+
+    return result;
+}
+
+ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &originalkeystr)
+{
+    ValidationResult result;
+    result.isValid = true;
+
+    QStringList orikeylist = originalkeystr.split(SEPARATOR_PLUS);
+    if (orikeylist.isEmpty())
+    {
+        result.isValid = false;
+        result.errorMessage = tr("Unlock(...) is empty.");
+        return result;
+    }
+
+    static QRegularExpression orikey_regex(R"(^(.+?)(?:@([0-9]))?$)");
+    for (const QString &orikey : std::as_const(orikeylist)) {
+        QRegularExpressionMatch orikey_match = orikey_regex.match(orikey);
+        if (orikey_match.hasMatch()) {
+            QString orikey_withoutindex = orikey_match.captured(1);
+            if (!QKeyMapper_Worker::CombinationKeysList.contains(orikey_withoutindex))
+            {
+                result.isValid = false;
+                result.errorMessage = tr("Invalid key \"%1\"").arg(orikey_withoutindex);
+                return result;
+            }
+        }
+        else {
+            result.isValid = false;
+            result.errorMessage = tr("Invalid key \"%1\"").arg(orikey);
+            return result;
+        }
+    }
+
+    // Check for duplicate keys
+    int numRemoved = orikeylist.removeDuplicates();
+    if (numRemoved > 0) {
+        result.isValid = false;
+        result.errorMessage = tr("Unlock(...) contains duplicate keys.");
+        return result;
     }
 
     return result;

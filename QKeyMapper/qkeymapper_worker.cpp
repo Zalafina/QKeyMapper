@@ -13715,7 +13715,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression sendtext_regex(QKeyMapperConstants::REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
-    static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK);
+    static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
     // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them

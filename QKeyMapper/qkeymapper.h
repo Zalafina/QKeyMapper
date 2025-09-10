@@ -853,6 +853,7 @@ public:
     static ValidationResult validateSingleOriginalKeyWithoutTimeSuffix(const QString &orikey, int update_rowindex);
     static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex);
     static ValidationResult validateSingleMappingKey(const QString &mapkey);
+    static ValidationResult validateUnlockOriginalKeyString(const QString &originalkeystr);
     static bool checkOriginalkeyStr(const QString &originalkeystr);
     static bool checkMappingkeyStr(QString &mappingkeystr);
     static void collectMappingTableTabHotkeys(void);

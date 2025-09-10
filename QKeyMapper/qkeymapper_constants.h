@@ -961,18 +961,19 @@ namespace QKeyMapperConstants {
     inline constexpr const char REGEX_PATTERN_RUN_FIND[] = R"(Run\((.+?)\))";
 
     // Use pattern that matches everything between SwitchTab( and the last ) for complete content capture
-    // inline constexpr const char REGEX_PATTERN_SWITCHTAB[] = R"(^SwitchTab\((.+)\)$)";
     inline constexpr const char REGEX_PATTERN_SWITCHTAB[] = R"(^SwitchTab(💾)?\((.+)\)$)";
 
     // Pattern for finding SwitchTab( and the first ) parts in a composite string (non-greedy matching)
-    // inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab\((.+?)\))";
     inline constexpr const char REGEX_PATTERN_SWITCHTAB_FIND[] = R"(SwitchTab(💾)?\((.+?)\))";
 
     // Pattern for matching Unlock(...) mapping keys
     // Matches: Unlock(L-Ctrl+1), Unlock(F3), Unlock(R✖), Unlock(Y+B⏲500)
     // Does not match: Unlock(R✖300), Unlock(Y+B⏲)
     // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖|⏲number), (4) = number for ⏲
-    inline constexpr const char REGEX_PATTERN_UNLOCK[] = R"(^Unlock\((([^\s✖⏲)]+)(✖|⏲(\d+))?)\)$)";
+    inline constexpr const char REGEX_PATTERN_UNLOCK[] = R"(^Unlock\((([^✖⏲)]+)(✖|⏲(\d+))?)\)$)";
+
+    // Pattern for finding Unlock( and the first ) parts in a composite string (non-greedy matching)
+    inline constexpr const char REGEX_PATTERN_UNLOCK_FIND[] = R"(Unlock\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
 
     inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
@@ -1072,6 +1073,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char RUN_STR[]           = "Run";
     inline constexpr const char SWITCHTAB_STR[]         = "SwitchTab";
     inline constexpr const char SWITCHTAB_SAVE_STR[]    = "SwitchTab💾";
+    inline constexpr const char UNLOCK_STR[]            = "Unlock";
     inline constexpr const char KEYSEQUENCEBREAK_STR[] = "KeySequenceBreak";
 
     inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";

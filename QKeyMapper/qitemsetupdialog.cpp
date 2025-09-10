@@ -793,6 +793,8 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
     });
 
     // Store content in order and create a map for placeholder-to-content mapping
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
+    static QRegularExpression whitespace_reg(R"(\s+)");
     preservedParts.clear();
     for (int i = 0; i < allMatches.size(); ++i) {
         QString content = allMatches[i].content;
@@ -805,10 +807,9 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             int lastParen = content.lastIndexOf(')');
             if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
                 QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
-                static QRegularExpression simplified_regex(R"([\r\n]+)");
                 innerContent.replace(simplified_regex, " ");
                 QString simplifiedInnerContent = innerContent.trimmed();
-                content = QString("Run(%1)").arg(simplifiedInnerContent);
+                content = QString("%1(%2)").arg(RUN_STR, simplifiedInnerContent);
             }
         }
         else if (allMatches[i].type == "switchtab") {
@@ -818,10 +819,9 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             int lastParen = content.lastIndexOf(')');
             if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
                 QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
-                static QRegularExpression simplified_regex(R"([\r\n]+)");
                 innerContent.replace(simplified_regex, " ");
                 // Don't trim to preserve user's spacing - only replace line breaks
-                content = QString("SwitchTab(%1)").arg(innerContent);
+                content = QString("%1(%2)").arg(SWITCHTAB_STR, innerContent);
             }
         }
         else if (allMatches[i].type == "switchtab_save") {
@@ -831,15 +831,22 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             int lastParen = content.lastIndexOf(')');
             if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
                 QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
-                static QRegularExpression simplified_regex(R"([\r\n]+)");
                 innerContent.replace(simplified_regex, " ");
                 // Don't trim to preserve user's spacing - only replace line breaks
-                content = QString("SwitchTab💾(%1)").arg(innerContent);
+                content = QString("%1(%2)").arg(SWITCHTAB_SAVE_STR, innerContent);
             }
         }
         else if (allMatches[i].type == "unlock") {
-            // Unlock(...) content remains unchanged - no processing needed
-            // The Unlock pattern is simple and doesn't need simplified processing
+            // Extract the content inside Unlock(...) and apply custom simplified()
+            // Format: Unlock(content) -> find content between first ( and last )
+            int firstParen = content.indexOf('(');
+            int lastParen = content.lastIndexOf(')');
+            if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
+                QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
+                innerContent = innerContent.simplified();
+                innerContent.remove(whitespace_reg);
+                content = QString("%1(%2)").arg(UNLOCK_STR, innerContent);
+            }
         }
         // SendText(...) content remains completely unchanged
 
@@ -2016,7 +2023,7 @@ bool QItemSetupDialog::updateMappingKey()
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
-    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
+    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
 
     QString mappingKey = m_MappingKeyLineEdit->text();
 
