@@ -10249,28 +10249,25 @@ int QKeyMapper_Worker::detectCombinationKeys(const QString &keycodeString, int k
             bool combinationkey_matched = true;
             int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(combinationkey);
 
-            // Check if index is valid before accessing the list
-            if (findindex < 0) {
-                // Skip this combination key if no valid mapping found
-                continue;
-            }
-
-            bool checkcombkeyorder = QKeyMapper::KeyMappingDataList->at(findindex).CheckCombKeyOrder;
-            if (checkcombkeyorder) {
-                bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
-                if (!keyorder_increasing) {
-                    combinationkey_matched = false;
+            // Check pressed order if index is valid before accessing the list
+            if (findindex >= 0) {
+                bool checkcombkeyorder = QKeyMapper::KeyMappingDataList->at(findindex).CheckCombKeyOrder;
+                if (checkcombkeyorder) {
+                    bool keyorder_increasing = isKeyOrderIncreasing(pressedCombinationRealKeysOrder);
+                    if (!keyorder_increasing) {
+                        combinationkey_matched = false;
+                    }
+#ifdef DEBUG_LOGOUT_ON
+                    QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, isKeyOrderIncreasing(%2), pressedCombinationRealKeysOrder -> ").arg(combinationkey, (keyorder_increasing?"true":"false"));
+                    qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
+#endif
                 }
+                else {
 #ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, isKeyOrderIncreasing(%2), pressedCombinationRealKeysOrder -> ").arg(combinationkey, (keyorder_increasing?"true":"false"));
-                qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
+                    QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, pressedCombinationRealKeysOrder -> ").arg(combinationkey);
+                    qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
 #endif
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[detectCombinationKeys] CombinationKey(\"%1\") KEY_DOWN detected, pressedCombinationRealKeysOrder -> ").arg(combinationkey);
-                qDebug().nospace().noquote() << debugmessage << pressedCombinationRealKeysOrder;
-#endif
+                }
             }
 
             if (combinationkey_matched) {
