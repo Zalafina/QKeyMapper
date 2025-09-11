@@ -9592,9 +9592,12 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
 
         if (findindex >=0 && true == QKeyMapper::KeyMappingDataList->at(findindex).Lock) {
             if (true == pressedLockKeysMap.contains(keycodeString)){
-                (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKOFF;
-                update_lockstatus = true;
-                pressedLockKeysMap.remove(keycodeString);
+                bool disable_orikeyunlock = QKeyMapper::KeyMappingDataList->at(findindex).DisableOriginalKeyUnlock;
+                if (!disable_orikeyunlock) {
+                    (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKOFF;
+                    update_lockstatus = true;
+                    pressedLockKeysMap.remove(keycodeString);
+                }
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KeyDown LockState = OFF").arg(keycodeString);
                 qDebug().nospace().noquote() << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap;

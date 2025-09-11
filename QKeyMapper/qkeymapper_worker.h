@@ -59,6 +59,7 @@ typedef struct MAP_KEYDATA
     int BurstReleaseTime;
     bool Lock;
     bool MappingKeyUnlock;
+    bool DisableOriginalKeyUnlock;
     bool PostMappingKey;
     int FixedVKeyCode;
     uint LockState;

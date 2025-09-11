@@ -399,7 +399,7 @@
    <property name="geometry">
     <rect>
      <x>610</x>
-     <y>140</y>
+     <y>110</y>
      <width>101</width>
      <height>22</height>
     </rect>
@@ -475,7 +475,7 @@
    <property name="geometry">
     <rect>
      <x>610</x>
-     <y>260</y>
+     <y>140</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -730,9 +730,9 @@
   <widget class="QLabel" name="fixedVKeyCodeLabel">
    <property name="geometry">
     <rect>
-     <x>425</x>
+     <x>415</x>
      <y>280</y>
-     <width>101</width>
+     <width>111</width>
      <height>21</height>
     </rect>
    </property>
@@ -808,6 +808,25 @@ Update</string>
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QCheckBox" name="disableOriginalKeyUnlockCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>450</x>
+     <y>260</y>
+     <width>181</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>DisableOriKeyUnlock</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>burstCheckBox</zorder>
   <zorder>lockCheckBox</zorder>
   <zorder>passThroughCheckBox</zorder>
@@ -849,6 +868,7 @@ Update</string>
   <zorder>keyRecordLineEdit</zorder>
   <zorder>keyRecordLabel</zorder>
   <zorder>updateMappingInfoButton</zorder>
+  <zorder>disableOriginalKeyUnlockCheckBox</zorder>
  </widget>
  <resources/>
  <connections/>
