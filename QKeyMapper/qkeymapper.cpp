@@ -16264,6 +16264,7 @@ void QKeyMapper::initKeysCategoryMap()
     mapping_common_keylist = QStringList() \
         << KEY_BLOCKED_STR
         << KEY_NONE_STR
+        << UNLOCK_STR
         << SENDTEXT_STR
         << RUN_STR
         << SWITCHTAB_STR
@@ -17074,6 +17075,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
+#if 0
             else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
                 // disable_burst = true;
                 disable_lock = true;
@@ -17087,6 +17089,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
+#endif
 
             /* ORIGINAL_KEY_COLUMN */
             QString mapdata_note = keymapdata.Note;
@@ -17275,6 +17278,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_burst = true;
         disable_lock = true;
     }
+#if 0
     else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
         // disable_burst = true;
         disable_lock = true;
@@ -17288,6 +17292,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_burst = true;
         disable_lock = true;
     }
+#endif
 
     // Update the specific column
     switch (column) {
@@ -19661,6 +19666,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
             }
+            else if (currentMapKeyText == UNLOCK_STR) {
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
+                unlock_key.remove(whitespace_reg);
+                if (unlock_key.isEmpty()) {
+                    QString message = tr("Please input the key to unlock!");
+                    showFailurePopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
+                }
+            }
             else if (currentMapKeyText == SENDTEXT_STR) {
                 QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
                 if (sendtext.isEmpty()) {
@@ -19669,7 +19687,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     return;
                 }
                 else {
-                    currentMapKeyText = QString("SendText(%1)").arg(sendtext);
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
                 }
             }
             else if (currentMapKeyText == RUN_STR) {
@@ -19683,7 +19701,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     return;
                 }
                 else {
-                    currentMapKeyText = QString("Run(%1)").arg(run_cmd);
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, run_cmd);
                 }
             }
             else if (currentMapKeyText == SWITCHTAB_STR
@@ -19842,6 +19860,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         }
                     }
                 }
+                else if (currentMapKeyText == UNLOCK_STR) {
+                    static QRegularExpression whitespace_reg(R"(\s+)");
+                    QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
+                    unlock_key.remove(whitespace_reg);
+                    if (unlock_key.isEmpty()) {
+                        QString message = tr("Please input the key to unlock!");
+                        showFailurePopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
+                    }
+                }
                 else if (currentMapKeyText == SENDTEXT_STR) {
                     QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
                     if (sendtext.isEmpty()) {
@@ -19850,7 +19881,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         return;
                     }
                     else {
-                        currentMapKeyText = QString("SendText(%1)").arg(sendtext);
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
                     }
                 }
                 else if (currentMapKeyText == RUN_STR) {
@@ -19864,7 +19895,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         return;
                     }
                     else {
-                        currentMapKeyText = QString("Run(%1)").arg(run_cmd);
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, run_cmd);
                     }
                 }
                 else if (currentMapKeyText == SWITCHTAB_STR
