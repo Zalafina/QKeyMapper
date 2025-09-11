@@ -1920,6 +1920,294 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
     return value_changed;
 }
 
+void QItemSetupDialog::refreshAllRelatedUI()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
+#endif
+
+    /* Load Original Key String */
+    QString originalkey_str = keymapdata.Original_Key;
+    ui->originalKeyLineEdit->setText(originalkey_str);
+
+    /* Load Mapping Keys String */
+    QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+    m_MappingKeyLineEdit->setText(mappingkeys_str);
+
+    /* Load KeyUp MappingKeys String */
+    if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
+        keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
+        m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+    }
+    else {
+        QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+        m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+    }
+
+    bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
+    bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(m_ItemRow);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QItemSetupDialog::refreshAllRelatedUI] Burst item in row" << m_ItemRow << " enabled =" << burstEnabled;
+    qDebug() << "[QItemSetupDialog::refreshAllRelatedUI] Lock item in row" << m_ItemRow << " enabled =" << lockEnabled;
+#endif
+
+    if (burstEnabled) {
+        ui->burstCheckBox->setEnabled(true);
+        ui->burstpressSpinBox->setEnabled(true);
+        ui->burstreleaseSpinBox->setEnabled(true);
+    }
+    else {
+        if (keymapdata.Burst) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = false;
+            keymapdata.Burst = false;
+            QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
+        }
+        ui->burstCheckBox->setEnabled(false);
+        ui->burstpressSpinBox->setEnabled(false);
+        ui->burstreleaseSpinBox->setEnabled(false);
+    }
+
+    if (lockEnabled) {
+        ui->lockCheckBox->setEnabled(true);
+    }
+    else {
+        if (keymapdata.Lock) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = false;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].LockState = LOCK_STATE_LOCKOFF;
+            keymapdata.Lock = false;
+            QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, LOCK_COLUMN);
+        }
+        ui->lockCheckBox->setEnabled(false);
+        ui->mappingKeyUnlockCheckBox->setEnabled(false);
+        ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
+    }
+
+    if (keymapdata.Mapping_Keys.size() > 1) {
+        ui->keySeqHoldDownCheckBox->setEnabled(true);
+        ui->repeatByKeyCheckBox->setEnabled(true);
+        ui->repeatByTimesCheckBox->setEnabled(true);
+        ui->repeatTimesSpinBox->setEnabled(true);
+    }
+    else {
+        if (keymapdata.RepeatMode != REPEAT_MODE_NONE) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = REPEAT_MODE_NONE;
+            keymapdata.RepeatMode = REPEAT_MODE_NONE;
+        }
+        if (keymapdata.KeySeqHoldDown) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
+            keymapdata.KeySeqHoldDown = false;
+        }
+        ui->keySeqHoldDownCheckBox->setEnabled(false);
+        ui->repeatByKeyCheckBox->setEnabled(false);
+        ui->repeatByTimesCheckBox->setEnabled(false);
+        ui->repeatTimesSpinBox->setEnabled(false);
+    }
+
+    if (keymapdata.KeySeqHoldDown) {
+        if (keymapdata.RepeatMode != REPEAT_MODE_NONE) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = REPEAT_MODE_NONE;
+            keymapdata.RepeatMode = REPEAT_MODE_NONE;
+        }
+        ui->repeatByKeyCheckBox->setEnabled(false);
+        ui->repeatByTimesCheckBox->setEnabled(false);
+        ui->repeatTimesSpinBox->setEnabled(false);
+    }
+
+    keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+
+    /* Load Burst */
+    if (true == keymapdata.Burst) {
+        ui->burstCheckBox->setChecked(true);
+    }
+    else {
+        ui->burstCheckBox->setChecked(false);
+    }
+
+    /* Load Burst press time */
+    if (BURST_TIME_MIN <= keymapdata.BurstPressTime && keymapdata.BurstPressTime <= BURST_TIME_MAX) {
+        ui->burstpressSpinBox->setValue(keymapdata.BurstPressTime);
+    }
+    else {
+        ui->burstpressSpinBox->setValue(BURST_PRESS_TIME_DEFAULT);
+    }
+
+    /* Load Burst release time */
+    if (BURST_TIME_MIN <= keymapdata.BurstReleaseTime && keymapdata.BurstReleaseTime <= BURST_TIME_MAX) {
+        ui->burstreleaseSpinBox->setValue(keymapdata.BurstReleaseTime);
+    }
+    else {
+        ui->burstreleaseSpinBox->setValue(BURST_RELEASE_TIME_DEFAULT);
+    }
+
+    /* Load Lock */
+    if (true == keymapdata.Lock) {
+        ui->lockCheckBox->setChecked(true);
+        ui->mappingKeyUnlockCheckBox->setEnabled(true);
+        ui->disableOriginalKeyUnlockCheckBox->setEnabled(true);
+    }
+    else {
+        ui->lockCheckBox->setChecked(false);
+        ui->mappingKeyUnlockCheckBox->setEnabled(false);
+        ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
+    }
+
+    /* Load MappingKeyUnlock */
+    if (true == keymapdata.MappingKeyUnlock) {
+        ui->mappingKeyUnlockCheckBox->setChecked(true);
+    }
+    else {
+        ui->mappingKeyUnlockCheckBox->setChecked(false);
+    }
+
+    /* Load DisableOriginalKeyUnlock */
+    if (true == keymapdata.DisableOriginalKeyUnlock) {
+        ui->disableOriginalKeyUnlockCheckBox->setChecked(true);
+    }
+    else {
+        ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
+    }
+
+    /* Load PostMappingKey */
+    if (true == keymapdata.PostMappingKey) {
+        ui->postMappingKeyCheckBox->setChecked(true);
+    }
+    else {
+        ui->postMappingKeyCheckBox->setChecked(false);
+    }
+
+    /* Load FixedVKeyCode */
+    if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
+        ui->fixedVKeyCodeSpinBox->setValue(keymapdata.FixedVKeyCode);
+    }
+    else {
+        ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
+    }
+
+    QString mappingkey = keymapdata.Mapping_Keys.constFirst();
+    if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
+        ui->postMappingKeyCheckBox->setChecked(false);
+        ui->postMappingKeyCheckBox->setEnabled(false);
+    }
+    else {
+        ui->postMappingKeyCheckBox->setEnabled(true);
+    }
+
+    /* Load SendTiming State */
+    if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
+    }
+    else if (SENDTIMING_KEYUP == keymapdata.SendTiming) {
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYUP);
+    }
+    else if (SENDTIMING_KEYDOWN_AND_KEYUP == keymapdata.SendTiming) {
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN_AND_KEYUP);
+    }
+    else if (SENDTIMING_NORMAL_AND_KEYUP == keymapdata.SendTiming) {
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL_AND_KEYUP);
+    }
+    else {
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+    }
+
+    bool isSendTimingValid = QKeyMapper::validateSendTimingByKeyMapData(keymapdata);
+    if (!isSendTimingValid) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = SENDTIMING_NORMAL;
+        keymapdata.SendTiming = SENDTIMING_NORMAL;
+        ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
+        ui->sendTimingComboBox->setEnabled(false);
+    }
+    else {
+        ui->sendTimingComboBox->setEnabled(true);
+    }
+
+    /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
+    if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
+        if (keymapdata.Mapping_Keys.size() > 1) {
+            ui->keySeqHoldDownCheckBox->setEnabled(true);
+        }
+        else {
+            ui->keySeqHoldDownCheckBox->setEnabled(false);
+            keymapdata.KeySeqHoldDown = false;
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
+        }
+    }
+    else {
+        ui->keySeqHoldDownCheckBox->setEnabled(false);
+        keymapdata.KeySeqHoldDown = false;
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = false;
+    }
+
+    /* Update CheckCombKeyOrder Enable Status & Load CheckCombKeyOrder Status */
+    if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
+        ui->checkCombKeyOrderCheckBox->setEnabled(true);
+    }
+    else {
+        ui->checkCombKeyOrderCheckBox->setEnabled(false);
+    }
+    if (true == keymapdata.CheckCombKeyOrder) {
+        ui->checkCombKeyOrderCheckBox->setChecked(true);
+    }
+    else {
+        ui->checkCombKeyOrderCheckBox->setChecked(false);
+    }
+
+    /* Load Unbreakable */
+    if (true == keymapdata.Unbreakable) {
+        ui->unbreakableCheckBox->setChecked(true);
+    }
+    else {
+        ui->unbreakableCheckBox->setChecked(false);
+    }
+
+    /* Load PassThrough Status */
+    if (true == keymapdata.PassThrough) {
+        ui->passThroughCheckBox->setChecked(true);
+    }
+    else {
+        ui->passThroughCheckBox->setChecked(false);
+    }
+
+    /* Load KeySequenceHoldDown Status */
+    if (true == keymapdata.KeySeqHoldDown) {
+        ui->keySeqHoldDownCheckBox->setChecked(true);
+    }
+    else {
+        ui->keySeqHoldDownCheckBox->setChecked(false);
+    }
+
+    /* Load RepeatMode Status */
+    if (REPEAT_MODE_BYKEY == keymapdata.RepeatMode) {
+        ui->repeatByKeyCheckBox->setChecked(true);
+        ui->repeatByTimesCheckBox->setChecked(false);
+    }
+    else if (REPEAT_MODE_BYTIMES == keymapdata.RepeatMode) {
+        ui->repeatByKeyCheckBox->setChecked(false);
+        ui->repeatByTimesCheckBox->setChecked(true);
+    }
+    else {
+        ui->repeatByKeyCheckBox->setChecked(false);
+        ui->repeatByTimesCheckBox->setChecked(false);
+    }
+
+    /* Load RepeatTimes */
+    if (REPEAT_TIMES_MIN <= keymapdata.RepeatTimes && keymapdata.RepeatTimes <= REPEAT_TIMES_MAX) {
+        ui->repeatTimesSpinBox->setValue(keymapdata.RepeatTimes);
+    }
+    else {
+        ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
+    }
+}
+
 void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -1967,34 +2255,46 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
         }
     }
 
-    // Execute updates in priority order, stopping on first validation error
+    // Store the original UI content for validation
+    QString originalKeytoUpdate = ui->originalKeyLineEdit->text();
+    QString mappingKeytoUpdate = m_MappingKeyLineEdit->text();
+    QString mappingKey_KeyUptoUpdate = m_MappingKey_KeyUpLineEdit->text();
+
+    // Execute validation in priority order, stopping on first validation error
     bool allUpdatesSuccessful = true;
     for (int priority : std::as_const(updatePriorities)) {
         bool success = false;
 
         switch (priority) {
             case MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST:
-                success = updateOriginalKey();
+                // Validate original key without updating UI
+                success = updateOriginalKey(originalKeytoUpdate, mappingKeytoUpdate);
                 break;
             case MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST:
-                success = updateMappingKey();
+                // Validate mapping key without updating UI
+                success = updateMappingKey(mappingKeytoUpdate, originalKeytoUpdate);
                 break;
             case MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST:
-                success = updateMappingKeyKeyUp();
+                // Validate mapping key key-up without updating UI
+                success = updateMappingKeyKeyUp(mappingKey_KeyUptoUpdate, originalKeytoUpdate);
                 break;
             default:
                 continue; // Skip unknown priorities
         }
 
-        // Stop on first validation error
+        // Stop on first validation error - error message already shown by update functions
         if (!success) {
             allUpdatesSuccessful = false;
             break;
         }
     }
 
-    // Show unified success message if all updates were successful
+    // Apply UI updates only if all validations passed
     if (allUpdatesSuccessful && !updatePriorities.isEmpty()) {
+        // Update LineEdit controls with validated and potentially modified content
+        updateAllMappingInfoFinally(originalKeytoUpdate, mappingKeytoUpdate, mappingKey_KeyUptoUpdate);
+
+        // Show success message
         QString popupMessage;
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
@@ -2005,32 +2305,21 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
     }
 }
 
-bool QItemSetupDialog::updateOriginalKey()
+bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &mappingKey)
 {
     static QRegularExpression whitespace_reg(R"(\s+)");
-    QString originalKey = ui->originalKeyLineEdit->text();
     originalKey.remove(whitespace_reg);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[" << __func__ << "] OriginalKeyText remove whitespace -> " << originalKey;
 #endif
 
-    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey, m_ItemRow);
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey, m_ItemRow, mappingKey);
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
-        if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
-            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
-        }
-
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
-        refreshOriginalKeyRelatedUI();
-
-        // popupMessageColor = SUCCESS_COLOR;
-        // popupMessage = tr("OriginalKey update success");
-        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return true;
     }
     else {
@@ -2041,15 +2330,13 @@ bool QItemSetupDialog::updateOriginalKey()
     }
 }
 
-bool QItemSetupDialog::updateMappingKey()
+bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &originalKey)
 {
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
-
-    QString mappingKey = m_MappingKeyLineEdit->text();
 
     // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
     QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
@@ -2072,24 +2359,12 @@ bool QItemSetupDialog::updateMappingKey()
 #endif
 
     QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow, originalKey);
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
-        QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
-        (void)refreshMappingKeyRelatedUI();
-
-        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
-        /* Load Mapping Keys String */
-        QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-        m_MappingKeyLineEdit->setText(mappingkeys_str);
-
-        // popupMessageColor = SUCCESS_COLOR;
-        // popupMessage = tr("MappingKey update success");
-        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return true;
     }
     else {
@@ -2100,15 +2375,13 @@ bool QItemSetupDialog::updateMappingKey()
     }
 }
 
-bool QItemSetupDialog::updateMappingKeyKeyUp()
+bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey)
 {
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
-
-    QString mappingKey = m_MappingKey_KeyUpLineEdit->text();
 
     // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
     QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
@@ -2136,39 +2409,13 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
     }
     else {
         QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
-        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow);
+        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow, originalKey);
     }
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     if (result.isValid) {
-        if (mappingKey.isEmpty()) {
-            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
-            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys;
-        }
-        else {
-            QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey);
-        }
-
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, MAPPING_KEY_COLUMN);
-        (void)refreshMappingKeyRelatedUI();
-
-        MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
-        /* Load KeyUp MappingKeys String */
-        if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
-            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-            keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
-            m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
-        }
-        else {
-            QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
-            m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
-        }
-
-        // popupMessageColor = SUCCESS_COLOR;
-        // popupMessage = tr("KeyUp MappingKey update success");
-        // emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return true;
     }
     else {
@@ -2177,6 +2424,38 @@ bool QItemSetupDialog::updateMappingKeyKeyUp()
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         return false;
     }
+}
+
+void QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    /* OriginalKey Update */
+    if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
+    }
+
+    /* MappingKey Update */
+    QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
+
+    /* KeyUp MappingKey Update */
+    if (mappingKey_KeyUp.isEmpty()) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys;
+    }
+    else {
+        QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey_KeyUp);
+    }
+
+    QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
+
+    refreshAllRelatedUI();
 }
 
 void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bool checked)

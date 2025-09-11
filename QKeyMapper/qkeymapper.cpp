@@ -3208,7 +3208,7 @@ int QKeyMapper::findMapKeyInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
-ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalkeystr, int update_rowindex)
+ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalkeystr, int update_rowindex, const QString &mappingkeystr_matched)
 {
     ValidationResult result;
     result.isValid = true;
@@ -3276,7 +3276,13 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
         if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
             QString orikey_noindex = orikey;
-            QStringList mappingkeys = QKeyMapper::KeyMappingDataList->at(update_rowindex).Mapping_Keys;
+            QStringList mappingkeys;
+            if (!mappingkeystr_matched.isEmpty()) {
+                mappingkeys = splitMappingKeyString(mappingkeystr_matched, SPLIT_WITH_NEXT);
+            }
+            else {
+                mappingkeys = QKeyMapper::KeyMappingDataList->at(update_rowindex).Mapping_Keys;
+            }
 
             if (mappingkeys.size() == 1
                 && false == mappingkeys.constFirst().contains(SEPARATOR_PLUS)) {
@@ -3353,7 +3359,13 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     }
 
     if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
-        QStringList mappingkeys = QKeyMapper::KeyMappingDataList->at(update_rowindex).Mapping_Keys;
+        QStringList mappingkeys;
+        if (!mappingkeystr_matched.isEmpty()) {
+            mappingkeys = splitMappingKeyString(mappingkeystr_matched, SPLIT_WITH_NEXT);
+        }
+        else {
+            mappingkeys = QKeyMapper::KeyMappingDataList->at(update_rowindex).Mapping_Keys;
+        }
 
         if (mappingkeys.size() == 1 && mappingkeys.constFirst() == KEY_BLOCKED_STR) {
             if (originalkeystr.contains(JOY_KEY_PREFIX)) {
@@ -3498,7 +3510,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     return result;
 }
 
-ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex)
+ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex, const QString &originalkeystr_matched)
 {
     Q_UNUSED(mappingkeystr);
     ValidationResult result;
@@ -3580,7 +3592,13 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
             const QString mapkey = Mapping_Keys.constFirst();
 
             if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
-                QString orikey_noindex = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
+                QString orikey_noindex;
+                if (!originalkeystr_matched.isEmpty()) {
+                    orikey_noindex = originalkeystr_matched;
+                }
+                else {
+                    orikey_noindex = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
+                }
                 QString mapkey_noindex = mapkey;
 
                 if (false == orikey_noindex.contains(SEPARATOR_PLUS)) {
@@ -3605,6 +3623,12 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
     if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
         QString originalkeystr = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
+        if (!originalkeystr_matched.isEmpty()) {
+            originalkeystr = originalkeystr_matched;
+        }
+        else {
+            originalkeystr = QKeyMapper::KeyMappingDataList->at(update_rowindex).Original_Key;
+        }
 
         if (mappingkeystr == KEY_BLOCKED_STR) {
             if (originalkeystr.contains(JOY_KEY_PREFIX)) {

@@ -66,11 +66,13 @@ private:
     void initKeyStringLineEdit(void);
     void refreshOriginalKeyRelatedUI(void);
     bool refreshMappingKeyRelatedUI(void);
+    void refreshAllRelatedUI(void);
 
     // Unified update system helper methods
-    bool updateOriginalKey(void);
-    bool updateMappingKey(void);
-    bool updateMappingKeyKeyUp(void);
+    bool updateOriginalKey(QString &originalKey,const QString &mappingKey);
+    bool updateMappingKey(QString &mappingKey, const QString &originalKey);
+    bool updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey);
+    void updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp);
 
 private:
     static QItemSetupDialog *m_instance;
