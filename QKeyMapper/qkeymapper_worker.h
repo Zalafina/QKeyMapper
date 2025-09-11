@@ -99,6 +99,7 @@ typedef struct MAP_KEYDATA
     , BurstReleaseTime(QKeyMapperConstants::BURST_RELEASE_TIME_DEFAULT)
     , Lock(false)
     , MappingKeyUnlock(false)
+    , DisableOriginalKeyUnlock(false)
     , PostMappingKey(false)
     , FixedVKeyCode(QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_NONE)
     , LockState(QKeyMapperConstants::LOCK_STATE_LOCKOFF)
@@ -127,7 +128,8 @@ typedef struct MAP_KEYDATA
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
                 bool burst, int burstpresstime, int burstreleasetime,
-                bool lock, bool mappingkeys_unlock, bool postmappingkey, int fixedvkeycode,
+                bool lock, bool mappingkeys_unlock, bool disable_originalkeyunlock,
+                bool postmappingkey, int fixedvkeycode,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, bool keyseqholddown,
                 int repeat_mode, int repeat_times,
@@ -158,6 +160,7 @@ typedef struct MAP_KEYDATA
         BurstReleaseTime = burstreleasetime;
         Lock = lock;
         MappingKeyUnlock = mappingkeys_unlock;
+        DisableOriginalKeyUnlock = disable_originalkeyunlock;
         PostMappingKey = postmappingkey;
         FixedVKeyCode = fixedvkeycode;
         LockState = QKeyMapperConstants::LOCK_STATE_LOCKOFF;
@@ -196,6 +199,7 @@ typedef struct MAP_KEYDATA
                 && (BurstReleaseTime == other.BurstReleaseTime)
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
+                && (DisableOriginalKeyUnlock == other.DisableOriginalKeyUnlock)
                 && (PostMappingKey == other.PostMappingKey)
                 && (FixedVKeyCode == other.FixedVKeyCode)
                 && (CheckCombKeyOrder == other.CheckCombKeyOrder)
@@ -237,6 +241,7 @@ typedef struct MAP_KEYDATA
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
                         << ", Lock:" << data.Lock
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
+                        << ", DisableOriginalKeyUnlock:" << data.DisableOriginalKeyUnlock
                         << ", PostMappingKey:" << data.PostMappingKey
                         << ", FixedVKeyCode:" << fixedvkeycodeStr
                         << ", LockState:" << data.LockState

@@ -151,6 +151,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->burstCheckBox->setText(tr(BURSTCHECKBOX_STR));
     ui->lockCheckBox->setText(tr(LOCKCHECKBOX_STR));
     ui->mappingKeyUnlockCheckBox->setText(tr(MAPPINGKEYUNLOCKCHECKBOX_STR));
+    ui->disableOriginalKeyUnlockCheckBox->setText(tr("DisableOriKeyUnlock"));
     ui->postMappingKeyCheckBox->setText(tr(POSTMAPPINGKEYCHECKBOX_STR));
     ui->checkCombKeyOrderCheckBox->setText(tr(CHECKCOMBKEYORDERCHECKBOX_STR));
     ui->unbreakableCheckBox->setText(tr(UNBREAKABLECHECKBOX_STR));
@@ -242,6 +243,7 @@ void QItemSetupDialog::resetFontSize()
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
+    ui->disableOriginalKeyUnlockCheckBox->setFont(customFont);
     ui->postMappingKeyCheckBox->setFont(customFont);
     ui->checkCombKeyOrderCheckBox->setFont(customFont);
     ui->unbreakableCheckBox->setFont(customFont);
@@ -963,12 +965,12 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         if (true == keymapdata.Lock) {
             ui->lockCheckBox->setChecked(true);
             ui->mappingKeyUnlockCheckBox->setEnabled(true);
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(true);
         }
         else {
             ui->lockCheckBox->setChecked(false);
             ui->mappingKeyUnlockCheckBox->setEnabled(false);
-            ui->mappingKeyUnlockCheckBox->setChecked(false);
-            keymapdata.MappingKeyUnlock = false;
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
         /* Load MappingKeyUnlock */
@@ -977,6 +979,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->mappingKeyUnlockCheckBox->setChecked(false);
+        }
+
+        /* Load DisableOriginalKeyUnlock */
+        if (true == keymapdata.DisableOriginalKeyUnlock) {
+            ui->disableOriginalKeyUnlockCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
         }
 
         /* Load PostMappingKey */
@@ -1149,6 +1159,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         else {
             ui->lockCheckBox->setEnabled(false);
             ui->mappingKeyUnlockCheckBox->setEnabled(false);
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
@@ -1406,12 +1417,12 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         if (true == keymapdata.Lock) {
             ui->lockCheckBox->setChecked(true);
             ui->mappingKeyUnlockCheckBox->setEnabled(true);
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(true);
         }
         else {
             ui->lockCheckBox->setChecked(false);
             ui->mappingKeyUnlockCheckBox->setEnabled(false);
-            ui->mappingKeyUnlockCheckBox->setChecked(false);
-            keymapdata.MappingKeyUnlock = false;
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
         /* Load MappingKeyUnlock */
@@ -1420,6 +1431,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->mappingKeyUnlockCheckBox->setChecked(false);
+        }
+
+        /* Load DisableOriginalKeyUnlock */
+        if (true == keymapdata.DisableOriginalKeyUnlock) {
+            ui->disableOriginalKeyUnlockCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
         }
 
         /* Load PostMappingKey */
@@ -1585,6 +1604,7 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         else {
             ui->lockCheckBox->setEnabled(false);
             ui->mappingKeyUnlockCheckBox->setEnabled(false);
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
@@ -1649,13 +1669,9 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
                 keymapdata.Lock = false;
                 value_changed = true;
             }
-            if (keymapdata.MappingKeyUnlock) {
-                (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = false;
-                keymapdata.MappingKeyUnlock = false;
-                value_changed = true;
-            }
             ui->lockCheckBox->setEnabled(false);
             ui->mappingKeyUnlockCheckBox->setEnabled(false);
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
         if (keymapdata.Mapping_Keys.size() > 1) {
@@ -1738,12 +1754,12 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         if (true == keymapdata.Lock) {
             ui->lockCheckBox->setChecked(true);
             ui->mappingKeyUnlockCheckBox->setEnabled(true);
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(true);
         }
         else {
             ui->lockCheckBox->setChecked(false);
             ui->mappingKeyUnlockCheckBox->setEnabled(false);
-            ui->mappingKeyUnlockCheckBox->setChecked(false);
-            keymapdata.MappingKeyUnlock = false;
+            ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
         /* Load MappingKeyUnlock */
@@ -1752,6 +1768,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->mappingKeyUnlockCheckBox->setChecked(false);
+        }
+
+        /* Load DisableOriginalKeyUnlock */
+        if (true == keymapdata.DisableOriginalKeyUnlock) {
+            ui->disableOriginalKeyUnlockCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
         }
 
         /* Load PostMappingKey */
@@ -2529,6 +2553,22 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
+#endif
+    }
+}
+
+void QItemSetupDialog::on_disableOriginalKeyUnlockCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool disableoriginalkeyunlock = ui->disableOriginalKeyUnlockCheckBox->isChecked();
+    if (disableoriginalkeyunlock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).DisableOriginalKeyUnlock) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableOriginalKeyUnlock = disableoriginalkeyunlock;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableOriginalKeyUnlock -> " << disableoriginalkeyunlock;
 #endif
     }
 }

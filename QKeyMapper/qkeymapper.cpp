@@ -4989,6 +4989,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList burstreleasetimeList;
     QStringList lockList;
     QStringList mappingkeyunlockList;
+    QStringList disableoriginalkeyunlockList;
     QStringList postmappingkeyList;
     QStringList fixedvkeycodeList;
     QStringList checkcombkeyorderList;
@@ -5056,6 +5057,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         }
         else {
             mappingkeyunlockList.append("OFF");
+        }
+        if (true == keymapdata.DisableOriginalKeyUnlock) {
+            disableoriginalkeyunlockList.append("ON");
+        }
+        else {
+            disableoriginalkeyunlockList.append("OFF");
         }
         if (true == keymapdata.PostMappingKey) {
             postmappingkeyList.append("ON");
@@ -5218,6 +5225,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
     keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
+    keyMappingDataFile.setValue(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK, disableoriginalkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_POSTMAPPINGKEY, postmappingkeyList);
     keyMappingDataFile.setValue(KEYMAPDATA_FIXEDVKEYCODE, fixedvkeycodeList);
     keyMappingDataFile.setValue(KEYMAPDATA_CHECKCOMBKEYORDER, checkcombkeyorderList);
@@ -5271,6 +5279,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList burstreleaseStringList;
     QStringList lockStringList;
     QStringList mappingkeyunlockStringList;
+    QStringList disableoriginalkeyunlockStringList;
     QStringList postmappingkeyStringList;
     QStringList fixedvkeycodeStringList;
     QStringList checkcombkeyorderStringList;
@@ -5301,6 +5310,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> burstreleasetimeList;
     QList<bool> lockList;
     QList<bool> mappingkeyunlockList;
+    QList<bool> disableoriginalkeyunlockList;
     QList<bool> postmappingkeyList;
     QList<int> fixedvkeycodeList;
     QList<bool> checkcombkeyorderList;
@@ -5374,6 +5384,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         burstreleaseStringList  = burstreleaseStringListDefault;
         lockStringList          = stringListAllOFF;
         mappingkeyunlockStringList = stringListAllOFF;
+        disableoriginalkeyunlockStringList = stringListAllOFF;
         postmappingkeyStringList = stringListAllOFF;
         fixedvkeycodeStringList = fixedvkeycodeStringListDefault;
         checkcombkeyorderStringList = stringListAllON;
@@ -5418,6 +5429,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_MAPPINGKEYUNLOCK)) {
             mappingkeyunlockStringList = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYUNLOCK).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK)) {
+            disableoriginalkeyunlockStringList = keyMappingDataFile.value(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_POSTMAPPINGKEY)) {
             postmappingkeyStringList = keyMappingDataFile.value(KEYMAPDATA_POSTMAPPINGKEY).toStringList();
@@ -5549,6 +5563,15 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     mappingkeyunlockList.append(true);
                 } else {
                     mappingkeyunlockList.append(false);
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &disableoriginalkeyunlock = (i < disableoriginalkeyunlockStringList.size()) ? disableoriginalkeyunlockStringList.at(i) : "OFF";
+                if (disableoriginalkeyunlock == "ON") {
+                    disableoriginalkeyunlockList.append(true);
+                } else {
+                    disableoriginalkeyunlockList.append(false);
                 }
             }
 
@@ -5816,6 +5839,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       burstreleasetimeList.at(loadindex),
                                                       lockList.at(loadindex),
                                                       mappingkeyunlockList.at(loadindex),
+                                                      disableoriginalkeyunlockList.at(loadindex),
                                                       postmappingkeyList.at(loadindex),
                                                       fixedvkeycodeList.at(loadindex),
                                                       checkcombkeyorderList.at(loadindex),
@@ -8879,6 +8903,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString burstreleasetimeList_forsave;
     QString lockList_forsave;
     QString mappingkeyunlockList_forsave;
+    QString disableoriginalkeyunlockList_forsave;
     QString postmappingkeyList_forsave;
     QString fixedvkeycodeList_forsave;
     QString checkcombkeyorderList_forsave;
@@ -8970,6 +8995,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             burstreleasetimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             lockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mappingkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            disableoriginalkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             postmappingkeyList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             fixedvkeycodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             checkcombkeyorderList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -9005,6 +9031,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList burstreleasetimeList;
         QStringList lockList;
         QStringList mappingkeyunlockList;
+        QStringList disableoriginalkeyunlockList;
         QStringList postmappingkeyList;
         QStringList fixedvkeycodeList;
         QStringList checkcombkeyorderList;
@@ -9084,6 +9111,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 }
                 else {
                     mappingkeyunlockList.append("OFF");
+                }
+                if (true == keymapdata.DisableOriginalKeyUnlock) {
+                    disableoriginalkeyunlockList.append("ON");
+                }
+                else {
+                    disableoriginalkeyunlockList.append("OFF");
                 }
                 if (true == keymapdata.PostMappingKey) {
                     postmappingkeyList.append("ON");
@@ -9245,6 +9278,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString burstreleasetimeList_str = burstreleasetimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString lockList_str = lockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mappingkeyunlockList_str = mappingkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString disableoriginalkeyunlockList_str = disableoriginalkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString postmappingkeyList_str = postmappingkeyList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString fixedvkeycodeList_str = fixedvkeycodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString checkcombkeyorderList_str = checkcombkeyorderList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -9280,6 +9314,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         burstreleasetimeList_forsave.append(burstreleasetimeList_str);
         lockList_forsave.append(lockList_str);
         mappingkeyunlockList_forsave.append(mappingkeyunlockList_str);
+        disableoriginalkeyunlockList_forsave.append(disableoriginalkeyunlockList_str);
         postmappingkeyList_forsave.append(postmappingkeyList_str);
         fixedvkeycodeList_forsave.append(fixedvkeycodeList_str);
         checkcombkeyorderList_forsave.append(checkcombkeyorderList_str);
@@ -9335,6 +9370,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLEORIGINALKEYUNLOCK , disableoriginalkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_POSTMAPPINGKEY , postmappingkeyList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FIXEDVKEYCODE , fixedvkeycodeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER , checkcombkeyorderList_forsave);
@@ -10581,6 +10617,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QString burstreleaseData_loaded;
         QString lockData_loaded;
         QString mappingkeyunlockData_loaded;
+        QString disableoriginalkeyunlockData_loaded;
         QString postmappingkeyData_loaded;
         QString fixedvkeycodeData_loaded;
         QString checkcombkeyorderData_loaded;
@@ -10617,6 +10654,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QStringList burstreleaseData_split;
         QStringList lockData_split;
         QStringList mappingkeyunlockData_split;
+        QStringList disableoriginalkeyunlockData_split;
         QStringList fixedvkeycodeData_split;
         QStringList postmappingkeyData_split;
         QStringList checkcombkeyorderData_split;
@@ -10842,6 +10880,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                 mappingkeyunlockData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK).toString();
                 mappingkeyunlockData_split = mappingkeyunlockData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_DISABLEORIGINALKEYUNLOCK)) {
+                disableoriginalkeyunlockData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_DISABLEORIGINALKEYUNLOCK).toString();
+                disableoriginalkeyunlockData_split = disableoriginalkeyunlockData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_POSTMAPPINGKEY)) {
                 postmappingkeyData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_POSTMAPPINGKEY).toString();
                 postmappingkeyData_split = postmappingkeyData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -10965,6 +11007,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     QStringList burstreleaseStringList;
                     QStringList lockStringList;
                     QStringList mappingkeyunlockStringList;
+                    QStringList disableoriginalkeyunlockStringList;
                     QStringList postmappingkeyStringList;
                     QStringList fixedvkeycodeStringList;
                     QStringList checkcombkeyorderStringList;
@@ -10996,6 +11039,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     QList<int> burstreleasetimeList;
                     QList<bool> lockList;
                     QList<bool> mappingkeyunlockList;
+                    QList<bool> disableoriginalkeyunlockList;
                     QList<bool> postmappingkeyList;
                     QList<int> fixedvkeycodeList;
                     QList<bool> checkcombkeyorderList;
@@ -11067,6 +11111,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     burstreleaseStringList  = burstreleaseStringListDefault;
                     lockStringList          = stringListAllOFF;
                     mappingkeyunlockStringList = stringListAllOFF;
+                    disableoriginalkeyunlockStringList = stringListAllOFF;
                     postmappingkeyStringList = stringListAllOFF;
                     fixedvkeycodeStringList = fixedvkeycodeStringListDefault;
                     checkcombkeyorderStringList = stringListAllON;
@@ -11119,6 +11164,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     }
                     if (mappingkeyunlockData_split.size() == table_count) {
                         mappingkeyunlockStringList = mappingkeyunlockData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (disableoriginalkeyunlockData_split.size() == table_count) {
+                        disableoriginalkeyunlockStringList = disableoriginalkeyunlockData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (postmappingkeyData_split.size() == table_count) {
                         postmappingkeyStringList = postmappingkeyData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -11254,6 +11302,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                                 mappingkeyunlockList.append(true);
                             } else {
                                 mappingkeyunlockList.append(false);
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &disableoriginalkeyunlock = (i < disableoriginalkeyunlockStringList.size()) ? disableoriginalkeyunlockStringList.at(i) : "OFF";
+                            if (disableoriginalkeyunlock == "ON") {
+                                disableoriginalkeyunlockList.append(true);
+                            } else {
+                                disableoriginalkeyunlockList.append(false);
                             }
                         }
 
@@ -11535,6 +11592,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                                                                   burstreleasetimeList.at(loadindex),
                                                                   lockList.at(loadindex),
                                                                   mappingkeyunlockList.at(loadindex),
+                                                                  disableoriginalkeyunlockList.at(loadindex),
                                                                   postmappingkeyList.at(loadindex),
                                                                   fixedvkeycodeList.at(loadindex),
                                                                   checkcombkeyorderList.at(loadindex),
@@ -19766,6 +19824,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.BurstReleaseTime,
                                                                keymapdata.Lock,
                                                                keymapdata.MappingKeyUnlock,
+                                                               keymapdata.DisableOriginalKeyUnlock,
                                                                keymapdata.PostMappingKey,
                                                                keymapdata.FixedVKeyCode,
                                                                keymapdata.CheckCombKeyOrder,
@@ -19967,6 +20026,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    BURST_RELEASE_TIME_DEFAULT,              /* burstreleasetime int */
                                                    false,                                   /* lock bool */
                                                    false,                                   /* mappingkeys_unlock bool */
+                                                   false,                                   /* disable_originalkeyunlock bool */
                                                    false,                                   /* postmappingkey bool */
                                                    FIXED_VIRTUAL_KEY_CODE_NONE,             /* fixedvkeycode int */
                                                    true,                                    /* checkcombkeyorder bool */
