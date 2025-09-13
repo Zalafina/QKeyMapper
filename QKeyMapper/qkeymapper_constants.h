@@ -983,8 +983,8 @@ namespace QKeyMapperConstants {
     inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_TOPLEVEL = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 2);
     inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_GLOBALSETTING = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 3);
 
-    inline constexpr const int GROUPSELECTWIDGET_ITEM_HEIGHT = 23;
-    inline constexpr const int GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN = 13;
+    inline constexpr const int GROUPSELECTWIDGET_ITEM_HEIGHT = 21;
+    inline constexpr const int GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN = 20;
 
     inline constexpr const char GROUPSELECTWIDGET_SELECT_ALL_PREFIX[] = "☑️ ";
 

@@ -23316,8 +23316,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     : QWidget(parent),
       m_listWidget(new QListWidget(this))
 {
-    // Disable row selection, use checkboxes instead
-    m_listWidget->setSelectionMode(QAbstractItemView::NoSelection);
+    m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     // Keep uniform item height for consistent DPI scaling
     m_listWidget->setUniformItemSizes(true);
@@ -23329,7 +23328,12 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     m_listWidget->setWordWrap(false);
 
     // Set spacing between items for better visual comfort
-    m_listWidget->setSpacing(2);
+    // m_listWidget->setSpacing(2);
+
+    m_listWidget->setIconSize(QSize(16, 16));
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[GroupSelectionWidget] m_listWidget iconSize() =" << m_listWidget->iconSize();
+#endif
 
     // Layout setup
     auto layout = new QVBoxLayout(this);
@@ -23357,6 +23361,15 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
         selectAllItem->setCheckState(Qt::Unchecked);
     }
 
+    // Create QSettings object once before the loop if configfile is provided
+    QScopedPointer<QSettings> settingFile;
+    if (!configfile.isEmpty()) {
+        settingFile.reset(new QSettings(configfile, QSettings::IniFormat));
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+        settingFile->setIniCodec("UTF-8");
+#endif
+    }
+
     // Create group items in the exact order provided by caller
     for (const QString &group : groups) {
         QString displayText = group;
@@ -23372,16 +23385,12 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
             itemType = SETTING_BACKUP_LIST_TYPE_GLOBALSETTING;
             settingIcon = QIcon(":/function.svg");
         } else {
-            if (!configfile.isEmpty()) {
-                QSettings settingFile(configfile, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-                settingFile.setIniCodec("UTF-8");
-#endif
-
+            // Use the pre-created settings object if available
+            if (settingFile) {
                 QString tempSettingSelectStr = group + "/";
                 QString filepathString;
-                if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
-                    filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+                if (true == settingFile->contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
+                    filepathString = settingFile->value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
                 }
                 if (!filepathString.isEmpty()
                     && QFileInfo::exists(filepathString)){
@@ -23399,8 +23408,8 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
                 }
 
                 QString descriptionString;
-                if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
-                    descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
+                if (true == settingFile->contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
+                    descriptionString = settingFile->value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
                 }
                 if (!descriptionString.isEmpty()) {
                     displayText = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
