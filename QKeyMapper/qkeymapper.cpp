@@ -1116,9 +1116,6 @@ void QKeyMapper::matchForegroundWindow()
                         Q_UNUSED(loadresult)
                         loadSetting_flag = false;
 
-                        // Record this as the last auto matched setting
-                        recordLastAutoMatchedSetting(autoMatchSettingGroup);
-
                         matchProcessIndex = ui->checkProcessComboBox->currentIndex();
                         matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
                         matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
@@ -1129,6 +1126,9 @@ void QKeyMapper::matchForegroundWindow()
                         qDebug() << "[matchForegroundWindow]" << "Current setting select is already the same ->" << curSettingSelectStr;
 #endif
                     }
+
+                    // Record this as the last auto matched setting
+                    recordLastAutoMatchedSetting(autoMatchSettingGroup);
                 }
 
                 // Perform matching logic based on ComboBox selection
@@ -1455,6 +1455,11 @@ void QKeyMapper::checkGlobalSettingSwitchTimeout()
             ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
+
+            if (!m_LastAutoMatchedSetting.isEmpty()) {
+                startLastAutoMatchedSettingTimer();
+            }
+
             matchForegroundWindow();
         }
     }
@@ -6671,6 +6676,11 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
                 qDebug() << "[MappingSwitch]" << "Successfully switched back to last matched setting after stopping mapping";
 #endif
             }
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[MappingSwitch]" << "currentSettingIndex =" << currentSettingIndex << ", AutoStart =" << checkGlobalSettingAutoStart() << ", LastAutoMatchedSettingTimer Active =" << m_LastAutoMatchedSettingTimer.isActive();
+#endif
         }
 
         emit updateLockStatus_Signal();
@@ -23683,13 +23693,16 @@ void QKeyMapper::recordLastAutoMatchedSetting(const QString &settingName)
 
     m_LastAutoMatchedSetting = settingName;
 
-    // Start/restart the timer
-    m_LastAutoMatchedSettingTimer.stop();
-    m_LastAutoMatchedSettingTimer.start();
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[recordLastAutoMatchedSetting]" << "Recorded last auto matched setting:" << settingName;
 #endif
+}
+
+void QKeyMapper::startLastAutoMatchedSettingTimer()
+{
+    // Start/restart the timer
+    m_LastAutoMatchedSettingTimer.stop();
+    m_LastAutoMatchedSettingTimer.start();
 }
 
 void QKeyMapper::clearLastAutoMatchedSetting()
@@ -23704,14 +23717,17 @@ void QKeyMapper::clearLastAutoMatchedSetting()
 
 bool QKeyMapper::switchBackToLastMatchedSetting()
 {
-    if (m_LastAutoMatchedSetting.isEmpty()) {
-        return false;
-    }
-
     QString settingToRestore = m_LastAutoMatchedSetting;
 
     // Clear the record first to avoid recursion
     clearLastAutoMatchedSetting();
+
+    if (settingToRestore.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[switchBackToLastMatchedSetting]" << "settingToRestore is Empty.";
+#endif
+        return false;
+    }
 
     // Find the setting in the list
     int settingIndex = m_SettingSelectListWithoutDescription.indexOf(settingToRestore);

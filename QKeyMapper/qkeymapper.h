@@ -1201,6 +1201,7 @@ private:
     // Helper methods for saving/restoring category filter state
     // Helper methods for last auto matched setting management
     void recordLastAutoMatchedSetting(const QString &settingName);
+    void startLastAutoMatchedSettingTimer();
     void clearLastAutoMatchedSetting();
     bool switchBackToLastMatchedSetting();
     QString getCurrentCategoryFilter() const;
