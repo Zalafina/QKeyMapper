@@ -23344,7 +23344,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
 }
 
 // Add "Select All" item at the top only when groups are not empty
-void GroupSelectionWidget::setGroups(const QStringList &groups)
+void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &configfile)
 {
     QSignalBlocker blocker(m_listWidget);
     m_listWidget->clear();
@@ -23362,6 +23362,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
         QString displayText = group;
         QListWidgetItem::ItemType itemType = QListWidgetItem::Type;
 
+        QIcon settingIcon = QKeyMapper::s_Icon_Blank;
         // Set display text and type for special groups
         if (group == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
             displayText = tr("TopLevelGroup");
@@ -23369,9 +23370,45 @@ void GroupSelectionWidget::setGroups(const QStringList &groups)
         } else if (group == GROUPNAME_GLOBALSETTING) {
             displayText = tr("GlobalKeyMapping");
             itemType = SETTING_BACKUP_LIST_TYPE_GLOBALSETTING;
+            settingIcon = QIcon(":/function.svg");
+        } else {
+            if (!configfile.isEmpty()) {
+                QSettings settingFile(configfile, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+                settingFile.setIniCodec("UTF-8");
+#endif
+
+                QString tempSettingSelectStr = group + "/";
+                QString filepathString;
+                if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
+                    filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+                }
+                if (!filepathString.isEmpty()
+                    && QFileInfo::exists(filepathString)){
+                    QIcon fileicon;
+                    fileicon = QKeyMapper::extractIconFromExecutable(filepathString);
+
+                    if (fileicon.isNull()) {
+                        QFileIconProvider icon_provider;
+                        fileicon = icon_provider.icon(QFileInfo(filepathString));
+                    }
+
+                    if (!fileicon.isNull()) {
+                        settingIcon = fileicon;
+                    }
+                }
+
+                QString descriptionString;
+                if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
+                    descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
+                }
+                if (!descriptionString.isEmpty()) {
+                    displayText = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
+                }
+            }
         }
 
-        auto *item = new QListWidgetItem(displayText, m_listWidget, itemType);
+        auto *item = new QListWidgetItem(settingIcon, displayText, m_listWidget, itemType);
         // Store the original group name in UserRole for later retrieval
         item->setData(Qt::UserRole, group);
         // Only user-checkable; do not set tri-state on children
@@ -23567,8 +23604,8 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
         filePathEdit->setText(defaultPath);
 
         // Load groups from fixed source INI
-        QStringList groups = readGroupsFromIni(QKeyMapperConstants::CONFIG_FILENAME);
-        groupWidget->setGroups(groups);
+        QStringList groups = readGroupsFromIni(CONFIG_FILENAME);
+        groupWidget->setGroups(groups, CONFIG_FILENAME);
     } else {
         // Import mode: group list will be loaded after file selection
         groupWidget->setGroups({});
@@ -23613,12 +23650,11 @@ void SettingTransferDialog::onBrowseFile() {
         if (!fileName.isEmpty()) {
             // Load groups from selected INI
             QStringList groups = readGroupsFromIni(fileName);
-            if (groups.isEmpty()) {
-                QMessageBox::warning(this, tr("Setting Import"), tr("No valid groups found in the selected INI file."));
-            }
-            groupWidget->setGroups(groups);
+
             // Default select only non-duplicated groups, highlight duplicates
             if (!groups.isEmpty()) {
+                groupWidget->setGroups(groups, fileName);
+
                 QSettings curIni(QKeyMapperConstants::CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
                 curIni.setIniCodec("UTF-8");
@@ -23639,6 +23675,9 @@ void SettingTransferDialog::onBrowseFile() {
                 }
                 groupWidget->setSelectedGroups(nonDup);
                 groupWidget->highlightDuplicates(dups, SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR);
+            }
+            else {
+                QMessageBox::warning(this, tr("Setting Import"), tr("No valid groups found in the selected INI file."));
             }
         }
     }

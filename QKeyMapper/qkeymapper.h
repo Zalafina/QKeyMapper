@@ -648,7 +648,7 @@ public:
     explicit GroupSelectionWidget(QWidget *parent = nullptr);
 
     // Set the list of available groups
-    void setGroups(const QStringList &groups);
+    void setGroups(const QStringList &groups, const QString &configfile = QString());
 
     // Get the list of currently selected groups
     QStringList selectedGroups() const;
