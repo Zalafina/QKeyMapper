@@ -673,6 +673,9 @@ protected:
 private:
     QListWidget *m_listWidget;
     bool m_setupConnectionsDone { false }; // Ensure we only connect signals once
+
+    // Update "Select All" item state based on child items
+    void updateSelectAllState();
 };
 
 class SettingTransferDialog : public QDialog {

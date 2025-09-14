@@ -23450,20 +23450,8 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
                 m_listWidget->item(i)->setCheckState(state == Qt::Checked ? Qt::Checked : Qt::Unchecked);
             }
         } else if (hasSelectAllItem) {
-            // Update "Select All" state based on children
-            int checkedCount = 0;
-            int total = m_listWidget->count() - 1;
-            for (int i = 1; i < m_listWidget->count(); ++i) {
-                if (m_listWidget->item(i)->checkState() == Qt::Checked)
-                    ++checkedCount;
-            }
-            QSignalBlocker blocker2(m_listWidget);
-            if (checkedCount == 0)
-                m_listWidget->item(0)->setCheckState(Qt::Unchecked);
-            else if (checkedCount == total)
-                m_listWidget->item(0)->setCheckState(Qt::Checked);
-            else
-                m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
+            // Update "Select All" state based on child items
+            updateSelectAllState();
         }
         });
     }
@@ -23633,8 +23621,12 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
         for (QListWidgetItem* item : toggleableItems) {
             item->setCheckState(targetState);
         }
+        blocker.unblock(); // Unblock signals before updating Select All state
 
-        // Emit selection changed signal manually since we blocked signals
+        // Update "Select All" state after batch checkbox changes
+        updateSelectAllState();
+
+        // Emit selection changed signal manually
         emit selectionChanged(selectedGroups());
 
         // Accept the event to prevent default space key behavior
@@ -23644,6 +23636,37 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
 
     // For other keys, use default behavior
     QWidget::keyPressEvent(event);
+}
+
+void GroupSelectionWidget::updateSelectAllState()
+{
+    // Check if "Select All" item exists
+    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+
+    if (!hasSelectAllItem) {
+        return; // No "Select All" item to update
+    }
+
+    // Count checked child items (excluding "Select All" item at index 0)
+    int checkedCount = 0;
+    int total = m_listWidget->count() - 1; // Exclude "Select All" item
+
+    for (int i = 1; i < m_listWidget->count(); ++i) {
+        if (m_listWidget->item(i)->checkState() == Qt::Checked) {
+            ++checkedCount;
+        }
+    }
+
+    // Update "Select All" state based on child items
+    QSignalBlocker blocker(m_listWidget);
+    if (checkedCount == 0) {
+        m_listWidget->item(0)->setCheckState(Qt::Unchecked);
+    } else if (checkedCount == total) {
+        m_listWidget->item(0)->setCheckState(Qt::Checked);
+    } else {
+        m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
+    }
 }
 
 SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
