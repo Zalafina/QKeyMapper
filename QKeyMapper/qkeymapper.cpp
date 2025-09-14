@@ -23318,7 +23318,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
 {
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
-    // Allow this widget to receive mouseclick focus for space key handling
+    // Allow this widget to receive mouse click focus for space key handling
     setFocusPolicy(Qt::ClickFocus);
 
     // Let the list widget handle mouse selection but forward key events to parent
