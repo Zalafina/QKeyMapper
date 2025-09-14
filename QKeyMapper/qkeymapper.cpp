@@ -23318,6 +23318,8 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
 {
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
+    m_listWidget->setFocusPolicy(Qt::NoFocus);
+
     // Keep uniform item height for consistent DPI scaling
     m_listWidget->setUniformItemSizes(true);
 
@@ -23598,6 +23600,20 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     // OK / Cancel buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(
                 QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+
+    QPushButton *okButton = buttonBox->button(QDialogButtonBox::Ok);
+    QPushButton *cancelButton = buttonBox->button(QDialogButtonBox::Cancel);
+
+    okButton->setFocusPolicy(Qt::NoFocus);
+    okButton->setAutoDefault(false);
+    okButton->setDefault(false);
+
+    cancelButton->setFocusPolicy(Qt::NoFocus);
+    cancelButton->setAutoDefault(false);
+    cancelButton->setDefault(false);
+
+    setFocus();
+
     mainLayout->addWidget(buttonBox);
 
     // Connections
