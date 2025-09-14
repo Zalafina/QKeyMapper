@@ -666,6 +666,10 @@ signals:
     // Emitted when the selection changes
     void selectionChanged(const QStringList &selected);
 
+protected:
+    // Handle key press events (Space key for batch checkbox toggle)
+    void keyPressEvent(QKeyEvent *event) override;
+
 private:
     QListWidget *m_listWidget;
     bool m_setupConnectionsDone { false }; // Ensure we only connect signals once

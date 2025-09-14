@@ -23318,6 +23318,10 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
 {
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
+    // Allow this widget to receive mouseclick focus for space key handling
+    setFocusPolicy(Qt::ClickFocus);
+
+    // Let the list widget handle mouse selection but forward key events to parent
     m_listWidget->setFocusPolicy(Qt::NoFocus);
 
     // Keep uniform item height for consistent DPI scaling
@@ -23570,6 +23574,76 @@ void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, 
             item->setForeground(QBrush());
         }
     }
+}
+
+void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
+{
+    // Handle Space key for batch checkbox toggle on selected items
+    if (event->key() == Qt::Key_Space) {
+        // Get currently selected items (highlighted, not checked)
+        QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
+
+        if (selectedItems.isEmpty()) {
+            QWidget::keyPressEvent(event);
+            return;
+        }
+
+        // Filter out "Select All" item if present - it shouldn't be toggled by space
+        QList<QListWidgetItem*> toggleableItems;
+        for (QListWidgetItem* item : std::as_const(selectedItems)) {
+            // Skip "Select All" item (it has a special prefix)
+            if (!item->text().startsWith(GROUPSELECTWIDGET_SELECT_ALL_PREFIX)) {
+                toggleableItems.append(item);
+            }
+        }
+
+        if (toggleableItems.isEmpty()) {
+            QWidget::keyPressEvent(event);
+            return;
+        }
+
+        // Count checked and unchecked states
+        int checkedCount = 0;
+        int uncheckedCount = 0;
+
+        for (QListWidgetItem* item : toggleableItems) {
+            if (item->checkState() == Qt::Checked) {
+                checkedCount++;
+            } else if (item->checkState() == Qt::Unchecked) {
+                uncheckedCount++;
+            }
+        }
+
+        // Apply the three rules for batch checkbox toggle
+        Qt::CheckState targetState;
+
+        if (uncheckedCount > 0 && checkedCount == 0) {
+            // Rule 1: All unchecked -> All checked
+            targetState = Qt::Checked;
+        } else if (checkedCount > 0 && uncheckedCount == 0) {
+            // Rule 2: All checked -> All unchecked
+            targetState = Qt::Unchecked;
+        } else {
+            // Rule 3: Mixed state -> All checked
+            targetState = Qt::Checked;
+        }
+
+        // Apply the target state to all toggleable selected items
+        QSignalBlocker blocker(m_listWidget);
+        for (QListWidgetItem* item : toggleableItems) {
+            item->setCheckState(targetState);
+        }
+
+        // Emit selection changed signal manually since we blocked signals
+        emit selectionChanged(selectedGroups());
+
+        // Accept the event to prevent default space key behavior
+        event->accept();
+        return;
+    }
+
+    // For other keys, use default behavior
+    QWidget::keyPressEvent(event);
 }
 
 SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
