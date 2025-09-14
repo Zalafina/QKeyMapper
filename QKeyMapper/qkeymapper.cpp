@@ -23576,6 +23576,49 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
             return;
         }
 
+        // Check if "Select All" item exists
+        bool hasSelectAllItem = (m_listWidget->count() > 0 &&
+                                m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+
+        // Special case: If only "Select All" item is selected, handle it like mouse click
+        if (hasSelectAllItem && selectedItems.size() == 1 &&
+            selectedItems.first() == m_listWidget->item(0)) {
+
+            QListWidgetItem* selectAllItem = selectedItems.first();
+            Qt::CheckState currentState = selectAllItem->checkState();
+            Qt::CheckState newState;
+
+            // Apply Select All logic similar to the lambda in setGroups
+            if (currentState == Qt::PartiallyChecked) {
+                // Rule 1: PartiallyChecked -> Checked, set all children to Checked
+                newState = Qt::Checked;
+            } else if (currentState == Qt::Checked) {
+                // Rule 2: Checked -> Unchecked, set all children to Unchecked
+                newState = Qt::Unchecked;
+            } else {
+                // Rule 3: Unchecked -> Checked, set all children to Checked
+                newState = Qt::Checked;
+            }
+
+            // Block signals to prevent recursive updates
+            QSignalBlocker blocker(m_listWidget);
+
+            // Update Select All item state
+            selectAllItem->setCheckState(newState);
+
+            // Update all child items (excluding Select All at index 0)
+            for (int i = 1; i < m_listWidget->count(); ++i) {
+                m_listWidget->item(i)->setCheckState(newState == Qt::Checked ? Qt::Checked : Qt::Unchecked);
+            }
+
+            // Emit selection changed signal manually
+            emit selectionChanged(selectedGroups());
+
+            // Accept the event to prevent default space key behavior
+            event->accept();
+            return;
+        }
+
         // Filter out "Select All" item if present - it shouldn't be toggled by space
         QList<QListWidgetItem*> toggleableItems;
         for (QListWidgetItem* item : std::as_const(selectedItems)) {
