@@ -1,4 +1,4 @@
-# QKeyMapper
+<!-- # QKeyMapper
 
 <p align="left">
     <img src="https://img.shields.io/badge/QKeyMapper-a55eea?style=plastic">
@@ -6,7 +6,19 @@
     <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?style=plastic&color=09e&labelColor=474787"></a>
     <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=B53471&style=plastic&labelColor=474787"></a>
     <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg?style=plastic&labelColor=474787"/></a>
-</p>
+</p> -->
+
+<div align="center">
+  <h1>QKeyMapper</h1>
+  <p>
+    <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper?color=4cd137&style=plastic&labelColor=474787"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?style=plastic&color=09e&labelColor=474787"></a>
+    <img src="https://img.shields.io/badge/platform-Windows-B53471.svg?style=plastic&labelColor=474787" alt="Platform: Windows">
+    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=a55eea&style=plastic&labelColor=474787"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg?style=plastic&labelColor=474787"/></a>
+  </p>
+  <p><strong><a href="README.md">中文</a> | <a href="README_en.md">English</a></strong></p>
+</div>
 
 ## 📖 软件简介
 ## QKeyMapper是兼容Win7/Win10/Win11的开源按键映射工具，使用Qt Widget 和 WinAPI 基于C++语言开发。可支持键盘、鼠标、游戏手柄、虚拟游戏手柄之间各种互相按键映射。软件下载解压后直接运行，不修改注册表、不需重新启动系统，依靠程序在内存中运行完成按键映射转换。程序运行中可随时控制映射功能生效和停止，软件退出后映射功能自动停止。适用于各种游戏或办公等目的的Windows PC端改键场景。
