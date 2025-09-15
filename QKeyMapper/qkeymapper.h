@@ -78,6 +78,7 @@
 #include "qtrayiconselectdialog.h"
 #include "qnotificationsetupdialog.h"
 #include "qstartuppositiondialog.h"
+#include "qmappingadvanceddialog.h"
 
 struct InputDeviceInfo
 {
@@ -908,6 +909,7 @@ public:
     // static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
     static int getJoystick2MouseSpeedY(void);
+    static int getMouseMovePollingInterval(void);
     static double getGyro2MouseXSpeed(void);
     static double getGyro2MouseYSpeed(void);
     static double getGyro2MouseMinThreshold(void);
@@ -1202,6 +1204,8 @@ private slots:
 
     void on_startupPositonSettingButton_clicked();
 
+    void on_mappingAdvancedSettingButton_clicked();
+
     void on_backupSettingButton_clicked();
 
 private:
@@ -1366,6 +1370,8 @@ private:
     void closeNotificationSetupDialog(void);
     void showStartupPositonSettingDialog(void);
     void closeStartupPositonSettingDialog(void);
+    void showMappingAdvancedDialog(void);
+    void closeMappingAdvancedDialog(void);
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
@@ -1496,6 +1502,7 @@ private:
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
     QNotificationSetupDialog *m_NotificationSetupDialog = Q_NULLPTR;
     QStartupPositionDialog *m_StartupPositionDialog = Q_NULLPTR;
+    QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     QPopupNotification *m_PopupNotification;

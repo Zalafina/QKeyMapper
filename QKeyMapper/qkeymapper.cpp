@@ -329,8 +329,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
     // ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     // ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
-    ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
-    ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
+    // ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
+    // ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
     ui->Gyro2MouseXSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
     ui->Gyro2MouseYSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
@@ -481,6 +481,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     m_StartupPositionDialog = new QStartupPositionDialog(this);
+    m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
@@ -4748,12 +4749,17 @@ int QKeyMapper::getBurstReleaseTime()
 
 int QKeyMapper::getJoystick2MouseSpeedX()
 {
-    return getInstance()->ui->mouseXSpeedSpinBox->value();
+    return getInstance()->m_MappingAdvancedDialog->getMouseXSpeed();
 }
 
 int QKeyMapper::getJoystick2MouseSpeedY()
 {
-    return getInstance()->ui->mouseYSpeedSpinBox->value();
+    return getInstance()->m_MappingAdvancedDialog->getMouseYSpeed();
+}
+
+int QKeyMapper::getMouseMovePollingInterval()
+{
+    return getInstance()->m_MappingAdvancedDialog->getMousePollingInterval();
 }
 
 double QKeyMapper::getGyro2MouseXSpeed()
@@ -4870,17 +4876,12 @@ bool QKeyMapper::getSendToSameTitleWindowsStatus()
 
 bool QKeyMapper::getAcceptVirtualGamepadInputStatus()
 {
-    if (true == getInstance()->ui->acceptVirtualGamepadInputCheckBox->isChecked()) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return getInstance()->m_MappingAdvancedDialog->getAcceptVirtualGamepadInput();
 }
 
 bool QKeyMapper::getProcessIconAsTrayIconStatus()
 {
-    return getInstance()->ui->ProcessIconAsTrayIconCheckBox->isChecked();
+    return getInstance()->m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
 }
 
 bool QKeyMapper::getEnableSystemFilterKeyChecked()
@@ -9429,8 +9430,9 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_X_OFFSET, crosshair_x_offsetList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_Y_OFFSET, crosshair_y_offsetList_forsave);
 
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED , ui->mouseXSpeedSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED , ui->mouseYSpeedSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED,            m_MappingAdvancedDialog->getMouseXSpeed());
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED,            m_MappingAdvancedDialog->getMouseYSpeed());
+    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_POLLING_INTERVAL,   m_MappingAdvancedDialog->getMousePollingInterval());
 
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, ui->Gyro2MouseXSpeedSpinBox->value());
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, ui->Gyro2MouseYSpeedSpinBox->value());
@@ -9471,8 +9473,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
     settingFile.setValue(saveSettingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED, ui->enableSystemFilterKeyCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
-    settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, ui->acceptVirtualGamepadInputCheckBox->isChecked());
-    settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, ui->ProcessIconAsTrayIconCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, m_MappingAdvancedDialog->getAcceptVirtualGamepadInput());
+    settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, m_MappingAdvancedDialog->getProcessIconAsTrayIcon());
 #ifdef VIGEM_CLIENT_SUPPORT
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_DIRECTMODE, ui->directModeCheckBox->isChecked());
@@ -11988,7 +11990,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         // ui->disableWinKeyCheckBox->setChecked(false);
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
-        ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
+        m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
 
         // ui->settingNameLineEdit->setEnabled(false);
         ui->processLineEdit->setEnabled(false);
@@ -12003,7 +12005,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
-        ui->ProcessIconAsTrayIconCheckBox->setEnabled(false);
+        m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(false);
 
         ui->iconLabel->clear();
         m_MapProcessInfo = MAP_PROCESSINFO();
@@ -12025,7 +12027,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->checkWindowTitleComboBox->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
-        ui->ProcessIconAsTrayIconCheckBox->setEnabled(true);
+        m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(true);
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME)){
             m_MapProcessInfo.FileName = settingFile.value(settingSelectStr+PROCESSINFO_FILENAME).toString();
@@ -12075,7 +12077,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
             ui->enableSystemFilterKeyCheckBox->blockSignals(false);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
-            ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
+            m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
         }
 
@@ -12185,24 +12187,50 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 
     if (true == settingFile.contains(settingSelectStr+KEY2MOUSE_X_SPEED)){
         int mouseXSpeed = settingFile.value(settingSelectStr+KEY2MOUSE_X_SPEED).toInt();
-        ui->mouseXSpeedSpinBox->setValue(mouseXSpeed);
+        if (MOUSE_SPEED_MIN <= mouseXSpeed && mouseXSpeed <= MOUSE_SPEED_MAX) {
+            m_MappingAdvancedDialog->setMouseXSpeed(mouseXSpeed);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Mouse X Speed =" << mouseXSpeed;
+            qDebug() << "[loadKeyMapSetting]" << "Mouse X Speed =" << mouseXSpeed;
 #endif
+        }
+        else {
+            m_MappingAdvancedDialog->setMouseXSpeed(MOUSE_SPEED_DEFAULT);
+        }
     }
     else {
-        ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+        m_MappingAdvancedDialog->setMouseXSpeed(MOUSE_SPEED_DEFAULT);
     }
 
     if (true == settingFile.contains(settingSelectStr+KEY2MOUSE_Y_SPEED)){
         int mouseYSpeed = settingFile.value(settingSelectStr+KEY2MOUSE_Y_SPEED).toInt();
-        ui->mouseYSpeedSpinBox->setValue(mouseYSpeed);
+        if (MOUSE_SPEED_MIN <= mouseYSpeed && mouseYSpeed <= MOUSE_SPEED_MAX) {
+            m_MappingAdvancedDialog->setMouseYSpeed(mouseYSpeed);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Mouse Y Speed =" << mouseYSpeed;
+            qDebug() << "[loadKeyMapSetting]" << "Mouse Y Speed =" << mouseYSpeed;
 #endif
+        }
+        else {
+            m_MappingAdvancedDialog->setMouseYSpeed(MOUSE_SPEED_DEFAULT);
+        }
     }
     else {
-        ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+        m_MappingAdvancedDialog->setMouseYSpeed(MOUSE_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+KEY2MOUSE_POLLING_INTERVAL)){
+        int mousePollingInterval = settingFile.value(settingSelectStr+KEY2MOUSE_POLLING_INTERVAL).toInt();
+        if (MOUSE_POLLING_INTERNAL_MIN <= mousePollingInterval && mousePollingInterval <= MOUSE_POLLING_INTERNAL_MAX) {
+            m_MappingAdvancedDialog->setMousePollingInterval(mousePollingInterval);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Mouse Polling Interval =" << mousePollingInterval;
+#endif
+        }
+        else {
+            m_MappingAdvancedDialog->setMousePollingInterval(MOUSE_POLLING_INTERNAL_DEFAULT);
+        }
+    }
+    else {
+        m_MappingAdvancedDialog->setMousePollingInterval(MOUSE_POLLING_INTERNAL_DEFAULT);
     }
 
     if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_X_SPEED)){
@@ -12524,34 +12552,24 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 
     if (true == settingFile.contains(settingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED)){
         bool acceptVirtualGamepadInputChecked = settingFile.value(settingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED).toBool();
-        if (true == acceptVirtualGamepadInputChecked) {
-            ui->acceptVirtualGamepadInputCheckBox->setChecked(true);
-        }
-        else {
-            ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
-        }
+        m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(acceptVirtualGamepadInputChecked);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "AcceptVirtualGamdpadInputChecked =" << acceptVirtualGamepadInputChecked;
 #endif
     }
     else {
-        ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
+        m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(false);
     }
 
     if (true == settingFile.contains(settingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED)){
         bool processIconAsTrayIconChecked = settingFile.value(settingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED).toBool();
-        if (true == processIconAsTrayIconChecked) {
-            ui->ProcessIconAsTrayIconCheckBox->setChecked(true);
-        }
-        else {
-            ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
-        }
+        m_MappingAdvancedDialog->setProcessIconAsTrayIcon(processIconAsTrayIconChecked);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "ProcessIconAsTrayIconChecked =" << processIconAsTrayIconChecked;
 #endif
     }
     else {
-        ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
+        m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
     }
 
 //     QString loadedmappingswitchKeySeqStr;
@@ -12649,8 +12667,10 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     m_MapProcessInfo = MAP_PROCESSINFO();
 
-    ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
-    ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    // ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    // ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
+    m_MappingAdvancedDialog->setMouseXSpeed(MOUSE_SPEED_DEFAULT);
+    m_MappingAdvancedDialog->setMouseYSpeed(MOUSE_SPEED_DEFAULT);
     ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
     ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
     ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
@@ -12678,8 +12698,8 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
     ui->enableSystemFilterKeyCheckBox->blockSignals(false);
     ui->sendToSameTitleWindowsCheckBox->setChecked(false);
-    ui->acceptVirtualGamepadInputCheckBox->setChecked(false);
-    ui->ProcessIconAsTrayIconCheckBox->setChecked(false);
+    m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(false);
+    m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
 
     QString loadedmappingStartKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
     updateMappingStartKeyString(loadedmappingStartKeyStr);
@@ -13519,8 +13539,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
-    ui->mouseXSpeedLabel->setFont(customFont);
-    ui->mouseYSpeedLabel->setFont(customFont);
+    // ui->mouseXSpeedLabel->setFont(customFont);
+    // ui->mouseYSpeedLabel->setFont(customFont);
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
     ui->gamepadSelectLabel->setFont(customFont);
@@ -13536,6 +13556,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->startupPositonSettingButton->setFont(customFont);
+    ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -13563,7 +13584,7 @@ void QKeyMapper::setControlFontEnglish()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
-    ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
+    // ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
@@ -13572,7 +13593,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
     ui->selectTrayIconButton->setFont(customFont);
-    ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
+    // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
     ui->Gyro2MouseXSpeedLabel->setFont(customFont);
     ui->Gyro2MouseYSpeedLabel->setFont(customFont);
@@ -13659,8 +13680,8 @@ void QKeyMapper::setControlFontChinese()
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
-    ui->mouseXSpeedLabel->setFont(customFont);
-    ui->mouseYSpeedLabel->setFont(customFont);
+    // ui->mouseXSpeedLabel->setFont(customFont);
+    // ui->mouseYSpeedLabel->setFont(customFont);
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
     ui->gamepadSelectLabel->setFont(customFont);
@@ -13676,6 +13697,7 @@ void QKeyMapper::setControlFontChinese()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->startupPositonSettingButton->setFont(customFont);
+    ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -13703,7 +13725,7 @@ void QKeyMapper::setControlFontChinese()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
-    ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
+    // ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
@@ -13712,7 +13734,7 @@ void QKeyMapper::setControlFontChinese()
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
     ui->selectTrayIconButton->setFont(customFont);
-    ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
+    // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
     ui->Gyro2MouseXSpeedLabel->setFont(customFont);
     ui->Gyro2MouseYSpeedLabel->setFont(customFont);
@@ -13799,8 +13821,8 @@ void QKeyMapper::setControlFontJapanese()
     ui->pointLabel->setFont(customFont);
     // ui->pointDisplayLabel->setFont(customFont);
     // ui->waitTime_msLabel->setFont(customFont);
-    ui->mouseXSpeedLabel->setFont(customFont);
-    ui->mouseYSpeedLabel->setFont(customFont);
+    // ui->mouseXSpeedLabel->setFont(customFont);
+    // ui->mouseYSpeedLabel->setFont(customFont);
     ui->keyboardSelectLabel->setFont(customFont);
     ui->mouseSelectLabel->setFont(customFont);
     ui->gamepadSelectLabel->setFont(customFont);
@@ -13816,6 +13838,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->startupPositonSettingButton->setFont(customFont);
+    ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
@@ -13843,7 +13866,7 @@ void QKeyMapper::setControlFontJapanese()
     }
     ui->autoStartMappingCheckBox->setFont(customFont);
     ui->sendToSameTitleWindowsCheckBox->setFont(customFont);
-    ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
+    // ui->acceptVirtualGamepadInputCheckBox->setFont(customFont);
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
@@ -13852,7 +13875,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
     ui->selectTrayIconButton->setFont(customFont);
-    ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
+    // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
     ui->Gyro2MouseXSpeedLabel->setFont(customFont);
     ui->Gyro2MouseYSpeedLabel->setFont(customFont);
@@ -13920,7 +13943,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->settingNameLabel->setEnabled(status);
     ui->settingNameLineEdit->setEnabled(status);
     ui->backupSettingButton->setEnabled(status);
-    ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
+    // ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
     ui->autoStartupCheckBox->setEnabled(status);
     ui->startupMinimizedCheckBox->setEnabled(status);
     ui->startupAutoMonitoringCheckBox->setEnabled(status);
@@ -13950,10 +13973,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->pushLevelSlider->setEnabled(status);
     ui->pushLevelSpinBox->setEnabled(status);
     ui->pressTimeSpinBox->setEnabled(status);
-    ui->mouseXSpeedLabel->setEnabled(status);
-    ui->mouseYSpeedLabel->setEnabled(status);
-    ui->mouseXSpeedSpinBox->setEnabled(status);
-    ui->mouseYSpeedSpinBox->setEnabled(status);
+    // ui->mouseXSpeedLabel->setEnabled(status);
+    // ui->mouseYSpeedLabel->setEnabled(status);
+    // ui->mouseXSpeedSpinBox->setEnabled(status);
+    // ui->mouseYSpeedSpinBox->setEnabled(status);
 
     ui->dataPortLabel->setEnabled(status);
     ui->dataPortSpinBox->setEnabled(status);
@@ -14061,9 +14084,10 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->movedownButton->setEnabled(status);
     ui->nextarrowCheckBox->setEnabled(status);
 
-    ui->windowswitchkeyLabel->setEnabled(status);
-    ui->checkUpdateButton->setEnabled(status);
-    ui->startupPositonSettingButton->setEnabled(status);
+    // ui->windowswitchkeyLabel->setEnabled(status);
+    // ui->checkUpdateButton->setEnabled(status);
+    // ui->startupPositonSettingButton->setEnabled(status);
+    // ui->mappingAdvancedSettingButton->setEnabled(status);
     // m_windowswitchKeySeqEdit->setEnabled(status);
     ui->windowswitchkeyLineEdit->setEnabled(status);
     ui->mappingStartKeyLabel->setEnabled(status);
@@ -14480,6 +14504,24 @@ void QKeyMapper::closeStartupPositonSettingDialog()
 
     if (m_StartupPositionDialog->isVisible()) {
         m_StartupPositionDialog->close();
+    }
+}
+
+void QKeyMapper::showMappingAdvancedDialog()
+{
+    if (!m_MappingAdvancedDialog->isVisible()) {
+        m_MappingAdvancedDialog->show();
+    }
+}
+
+void QKeyMapper::closeMappingAdvancedDialog()
+{
+    if (Q_NULLPTR == m_MappingAdvancedDialog) {
+        return;
+    }
+
+    if (m_MappingAdvancedDialog->isVisible()) {
+        m_MappingAdvancedDialog->close();
     }
 }
 
@@ -17706,8 +17748,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->keyPressTypeComboBox->addItem(tr("DoublePress"));
     ui->pointLabel->setText(tr("Point"));
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
-    ui->mouseXSpeedLabel->setText(tr("X Speed"));
-    ui->mouseYSpeedLabel->setText(tr("Y Speed"));
+    // ui->mouseXSpeedLabel->setText(tr("X Speed"));
+    // ui->mouseYSpeedLabel->setText(tr("Y Speed"));
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
     ui->removeSettingButton->setText(tr("Remove"));
     // ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
@@ -17717,7 +17759,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->autoStartMappingCheckBox->setText(tr("Auto Match Foreground"));
     ui->enableSystemFilterKeyCheckBox->setText(tr("SystemFilterKey"));
     ui->sendToSameTitleWindowsCheckBox->setText(tr("Send To Same Windows"));
-    ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
+    // ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
     ui->startupAutoMonitoringCheckBox->setText(tr("Startup AutoMonitoring"));
@@ -17726,6 +17768,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->startupPositonSettingButton->setText(tr("Startup Position"));
+    ui->mappingAdvancedSettingButton->setText(tr("Mapping Advanced"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
     ui->checkUpdateButton->setText(tr("Check Updates"));
     ui->mappingStartKeyLabel->setText(tr("MappingStart"));
@@ -17741,7 +17784,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->Gyro2MouseAdvancedSettingButton->setText(tr("Advanced"));
     ui->selectTrayIconButton->setText(tr("Select Tray Icon"));
     ui->notificationAdvancedSettingButton->setText(tr("Noti Advanced"));
-    ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
+    // ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
 
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_NONE,           tr("None"));
     ui->notificationComboBox->setItemText(NOTIFICATION_POSITION_TOP_LEFT,       tr("Top Left"));
@@ -17851,6 +17894,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_StartupPositionDialog != Q_NULLPTR) {
         m_StartupPositionDialog->setUILanguage(languageindex);
+    }
+
+    if (m_MappingAdvancedDialog != Q_NULLPTR) {
+        m_MappingAdvancedDialog->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
@@ -23271,6 +23318,11 @@ void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
 void QKeyMapper::on_startupPositonSettingButton_clicked()
 {
     showStartupPositonSettingDialog();
+}
+
+void QKeyMapper::on_mappingAdvancedSettingButton_clicked()
+{
+    showMappingAdvancedDialog();
 }
 
 void QKeyMapper::on_backupSettingButton_clicked()

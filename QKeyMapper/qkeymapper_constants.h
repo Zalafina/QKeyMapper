@@ -336,6 +336,10 @@ namespace QKeyMapperConstants {
     inline constexpr int MOUSE_SPEED_MAX = 99;
     inline constexpr int MOUSE_SPEED_DEFAULT = 3;
 
+    inline constexpr int MOUSE_POLLING_INTERNAL_MIN     = 1;
+    inline constexpr int MOUSE_POLLING_INTERNAL_MAX     = 99;
+    inline constexpr int MOUSE_POLLING_INTERNAL_DEFAULT = 2;
+
     inline constexpr int UI_SCALE_NORMAL = 0;
     inline constexpr int UI_SCALE_1K_PERCENT_100 = 1;
     inline constexpr int UI_SCALE_1K_PERCENT_125 = 2;
@@ -841,6 +845,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_CROSSHAIR_Y_OFFSET[] = "KeyMapData_Crosshair_Y_Offset";
     inline constexpr const char KEY2MOUSE_X_SPEED[] = "Key2Mouse_XSpeed";
     inline constexpr const char KEY2MOUSE_Y_SPEED[] = "Key2Mouse_YSpeed";
+    inline constexpr const char KEY2MOUSE_POLLING_INTERVAL[] = "Key2Mouse_PollingInterval";
 
     inline constexpr const char GYRO2MOUSE_X_SPEED[] = "Gyro2Mouse_XSpeed";
     inline constexpr const char GYRO2MOUSE_Y_SPEED[] = "Gyro2Mouse_YSpeed";

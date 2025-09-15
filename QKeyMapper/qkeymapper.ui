@@ -433,7 +433,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -1034,75 +1034,11 @@
       <string>Auto Match Foreground</string>
      </property>
     </widget>
-    <widget class="QSpinBox" name="mouseYSpeedSpinBox">
-     <property name="geometry">
-      <rect>
-       <x>100</x>
-       <y>100</y>
-       <width>51</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::ClickFocus</enum>
-     </property>
-     <property name="value">
-      <number>3</number>
-     </property>
-    </widget>
-    <widget class="QLabel" name="mouseXSpeedLabel">
-     <property name="geometry">
-      <rect>
-       <x>4</x>
-       <y>70</y>
-       <width>91</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>X Speed</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-     </property>
-    </widget>
-    <widget class="QSpinBox" name="mouseXSpeedSpinBox">
-     <property name="geometry">
-      <rect>
-       <x>100</x>
-       <y>70</y>
-       <width>51</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::ClickFocus</enum>
-     </property>
-     <property name="value">
-      <number>3</number>
-     </property>
-    </widget>
-    <widget class="QLabel" name="mouseYSpeedLabel">
-     <property name="geometry">
-      <rect>
-       <x>4</x>
-       <y>100</y>
-       <width>91</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Y Speed</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="sendToSameTitleWindowsCheckBox">
      <property name="geometry">
       <rect>
        <x>290</x>
-       <y>100</y>
+       <y>70</y>
        <width>191</width>
        <height>21</height>
       </rect>
@@ -1140,38 +1076,6 @@
       </rect>
      </property>
     </widget>
-    <widget class="QCheckBox" name="acceptVirtualGamepadInputCheckBox">
-     <property name="geometry">
-      <rect>
-       <x>290</x>
-       <y>130</y>
-       <width>191</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::NoFocus</enum>
-     </property>
-     <property name="text">
-      <string>Accept Virtual Gamepad Input</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="ProcessIconAsTrayIconCheckBox">
-     <property name="geometry">
-      <rect>
-       <x>290</x>
-       <y>70</y>
-       <width>191</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::NoFocus</enum>
-     </property>
-     <property name="text">
-      <string>ProcessIcon as TrayIcon</string>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="enableSystemFilterKeyCheckBox">
      <property name="geometry">
       <rect>
@@ -1186,6 +1090,25 @@
      </property>
      <property name="text">
       <string>SystemFilterKey</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="mappingAdvancedSettingButton">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>70</y>
+       <width>141</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Mapping Advanced</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
      </property>
     </widget>
    </widget>

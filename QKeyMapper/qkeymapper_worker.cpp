@@ -4564,7 +4564,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[setWorkerKeyHook] Key2MouseCycleTimer Started.");
 #endif
-        m_Key2MouseCycleTimer.start(KEY2MOUSE_CYCLECHECK_TIMEOUT);
+        m_Key2MouseCycleTimer.start(QKeyMapper::getMouseMovePollingInterval());
     }
 
     startDataPortListener();
@@ -4961,7 +4961,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[setKeyMappingRestart] Key2MouseCycleTimer Started.");
 #endif
-        m_Key2MouseCycleTimer.start(KEY2MOUSE_CYCLECHECK_TIMEOUT);
+        m_Key2MouseCycleTimer.start(QKeyMapper::getMouseMovePollingInterval());
     }
 
     startDataPortListener();

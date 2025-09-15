@@ -170,6 +170,7 @@ HEADERS     += \
     qgyro2mouseoptiondialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
+    qmappingadvanceddialog.h \
     qnotificationsetupdialog.h \
     qstartuppositiondialog.h \
     qtablesetupdialog.h \
@@ -192,6 +193,7 @@ SOURCES     += \
     qkeymapper.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
+    qmappingadvanceddialog.cpp \
     qnotificationsetupdialog.cpp \
     qstartuppositiondialog.cpp \
     qtablesetupdialog.cpp \
@@ -222,6 +224,7 @@ FORMS       += \
     qitemsetupdialog.ui \
     qkeymapper.ui \
     qkeyrecord.ui \
+    qmappingadvanceddialog.ui \
     qnotificationsetupdialog.ui \
     qstartuppositiondialog.ui \
     qtablesetupdialog.ui \

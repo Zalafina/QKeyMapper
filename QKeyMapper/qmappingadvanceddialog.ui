@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>QMappingAdvancedDialog</class>
+ <widget class="QDialog" name="QMappingAdvancedDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>460</width>
+    <height>190</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Mapping Advanced Setting</string>
+  </property>
+  <widget class="QCheckBox" name="ProcessIconAsTrayIconCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>10</y>
+     <width>211</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>ProcessIcon as TrayIcon</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="acceptVirtualGamepadInputCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>50</y>
+     <width>221</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Accept Virtual Gamepad Input</string>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="mouseGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>10</y>
+     <width>191</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Mouse</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="mouseXSpeedSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>50</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>3</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mouseYSpeedLabel">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>90</y>
+     <width>91</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Y Speed</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mouseXSpeedLabel">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>50</y>
+     <width>91</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>X Speed</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="mouseYSpeedSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>90</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>3</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mousePollingIntervalLabel">
+   <property name="geometry">
+    <rect>
+     <x>24</x>
+     <y>130</y>
+     <width>91</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Polling</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="mousePollingIntervalSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>130</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+   <property name="value">
+    <number>3</number>
+   </property>
+  </widget>
+  <zorder>mouseGroupBox</zorder>
+  <zorder>ProcessIconAsTrayIconCheckBox</zorder>
+  <zorder>acceptVirtualGamepadInputCheckBox</zorder>
+  <zorder>mouseXSpeedSpinBox</zorder>
+  <zorder>mouseYSpeedLabel</zorder>
+  <zorder>mouseXSpeedLabel</zorder>
+  <zorder>mouseYSpeedSpinBox</zorder>
+  <zorder>mousePollingIntervalLabel</zorder>
+  <zorder>mousePollingIntervalSpinBox</zorder>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
