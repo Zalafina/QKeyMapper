@@ -854,6 +854,7 @@ signals:
 
 public slots:
     void threadStarted(void);
+    void threadFinished(void);
     void setWorkerKeyHook(void);
     void setWorkerKeyUnHook(void);
     void setKeyMappingRestart(void);
@@ -1172,6 +1173,7 @@ private:
     QHash<JoystickRStickCode, QString> m_JoystickRStickMap;
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
     GamepadMotion m_GamdpadMotion;
+    bool m_ComInitialized = false;
 };
 
 class QKeyMapper_Hook_Proc : public QObject

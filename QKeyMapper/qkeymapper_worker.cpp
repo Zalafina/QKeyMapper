@@ -4413,12 +4413,38 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 void QKeyMapper_Worker::threadStarted()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("threadStarted() -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+    qDebug("[QKeyMapper_Worker::threadStarted] Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
+
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (SUCCEEDED(hr)) {
+        m_ComInitialized = true;
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[QKeyMapper_Worker::threadStarted] CoInitializeEx failed:" << hr;
+#endif
+    }
 
     /* UDP Data Port Listener */
     m_UdpSocket = new QUdpSocket(this);
     QObject::connect(m_UdpSocket, &QUdpSocket::readyRead, this, &QKeyMapper_Worker::processUdpPendingDatagrams);
+}
+
+void QKeyMapper_Worker::threadFinished()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[QKeyMapper_Worker::threadFinished] Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+#endif
+
+    if (m_ComInitialized && QThread::currentThread() == this->thread()) {
+        CoUninitialize();
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[QKeyMapper_Worker::threadFinished] CoUninitialize skipped: wrong thread!";
+#endif
+    }
 }
 
 void QKeyMapper_Worker::setWorkerKeyHook()

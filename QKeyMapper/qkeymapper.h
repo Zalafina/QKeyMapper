@@ -60,6 +60,7 @@
 #include <tchar.h>
 #include <string.h>
 #include <dwmapi.h>
+// #include <objbase.h>
 #include <Shlobj.h>
 #include <powrprof.h>
 #include <setupapi.h>

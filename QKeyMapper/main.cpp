@@ -328,7 +328,8 @@ int main(int argc, char *argv[])
     QThread * const workerThread = new QThread();
     keymapper_worker->moveToThread(workerThread);
     workerThread->setObjectName("QKeyMapper_Worker");
-    QObject::connect(workerThread, &QThread::started, keymapper_worker, &QKeyMapper_Worker::threadStarted);
+    QObject::connect(workerThread, &QThread::started, keymapper_worker, &QKeyMapper_Worker::threadStarted, Qt::DirectConnection);
+    QObject::connect(workerThread, &QThread::finished, keymapper_worker, &QKeyMapper_Worker::threadFinished, Qt::DirectConnection);
     workerThread->start();
 
     QKeyMapper w;
