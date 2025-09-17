@@ -11528,7 +11528,16 @@ ParsedRunCommand QKeyMapper_Worker::parseRunCommandUserInput(const QString &inpu
     // print: Prints the document file specified by lpFile
     // properties: Displays the file or folder's properties
     // runas: Launches an application as Administrator (UAC prompt)
-    static const QStringList systemVerbs{"find", "explore", "open", "edit", "openas", "print", "properties", "runas"};
+    static const QStringList systemVerbs{
+        "find",
+        "explore",
+        "open",
+        "edit",
+        "openas",
+        "print",
+        "properties",
+        "runas"
+    };
 
     ParsedRunCommand result;
     QString str = input;
@@ -13576,7 +13585,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
