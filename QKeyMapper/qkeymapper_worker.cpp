@@ -13682,7 +13682,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        // s_LowLevelKeyboardHook_Enable = false;
+        s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
@@ -13873,10 +13873,11 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
 
-    // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

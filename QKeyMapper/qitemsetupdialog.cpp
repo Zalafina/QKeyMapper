@@ -547,17 +547,17 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
 
-    // Create a list of all matches (SendText, Run, SwitchTab, and Unlock) with their positions
+    // Create a list of all matches (SendText, Run, SwitchTab, Unlock, and SetVolume) with their positions
     struct MatchInfo {
         int start;
         int end;
         QString content;
-        QString type; // "sendtext", "run", "switchtab", "switchtab_save", or "unlock"
+        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "unlock", or "setvolume"
     };
 
     QList<MatchInfo> allMatches;
@@ -565,6 +565,10 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
     // Find all SendText matches
     int currentPos = 0;
     while (currentPos < mappingKey.length()) {
+        if (sendtext_regex.pattern().isEmpty()) {
+            break;
+        }
+
         QRegularExpressionMatch match = sendtext_regex.match(mappingKey, currentPos);
         if (!match.hasMatch()) {
             break;
@@ -630,6 +634,10 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
     // Find all Run matches (need bracket balancing like SendText)
     currentPos = 0;
     while (currentPos < mappingKey.length()) {
+        if (run_regex.pattern().isEmpty()) {
+            break;
+        }
+
         QRegularExpressionMatch match = run_regex.match(mappingKey, currentPos);
         if (!match.hasMatch()) {
             break;
@@ -695,6 +703,10 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
     // Find all SwitchTab matches (need bracket balancing like Run)
     currentPos = 0;
     while (currentPos < mappingKey.length()) {
+        if (switchtab_regex.pattern().isEmpty()) {
+            break;
+        }
+
         QRegularExpressionMatch match = switchtab_regex.match(mappingKey, currentPos);
         if (!match.hasMatch()) {
             break;
@@ -774,6 +786,10 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
     // Find all Unlock matches (simple pattern without bracket balancing issues)
     currentPos = 0;
     while (currentPos < mappingKey.length()) {
+        if (unlock_regex.pattern().isEmpty()) {
+            break;
+        }
+
         QRegularExpressionMatch match = unlock_regex.match(mappingKey, currentPos);
         if (!match.hasMatch()) {
             break;
@@ -785,6 +801,28 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         info.end = match.capturedEnd();
         info.content = match.captured(0);
         info.type = "unlock";
+        allMatches.append(info);
+        currentPos = match.capturedEnd();
+    }
+
+    // Find all SetVolume matches (simple pattern without bracket balancing issues)
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        if (setvolume_regex.pattern().isEmpty()) {
+            break;
+        }
+
+        QRegularExpressionMatch match = setvolume_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // SetVolume pattern is simple: SetVolume(...) with no nested brackets expected
+        MatchInfo info;
+        info.start = match.capturedStart();
+        info.end = match.capturedEnd();
+        info.content = match.captured(0);
+        info.type = "setvolume";
         allMatches.append(info);
         currentPos = match.capturedEnd();
     }
@@ -849,6 +887,10 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
                 innerContent.remove(whitespace_reg);
                 content = QString("%1(%2)").arg(UNLOCK_STR, innerContent);
             }
+        }
+        else if (allMatches[i].type == "setvolume") {
+            // SetVolume(...) content remains unchanged as it has strict format validation
+            // Format: SetVolume(numeric_value) - no whitespace manipulation needed
         }
         // SendText(...) content remains completely unchanged
 
@@ -2338,7 +2380,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
     QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
@@ -2383,7 +2425,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), and Unlock(...) content to preserve them
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
     QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
