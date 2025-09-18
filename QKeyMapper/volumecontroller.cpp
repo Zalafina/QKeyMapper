@@ -1,0 +1,168 @@
+#include <mmdeviceapi.h>
+#include <endpointvolume.h>
+
+#include <QDebug>
+#include "volumecontroller.h"
+
+#include "qkeymapper_constants.h"
+
+using namespace QKeyMapperConstants;
+
+// VolumeController class implementation
+VolumeController::VolumeController()
+    : m_isInitialized(false)
+    , m_deviceEnumerator(nullptr)
+    , m_defaultDevice(nullptr)
+    , m_endpointVolume(nullptr)
+{
+}
+
+VolumeController::~VolumeController()
+{
+    cleanup();
+}
+
+bool VolumeController::initialize()
+{
+    if (m_isInitialized) {
+        return true; // Already initialized
+    }
+
+    HRESULT hr;
+
+    // Create device enumerator
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
+                          __uuidof(IMMDeviceEnumerator),
+                          reinterpret_cast<void**>(&m_deviceEnumerator));
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::initialize] Failed to create device enumerator, hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+    // Get default audio render device
+    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &m_defaultDevice);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::initialize] Failed to get default audio endpoint, hr =" << QString::number(hr, 16);
+#endif
+        cleanup();
+        return false;
+    }
+
+    // Get audio endpoint volume interface
+    hr = m_defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL,
+                                   nullptr, reinterpret_cast<void**>(&m_endpointVolume));
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::initialize] Failed to activate audio endpoint volume, hr =" << QString::number(hr, 16);
+#endif
+        cleanup();
+        return false;
+    }
+
+    m_isInitialized = true;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[VolumeController::initialize] Volume controller initialized successfully";
+#endif
+    return true;
+}
+
+void VolumeController::cleanup()
+{
+    if (m_endpointVolume) {
+        m_endpointVolume->Release();
+        m_endpointVolume = nullptr;
+    }
+
+    if (m_defaultDevice) {
+        m_defaultDevice->Release();
+        m_defaultDevice = nullptr;
+    }
+
+    if (m_deviceEnumerator) {
+        m_deviceEnumerator->Release();
+        m_deviceEnumerator = nullptr;
+    }
+
+    m_isInitialized = false;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[VolumeController::cleanup] Volume controller cleaned up";
+#endif
+}
+
+bool VolumeController::setVolume(float volumePercentage)
+{
+    if (!m_isInitialized || !m_endpointVolume) {
+        return false;
+    }
+
+    float clampedPercentage = clampVolumePercentage(volumePercentage);
+    float scalar = percentageToScalar(clampedPercentage);
+
+    HRESULT hr = m_endpointVolume->SetMasterVolumeLevelScalar(scalar, nullptr);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::setVolume] Failed to set volume to" << clampedPercentage << "%, hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[VolumeController::setVolume] Volume set to" << clampedPercentage << "%";
+#endif
+    return true;
+}
+
+float VolumeController::getCurrentVolume()
+{
+    if (!m_isInitialized || !m_endpointVolume) {
+        return 0.0f;
+    }
+
+    float scalar = 0.0f;
+    HRESULT hr = m_endpointVolume->GetMasterVolumeLevelScalar(&scalar);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::getCurrentVolume] Failed to get current volume, hr =" << QString::number(hr, 16);
+#endif
+        return 0.0f;
+    }
+
+    return scalarToPercentage(scalar);
+}
+
+bool VolumeController::adjustVolume(float deltaPercentage)
+{
+    float currentVolume = getCurrentVolume();
+    if (currentVolume < 0.0f) {
+        return false; // Failed to get current volume
+    }
+
+    float newVolume = currentVolume + deltaPercentage;
+    return setVolume(newVolume);
+}
+
+float VolumeController::percentageToScalar(float percentage)
+{
+    return percentage / 100.0f;
+}
+
+float VolumeController::scalarToPercentage(float scalar)
+{
+    return scalar * 100.0f;
+}
+
+float VolumeController::clampVolumePercentage(float percentage)
+{
+    if (percentage < VOLUME_MIN_PERCENTAGE) {
+        return VOLUME_MIN_PERCENTAGE;
+    }
+    if (percentage > VOLUME_MAX_PERCENTAGE) {
+        return VOLUME_MAX_PERCENTAGE;
+    }
+    return percentage;
+}

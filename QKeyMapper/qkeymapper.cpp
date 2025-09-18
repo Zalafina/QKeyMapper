@@ -3694,6 +3694,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
             static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
             static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
+            static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
@@ -3701,6 +3702,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(mapping_key);
+            QRegularExpressionMatch setvolume_match = setvolume_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
@@ -3758,6 +3760,30 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                     if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid press time in Unlock(...): \"%1\"").arg(timeString);
+                    }
+                }
+            }
+            else if (setvolume_match.hasMatch()) {
+                // Validate SetVolume(...) mapping key
+                QString sign = setvolume_match.captured(1);         // Optional +/- sign
+                QString valueStr = setvolume_match.captured(2);     // Numeric value
+
+                bool ok;
+                float value = valueStr.toFloat(&ok);
+                if (!ok) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid numeric value in SetVolume(...): \"%1\"").arg(valueStr);
+                }
+                else if (value < VOLUME_MIN_PERCENTAGE || value > VOLUME_MAX_PERCENTAGE) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Volume value out of range (0.00-100.00): \"%1\"").arg(valueStr);
+                }
+                else {
+                    // Check decimal precision (should be at most 2 decimal places)
+                    QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
+                    if (!precisionRegex.match(valueStr).hasMatch()) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Volume value precision exceeds 2 decimal places: \"%1\"").arg(valueStr);
                     }
                 }
             }

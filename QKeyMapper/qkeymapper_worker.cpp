@@ -350,6 +350,83 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
     }
 }
 
+void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
+{
+    static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
+    QRegularExpressionMatch match = setvolume_regex.match(volumeCommand);
+
+    if (!match.hasMatch()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[processSetVolumeMapping] Invalid SetVolume format:" << volumeCommand;
+#endif
+        return;
+    }
+
+    if (!m_volumeController.isInitialized()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[processSetVolumeMapping] Volume controller not initialized";
+#endif
+        return;
+    }
+
+    QString sign = match.captured(1);           // Optional +/- sign
+    QString valueStr = match.captured(2);       // Numeric value
+
+    bool ok;
+    float value = valueStr.toFloat(&ok);
+    if (!ok) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[processSetVolumeMapping] Invalid numeric value:" << valueStr;
+#endif
+        return;
+    }
+
+    // Determine operation type based on sign
+    int operationType = VOLUME_OPERATION_SET;
+    if (sign == "+") {
+        operationType = VOLUME_OPERATION_INCREASE;
+    } else if (sign == "-") {
+        operationType = VOLUME_OPERATION_DECREASE;
+        value = -value; // Make value negative for decrease
+    }
+
+    bool success = false;
+    float currentVolume = 0.0f;
+
+    switch (operationType) {
+        case VOLUME_OPERATION_SET:
+            success = m_volumeController.setVolume(value);
+#ifdef DEBUG_LOGOUT_ON
+            if (success) {
+                qDebug() << "[processSetVolumeMapping] Volume set to" << value << "%";
+            } else {
+                qDebug() << "[processSetVolumeMapping] Failed to set volume to" << value << "%";
+            }
+#endif
+            break;
+
+        case VOLUME_OPERATION_INCREASE:
+        case VOLUME_OPERATION_DECREASE:
+            currentVolume = m_volumeController.getCurrentVolume();
+            success = m_volumeController.adjustVolume(value);
+#ifdef DEBUG_LOGOUT_ON
+            if (success) {
+                float newVolume = m_volumeController.getCurrentVolume();
+                qDebug() << "[processSetVolumeMapping] Volume adjusted from" << currentVolume << "% to" << newVolume << "% (delta:" << value << "%)";
+            } else {
+                qDebug() << "[processSetVolumeMapping] Failed to adjust volume by" << value << "%";
+            }
+#endif
+            break;
+
+        default:
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[processSetVolumeMapping] Unknown operation type:" << operationType;
+#endif
+            break;
+    }
+}
+
 void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
     // Get the client area rectangle (relative to the window)
@@ -1053,6 +1130,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
+    static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
@@ -1259,6 +1337,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(key);
+            QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
             if (sendtext_match.hasMatch()) {
                 /* SendText KeyUp do nothing. */
             }
@@ -1270,6 +1349,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
             else if (unlock_match.hasMatch()) {
                 /* Unlock KeyUp do nothing. */
+            }
+            else if (setvolume_match.hasMatch()) {
+                /* SetVolume KeyUp do nothing. */
             }
             else if (vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
@@ -1724,6 +1806,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
                 QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
                 QRegularExpressionMatch unlock_match = unlock_regex.match(key);
+                QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
@@ -1818,6 +1901,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         qDebug().nospace().noquote() << "\033[1;31m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
 #endif
                     }
+                }
+                else if (setvolume_match.hasMatch()) {
+                    // Process SetVolume(...) mapping key
+                    processSetVolumeMapping(key);
                 }
                 else if (vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -4419,6 +4506,13 @@ void QKeyMapper_Worker::threadStarted()
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (SUCCEEDED(hr)) {
         m_ComInitialized = true;
+
+        // Initialize volume controller after COM is initialized
+        if (!m_volumeController.initialize()) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[QKeyMapper_Worker::threadStarted] Failed to initialize volume controller";
+#endif
+        }
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
@@ -4438,6 +4532,9 @@ void QKeyMapper_Worker::threadFinished()
 #endif
 
     if (m_ComInitialized && QThread::currentThread() == this->thread()) {
+        // Cleanup volume controller before COM is uninitialized
+        m_volumeController.cleanup();
+
         CoUninitialize();
     }
     else {

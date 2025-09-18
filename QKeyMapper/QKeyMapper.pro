@@ -175,7 +175,8 @@ HEADERS     += \
     qnotificationsetupdialog.h \
     qstartuppositiondialog.h \
     qtablesetupdialog.h \
-    qtrayiconselectdialog.h
+    qtrayiconselectdialog.h \
+    volumecontroller.h
 # Interception Driver Support <<<
 
 
@@ -198,7 +199,8 @@ SOURCES     += \
     qnotificationsetupdialog.cpp \
     qstartuppositiondialog.cpp \
     qtablesetupdialog.cpp \
-    qtrayiconselectdialog.cpp
+    qtrayiconselectdialog.cpp \
+    volumecontroller.cpp
 
 HEADERS     += \
     interception_worker.h \

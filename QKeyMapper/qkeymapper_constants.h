@@ -1199,4 +1199,25 @@ namespace QKeyMapperConstants {
 
     inline constexpr const int KEYBOARD_TABLE_COLUMN_COUNT    = 9;
     inline constexpr const int MOUSE_TABLE_COLUMN_COUNT       = 9;
+
+    /* Volume Control Constants */
+    // Volume control ranges - Windows uses 0.0f to 1.0f (scalar)
+    inline constexpr const float VOLUME_MIN_SCALAR           = 0.0f;   // Minimum volume (muted)
+    inline constexpr const float VOLUME_MAX_SCALAR           = 1.0f;   // Maximum volume (100%)
+    inline constexpr const float VOLUME_MIN_PERCENTAGE       = 0.0f;   // Minimum volume percentage
+    inline constexpr const float VOLUME_MAX_PERCENTAGE       = 100.0f; // Maximum volume percentage
+
+    // Volume precision and validation
+    inline constexpr const int VOLUME_DECIMAL_PRECISION      = 2;      // Support 2 decimal places
+    inline constexpr const float VOLUME_EPSILON              = 0.001f; // Small value for float comparison
+
+    // Volume control operation types
+    inline constexpr const int VOLUME_OPERATION_SET          = 0;      // Set absolute volume
+    inline constexpr const int VOLUME_OPERATION_INCREASE     = 1;      // Increase volume by amount
+    inline constexpr const int VOLUME_OPERATION_DECREASE     = 2;      // Decrease volume by amount
+
+    // Pattern for matching SetVolume(...) mapping keys
+    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75)
+    // Capture groups: (1) = optional +/- sign, (2) = numeric value
+    inline constexpr const char REGEX_PATTERN_SETVOLUME[] = R"(^SetVolume\(([+-]?)(\d+(?:\.\d{1,2})?)\)$)";
 }

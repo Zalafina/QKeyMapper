@@ -32,6 +32,7 @@
 #include <QAtomicInteger>
 using QAtomicBool = QAtomicInteger<bool>;
 
+#include "volumecontroller.h"
 #include "qkeymapper_constants.h"
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
@@ -740,6 +741,9 @@ public slots:
     void sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
+
+    // Volume control functions
+    void processSetVolumeMapping(const QString& volumeCommand);
     void postMouseWheel(HWND hwnd, const QString &mousewheel);
     void postMouseMove(HWND hwnd, int delta_x, int delta_y);
     void postMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint = QPoint(-1, -1));
@@ -1174,6 +1178,9 @@ private:
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
     GamepadMotion m_GamdpadMotion;
     bool m_ComInitialized = false;
+
+    // Volume control instance
+    VolumeController m_volumeController;
 };
 
 class QKeyMapper_Hook_Proc : public QObject
