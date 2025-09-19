@@ -391,11 +391,14 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
     }
 
     bool success = false;
+#ifdef DEBUG_LOGOUT_ON
     float currentVolume = 0.0f;
+#endif
 
     switch (operationType) {
         case VOLUME_OPERATION_SET:
             success = m_volumeController.setVolume(value);
+            Q_UNUSED(success);
 #ifdef DEBUG_LOGOUT_ON
             if (success) {
                 qDebug() << "[processSetVolumeMapping] Volume set to" << value << "%";
@@ -407,8 +410,11 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
 
         case VOLUME_OPERATION_INCREASE:
         case VOLUME_OPERATION_DECREASE:
+#ifdef DEBUG_LOGOUT_ON
             currentVolume = m_volumeController.getCurrentVolume();
+#endif
             success = m_volumeController.adjustVolume(value);
+            Q_UNUSED(success);
 #ifdef DEBUG_LOGOUT_ON
             if (success) {
                 float newVolume = m_volumeController.getCurrentVolume();
