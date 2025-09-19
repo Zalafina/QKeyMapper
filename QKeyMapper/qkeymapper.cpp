@@ -16725,6 +16725,7 @@ void QKeyMapper::initKeysCategoryMap()
 
     /* Mapping Function Keys */
     mapping_function_keylist = QStringList() \
+        << SETVOLUME_STR
         << CROSSHAIR_NORMAL_STR
         << CROSSHAIR_TYPEA_STR
         << "VolumeMute"
@@ -19666,6 +19667,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         isDoublePress = true;
     }
 
+    static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)");
     bool already_exist = false;
     int findindex = -1;
@@ -19832,7 +19834,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else if (currentMapKeyText == UNLOCK_STR) {
-                static QRegularExpression whitespace_reg(R"(\s+)");
                 QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
                 unlock_key.remove(whitespace_reg);
                 if (unlock_key.isEmpty()) {
@@ -19842,6 +19843,18 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
                 else {
                     currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
+                }
+            }
+            else if (currentMapKeyText == SETVOLUME_STR) {
+                QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
+                setvolume_value.remove(whitespace_reg);
+                if (setvolume_value.isEmpty()) {
+                    QString message = tr("Please input the volume value to set!");
+                    showFailurePopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, setvolume_value);
                 }
             }
             else if (currentMapKeyText == SENDTEXT_STR) {
@@ -20027,7 +20040,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
                 else if (currentMapKeyText == UNLOCK_STR) {
-                    static QRegularExpression whitespace_reg(R"(\s+)");
                     QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
                     unlock_key.remove(whitespace_reg);
                     if (unlock_key.isEmpty()) {
@@ -20037,6 +20049,18 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
+                    }
+                }
+                else if (currentMapKeyText == SETVOLUME_STR) {
+                    QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
+                    setvolume_value.remove(whitespace_reg);
+                    if (setvolume_value.isEmpty()) {
+                        QString message = tr("Please input the volume value to set!");
+                        showFailurePopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, setvolume_value);
                     }
                 }
                 else if (currentMapKeyText == SENDTEXT_STR) {
