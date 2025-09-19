@@ -1071,6 +1071,7 @@ public:
     static QStringList MultiVirtualGamepadInputList;
     static QStringList CombinationKeysList;
     static QStringList SpecialOriginalKeysList;
+    static QStringList SendOnOriginalKeysList;
     static QStringList SpecialMappingKeysList;
     static QList<quint8> SpecialVirtualKeyCodeList;
     // static QStringList skipReleaseModifiersKeysList;

@@ -3252,7 +3252,8 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     if (orikeylist.size() > 1) {
         // Check if any key is a special key
         for (const QString &orikey : std::as_const(orikeylist)) {
-            if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)) {
+            if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)
+                || QKeyMapper_Worker::SendOnOriginalKeysList.contains(orikey)) {
                 result.isValid = false;
                 result.errorMessage = tr("Oricombinationkey contains specialkey \"%1\"").arg(orikey);
                 return result;
@@ -5995,7 +5996,9 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
 
     if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
         || keymapdata.Original_Key == JOY_RS2MOUSE_STR
-        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR) {
+        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
+        || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
+        || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
         disable_sendtiming = true;
     }
 
@@ -16408,6 +16411,7 @@ void QKeyMapper::initQSimpleUpdater()
 void QKeyMapper::initKeysCategoryMap()
 {
     /* Original keylists */
+    QStringList& original_common_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_COMMON];
     QStringList& original_mouse_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_MOUSE];
     QStringList& original_keyboard_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_KEYBOARD];
     QStringList& original_gamepad_keylist = s_OriginalKeysCategoryMap[KEY_TYPE_GAMEPAD];
@@ -16419,6 +16423,12 @@ void QKeyMapper::initKeysCategoryMap()
     QStringList& mapping_keyboard_keylist = s_MappingKeysCategoryMap[KEY_TYPE_KEYBOARD];
     QStringList& mapping_gamepad_keylist = s_MappingKeysCategoryMap[KEY_TYPE_GAMEPAD];
     QStringList& mapping_function_keylist = s_MappingKeysCategoryMap[KEY_TYPE_FUNCTION];
+
+    /* Original Common Keys */
+    original_common_keylist = QStringList() \
+        << SENDON_MAPPINGSTART_STR
+        << SENDON_SWITCHTAB_STR
+        ;
 
     /* Mapping Common Keys */
     mapping_common_keylist = QStringList() \
@@ -17026,9 +17036,14 @@ void QKeyMapper::updateOriginalKeyListComboBox()
 
     m_orikeyComboBox->clear();
     m_orikeyComboBox->addItem(QString());
+
+    const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
+    const QStringList common_keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_COMMON);
+    for (const QString &key : common_keyList) {
+        m_orikeyComboBox->addItem(common_icon, key);
+    }
+
     if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
-        m_orikeyComboBox->clear();
-        m_orikeyComboBox->addItem(QString());
         if (isMouseKeys_Selected) {
             QIcon icon = QIcon(":/mouse.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_MOUSE);
@@ -17182,7 +17197,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 #endif
             if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
                 || keymapdata.Original_Key == JOY_RS2MOUSE_STR
-                || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR) {
+                || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
+                || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
+                || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
                 disable_burst = true;
                 disable_lock = true;
             }
@@ -17385,7 +17402,9 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
 
     if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
         || keymapdata.Original_Key == JOY_RS2MOUSE_STR
-        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR) {
+        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
+        || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
+        || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
         disable_burst = true;
         disable_lock = true;
     }
@@ -19648,6 +19667,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
         baseKeyForSpecialCheck = currentOriKeyComboBoxText;
     }
     bool isSpecialOriginalKey = QKeyMapper_Worker::SpecialOriginalKeysList.contains(baseKeyForSpecialCheck);
+    bool isSendOnOriginalKey = QKeyMapper_Worker::SendOnOriginalKeysList.contains(baseKeyForSpecialCheck);
 
     if (currentOriKeyText.isEmpty()
         || (m_mapkeyComboBox->isEnabled()
@@ -19659,10 +19679,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
     currentOriKeyTextWithoutPostfix = currentOriKeyText;
     int pressTime = ui->pressTimeSpinBox->value();
-    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
+    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
     }
-    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0 && isSpecialOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR){
+    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0 && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR){
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_DOUBLEPRESS) + QString::number(pressTime);
         isDoublePress = true;
     }

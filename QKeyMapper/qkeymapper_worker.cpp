@@ -45,6 +45,7 @@ QStringList QKeyMapper_Worker::MultiMouseInputList = QStringList();
 QStringList QKeyMapper_Worker::MultiVirtualGamepadInputList;
 QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
 QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
+QStringList QKeyMapper_Worker::SendOnOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
 QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
@@ -12963,6 +12964,11 @@ void QKeyMapper_Worker::initSpecialOriginalKeysList()
             << JOY_RS2VJOYLS_STR
             << JOY_LT2VJOYLT_STR
             << JOY_RT2VJOYRT_STR
+            ;
+
+    SendOnOriginalKeysList = QStringList() \
+            << SENDON_MAPPINGSTART_STR
+            << SENDON_SWITCHTAB_STR
             ;
 }
 
