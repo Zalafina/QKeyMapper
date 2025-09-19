@@ -3765,7 +3765,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             }
             else if (setvolume_match.hasMatch()) {
                 // Validate SetVolume(...) mapping key
-                QString sign = setvolume_match.captured(1);         // Optional +/- sign
+                // QString sign = setvolume_match.captured(1);         // Optional +/- sign
                 QString valueStr = setvolume_match.captured(2);     // Numeric value
 
                 bool ok;
@@ -3776,11 +3776,11 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
                 }
                 else if (value < VOLUME_MIN_PERCENTAGE || value > VOLUME_MAX_PERCENTAGE) {
                     result.isValid = false;
-                    result.errorMessage = tr("Volume value out of range (0.00-100.00): \"%1\"").arg(valueStr);
+                    result.errorMessage = tr("Volume value out of range (0～100): \"%1\"").arg(valueStr);
                 }
                 else {
                     // Check decimal precision (should be at most 2 decimal places)
-                    QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
+                    static QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
                     if (!precisionRegex.match(valueStr).hasMatch()) {
                         result.isValid = false;
                         result.errorMessage = tr("Volume value precision exceeds 2 decimal places: \"%1\"").arg(valueStr);
