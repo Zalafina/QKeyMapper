@@ -4706,6 +4706,9 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
+
+    emitSendOnMappingStartKeys();
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc End.");
 #endif
@@ -5102,6 +5105,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
+
+    emitSendOnSwitchTabKeys();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart End.<<<\033[0m");
@@ -13502,6 +13507,30 @@ void QKeyMapper_Worker::releasePressedRealKeysOfOriginalKeys(void)
 
     for (const QString &keycodeString : keycodeStringListToRelease) {
         QKeyMapper_Worker::getInstance()->sendSpecialVirtualKey(keycodeString, KEY_UP);
+    }
+}
+
+void QKeyMapper_Worker::emitSendOnMappingStartKeys()
+{
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(SENDON_MAPPINGSTART_STR);
+
+    if (findindex >= 0) {
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+        QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+    }
+}
+
+void QKeyMapper_Worker::emitSendOnSwitchTabKeys()
+{
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(SENDON_SWITCHTAB_STR);
+
+    if (findindex >= 0) {
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+        QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
     }
 }
 

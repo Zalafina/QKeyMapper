@@ -1026,6 +1026,8 @@ private:
     void clearGlobalSendInputTaskController(void);
     void clearGlobalSendInputTaskControllerThreadPool(void);
     void releasePressedRealKeysOfOriginalKeys(void);
+    void emitSendOnMappingStartKeys(void);
+    void emitSendOnSwitchTabKeys(void);
 
 public:
 #if 0
