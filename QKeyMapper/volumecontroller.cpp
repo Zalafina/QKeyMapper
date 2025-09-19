@@ -103,12 +103,21 @@ bool VolumeController::setVolume(float volumePercentage)
     float clampedPercentage = clampVolumePercentage(volumePercentage);
     float scalar = percentageToScalar(clampedPercentage);
 
+    // Set the volume level first
     HRESULT hr = m_endpointVolume->SetMasterVolumeLevelScalar(scalar, nullptr);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[VolumeController::setVolume] Failed to set volume to" << clampedPercentage << "%, hr =" << QString::number(hr, 16);
 #endif
         return false;
+    }
+
+    // Apply Windows-like mute logic: mute at 0%, unmute at non-zero
+    if (!applyWindowsMuteLogic(clampedPercentage)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::setVolume] Failed to apply mute logic for volume" << clampedPercentage << "%";
+#endif
+        // Don't return false here as volume was set successfully, mute operation is supplementary
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -165,4 +174,56 @@ float VolumeController::clampVolumePercentage(float percentage)
         return VOLUME_MAX_PERCENTAGE;
     }
     return percentage;
+}
+
+bool VolumeController::setMute(bool muted)
+{
+    if (!m_isInitialized || !m_endpointVolume) {
+        return false;
+    }
+
+    HRESULT hr = m_endpointVolume->SetMute(muted ? TRUE : FALSE, nullptr);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::setMute] Failed to set mute state to" << muted << ", hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[VolumeController::setMute] Mute state set to" << muted;
+#endif
+    return true;
+}
+
+bool VolumeController::isMuted()
+{
+    if (!m_isInitialized || !m_endpointVolume) {
+        return false;
+    }
+
+    BOOL muted = FALSE;
+    HRESULT hr = m_endpointVolume->GetMute(&muted);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::isMuted] Failed to get mute state, hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+    return (muted == TRUE);
+}
+
+bool VolumeController::applyWindowsMuteLogic(float volumePercentage)
+{
+    if (!m_isInitialized || !m_endpointVolume) {
+        return false;
+    }
+
+    // Apply Windows-like mute logic:
+    // - Setting volume to 0% should mute the system
+    // - Setting volume to any non-zero value should unmute the system
+    bool shouldMute = (volumePercentage <= VOLUME_EPSILON);
+
+    return setMute(shouldMute);
 }

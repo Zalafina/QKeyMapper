@@ -26,6 +26,12 @@ public:
     // Increase volume by specified amount (can be negative for decrease)
     bool adjustVolume(float deltaPercentage);
 
+    // Set mute state (true = muted, false = unmuted)
+    bool setMute(bool muted);
+
+    // Get current mute state (returns true if muted, false if not muted)
+    bool isMuted();
+
     // Check if volume controller is properly initialized
     bool isInitialized() const { return m_isInitialized; }
 
@@ -38,6 +44,10 @@ private:
 
     // Clamp volume percentage to valid range
     float clampVolumePercentage(float percentage);
+
+    // Apply Windows-like mute logic when setting volume
+    // Automatically mute when setting to 0%, unmute when setting to non-zero
+    bool applyWindowsMuteLogic(float volumePercentage);
 
 private:
     bool m_isInitialized;
