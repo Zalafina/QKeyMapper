@@ -15237,7 +15237,27 @@ void QKeyMapper::showSetVolumeNotification(float volume)
     else {
         color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
     }
-    popupNotification = QString::number(volume, 'g', 6);
+
+    // Format volume with right-aligned integer part for consistent display
+    // Volume range is 0-100, so integer part needs 3 characters (including "100")
+    QString volumeStr = QString::number(volume, 'g', 6);
+
+    // Check if the volume has decimal part
+    if (volumeStr.contains('.')) {
+        // Split into integer and decimal parts
+        QStringList parts = volumeStr.split('.');
+        if (parts.size() == 2) {
+            QString integerPart = parts[0];
+            QString decimalPart = parts[1];
+            // Right-align integer part to 3 characters, then add decimal part
+            popupNotification = QString("%1.%2").arg(integerPart, 3, ' ').arg(decimalPart);
+        } else {
+            popupNotification = volumeStr;
+        }
+    } else {
+        // No decimal part, just right-align the integer to 3 characters
+        popupNotification = QString("%1").arg(volumeStr, 3, ' ');
+    }
 
     // Setup Notification Options
     PopupNotificationOptions opts;
