@@ -370,7 +370,7 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
         return;
     }
 
-    bool notify = !match.captured(1).isEmpty();         // Optional notify '🔔'
+    bool notify = !match.captured(1).isEmpty();         // Optional notify '🔊'
     QString sign = match.captured(2);                   // Optional +/- sign
     QString valueStr = match.captured(3);               // Numeric value
 

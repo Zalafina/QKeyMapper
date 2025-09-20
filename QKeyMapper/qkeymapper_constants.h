@@ -984,11 +984,11 @@ namespace QKeyMapperConstants {
     // Pattern for matching SetVolume(...) mapping keys
     // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75)
     // Capture groups: (1) = optional +/- sign, (2) = numeric value
-    inline constexpr const char REGEX_PATTERN_SETVOLUME[] = R"(^SetVolume(🔔)?\(([+-]?)(\d+(?:\.\d{1,2})?)\)$)";
+    inline constexpr const char REGEX_PATTERN_SETVOLUME[] = R"(^SetVolume(🔊)?\(([+-]?)(\d+(?:\.\d{1,2})?)\)$)";
 
     // Pattern for finding SetVolume( and the first ) parts in a composite string
     // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75)
-    inline constexpr const char REGEX_PATTERN_SETVOLUME_FIND[] = R"(SetVolume(🔔)?\([+-]?\d+(?:\.\d{1,2})?\))";
+    inline constexpr const char REGEX_PATTERN_SETVOLUME_FIND[] = R"(SetVolume(🔊)?\([+-]?\d+(?:\.\d{1,2})?\))";
 
     inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
@@ -1090,7 +1090,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char SWITCHTAB_SAVE_STR[]    = "SwitchTab💾";
     inline constexpr const char UNLOCK_STR[]            = "Unlock";
     inline constexpr const char SETVOLUME_STR[]         = "SetVolume";
-    inline constexpr const char SETVOLUME_NOTIFY_STR[]  = "SetVolume🔔";
+    inline constexpr const char SETVOLUME_NOTIFY_STR[]  = "SetVolume🔊";
     inline constexpr const char KEYSEQUENCEBREAK_STR[] = "KeySequenceBreak";
 
     inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";
