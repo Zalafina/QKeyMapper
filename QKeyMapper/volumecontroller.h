@@ -49,6 +49,10 @@ private:
     // Automatically mute when setting to 0%, unmute when setting to non-zero
     bool applyWindowsMuteLogic(float volumePercentage);
 
+    // QKeyMapper-specific GUID for volume change event context
+    // This helps identify volume changes made by QKeyMapper vs other applications
+    static const GUID s_QKeyMapperVolumeGUID;
+
 private:
     bool m_isInitialized;
     IMMDeviceEnumerator* m_deviceEnumerator;

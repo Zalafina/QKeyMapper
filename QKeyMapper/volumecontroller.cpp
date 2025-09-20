@@ -8,6 +8,12 @@
 
 using namespace QKeyMapperConstants;
 
+// QKeyMapper-specific GUID for volume change event context
+// Generated GUID: {B8A9F2E5-1D4C-4A7B-9F3E-2C8B5A9D7E6F}
+// This helps identify volume changes made by QKeyMapper vs other applications
+const GUID VolumeController::s_QKeyMapperVolumeGUID =
+    { 0xB8A9F2E5, 0x1D4C, 0x4A7B, { 0x9F, 0x3E, 0x2C, 0x8B, 0x5A, 0x9D, 0x7E, 0x6F } };
+
 // VolumeController class implementation
 VolumeController::VolumeController()
     : m_isInitialized(false)
@@ -104,7 +110,10 @@ bool VolumeController::setVolume(float volumePercentage)
     float scalar = percentageToScalar(clampedPercentage);
 
     // Set the volume level first
-    HRESULT hr = m_endpointVolume->SetMasterVolumeLevelScalar(scalar, nullptr);
+    // Use QKeyMapper-specific GUID to identify this volume change event
+    // This allows other applications to distinguish between QKeyMapper volume changes
+    // and system/user-initiated changes, but does NOT control Windows volume OSD display
+    HRESULT hr = m_endpointVolume->SetMasterVolumeLevelScalar(scalar, &s_QKeyMapperVolumeGUID);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[VolumeController::setVolume] Failed to set volume to" << clampedPercentage << "%, hr =" << QString::number(hr, 16);
@@ -162,18 +171,25 @@ float VolumeController::percentageToScalar(float percentage)
 
 float VolumeController::scalarToPercentage(float scalar)
 {
-    return scalar * 100.0f;
+    float percentage = scalar * 100.0f;
+
+    // Round to specified decimal precision (e.g., 2 decimal places: 0.01)
+    float precision = std::pow(10.0f, static_cast<float>(VOLUME_DECIMAL_PRECISION));
+    return std::round(percentage * precision) / precision;
 }
 
 float VolumeController::clampVolumePercentage(float percentage)
 {
     if (percentage < VOLUME_MIN_PERCENTAGE) {
-        return VOLUME_MIN_PERCENTAGE;
+        percentage = VOLUME_MIN_PERCENTAGE;
     }
-    if (percentage > VOLUME_MAX_PERCENTAGE) {
-        return VOLUME_MAX_PERCENTAGE;
+    else if (percentage > VOLUME_MAX_PERCENTAGE) {
+        percentage = VOLUME_MAX_PERCENTAGE;
     }
-    return percentage;
+
+    // Round to specified decimal precision (e.g., 2 decimal places: 0.01)
+    float precision = std::pow(10.0f, static_cast<float>(VOLUME_DECIMAL_PRECISION));
+    return std::round(percentage * precision) / precision;
 }
 
 bool VolumeController::setMute(bool muted)
@@ -182,7 +198,8 @@ bool VolumeController::setMute(bool muted)
         return false;
     }
 
-    HRESULT hr = m_endpointVolume->SetMute(muted ? TRUE : FALSE, nullptr);
+    // Use QKeyMapper-specific GUID to identify this mute change event
+    HRESULT hr = m_endpointVolume->SetMute(muted ? TRUE : FALSE, &s_QKeyMapperVolumeGUID);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[VolumeController::setMute] Failed to set mute state to" << muted << ", hr =" << QString::number(hr, 16);

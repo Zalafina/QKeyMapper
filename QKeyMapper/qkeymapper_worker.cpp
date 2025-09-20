@@ -370,8 +370,9 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
         return;
     }
 
-    QString sign = match.captured(1);           // Optional +/- sign
-    QString valueStr = match.captured(2);       // Numeric value
+    bool notify = !match.captured(1).isEmpty();         // Optional notify '🔔'
+    QString sign = match.captured(2);                   // Optional +/- sign
+    QString valueStr = match.captured(3);               // Numeric value
 
     bool ok;
     float value = valueStr.toFloat(&ok);
@@ -431,6 +432,15 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
             qDebug() << "[processSetVolumeMapping] Unknown operation type:" << operationType;
 #endif
             break;
+    }
+
+    if (notify && success) {
+        float currentVol = m_volumeController.getCurrentVolume();
+        emit QKeyMapper::getInstance()->showSetVolumeNotification_Signal(currentVol);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[processSetVolumeMapping] SetVolume with notify, current volume value:" << currentVol;
+#endif
     }
 }
 

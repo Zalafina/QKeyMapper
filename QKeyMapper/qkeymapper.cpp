@@ -569,6 +569,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showSetVolumeNotification_Signal, this, &QKeyMapper::showSetVolumeNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
@@ -3766,8 +3767,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             }
             else if (setvolume_match.hasMatch()) {
                 // Validate SetVolume(...) mapping key
-                // QString sign = setvolume_match.captured(1);         // Optional +/- sign
-                QString valueStr = setvolume_match.captured(2);     // Numeric value
+                // QString sign = setvolume_match.captured(2);         // Optional +/- sign
+                QString valueStr = setvolume_match.captured(3);     // Numeric value
 
                 bool ok;
                 float value = valueStr.toFloat(&ok);
@@ -15189,6 +15190,104 @@ void QKeyMapper::updateGamepadSelectComboBox(int instance_id)
     }
 }
 
+void QKeyMapper::showSetVolumeNotification(float volume)
+{
+    constexpr int VOLUME_TYPE_NORMAL    = 0;
+    constexpr int VOLUME_TYPE_FULL      = 1;
+    constexpr int VOLUME_TYPE_MUTED     = 2;
+
+    int volume_type = VOLUME_TYPE_NORMAL;
+    if (volume <= VOLUME_EPSILON) {
+        volume_type = VOLUME_TYPE_MUTED;
+    }
+    else if (volume >= VOLUME_FULL) {
+        volume_type = VOLUME_TYPE_FULL;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().noquote().nospace() << "[QKeyMapper::showSetVolumeNotification] Volume:" << volume << ", Type:" << volume_type;
+#endif
+
+    int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        position = NOTIFICATION_POSITION_BOTTOM_RIGHT;
+    }
+
+    QString popupNotification;
+    QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+    QString color_str;
+    if (tabFontColor.isValid()) {
+        color_str = tabFontColor.name();
+    }
+    else {
+        QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
+        if (notification_font_color.isValid()) {
+            color_str = notification_font_color.name();
+        }
+        else {
+            color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+        }
+    }
+
+    QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
+    if (notification_font_color.isValid()) {
+        color_str = notification_font_color.name();
+    }
+    else {
+        color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+    }
+    popupNotification = QString::number(volume, 'g', 6);
+
+    // Setup Notification Options
+    PopupNotificationOptions opts;
+    opts.color = color_str;
+    opts.position = position;
+    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
+    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
+    if (tabBGColor.isValid()) {
+        opts.backgroundColor = tabBGColor;
+    }
+    else {
+        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    }
+    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
+    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
+    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
+    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
+        opts.fontWeight = QFont::Light;
+    }
+    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
+        opts.fontWeight = QFont::Normal;
+    }
+    else {
+        opts.fontWeight = QFont::Bold;
+    }
+    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
+    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
+    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
+    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
+    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+
+    QString volumeIcon;
+    if (volume_type == VOLUME_TYPE_MUTED) {
+        volumeIcon = ":/volume_muted.svg";
+    }
+    else if (volume_type == VOLUME_TYPE_FULL) {
+        volumeIcon = ":/volume_full.svg";
+    }
+    else {
+        volumeIcon = ":/volume.svg";
+    }
+    opts.iconPath = volumeIcon;
+    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+
+    // Show Notification Popup
+    showNotificationPopup(popupNotification, opts);
+}
+
 void QKeyMapper::updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname)
 {
     if ((tabindex < 0) || (tabindex >= m_KeyMappingTabWidget->count()) || (tabindex >= s_KeyMappingTabInfoList.size())) {
@@ -16736,6 +16835,7 @@ void QKeyMapper::initKeysCategoryMap()
     /* Mapping Function Keys */
     mapping_function_keylist = QStringList() \
         << SETVOLUME_STR
+        << SETVOLUME_NOTIFY_STR
         << CROSSHAIR_NORMAL_STR
         << CROSSHAIR_TYPEA_STR
         << "VolumeMute"
@@ -19865,7 +19965,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
                 }
             }
-            else if (currentMapKeyText == SETVOLUME_STR) {
+            else if (currentMapKeyText == SETVOLUME_STR
+                || currentMapKeyText == SETVOLUME_NOTIFY_STR) {
                 QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
                 setvolume_value.remove(whitespace_reg);
                 if (setvolume_value.isEmpty()) {
@@ -20071,7 +20172,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
                     }
                 }
-                else if (currentMapKeyText == SETVOLUME_STR) {
+                else if (currentMapKeyText == SETVOLUME_STR
+                    || currentMapKeyText == SETVOLUME_NOTIFY_STR) {
                     QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
                     setvolume_value.remove(whitespace_reg);
                     if (setvolume_value.isEmpty()) {

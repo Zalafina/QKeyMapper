@@ -20,6 +20,9 @@
         <file alias="mouse.svg">image\button_image\mouse_01.svg</file>
         <file alias="gamepad.svg">image\button_image\gamepad_01.svg</file>
         <file alias="function.svg">image\button_image\computer_01.svg</file>
+        <file alias="volume.svg">image\button_image\volume_01.svg</file>
+        <file alias="volume_muted.svg">image\button_image\volume_muted_01.svg</file>
+        <file alias="volume_full.svg">image\button_image\volume_full_01.svg</file>
         <file alias="checked.svg">image\button_image\checked-enabled.svg</file>
         <file alias="checked_disabled.svg">image\button_image\checked-disabled.svg</file>
         <file alias="partiallychecked.svg">image\button_image\partiallychecked-enabled.svg</file>
