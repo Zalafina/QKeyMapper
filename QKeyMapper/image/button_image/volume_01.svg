@@ -1,5 +1,5 @@
-<svg width="64px" height="64px" viewBox="0 -1.5 31 31" xmlns="http://www.w3.org/2000/svg" fill="#1A9EDB">
-  <g transform="translate(-258, -571)" fill="#1A9EDB">
+<svg width="64px" height="64px" viewBox="0 -1.5 31 31" xmlns="http://www.w3.org/2000/svg" fill="#23b8c9">
+  <g transform="translate(-258, -571)" fill="#23b8c9">
     <!-- 喇叭本体 -->
     <path d="M272,573 L265,577.667 L265,592.333 L272,597 C273.104,597 274,596.104 274,595 L274,575 C274,573.896 273.104,573 272,573 Z"/>
     <!-- 中间的音量弧线 -->
