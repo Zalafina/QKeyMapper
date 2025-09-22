@@ -518,8 +518,11 @@ namespace QKeyMapperConstants {
 
     inline constexpr qreal JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD = 1e-04;
 
-    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD      = 0.15;
-    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD    = 0.5;
+    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER       = 0.15;
+    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER     = 0.5;
+
+    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK             = -0.7;
+    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK           = 0;
 
     inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD                = -0.5;
     inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD              = 0.5;

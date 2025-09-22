@@ -6679,14 +6679,28 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         }
         if (pressedRealKeysList.contains(keycodeString)) {
             /* LT Button is already Pressed */
-            if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
-                keyupdown = KEY_UP;
+            if (e.event_type == GameControllerEvent) {
+                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER) {
+                    keyupdown = KEY_UP;
+                }
+            }
+            else { /* e.event_type == JoystickEvent */
+                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK) {
+                    keyupdown = KEY_UP;
+                }
             }
         }
         else {
             /* LT Button has been Released */
-            if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD) {
-                keyupdown = KEY_DOWN;
+            if (e.event_type == GameControllerEvent) {
+                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER) {
+                    keyupdown = KEY_DOWN;
+                }
+            }
+            else { /* e.event_type == JoystickEvent */
+                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK) {
+                    keyupdown = KEY_DOWN;
+                }
             }
         }
     }
@@ -6701,14 +6715,28 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         }
         if (pressedRealKeysList.contains(keycodeString)) {
             /* RT Button is already Pressed */
-            if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD) {
-                keyupdown = KEY_UP;
+            if (e.event_type == GameControllerEvent) {
+                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER) {
+                    keyupdown = KEY_UP;
+                }
+            }
+            else { /* e.event_type == JoystickEvent */
+                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK) {
+                    keyupdown = KEY_UP;
+                }
             }
         }
         else {
             /* RT Button has been Released */
-            if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD) {
-                keyupdown = KEY_DOWN;
+            if (e.event_type == GameControllerEvent) {
+                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER) {
+                    keyupdown = KEY_DOWN;
+                }
+            }
+            else { /* e.event_type == JoystickEvent */
+                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK) {
+                    keyupdown = KEY_DOWN;
+                }
             }
         }
     }
