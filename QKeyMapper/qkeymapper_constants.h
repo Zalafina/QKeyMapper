@@ -124,9 +124,10 @@ namespace QKeyMapperConstants {
     inline constexpr int WINDOWINFO_MATCH_INDEX_CONTAINS   = 2;
     inline constexpr int WINDOWINFO_MATCH_INDEX_STARTSWITH = 3;
     inline constexpr int WINDOWINFO_MATCH_INDEX_ENDSWITH   = 4;
+    inline constexpr int WINDOWINFO_MATCH_INDEX_REGEXMATCH = 5;
     inline constexpr int WINDOWINFO_MATCH_INDEX_DEFAULT    = WINDOWINFO_MATCH_INDEX_CONTAINS;
     inline constexpr int WINDOWINFO_MATCH_INDEX_MIN        = WINDOWINFO_MATCH_INDEX_IGNORE;
-    inline constexpr int WINDOWINFO_MATCH_INDEX_MAX        = WINDOWINFO_MATCH_INDEX_ENDSWITH;
+    inline constexpr int WINDOWINFO_MATCH_INDEX_MAX        = WINDOWINFO_MATCH_INDEX_REGEXMATCH;
 
     inline constexpr int BURST_TIME_MIN = 1;
     inline constexpr int BURST_TIME_MAX = 99999;

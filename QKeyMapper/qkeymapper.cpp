@@ -1151,6 +1151,16 @@ void QKeyMapper::matchForegroundWindow()
                     else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
                         processMatched = processName.endsWith(m_MapProcessInfo.FileName);
                     }
+                    else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                        // Create regex pattern from user input
+                        QRegularExpression regex(m_MapProcessInfo.FileName);
+                        if (regex.isValid()) {
+                            processMatched = regex.match(processName).hasMatch();
+                        } else {
+                            // Invalid regex pattern, no match
+                            processMatched = false;
+                        }
+                    }
                 }
                 else {
                     processMatched = true; // Treat as matched if process name check is ignored
@@ -1169,6 +1179,16 @@ void QKeyMapper::matchForegroundWindow()
                     }
                     else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
                         windowTitleMatched = windowTitle.endsWith(m_MapProcessInfo.WindowTitle);
+                    }
+                    else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                        // Create regex pattern from user input
+                        QRegularExpression regex(m_MapProcessInfo.WindowTitle);
+                        if (regex.isValid()) {
+                            windowTitleMatched = regex.match(windowTitle).hasMatch();
+                        } else {
+                            // Invalid regex pattern, no match
+                            windowTitleMatched = false;
+                        }
                     }
                 }
                 else {
@@ -2955,6 +2975,16 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
             else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
                 processMatched = processPath.endsWith(processNameString);
             }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                // Create regex pattern from user input
+                QRegularExpression regex(processNameString);
+                if (regex.isValid()) {
+                    processMatched = regex.match(processPath).hasMatch();
+                } else {
+                    // Invalid regex pattern, no match
+                    processMatched = false;
+                }
+            }
         }
         else {
             processMatched = true; // Treat as matched if process name check is ignored
@@ -2973,6 +3003,16 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
             }
             else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
                 windowTitleMatched = WindowText.endsWith(windowTitleString);
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                // Create regex pattern from user input
+                QRegularExpression regex(windowTitleString);
+                if (regex.isValid()) {
+                    windowTitleMatched = regex.match(WindowText).hasMatch();
+                } else {
+                    // Invalid regex pattern, no match
+                    windowTitleMatched = false;
+                }
             }
         }
         else {
@@ -8202,6 +8242,16 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
             else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
                 return processpath.endsWith(processNameString);
             }
+            else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                // Create regex pattern from user input
+                QRegularExpression regex(processNameString);
+                if (regex.isValid()) {
+                    return regex.match(processpath).hasMatch();
+                } else {
+                    // Invalid regex pattern, no match
+                    return false;
+                }
+            }
             return false;
         };
 
@@ -8222,6 +8272,16 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
             }
             else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
                 return windowtitle.endsWith(windowTitleString);
+            }
+            else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                // Create regex pattern from user input
+                QRegularExpression regex(windowTitleString);
+                if (regex.isValid()) {
+                    return regex.match(windowtitle).hasMatch();
+                } else {
+                    // Invalid regex pattern, no match
+                    return false;
+                }
             }
             return false;
         };
@@ -15442,6 +15502,7 @@ void QKeyMapper::initWindowInfoMatchComboBoxes()
     windowinfoMatchList.append(tr("Contains"));
     windowinfoMatchList.append(tr("StartsWith"));
     windowinfoMatchList.append(tr("EndsWith"));
+    windowinfoMatchList.append(tr("RegexMatch"));
     ui->checkProcessComboBox->addItems(windowinfoMatchList);
     ui->checkWindowTitleComboBox->addItems(windowinfoMatchList);
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
@@ -17973,11 +18034,13 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_CONTAINS,      tr("Contains"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,    tr("StartsWith"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,      tr("EndsWith"));
+    ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_REGEXMATCH,    tr("RegexMatch"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,    tr("Ignore"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,    tr("Equals"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_CONTAINS,  tr("Contains"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,tr("StartsWith"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,  tr("EndsWith"));
+    ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_REGEXMATCH,tr("RegexMatch"));
 
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->windowinfo),       tr("WindowInfo")    );
