@@ -1370,7 +1370,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (setvolume_match.hasMatch()) {
                 /* SetVolume KeyUp do nothing. */
             }
-            else if (vjoy_match.hasMatch()) {
+            else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
                     QString joystickButton = vjoy_match.captured(1);
                     QString gamepadIndexString = vjoy_match.captured(2);
@@ -1923,7 +1923,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     // Process SetVolume(...) mapping key
                     processSetVolumeMapping(key);
                 }
-                else if (vjoy_match.hasMatch()) {
+                else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
                     QString gamepadIndexString = vjoy_match.captured(2);
                     int send_keyupdown = KEY_DOWN;
@@ -3319,7 +3319,7 @@ void QKeyMapper_Worker::ViGEmClient_setConnectState(ViGEmClient_ConnectState con
     s_ViGEmClient_ConnectState = connectstate;
 }
 
-void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index)
+void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type)
 {
     int gamepad_count = s_ViGEmTargetList.size();
     int gamepad_report_count = s_ViGEmTarget_ReportList.size();
@@ -3372,14 +3372,26 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         if (joystickButton.isEmpty() && autoAdjust) {
             if (autoAdjust & AUTO_ADJUST_LT) {
                 Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
-                // Map -1.0~1.0 to 0~255 for BYTE representation
-                ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>((JoyAxisState.left_trigger + 1.0) * 127.5 + 0.5);
+                if (event_type == GameControllerEvent) {
+                    // Map 0.0~1.0 to 0~255 for BYTE representation (GameController trigger range)
+                    ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>(JoyAxisState.left_trigger * 255.0 + 0.5);
+                }
+                else {
+                    // Map -1.0~1.0 to 0~255 for BYTE representation (Joystick trigger range)
+                    ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>((JoyAxisState.left_trigger + 1.0) * 127.5 + 0.5);
+                }
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
             else if (autoAdjust & AUTO_ADJUST_RT) {
                 Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
-                // Map -1.0~1.0 to 0~255 for BYTE representation
-                ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>((JoyAxisState.right_trigger + 1.0) * 127.5 + 0.5);
+                if (event_type == GameControllerEvent) {
+                    // Map 0.0~1.0 to 0~255 for BYTE representation (GameController trigger range)
+                    ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>(JoyAxisState.right_trigger * 255.0 + 0.5);
+                }
+                else {
+                    // Map -1.0~1.0 to 0~255 for BYTE representation (Joystick trigger range)
+                    ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>((JoyAxisState.right_trigger + 1.0) * 127.5 + 0.5);
+                }
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
             else {
@@ -6097,7 +6109,7 @@ void QKeyMapper_Worker::checkJoystickButtons(const QJoystickButtonEvent &e)
     if (e.joystick == Q_NULLPTR)
         return;
 
-    if (e.button_type == GameControllerButton) {
+    if (e.event_type == GameControllerEvent) {
         GameControllerButtonCode buttonCode = (GameControllerButtonCode)e.button;
 
         if (m_ControllerButtonMap.contains(buttonCode)) {
@@ -6240,7 +6252,7 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
         s_JoyAxisStateMap[player_index].left_trigger = e.value;
         if (JOY2VJOY_TRIGGER_LT == Joy2vJoy_EnableState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == Joy2vJoy_EnableState.trigger_state) {
             QString autoadjustEmptyStr;
-            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT, gamepad_index, player_index);
+            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_LT, gamepad_index, player_index, e.event_type);
         }
         else {
             joystickLTRTButtonProc(e);
@@ -6252,7 +6264,7 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
         s_JoyAxisStateMap[player_index].right_trigger = e.value;
         if (JOY2VJOY_TRIGGER_RT == Joy2vJoy_EnableState.trigger_state || JOY2VJOY_TRIGGER_LTRT_BOTH == Joy2vJoy_EnableState.trigger_state) {
             QString autoadjustEmptyStr;
-            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT, gamepad_index, player_index);
+            ViGEmClient_PressButton(autoadjustEmptyStr, AUTO_ADJUST_RT, gamepad_index, player_index, e.event_type);
         }
         else {
             joystickLTRTButtonProc(e);

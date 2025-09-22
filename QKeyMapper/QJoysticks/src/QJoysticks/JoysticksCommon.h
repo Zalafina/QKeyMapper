@@ -59,6 +59,12 @@ struct QJoystickDevice
    QAtomicInteger<bool> blacklisted; /**< Holds \c true if the joystick is disabled */
 };
 
+enum QJoystickEventType
+{
+    JoystickEvent       = 0,    /**< Raw joystick event */
+    GameControllerEvent = 1     /**< Mapped game controller event */
+};
+
 /**
  * @brief Represents a joystick rumble request
  *
@@ -101,13 +107,8 @@ struct QJoystickAxisEvent
 {
    int axis; /**< The numerical ID of the axis */
    qreal value; /**< The value (from -1 to 1) of the axis */
+   QJoystickEventType event_type; /**< Joystick Event or Gamecontroller Event */
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
-};
-
-enum QJoystickButtonType
-{
-    JoystickButton = 0,         /**< Raw joystick button */
-    GameControllerButton = 1    /**< Mapped game controller button */
 };
 
 /**
@@ -122,7 +123,7 @@ struct QJoystickButtonEvent
 {
    int button; /**< The numerical ID of the button */
    bool pressed; /**< Set to \c true if the button is pressed */
-   QJoystickButtonType button_type; /**< Joystick button or Gamecontroller button */
+   QJoystickEventType event_type; /**< Joystick Event or Gamecontroller Event */
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 

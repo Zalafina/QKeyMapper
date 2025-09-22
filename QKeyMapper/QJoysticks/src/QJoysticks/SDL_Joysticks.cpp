@@ -436,6 +436,12 @@ QJoystickAxisEvent SDL_Joysticks::getAxisEvent(const SDL_Event *sdl_event)
 #ifdef SDL_SUPPORTED
    event.axis = sdl_event->caxis.axis;
    event.value = static_cast<qreal>(sdl_event->caxis.value) / 32767;
+   if (sdl_event->type == SDL_CONTROLLERAXISMOTION) {
+       event.event_type = GameControllerEvent;
+   }
+   else {
+       event.event_type = JoystickEvent;
+   }
    event.joystick = m_joysticks[sdl_event->cdevice.which];
 #else
    Q_UNUSED(sdl_event);
@@ -461,7 +467,7 @@ QJoystickButtonEvent SDL_Joysticks::getButtonEvent(const SDL_Event *sdl_event)
    }
 
 #ifdef SDL_SUPPORTED
-   event.button_type = JoystickButton;
+   event.event_type = JoystickEvent;
    event.button = sdl_event->jbutton.button;
    event.pressed = sdl_event->jbutton.state == SDL_PRESSED;
    event.joystick = m_joysticks[sdl_event->jdevice.which];
@@ -485,7 +491,7 @@ QJoystickButtonEvent SDL_Joysticks::getControllerButtonEvent(const SDL_Event *sd
         return event;
     }
 
-    event.button_type = GameControllerButton;
+    event.event_type = GameControllerEvent;
     event.button = sdl_event->cbutton.button;
     event.pressed = sdl_event->cbutton.state == SDL_PRESSED;
     event.joystick = m_joysticks[sdl_event->cdevice.which];

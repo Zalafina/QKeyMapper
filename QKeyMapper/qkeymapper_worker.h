@@ -806,7 +806,7 @@ public:
     static ViGEmClient_ConnectState ViGEmClient_getConnectState(void);
     static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
-    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index);
+    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type = GameControllerEvent);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY, uint custom_radius = 255);
