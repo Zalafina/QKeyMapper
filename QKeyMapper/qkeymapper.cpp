@@ -576,6 +576,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::systemFilterKeysSettingChanged_Signal, this, &QKeyMapper::systemFilterKeysSettingChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal, m_ItemSetupDialog, &QItemSetupDialog::keyMappingTableItemCheckStateChanged);
 
+    QObject::connect(ui->processLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmProcessLineEdit);
+    QObject::connect(ui->windowTitleLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmWindowTitleLineEdit);
+
     updateHWNDListProc();
     refreshProcessInfoTable();
     if (!ui->processListButton->isChecked()) {
@@ -20399,6 +20402,46 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
     else {
         showFailurePopup(tr("Conflict with exist Keys!"));
+    }
+}
+
+void QKeyMapper::confirmProcessLineEdit()
+{
+    int matchProcessIndex = ui->checkProcessComboBox->currentIndex();
+    if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+        QString process_string = ui->processLineEdit->text();
+        if (process_string.isEmpty()) {
+            return;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[confirmProcessLineEdit] RegexMatch process_string:" << process_string;
+#endif
+
+        QRegularExpression regex(process_string);
+        if (!regex.isValid()) {
+            showFailurePopup(tr("Invalid regular expression : \"%1\"").arg(process_string));
+        }
+    }
+}
+
+void QKeyMapper::confirmWindowTitleLineEdit()
+{
+    int matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+    if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+        QString windowtitle_string = ui->windowTitleLineEdit->text();
+        if (windowtitle_string.isEmpty()) {
+            return;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[confirmWindowTitleLineEdit] RegexMatch windowtitle_string:" << windowtitle_string;
+#endif
+
+        QRegularExpression regex(windowtitle_string);
+        if (!regex.isValid()) {
+            showFailurePopup(tr("Invalid regular expression : \"%1\"").arg(windowtitle_string));
+        }
     }
 }
 

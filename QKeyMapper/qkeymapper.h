@@ -1100,6 +1100,10 @@ private slots:
 
     void on_addmapdataButton_clicked();
 
+    void confirmProcessLineEdit(void);
+
+    void confirmWindowTitleLineEdit(void);
+
 public slots:
     void selectedItemsMoveUp();
 
