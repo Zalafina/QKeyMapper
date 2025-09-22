@@ -1,13 +1,76 @@
-# QKeyMapper
+<div align="center">
+  <h1>QKeyMapper</h1>
+  <p>
+    <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper?color=4cd137&style=plastic&labelColor=474787"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?style=plastic&color=09e&labelColor=474787"></a>
+    <img src="https://img.shields.io/badge/platform-Windows-B53471.svg?style=plastic&labelColor=474787" alt="Platform: Windows">
+    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=a55eea&style=plastic&labelColor=474787"></a>
+    <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg?style=plastic&labelColor=474787"/></a>
+  </p>
+  <p><strong><a href="README.md">中文</a> | <a href="README_en.md">English</a></strong></p>
+</div>
 
-<p align="left">
-    <a href="./LICENSE"><img src="https://img.shields.io/github/license/Zalafina/QKeyMapper"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/releases"><img src="https://img.shields.io/github/v/release/Zalafina/QKeyMapper?color=09e"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/stargazers"><img src="https://img.shields.io/github/stars/Zalafina/QKeyMapper?color=ccf"></a>
-    <a href="https://github.com/Zalafina/QKeyMapper/releases/latest" target="_blank"><img src="https://img.shields.io/github/downloads/Zalafina/QKeyMapper/total.svg"/></a>
-</p>
+## 📖 Software Introduction
+QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, developed using Qt Widget and WinAPI with C++. It supports various key mappings between keyboard, mouse, gamepad, and virtual gamepad. The software can be run directly after downloading and extracting, without modifying the registry or requiring system restarts. It relies on in-memory program execution to complete key mapping conversions. During program execution, mapping functions can be controlled to start and stop at any time, and mapping functions automatically stop when the software exits. Suitable for various gaming or office purposes on Windows PC key remapping scenarios.
 
-## A key mapping tool that works well on Win10 and Win11, developed using Qt Widget + WinAPI. Support for Qt6 was updated starting from v1.2.8 (2022-12-24). The versions of the Release after v1.2.8 are compiled with Qt6. v1.3.6 (Build 20231220) added support for gamepad keys and virtual gamepads. v1.3.7 (Build 20240410) added support for multi-key mouse + multiple virtual gamepads.
+## ⚠️ Important Disclaimer
+### The developer is not responsible for any consequences resulting from users downloading, installing, or using this software.
+### Users download and use this software entirely at their own risk.
+### This is because the software itself is a programming tool that simulates keyboard, mouse, and gamepad input, which could potentially:
+### 1. Be misused to interfere with third-party software.
+### 2. Be mistakenly identified as cheating software by anti-cheat systems.
+### 3. Be flagged as suspicious software by some antivirus programs.
+### Users should exercise their own judgment. For gaming purposes, please ensure the game allows the use of such tools.
+### The developer declares that this software is not designed for cheating purposes and is solely intended as a development tool to facilitate user operations on their personal devices.
+
+## 🚀 Key Features
+
+### Comprehensive Input Support
+* **Keyboard Mapping**: All standard keys including F1-F24, left/right differentiation for Ctrl/Shift/Alt, numeric keypad
+* **Mouse Support**: 5-button mouse (L/R/M/X1/X2) with wheel scroll in all directions
+* **Gamepad Integration**: Xbox/PlayStation controllers with joystick, D-pad, triggers, and gyro controls
+* **Virtual Gamepad**: Up to 4 virtual controllers (X360/DS4) for emulators and games
+
+### Advanced Key Mapping
+* **Key Sequences**: Chain multiple key combinations with `»` operator (e.g., Ctrl+X » Ctrl+S)
+* **Combination Keys**: Complex multi-key combinations with modifier support
+* **Timing Controls**: Long press (1-9999ms), double-click, burst mode, key delays
+* **Conditional Mapping**: Window-specific mappings based on process name or title
+* **Regex Window Matching**: Pattern-based window detection using `WINDOWINFO_MATCH_INDEX_REGEXMATCH`
+
+### Professional Features
+* **Multi-Device Support**: Handle up to 10 keyboards and 10 mice independently
+* **Input Override (SOCD)**: Last Input Priority for competitive gaming
+* **Lock Mode**: Keep keys pressed until toggled off
+* **PassThrough Mode**: Send both original and mapped keys
+* **Key Blocking**: Completely disable specific keys
+* **System Volume Control**: Direct system volume manipulation with `SetVolume`
+
+### Gaming Enhancements
+* **Mouse to Joystick**: Control virtual gamepad sticks with mouse movement
+* **Gyro to Mouse**: Use controller gyroscope for precise camera control
+* **Crosshair Overlay**: Display gaming crosshairs with customizable appearance
+* **WindowPoint Mapping**: Click specific coordinates within target windows
+* **Screen Point Mapping**: Click absolute screen coordinates
+
+### Multi-Input Device Management
+* **Interception Driver**: Low-level input capture that works with all games
+* **Device Filtering**: Enable/disable specific keyboards and mice
+* **Player Index Support**: Distinguish between multiple controllers (@0-@9)
+* **Device Lists**: Real-time hardware detection and management
+
+### User Interface & Experience
+* **Multi-Language**: Chinese and English interfaces with proper localization
+* **Settings Management**: Save unlimited configuration profiles
+* **Auto-Loading**: Automatically switch configs based on active window
+* **System Tray**: Background operation with hotkey controls
+* **Visual Feedback**: Sound effects, notifications, and status indicators
+* **Import/Export**: Share configurations between devices
+
+### Advanced Features
+* **Key Recording**: Capture and replay complex key sequences
+* **Text Injection**: Send arbitrary text strings to applications
+* **Function Keys**: System controls (shutdown, sleep, lock screen)
 
 ---
 
@@ -44,15 +107,46 @@
 
 ---
 
-## For tips on using the key mapping tool, refer to the Wiki page:
+## 📚 Getting Started
 
-* [QKeyMapper Tips and More Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
+### Quick Setup Guide
+1. **Download & Extract**: Get the latest release zip file and extract to any folder
+2. **Run as Administrator**: Right-click `QKeyMapper.exe` → "Run as administrator" (recommended)
+3. **Enable Filter Keys**: Follow the Windows Filter Keys setup guide above
+4. **Configure Mapping**: Select target application and create your key mappings
+5. **Start Mapping**: Click "KeyMappingStart" to activate
+
+### Window Matching Options
+* **Process Name**: Match by executable filename (e.g., `game.exe`)
+* **Window Title**: Match by window title text
+* **Regex Matching**: Use `WINDOWINFO_MATCH_INDEX_REGEXMATCH` for pattern-based matching
+* **Global Settings**: Apply mappings to all applications
+
+### Mapping Configuration Tips
+* **Original Key**: The key you want to remap (physical input)
+* **Mapping Key**: The key(s) to send when original key is pressed
+* **Key Sequences**: Use `»` to chain multiple key combinations
+* **Combination Keys**: Use `+` to create multi-key combinations (e.g., `Ctrl+C`)
+* **Timing Suffixes**: Add `⏱200` for delays, `⏲500` for long press detection
+
+### Advanced Features
+* **Multiple Virtual Gamepads**: Control up to 4 virtual controllers simultaneously
+* **Multi-Input Devices**: Distinguish between different keyboards/mice
+* **Window Coordinates**: Click specific points within target windows
+* **System Integration**: Control volume, media playback, and system functions
+
+## 📖 Documentation & Support
+
+### Resources
+* **Wiki Guide**: [QKeyMapper Tips and More Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
+* **QQ Support Group**: 906963961 (Only Chinese community support)
+
+### Update Information
+* **Automatic Updates**: Use the built-in update checker in "General" settings
+* **Mirror Sites**: Choose between GitHub and Gitee for downloads
+* **Version History**: Comprehensive changelog with build-specific features
 
 ---
-
-## For a collection of tutorial videos, click the image below
-
-## If you have any questions during use, you can also join the Q group for consultation (Group number: 906963961)
 
 ### New features list (sorted in descending order of update time)
 * v1.3.7 (Build 20250616)
