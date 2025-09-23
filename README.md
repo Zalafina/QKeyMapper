@@ -59,25 +59,28 @@
 ## ✨ 功能特性
 | 设备     | 输入检测   | 输入映射   | 组合键支持  | 多键鼠支持 | 多手柄支持    |
 | -------- | -------- | --------- | --------- | --------- | ----------- |
-| 键盘     | ✅       | ✅        | ✅       | ✅       |             |
-| 鼠标     | ✅       | ✅        | ✅       | ✅       |             |
-| 物理手柄  | ✅       |           | ✅       |          | ✅          |
-| 虚拟手柄  |          | ✅        | ✅       |          | ✅          |
+| 键盘     | ✅       | ✅        | ✅       | ✅ (10)   |             |
+| 鼠标     | ✅       | ✅        | ✅       | ✅ (10)   |             |
+| 物理手柄  | ✅       |           | ✅       |          | ✅ (10)     |
+| 虚拟手柄  |          | ✅        | ✅       |          | ✅ (4)      |
 
 ---------------
 ### 📦 最新Release版本压缩包下载:
+
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
+
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
+
 ### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
 
----------------
+---
 ## ⭐ Star 趋势图
 
 如果 **QKeyMapper** 按键映射软件对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 **QKeyMapper**
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
 
----------------
+---
 ## 💡 软件使用须知
 ### Win10及Win11系统推荐使用Qt6版本，提供Qt5版本只是为了能兼容Win7系统。Win7下如果无法使用Qt6版本的话请下载Qt5版本使用。
 ### 📌注意1 : 使用时可能需要安装 Visual C++ Redistributable 64位运行库。<br>VC++ 2015-2022 64位运行库，微软下载网址：<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
@@ -89,7 +92,8 @@
 
 ### [📌注意4: Win7系统使用虚拟手柄功能需要自己安装ViGEMBus v1.16.116](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
 * https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
----------------
+
+---
 ## 🔧 软件使用建议
 #### ※通常情况下建议先运行QKeyMapper映射工具再运行需要使用按键映射的游戏或软件，避免按键被其他软件拦截导致映射工具无法检测到。
 #### ※使用QKeyMapper强烈建议开启Windows系统的筛选键，避免持续按下键盘按键时候Windows系统不停发送同一个按键，会引发各种按键映射功能的不可预知问题。<br>v1.3.8.20250816版本增加了"开启系统筛选键"设定勾选框，勾选此设定后，开始映射时如果系统没有开启筛选键，程序会自动开启系统筛选键，映射结束后会自动恢复映射开始前的系统筛选键关闭状态。

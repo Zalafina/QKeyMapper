@@ -13,67 +13,48 @@
 ## 📖 Software Introduction
 QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, developed using Qt Widget and WinAPI with C++. It supports various key mappings between keyboard, mouse, gamepad, and virtual gamepad. The software can be run directly after downloading and extracting, without modifying the registry or requiring system restarts. It relies on in-memory program execution to complete key mapping conversions. During program execution, mapping functions can be controlled to start and stop at any time, and mapping functions automatically stop when the software exits. Suitable for various gaming or office purposes on Windows PC key remapping scenarios.
 
-## ⚠️ Important Disclaimer
-### The developer is not responsible for any consequences resulting from users downloading, installing, or using this software.
-### Users download and use this software entirely at their own risk.
-### This is because the software itself is a programming tool that simulates keyboard, mouse, and gamepad input, which could potentially:
-### 1. Be misused to interfere with third-party software.
-### 2. Be mistakenly identified as cheating software by anti-cheat systems.
-### 3. Be flagged as suspicious software by some antivirus programs.
-### Users should exercise their own judgment. For gaming purposes, please ensure the game allows the use of such tools.
-### The developer declares that this software is not designed for cheating purposes and is solely intended as a development tool to facilitate user operations on their personal devices.
+---------------
+## ⚠️ Disclaimer
 
-## 🚀 Key Features
+**QKeyMapper** is an open-source software project released under the [GPLv3](./LICENSE) license. Please read and understand the following terms before using this software:
 
-### Comprehensive Input Support
-* **Keyboard Mapping**: All standard keys including F1-F24, left/right differentiation for Ctrl/Shift/Alt, numeric keypad
-* **Mouse Support**: 5-button mouse (L/R/M/X1/X2) with wheel scroll in all directions
-* **Gamepad Integration**: Xbox/PlayStation controllers with joystick, D-pad, triggers, and gyro controls
-* **Virtual Gamepad**: Up to 4 virtual controllers (X360/DS4) for emulators and games
+### 📋 Usage Responsibility
+- This software is provided *"as is"* without any express or implied warranties.
+- All risks associated with the use of this software are borne solely by the user.
+- The developer shall not be liable for any direct or indirect damages resulting from the use of this software.
 
-### Advanced Key Mapping
-* **Key Sequences**: Chain multiple key combinations with `»` operator (e.g., Ctrl+X » Ctrl+S)
-* **Combination Keys**: Complex multi-key combinations with modifier support
-* **Timing Controls**: Long press (1-9999ms), double-click, burst mode, key delays
-* **Conditional Mapping**: Window-specific mappings based on process name or title
-* **Regex Window Matching**: Pattern-based window detection using `WINDOWINFO_MATCH_INDEX_REGEXMATCH`
+### 🔒 Safety Notice
+- This software involves low-level system operations and drivers; ensure you understand the relevant technical risks.
+- Back up important data before use and verify functionality in a test environment.
+- Some features require administrator privileges—grant them with caution.
 
-### Professional Features
-* **Multi-Device Support**: Handle up to 10 keyboards and 10 mice independently
-* **Input Override (SOCD)**: Last Input Priority for competitive gaming
-* **Lock Mode**: Keep keys pressed until toggled off
-* **PassThrough Mode**: Send both original and mapped keys
-* **Key Blocking**: Completely disable specific keys
-* **System Volume Control**: Direct system volume manipulation with `SetVolume`
+### 🎯 Compliance
+- Ensure your usage complies with applicable local laws and regulations.
+- This software is intended solely for learning, research, and lawful personal use.
+- It is prohibited to use this software for any illegal, malicious, or rights-infringing purposes.
 
-### Gaming Enhancements
-* **Mouse to Joystick**: Control virtual gamepad sticks with mouse movement
-* **Gyro to Mouse**: Use controller gyroscope for precise camera control
-* **Crosshair Overlay**: Display gaming crosshairs with customizable appearance
-* **WindowPoint Mapping**: Click specific coordinates within target windows
-* **Screen Point Mapping**: Click absolute screen coordinates
+### 💼 Commercial Use
+- **This software is developed for open-source sharing and is not encouraged for commercial use.**
+- While the GPLv3 license technically permits commercial use, the developer’s intention is to provide a free tool for the community.
+- If commercial use is necessary, you must strictly comply with the GPLv3 requirements:
+  - Retain the GPLv3 license and make the complete source code publicly available.
+  - Derivative works based on this software must also be released under the GPLv3 license.
+  - The software must not be used in any form of closed-source commercial product.
+- **Commercial entities and businesses are strongly advised to seek alternative commercial solutions.**
+- For full license details, please refer to the [GPLv3 Terms](./LICENSE).
 
-### Multi-Input Device Management
-* **Interception Driver**: Low-level input capture that works with all games
-* **Device Filtering**: Enable/disable specific keyboards and mice
-* **Player Index Support**: Distinguish between multiple controllers (@0-@9)
-* **Device Lists**: Real-time hardware detection and management
+**By continuing to use this software, you acknowledge that you have read, understood, and agreed to the above disclaimer.**
 
-### User Interface & Experience
-* **Multi-Language**: Chinese and English interfaces with proper localization
-* **Settings Management**: Save unlimited configuration profiles
-* **Auto-Loading**: Automatically switch configs based on active window
-* **System Tray**: Background operation with hotkey controls
-* **Visual Feedback**: Sound effects, notifications, and status indicators
-* **Import/Export**: Share configurations between devices
+## ✨ Features
+| Device        | Input Detection | Input Mapping | Combination Key   | Multi-Input         | Multi-Controller         |
+| ------------- | --------------- | --------------| ----------------- | ------------------- | ------------------------ |
+| Keyboard      | ✅              | ✅            | ✅               | ✅ (10)             |                          |
+| Mouse         | ✅              | ✅            | ✅               | ✅ (10)             |                          |
+| Physical Gamepad | ✅           |               | ✅               |                      | ✅ (10)                 |
+| Virtual Gamepad  |              | ✅            | ✅               |                      | ✅ (4)                  |
 
-### Advanced Features
-* **Key Recording**: Capture and replay complex key sequences
-* **Text Injection**: Send arbitrary text strings to applications
-* **Function Keys**: System controls (shutdown, sleep, lock screen)
 
 ---
-
 ### Download the latest Release version zip package:
 
 ### https://github.com/Zalafina/QKeyMapper/releases/latest
@@ -82,78 +63,246 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 
 ### ※ The ZIP packages starting with QKeyMapper_vX.Y.Z_x64/x86 are compiled executable file zip packages. Build_YYYYMMDD represents the compilation date, and the newer compilation date has corresponding new feature descriptions.
 
----
-
-### License change: Please note that the software license has been changed from the MIT license to the GNU General Public License v3.0 (GPL v3). Before using, modifying, or distributing the software, please make sure you have viewed and understood the terms of the new license.
-
-### Win10 and Win11 systems are recommended to use the Qt6 version, and the Qt5 version is provided just to be compatible with the Win7 system. If you cannot use the Qt6 version under Win7, please download the Qt5 version for use.
-
-### Note: You may need to install the Visual C++ Redistributable 64-bit runtime library when using.`<br>`VC++ 2015-2022 64-bit runtime library, Microsoft download address:`<br>`[https://aka.ms/vs/17/release/vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe)
-
-* (For 32-bit systems, download and install the 32-bit runtime library [https://aka.ms/vs/17/release/vc_redist.x86.exe](https://aka.ms/vs/17/release/vc_redist.x86.exe) )
-
-### [Note: Win7 system needs to install ViGEMBus v1.16.116 by itself to use the virtual gamepad function](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
-
-* [https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
-
 ---------------
-#### ※It is strongly recommended to enable Windows Filter Keys when using QKeyMapper. This prevents Windows from repeatedly sending the same key when a keyboard key is held down, which can cause unpredictable issues with key mapping functions.
-  - #### How to enable Filter Keys on Windows 10
+## ⭐ Star Trend
+
+If the **QKeyMapper** key mapping software has been helpful to you, please give it a ⭐ Star to support the project and help more people discover **QKeyMapper**.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
+
+---
+## 💡 Usage notes
+
+### For Windows 10 and Windows 11, Qt 6 is recommended. Qt 5 builds are provided only for Windows 7 compatibility. If Qt 6 cannot run on Windows 7, download and use the Qt 5 build.
+
+### 📌 Note 1: You may need to install the Visual C++ Redistributable 64-bit runtime.<br>VC++ 2015–2022 (64-bit) download from Microsoft:<br>https://aka.ms/vs/17/release/vc_redist.x64.exe
+* ( For 32-bit systems, install the 32-bit runtime https://aka.ms/vs/17/release/vc_redist.x86.exe )
+
+### 📌 Note 2: The multi-device support feature uses the Interception driver. This driver has known issues: repeatedly plugging/unplugging input devices (keyboard/mouse) from USB, reconnecting, or putting Windows to sleep and waking it can cause input device IDs to increase. If the ID value exceeds the Interception driver’s limit (10 keyboards, 10 mice), input devices may stop working. Only a full OS restart restores functionality (a quick restart that preserves application state will not). Install the multi-device driver only if you truly need the feature and after carefully reading how to use the driver and its potential side effects, to avoid unnecessary problems. If your mouse or keyboard stops working, first perform a full system restart, then click “Uninstall multi-device driver,” and restart again to return to normal without driver impact.
+
+### 📌 Note 3: ViGEMBus and vJoy are both virtual gamepad drivers. Installing both at the same time is not recommended. If vJoy was previously installed and you encounter virtual gamepad issues, uninstall vJoy and check whether the problem is resolved.
+
+### [📌 Note 4: Windows 7 requires manual installation of ViGEMBus v1.16.116 to use the virtual gamepad feature](https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles)
+* https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles
+
+
+---
+## 🔧 Usage Recommendations
+#### ※ In most cases, it is recommended to run the QKeyMapper mapping tool first, and then launch the game or software that requires key mapping. This helps avoid situations where keys are intercepted by other software, preventing the mapping tool from detecting them.
+#### ※ It is strongly recommended to enable Windows Filter Keys when using QKeyMapper. This prevents the system from continuously sending the same key signal when a keyboard key is held down, which can cause unpredictable issues with key mapping functions.<br>Starting from version v1.3.8.20250816, a "Enable System Filter Keys" checkbox has been added. When this option is checked, if the system’s Filter Keys are not enabled at the start of mapping, the program will automatically enable them. After mapping ends, it will restore the Filter Keys setting to its previous disabled state.
+
+  - #### How to enable Filter Keys in Windows 10
     Windows Settings -> Ease of Access -> Keyboard -> Filter Keys  
     <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win10_FilterKey.png" width="1839" height="auto"/></div>
-  - #### How to enable Filter Keys on Windows 11
+  - #### How to enable Filter Keys in Windows 11
     Settings -> Accessibility -> Keyboard -> Filter Keys  
     <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win11_FilterKey.png" width="1182" height="auto"/></div>
 
 ---
+### 🎯 New features list (sorted in descending order of update time)
+* v1.3.8 (Build 20250926)
+    * Added "**Regex Match**" as a process and window title matching method. When using this method, the process and window title will be matched based on the regular expression entered in the single-line edit boxes for process and title. After entering a "**Regex Match**" pattern, you can press Enter to validate the regular expression. If invalid, a prompt will display: "Invalid regular expression : ...".
+    * Added "**SetVolume🔊**" mapping key to the mapping key list. This mapping key sets the volume of the system’s current playback device and also displays the new volume value via a notification message.
 
-## 📚 Getting Started
+* v1.3.8 (Build 20250920)
+    * Added two original keys to the original key list: "**SendOnMappingStart**" and "**SendOnSwitchTab**".
+      - "**SendOnMappingStart**": Sends the mapped key content when mapping starts from this mapping table.
+      - "**SendOnSwitchTab**": Sends the mapped key content when switching to this mapping table using the Tab shortcut key or the **SwitchTab** mapping.
+    * Added "**SetVolume**" mapping key to the mapping key list. You can use this mapping key in the form "**SetVolume(...)**" to control the volume of the system’s current playback device. The volume range is 0–100, allowing up to two decimal places.
+        ##### Examples of using the volume setting mapping key:
+            SetVolume(10)    (Set volume to 10)
+            SetVolume(+5)    (Increase current volume by 5, will not exceed 100)
+            SetVolume(-20)   (Decrease current volume by 20, will not go below 0)
+            SetVolume(30.8)  (Set volume to 30.8, system UI will round to display 31)
+    * Optimized display and operation in the import/export settings dialog.
+    * Added "Advanced Mapping Settings" button, which opens the "Advanced Mapping Settings" dialog window.
+      - The settings for "Horizontal Mouse Speed", "Vertical Mouse Speed", "Use Process Icon as Tray Icon", and "Accept Virtual Gamepad Input" have been moved into the "Advanced Mapping Settings" dialog window.
+      - Added "Polling Interval" for mouse movement. When controlling the mouse pointer via gamepad analog stick or keyboard keys, increasing the "Polling Interval" can further reduce pointer movement speed. Default value is "2 milliseconds", with a configurable range of 1–99 milliseconds.
 
-### Quick Setup Guide
-1. **Download & Extract**: Get the latest release zip file and extract to any folder
-2. **Run as Administrator**: Right-click `QKeyMapper.exe` → "Run as administrator" (recommended)
-3. **Enable Filter Keys**: Follow the Windows Filter Keys setup guide above
-4. **Configure Mapping**: Select target application and create your key mappings
-5. **Start Mapping**: Click "KeyMappingStart" to activate
+* v1.3.8 (Build 20250912)
+    * Added "**Unlock**" mapping key to the mapping key list. You can use this mapping key in the form "**Unlock(...)**" to unlock the lock state of a specified original key. For example: A->B (locked), C->Unlock(A). After pressing and releasing key A for the first time, it enters a locked state of continuously pressing key B. Pressing key C can unlock the original key A, ending the continuous press of key B.
+    * Added "**Disable Original Key Unlock**" checkbox in the mapping item settings window. When checked, for keys with the lock function enabled, pressing the original key will only lock it and cannot unlock it by pressing the original key again. The lock state can only be released via the "**Unlock**" mapping key or by stopping the mapping.
+    * Added mapping tab switch memory function.
+      - Double-click the mapping tab name to set a tab switch shortcut key. If you add the prefix "💾", switching to this tab using the shortcut during mapping will record and save the tab name. The next time you switch to this setting, the saved tab name will be displayed.
+      - Added "**SwitchTab💾**" mapping key to the mapping key list. Using this mapping key to switch tabs will record and save the tab name, and the next time you switch to this setting, the saved tab name will be displayed.
+    * When manually stopping mapping, if the current mapping has automatically switched to the global mapping settings, the software will attempt to switch back to the last setting that was automatically matched to the foreground window within the past 20 seconds, allowing the user to directly modify and edit that setting.
 
-### Window Matching Options
-* **Process Name**: Match by executable filename (e.g., `game.exe`)
-* **Window Title**: Match by window title text
-* **Regex Matching**: Use `WINDOWINFO_MATCH_INDEX_REGEXMATCH` for pattern-based matching
-* **Global Settings**: Apply mappings to all applications
+* v1.3.8 (Build 20250906)
+    * Added a "Backup" button to the right of the main window’s setting name edit box. Clicking it opens the "Import Settings" and "Import Settings (Extended)" buttons. The export settings window includes:
+      - In the "Export Settings" dialog, you can select and edit the name of the exported INI file. The default is "setting_export.ini" in the software directory. Note: If you select an existing INI file, it will not be cleared; instead, the selected settings will overwrite and append to the current contents of the INI file. To perform a fresh export without appending, choose a new file name that does not already exist.
+      - In the "Import Settings" dialog, you can select and edit the name of the INI file to import. If the INI file contains setting names already present in the current file, they will be displayed in a special color. Importing settings with the same name will overwrite the data of the same-named settings in the current settings file.
+      - "Select All" is used to select or deselect all items.
+      - "General Settings" refers to the basic software function settings in the "General Settings" tab that are not tied to a specific setting name. After importing general settings, if some do not take effect immediately, you can manually exit and restart the software to reload the settings file.
+      - "Import Settings" will modify and overwrite the current settings file data. It is recommended to back up the original `keymapdata.ini` settings file before proceeding to avoid accidental data loss or file errors.
+    * After adjusting the position and transparency of the floating window, holding L-Ctrl and double-clicking the floating window with the left mouse button will save the settings.
+    * In virtual gamepad settings, "X-axis sensitivity" and "Y-axis sensitivity" can be set to 0. When set to 0, moving the mouse will not cause any horizontal or vertical analog stick movement in the virtual gamepad.
+    * Updated interface icon colors for clearer contrast in dark and light modes.
+    * Optimized mapping switch effects when switching between two saved foreground windows.
+    * Added a tri-state "Do Not Show Notifications" checkbox in the mapping tab settings window. This allows a single tab mapping to be set so that no notifications are shown when starting mapping for that tab, or both when starting mapping and switching to that tab.
+    * Fixed an issue with the "Update Mapping" button related to double-click and long-press original key check rules.
 
-### Mapping Configuration Tips
-* **Original Key**: The key you want to remap (physical input)
-* **Mapping Key**: The key(s) to send when original key is pressed
-* **Key Sequences**: Use `»` to chain multiple key combinations
-* **Combination Keys**: Use `+` to create multi-key combinations (e.g., `Ctrl+C`)
-* **Timing Suffixes**: Add `⏱200` for delays, `⏲500` for long press detection
+* v1.3.8 (Build 20250830)
+    * Added "SwitchTab" mapping key to switch to a specified tab mapping table by name using a mapping action.
+    * When selecting the first blank item in the settings selection list, the tab mapping list will be cleared and the settings will be restored to their initial default values.
+    * Optimized the update method after modifying the key mapping string content in the "Mapping Item Settings" window.
+    * Added a "Startup Position Settings" window to choose the window position when the program starts.
+    * Tab names with assigned shortcut keys are now displayed in teal text instead of using the ★ prefix.
+    * Added support for ".svg" suffix SVG images in "Custom Mapping Table Image".
+    * Pressing Tab or Shift+Tab in the key capture edit box will no longer switch focus to other controls.
 
-### Advanced Features
-* **Multiple Virtual Gamepads**: Control up to 4 virtual controllers simultaneously
-* **Multi-Input Devices**: Distinguish between different keyboards/mice
-* **Window Coordinates**: Click specific points within target windows
-* **System Integration**: Control volume, media playback, and system functions
+* v1.3.8 (Build 20250824)
+    * Added "Run" mapping key to map a key to execute a specific command.
+      - Example: `Run(E:\ABC\def\XYZ\abcd.exe param1 param2 [WorkingDir="<dir_path>"] [ShowOption=Max|Min|Hide])` can run the specified command, with parameters specified by spaces.
+      - Special parameters can be added to define the run state:
+        - `WorkingDir="C:\Path With Spaces"` specifies the working directory. Paths containing spaces must be enclosed in double quotes; the directory existence will be validated.
+        - `ShowOption=Max|Min|Hide` sets the startup window display mode: Max (maximize), Min (minimize), Hide (hidden). If not specified, the default is normal display (note: not all programs support these ShowOption parameters).
+      - Supports specifying system actions at the start of the command. Available system actions:
+        - `find` (Search)
+        - `explore` (Open in File Explorer)
+        - `open` (Open file)
+        - `edit` (Edit with default editor)
+        - `openas` (Open with program selection)
+        - `print` (Print)
+        - `properties` (Show file properties)
+        - `runas` (Run with administrator privileges)
+    * SendText now supports multi-line text.
+    * Fixed an issue where displaying the "Crosshair" mapping should not steal focus from the current window.
 
-## 📖 Documentation & Support
+* v1.3.8 (Build 20250816)
+    * Added an "Enable System Filter Keys" checkbox in the "Mapping Settings" tab. When checked, if the system’s Filter Keys are not enabled at the start of mapping for this set of mappings, the program will automatically enable them. After mapping ends, it will restore the Filter Keys state to what it was before mapping started. This checkbox is unchecked by default. When unchecked, a message prompt will appear asking the user to confirm that they do not want Filter Keys to be automatically enabled during mapping.
+    * In the settings list, the global mapping setting name is displayed as "Global Key Mapping".
+    * Added a "Key Recording Area" edit box in the mapping table settings window. When this edit box gains focus, any single key or key combination pressed will be recorded and displayed in the box.
+      - Clicking the "Key Compile/Key Capture" mode toggle button next to it switches between key capture mode and manual edit mode.
+      - Right-clicking the mode toggle button will append the current contents of the "Key Recording Area" edit box to the end of the original key or mapped key edit box (holding L-Ctrl while right-clicking will append to the mapped key edit box).
 
-### Resources
-* **Wiki Guide**: [QKeyMapper Tips and More Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
-* **QQ Support Group**: 906963961 (Only Chinese community support)
+* v1.3.8 (Build 20250812)
+    * Added an "Appearance Color" dropdown list in "General Settings", allowing selection of "Light", "Dark", or "System Default". "System Default" follows the Windows system color theme to change the interface appearance accordingly.
+    * Added an "Original Key Recording" edit box. When this edit box gains focus, any single key or key combination pressed will be recorded and displayed in the box.
+      - Clicking the "Key Compile/Key Capture" mode toggle button next to it switches between key capture mode and manual edit mode.
+      - When clicking the "Add" button, the program will first check the contents of the "Original Key Recording" edit box. If it is empty, it will then check the selection in the original key list.
+    * Changed the display of operation prompts and mapping status prompts to use mouse-through effect.
 
-### Update Information
-* **Automatic Updates**: Use the built-in update checker in "General" settings
-* **Mirror Sites**: Choose between GitHub and Gitee for downloads
-* **Version History**: Comprehensive changelog with build-specific features
+* v1.3.8 (Build 20250808)
+    * Added support for new physical gamepad buttons in button detection.
+        ##### Newly supported buttons:
+            Joy-Misc1       (Xbox X Share button, PS5 Microphone button, Switch Pro Capture button, Amazon Luna Microphone button)
+            Joy-Paddle1     (Xbox Elite upper left back paddle)
+            Joy-Paddle2     (Xbox Elite upper right back paddle)
+            Joy-Paddle3     (Xbox Elite lower left back paddle)
+            Joy-Paddle4     (Xbox Elite lower right back paddle)
+            Joy-Touchpad    (PS4/PS5 Touchpad button)
+            ※ On Windows, Xbox layout controllers use XInput by default, so special buttons can only be detected when switched to DInput mode. PS controllers and Switch controllers use DInput by default, so these buttons can be detected.
+    * Optimized physical gamepad button detection so that PS4/PS5 button names match those of Xbox controllers.
+    * When the original key list control has focus (e.g., by scrolling or clicking with the mouse), pressing a physical gamepad button will automatically switch the original key list to the name of the pressed gamepad button.
+    * If Windows system default app mode is set to "Dark", QKeyMapper will still display the interface in "Light" mode.
+    * Fixed an issue where the floating window would not display when setting prompts were disabled.
+    * Fixed an issue where changing a tab name did not update the tab label display.
+    * Removed the program’s default scale setting. You can now select the display scaling factor from the new "Scaling Ratio" dropdown list in "General Settings". The setting will take effect the next time the program starts after saving. Note: The "--scale=" startup parameter has higher priority than the in-program setting.
 
----
+* v1.3.8 (Build 20250806)
+    * Added coordinate reference point settings in the "Floating Window Settings" window. The default reference point is "Top-left corner of the screen". You can choose a specific position on the screen or a specific position of the matched window as the reference point, combined with coordinate information to determine the floating window display position.
+    * In the "Floating Window Settings" window, you can set the floating window's "Background Color" and "Corner Radius" separately.
+    * Holding L-Ctrl while clicking the "Add Tab" button will fully duplicate the contents of the currently displayed tab into the newly added tab, including custom tab images and all tab settings.
+    * Fixed an issue where switching to a tab that does not display a floating window would not remove the floating window.
+    * Changed "Post" sending method to "SendMessage" sending. Replaced PostMessage with SendMessage to improve compatibility.
 
-### New features list (sorted in descending order of update time)
-* v1.3.7 (Build 20250616)
-    * Added "Gyro2Mouse" feature. If your game controller supports the standard gyro protocol (DS4, DS5, etc.), you can select "Joy-Gyro2Mouse" in the original key list to use gyro2mouse mapping.
-      - Added a "Gyro2Mouse" settings tab, where "Horizontal Speed" and "Vertical Speed" can be adjusted to control the horizontal and vertical movement speed of the gyro-to-mouse function. Value range: 0.00~99.99.
-      - When a game controller with gyro support is connected to the PC, "[GyroEnabled]" will be displayed after the controller name in the controller list. When a controller is highlighted in the list, pressing the "F2" key will toggle gyro enable/disable. Gyro is enabled by default when the controller is connected.
-      - The "Gyro2Mouse" settings tab contains other advanced options. The default values are usually sufficient. If you need to modify them, please make sure you understand their functions first.
+* v1.3.8 (Build 20250802)
+    * Added a "Display as Floating Window" checkbox in the custom mapping table image settings area of the "Mapping Table Settings" window. When checked, successfully matching and enabling this tab mapping table will display the custom image as a top-level floating window on the screen.
+      - While the floating window is displayed, you can drag it to move its position using the left mouse button.
+      - Moving the mouse pointer to the bottom-right corner of the floating window will change the pointer to the resize cursor. Pressing and dragging with the left mouse button will resize the floating window. The aspect ratio is fixed as a square, with size range 16~640.
+      - When the mouse pointer is inside the floating window, you can scroll the mouse wheel up to increase opacity or down to decrease opacity. Opacity range is 0.10~1.00.
+      - Clicking the "Floating Window Settings" button in the "Mapping Table Settings" window opens the "Floating Window Settings" window, where you can view and adjust the current floating window's size, position, opacity, and mouse-through state.
+      - When the "Mouse Through" checkbox is checked, the floating window cannot be dragged, resized, or have its opacity adjusted with the mouse. Mouse actions will pass directly through to the underlying window.
+      - While the floating window is displayed, pressing the "F11" key when the mouse pointer is inside the window will toggle the "Mouse Through" state.
+      - Clicking "Save Settings" will save the current settings along with the mapping table's "Floating Window Settings", including size, position, opacity, and mouse-through state.
+    * Modified the "Tray Icon Pixel" dropdown list in the "Mapping Table Settings" window to read various icon sizes directly from ICO files for selection.
+
+* v1.3.8 (Build 20250728)
+    * Fixed an issue where icon sizes were extracted incorrectly when loading certain exe files that do not provide high-resolution icons.
+    * If the "custom_trayicons" subdirectory exists in the program directory and contains ".ico" icon files, the program will read and append them to the end of the list in the "Select System Tray Icon" window at startup, allowing selection as custom tray icons for different states.
+    * In the "Window Information" tab, the "Process" and "Title" fields can be set to empty. Setting them to empty is equivalent to selecting "Ignore" as the matching method, meaning process or window title detection will be skipped.
+    * Improved foreground window matching handling when "Process" or "Title" fields are empty.
+    * Improved detection method for "Send to Same-Named Window".
+
+* v1.3.8 (Build 20250726)
+    * Changed the rules for setting names by adding a "Setting Name" single-line edit box, allowing users to customize the setting name. If the entered name does not exist in the list, a new setting will be added when saving.
+      - When saving, if the setting name matches an existing name in the list, the existing setting will be overwritten.
+      - Changes to "Process" and "Title" content and matching method in the setting will only take effect after clicking the Save button.
+    * Added a "Window Information" tab, moving the window title, process name, setting description, and process icon to be displayed in this tab.
+      - In the "Window Information" tab, you can choose the matching method for process and title, including: "Ignore", "Equals", "Contains", "Starts with...", "Ends with...". Selecting "Ignore" works the same as previously unchecking the process and title checkboxes.
+      - Double-clicking an item in the left process list changes the "Process" single-line edit box from showing the process file name to showing the absolute path, and makes both the "Process" and "Title" single-line edit boxes editable.
+      - Holding L-Ctrl while double-clicking an item in the left process list will not only search for a matching existing setting name but also update the process path and window title in the "Window Information" tab.
+      - Clicking the "Restore" button will restore the "Process" edit box content to the absolute path (if available).
+    * Added a "Start Automatically" checkbox in the "General Settings" tab. When checked, the software will automatically switch to "Mapping Started" state upon launch. This removes the need to use the "Auto Match Foreground Process" checkbox to achieve automatic mapping start after launch.
+    * Pressing the "Remove Setting" button will now prompt the user with a confirmation dialog. The setting will only be removed if the user clicks Confirm.
+    * Added a "Fixed Virtual Key Code" hexadecimal value box in the "Mapping Item Settings" window. If the value is not 0x0, the specified virtual key code will be sent when sending a keyboard mapping key, but the key scan code will still be sent according to the key name.
+    * Added support for mapping original key combinations to functional mapping keys with the "Func-" prefix.
+    * In "Advanced Prompt Settings", if the display duration is set to 0, the last displayed prompt will remain visible indefinitely.
+    * Fixed untranslated interface text in the "Advanced Prompt Settings" window.
+
+* v1.3.8 (Build 20250716)
+    * Added a "Tab Prompt Background Color" setting button in the "Mapping Table Settings" dialog. Clicking it opens a color selection window, allowing you to set different background colors for prompt messages when starting or switching mapping for each mapping table.
+    * Fixed issues with the SendText text sending function.
+
+* v1.3.8 (Build 20250712)
+    * Added "Category Filter" feature. Clicking the "Category Filter" button will display the "Category" column in the mapping table. Double-clicking a cell in the Category column allows you to enter a category. Selecting a specific category tag from the dropdown list on the right will filter the mapping table display accordingly.
+    * Tab mapping tables can now be moved by dragging the tab name position. The Add Tab function is no longer triggered by double-clicking the "+" tab; instead, use the "Add Tab" button in the upper right corner.
+    * Removed the up/down move buttons for mapping items on the right side of the main program window. Mapping items can now be moved by dragging with the mouse, or by selecting them and pressing the keyboard arrow keys "↑" and "↓".
+    * After selecting one or more mapping items, holding L-Ctrl and pressing the keyboard arrow keys "↑" or "↓" will move the selected items directly to the top or bottom of the mapping table.
+    * Updated **zipupdater.exe** to fix an issue where updating and copying program files could fail if the QKeyMapper process exited slowly.
+    * Fixed an issue where, if there was only one empty mapping table with no mapping items, changes to the mapping table name or other custom data could not be saved correctly.
+
+* v1.3.8 (Build 20250708)
+    * Added a "Tray Icon Pixel" selection list in the "Custom Mapping Table Image" settings area. If the selected resolution layer exists in the ICO file, the specified pixel resolution layer from the ICO image will be used for the custom tray icon. Otherwise, it will behave the same as the default selection, letting the system automatically choose which resolution layer to display for the tray icon.
+    * Fixed an issue in **v1.3.8.20250706** where the tray icon was not updated correctly when prompt messages were disabled.
+
+* v1.3.8 (Build 20250706)
+    * Added the following "Custom Mapping Table Image" settings in the "Mapping Table Settings" window:
+      - Clicking the "Select Custom Image" button opens a dialog to choose a dedicated custom image for this tab mapping table (supports .ico/.png extensions). If the image file loads successfully, it will be displayed in the left image box and updated in front of the tab name label.
+      - Holding L-Ctrl while clicking the "Select Custom Image" button will clear the current tab’s custom image.
+      - The "Display Position" dropdown list allows choosing to display the tab custom image to the left or right of the prompt text, or not display it in the prompt at all.
+      - The "Image and Text Spacing" value adjustment box can increase the spacing between the image and text when displaying the custom image in the prompt (default spacing 0, range 0~1000).
+      - When the "Display as Tray Icon" checkbox is checked, successfully matching and enabling this tab mapping table will use the custom image as the system tray icon.
+      - If the selected custom image file is located in the current program directory or its subdirectory, a relative path will be saved. This ensures that when the program directory is moved to another PC, the custom image in the program directory can still be used.
+    * Added a "Advanced Prompt Settings" button in the "General Settings" tab. Clicking it opens the "Advanced Prompt Settings" dialog, where you can configure:
+      - Prompt text color (hold L-Ctrl and click the color button to restore default color)
+      - Prompt text size (default size 16, range 1~72)
+      - Prompt text weight (default bold; options: thin, regular, bold)
+      - Prompt display duration (milliseconds, default 3000 ms, range 0~99999 ms)
+      - Prompt fade-in animation duration (milliseconds, default 0 ms: no fade-in, range 0~99999 ms)
+      - Prompt fade-out animation duration (milliseconds, default 500 ms, range 0~99999 ms)
+      - Prompt background color (can set background transparency; hold L-Ctrl and click the color button to restore default color)
+      - Prompt background corner radius (default 5 pixels, range 0~1000; 0 for square corners)
+      - Prompt background padding (default 15 pixels, range 0~1000)
+      - Prompt overall opacity (default 1.000, range 0.000~1.000; lower values are more transparent)
+      - Prompt horizontal offset adjustment (additional X-axis offset in pixels based on chosen prompt position; default 0, range -5000~5000; negative shifts left, positive shifts right)
+      - Prompt vertical offset adjustment (additional Y-axis offset in pixels based on chosen prompt position; default 0, range -5000~5000; negative shifts up, positive shifts down)
+    * In the "Mapping Table Settings" window, holding L-Ctrl while clicking the "Tab Prompt Text Color" button will restore the default color for tabs without a custom "Tab Prompt Text Color" set.
+    * Added category selection buttons above the "Original Key List" and "Mapped Key List" in the "Mapping Item Settings" window, linked with the main window.
+    * Foreground window monitoring now uses both event monitoring and periodic monitoring to improve detection stability.
+    * Fixed an issue where the "Mapped Key List" was missing the Key2Mouse mapping key.
+
+* v1.3.8 (Build 20250626)
+    * Added category selection buttons above the "Original Key List" and "Mapped Key List" in the main program window. The four buttons are "Keyboard Keys", "Mouse Keys", "Gamepad Keys", and "Function Keys". Only keys of the selected category will be listed when the corresponding button is pressed.
+    * Added a "Tab Prompt Text Color" setting button in the "Mapping Table Settings" dialog. Clicking it opens a color selection window, allowing you to set different prompt text colors for each mapping table when mapping starts.
+    * Added a "Select Tray Icon" button in the "General Settings" tab. Clicking it opens a dialog where you can choose system tray icons for the four states: "Idle", "Monitoring", "Global Mapping", and "Matched Mapping". Multiple color icon options are available. **[Thanks to user group member **汽波** for creating the new system tray icons]**
+    * Added a "Use Process Icon as Tray Icon" checkbox in the "Mapping Settings" tab. When checked, successfully matching and enabling a mapping configuration will use the saved process file icon as the system tray icon.
+    * Optimized the method for monitoring foreground window changes, making the start/stop mapping response faster when switching foreground windows.
+    * Clicking the close button now opens a dialog asking whether to check "Clicking the close button will hide the program to the system tray icon". If checked and confirmed, subsequent clicks on the close button will hide the program to the system tray. If unchecked and confirmed, subsequent clicks will directly close the program.
+      **[Note: The dialog choice is saved to the settings file. Holding L-Ctrl while clicking the close button will reopen the dialog to choose again.]**
+    * When a numeric adjustment box in the "Mapping Item Settings" dialog has focus and is being edited, closing the dialog will update the setting value with the current edit.
+    * Optimized the display method for mapping start prompt messages:
+      - Added a numeric box in the "General Settings" tab to set the size of the mapping status prompt text (default size 16, range 1~72).
+      - For mapping configurations with a description, the description will replace the process information in the prompt message when mapping starts.
+      - When switching mapping table tabs via shortcut keys while mapping is active, if the pressed shortcut key belongs to the current mapping table, a prompt will display: "Already on - <Tab Name>".
+
+* v1.3.7 (Build 20250622)
+    * Fixed an issue introduced in **v1.3.7.20250618** where gamepad buttons could not be detected properly. (The 0618 version files are no longer provided; upgrade to the 0622 version to resolve the issue.)
+
+* v1.3.7 (Build 20250618)
+    * Added "vJoy-LS-Radius" and "vJoy-RS-Radius" mapping keys to the mapped key list. These can be used with the "Light Push Value" slider to add mapping keys such as "vJoy-LS-Radius[100]" or "vJoy-RS-Radius[150]" to switch the radius of the left/right virtual analog sticks. **Stick radius range**: 1~254.
+    * Added a "Mapping Table Templates" folder to the ZIP package of the software release. It contains several ready-to-import mapping table templates for reference. 
+
 * v1.3.7 (Build 20250616)
     * Added the "Gyro2Mouse" feature. If your physical game controller supports the standard gyro protocol (DS4, DS5, etc.), you can select "Joy-Gyro2Mouse" in the original key list to use gyro-to-mouse mapping, allowing you to control the mouse pointer's horizontal and vertical movement by rotating the controller along a specific axis.
       - Added a "Gyro2Mouse" settings tab, where "Horizontal Speed" and "Vertical Speed" can be adjusted to control the horizontal and vertical movement speed of the gyro-to-mouse function. Value range: 0.00~99.99.
