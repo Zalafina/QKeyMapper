@@ -16622,6 +16622,7 @@ void QKeyMapper::initKeysCategoryMap()
         << RUN_STR
         << SWITCHTAB_STR
         << SWITCHTAB_SAVE_STR
+        << QKEYMAPPER_FN_KEY_STR
         << KEYSEQUENCEBREAK_STR
         ;
 

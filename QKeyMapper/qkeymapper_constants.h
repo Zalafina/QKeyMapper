@@ -645,17 +645,18 @@ namespace QKeyMapperConstants {
     inline constexpr int MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT = 50;
 
     inline constexpr int VJOY_KEYUP_WAITTIME = 20;
-    inline constexpr quint8 VK_MOUSE2VJOY_HOLD = 0x3A;
 
-    inline constexpr quint8 VK_KEY2MOUSE_UP    = 0x8A;
-    inline constexpr quint8 VK_KEY2MOUSE_DOWN  = 0x8B;
-    inline constexpr quint8 VK_KEY2MOUSE_LEFT  = 0x8C;
-    inline constexpr quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
     inline constexpr quint8 VK_GAMEPAD_HOME    = 0x07;
     inline constexpr quint8 VK_CROSSHAIR_NORMAL= 0x0A;
     inline constexpr quint8 VK_CROSSHAIR_TYPEA = 0x0B;
     inline constexpr quint8 VK_GYRO2MOUSE_HOLD = 0x0E;
     inline constexpr quint8 VK_GYRO2MOUSE_MOVE = 0x0F;
+    inline constexpr quint8 VK_MOUSE2VJOY_HOLD = 0x3A;
+    inline constexpr quint8 VK_KEY2MOUSE_UP    = 0x8A;
+    inline constexpr quint8 VK_KEY2MOUSE_DOWN  = 0x8B;
+    inline constexpr quint8 VK_KEY2MOUSE_LEFT  = 0x8C;
+    inline constexpr quint8 VK_KEY2MOUSE_RIGHT = 0x8D;
+    inline constexpr quint8 VK_QKEYMAPPER_FN   = 0x97;
 
     inline constexpr int INTERCEPTION_RETURN_NORMALSEND = 0;
     inline constexpr int INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION = 1;
@@ -1036,6 +1037,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEY_NONE_STR[] = "NONE";
     inline constexpr const char KEY_BLOCKED_STR[] = "BLOCKED";
     inline constexpr const char GAMEPAD_HOME_STR[] = "GamepadHome";
+    inline constexpr const char QKEYMAPPER_FN_KEY_STR[] = "QKeyMapper-Fn";
 
     inline constexpr const char MOUSE_MOVE_PREFIX[]  = "Mouse-Move";
     inline constexpr const char MOUSE_BUTTON_PREFIX[]  = "Mouse-";
