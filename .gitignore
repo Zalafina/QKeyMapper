@@ -4,12 +4,14 @@ build-*/*
 build-*
 *-build-*
 .vscode/
+*.TMP
+*.tmp
 QKeyMapper/*.pro.user
 QKeyMapper/*.pro.user.*
 QKeyMapper/*.moc
 QKeyMapper/*.bin
-QKeyMapper/*.TMP
-QKeyMapper/*.tmp
+QKeyMapper/**/*.TMP
+QKeyMapper/**/*.tmp
 QKeyMapper/moc_*.cpp
 QKeyMapper/qrc_*.cpp
 QKeyMapper/ui_*.h

@@ -15470,6 +15470,11 @@ void QKeyMapper::showSwitchBurstAndLockNotification(int rowindex)
         return;
     }
 
+    constexpr int MAPPING_TYPE_NORMAL      = 0;
+    constexpr int MAPPING_TYPE_BURST       = 1;
+    constexpr int MAPPING_TYPE_LOCK        = 2;
+    constexpr int MAPPING_TYPE_BURSTLOCK   = 3;
+
     int position = ui->notificationComboBox->currentIndex();
     if (NOTIFICATION_POSITION_NONE == position) {
         position = NOTIFICATION_POSITION_DEFAULT;
@@ -15492,22 +15497,26 @@ void QKeyMapper::showSwitchBurstAndLockNotification(int rowindex)
     }
 
     // Prepare notification text
+    int mapping_type = MAPPING_TYPE_NORMAL;
     QString popupNotification;
     QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
     bool burst = QKeyMapper::KeyMappingDataList->at(rowindex).Burst;
     bool lock = QKeyMapper::KeyMappingDataList->at(rowindex).Lock;
-    QString burst_state_string = burst ? tr("BurstOn") : tr("BurstOff");
-    QString lock_state_string = lock ? tr("LockOn") : tr("LockOff");
+    QString state_string = tr("Normal");
+    if (burst && lock) {
+        state_string = tr("BurstLock");
+        mapping_type = MAPPING_TYPE_BURSTLOCK;
+    }
+    else if (burst) {
+        state_string = tr("Burst");
+        mapping_type = MAPPING_TYPE_BURST;
+    }
+    else if (lock) {
+        state_string = tr("Lock");
+        mapping_type = MAPPING_TYPE_LOCK;
+    }
 
-    if (burstEnabled && lockEnabled) {
-        popupNotification = QString("%1 + %2 : %3").arg(burst_state_string, lock_state_string, original_key);
-    }
-    else if (burstEnabled) {
-        popupNotification = QString("%1 : %2").arg(burst_state_string, original_key);
-    }
-    else if (lockEnabled) {
-        popupNotification = QString("%1 : %2").arg(lock_state_string, original_key);
-    }
+    popupNotification = QString("%1 : %2").arg(state_string, original_key);
 
     // Setup Notification Options
     PopupNotificationOptions opts;
@@ -15544,6 +15553,23 @@ void QKeyMapper::showSwitchBurstAndLockNotification(int rowindex)
     opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
     opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+
+    QString stateIcon;
+    if (mapping_type == MAPPING_TYPE_BURSTLOCK) {
+        stateIcon = ":/burstlock.svg";
+    }
+    else if (mapping_type == MAPPING_TYPE_BURST) {
+        stateIcon = ":/burst.svg";
+    }
+    else if (mapping_type == MAPPING_TYPE_LOCK) {
+        stateIcon = ":/lock.svg";
+    }
+    else {
+        stateIcon = ":/normal.svg";
+    }
+    opts.iconPath = stateIcon;
+    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);
