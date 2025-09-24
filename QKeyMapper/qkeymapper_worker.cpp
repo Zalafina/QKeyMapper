@@ -9742,6 +9742,13 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
     bool update_lockstatus = false;
 
+    if (findindex >= 0 && (GetAsyncKeyState(VK_QKEYMAPPER_FN) & 0x8000) != 0) {
+        if (KEY_DOWN == keyupdown) {
+            QKeyMapper::switchBurstAndLockState(findindex);
+            return KEY_PROC_LOCK;
+        }
+    }
+
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
             if (findindex >=0 && true == QKeyMapper::KeyMappingDataList->at(findindex).Burst) {

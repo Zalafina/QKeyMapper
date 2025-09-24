@@ -444,7 +444,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             << tr("Bottom Right")
             ;
     ui->notificationComboBox->addItems(positoin_list);
-    ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+    ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
 
     QStringList scale_list = QStringList() \
             << tr("Default")
@@ -570,6 +570,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showSetVolumeNotification_Signal, this, &QKeyMapper::showSetVolumeNotification, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showSwitchBurstAndLockNotification_Signal, this, &QKeyMapper::showSwitchBurstAndLockNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
@@ -4041,6 +4042,99 @@ QString QKeyMapper::unescapeSendTextForLoading(const QString &text)
     result.replace("░", "#");
     result.replace("┋", "|");
     return result;
+}
+
+void QKeyMapper::switchBurstAndLockState(int rowindex)
+{
+    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(rowindex);
+    bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(rowindex);
+
+    if (!burstEnabled && !lockEnabled) {
+        return;
+    }
+
+    QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
+    bool currentBurst = QKeyMapper::KeyMappingDataList->at(rowindex).Burst;
+    bool currentLock = QKeyMapper::KeyMappingDataList->at(rowindex).Lock;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[switchBurstAndLockState] "
+                                << "RowIndex: " << rowindex
+                                << ", OriginalKey: " << original_key
+                                << ", Burst Enabled: " << burstEnabled
+                                << ", Lock Enabled: " << lockEnabled
+                                << ", Current Burst: " << currentBurst
+                                << ", Current Lock: " << currentLock;
+#endif
+
+    bool newBurst = currentBurst;
+    bool newLock = currentLock;
+
+    // Switch state logic based on enabled capabilities
+    if (burstEnabled && lockEnabled) {
+        // Both burst and lock are enabled - cycle through 3 states
+        if (!currentBurst && !currentLock) {
+            // State 1: burst=false, lock=false -> burst=true, lock=false
+            newBurst = true;
+            newLock = false;
+        }
+        else if (currentBurst && !currentLock) {
+            // State 2: burst=true, lock=false -> burst=true, lock=true
+            newBurst = true;
+            newLock = true;
+        }
+        else if (currentBurst && currentLock) {
+            // State 3: burst=true, lock=true -> burst=false, lock=false
+            newBurst = false;
+            newLock = false;
+        }
+        else {
+            // Unexpected state: lock=true, burst=false -> reset to default
+            newBurst = false;
+            newLock = false;
+        }
+    }
+    else if (burstEnabled && !lockEnabled) {
+        // Only burst is enabled - toggle burst state
+        newBurst = !currentBurst;
+        newLock = currentLock; // Keep lock unchanged
+    }
+    else if (!burstEnabled && lockEnabled) {
+        // Only lock is enabled - toggle lock state
+        newBurst = currentBurst; // Keep burst unchanged
+        newLock = !currentLock;
+    }
+
+    // Update the state only if there's a change
+    if (newBurst != currentBurst || newLock != currentLock) {
+        (*QKeyMapper::KeyMappingDataList)[rowindex].Burst = newBurst;
+        (*QKeyMapper::KeyMappingDataList)[rowindex].Lock = newLock;
+
+        // Reset lock state if lock is turned off
+        if (currentLock && !newLock) {
+            if (true == QKeyMapper_Worker::pressedLockKeysMap.contains(original_key)){
+                (*QKeyMapper::KeyMappingDataList)[rowindex].LockState = LOCK_STATE_LOCKOFF;
+                QKeyMapper_Worker::pressedLockKeysMap.remove(original_key);
+            }
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[switchBurstAndLockState] "
+                                    << "State changed - New Burst:" << newBurst
+                                    << ", New Lock:" << newLock;
+#endif
+
+        // Update UI table displaygg
+        QKeyMapper::getInstance()->updateKeyMappingDataTableItem(QKeyMapper::getInstance()->m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, BURST_MODE_COLUMN);
+        QKeyMapper::getInstance()->updateKeyMappingDataTableItem(QKeyMapper::getInstance()->m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, LOCK_COLUMN);
+
+        // Show notification
+        emit QKeyMapper::getInstance()->showSwitchBurstAndLockNotification_Signal(rowindex);
+    }
 }
 
 #if 0
@@ -9913,11 +10007,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                 ui->notificationComboBox->setCurrentIndex(notification_position);
             }
             else {
-                ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+                ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
             }
         }
         else {
-            ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+            ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentText();
@@ -13010,11 +13104,11 @@ void QKeyMapper::loadGeneralSetting()
             ui->notificationComboBox->setCurrentIndex(notification_position);
         }
         else {
-            ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+            ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
         }
     }
     else {
-        ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_TOP_RIGHT);
+        ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentText();
@@ -15273,7 +15367,7 @@ void QKeyMapper::showSetVolumeNotification(float volume)
 
     int position = ui->notificationComboBox->currentIndex();
     if (NOTIFICATION_POSITION_NONE == position) {
-        position = NOTIFICATION_POSITION_BOTTOM_RIGHT;
+        position = NOTIFICATION_POSITION_DEFAULT;
     }
 
     QString popupNotification;
@@ -15291,14 +15385,6 @@ void QKeyMapper::showSetVolumeNotification(float volume)
         else {
             color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
         }
-    }
-
-    QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
-    if (notification_font_color.isValid()) {
-        color_str = notification_font_color.name();
-    }
-    else {
-        color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
     }
 
     // Format volume with right-aligned integer part for consistent display
@@ -15366,6 +15452,98 @@ void QKeyMapper::showSetVolumeNotification(float volume)
     opts.iconPath = volumeIcon;
     opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
     opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+
+    // Show Notification Popup
+    showNotificationPopup(popupNotification, opts);
+}
+
+void QKeyMapper::showSwitchBurstAndLockNotification(int rowindex)
+{
+    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(rowindex);
+    bool lockEnabled = QKeyMapper::getKeyMappingDataTableItemLockStatus(rowindex);
+
+    if (!burstEnabled && !lockEnabled) {
+        return;
+    }
+
+    int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        position = NOTIFICATION_POSITION_DEFAULT;
+    }
+
+    // Determine notification text color
+    QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    QString color_str;
+    if (tabFontColor.isValid()) {
+        color_str = tabFontColor.name();
+    }
+    else {
+        QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
+        if (notification_font_color.isValid()) {
+            color_str = notification_font_color.name();
+        }
+        else {
+            color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+        }
+    }
+
+    // Prepare notification text
+    QString popupNotification;
+    QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
+    bool burst = QKeyMapper::KeyMappingDataList->at(rowindex).Burst;
+    bool lock = QKeyMapper::KeyMappingDataList->at(rowindex).Lock;
+    QString burst_state_string = burst ? tr("BurstOn") : tr("BurstOff");
+    QString lock_state_string = lock ? tr("LockOn") : tr("LockOff");
+
+    if (burstEnabled && lockEnabled) {
+        popupNotification = QString("%1 + %2 : %3").arg(burst_state_string, lock_state_string, original_key);
+    }
+    else if (burstEnabled) {
+        popupNotification = QString("%1 : %2").arg(burst_state_string, original_key);
+    }
+    else if (lockEnabled) {
+        popupNotification = QString("%1 : %2").arg(lock_state_string, original_key);
+    }
+
+    // Setup Notification Options
+    PopupNotificationOptions opts;
+    opts.color = color_str;
+    opts.position = position;
+    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
+    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
+
+    QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+    if (tabBGColor.isValid()) {
+        opts.backgroundColor = tabBGColor;
+    }
+    else {
+        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    }
+
+    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
+    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
+    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+
+    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
+    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
+        opts.fontWeight = QFont::Light;
+    }
+    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
+        opts.fontWeight = QFont::Normal;
+    }
+    else {
+        opts.fontWeight = QFont::Bold;
+    }
+
+    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
+    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
+    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
+    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
+    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
 
     // Show Notification Popup
     showNotificationPopup(popupNotification, opts);

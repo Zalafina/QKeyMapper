@@ -147,7 +147,7 @@ struct ValidationResult
 struct PopupNotificationOptions {
     QString color = QKeyMapperConstants::NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;             // Text color
     int displayDuration = QKeyMapperConstants::NOTIFICATION_DISPLAY_DURATION_DEFAULT;       // Display duration (ms)
-    int position = QKeyMapperConstants::NOTIFICATION_POSITION_TOP_RIGHT;                    // Display position (e.g. NOTIFICATION_POSITION_TOP_RIGHT)
+    int position = QKeyMapperConstants::NOTIFICATION_POSITION_DEFAULT;                      // Display position (Default: NOTIFICATION_POSITION_TOP_RIGHT)
     int size = QKeyMapperConstants::NOTIFICATION_FONT_SIZE_DEFAULT;                         // Font size
     QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT;    // Background color
     double windowOpacity = QKeyMapperConstants::NOTIFICATION_OPACITY_DEFAULT;               // Window opacity (0.0~1.0)
@@ -871,6 +871,7 @@ public:
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
     static QString escapeSendTextForSaving(const QString &text);
     static QString unescapeSendTextForLoading(const QString &text);
+    static void switchBurstAndLockState(int rowindex);
 
     // unused enum all process function >>>
     // static void EnumProcessFunction(void);
@@ -976,6 +977,7 @@ signals:
     void updateInputDeviceSelectComboBoxes_Signal(void);
     void updateGamepadSelectComboBox_Signal(int instance_id);
     void showSetVolumeNotification_Signal(float volume);
+    void showSwitchBurstAndLockNotification_Signal(int rowindex);
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
@@ -1403,6 +1405,7 @@ public slots:
     void updateInputDeviceSelectComboBoxes(void);
     void updateGamepadSelectComboBox(int instance_id);
     void showSetVolumeNotification(float volume);
+    void showSwitchBurstAndLockNotification(int rowindex);
     void updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname);
     void updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabhotkey);
 

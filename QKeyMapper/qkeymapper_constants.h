@@ -375,6 +375,7 @@ namespace QKeyMapperConstants {
     inline constexpr int NOTIFICATION_POSITION_BOTTOM_LEFT     = 4;
     inline constexpr int NOTIFICATION_POSITION_BOTTOM_CENTER   = 5;
     inline constexpr int NOTIFICATION_POSITION_BOTTOM_RIGHT    = 6;
+    inline constexpr int NOTIFICATION_POSITION_DEFAULT = NOTIFICATION_POSITION_TOP_RIGHT;
 
     inline constexpr int STARTUP_POSITION_DEFAULT   = 0;
     inline constexpr int STARTUP_POSITION_LASTSAVED = 1;
