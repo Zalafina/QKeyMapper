@@ -11235,11 +11235,70 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 if (KEY_PROC_NONE == keyproc) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                    int mappingkeylist_size = mappingKeyList.size();
+                    int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
+                    bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
+                    bool isCombinationKey = false;
                     if (original_key.contains(SEPARATOR_PLUS)) {
-                        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releaseKeyboardModifiers(modifiers_arg, original_key);
+                        isCombinationKey = true;
                     }
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+
+                    if (SENDTIMING_KEYDOWN == SendTiming) {
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
+                    else if (SENDTIMING_KEYUP == SendTiming) {
+                        /* KEY_DOWN & SENDTIMING_KEYUP == SendTiming -> do nothing */
+                    }
+                    else if (SENDTIMING_KEYDOWN_AND_KEYUP == SendTiming) {
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
+                    else if (SENDTIMING_NORMAL_AND_KEYUP == SendTiming) {
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                    }
+                    else { /* SENDTIMING_NORMAL == SendTiming */
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        /* Add for KeySequenceHoldDown >>> */
+                        if (mappingkeylist_size > 1 && KeySeqHoldDown) {
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+                        }
+                        else {
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        }
+                        /* Add for KeySequenceHoldDown <<< */
+                    }
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -11277,8 +11336,67 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 if (findindex >=0){
                     if (keyproc != KEY_PROC_LOCK && keyproc != KEY_PROC_LOCK_PASSTHROUGH) {
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+                        QStringList mappingKey_KeyUpList = QKeyMapper::KeyMappingDataList->at(findindex).MappingKeys_KeyUp;
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        int mappingkeylist_size = mappingKeyList.size();
+                        int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
+                        bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
+                        bool isCombinationKey = false;
+                        if (original_key.contains(SEPARATOR_PLUS)) {
+                            isCombinationKey = true;
+                        }
+
+                        if (SENDTIMING_KEYDOWN == SendTiming) {
+                            /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
+                        }
+                        else if (SENDTIMING_KEYUP == SendTiming) {
+                            int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                            if (isCombinationKey) {
+                                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                                bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKey_KeyUpList);
+                                if (releasemodifier) {
+                                    sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                                }
+                            }
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        }
+                        else if (SENDTIMING_KEYDOWN_AND_KEYUP == SendTiming) {
+                            int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                            if (isCombinationKey) {
+                                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                                bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKey_KeyUpList);
+                                if (releasemodifier) {
+                                    sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                                }
+                            }
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        }
+                        else if (SENDTIMING_NORMAL_AND_KEYUP == SendTiming) {
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+
+                            int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                            if (isCombinationKey) {
+                                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                                bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKey_KeyUpList);
+                                if (releasemodifier) {
+                                    sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                                }
+                            }
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        }
+                        else { /* SENDTIMING_NORMAL == SendTiming */
+                            /* Add for KeySequenceHoldDown >>> */
+                            if (mappingkeylist_size > 1 && KeySeqHoldDown) {
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                            }
+                            else {
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            }
+                            /* Add for KeySequenceHoldDown <<< */
+                        }
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -11526,16 +11644,70 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                 if (KEY_PROC_NONE == keyproc) {
                     QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                     QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                    bool releasemodifier = false;
-                    int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                    int mappingkeylist_size = mappingKeyList.size();
+                    int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
+                    bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
+                    bool isCombinationKey = false;
                     if (original_key.contains(SEPARATOR_PLUS)) {
-                        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
-                        releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key);
-                        if (releasemodifier) {
-                            sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
-                        }
+                        isCombinationKey = true;
                     }
-                    QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+
+                    if (SENDTIMING_KEYDOWN == SendTiming) {
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
+                    else if (SENDTIMING_KEYUP == SendTiming) {
+                        /* KEY_DOWN & SENDTIMING_KEYUP == SendTiming -> do nothing */
+                    }
+                    else if (SENDTIMING_KEYDOWN_AND_KEYUP == SendTiming) {
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
+                    else if (SENDTIMING_NORMAL_AND_KEYUP == SendTiming) {
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                    }
+                    else { /* SENDTIMING_NORMAL == SendTiming */
+                        int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                        if (isCombinationKey) {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                            bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKeyList);
+                            if (releasemodifier) {
+                                sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                            }
+                        }
+                        /* Add for KeySequenceHoldDown >>> */
+                        if (mappingkeylist_size > 1 && KeySeqHoldDown) {
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+                        }
+                        else {
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                        }
+                        /* Add for KeySequenceHoldDown <<< */
+                    }
                 }
 
                 bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -11575,8 +11747,67 @@ int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyu
                 if (findindex >= 0) {
                     if (keyproc != KEY_PROC_LOCK) {
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+                        QStringList mappingKey_KeyUpList = QKeyMapper::KeyMappingDataList->at(findindex).MappingKeys_KeyUp;
                         QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        int mappingkeylist_size = mappingKeyList.size();
+                        int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
+                        bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
+                        bool isCombinationKey = false;
+                        if (original_key.contains(SEPARATOR_PLUS)) {
+                            isCombinationKey = true;
+                        }
+
+                        if (SENDTIMING_KEYDOWN == SendTiming) {
+                            /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
+                        }
+                        else if (SENDTIMING_KEYUP == SendTiming) {
+                            int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                            if (isCombinationKey) {
+                                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                                bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKey_KeyUpList);
+                                if (releasemodifier) {
+                                    sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                                }
+                            }
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        }
+                        else if (SENDTIMING_KEYDOWN_AND_KEYUP == SendTiming) {
+                            int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                            if (isCombinationKey) {
+                                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                                bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKey_KeyUpList);
+                                if (releasemodifier) {
+                                    sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                                }
+                            }
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        }
+                        else if (SENDTIMING_NORMAL_AND_KEYUP == SendTiming) {
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+
+                            int sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
+                            if (isCombinationKey) {
+                                const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                                bool releasemodifier = releaseKeyboardModifiers(modifiers_arg, original_key, mappingKey_KeyUpList);
+                                if (releasemodifier) {
+                                    sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
+                                }
+                            }
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL, sendvirtualkey_state);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+                        }
+                        else { /* SENDTIMING_NORMAL == SendTiming */
+                            /* Add for KeySequenceHoldDown >>> */
+                            if (mappingkeylist_size > 1 && KeySeqHoldDown) {
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+                            }
+                            else {
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                            }
+                            /* Add for KeySequenceHoldDown <<< */
+                        }
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
@@ -13782,7 +14013,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
