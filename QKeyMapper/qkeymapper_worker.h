@@ -61,6 +61,7 @@ typedef struct MAP_KEYDATA
     bool Lock;
     bool MappingKeyUnlock;
     bool DisableOriginalKeyUnlock;
+    bool DisableFnKeySwitch;
     bool PostMappingKey;
     int FixedVKeyCode;
     uint LockState;
@@ -101,6 +102,7 @@ typedef struct MAP_KEYDATA
     , Lock(false)
     , MappingKeyUnlock(false)
     , DisableOriginalKeyUnlock(false)
+    , DisableFnKeySwitch(false)
     , PostMappingKey(false)
     , FixedVKeyCode(QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_NONE)
     , LockState(QKeyMapperConstants::LOCK_STATE_LOCKOFF)
@@ -129,7 +131,7 @@ typedef struct MAP_KEYDATA
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
                 bool burst, int burstpresstime, int burstreleasetime,
-                bool lock, bool mappingkeys_unlock, bool disable_originalkeyunlock,
+                bool lock, bool mappingkeys_unlock, bool disable_originalkeyunlock, bool disable_fnkeyswitch,
                 bool postmappingkey, int fixedvkeycode,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, bool keyseqholddown,
@@ -162,6 +164,7 @@ typedef struct MAP_KEYDATA
         Lock = lock;
         MappingKeyUnlock = mappingkeys_unlock;
         DisableOriginalKeyUnlock = disable_originalkeyunlock;
+        DisableFnKeySwitch = disable_fnkeyswitch;
         PostMappingKey = postmappingkey;
         FixedVKeyCode = fixedvkeycode;
         LockState = QKeyMapperConstants::LOCK_STATE_LOCKOFF;
@@ -201,6 +204,7 @@ typedef struct MAP_KEYDATA
                 && (Lock == other.Lock)
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (DisableOriginalKeyUnlock == other.DisableOriginalKeyUnlock)
+                && (DisableFnKeySwitch == other.DisableFnKeySwitch)
                 && (PostMappingKey == other.PostMappingKey)
                 && (FixedVKeyCode == other.FixedVKeyCode)
                 && (CheckCombKeyOrder == other.CheckCombKeyOrder)
@@ -243,6 +247,7 @@ typedef struct MAP_KEYDATA
                         << ", Lock:" << data.Lock
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", DisableOriginalKeyUnlock:" << data.DisableOriginalKeyUnlock
+                        << ", DisableFnKeySwitch:" << data.DisableFnKeySwitch
                         << ", PostMappingKey:" << data.PostMappingKey
                         << ", FixedVKeyCode:" << fixedvkeycodeStr
                         << ", LockState:" << data.LockState

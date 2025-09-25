@@ -9744,9 +9744,12 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
 
     if (KEY_DOWN == keyupdown){
         if (false == pressedRealKeysList.contains(keycodeString)){
-            if (findindex >= 0 && (GetAsyncKeyState(VK_QKEYMAPPER_FN) & 0x8000) != 0) {
-                QKeyMapper::switchBurstAndLockState(findindex);
-                return KEY_PROC_LOCK;
+            if (findindex >= 0) {
+                bool disablefnkeyswitch = QKeyMapper::KeyMappingDataList->at(findindex).DisableFnKeySwitch;
+                if (!disablefnkeyswitch && (GetAsyncKeyState(VK_QKEYMAPPER_FN) & 0x8000) != 0) {
+                    QKeyMapper::switchBurstAndLockState(findindex);
+                    return KEY_PROC_LOCK;
+                }
             }
 
             if (findindex >=0 && true == QKeyMapper::KeyMappingDataList->at(findindex).Burst) {

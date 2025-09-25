@@ -827,6 +827,25 @@ Update</string>
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QCheckBox" name="disableFnKeySwitchCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>630</x>
+     <y>260</y>
+     <width>181</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>DisableFnKeySwitch</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>burstCheckBox</zorder>
   <zorder>lockCheckBox</zorder>
   <zorder>passThroughCheckBox</zorder>
@@ -869,6 +888,7 @@ Update</string>
   <zorder>keyRecordLabel</zorder>
   <zorder>updateMappingInfoButton</zorder>
   <zorder>disableOriginalKeyUnlockCheckBox</zorder>
+  <zorder>disableFnKeySwitchCheckBox</zorder>
  </widget>
  <resources/>
  <connections/>

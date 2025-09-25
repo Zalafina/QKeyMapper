@@ -824,6 +824,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_LOCK[] = "KeyMapData_Lock";
     inline constexpr const char KEYMAPDATA_MAPPINGKEYUNLOCK[] = "KeyMapData_MappingKeyUnlock";
     inline constexpr const char KEYMAPDATA_DISABLEORIGINALKEYUNLOCK[] = "KeyMapData_DisableOriginalKeyUnlock";
+    inline constexpr const char KEYMAPDATA_DISABLEFNKEYSWITCH[] = "KeyMapData_DisableFnKeySwitch";
     inline constexpr const char KEYMAPDATA_POSTMAPPINGKEY[] = "KeyMapData_PostMappingKey";
     inline constexpr const char KEYMAPDATA_FIXEDVKEYCODE[] = "KeyMapData_FixedVirtualKeyCode";
     inline constexpr const char KEYMAPDATA_CHECKCOMBKEYORDER[] = "KeyMapData_CheckCombKeyOrder";

@@ -152,6 +152,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->lockCheckBox->setText(tr(LOCKCHECKBOX_STR));
     ui->mappingKeyUnlockCheckBox->setText(tr(MAPPINGKEYUNLOCKCHECKBOX_STR));
     ui->disableOriginalKeyUnlockCheckBox->setText(tr("DisableOriKeyUnlock"));
+    ui->disableFnKeySwitchCheckBox->setText(tr("DisableFnKeySwitch"));
     ui->postMappingKeyCheckBox->setText(tr(POSTMAPPINGKEYCHECKBOX_STR));
     ui->checkCombKeyOrderCheckBox->setText(tr(CHECKCOMBKEYORDERCHECKBOX_STR));
     ui->unbreakableCheckBox->setText(tr(UNBREAKABLECHECKBOX_STR));
@@ -244,6 +245,7 @@ void QItemSetupDialog::resetFontSize()
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
     ui->disableOriginalKeyUnlockCheckBox->setFont(customFont);
+    ui->disableFnKeySwitchCheckBox->setFont(customFont);
     ui->postMappingKeyCheckBox->setFont(customFont);
     ui->checkCombKeyOrderCheckBox->setFont(customFont);
     ui->unbreakableCheckBox->setFont(customFont);
@@ -1031,6 +1033,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
         }
 
+        /* Load DisableFnKeySwitchCheckBox */
+        if (true == keymapdata.DisableFnKeySwitch) {
+            ui->disableFnKeySwitchCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableFnKeySwitchCheckBox->setChecked(false);
+        }
+
         /* Load PostMappingKey */
         if (true == keymapdata.PostMappingKey) {
             ui->postMappingKeyCheckBox->setChecked(true);
@@ -1483,6 +1493,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
         }
 
+        /* Load DisableFnKeySwitchCheckBox */
+        if (true == keymapdata.DisableFnKeySwitch) {
+            ui->disableFnKeySwitchCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableFnKeySwitchCheckBox->setChecked(false);
+        }
+
         /* Load PostMappingKey */
         if (true == keymapdata.PostMappingKey) {
             ui->postMappingKeyCheckBox->setChecked(true);
@@ -1820,6 +1838,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
         }
 
+        /* Load DisableFnKeySwitchCheckBox */
+        if (true == keymapdata.DisableFnKeySwitch) {
+            ui->disableFnKeySwitchCheckBox->setChecked(true);
+        }
+        else {
+            ui->disableFnKeySwitchCheckBox->setChecked(false);
+        }
+
         /* Load PostMappingKey */
         if (true == keymapdata.PostMappingKey) {
             ui->postMappingKeyCheckBox->setChecked(true);
@@ -2117,6 +2143,14 @@ void QItemSetupDialog::refreshAllRelatedUI()
     }
     else {
         ui->disableOriginalKeyUnlockCheckBox->setChecked(false);
+    }
+
+    /* Load DisableFnKeySwitchCheckBox */
+    if (true == keymapdata.DisableFnKeySwitch) {
+        ui->disableFnKeySwitchCheckBox->setChecked(true);
+    }
+    else {
+        ui->disableFnKeySwitchCheckBox->setChecked(false);
     }
 
     /* Load PostMappingKey */
@@ -2890,6 +2924,22 @@ void QItemSetupDialog::on_disableOriginalKeyUnlockCheckBox_stateChanged(int stat
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableOriginalKeyUnlock = disableoriginalkeyunlock;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableOriginalKeyUnlock -> " << disableoriginalkeyunlock;
+#endif
+    }
+}
+
+void QItemSetupDialog::on_disableFnKeySwitchCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool disablefnkeyswitch = ui->disableFnKeySwitchCheckBox->isChecked();
+    if (disablefnkeyswitch != QKeyMapper::KeyMappingDataList->at(m_ItemRow).DisableFnKeySwitch) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableFnKeySwitch = disablefnkeyswitch;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableFnKeySwitch -> " << disablefnkeyswitch;
 #endif
     }
 }
