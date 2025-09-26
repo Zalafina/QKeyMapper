@@ -1468,12 +1468,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
             }
-            else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                sendMouseMoveToPoint(key, postmappingkey);
-            }
-            else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
-                sendMousePointClick(key, KEY_UP, postmappingkey);
-            }
             else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
@@ -1577,6 +1571,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     qDebug().nospace().noquote() << "[sendInputKeys] postVirtualKeyCode(" << key << ") KeyUp -> " << QKeyMapper::s_last_HWNDList;
 #endif
                 }
+            }
+            else if (key.startsWith(FUNC_PREFIX)) {
+                /* Function KeyUp do nothing. */
+            }
+            else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
+                sendMouseMoveToPoint(key, postmappingkey);
+            }
+            else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
+                sendMousePointClick(key, KEY_UP, postmappingkey);
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -2123,28 +2126,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                 }
-                else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                    sendMouseMoveToPoint(key, postmappingkey);
-                }
-                else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
-                    int send_keyupdown = KEY_DOWN;
-                    if (sendtype == SENDTYPE_UP) {
-                        send_keyupdown = KEY_UP;
-                    }
-                    sendMousePointClick(key, send_keyupdown, postmappingkey);
-
-                    if (sendtype == SENDTYPE_BOTH) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait start ->" << key;
-#endif
-                        QThread::msleep(SENDTYPE_BOTH_WAITTIME);
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
-#endif
-                        send_keyupdown = KEY_UP;
-                        sendMousePointClick(key, send_keyupdown, postmappingkey);
-                    }
-                }
                 else if (true == QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
                     if (SENDTYPE_NORMAL == sendtype && true == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -2276,6 +2257,32 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             qDebug().nospace().noquote() << "[sendInputKeys] SENDTYPE_BOTH postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
 #endif
                         }
+                    }
+                }
+                else if (key.startsWith(FUNC_PREFIX)) {
+                    // Function KeyDown processing
+                    emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(key);
+                }
+                else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
+                    sendMouseMoveToPoint(key, postmappingkey);
+                }
+                else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
+                    int send_keyupdown = KEY_DOWN;
+                    if (sendtype == SENDTYPE_UP) {
+                        send_keyupdown = KEY_UP;
+                    }
+                    sendMousePointClick(key, send_keyupdown, postmappingkey);
+
+                    if (sendtype == SENDTYPE_BOTH) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait start ->" << key;
+#endif
+                        QThread::msleep(SENDTYPE_BOTH_WAITTIME);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
+#endif
+                        send_keyupdown = KEY_UP;
+                        sendMousePointClick(key, send_keyupdown, postmappingkey);
                     }
                 }
                 else {
@@ -7758,21 +7765,6 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
 #endif
                     returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
-                else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
-#ifdef DEBUG_LOGOUT_ON
-                    if (KEY_DOWN == keyupdown){
-                        qDebug() << "[InterceptionKeyboardHookProc]" << "Function KEY_DOWN ->" << firstmappingkey;
-                    }
-                    else {
-                        qDebug() << "[InterceptionKeyboardHookProc]" << "Function KEY_UP ->" << firstmappingkey;
-                    }
-#endif
-                    if (KEY_DOWN == keyupdown){
-                        emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
-                    }
-
-                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
-                }
                 else {
                     if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
                         if (KEY_DOWN == keyupdown){
@@ -8068,21 +8060,6 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
                         qDebug() << "[InterceptionMouseHookProc]" << "Real Mouse Button Up Blocked ->" << original_key;
                     }
 #endif
-                    returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
-                }
-                else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
-#ifdef DEBUG_LOGOUT_ON
-                    if (KEY_DOWN == keyupdown){
-                        qDebug() << "[InterceptionMouseHookProc]" << "Function KEY_DOWN ->" << firstmappingkey;
-                    }
-                    else {
-                        qDebug() << "[InterceptionMouseHookProc]" << "Function KEY_UP ->" << firstmappingkey;
-                    }
-#endif
-                    if (KEY_DOWN == keyupdown){
-                        emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
-                    }
-
                     returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else {
@@ -8690,21 +8667,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                             qDebug() << "[LowLevelKeyboardHookProc]" << "RealKey KEY_UP Blocked ->" << original_key;
                         }
 #endif
-                        returnFlag = true;
-                    }
-                    else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
-#ifdef DEBUG_LOGOUT_ON
-                        if (KEY_DOWN == keyupdown){
-                            qDebug() << "[LowLevelKeyboardHookProc]" << "Function KEY_DOWN ->" << firstmappingkey;
-                        }
-                        else {
-                            qDebug() << "[LowLevelKeyboardHookProc]" << "Function KEY_UP ->" << firstmappingkey;
-                        }
-#endif
-                        if (KEY_DOWN == keyupdown){
-                            emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
-                        }
-
                         returnFlag = true;
                     }
                     else {
@@ -9320,21 +9282,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                                 qDebug() << "[LowLevelMouseHookProc]" << "Real Mouse Button Up Blocked ->" << original_key;
                             }
 #endif
-                            returnFlag = true;
-                        }
-                        else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
-#ifdef DEBUG_LOGOUT_ON
-                            if (KEY_DOWN == keyupdown){
-                                qDebug() << "[LowLevelMouseHookProc]" << "Function KEY_DOWN ->" << firstmappingkey;
-                            }
-                            else {
-                                qDebug() << "[LowLevelMouseHookProc]" << "Function KEY_UP ->" << firstmappingkey;
-                            }
-#endif
-                            if (KEY_DOWN == keyupdown){
-                                emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
-                            }
-
                             returnFlag = true;
                         }
                         else {
@@ -10600,20 +10547,6 @@ void QKeyMapper_Worker::CombinationKeyProc(int rowindex, const QString &keycodeS
                 }
 #endif
                 return; // Block the combination key
-            }
-            else if (firstmappingkey.startsWith(FUNC_PREFIX) && mappingkeylist_size == 1) {
-#ifdef DEBUG_LOGOUT_ON
-                if (KEY_DOWN == keyupdown){
-                    qDebug() << "[CombinationKeyProc]" << "Function CombinationKey KEY_DOWN ->" << firstmappingkey;
-                }
-                else {
-                    qDebug() << "[CombinationKeyProc]" << "Function CombinationKey KEY_UP ->" << firstmappingkey;
-                }
-#endif
-                if (KEY_DOWN == keyupdown){
-                    emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(firstmappingkey);
-                }
-                return; // Function mapping handled
             }
 
             int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
@@ -13298,18 +13231,9 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << KEY2MOUSE_DOWN_STR
             << KEY2MOUSE_LEFT_STR
             << KEY2MOUSE_RIGHT_STR
-            << FUNC_REFRESH
-            << FUNC_LOCKSCREEN
-            << FUNC_SHUTDOWN
-            << FUNC_REBOOT
-            << FUNC_LOGOFF
-            << FUNC_SLEEP
-            << FUNC_HIBERNATE
             << MOUSE2VJOY_HOLD_KEY_STR
             << GYRO2MOUSE_HOLD_KEY_STR
             << GYRO2MOUSE_MOVE_KEY_STR
-            << CROSSHAIR_NORMAL_STR
-            << CROSSHAIR_TYPEA_STR
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
@@ -13320,14 +13244,17 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
 void QKeyMapper_Worker::initSpecialVirtualKeyCodeList()
 {
     SpecialVirtualKeyCodeList = QList<quint8>() \
+            << VK_GAMEPAD_HOME
+            << VK_CROSSHAIR_NORMAL
+            << VK_CROSSHAIR_TYPEA
+            << VK_GYRO2MOUSE_HOLD
+            << VK_GYRO2MOUSE_MOVE
+            << VK_MOUSE2VJOY_HOLD
             << VK_KEY2MOUSE_UP
             << VK_KEY2MOUSE_DOWN
             << VK_KEY2MOUSE_LEFT
             << VK_KEY2MOUSE_RIGHT
-            << VK_MOUSE2VJOY_HOLD
-            << VK_GAMEPAD_HOME
-            << VK_CROSSHAIR_NORMAL
-            << VK_CROSSHAIR_TYPEA
+            << VK_QKEYMAPPER_FN
             ;
 }
 

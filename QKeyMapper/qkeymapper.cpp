@@ -6184,10 +6184,6 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
         disable_sendtiming = true;
     }
-    else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)
-        || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(CROSSHAIR_PREFIX)) {
-        disable_sendtiming = true;
-    }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
         || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
         disable_sendtiming = true;
@@ -17672,14 +17668,6 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)) {
-                disable_burst = true;
-                // disable_lock = true;
-            }
-            else if (keymapdata.Mapping_Keys.constFirst().startsWith(FUNC_PREFIX)) {
-                disable_burst = true;
-                disable_lock = true;
-            }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
                 disable_burst = true;
                 // disable_lock = true;
@@ -17874,14 +17862,6 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_lock = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
-        disable_burst = true;
-        disable_lock = true;
-    }
-    else if (keymapdata.Mapping_Keys.constFirst().startsWith(CROSSHAIR_PREFIX)) {
-        disable_burst = true;
-        // disable_lock = true;
-    }
-    else if (keymapdata.Mapping_Keys.constFirst().startsWith(FUNC_PREFIX)) {
         disable_burst = true;
         disable_lock = true;
     }
@@ -20166,8 +20146,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             if (currentMapKeyText == KEY_BLOCKED_STR
                 || currentMapKeyText == KEYSEQUENCEBREAK_STR
                 || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
-                || currentMapKeyText.startsWith(CROSSHAIR_PREFIX)
-                || currentMapKeyText.startsWith(FUNC_PREFIX)
                 || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                 || currentMapKeyText == VJOY_LS_RADIUS_STR
@@ -20183,8 +20161,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
                     || keymapdata.Mapping_Keys.contains(KEYSEQUENCEBREAK_STR)
                     || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
-                    || keymapdata.Mapping_Keys.contains(CROSSHAIR_PREFIX)
-                    || keymapdata.Mapping_Keys.contains(FUNC_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(GYRO2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(VJOY_LS_RADIUS_STR)
@@ -20202,8 +20178,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (currentMapKeyText == KEY_BLOCKED_STR
                     || currentMapKeyText == KEYSEQUENCEBREAK_STR
                     || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
-                    || currentMapKeyText.startsWith(CROSSHAIR_PREFIX)
-                    || currentMapKeyText.startsWith(FUNC_PREFIX)
                     || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                     || currentMapKeyText == VJOY_LS_RADIUS_STR
