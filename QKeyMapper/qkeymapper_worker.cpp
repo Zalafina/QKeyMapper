@@ -1223,8 +1223,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (longpress && pressedLongPressKeysList.contains(original_key_holddown)) {
                     keyseqholddown_skip = true;
                 }
-                else if (doublepress && pressedDoublePressKeysList.contains(original_key_holddown)) {
-                    keyseqholddown_skip = true;
+                else if (doublepress) {
+                    static QRegularExpression doublepress_regex(R"(^(.+✖)(\d+)$)");
+                    QRegularExpressionMatch doublepress_match = doublepress_regex.match(original_key_holddown);
+                    if (doublepress_match.hasMatch()) {
+                        QString original_doublepress_key = doublepress_match.captured(1);
+                        if (pressedDoublePressKeysList.contains(original_doublepress_key)) {
+                            keyseqholddown_skip = true;
+                        }
+                    }
                 }
                 else if (multi_input && pressedRealKeysList.contains(original_key_holddown)) {
                     keyseqholddown_skip = true;
