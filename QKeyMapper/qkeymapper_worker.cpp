@@ -1214,33 +1214,48 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QRegularExpressionMatch match = regex.match(original_key);
             if (match.hasMatch()) {
                 QString original_key_holddown = match.captured(1);
-                if (original_key_holddown.contains('@')) {
-                    if (pressedRealKeysList.contains(original_key_holddown)) {
-#ifdef DEBUG_LOGOUT_ON
-                        /* \033[1;34m (Blue Bold Text) \033[0m */
-                        /* \033[34m (Blue Text) */
-                        /* \033[31m (Red Text) */
-                        /* \033[32m (Green Text) */
-                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] MultiInput KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
-#endif
-                        /* return for KeySequenceHoldDown to skip KeyUp of last mappingkey. */
-                        return;
-                    }
+
+                bool longpress      = original_key_holddown.contains(SEPARATOR_LONGPRESS);
+                bool doublepress    = original_key_holddown.contains(SEPARATOR_DOUBLEPRESS);
+                bool multi_input    = original_key_holddown.contains('@');
+                bool keyseqholddown_skip = false;
+
+                if (longpress && pressedLongPressKeysList.contains(original_key_holddown)) {
+                    keyseqholddown_skip = true;
                 }
-                else {
-                    if (pressedRealKeysListRemoveMultiInput.contains(original_key_holddown)) {
-#ifdef DEBUG_LOGOUT_ON
-                        /* \033[1;34m (Blue Bold Text) \033[0m */
-                        /* \033[34m (Blue Text) */
-                        /* \033[31m (Red Text) */
-                        /* \033[32m (Green Text) */
-                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
-#endif
-                        /* return for KeySequenceHoldDown to skip KeyUp of last mappingkey. */
-                        return;
-                    }
+                else if (doublepress && pressedDoublePressKeysList.contains(original_key_holddown)) {
+                    keyseqholddown_skip = true;
+                }
+                else if (multi_input && pressedRealKeysList.contains(original_key_holddown)) {
+                    keyseqholddown_skip = true;
+                }
+                else if (pressedRealKeysListRemoveMultiInput.contains(original_key_holddown)) {
+                    keyseqholddown_skip = true;
                 }
 
+                if (keyseqholddown_skip) {
+#ifdef DEBUG_LOGOUT_ON
+                    /* \033[1;34m (Blue Bold Text) \033[0m */
+                    /* \033[34m (Blue Text) */
+                    /* \033[31m (Red Text) */
+                    /* \033[32m (Green Text) */
+
+                    if (longpress) {
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] LongPress KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedLongPressKeysList -> " << pressedLongPressKeysList << "\033[0m";
+                    }
+                    else if (doublepress) {
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] DoublePress KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedDoublePressKeysList -> " << pressedDoublePressKeysList << "\033[0m";
+                    }
+                    else if (multi_input) {
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] MultiInput KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
+                    }
+                    else {
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysListRemoveMultiInput -> " << pressedRealKeysListRemoveMultiInput << "\033[0m";
+                    }
+#endif
+                    /* return for KeySequenceHoldDown to skip KeyUp of last mappingkey. */
+                    return;
+                }
             }
         }
         /* Add for KeySequenceHoldDown <<< */
