@@ -8356,7 +8356,7 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
 
         // Helper function to check process matching
         auto checkProcessMatch = [&]() -> bool {
-            if (processpath.isEmpty() || processNameString.isEmpty()) {
+            if (processNameString.isEmpty()) {
                 return false;
             }
 
@@ -8387,7 +8387,7 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
 
         // Helper function to check window title matching
         auto checkWindowTitleMatch = [&]() -> bool {
-            if (windowtitle.isEmpty() || windowTitleString.isEmpty()) {
+            if (windowTitleString.isEmpty()) {
                 return false;
             }
 
