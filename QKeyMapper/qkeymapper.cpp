@@ -1059,8 +1059,16 @@ void QKeyMapper::matchForegroundWindow()
         }
 
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
-        if (resultLength){
-            windowTitle = QString::fromWCharArray(titleBuffer);
+        if (resultLength >= 0){
+            if (resultLength == 0) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[matchForegroundWindow]" << "GetWindowText resultLength = 0";
+#endif
+            }
+
+            if (resultLength) {
+                windowTitle = QString::fromWCharArray(titleBuffer);
+            }
             getProcessInfoFromHWND( hwnd, ProcessPath);
 
             if (ProcessPath.isEmpty()) {
@@ -1070,13 +1078,17 @@ void QKeyMapper::matchForegroundWindow()
                     getProcessInfoFromHWND( hwnd, ProcessPath);
                 }
                 else {
+#ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[matchForegroundWindow]" << "getProcessInfoFromHWND EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+#endif
                 }
                 adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
 
+#ifdef DEBUG_LOGOUT_ON
                 if (!adjust_priv) {
                     qDebug() << "[matchForegroundWindow]" << "getProcessInfoFromHWND DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
                 }
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
                 if (ProcessPath.isEmpty()) {
@@ -1091,8 +1103,7 @@ void QKeyMapper::matchForegroundWindow()
             if (ProcessPath.isEmpty()) {
                 ProcessPath = PROCESS_UNKNOWN;
             }
-
-            if (false == windowTitle.isEmpty()){
+            else {
                 QFileInfo fileinfo(ProcessPath);
                 filename = fileinfo.fileName();
                 processName = ProcessPath;
