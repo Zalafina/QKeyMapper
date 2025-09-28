@@ -1062,7 +1062,7 @@ void QKeyMapper::matchForegroundWindow()
         if (resultLength >= 0){
 #ifdef DEBUG_LOGOUT_ON
             if (resultLength == 0) {
-                qDebug() << "[matchForegroundWindow]" << "GetWindowText resultLength = 0";
+                qDebug() << "[matchForegroundWindow]" << "GetWindowText resultLength = 0 (the window maybe has no title bar)";
             }
 #endif
 
@@ -3075,13 +3075,15 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
     if (event == EVENT_SYSTEM_FOREGROUND) {
 #ifdef DEBUG_LOGOUT_ON
         QString windowTitle;
+        QString ProcessPath;
         TCHAR titleBuffer[MAX_PATH];
         memset(titleBuffer, 0x00, sizeof(titleBuffer));
 
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
-        if (resultLength){
+        if (resultLength >= 0){
             windowTitle = QString::fromWCharArray(titleBuffer);
-            qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << "\033[0m";
+            getProcessInfoFromHWND( hwnd, ProcessPath);
+            qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << ", ProcessPath(" << ProcessPath << ")\033[0m";
         }
 #endif
 
