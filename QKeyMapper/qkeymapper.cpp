@@ -1060,11 +1060,11 @@ void QKeyMapper::matchForegroundWindow()
 
         int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
         if (resultLength >= 0){
-            if (resultLength == 0) {
 #ifdef DEBUG_LOGOUT_ON
+            if (resultLength == 0) {
                 qDebug() << "[matchForegroundWindow]" << "GetWindowText resultLength = 0";
-#endif
             }
+#endif
 
             if (resultLength) {
                 windowTitle = QString::fromWCharArray(titleBuffer);
