@@ -1040,8 +1040,6 @@ void QKeyMapper::matchForegroundWindow()
         QString filename;
         QString ProcessPath;
         HWND hwnd = GetForegroundWindow();
-        TCHAR titleBuffer[MAX_PATH];
-        memset(titleBuffer, 0x00, sizeof(titleBuffer));
         QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
         Q_UNUSED(keymapstatusEnum);
 
@@ -1058,176 +1056,175 @@ void QKeyMapper::matchForegroundWindow()
             matchResult = MatchResult::SendToSameWindows;
         }
 
-        int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
-        if (resultLength >= 0){
-#ifdef DEBUG_LOGOUT_ON
-            if (resultLength == 0) {
-                qDebug() << "[matchForegroundWindow]" << "GetWindowText resultLength = 0 (the window maybe has no title bar)";
+        // Optimize GetWindowText call by checking window text length first
+        int titleLength = GetWindowTextLength(hwnd);
+        if (titleLength > 0) {
+            // Allocate buffer with exact size needed instead of fixed MAX_PATH
+            std::wstring titleString(titleLength, L'\0');
+            int resultLength = GetWindowTextW(hwnd, &titleString[0], titleLength + 1);
+            if (resultLength > 0) {
+                windowTitle = QString::fromStdWString(titleString);
             }
-#endif
+        }
 
-            if (resultLength) {
-                windowTitle = QString::fromWCharArray(titleBuffer);
-            }
-            getProcessInfoFromHWND( hwnd, ProcessPath);
+        getProcessInfoFromHWND( hwnd, ProcessPath);
 
-            if (ProcessPath.isEmpty()) {
-                bool adjust_priv;
-                adjust_priv = EnablePrivilege(SE_DEBUG_NAME);
-                if (adjust_priv) {
-                    getProcessInfoFromHWND( hwnd, ProcessPath);
-                }
-                else {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[matchForegroundWindow]" << "getProcessInfoFromHWND EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
-#endif
-                }
-                adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
-
-#ifdef DEBUG_LOGOUT_ON
-                if (!adjust_priv) {
-                    qDebug() << "[matchForegroundWindow]" << "getProcessInfoFromHWND DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
-                }
-#endif
-
-#ifdef DEBUG_LOGOUT_ON
-                if (ProcessPath.isEmpty()) {
-                    qDebug().nospace().noquote() << "[matchForegroundWindow] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromHWND Failed!";
-                }
-                else {
-                    qDebug().nospace().noquote() << "[matchForegroundWindow] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromHWND Success -> " << ProcessPath;
-                }
-#endif
-            }
-
-            if (ProcessPath.isEmpty()) {
-                ProcessPath = PROCESS_UNKNOWN;
+        if (ProcessPath.isEmpty()) {
+            bool adjust_priv;
+            adjust_priv = EnablePrivilege(SE_DEBUG_NAME);
+            if (adjust_priv) {
+                getProcessInfoFromHWND( hwnd, ProcessPath);
             }
             else {
-                QFileInfo fileinfo(ProcessPath);
-                filename = fileinfo.fileName();
-                processName = ProcessPath;
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[matchForegroundWindow]" << "getProcessInfoFromHWND EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+#endif
+            }
+            adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+
+#ifdef DEBUG_LOGOUT_ON
+            if (!adjust_priv) {
+                qDebug() << "[matchForegroundWindow]" << "getProcessInfoFromHWND DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+            }
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+            if (ProcessPath.isEmpty()) {
+                qDebug().nospace().noquote() << "[matchForegroundWindow] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromHWND Failed!";
+            }
+            else {
+                qDebug().nospace().noquote() << "[matchForegroundWindow] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromHWND Success -> " << ProcessPath;
+            }
+#endif
+        }
+
+        if (ProcessPath.isEmpty()) {
+            ProcessPath = PROCESS_UNKNOWN;
+        }
+        else {
+            QFileInfo fileinfo(ProcessPath);
+            filename = fileinfo.fileName();
+            processName = ProcessPath;
+        }
+
+        if (!processName.isEmpty()) {
+            QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle);
+
+            if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
+                QString curSettingSelectStr;
+                int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+                if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+                    curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote().nospace() << "[matchForegroundWindow]" << "Need to load setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+                }
+                if (curSettingSelectStr != autoMatchSettingGroup) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[matchForegroundWindow] "<< "Setting Check Matched! Load setting -> [" << autoMatchSettingGroup << "]";
+#endif
+                    loadSetting_flag = true;
+                    QString loadresult = loadKeyMapSetting(autoMatchSettingGroup);
+                    ui->settingNameLineEdit->setText(loadresult);
+                    Q_UNUSED(loadresult)
+                    loadSetting_flag = false;
+
+                    matchProcessIndex = ui->checkProcessComboBox->currentIndex();
+                    matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+                    matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
+                    matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
+                }
+                else {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[matchForegroundWindow]" << "Current setting select is already the same ->" << curSettingSelectStr;
+#endif
+                }
+
+                // Record this as the last auto matched setting
+                recordLastAutoMatchedSetting(autoMatchSettingGroup);
             }
 
-            if (!processName.isEmpty()) {
-                QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle);
+            // Perform matching logic based on ComboBox selection
+            bool processMatched = false;
+            bool windowTitleMatched = false;
 
-                if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
-                    QString curSettingSelectStr;
-                    int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
-                    if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
-                        curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
-                    }
-                    else {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().noquote().nospace() << "[matchForegroundWindow]" << "Need to load setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
-#endif
-                    }
-                    if (curSettingSelectStr != autoMatchSettingGroup) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "[matchForegroundWindow] "<< "Setting Check Matched! Load setting -> [" << autoMatchSettingGroup << "]";
-#endif
-                        loadSetting_flag = true;
-                        QString loadresult = loadKeyMapSetting(autoMatchSettingGroup);
-                        ui->settingNameLineEdit->setText(loadresult);
-                        Q_UNUSED(loadresult)
-                        loadSetting_flag = false;
-
-                        matchProcessIndex = ui->checkProcessComboBox->currentIndex();
-                        matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
-                        matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
-                        matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
-                    }
-                    else {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[matchForegroundWindow]" << "Current setting select is already the same ->" << curSettingSelectStr;
-#endif
-                    }
-
-                    // Record this as the last auto matched setting
-                    recordLastAutoMatchedSetting(autoMatchSettingGroup);
+            // Check for process name match
+            if (matchProcess) {
+                if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                    processMatched = (m_MapProcessInfo.FileName == processName);
                 }
-
-                // Perform matching logic based on ComboBox selection
-                bool processMatched = false;
-                bool windowTitleMatched = false;
-
-                // Check for process name match
-                if (matchProcess) {
-                    if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
-                        processMatched = (m_MapProcessInfo.FileName == processName);
-                    }
-                    else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
-                        processMatched = processName.contains(m_MapProcessInfo.FileName);
-                    }
-                    else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
-                        processMatched = processName.startsWith(m_MapProcessInfo.FileName);
-                    }
-                    else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
-                        processMatched = processName.endsWith(m_MapProcessInfo.FileName);
-                    }
-                    else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
-                        // Create regex pattern from user input
-                        QRegularExpression regex(m_MapProcessInfo.FileName);
-                        if (regex.isValid()) {
-                            processMatched = regex.match(processName).hasMatch();
-                        } else {
-                            // Invalid regex pattern, no match
-                            processMatched = false;
-                        }
+                else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                    processMatched = processName.contains(m_MapProcessInfo.FileName);
+                }
+                else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                    processMatched = processName.startsWith(m_MapProcessInfo.FileName);
+                }
+                else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                    processMatched = processName.endsWith(m_MapProcessInfo.FileName);
+                }
+                else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                    // Create regex pattern from user input
+                    QRegularExpression regex(m_MapProcessInfo.FileName);
+                    if (regex.isValid()) {
+                        processMatched = regex.match(processName).hasMatch();
+                    } else {
+                        // Invalid regex pattern, no match
+                        processMatched = false;
                     }
                 }
-                else {
-                    processMatched = true; // Treat as matched if process name check is ignored
-                }
+            }
+            else {
+                processMatched = true; // Treat as matched if process name check is ignored
+            }
 
-                // Check for window title match
-                if (matchWindowTitle) {
-                    if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
-                        windowTitleMatched = (m_MapProcessInfo.WindowTitle == windowTitle);
-                    }
-                    else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
-                        windowTitleMatched = windowTitle.contains(m_MapProcessInfo.WindowTitle);
-                    }
-                    else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
-                        windowTitleMatched = windowTitle.startsWith(m_MapProcessInfo.WindowTitle);
-                    }
-                    else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
-                        windowTitleMatched = windowTitle.endsWith(m_MapProcessInfo.WindowTitle);
-                    }
-                    else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
-                        // Create regex pattern from user input
-                        QRegularExpression regex(m_MapProcessInfo.WindowTitle);
-                        if (regex.isValid()) {
-                            windowTitleMatched = regex.match(windowTitle).hasMatch();
-                        } else {
-                            // Invalid regex pattern, no match
-                            windowTitleMatched = false;
-                        }
+            // Check for window title match
+            if (matchWindowTitle) {
+                if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                    windowTitleMatched = (m_MapProcessInfo.WindowTitle == windowTitle);
+                }
+                else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                    windowTitleMatched = windowTitle.contains(m_MapProcessInfo.WindowTitle);
+                }
+                else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                    windowTitleMatched = windowTitle.startsWith(m_MapProcessInfo.WindowTitle);
+                }
+                else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                    windowTitleMatched = windowTitle.endsWith(m_MapProcessInfo.WindowTitle);
+                }
+                else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                    // Create regex pattern from user input
+                    QRegularExpression regex(m_MapProcessInfo.WindowTitle);
+                    if (regex.isValid()) {
+                        windowTitleMatched = regex.match(windowTitle).hasMatch();
+                    } else {
+                        // Invalid regex pattern, no match
+                        windowTitleMatched = false;
                     }
                 }
-                else {
-                    windowTitleMatched = true; // Treat as matched if window title check is ignored
-                }
+            }
+            else {
+                windowTitleMatched = true; // Treat as matched if window title check is ignored
+            }
 
-                // Set matchResult based on the matching outcome
-                if (matchProcess && matchWindowTitle) {
-                    // Check both process name and window title
-                    if (processMatched && windowTitleMatched) {
-                        matchResult = MatchResult::ProcessMatched;
-                    }
+            // Set matchResult based on the matching outcome
+            if (matchProcess && matchWindowTitle) {
+                // Check both process name and window title
+                if (processMatched && windowTitleMatched) {
+                    matchResult = MatchResult::ProcessMatched;
                 }
-                else if (matchProcess) {
-                    // Check process name only
-                    if (processMatched) {
-                        matchResult = MatchResult::ProcessMatched;
-                    }
+            }
+            else if (matchProcess) {
+                // Check process name only
+                if (processMatched) {
+                    matchResult = MatchResult::ProcessMatched;
                 }
-                else if (matchWindowTitle) {
-                    // Check window title only
-                    if (windowTitleMatched) {
-                        matchResult = MatchResult::ProcessMatched;
-                    }
+            }
+            else if (matchWindowTitle) {
+                // Check window title only
+                if (windowTitleMatched) {
+                    matchResult = MatchResult::ProcessMatched;
                 }
             }
         }
@@ -2665,9 +2662,9 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     Q_UNUSED(lParam);
 
     DWORD dwProcessId = 0;
-    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    DWORD tid = GetWindowThreadProcessId(hWnd, &dwProcessId);
 
-    if(FALSE == IsWindowVisible(hWnd)){
+    if(!IsWindow(hWnd) || !IsWindowVisible(hWnd)){
 //#ifdef DEBUG_LOGOUT_ON
 //        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(Invisible window)" << " [PID:" << dwProcessId <<"]";
 //#endif
@@ -2675,14 +2672,22 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     }
 
     QString WindowText;
+    QString processName;
     QString ProcessPath;
     QString filename;
-    TCHAR titleBuffer[MAX_PATH] = TEXT("");
-    memset(titleBuffer, 0x00, sizeof(titleBuffer));
 
-    int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
-    if (resultLength){
-        WindowText = QString::fromWCharArray(titleBuffer);
+    // Optimize GetWindowText call by checking window text length first
+    int titleLength = GetWindowTextLength(hWnd);
+    if (titleLength > 0) {
+        // Allocate buffer with exact size needed instead of fixed MAX_PATH
+        std::wstring titleString(titleLength, L'\0');
+        int resultLength = GetWindowTextW(hWnd, &titleString[0], titleLength + 1);
+        if (resultLength > 0) {
+            WindowText = QString::fromStdWString(titleString);
+        }
+    }
+
+    if (tid != 0 && dwProcessId != 0 ) {
         getProcessInfoFromPID(dwProcessId, ProcessPath);
 
         if (ProcessPath.isEmpty()) {
@@ -2712,12 +2717,14 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
         if (ProcessPath.isEmpty()) {
             ProcessPath = PROCESS_UNKNOWN;
         }
-
-        if (false == WindowText.isEmpty()){
-            MAP_PROCESSINFO ProcessInfo;
+        else {
             QFileInfo fileinfo(ProcessPath);
             filename = fileinfo.fileName();
+            processName = ProcessPath;
+        }
 
+        if (!processName.isEmpty()) {
+            MAP_PROCESSINFO ProcessInfo;
             ProcessInfo.FileName = filename;
             ProcessInfo.PID = QString::number(dwProcessId);
             ProcessInfo.WindowTitle = WindowText;
@@ -2779,7 +2786,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
         }
         else{
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(ProcessPath empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
+            qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(processName empty)" << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << ")";
 #endif
         }
     }
@@ -2938,23 +2945,16 @@ BOOL QKeyMapper::EnumWindowsBgProc(HWND hWnd, LPARAM lParam)
 {
     Q_UNUSED(lParam);
 
-    if(FALSE == IsWindowVisible(hWnd)){
+    if(!IsWindow(hWnd) || !IsWindowVisible(hWnd)){
         return TRUE;
     }
 
-    TCHAR titleBuffer[MAX_PATH] = TEXT("");
-    memset(titleBuffer, 0x00, sizeof(titleBuffer));
-
-    int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
-    if (resultLength){
-        QString WindowText = QString::fromWCharArray(titleBuffer);
-        collectWindowsHWND(WindowText, hWnd);
-    }
+    collectWindowsHWND(hWnd);
 
     return TRUE;
 }
 
-void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
+void QKeyMapper::collectWindowsHWND(HWND hWnd)
 {
     QString processNameString = QKeyMapper::getInstance()->m_MapProcessInfo.FileName;
     QString windowTitleString = QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle;
@@ -2967,9 +2967,22 @@ void QKeyMapper::collectWindowsHWND(const QString &WindowText, HWND hWnd)
         return;
     }
 
-    if (false == WindowText.isEmpty()){
-        DWORD dwProcessId = 0;
-        GetWindowThreadProcessId(hWnd, &dwProcessId);
+    QString WindowText;
+    // Optimize GetWindowText call by checking window text length first
+    int titleLength = GetWindowTextLength(hWnd);
+    if (titleLength > 0) {
+        // Allocate buffer with exact size needed instead of fixed MAX_PATH
+        std::wstring titleString(titleLength, L'\0');
+        int resultLength = GetWindowTextW(hWnd, &titleString[0], titleLength + 1);
+        if (resultLength > 0) {
+            WindowText = QString::fromStdWString(titleString);
+        }
+    }
+
+    DWORD dwProcessId = 0;
+    DWORD tid = GetWindowThreadProcessId(hWnd, &dwProcessId);
+
+    if (tid != 0 && dwProcessId != 0) {
         QString processPath = getProcessPathFromPID(dwProcessId);
 
         // Perform matching logic based on ComboBox selection
@@ -3076,15 +3089,20 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
 #ifdef DEBUG_LOGOUT_ON
         QString windowTitle;
         QString ProcessPath;
-        TCHAR titleBuffer[MAX_PATH];
-        memset(titleBuffer, 0x00, sizeof(titleBuffer));
 
-        int resultLength = GetWindowText(hwnd, titleBuffer, MAX_PATH);
-        if (resultLength >= 0){
-            windowTitle = QString::fromWCharArray(titleBuffer);
-            getProcessInfoFromHWND( hwnd, ProcessPath);
-            qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << ", ProcessPath(" << ProcessPath << ")\033[0m";
+        // Optimize GetWindowText call by checking window text length first
+        int titleLength = GetWindowTextLength(hwnd);
+        if (titleLength > 0) {
+            // Allocate buffer with exact size needed instead of fixed MAX_PATH
+            std::wstring titleString(titleLength, L'\0');
+            int resultLength = GetWindowTextW(hwnd, &titleString[0], titleLength + 1);
+            if (resultLength > 0) {
+                windowTitle = QString::fromStdWString(titleString);
+            }
         }
+
+        getProcessInfoFromHWND( hwnd, ProcessPath);
+        qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << ", ProcessPath(" << ProcessPath << ")\033[0m";
 #endif
 
         getInstance()->matchForegroundWindow();
@@ -4200,12 +4218,21 @@ void QKeyMapper::EnumProcessFunction(void)
             filename = QString::fromWCharArray(pe32.szExeFile);
 
             DWORD dwProcessId = pe32.th32ProcessID;
-            TCHAR titleBuffer[MAX_PATH] = TEXT("");
-            memset(titleBuffer, 0x00, sizeof(titleBuffer));
 
-            int resultLength = GetWindowText(hWnd, titleBuffer, MAX_PATH);
-            if (resultLength){
-                WindowText = QString::fromWCharArray(titleBuffer);
+            // Optimize GetWindowText call by checking window text length first
+            if (hWnd) {
+                int titleLength = GetWindowTextLength(hWnd);
+                if (titleLength > 0) {
+                    // Allocate buffer with exact size needed instead of fixed MAX_PATH
+                    std::wstring titleString(titleLength, L'\0');
+                    int resultLength = GetWindowTextW(hWnd, &titleString[0], titleLength + 1);
+                    if (resultLength > 0) {
+                        WindowText = QString::fromStdWString(titleString);
+                    }
+                }
+            }
+
+            if (!WindowText.isEmpty()) {
 
                 if ((false == WindowText.isEmpty())
                         && (false == ProcessPath.isEmpty())){
