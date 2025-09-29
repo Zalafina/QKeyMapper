@@ -9919,6 +9919,12 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                 QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
                 move(startup_specify_position);
             }
+            else {  /* startup_position == STARTUP_POSITION_DEFAULT */
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[loadKeyMapSetting]" << "STARTUP_POSITION_DEFAULT pos() ->" << pos();
+#endif
+                move(pos());
+            }
         }
 
         if (true == settingFile.contains(LANGUAGE_INDEX)){
