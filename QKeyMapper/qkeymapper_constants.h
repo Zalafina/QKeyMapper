@@ -953,6 +953,8 @@ namespace QKeyMapperConstants {
     inline const QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
 #endif
 
+    inline constexpr const char REGEX_STRING_EMPTYSTRING[] = "^$";
+
     inline constexpr const char REGEX_PATTERN_NORMALHOTKEY[] = R"(^(\$)?(.+)$)";
 
     inline constexpr const char REGEX_PATTERN_TABHOTKEY[] = R"(^(\$)?(💾)?(.+)$)";

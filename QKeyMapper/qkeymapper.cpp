@@ -19893,6 +19893,12 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->settingNameLineEdit->setText(windowTitle);
+            if (windowTitle.isEmpty()) {
+                QString processName = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
+                if (!processName.isEmpty()) {
+                    ui->settingNameLineEdit->setText(processName);
+                }
+            }
         }
         else {
             QString curSettingSelectStr;
@@ -20055,8 +20061,12 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
         ui->processLineEdit->setToolTip(ProcessPath);
 
-        ui->processLineEdit->setText(ProcessPath);
+        if (windowTitle.isEmpty()) {
+            windowTitle = REGEX_STRING_EMPTYSTRING;
+            ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_REGEXMATCH);
+        }
         ui->windowTitleLineEdit->setText(windowTitle);
+        ui->processLineEdit->setText(ProcessPath);
 
         if (ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
             ui->settingNameLineEdit->setReadOnly(false);
