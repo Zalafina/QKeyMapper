@@ -1032,7 +1032,7 @@ void QKeyMapper::matchForegroundWindow()
         enum class MatchResult {
             NoMatch = 0,            // NoMatch,              same as checkresult = 0
             ProcessMatched = 1,     // ProcessMatched，      same as checkresult = 1
-            IgnoreBothChecks = 2,   // IgnoreBothChecks,     same as checkresult = 2
+            IgnoreAllChecks = 2,   // IgnoreAllChecks,     same as checkresult = 2
             SendToSameWindows = 3   // SendToSameWindows,    same as checkresult = 3
         };
 
@@ -1054,7 +1054,7 @@ void QKeyMapper::matchForegroundWindow()
         bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
 
         if (!matchProcess && !matchWindowTitle && !matchClassName) {
-            matchResult = MatchResult::IgnoreBothChecks;
+            matchResult = MatchResult::IgnoreAllChecks;
         }
         else if (getSendToSameTitleWindowsStatus()
             && matchWindowTitle){
@@ -1294,7 +1294,7 @@ void QKeyMapper::matchForegroundWindow()
 
         bool GlobalMappingFlag = false;
         if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-            && matchResult == MatchResult::IgnoreBothChecks) {
+            && matchResult == MatchResult::IgnoreAllChecks) {
             GlobalMappingFlag = true;
         }
 
@@ -1353,7 +1353,7 @@ void QKeyMapper::matchForegroundWindow()
                     }
 
                     playStartSound();
-                    if (matchResult == MatchResult::IgnoreBothChecks || matchResult == MatchResult::SendToSameWindows) {
+                    if (matchResult == MatchResult::IgnoreAllChecks || matchResult == MatchResult::SendToSameWindows) {
                         setKeyHook(NULL);
                     }
                     else {
@@ -1423,18 +1423,20 @@ void QKeyMapper::matchForegroundWindow()
                                 // Check if both checks should be ignored for new settings
                                 int newMatchProcessIndex = ui->checkProcessComboBox->currentIndex();
                                 int newMatchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+                                int newMatchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
                                 bool newMatchProcess = (newMatchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
                                 bool newMatchWindowTitle = (newMatchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
+                                bool newMatchClassName = (newMatchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
 
-                                if (!newMatchProcess && !newMatchWindowTitle) {
-                                    newMatchResult = MatchResult::IgnoreBothChecks;
+                                if (!newMatchProcess && !newMatchWindowTitle && !newMatchClassName) {
+                                    newMatchResult = MatchResult::IgnoreAllChecks;
                                 } else if (getSendToSameTitleWindowsStatus() && newMatchWindowTitle) {
                                     newMatchResult = MatchResult::SendToSameWindows;
                                 }
 
                                 // Update hook to new window but keep mapping status
                                 playStartSound();
-                                if (newMatchResult == MatchResult::IgnoreBothChecks || newMatchResult == MatchResult::SendToSameWindows) {
+                                if (newMatchResult == MatchResult::IgnoreAllChecks || newMatchResult == MatchResult::SendToSameWindows) {
                                     setKeyHook(NULL);
                                 } else {
                                     setKeyHook(hwnd);
@@ -8421,7 +8423,7 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
 
     // Store candidates for priority-based matching (lower priority stored as fallback)
     // Priority order: 1=All(P+W+C), 2=P+W, 3=P+C, 4=W+C, 5=P, 6=W, 7=C
-    QString priority1Match;  // process + windowTitle + className
+    // QString priority1Match;  // process + windowTitle + className
     QString priority2Match;  // process + windowTitle
     QString priority3Match;  // process + className
     QString priority4Match;  // windowTitle + className
@@ -8685,7 +8687,7 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
 
     // Store candidates for priority-based matching (lower priority stored as fallback)
     // Priority order: 1=All(P+W+C)Exact, 2=All(P+W+C)Contains, 3=(P+W)Exact, 4=(P+W)Contains, 5=(P+C), 6=(W+C), 7=P, 8=W, 9=C
-    QString priority1Match;  // processpath(exact) + windowtitle(exact) + classname(exact)
+    // QString priority1Match;  // processpath(exact) + windowtitle(exact) + classname(exact)
     QString priority2Match;  // processpath(exact) + windowtitle(contains) + classname(exact)
     QString priority3Match;  // processpath(exact) + windowtitle(exact)
     QString priority4Match;  // processpath(exact) + windowtitle(contains)
