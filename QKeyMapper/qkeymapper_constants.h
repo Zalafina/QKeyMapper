@@ -26,7 +26,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
-    inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 3;
+    inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
     inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 5;
 
     inline constexpr int INITIAL_WINDOW_POSITION = -10000;
@@ -34,8 +34,10 @@ namespace QKeyMapperConstants {
     inline constexpr int PROCESS_NAME_COLUMN = 0;
     inline constexpr int PROCESS_PID_COLUMN = 1;
     inline constexpr int PROCESS_TITLE_COLUMN = 2;
+    inline constexpr int PROCESS_CLASS_COLUMN = 3;
 
-    inline constexpr int PROCESS_NAME_COLUMN_WIDTH_MAX = 200;
+    inline constexpr int PROCESS_NAME_COLUMN_WIDTH_MAX = 120;
+    inline constexpr int CLASS_NAME_COLUMN_WIDTH_MAX = 80;
 
     inline constexpr int ORIGINAL_KEY_COLUMN = 0;
     inline constexpr int MAPPING_KEY_COLUMN = 1;

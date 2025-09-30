@@ -115,6 +115,7 @@ typedef struct
     QString FileName;
     QString PID;
     QString WindowTitle;
+    QString ClassName;
     QString FilePath;
     QIcon   WindowIcon;
 }MAP_PROCESSINFO;
@@ -807,7 +808,7 @@ public:
     void startWinEventHook(void);
     void stopWinEventHook(void);
 
-    void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon);
+    void setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &classname, const QString &pid, const QString &filepath, const QIcon &windowicon);
 
     QPushButton* getOriListSelectKeyboardButton(void) const;
     QPushButton* getOriListSelectMouseButton(void) const;
@@ -1246,7 +1247,7 @@ private:
     void initWindowInfoMatchComboBoxes(void);
     void initSettingBackupActionPopup(void);
     void updateSysTrayIconMenuText(void);
-    void refreshProcessInfoTable(void);
+    void refreshProcessInfoTable(bool resize = true);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void showQKeyMapperWindowToTop(void);

@@ -1505,7 +1505,7 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
     updateHWNDListProc();
 
     if (false == isHidden()){
-        refreshProcessInfoTable();
+        refreshProcessInfoTable(false);
         initInputDeviceSelectComboBoxes();
     }
 }
@@ -1653,16 +1653,16 @@ void QKeyMapper::stopWinEventHook()
     }
 }
 
-void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &pid, const QString &filepath, const QIcon &windowicon)
+void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windowtitle, const QString &classname, const QString &pid, const QString &filepath, const QIcon &windowicon)
 {
     m_MapProcessInfo.PID = pid;
     m_MapProcessInfo.FilePath = filepath;
+    m_MapProcessInfo.WindowTitle = windowtitle;
+    m_MapProcessInfo.ClassName = classname;
 
     if ((false == filename.isEmpty())
-            && (false == windowtitle.isEmpty())
             && (false == windowicon.isNull())){
         m_MapProcessInfo.FileName = filename;
-        m_MapProcessInfo.WindowTitle = windowtitle;
         m_MapProcessInfo.WindowIcon = windowicon;
     }
     else{
@@ -2675,6 +2675,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     QString processName;
     QString ProcessPath;
     QString filename;
+    QString className;
 
     // Optimize GetWindowText call by checking window text length first
     int titleLength = GetWindowTextLength(hWnd);
@@ -2689,6 +2690,13 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 
     if (tid != 0 && dwProcessId != 0 ) {
         getProcessInfoFromPID(dwProcessId, ProcessPath);
+
+        TCHAR classNameBuffer[MAX_PATH];
+        memset(classNameBuffer, 0x00, sizeof(classNameBuffer));
+        int classLength = GetClassName(hWnd, classNameBuffer, MAX_PATH);
+        if (classLength){
+            className = QString::fromWCharArray(classNameBuffer);
+        }
 
         if (ProcessPath.isEmpty()) {
             bool adjust_priv;
@@ -2729,6 +2737,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             ProcessInfo.PID = QString::number(dwProcessId);
             ProcessInfo.WindowTitle = WindowText;
             ProcessInfo.FilePath = ProcessPath;
+            ProcessInfo.ClassName = className;
 
             QIcon fileicon;
             fileicon = extractIconFromExecutable(ProcessPath);
@@ -2775,7 +2784,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 }
 
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "(" << filename << "), " << "IsAltTabWindow = " << (isVisibleWindow == TRUE) << ", Win10Above = " << isWin10Above;
+                qDebug().nospace().noquote() << "[EnumWindowsProc] " << WindowText <<" [PID:" << dwProcessId <<"]" << "[Class:" << className <<"]" << "(" << filename << "), " << "IsAltTabWindow = " << (isVisibleWindow == TRUE) << ", Win10Above = " << isWin10Above;
 #endif
             }
             else{
@@ -15870,20 +15879,22 @@ void QKeyMapper::updateSysTrayIconMenuText()
 #endif
 }
 
-void QKeyMapper::refreshProcessInfoTable(void)
+void QKeyMapper::refreshProcessInfoTable(bool resize)
 {
     bool isSelected = false;
     QList<QTableWidgetItem*> items = ui->processinfoTable->selectedItems();
     QString selectedProcess;
     QString selectedPID;
     QString selectedTitle;
+    QString selectedClassName;
     if (!items.empty()) {
         selectedProcess = items.at(PROCESS_NAME_COLUMN)->text();
         selectedPID = items.at(PROCESS_PID_COLUMN)->text();
         selectedTitle = items.at(PROCESS_TITLE_COLUMN)->text();
+        selectedClassName = items.at(PROCESS_CLASS_COLUMN)->text();
         isSelected = true;
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[refreshProcessInfoTable]" << "Selected[" << items.size() << "] -> " << selectedProcess << " | " << selectedPID << " | " << selectedTitle;
+        qDebug().nospace().noquote() << "[refreshProcessInfoTable]" << "Selected[" << items.size() << "] -> " << selectedProcess << " | " << selectedPID << " | " << selectedTitle << " | " << selectedClassName;
 #endif
     }
 
@@ -15899,19 +15910,44 @@ void QKeyMapper::refreshProcessInfoTable(void)
     setProcessInfoTable(static_ProcessInfoList);
 
     ui->processinfoTable->sortItems(PROCESS_NAME_COLUMN);
-    ui->processinfoTable->resizeColumnToContents(PROCESS_NAME_COLUMN);
-    if (ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN) > PROCESS_NAME_COLUMN_WIDTH_MAX){
-        ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, PROCESS_NAME_COLUMN_WIDTH_MAX);
-    }
 
-    ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
+    if (resize) {
+        ui->processinfoTable->resizeColumnToContents(PROCESS_NAME_COLUMN);
+        if (ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN) > PROCESS_NAME_COLUMN_WIDTH_MAX){
+            ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, PROCESS_NAME_COLUMN_WIDTH_MAX);
+        }
+
+        ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
+
+        ui->processinfoTable->horizontalHeader()->setStretchLastSection(false);
+        ui->processinfoTable->resizeColumnToContents(PROCESS_CLASS_COLUMN);
+        if (ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN) > CLASS_NAME_COLUMN_WIDTH_MAX){
+            ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, CLASS_NAME_COLUMN_WIDTH_MAX);
+        }
+        int processname_width = ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN);
+        int pid_width = ui->processinfoTable->columnWidth(PROCESS_PID_COLUMN);
+        int classname_width = ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN);
+        int title_width = ui->processinfoTable->width() - processname_width - pid_width - classname_width - 16;
+        ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
+
+        ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, processname_width);
+        ui->processinfoTable->setColumnWidth(PROCESS_PID_COLUMN, pid_width);
+        ui->processinfoTable->setColumnWidth(PROCESS_TITLE_COLUMN, title_width);
+        ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[refreshProcessInfoTable]" << "ui->processinfoTable->rowCount" << ui->processinfoTable->rowCount();
+        qDebug() << "[refreshProcessInfoTable]" << "processname_width =" << processname_width << ", pid_width =" << pid_width << ", title_width =" << title_width << ", classname_width =" << classname_width;
+#endif
+    }
 
     if (isSelected) {
         int reselectrow = -1;
         for (int i = 0; i < ui->processinfoTable->rowCount(); ++i) {
             if (ui->processinfoTable->item(i, PROCESS_NAME_COLUMN)->text() == selectedProcess
                 && ui->processinfoTable->item(i, PROCESS_PID_COLUMN)->text() == selectedPID
-                && ui->processinfoTable->item(i, PROCESS_TITLE_COLUMN)->text() == selectedTitle) {
+                && ui->processinfoTable->item(i, PROCESS_TITLE_COLUMN)->text() == selectedTitle
+                && ui->processinfoTable->item(i, PROCESS_CLASS_COLUMN)->text() == selectedClassName) {
                 reselectrow = i;
                 break;
             }
@@ -15941,15 +15977,19 @@ void QKeyMapper::setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist)
 #endif
         QTableWidgetItem *filename_TableItem = new QTableWidgetItem(processinfo.WindowIcon, processinfo.FileName);
         filename_TableItem->setToolTip(processinfo.FileName);
-        ui->processinfoTable->setItem(rowindex, 0, filename_TableItem);
+        ui->processinfoTable->setItem(rowindex, PROCESS_NAME_COLUMN, filename_TableItem);
 
         QTableWidgetItem *pid_TableItem = new QTableWidgetItem(processinfo.PID);
-        ui->processinfoTable->setItem(rowindex, 1, pid_TableItem);
+        ui->processinfoTable->setItem(rowindex, PROCESS_PID_COLUMN, pid_TableItem);
         //ui->processinfoTable->item(rowindex, 1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
         QTableWidgetItem *windowtitle_TableItem = new QTableWidgetItem(processinfo.WindowTitle);
         windowtitle_TableItem->setToolTip(processinfo.WindowTitle);
-        ui->processinfoTable->setItem(rowindex, 2, windowtitle_TableItem);
+        ui->processinfoTable->setItem(rowindex, PROCESS_TITLE_COLUMN, windowtitle_TableItem);
+
+        QTableWidgetItem *classname_TableItem = new QTableWidgetItem(processinfo.ClassName);
+        classname_TableItem->setToolTip(processinfo.ClassName);
+        ui->processinfoTable->setItem(rowindex, PROCESS_CLASS_COLUMN, classname_TableItem);
 
         rowindex += 1;
     }
@@ -18395,7 +18435,8 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << tr("Process")
                                                                     << tr("PID")
-                                                                    << tr("Window Title"));
+                                                                    << tr("Title")
+                                                                    << tr("Class"));
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->setUILanguage(languageindex);
@@ -19883,6 +19924,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         // QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
         QString windowTitle = ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text();
         QString pidStr = ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text();
+        QString className = ui->processinfoTable->item(index.row(), PROCESS_CLASS_COLUMN)->text();
         QString ProcessPath;
         DWORD dwProcessId = pidStr.toULong();
 
@@ -19994,6 +20036,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
         setMapProcessInfo(ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text(),
                           ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text(),
+                          ui->processinfoTable->item(index.row(), PROCESS_CLASS_COLUMN)->text(),
                           ui->processinfoTable->item(index.row(), PROCESS_PID_COLUMN)->text(),
                           ProcessPath,
                           fileicon);
