@@ -2676,8 +2676,8 @@ BOOL QKeyMapper::IsAltTabWindow(HWND hWnd)
     WINDOWINFO winInfo;
     winInfo.cbSize = sizeof(WINDOWINFO);
     if (GetWindowInfo(hWnd, &winInfo)) {
-        if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
-            return FALSE;
+        // if ((winInfo.dwExStyle & WS_EX_TOOLWINDOW) != 0)
+        //     return FALSE;
 
         //  It must not be a cloaked window
         BOOL isCloaked = FALSE;
@@ -2704,9 +2704,6 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
     DWORD tid = GetWindowThreadProcessId(hWnd, &dwProcessId);
 
     if(!IsWindow(hWnd) || !IsWindowVisible(hWnd)){
-//#ifdef DEBUG_LOGOUT_ON
-//        qDebug().nospace().noquote() << "[EnumWindowsProc] " << "(Invisible window)" << " [PID:" << dwProcessId <<"]";
-//#endif
         return TRUE;
     }
 
@@ -2771,6 +2768,13 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
         }
 
         if (!processName.isEmpty()) {
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug().nospace() << "[EnumWindowsProc]" << "WindowTitle:" << WindowText
+//                                << ", ClassName:" << className
+//                                << ", ProcessPath:" << ProcessPath
+//                                << ", PID:" << dwProcessId;
+// #endif
+
             MAP_PROCESSINFO ProcessInfo;
             ProcessInfo.FileName = filename;
             ProcessInfo.PID = QString::number(dwProcessId);
@@ -3165,6 +3169,7 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
     if (event == EVENT_SYSTEM_FOREGROUND) {
 #ifdef DEBUG_LOGOUT_ON
         QString windowTitle;
+        QString className;
         QString ProcessPath;
 
         // Optimize GetWindowText call by checking window text length first
@@ -3178,8 +3183,15 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
             }
         }
 
+        TCHAR classNameBuffer[MAX_PATH];
+        memset(classNameBuffer, 0x00, sizeof(classNameBuffer));
+        int classLength = GetClassName(hwnd, classNameBuffer, MAX_PATH);
+        if (classLength){
+            className = QString::fromWCharArray(classNameBuffer);
+        }
+
         getProcessInfoFromHWND( hwnd, ProcessPath);
-        qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << ", ProcessPath(" << ProcessPath << ")\033[0m";
+        qDebug().nospace() << "\033[1;34m[QKeyMapper::WinEventProc]" << "EVENT_SYSTEM_FOREGROUND Foregound Window Title ->" << windowTitle << " [WindowClass:" << className << "], ProcessPath(" << ProcessPath << ")\033[0m";
 #endif
 
         getInstance()->matchForegroundWindow();
