@@ -1549,11 +1549,14 @@ void QKeyMapper::updateHWNDListProc()
     s_hWndList.clear();
     QString processNameString = m_MapProcessInfo.FileName;
     QString windowTitleString = m_MapProcessInfo.WindowTitle;
+    QString classNameString = m_MapProcessInfo.ClassName;
     int matchProcessIndex = ui->checkProcessComboBox->currentIndex();
     int matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+    int matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
     bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
     bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
-    if (matchProcess || matchWindowTitle) {
+    bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !classNameString.isEmpty());
+    if (matchProcess || matchWindowTitle || matchClassName) {
         EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsBgProc, 0);
     }
 
@@ -3001,12 +3004,15 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
 {
     QString processNameString = QKeyMapper::getInstance()->m_MapProcessInfo.FileName;
     QString windowTitleString = QKeyMapper::getInstance()->m_MapProcessInfo.WindowTitle;
+    QString classNameString = QKeyMapper::getInstance()->m_MapProcessInfo.ClassName;
     int matchProcessIndex = getMatchProcessNameIndex();
     int matchWindowTitleIndex = getMatchWindowTitleIndex();
+    int matchClassNameIndex = getMatchClassNameIndex();
     bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
     bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
+    bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !classNameString.isEmpty());
 
-    if (!matchProcess && !matchWindowTitle) {
+    if (!matchProcess && !matchWindowTitle && !matchClassName) {
         return;
     }
 
@@ -3022,6 +3028,15 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
         }
     }
 
+    // Get window class name for ClassName matching
+    QString WindowClassName;
+    TCHAR classNameBuffer[MAX_PATH];
+    memset(classNameBuffer, 0x00, sizeof(classNameBuffer));
+    int classLength = GetClassName(hWnd, classNameBuffer, MAX_PATH);
+    if (classLength) {
+        WindowClassName = QString::fromWCharArray(classNameBuffer);
+    }
+
     DWORD dwProcessId = 0;
     DWORD tid = GetWindowThreadProcessId(hWnd, &dwProcessId);
 
@@ -3031,6 +3046,7 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
         // Perform matching logic based on ComboBox selection
         bool processMatched = false;
         bool windowTitleMatched = false;
+        bool classNameMatched = false;
 
         // Check for process name match
         if (matchProcess) {
@@ -3090,26 +3106,42 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
             windowTitleMatched = true; // Treat as matched if window title check is ignored
         }
 
-        // Set matchResult based on the matching outcome
-        bool hwndMatched = false;
-        if (matchProcess && matchWindowTitle) {
-            // Check both process name and window title
-            if (processMatched && windowTitleMatched) {
-                hwndMatched = true;
+        // Check for class name match
+        if (matchClassName) {
+            if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                classNameMatched = (classNameString == WindowClassName);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                classNameMatched = WindowClassName.contains(classNameString);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                classNameMatched = WindowClassName.startsWith(classNameString);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                classNameMatched = WindowClassName.endsWith(classNameString);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                // Create regex pattern from user input
+                QRegularExpression regex(classNameString);
+                if (regex.isValid()) {
+                    classNameMatched = regex.match(WindowClassName).hasMatch();
+                } else {
+                    // Invalid regex pattern, no match
+                    classNameMatched = false;
+                }
             }
         }
-        else if (matchProcess) {
-            // Check process name only
-            if (processMatched) {
-                hwndMatched = true;
-            }
+        else {
+            classNameMatched = true; // Treat as matched if class name check is ignored
         }
-        else if (matchWindowTitle) {
-            // Check window title only
-            if (windowTitleMatched) {
-                hwndMatched = true;
-            }
-        }
+
+        // Use simplified match result logic from matchForegroundWindow function
+        bool anyMatchingEnabled = matchProcess || matchWindowTitle || matchClassName;
+        bool allEnabledConditionsSatisfied = (!matchProcess || processMatched) &&
+                                           (!matchWindowTitle || windowTitleMatched) &&
+                                           (!matchClassName || classNameMatched);
+
+        bool hwndMatched = anyMatchingEnabled && allEnabledConditionsSatisfied;
 
         if (hwndMatched) {
             if (!s_hWndList.contains(hWnd)) {
@@ -4965,6 +4997,11 @@ int QKeyMapper::getMatchProcessNameIndex()
 int QKeyMapper::getMatchWindowTitleIndex()
 {
     return getInstance()->ui->checkWindowTitleComboBox->currentIndex();
+}
+
+int QKeyMapper::getMatchClassNameIndex()
+{
+    return getInstance()->ui->checkClassNameComboBox->currentIndex();
 }
 
 #if 0
@@ -8382,9 +8419,15 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
     QStringList groups = settingFile.childGroups();
     groups.removeOne(GROUPNAME_GLOBALSETTING);
 
-    // Store candidates for fallback matching (lower priority)
-    QString processOnlyMatch;
-    QString windowTitleOnlyMatch;
+    // Store candidates for priority-based matching (lower priority stored as fallback)
+    // Priority order: 1=All(P+W+C), 2=P+W, 3=P+C, 4=W+C, 5=P, 6=W, 7=C
+    QString priority1Match;  // process + windowTitle + className
+    QString priority2Match;  // process + windowTitle
+    QString priority3Match;  // process + className
+    QString priority4Match;  // windowTitle + className
+    QString priority5Match;  // process only
+    QString priority6Match;  // windowTitle only
+    QString priority7Match;  // className only
 
     for (const QString &group : std::as_const(groups)) {
         // Skip groups without autoStartMapping enabled
@@ -8412,15 +8455,23 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
             matchWindowTitleIndex = WINDOWINFO_MATCH_INDEX_DEFAULT;
         }
 
+        ok = false;
+        int matchClassNameIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_CLASSNAME_MATCH_INDEX).toInt(&ok);
+        if (!ok || matchClassNameIndex < WINDOWINFO_MATCH_INDEX_MIN || matchClassNameIndex > WINDOWINFO_MATCH_INDEX_MAX) {
+            matchClassNameIndex = WINDOWINFO_MATCH_INDEX_IGNORE;
+        }
+
         // Get match strings
         QString processNameString = settingFile.value(tempSettingSelectStr + PROCESSINFO_FILENAME).toString();
         QString windowTitleString = settingFile.value(tempSettingSelectStr + PROCESSINFO_WINDOWTITLE).toString();
+        QString classNameString = settingFile.value(tempSettingSelectStr + PROCESSINFO_CLASSNAME).toString();
 
-        // Determine what needs to match
+        // Determine what needs to match (enabled conditions)
         bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
         bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
+        bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !classNameString.isEmpty());
 
-        if (!matchProcess && !matchWindowTitle) {
+        if (!matchProcess && !matchWindowTitle && !matchClassName) {
             continue; // Skip groups that don't require matching
         }
 
@@ -8443,13 +8494,9 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
                 return processpath.endsWith(processNameString);
             }
             else if (matchProcessIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
-                // Create regex pattern from user input
                 QRegularExpression regex(processNameString);
                 if (regex.isValid()) {
                     return regex.match(processpath).hasMatch();
-                } else {
-                    // Invalid regex pattern, no match
-                    return false;
                 }
             }
             return false;
@@ -8474,48 +8521,116 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
                 return windowtitle.endsWith(windowTitleString);
             }
             else if (matchWindowTitleIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
-                // Create regex pattern from user input
                 QRegularExpression regex(windowTitleString);
                 if (regex.isValid()) {
                     return regex.match(windowtitle).hasMatch();
-                } else {
-                    // Invalid regex pattern, no match
-                    return false;
                 }
             }
             return false;
         };
 
-        // Priority 1: Both process and window title need to match
-        if (matchProcess && matchWindowTitle) {
-            if (checkProcessMatch() && checkWindowTitleMatch()) {
-                return group;
+        // Helper function to check class name matching
+        auto checkClassNameMatch = [&]() -> bool {
+            if (classNameString.isEmpty()) {
+                return false;
             }
+
+            if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                return classname == classNameString;
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                return classname.contains(classNameString);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                return classname.startsWith(classNameString);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                return classname.endsWith(classNameString);
+            }
+            else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                QRegularExpression regex(classNameString);
+                if (regex.isValid()) {
+                    return regex.match(classname).hasMatch();
+                }
+            }
+            return false;
+        };
+
+        // Check which enabled conditions actually matched
+        bool processMatched = matchProcess ? checkProcessMatch() : false;
+        bool windowTitleMatched = matchWindowTitle ? checkWindowTitleMatch() : false;
+        bool classNameMatched = matchClassName ? checkClassNameMatch() : false;
+
+        // Verify all enabled conditions are satisfied
+        bool allEnabledConditionsSatisfied = (!matchProcess || processMatched) &&
+                                           (!matchWindowTitle || windowTitleMatched) &&
+                                           (!matchClassName || classNameMatched);
+
+        if (!allEnabledConditionsSatisfied) {
+            continue; // Skip if any enabled condition is not satisfied
         }
 
-        // Store candidates for lower priority matches
-        // Priority 2: Only process matches (store first match)
-        if (processOnlyMatch.isEmpty() && matchProcess && !matchWindowTitle) {
-            if (checkProcessMatch()) {
-                processOnlyMatch = group;
+        // Determine match priority based on which conditions are enabled and matched
+        // Priority 1: process + windowTitle + className (highest priority - return immediately)
+        if (matchProcess && matchWindowTitle && matchClassName) {
+            return group;
+        }
+        // Priority 2: process + windowTitle
+        else if (matchProcess && matchWindowTitle && !matchClassName) {
+            if (priority2Match.isEmpty()) {
+                priority2Match = group;
             }
         }
-
-        // Priority 3: Only window title matches (store first match)
-        if (windowTitleOnlyMatch.isEmpty() && !matchProcess && matchWindowTitle) {
-            if (checkWindowTitleMatch()) {
-                windowTitleOnlyMatch = group;
+        // Priority 3: process + className
+        else if (matchProcess && !matchWindowTitle && matchClassName) {
+            if (priority3Match.isEmpty()) {
+                priority3Match = group;
+            }
+        }
+        // Priority 4: windowTitle + className
+        else if (!matchProcess && matchWindowTitle && matchClassName) {
+            if (priority4Match.isEmpty()) {
+                priority4Match = group;
+            }
+        }
+        // Priority 5: process only
+        else if (matchProcess && !matchWindowTitle && !matchClassName) {
+            if (priority5Match.isEmpty()) {
+                priority5Match = group;
+            }
+        }
+        // Priority 6: windowTitle only
+        else if (!matchProcess && matchWindowTitle && !matchClassName) {
+            if (priority6Match.isEmpty()) {
+                priority6Match = group;
+            }
+        }
+        // Priority 7: className only
+        else if (!matchProcess && !matchWindowTitle && matchClassName) {
+            if (priority7Match.isEmpty()) {
+                priority7Match = group;
             }
         }
     }
 
-    // Return fallback matches in priority order
-    if (!processOnlyMatch.isEmpty()) {
-        return processOnlyMatch;
+    // Return matches in priority order (highest priority first)
+    if (!priority2Match.isEmpty()) {
+        return priority2Match;
     }
-
-    if (!windowTitleOnlyMatch.isEmpty()) {
-        return windowTitleOnlyMatch;
+    if (!priority3Match.isEmpty()) {
+        return priority3Match;
+    }
+    if (!priority4Match.isEmpty()) {
+        return priority4Match;
+    }
+    if (!priority5Match.isEmpty()) {
+        return priority5Match;
+    }
+    if (!priority6Match.isEmpty()) {
+        return priority6Match;
+    }
+    if (!priority7Match.isEmpty()) {
+        return priority7Match;
     }
 
     // No match found
@@ -8559,7 +8674,7 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
 }
 #endif
 
-QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString &windowtitle)
+QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString &windowtitle, const QString &classname)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -8568,59 +8683,129 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
     QStringList groups = settingFile.childGroups();
     groups.removeOne(GROUPNAME_GLOBALSETTING);
 
-    // Store candidates for fallback matching (lower priority)
-    QString processPathOnlyMatch;
-    QString windowTitleContainsMatch;
+    // Store candidates for priority-based matching (lower priority stored as fallback)
+    // Priority order: 1=All(P+W+C)Exact, 2=All(P+W+C)Contains, 3=(P+W)Exact, 4=(P+W)Contains, 5=(P+C), 6=(W+C), 7=P, 8=W, 9=C
+    QString priority1Match;  // processpath(exact) + windowtitle(exact) + classname(exact)
+    QString priority2Match;  // processpath(exact) + windowtitle(contains) + classname(exact)
+    QString priority3Match;  // processpath(exact) + windowtitle(exact)
+    QString priority4Match;  // processpath(exact) + windowtitle(contains)
+    QString priority5Match;  // processpath(exact) + classname(exact)
+    QString priority6Match;  // windowtitle(exact) + classname(exact)
+    QString priority7Match;  // processpath only
+    QString priority8Match;  // windowtitle only
+    QString priority9Match;  // classname only
 
     for (const QString &group : std::as_const(groups)) {
         QString tempSettingSelectStr = group + "/";
 
+        // Get match strings from settings
         QString filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
         QString windowtitleString = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
-        bool filepathNeedMatch = false;
-        bool windowtitleNeedMatch = false;
-        if (!filepathString.trimmed().isEmpty()) {
-            filepathNeedMatch = true;
-        }
-        if (!windowtitleString.trimmed().isEmpty()) {
-            windowtitleNeedMatch = true;
-        }
+        QString classnameString = settingFile.value(tempSettingSelectStr+PROCESSINFO_CLASSNAME).toString();
 
-        if (!filepathNeedMatch && !windowtitleNeedMatch) {
+        // Determine what needs to match (enabled conditions)
+        bool matchFilepath = !filepathString.trimmed().isEmpty();
+        bool matchWindowtitle = !windowtitleString.trimmed().isEmpty();
+        bool matchClassname = !classnameString.trimmed().isEmpty();
+
+        if (!matchFilepath && !matchWindowtitle && !matchClassname) {
             continue; // Skip groups that don't require matching
         }
 
-        // Priority 1: Exact match for both processpath and windowtitle
-        if (filepathNeedMatch && windowtitleNeedMatch
-            && processpath == filepathString && windowtitle == windowtitleString) {
+        // Check which enabled conditions actually matched
+        bool filepathMatched = matchFilepath && (processpath == filepathString);
+        bool windowtitleExactMatched = matchWindowtitle && (windowtitle == windowtitleString);
+        bool windowtitleContainsMatched = matchWindowtitle && windowtitle.contains(windowtitleString);
+        bool classnameMatched = matchClassname && (classname == classnameString);
+
+        // Verify all enabled conditions are satisfied (using exact or contains for windowtitle)
+        bool allEnabledExactMatched = (!matchFilepath || filepathMatched) &&
+                                      (!matchWindowtitle || windowtitleExactMatched) &&
+                                      (!matchClassname || classnameMatched);
+
+        bool allEnabledContainsMatched = (!matchFilepath || filepathMatched) &&
+                                         (!matchWindowtitle || windowtitleContainsMatched) &&
+                                         (!matchClassname || classnameMatched);
+
+        // Determine match priority based on which conditions are enabled and how they matched
+        // Priority 1: processpath(exact) + windowtitle(exact) + classname(exact) - highest priority, return immediately
+        if (matchFilepath && matchWindowtitle && matchClassname && allEnabledExactMatched) {
             return group;
         }
-
-        // Priority 2: Exact processpath match and windowtitle contains windowtitleString
-        if (filepathNeedMatch && windowtitleNeedMatch
-            && processpath == filepathString && windowtitle.contains(windowtitleString)) {
-            return group;
+        // Priority 2: processpath(exact) + windowtitle(contains) + classname(exact)
+        else if (matchFilepath && matchWindowtitle && matchClassname && allEnabledContainsMatched) {
+            if (priority2Match.isEmpty()) {
+                priority2Match = group;
+            }
         }
-
-        // Store candidates for lower priority matches
-        // Priority 3: Only processpath matches (store first match)
-        if (processPathOnlyMatch.isEmpty() && filepathNeedMatch && processpath == filepathString) {
-            processPathOnlyMatch = group;
+        // Priority 3: processpath(exact) + windowtitle(exact) - no classname
+        else if (matchFilepath && matchWindowtitle && !matchClassname && filepathMatched && windowtitleExactMatched) {
+            if (priority3Match.isEmpty()) {
+                priority3Match = group;
+            }
         }
-
-        // Priority 4: Only windowtitle contains match (store first match)
-        if (windowTitleContainsMatch.isEmpty() && windowtitleNeedMatch && windowtitle == windowtitleString) {
-            windowTitleContainsMatch = group;
+        // Priority 4: processpath(exact) + windowtitle(contains) - no classname
+        else if (matchFilepath && matchWindowtitle && !matchClassname && filepathMatched && windowtitleContainsMatched) {
+            if (priority4Match.isEmpty()) {
+                priority4Match = group;
+            }
+        }
+        // Priority 5: processpath(exact) + classname(exact) - no windowtitle
+        else if (matchFilepath && !matchWindowtitle && matchClassname && filepathMatched && classnameMatched) {
+            if (priority5Match.isEmpty()) {
+                priority5Match = group;
+            }
+        }
+        // Priority 6: windowtitle(exact) + classname(exact) - no processpath
+        else if (!matchFilepath && matchWindowtitle && matchClassname && windowtitleExactMatched && classnameMatched) {
+            if (priority6Match.isEmpty()) {
+                priority6Match = group;
+            }
+        }
+        // Priority 7: processpath only
+        else if (matchFilepath && !matchWindowtitle && !matchClassname && filepathMatched) {
+            if (priority7Match.isEmpty()) {
+                priority7Match = group;
+            }
+        }
+        // Priority 8: windowtitle only (exact match)
+        else if (!matchFilepath && matchWindowtitle && !matchClassname && windowtitleExactMatched) {
+            if (priority8Match.isEmpty()) {
+                priority8Match = group;
+            }
+        }
+        // Priority 9: classname only
+        else if (!matchFilepath && !matchWindowtitle && matchClassname && classnameMatched) {
+            if (priority9Match.isEmpty()) {
+                priority9Match = group;
+            }
         }
     }
 
-    // Return fallback matches in priority order
-    if (!processPathOnlyMatch.isEmpty()) {
-        return processPathOnlyMatch;
+    // Return matches in priority order (highest priority first)
+    if (!priority2Match.isEmpty()) {
+        return priority2Match;
     }
-
-    if (!windowTitleContainsMatch.isEmpty()) {
-        return windowTitleContainsMatch;
+    if (!priority3Match.isEmpty()) {
+        return priority3Match;
+    }
+    if (!priority4Match.isEmpty()) {
+        return priority4Match;
+    }
+    if (!priority5Match.isEmpty()) {
+        return priority5Match;
+    }
+    if (!priority6Match.isEmpty()) {
+        return priority6Match;
+    }
+    if (!priority7Match.isEmpty()) {
+        return priority7Match;
+    }
+    if (!priority8Match.isEmpty()) {
+        return priority8Match;
+    }
+    if (!priority9Match.isEmpty()) {
+        return priority9Match;
     }
 
     // No match found
@@ -20025,7 +20210,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
         QString loadSettingSelectStr;
         if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
-            loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle);
+            loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle, className);
         }
 
         if (loadSettingSelectStr.isEmpty()) {

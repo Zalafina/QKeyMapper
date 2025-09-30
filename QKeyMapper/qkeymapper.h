@@ -908,6 +908,7 @@ public:
     static void setCurrentOriKeyRecordText(const QString &newcombinationkeytext);
     static int getMatchProcessNameIndex(void);
     static int getMatchWindowTitleIndex(void);
+    static int getMatchClassNameIndex(void);
     // static int getBurstPressTime(void);
     // static int getBurstReleaseTime(void);
     static int getJoystick2MouseSpeedX(void);
@@ -1337,7 +1338,7 @@ private:
     // int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle, const QString &classname);
     // int checkSaveSettings(const QString &executablename, const QString &windowtitle);
-    QString matchSavedSettings(const QString &processpath, const QString &windowtitle);
+    QString matchSavedSettings(const QString &processpath, const QString &windowtitle, const QString &classname);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);
     void exportSettingToFile(void);
     void importSettingFromFile(void);
