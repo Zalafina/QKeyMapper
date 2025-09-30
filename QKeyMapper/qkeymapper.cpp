@@ -316,6 +316,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->processLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->windowTitleLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->classNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->descriptionLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->sendTextPlainTextEdit->setFocusPolicy(Qt::ClickFocus);
 
@@ -579,6 +580,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     QObject::connect(ui->processLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmProcessLineEdit);
     QObject::connect(ui->windowTitleLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmWindowTitleLineEdit);
+    QObject::connect(ui->classNameLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmClassNameLineEdit);
 
     updateHWNDListProc();
     refreshProcessInfoTable();
@@ -1036,6 +1038,7 @@ void QKeyMapper::matchForegroundWindow()
 
         MatchResult matchResult = MatchResult::NoMatch;
         QString windowTitle;
+        QString className;
         QString processName;
         QString filename;
         QString ProcessPath;
@@ -1045,10 +1048,12 @@ void QKeyMapper::matchForegroundWindow()
 
         int matchProcessIndex = ui->checkProcessComboBox->currentIndex();
         int matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+        int matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
         bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
         bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
+        bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
 
-        if (!matchProcess && !matchWindowTitle) {
+        if (!matchProcess && !matchWindowTitle && !matchClassName) {
             matchResult = MatchResult::IgnoreBothChecks;
         }
         else if (getSendToSameTitleWindowsStatus()
@@ -1065,6 +1070,13 @@ void QKeyMapper::matchForegroundWindow()
             if (resultLength > 0) {
                 windowTitle = QString::fromStdWString(titleString);
             }
+        }
+
+        TCHAR classNameBuffer[MAX_PATH];
+        memset(classNameBuffer, 0x00, sizeof(classNameBuffer));
+        int classLength = GetClassName(hwnd, classNameBuffer, MAX_PATH);
+        if (classLength){
+            className = QString::fromWCharArray(classNameBuffer);
         }
 
         getProcessInfoFromHWND( hwnd, ProcessPath);
@@ -1108,7 +1120,7 @@ void QKeyMapper::matchForegroundWindow()
         }
 
         if (!processName.isEmpty()) {
-            QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle);
+            QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle, className);
 
             if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
                 QString curSettingSelectStr;
@@ -1133,8 +1145,10 @@ void QKeyMapper::matchForegroundWindow()
 
                     matchProcessIndex = ui->checkProcessComboBox->currentIndex();
                     matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
+                    matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
                     matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
                     matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
+                    matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -1149,6 +1163,7 @@ void QKeyMapper::matchForegroundWindow()
             // Perform matching logic based on ComboBox selection
             bool processMatched = false;
             bool windowTitleMatched = false;
+            bool classNameMatched = false;
 
             // Check for process name match
             if (matchProcess) {
@@ -1208,24 +1223,43 @@ void QKeyMapper::matchForegroundWindow()
                 windowTitleMatched = true; // Treat as matched if window title check is ignored
             }
 
-            // Set matchResult based on the matching outcome
-            if (matchProcess && matchWindowTitle) {
-                // Check both process name and window title
-                if (processMatched && windowTitleMatched) {
-                    matchResult = MatchResult::ProcessMatched;
+            // Check for class name match
+            if (matchClassName) {
+                if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_EQUALS) {
+                    classNameMatched = (m_MapProcessInfo.ClassName == className);
+                }
+                else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_CONTAINS) {
+                    classNameMatched = className.contains(m_MapProcessInfo.ClassName);
+                }
+                else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_STARTSWITH) {
+                    classNameMatched = className.startsWith(m_MapProcessInfo.ClassName);
+                }
+                else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_ENDSWITH) {
+                    classNameMatched = className.endsWith(m_MapProcessInfo.ClassName);
+                }
+                else if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+                    // Create regex pattern from user input
+                    QRegularExpression regex(m_MapProcessInfo.ClassName);
+                    if (regex.isValid()) {
+                        classNameMatched = regex.match(className).hasMatch();
+                    } else {
+                        // Invalid regex pattern, no match
+                        classNameMatched = false;
+                    }
                 }
             }
-            else if (matchProcess) {
-                // Check process name only
-                if (processMatched) {
-                    matchResult = MatchResult::ProcessMatched;
-                }
+            else {
+                classNameMatched = true; // Treat as matched if class name check is ignored
             }
-            else if (matchWindowTitle) {
-                // Check window title only
-                if (windowTitleMatched) {
-                    matchResult = MatchResult::ProcessMatched;
-                }
+
+            // Simplified match result logic: if any matching is enabled and all enabled conditions are satisfied, it's a match
+            bool anyMatchingEnabled = matchProcess || matchWindowTitle || matchClassName;
+            bool allEnabledConditionsSatisfied = (!matchProcess || processMatched) &&
+                                                (!matchWindowTitle || windowTitleMatched) &&
+                                                (!matchClassName || classNameMatched);
+            
+            if (anyMatchingEnabled && allEnabledConditionsSatisfied) {
+                matchResult = MatchResult::ProcessMatched;
             }
         }
 
@@ -1347,7 +1381,7 @@ void QKeyMapper::matchForegroundWindow()
 
                 // Seamless switching check: When currently in mapping state, check if new window also has matching settings
                 if (!processName.isEmpty()) {
-                    QString newAutoMatchSetting = matchAutoStartSaveSettings(processName, windowTitle);
+                    QString newAutoMatchSetting = matchAutoStartSaveSettings(processName, windowTitle, className);
 
                     if (!newAutoMatchSetting.isEmpty()) {
                         // New window also has matching settings, check if we should perform seamless switching
@@ -8339,7 +8373,7 @@ int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const 
 }
 #endif
 
-QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle)
+QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle, const QString &classname)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -9732,8 +9766,10 @@ void QKeyMapper::saveKeyMapSetting(void)
 
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, ui->processLineEdit->text());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CLASSNAME, ui->classNameLineEdit->text());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX, ui->checkProcessComboBox->currentIndex());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_MATCH_INDEX, ui->checkWindowTitleComboBox->currentIndex());
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CLASSNAME_MATCH_INDEX, ui->checkClassNameComboBox->currentIndex());
 
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DESCRIPTION, ui->descriptionLineEdit->text());
     }
@@ -12276,6 +12312,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->settingNameLineEdit->setReadOnly(true);
         ui->processLineEdit->setText(QString());
         ui->windowTitleLineEdit->setText(QString());
+        ui->classNameLineEdit->setText(QString());
         ui->descriptionLineEdit->setReadOnly(true);
         ui->descriptionLineEdit->clear();
         ui->descriptionLineEdit->setEnabled(false);
@@ -12284,6 +12321,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         // ui->titleCheckBox->setChecked(false);
         ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
+        ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         // ui->disableWinKeyCheckBox->setChecked(false);
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
         m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
@@ -12292,12 +12330,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->processLineEdit->setEnabled(false);
         ui->restoreProcessPathButton->setEnabled(false);
         ui->windowTitleLineEdit->setEnabled(false);
+        ui->classNameLineEdit->setEnabled(false);
         // ui->processCheckBox->setEnabled(false);
         // ui->titleCheckBox->setEnabled(false);
         ui->processLabel->setEnabled(false);
         ui->windowTitleLabel->setEnabled(false);
+        ui->classNameLabel->setEnabled(false);
         ui->checkProcessComboBox->setEnabled(false);
         ui->checkWindowTitleComboBox->setEnabled(false);
+        ui->checkClassNameComboBox->setEnabled(false);
         ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
@@ -12315,12 +12356,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->processLineEdit->setEnabled(true);
         ui->restoreProcessPathButton->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
+        ui->classNameLineEdit->setEnabled(true);
         // ui->processCheckBox->setEnabled(true);
         // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
+        ui->classNameLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
+        ui->checkClassNameComboBox->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
         m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(true);
@@ -12339,6 +12383,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         }
         else {
             ui->windowTitleLineEdit->setText(QString());
+        }
+
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_CLASSNAME)){
+            m_MapProcessInfo.ClassName = settingFile.value(settingSelectStr+PROCESSINFO_CLASSNAME).toString();
+            ui->classNameLineEdit->setText(m_MapProcessInfo.ClassName);
+        }
+        else {
+            ui->classNameLineEdit->setText(QString());
         }
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILEPATH)){
@@ -12364,11 +12416,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             ui->settingNameLineEdit->setText(QString());
             ui->processLineEdit->setText(QString());
             ui->windowTitleLineEdit->setText(QString());
+            ui->classNameLineEdit->setText(QString());
             ui->descriptionLineEdit->setText(QString());
             // ui->processCheckBox->setChecked(false);
             // ui->titleCheckBox->setChecked(false);
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
             ui->enableSystemFilterKeyCheckBox->blockSignals(true);
             ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
             ui->enableSystemFilterKeyCheckBox->blockSignals(false);
@@ -12403,12 +12457,28 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             }
             ui->checkWindowTitleComboBox->setCurrentIndex(matchWindowTitleIndex);
 #ifdef DEBUG_LOGOUT_ON
-            QString matchWindowTitleString = ui->checkProcessComboBox->itemText(matchWindowTitleIndex);
+            QString matchWindowTitleString = ui->checkWindowTitleComboBox->itemText(matchWindowTitleIndex);
             qDebug() << "[loadKeyMapSetting]" << "WindowTitleMatchIndex =" << matchWindowTitleString;
 #endif
         }
         else {
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+        }
+
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_CLASSNAME_MATCH_INDEX)){
+            bool ok = false;
+            int matchClassNameIndex = settingFile.value(settingSelectStr+PROCESSINFO_CLASSNAME_MATCH_INDEX).toInt(&ok);
+            if (!ok || matchClassNameIndex < WINDOWINFO_MATCH_INDEX_MIN || matchClassNameIndex > WINDOWINFO_MATCH_INDEX_MAX) {
+                matchClassNameIndex = WINDOWINFO_MATCH_INDEX_IGNORE;
+            }
+            ui->checkClassNameComboBox->setCurrentIndex(matchClassNameIndex);
+#ifdef DEBUG_LOGOUT_ON
+            QString matchClassNameString = ui->checkClassNameComboBox->itemText(matchClassNameIndex);
+            qDebug() << "[loadKeyMapSetting]" << "ClassNameMatchIndex =" << matchClassNameString;
+#endif
+        }
+        else {
+            ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         }
 
 #if 0
@@ -12450,6 +12520,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             // ui->titleCheckBox->setChecked(false);
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         }
     }
 
@@ -12925,6 +12996,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->settingNameLineEdit->setCursorPosition(ui->settingNameLineEdit->text().length());
         ui->processLineEdit->setCursorPosition(ui->processLineEdit->text().length());
         ui->windowTitleLineEdit->setCursorPosition(ui->windowTitleLineEdit->text().length());
+        ui->classNameLineEdit->setCursorPosition(ui->classNameLineEdit->text().length());
 
         if (!settingSelectStr.isEmpty()) {
             settingSelectStr = settingSelectStr.remove("/");
@@ -12957,10 +13029,12 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->settingNameLineEdit->setText(QString());
     ui->processLineEdit->setText(QString());
     ui->windowTitleLineEdit->setText(QString());
+    ui->classNameLineEdit->setText(QString());
     ui->descriptionLineEdit->setText(QString());
     ui->iconLabel->clear();
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
     m_MapProcessInfo = MAP_PROCESSINFO();
 
     // ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
@@ -13814,6 +13888,7 @@ void QKeyMapper::setControlFontEnglish()
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
+    ui->classNameLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->backupSettingButton->setFont(customFont);
@@ -13955,6 +14030,7 @@ void QKeyMapper::setControlFontChinese()
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
+    ui->classNameLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->backupSettingButton->setFont(customFont);
@@ -14096,6 +14172,7 @@ void QKeyMapper::setControlFontJapanese()
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
+    ui->classNameLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->backupSettingButton->setFont(customFont);
@@ -15821,8 +15898,10 @@ void QKeyMapper::initWindowInfoMatchComboBoxes()
     windowinfoMatchList.append(tr("RegexMatch"));
     ui->checkProcessComboBox->addItems(windowinfoMatchList);
     ui->checkWindowTitleComboBox->addItems(windowinfoMatchList);
+    ui->checkClassNameComboBox->addItems(windowinfoMatchList);
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
 }
 
 void QKeyMapper::initSettingBackupActionPopup()
@@ -15999,6 +16078,10 @@ void QKeyMapper::updateProcessInfoDisplay()
 {
     ui->processLineEdit->setText(m_MapProcessInfo.FileName);
     ui->windowTitleLineEdit->setText(m_MapProcessInfo.WindowTitle);
+    ui->classNameLineEdit->setText(m_MapProcessInfo.ClassName);
+    ui->processLineEdit->setToolTip(m_MapProcessInfo.FileName);
+    ui->windowTitleLineEdit->setToolTip(m_MapProcessInfo.WindowTitle);
+    ui->classNameLineEdit->setToolTip(m_MapProcessInfo.ClassName);
     if ((false == m_MapProcessInfo.FilePath.isEmpty())
         && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
         ui->processLineEdit->setToolTip(m_MapProcessInfo.FilePath);
@@ -18265,6 +18348,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     // ui->titleCheckBox->setText(tr("Title"));
     ui->processLabel->setText(tr("Process"));
     ui->windowTitleLabel->setText(tr("Title"));
+    ui->classNameLabel->setText(tr("Class"));
     ui->restoreProcessPathButton->setText(tr("Restore"));
     ui->settingNameLabel->setText(tr("Setting"));
     ui->descriptionLabel->setText(tr("Description"));
@@ -18373,6 +18457,12 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,tr("StartsWith"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,  tr("EndsWith"));
     ui->checkWindowTitleComboBox->setItemText(WINDOWINFO_MATCH_INDEX_REGEXMATCH,tr("RegexMatch"));
+    ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,      tr("Ignore"));
+    ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,      tr("Equals"));
+    ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_CONTAINS,    tr("Contains"));
+    ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,  tr("StartsWith"));
+    ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,    tr("EndsWith"));
+    ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_REGEXMATCH,  tr("RegexMatch"));
 
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->windowinfo),       tr("WindowInfo")    );
@@ -19912,13 +20002,16 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
+        ui->classNameLineEdit->setEnabled(true);
         ui->restoreProcessPathButton->setEnabled(true);
         // ui->processCheckBox->setEnabled(true);
         // ui->titleCheckBox->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
+        ui->classNameLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
+        ui->checkClassNameComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
 
         // QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
@@ -19940,6 +20033,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             ui->descriptionLineEdit->clear();
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+            ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
             ui->settingNameLineEdit->setText(windowTitle);
             if (windowTitle.isEmpty()) {
                 QString processName = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
@@ -20108,14 +20202,17 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->iconLabel->setPixmap(IconPixmap);
 #endif
 
-        ui->processLineEdit->setToolTip(ProcessPath);
-
         if (windowTitle.isEmpty()) {
             windowTitle = REGEX_STRING_EMPTYSTRING;
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_REGEXMATCH);
         }
         ui->windowTitleLineEdit->setText(windowTitle);
+        ui->classNameLineEdit->setText(className);
         ui->processLineEdit->setText(ProcessPath);
+
+        ui->processLineEdit->setToolTip(ProcessPath);
+        ui->windowTitleLineEdit->setToolTip(windowTitle);
+        ui->classNameLineEdit->setToolTip(className);
 
         if (ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
             ui->settingNameLineEdit->setReadOnly(false);
@@ -20779,6 +20876,26 @@ void QKeyMapper::confirmWindowTitleLineEdit()
         QRegularExpression regex(windowtitle_string);
         if (!regex.isValid()) {
             showFailurePopup(tr("Invalid regular expression : \"%1\"").arg(windowtitle_string));
+        }
+    }
+}
+
+void QKeyMapper::confirmClassNameLineEdit()
+{
+    int matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
+    if (matchClassNameIndex == WINDOWINFO_MATCH_INDEX_REGEXMATCH) {
+        QString classname_string = ui->classNameLineEdit->text();
+        if (classname_string.isEmpty()) {
+            return;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[confirmClassNameLineEdit] RegexMatch classname_string:" << classname_string;
+#endif
+
+        QRegularExpression regex(classname_string);
+        if (!regex.isValid()) {
+            showFailurePopup(tr("Invalid regular expression : \"%1\"").arg(classname_string));
         }
     }
 }
@@ -22591,11 +22708,14 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
+        ui->classNameLineEdit->setEnabled(true);
         ui->restoreProcessPathButton->setEnabled(true);
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
+        ui->classNameLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
+        ui->checkClassNameComboBox->setEnabled(true);
         ui->removeSettingButton->setEnabled(true);
         ui->descriptionLineEdit->clear();
         ui->descriptionLineEdit->setReadOnly(false);

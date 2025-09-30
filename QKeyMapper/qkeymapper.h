@@ -1107,6 +1107,8 @@ private slots:
 
     void confirmWindowTitleLineEdit(void);
 
+    void confirmClassNameLineEdit(void);
+
 public slots:
     void selectedItemsMoveUp();
 
@@ -1333,7 +1335,7 @@ private:
     void convertSettingsFile(void);
 #endif
     // int checkAutoStartSaveSettings(const QString &executablename, const QString &windowtitle);
-    QString matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle);
+    QString matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle, const QString &classname);
     // int checkSaveSettings(const QString &executablename, const QString &windowtitle);
     QString matchSavedSettings(const QString &processpath, const QString &windowtitle);
     bool readSaveSettingData(const QString &group, const QString &key, QVariant &settingdata);

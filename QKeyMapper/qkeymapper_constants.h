@@ -901,9 +901,11 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char PROCESSINFO_FILENAME[] = "ProcessInfo_FileName";
     inline constexpr const char PROCESSINFO_WINDOWTITLE[] = "ProcessInfo_WindowTitle";
+    inline constexpr const char PROCESSINFO_CLASSNAME[] = "ProcessInfo_ClassName";
     inline constexpr const char PROCESSINFO_FILEPATH[] = "ProcessInfo_FilePath";
     inline constexpr const char PROCESSINFO_FILENAME_MATCH_INDEX[] = "ProcessInfo_FileNameMatchIndex";
     inline constexpr const char PROCESSINFO_WINDOWTITLE_MATCH_INDEX[] = "ProcessInfo_WindowTitleMatchIndex";
+    inline constexpr const char PROCESSINFO_CLASSNAME_MATCH_INDEX[] = "ProcessInfo_ClassNameMatchIndex";
     inline constexpr const char PROCESSINFO_DESCRIPTION[] = "ProcessInfo_Description";
 
     inline constexpr const char DATAPORT_NUMBER[] = "DataPortNumber";
