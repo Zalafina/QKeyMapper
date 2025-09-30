@@ -18533,9 +18533,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
     // ui->processCheckBox->setText(tr("Process"));
     // ui->titleCheckBox->setText(tr("Title"));
-    ui->processLabel->setText(tr("Process"));
-    ui->windowTitleLabel->setText(tr("Title"));
-    ui->classNameLabel->setText(tr("Class"));
+    ui->processLabel->setText(tr("WindowProcess"));
+    ui->windowTitleLabel->setText(tr("WindowTitle"));
+    ui->classNameLabel->setText(tr("WindowClass"));
     ui->restoreProcessPathButton->setText(tr("Restore"));
     ui->settingNameLabel->setText(tr("Setting"));
     ui->descriptionLabel->setText(tr("Description"));
