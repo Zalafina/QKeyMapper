@@ -1093,6 +1093,7 @@ void QKeyMapper::matchForegroundWindow()
 #endif
             }
             adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+            Q_UNUSED(adjust_priv);
 
 #ifdef DEBUG_LOGOUT_ON
             if (!adjust_priv) {
