@@ -9905,26 +9905,26 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 #endif
 
         if (settingtext.isEmpty()) {
+            QPoint startup_point = pos();
             int startup_position = m_StartupPositionDialog->getStartupPosition();
             if (startup_position == STARTUP_POSITION_LASTSAVED) {
                 if (true == settingFile.contains(LAST_WINDOWPOSITION)){
                     QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
                     if (last_windowposition != QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)) {
                         // m_LastWindowPosition = last_windowposition;
-                        move(last_windowposition);
+                        startup_point = last_windowposition;
                     }
                 }
             }
             else if (startup_position == STARTUP_POSITION_SPECIFY) {
-                QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
-                move(startup_specify_position);
+                startup_point = m_StartupPositionDialog->getSpecifyStartupPosition();
             }
-            else {  /* startup_position == STARTUP_POSITION_DEFAULT */
+
+            move(startup_point);
+
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[loadKeyMapSetting]" << "STARTUP_POSITION_DEFAULT pos() ->" << pos();
+            qDebug() << "[loadKeyMapSetting]" << "Startup move position ->" << startup_point;
 #endif
-                move(pos());
-            }
         }
 
         if (true == settingFile.contains(LANGUAGE_INDEX)){
