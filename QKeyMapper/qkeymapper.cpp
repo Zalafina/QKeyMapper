@@ -2035,14 +2035,17 @@ QString QKeyMapper::getProcessPathFromPID(DWORD dwProcessId)
             getProcessInfoFromPID(dwProcessId, ProcessPath);
         }
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+#endif
         }
         adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+        Q_UNUSED(adjust_priv);
 
+#ifdef DEBUG_LOGOUT_ON
         if (!adjust_priv) {
             qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
         }
-#ifdef DEBUG_LOGOUT_ON
         if (ProcessPath.isEmpty()) {
             qDebug().nospace().noquote() << "[EnumWindowsProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Failed! -> " << " [PID:" << dwProcessId <<"]";
         }
