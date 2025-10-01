@@ -2748,11 +2748,12 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
             }
             adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+            Q_UNUSED(adjust_priv);
 
+#ifdef DEBUG_LOGOUT_ON
             if (!adjust_priv) {
                 qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
             }
-#ifdef DEBUG_LOGOUT_ON
             if (ProcessPath.isEmpty()) {
                 qDebug().nospace().noquote() << "[EnumWindowsProc] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Failed! -> " << " [PID:" << dwProcessId <<"]";
             }
@@ -20292,11 +20293,12 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 qDebug() << "[on_processinfoTable_doubleClicked]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
             }
             adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
+            Q_UNUSED(adjust_priv);
 
+#ifdef DEBUG_LOGOUT_ON
             if (!adjust_priv) {
                 qDebug() << "[on_processinfoTable_doubleClicked]" << "getProcessInfoFromPID DisablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
             }
-#ifdef DEBUG_LOGOUT_ON
             if (ProcessPath.isEmpty()) {
                 qDebug().nospace().noquote() << "[on_processinfoTable_doubleClicked] " << "EnablePrivilege(SE_DEBUG_NAME) getProcessInfoFromPID Failed! -> " << " [PID:" << dwProcessId <<"]";
             }
