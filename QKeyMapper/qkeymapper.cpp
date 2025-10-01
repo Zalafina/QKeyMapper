@@ -9996,6 +9996,16 @@ void QKeyMapper::saveKeyMapSetting(void)
         if (!m_MapProcessInfo.FilePath.isEmpty()){
             settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
         }
+        else {
+            QString savedFilePathString = settingFile.value(saveSettingSelectStr+PROCESSINFO_FILEPATH).toString();
+            QString processName = ui->processLineEdit->text();
+            processName = processName.trimmed();
+            if (savedFilePathString.isEmpty()
+                && EMPTYSETTING_INDEX == ui->settingselectComboBox->currentIndex()
+                && !processName.isEmpty()){
+                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, processName);
+            }
+        }
 
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, ui->processLineEdit->text());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
