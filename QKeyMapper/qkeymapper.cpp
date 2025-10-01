@@ -1284,7 +1284,9 @@ void QKeyMapper::matchForegroundWindow()
                 && true == isExToolWindow) {
                 isInVisibleExToolWidow = true;
             }
-            else if ((className == "ForegroundStaging" || className == "MultitaskingViewFrame")
+            else if ((className == "ForegroundStaging"
+                      || className == "MultitaskingViewFrame"
+                      || className == "XamlExplorerHostIslandWindow")
                 && filename == "explorer.exe") {
                 // Alt+Tab Multitask switch view frame.
                 isInVisibleExToolWidow = true;
