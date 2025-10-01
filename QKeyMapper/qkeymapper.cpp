@@ -1266,7 +1266,7 @@ void QKeyMapper::matchForegroundWindow()
 
         bool isVisibleWindow = false;
         bool isExToolWindow = false;
-        bool isToolbarWindow = false;
+        bool isInVisibleExToolWidow = false;
 
         if (matchResult == MatchResult::NoMatch || matchResult == MatchResult::ProcessMatched) {
             isVisibleWindow = IsWindowVisible(hwnd);
@@ -1277,20 +1277,19 @@ void QKeyMapper::matchForegroundWindow()
                     isExToolWindow = true;
             }
 
-            /* Skip inVisibleWidow & ToolbarWindow >>> */
-            if (false == filename.isEmpty()
-                && false == windowTitle.isEmpty()
-                && true == isVisibleWindow
-                && true == isExToolWindow) {
-                isToolbarWindow = true;
-            }
-            else if (true == filename.isEmpty()
+            /* Skip inVisibleExToolWidow >>> */
+            if (true == filename.isEmpty()
                 && true == windowTitle.isEmpty()
                 && false == isVisibleWindow
                 && true == isExToolWindow) {
-                isToolbarWindow = true;
+                isInVisibleExToolWidow = true;
             }
-            /* Skip inVisibleWidow & ToolbarWindow <<< */
+            else if ((className == "ForegroundStaging" || className == "MultitaskingViewFrame")
+                && filename == "explorer.exe") {
+                // Alt+Tab Multitask switch view frame.
+                isInVisibleExToolWidow = true;
+            }
+            /* Skip inVisibleExToolWidow <<< */
         }
 
         bool GlobalMappingFlag = false;
@@ -1322,9 +1321,15 @@ void QKeyMapper::matchForegroundWindow()
                     qDebug().nospace() << "[matchForegroundWindow]" << " ProcessPath = " << ProcessPath;
                     qDebug().nospace() << "[matchForegroundWindow]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
                     qDebug().nospace() << "[matchForegroundWindow]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
-                    qDebug().nospace() << "[matchForegroundWindow]" << " isToolbarWindow = " << isToolbarWindow;
+                    qDebug().nospace() << "[matchForegroundWindow]" << " isInVisibleExToolWidow = " << isInVisibleExToolWidow;
 #endif
-                    if (isToolbarWindow) {
+                    if (isInVisibleExToolWidow) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[matchForegroundWindow]" << " Skip InVisibleExToolWidow of KeyMapStatus(KEYMAP_CHECKING)";
+#endif
+                        return;
+
+#if 0
                         /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
                         if (filename == "explorer.exe"
                             && windowTitle == "Program Manager"
@@ -1351,6 +1356,7 @@ void QKeyMapper::matchForegroundWindow()
 #endif
                             return;
                         }
+#endif
                     }
 
                     playStartSound();
@@ -1377,7 +1383,7 @@ void QKeyMapper::matchForegroundWindow()
                 qDebug().nospace() << "[matchForegroundWindow]" << " ProcessPath = " << ProcessPath;
                 qDebug().nospace() << "[matchForegroundWindow]" << " CurrentFileName = " << filename << "," << " CurrentWindowTitle = " << windowTitle;
                 qDebug().nospace() << "[matchForegroundWindow]" << " isVisibleWindow = " << isVisibleWindow << "," << " isExToolWindow =" << isExToolWindow;
-                qDebug().nospace() << "[matchForegroundWindow]" << " isToolbarWindow = " << isToolbarWindow;
+                qDebug().nospace() << "[matchForegroundWindow]" << " isInVisibleExToolWidow = " << isInVisibleExToolWidow;
 #endif
 
                 // Seamless switching check: When currently in mapping state, check if new window also has matching settings
@@ -1395,13 +1401,15 @@ void QKeyMapper::matchForegroundWindow()
                         if (curSettingSelectStr != newAutoMatchSetting) {
                             // Check if seamless switching should be allowed for this window type
                             bool allowSeamlessSwitching = true;
-                            if (isToolbarWindow) {
+                            if (isInVisibleExToolWidow) {
                                 allowSeamlessSwitching = false;
+#if 0
                                 // Allow seamless switching for specific toolbar windows
                                 if ((filename == "explorer.exe" && windowTitle == "Program Manager") ||
                                     (filename == "PixPin.exe" && windowTitle == "PixPin")) {
                                     allowSeamlessSwitching = true;
                                 }
+#endif
                             }
 
                             if (allowSeamlessSwitching) {
@@ -1467,7 +1475,13 @@ void QKeyMapper::matchForegroundWindow()
                     }
                 }
 
-                if (isToolbarWindow) {
+                if (isInVisibleExToolWidow) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[matchForegroundWindow]" << " Skip InVisibleExToolWidow of KeyMapStatus(KEYMAP_MAPPING_MATCHED)";
+#endif
+                    return;
+
+#if 0
                     /* Add for "explorer.exe -> Program Manager" Bug Fix >>> */
                     if (filename == "explorer.exe"
                         && windowTitle == "Program Manager"
@@ -1494,6 +1508,7 @@ void QKeyMapper::matchForegroundWindow()
 #endif
                         return;
                     }
+#endif
                 }
                 playStopSound();
                 setKeyUnHook();
