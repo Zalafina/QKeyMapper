@@ -741,7 +741,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char HOLDDOWN_STR[]        = "HoldDown";
     inline constexpr const char CLEAR_VIRTUALKEYS[]   = "ClearVirtualKeys";
 
-    inline constexpr const char PROCESS_UNKNOWN[] = "QKeyMapperUnknown";
+    // inline constexpr const char PROCESS_UNKNOWN[] = "QKeyMapperUnknown";
 
     inline constexpr const char DEFAULT_NAME[] = "ForzaHorizon4.exe";
     inline constexpr const char CONFIG_FILENAME[] = "keymapdata.ini";

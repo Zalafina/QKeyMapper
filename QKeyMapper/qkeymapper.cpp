@@ -590,7 +590,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
     refreshAllKeyMappingTabWidget();
     // resizeAllKeyMappingTabWidgetColumnWidth();
-#ifdef QT_NO_DEBUG
+#if defined(QT_NO_DEBUG) && defined(AUTO_REFRESH_PROCESSINFOLIST)
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
 
@@ -1111,16 +1111,21 @@ void QKeyMapper::matchForegroundWindow()
 #endif
         }
 
-        if (ProcessPath.isEmpty()) {
-            ProcessPath = PROCESS_UNKNOWN;
-        }
-        else {
+        bool isProtectedProcess = false;
+        if (!ProcessPath.isEmpty()) {
             QFileInfo fileinfo(ProcessPath);
             filename = fileinfo.fileName();
             processName = ProcessPath;
         }
+        else {
+            if(IsWindow(hwnd) && IsWindowVisible(hwnd)){
+                if (!windowTitle.isEmpty() || !className.isEmpty()) {
+                    isProtectedProcess = true;
+                }
+            }
+        }
 
-        if (!processName.isEmpty()) {
+        if (!processName.isEmpty() || isProtectedProcess) {
             QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle, className);
 
             if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
@@ -2762,7 +2767,9 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 getProcessInfoFromPID(dwProcessId, ProcessPath);
             }
             else {
+#ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[EnumWindowsProc]" << "getProcessInfoFromPID EnablePrivilege(SE_DEBUG_NAME) Failed with ->" << GetLastError();
+#endif
             }
             adjust_priv = DisablePrivilege(SE_DEBUG_NAME);
             Q_UNUSED(adjust_priv);
@@ -2780,16 +2787,21 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
 #endif
         }
 
-        if (ProcessPath.isEmpty()) {
-            ProcessPath = PROCESS_UNKNOWN;
-        }
-        else {
+        bool isProtectedProcess = false;
+        if (!ProcessPath.isEmpty()) {
             QFileInfo fileinfo(ProcessPath);
             filename = fileinfo.fileName();
             processName = ProcessPath;
         }
+        else {
+            if(IsWindow(hWnd) && IsWindowVisible(hWnd)){
+                if (!WindowText.isEmpty() || !className.isEmpty()) {
+                    isProtectedProcess = true;
+                }
+            }
+        }
 
-        if (!processName.isEmpty()) {
+        if (!processName.isEmpty() || isProtectedProcess) {
 // #ifdef DEBUG_LOGOUT_ON
 //             qDebug().nospace() << "[EnumWindowsProc]" << "WindowTitle:" << WindowText
 //                                << ", ClassName:" << className
@@ -2827,7 +2839,7 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
                 ProcessInfo.WindowIcon = fileicon;
             }
 
-            if (!ProcessInfo.FilePath.isEmpty()){
+            if (!ProcessInfo.FilePath.isEmpty() || isProtectedProcess) {
                 BOOL isVisibleWindow = TRUE;
                 bool isWin10Above = false;
                 QOperatingSystemVersion osVersion = QOperatingSystemVersion::current();
