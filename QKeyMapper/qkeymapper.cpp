@@ -1125,7 +1125,14 @@ void QKeyMapper::matchForegroundWindow()
             }
         }
 
-        if (!processName.isEmpty() || isProtectedProcess) {
+        bool isToolTipWindow = false;
+        if (className.contains(QT_TOOLTIP_WINDOW_CLASS)
+            || (className == SYSTEM_SHADOW_WINDOW_CLASS && windowTitle.isEmpty())) {
+            isToolTipWindow = true;
+        }
+
+        if ((!processName.isEmpty() || isProtectedProcess)
+            && !isToolTipWindow) {
             QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle, className);
 
             if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
@@ -1294,6 +1301,9 @@ void QKeyMapper::matchForegroundWindow()
                       || className == "XamlExplorerHostIslandWindow")
                 && filename == "explorer.exe") {
                 // Alt+Tab Multitask switch view frame.
+                isInVisibleExToolWidow = true;
+            }
+            else if (isToolTipWindow) {
                 isInVisibleExToolWidow = true;
             }
             /* Skip inVisibleExToolWidow <<< */
@@ -2801,7 +2811,14 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             }
         }
 
-        if (!processName.isEmpty() || isProtectedProcess) {
+        bool isToolTipWindow = false;
+        if (className.contains(QT_TOOLTIP_WINDOW_CLASS)
+            || (className == SYSTEM_SHADOW_WINDOW_CLASS && WindowText.isEmpty())) {
+            isToolTipWindow = true;
+        }
+
+        if ((!processName.isEmpty() || isProtectedProcess)
+            && !isToolTipWindow) {
 // #ifdef DEBUG_LOGOUT_ON
 //             qDebug().nospace() << "[EnumWindowsProc]" << "WindowTitle:" << WindowText
 //                                << ", ClassName:" << className
@@ -3080,7 +3097,13 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
     DWORD dwProcessId = 0;
     DWORD tid = GetWindowThreadProcessId(hWnd, &dwProcessId);
 
-    if (tid != 0 && dwProcessId != 0) {
+    bool isToolTipWindow = false;
+    if (WindowClassName.contains(QT_TOOLTIP_WINDOW_CLASS)
+        || (WindowClassName == SYSTEM_SHADOW_WINDOW_CLASS && WindowText.isEmpty())) {
+        isToolTipWindow = true;
+    }
+
+    if (tid != 0 && dwProcessId != 0 && !isToolTipWindow) {
         QString processPath = getProcessPathFromPID(dwProcessId);
 
         // Perform matching logic based on ComboBox selection
