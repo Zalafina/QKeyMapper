@@ -7602,6 +7602,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     tab_info.FloatingWindow_Radius = sourceTabInfo.FloatingWindow_Radius;
     tab_info.FloatingWindow_Opacity = sourceTabInfo.FloatingWindow_Opacity;
     tab_info.FloatingWindow_MousePassThrough = sourceTabInfo.FloatingWindow_MousePassThrough;
+    tab_info.FloatingWindow_MousePassThroughSwitchKey = sourceTabInfo.FloatingWindow_MousePassThroughSwitchKey;
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
