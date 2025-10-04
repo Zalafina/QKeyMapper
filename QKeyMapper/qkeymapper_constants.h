@@ -707,8 +707,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char SEPARATOR_KEYMAPDATA_LEVEL1[]   = "#";
     inline constexpr const char SEPARATOR_KEYMAPDATA_LEVEL2[]   = "|";
 
-    inline constexpr const int MAPPING_KEYS_MAX = 1000;
-    inline constexpr const int KEY_SEQUENCE_MAX = 20000;
+    inline constexpr const int MAPPING_KEYS_MAX = 10000;
+    inline constexpr const int KEY_SEQUENCE_MAX = 1000000;
 
     inline constexpr const int RUNWAIT_TIMEOUT = 15000;
 
