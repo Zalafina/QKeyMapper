@@ -19,6 +19,7 @@ QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINF
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
+QList<IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoList;
 int QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = 0;
 int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
@@ -190,6 +191,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initCategoryFilterControls();
     initPopupMessage();
     initPushLevelSlider();
+    initIgnoreWindowInfoList();
 
     QString fileDescription = getExeFileDescription();
     QString platformString = getPlatformString();
@@ -1125,14 +1127,10 @@ void QKeyMapper::matchForegroundWindow()
             }
         }
 
-        bool isToolTipWindow = false;
-        if (className.contains(QT_TOOLTIP_WINDOW_CLASS)
-            || (className == SYSTEM_SHADOW_WINDOW_CLASS && windowTitle.isEmpty())) {
-            isToolTipWindow = true;
-        }
+        bool isIgnoredWindow = isWindowInIgnoreList(processName, windowTitle, className);
 
         if ((!processName.isEmpty() || isProtectedProcess)
-            && !isToolTipWindow) {
+            && !isIgnoredWindow) {
             QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle, className);
 
             if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
@@ -1290,20 +1288,13 @@ void QKeyMapper::matchForegroundWindow()
             }
 
             /* Skip inVisibleExToolWidow >>> */
-            if (true == filename.isEmpty()
+            if (isIgnoredWindow) {
+                isInVisibleExToolWidow = true;
+            }
+            else if (true == filename.isEmpty()
                 && true == windowTitle.isEmpty()
                 && false == isVisibleWindow
                 && true == isExToolWindow) {
-                isInVisibleExToolWidow = true;
-            }
-            else if ((className == "ForegroundStaging"
-                      || className == "MultitaskingViewFrame"
-                      || className == "XamlExplorerHostIslandWindow")
-                && filename == "explorer.exe") {
-                // Alt+Tab Multitask switch view frame.
-                isInVisibleExToolWidow = true;
-            }
-            else if (isToolTipWindow) {
                 isInVisibleExToolWidow = true;
             }
             /* Skip inVisibleExToolWidow <<< */
@@ -1958,6 +1949,100 @@ bool QKeyMapper::isWindowsDarkMode()
         RegCloseKey(hKey);
     }
     return false; // Default to light mode
+}
+
+bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname)
+{
+    for (const IgnoreWindowInfo &rule : std::as_const(s_IgnoreWindowInfoList)) {
+        if (!rule.enabled)
+            continue;
+
+        bool matchProcess = (rule.processNameMatchType != WindowInfoMatchType::Ignore && !rule.processName.isEmpty());
+        bool matchTitle = (rule.windowTitleMatchType != WindowInfoMatchType::Ignore && !rule.windowTitle.isEmpty());
+        bool matchClass = (rule.classNameMatchType != WindowInfoMatchType::Ignore && !rule.className.isEmpty());
+
+        if (!matchProcess && !matchTitle && !matchClass)
+            continue; // No valid criteria to match, skip this rule
+
+        bool processMatched = false;
+        bool titleMatched = false;
+        bool classMatched = false;
+
+        // Process Name Matching
+        if (matchProcess) {
+            if (rule.processNameMatchType == WindowInfoMatchType::Equals) {
+                processMatched = (rule.processName == processname);
+            } else if (rule.processNameMatchType == WindowInfoMatchType::Contains) {
+                processMatched = processname.contains(rule.processName);
+            } else if (rule.processNameMatchType == WindowInfoMatchType::StartsWith) {
+                processMatched = processname.startsWith(rule.processName);
+            } else if (rule.processNameMatchType == WindowInfoMatchType::EndsWith) {
+                processMatched = processname.endsWith(rule.processName);
+            } else if (rule.processNameMatchType == WindowInfoMatchType::RegexMatch) {
+                QRegularExpression regex(rule.processName);
+                if (regex.isValid()) {
+                    processMatched = regex.match(processname).hasMatch();
+                } else {
+                    processMatched = false; // Invalid regex, consider it not matched
+                }
+            }
+        } else {
+            processMatched = true; // No process name criteria, consider it matched
+        }
+
+
+        // Window Title Matching
+        if (matchTitle) {
+            if (rule.windowTitleMatchType == WindowInfoMatchType::Equals) {
+                titleMatched = (rule.windowTitle == windowtitle);
+            } else if (rule.windowTitleMatchType == WindowInfoMatchType::Contains) {
+                titleMatched = windowtitle.contains(rule.windowTitle);
+            } else if (rule.windowTitleMatchType == WindowInfoMatchType::StartsWith) {
+                titleMatched = windowtitle.startsWith(rule.windowTitle);
+            } else if (rule.windowTitleMatchType == WindowInfoMatchType::EndsWith) {
+                titleMatched = windowtitle.endsWith(rule.windowTitle);
+            } else if (rule.windowTitleMatchType == WindowInfoMatchType::RegexMatch) {
+                QRegularExpression regex(rule.windowTitle);
+                if (regex.isValid()) {
+                    titleMatched = regex.match(windowtitle).hasMatch();
+                } else {
+                    titleMatched = false; // Invalid regex, consider it not matched
+                }
+            }
+        } else {
+            titleMatched = true; // No title criteria, consider it matched
+        }
+
+        // Class Name Matching
+        if (matchClass) {
+            if (rule.classNameMatchType == WindowInfoMatchType::Equals) {
+                classMatched = (rule.className == classname);
+            } else if (rule.classNameMatchType == WindowInfoMatchType::Contains) {
+                classMatched = classname.contains(rule.className);
+            } else if (rule.classNameMatchType == WindowInfoMatchType::StartsWith) {
+                classMatched = classname.startsWith(rule.className);
+            } else if (rule.classNameMatchType == WindowInfoMatchType::EndsWith) {
+                classMatched = classname.endsWith(rule.className);
+            } else if (rule.classNameMatchType == WindowInfoMatchType::RegexMatch) {
+                QRegularExpression regex(rule.className);
+                if (regex.isValid()) {
+                    classMatched = regex.match(classname).hasMatch();
+                } else {
+                    classMatched = false; // Invalid regex, consider it not matched
+                }
+            }
+        } else {
+            classMatched = true; // No class name criteria, consider it matched
+        }
+
+        if (processMatched && titleMatched && classMatched) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[isWindowInIgnoreList]"<< " Match found in ignore list: ProcessName(" << processname << "), WindowTitle(" << windowtitle << "), ClassName(" << classname << ")";
+#endif
+            return true;
+        }
+    }
+    return false;
 }
 
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
@@ -2811,14 +2896,10 @@ BOOL QKeyMapper::EnumWindowsProc(HWND hWnd, LPARAM lParam)
             }
         }
 
-        bool isToolTipWindow = false;
-        if (className.contains(QT_TOOLTIP_WINDOW_CLASS)
-            || (className == SYSTEM_SHADOW_WINDOW_CLASS && WindowText.isEmpty())) {
-            isToolTipWindow = true;
-        }
+        bool isIgnoredWindow = isWindowInIgnoreList(processName, WindowText, className);
 
         if ((!processName.isEmpty() || isProtectedProcess)
-            && !isToolTipWindow) {
+            && !isIgnoredWindow) {
 // #ifdef DEBUG_LOGOUT_ON
 //             qDebug().nospace() << "[EnumWindowsProc]" << "WindowTitle:" << WindowText
 //                                << ", ClassName:" << className
@@ -3073,7 +3154,9 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
         return;
     }
 
+    QString processPath;
     QString WindowText;
+    QString WindowClassName;
     // Optimize GetWindowText call by checking window text length first
     int titleLength = GetWindowTextLength(hWnd);
     if (titleLength > 0) {
@@ -3086,7 +3169,6 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
     }
 
     // Get window class name for ClassName matching
-    QString WindowClassName;
     TCHAR classNameBuffer[MAX_PATH];
     memset(classNameBuffer, 0x00, sizeof(classNameBuffer));
     int classLength = GetClassName(hWnd, classNameBuffer, MAX_PATH);
@@ -3096,16 +3178,13 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
 
     DWORD dwProcessId = 0;
     DWORD tid = GetWindowThreadProcessId(hWnd, &dwProcessId);
-
-    bool isToolTipWindow = false;
-    if (WindowClassName.contains(QT_TOOLTIP_WINDOW_CLASS)
-        || (WindowClassName == SYSTEM_SHADOW_WINDOW_CLASS && WindowText.isEmpty())) {
-        isToolTipWindow = true;
+    if (tid != 0) {
+        processPath = getProcessPathFromPID(dwProcessId);
     }
 
-    if (tid != 0 && dwProcessId != 0 && !isToolTipWindow) {
-        QString processPath = getProcessPathFromPID(dwProcessId);
+    bool isIgnoredWindow = isWindowInIgnoreList(processPath, WindowText, WindowClassName);
 
+    if (!isIgnoredWindow) {
         // Perform matching logic based on ComboBox selection
         bool processMatched = false;
         bool windowTitleMatched = false;
@@ -17045,6 +17124,58 @@ void QKeyMapper::updateCategoryFilterByShowCategoryState()
         qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category column visible:" << m_KeyMappingDataTable->isCategoryColumnVisible();
     }
 #endif
+}
+
+void QKeyMapper::initIgnoreWindowInfoList()
+{
+    s_IgnoreWindowInfoList.clear();
+
+    IgnoreWindowInfo info;
+
+    info.ruleName = "Qt tooltip window";
+    info.processNameMatchType = WindowInfoMatchType::Ignore;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Contains;
+    info.processName.clear();
+    info.windowTitle.clear();
+    info.className = QT_TOOLTIP_WINDOW_CLASS;
+    s_IgnoreWindowInfoList.append(info);
+
+    info.ruleName = "System shadow window";
+    info.processNameMatchType = WindowInfoMatchType::Ignore;
+    info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName.clear();
+    info.windowTitle = "^$"; // Empty window title
+    info.className = SYSTEM_SHADOW_WINDOW_CLASS;
+    s_IgnoreWindowInfoList.append(info);
+
+    info.ruleName = "Multitask view Staging";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName = "explorer.exe";
+    info.windowTitle.clear();
+    info.className = "ForegroundStaging";
+    s_IgnoreWindowInfoList.append(info);
+
+    info.ruleName = "Multitask view Frame Win10";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName = "explorer.exe";
+    info.windowTitle.clear();
+    info.className = "MultitaskingViewFrame";
+    s_IgnoreWindowInfoList.append(info);
+
+    info.ruleName = "Multitask view Frame Win11";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName = "explorer.exe";
+    info.windowTitle.clear();
+    info.className = "XamlExplorerHostIslandWindow";
+    s_IgnoreWindowInfoList.append(info);
 }
 
 void QKeyMapper::initKeyMappingTabWidget(void)

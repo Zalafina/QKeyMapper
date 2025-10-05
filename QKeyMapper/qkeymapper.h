@@ -110,7 +110,7 @@ namespace Ui {
 class QKeyMapper;
 }
 
-typedef struct
+struct MAP_PROCESSINFO
 {
     QString FileName;
     QString PID;
@@ -118,7 +118,21 @@ typedef struct
     QString ClassName;
     QString FilePath;
     QIcon   WindowIcon;
-}MAP_PROCESSINFO;
+};
+
+struct IgnoreWindowInfo
+{
+    QString ruleName;
+    QString processName;
+    QString windowTitle;
+    QString className;
+
+    QKeyMapperConstants::WindowInfoMatchType processNameMatchType = QKeyMapperConstants::WindowInfoMatchType::Contains;
+    QKeyMapperConstants::WindowInfoMatchType windowTitleMatchType = QKeyMapperConstants::WindowInfoMatchType::Contains;
+    QKeyMapperConstants::WindowInfoMatchType classNameMatchType   = QKeyMapperConstants::WindowInfoMatchType::Ignore;
+
+    bool enabled = true;
+};
 
 struct MousePoint_Info
 {
@@ -833,6 +847,7 @@ public:
     static bool isWindowsFilterKeysEnabled(void);
     static void setWindowsFilterKeysEnabled(bool enable);
     static bool isWindowsDarkMode(void);
+    static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
 
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
@@ -1281,6 +1296,7 @@ public:
     void onCategoryFilterChanged(int index);
     void updateCategoryFilterComboBox(void);
     void updateCategoryFilterByShowCategoryState(void);
+    void initIgnoreWindowInfoList(void);
 
 private:
     void initKeyMappingTabWidget(void);
@@ -1425,6 +1441,7 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
+    static QList<IgnoreWindowInfo> s_IgnoreWindowInfoList;
     static int s_KeyMappingTabWidgetCurrentIndex;
     static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;

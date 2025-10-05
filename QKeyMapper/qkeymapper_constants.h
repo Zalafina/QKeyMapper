@@ -121,6 +121,21 @@ namespace QKeyMapperConstants {
     inline constexpr bool ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT  = false;
 #endif
 
+    // Define match type enumeration
+    enum class WindowInfoMatchType : int {
+        Ignore     = 0,
+        Equals     = 1,
+        Contains   = 2,
+        StartsWith = 3,
+        EndsWith   = 4,
+        RegexMatch = 5
+    };
+
+    // Define helper constants (default value and range)
+    inline constexpr WindowInfoMatchType WINDOWINFO_MATCH_TYPE_DEFAULT = WindowInfoMatchType::Contains;
+    inline constexpr WindowInfoMatchType WINDOWINFO_MATCH_TYPE_MIN     = WindowInfoMatchType::Ignore;
+    inline constexpr WindowInfoMatchType WINDOWINFO_MATCH_TYPE_MAX     = WindowInfoMatchType::RegexMatch;
+
     inline constexpr int WINDOWINFO_MATCH_INDEX_IGNORE     = 0;
     inline constexpr int WINDOWINFO_MATCH_INDEX_EQUALS     = 1;
     inline constexpr int WINDOWINFO_MATCH_INDEX_CONTAINS   = 2;
