@@ -2037,7 +2037,7 @@ bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle
 
         if (processMatched && titleMatched && classMatched) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[isWindowInIgnoreList]"<< " Match found in ignore list: ProcessName(" << processname << "), WindowTitle(" << windowtitle << "), ClassName(" << classname << ")";
+            qDebug().nospace() << "[isWindowInIgnoreList]" << " Match found in ignore list: RuleName(" << rule.ruleName << "), ProcessName(" << processname << "), WindowTitle(" << windowtitle << "), ClassName(" << classname << ")";
 #endif
             return true;
         }
