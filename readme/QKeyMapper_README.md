@@ -592,12 +592,13 @@ E:\\MyGames\\Game_3\\.*\.exe$
 
 **路径示例：**
 - `E:\Game\DNF\DNF_Foreign\DNF-KOREA\KOREA\DNF\DNF.exe`
-- `E:\Game\DNF\DNF_Foreign\DFO-GLOBAL\DFO\DFO.exe`
 - `E:\Game\DNF\DNF_CHINA\DNF\DNF.exe`
+- `E:\Game\DNF\DNF_Foreign\DFO-GLOBAL\DFO\DFO.exe`
+- `E:\Game\DNF\DNF_Foreign\DNF-JAPAN\ARAD\ARAD.exe`
 
 **正则表达式：**
 ```regex
-E:\\Game\\DNF\\.*\\(DNF|DFO|ARAD)\.exe$
+E:\\Game\\DNF\\.*\\(?:DNF|DFO|ARAD)\.exe$
 ```
 
 #### 示例4：匹配 Steam 游戏
