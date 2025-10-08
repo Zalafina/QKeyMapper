@@ -147,7 +147,7 @@ bool VolumeController::refreshAudioEndpoint()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[VolumeController::refreshAudioEndpoint] Audio endpoint refreshed successfully";
+    qDebug() << "[VolumeController::refreshAudioEndpoint] Audio endpoint refreshed successfully, Device ID:" << QString::fromStdWString(m_currentDeviceId);
 #endif
     return true;
 }
