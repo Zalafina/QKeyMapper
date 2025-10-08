@@ -1,5 +1,6 @@
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
+#include <string>
 
 #include <QDebug>
 #include "volumecontroller.h"
@@ -20,6 +21,7 @@ VolumeController::VolumeController()
     , m_deviceEnumerator(nullptr)
     , m_defaultDevice(nullptr)
     , m_endpointVolume(nullptr)
+    , m_currentDeviceId()
 {
 }
 
@@ -47,23 +49,8 @@ bool VolumeController::initialize()
         return false;
     }
 
-    // Get default audio render device
-    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &m_defaultDevice);
-    if (FAILED(hr)) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::initialize] Failed to get default audio endpoint, hr =" << QString::number(hr, 16);
-#endif
-        cleanup();
-        return false;
-    }
-
-    // Get audio endpoint volume interface
-    hr = m_defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL,
-                                   nullptr, reinterpret_cast<void**>(&m_endpointVolume));
-    if (FAILED(hr)) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::initialize] Failed to activate audio endpoint volume, hr =" << QString::number(hr, 16);
-#endif
+    // Get default audio endpoint and activate volume interface
+    if (!refreshAudioEndpoint()) {
         cleanup();
         return false;
     }
@@ -94,15 +81,134 @@ void VolumeController::cleanup()
     }
 
     m_isInitialized = false;
+    m_currentDeviceId.clear();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[VolumeController::cleanup] Volume controller cleaned up";
 #endif
 }
 
+bool VolumeController::refreshAudioEndpoint()
+{
+    if (!m_deviceEnumerator) {
+        return false;
+    }
+
+    HRESULT hr;
+    IMMDevice* newDevice = nullptr;
+
+    // Get default audio render device
+    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &newDevice);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::refreshAudioEndpoint] Failed to get default audio endpoint, hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+    // Get device ID to track current device
+    LPWSTR deviceId = nullptr;
+    hr = newDevice->GetId(&deviceId);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::refreshAudioEndpoint] Failed to get device ID, hr =" << QString::number(hr, 16);
+#endif
+        newDevice->Release();
+        return false;
+    }
+
+    // Store current device ID
+    m_currentDeviceId = deviceId;
+    CoTaskMemFree(deviceId);
+
+    // Release old device if exists
+    if (m_defaultDevice) {
+        m_defaultDevice->Release();
+        m_defaultDevice = nullptr;
+    }
+
+    // Release old endpoint volume if exists
+    if (m_endpointVolume) {
+        m_endpointVolume->Release();
+        m_endpointVolume = nullptr;
+    }
+
+    // Store new device
+    m_defaultDevice = newDevice;
+
+    // Get audio endpoint volume interface
+    hr = m_defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL,
+                                   nullptr, reinterpret_cast<void**>(&m_endpointVolume));
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::refreshAudioEndpoint] Failed to activate audio endpoint volume, hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[VolumeController::refreshAudioEndpoint] Audio endpoint refreshed successfully";
+#endif
+    return true;
+}
+
+bool VolumeController::updateDefaultAudioEndpointIfChanged()
+{
+    if (!m_deviceEnumerator) {
+        return false;
+    }
+
+    HRESULT hr;
+    IMMDevice* currentDevice = nullptr;
+
+    // Get current default audio render device
+    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &currentDevice);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged] Failed to get current default audio endpoint, hr =" << QString::number(hr, 16);
+#endif
+        return false;
+    }
+
+    // Get current device ID
+    LPWSTR deviceId = nullptr;
+    hr = currentDevice->GetId(&deviceId);
+    if (FAILED(hr)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged] Failed to get current device ID, hr =" << QString::number(hr, 16);
+#endif
+        currentDevice->Release();
+        return false;
+    }
+
+    std::wstring currentDeviceId = deviceId;
+    CoTaskMemFree(deviceId);
+    currentDevice->Release();
+
+    // Check if device has changed
+    if (currentDeviceId != m_currentDeviceId) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged] Default audio device changed, refreshing endpoint";
+#endif
+        // Device changed, refresh endpoint
+        return refreshAudioEndpoint();
+    }
+
+    // Device hasn't changed, no update needed
+    return true;
+}
+
 bool VolumeController::setVolume(float volumePercentage)
 {
     if (!m_isInitialized || !m_endpointVolume) {
+        return false;
+    }
+
+    // Check if default audio device has changed and update if necessary
+    if (!updateDefaultAudioEndpointIfChanged()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::setVolume] Failed to update audio endpoint";
+#endif
         return false;
     }
 
@@ -138,6 +244,14 @@ bool VolumeController::setVolume(float volumePercentage)
 float VolumeController::getCurrentVolume()
 {
     if (!m_isInitialized || !m_endpointVolume) {
+        return 0.0f;
+    }
+
+    // Check if default audio device has changed and update if necessary
+    if (!updateDefaultAudioEndpointIfChanged()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::getCurrentVolume] Failed to update audio endpoint";
+#endif
         return 0.0f;
     }
 
@@ -198,6 +312,14 @@ bool VolumeController::setMute(bool muted)
         return false;
     }
 
+    // Check if default audio device has changed and update if necessary
+    if (!updateDefaultAudioEndpointIfChanged()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::setMute] Failed to update audio endpoint";
+#endif
+        return false;
+    }
+
     // Use QKeyMapper-specific GUID to identify this mute change event
     HRESULT hr = m_endpointVolume->SetMute(muted ? TRUE : FALSE, &s_QKeyMapperVolumeGUID);
     if (FAILED(hr)) {
@@ -216,6 +338,14 @@ bool VolumeController::setMute(bool muted)
 bool VolumeController::isMuted()
 {
     if (!m_isInitialized || !m_endpointVolume) {
+        return false;
+    }
+
+    // Check if default audio device has changed and update if necessary
+    if (!updateDefaultAudioEndpointIfChanged()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::isMuted] Failed to update audio endpoint";
+#endif
         return false;
     }
 

@@ -49,6 +49,14 @@ private:
     // Automatically mute when setting to 0%, unmute when setting to non-zero
     bool applyWindowsMuteLogic(float volumePercentage);
 
+    // Update default audio endpoint if the current device has changed
+    // This ensures volume operations target the currently active output device
+    bool updateDefaultAudioEndpointIfChanged();
+
+    // Get current default audio endpoint and activate volume interface
+    // Helper function to refresh endpoint when device changes
+    bool refreshAudioEndpoint();
+
     // QKeyMapper-specific GUID for volume change event context
     // This helps identify volume changes made by QKeyMapper vs other applications
     static const GUID s_QKeyMapperVolumeGUID;
@@ -58,4 +66,5 @@ private:
     IMMDeviceEnumerator* m_deviceEnumerator;
     IMMDevice* m_defaultDevice;
     IAudioEndpointVolume* m_endpointVolume;
+    std::wstring m_currentDeviceId; // Track current device ID to detect changes
 };
