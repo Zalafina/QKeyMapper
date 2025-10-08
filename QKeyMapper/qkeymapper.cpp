@@ -1268,7 +1268,7 @@ void QKeyMapper::matchForegroundWindow()
             bool allEnabledConditionsSatisfied = (!matchProcess || processMatched) &&
                                                 (!matchWindowTitle || windowTitleMatched) &&
                                                 (!matchClassName || classNameMatched);
-            
+
             if (anyMatchingEnabled && allEnabledConditionsSatisfied) {
                 matchResult = MatchResult::ProcessMatched;
             }
@@ -3960,23 +3960,45 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
     ValidationResult result;
     result.isValid = true;
 
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
+    // Support both fixed wait time (A⏱50) and random range (A⏱(50~70))
+    // Capture groups: 1=prefix, 2=keyname, 3=range_min, 4=range_max, 5=fixed_time
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
         QString prefix = mapkey_match.captured(1);
         QString mapping_key = mapkey_match.captured(2);
-        QString waitTimeString = mapkey_match.captured(3);
+        QString rangeMinString = mapkey_match.captured(3);
+        QString rangeMaxString = mapkey_match.captured(4);
+        QString fixedTimeString = mapkey_match.captured(5);
         bool ok = true;
         int waittime = 0;
+        int waittime_min = 0;
+        int waittime_max = 0;
+        bool is_range_format = false;
         Q_UNUSED(prefix);
 
-        if (!waitTimeString.isEmpty()) {
-            waittime = waitTimeString.toInt(&ok);
+        // Parse wait time: support both random range and fixed time
+        if (!rangeMinString.isEmpty() && !rangeMaxString.isEmpty()) {
+            // Random range format: A⏱(50~70)
+            is_range_format = true;
+            waittime_min = rangeMinString.toInt(&ok);
+            if (ok) {
+                waittime_max = rangeMaxString.toInt(&ok);
+            }
+        }
+        else if (!fixedTimeString.isEmpty()) {
+            // Fixed time format: A⏱50
+            waittime = fixedTimeString.toInt(&ok);
         }
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[validateSingleMappingKey]" << "Prefix(" << prefix << "), Time(" << waittime << ") -> " << mapkey;
+        if (is_range_format) {
+            qDebug().nospace() << "[validateSingleMappingKey]" << "Prefix(" << prefix << "), TimeRange(" << waittime_min << "~" << waittime_max << ") -> " << mapkey;
+        }
+        else {
+            qDebug().nospace() << "[validateSingleMappingKey]" << "Prefix(" << prefix << "), Time(" << waittime << ") -> " << mapkey;
+        }
 #endif
         bool deprecated_compatible = false;
         if (QKeyMapper::getInstance()->loadSetting_flag && mapping_key == MOUSE2VJOY_DIRECT_KEY_STR_DEPRECATED) {
@@ -4095,10 +4117,26 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
             }
         }
 
-        if (result.isValid && !waitTimeString.isEmpty()) {
-            if (!ok || waitTimeString == "0" || waitTimeString.startsWith('0') || waittime <= MAPPING_WAITTIME_MIN || waittime > MAPPING_WAITTIME_MAX) {
+        // Validate wait time format
+        if (result.isValid && is_range_format) {
+            // Validate random range format: A⏱(min~max)
+            if (!ok || rangeMinString == "0" || rangeMinString.startsWith('0')
+                || rangeMaxString == "0" || rangeMaxString.startsWith('0')
+                || waittime_min <= MAPPING_WAITTIME_MIN || waittime_min > MAPPING_WAITTIME_MAX
+                || waittime_max <= MAPPING_WAITTIME_MIN || waittime_max > MAPPING_WAITTIME_MAX) {
                 result.isValid = false;
-                result.errorMessage = tr("Invalid waittime \"%1\"").arg(waitTimeString);
+                result.errorMessage = tr("Invalid waittime range \"(%1~%2)\"").arg(rangeMinString, rangeMaxString);
+            }
+            else if (waittime_min > waittime_max) {
+                result.isValid = false;
+                result.errorMessage = tr("Invalid waittime range: min(%1) > max(%2)").arg(waittime_min).arg(waittime_max);
+            }
+        }
+        else if (result.isValid && !fixedTimeString.isEmpty()) {
+            // Validate fixed time format: A⏱50
+            if (!ok || fixedTimeString == "0" || fixedTimeString.startsWith('0') || waittime <= MAPPING_WAITTIME_MIN || waittime > MAPPING_WAITTIME_MAX) {
+                result.isValid = false;
+                result.errorMessage = tr("Invalid waittime \"%1\"").arg(fixedTimeString);
             }
         }
     }

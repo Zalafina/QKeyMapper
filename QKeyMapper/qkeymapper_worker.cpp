@@ -1139,7 +1139,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         return;
     }
 
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(\d+))?$)");
+    // Support both fixed wait time (A⏱50) and random range (A⏱(50~70))
+    // Capture groups: 1=prefix, 2=keyname, 3=range_min, 4=range_max, 5=fixed_time
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
     static QRegularExpression sendtext_regex(
         REGEX_PATTERN_SENDTEXT,
         QRegularExpression::MultilineOption
@@ -1812,12 +1814,31 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (mapkey_match.hasMatch()) {
                     QString prefix = mapkey_match.captured(1);
                     key = mapkey_match.captured(2);
-                    QString waitTimeString = mapkey_match.captured(3);
+                    QString rangeMinString = mapkey_match.captured(3);
+                    QString rangeMaxString = mapkey_match.captured(4);
+                    QString fixedTimeString = mapkey_match.captured(5);
                     bool ok = true;
                     int waittime_temp = 0;
 
-                    if (!waitTimeString.isEmpty()) {
-                        waittime_temp = waitTimeString.toInt(&ok);
+                    // Parse wait time: support both random range (min~max) and fixed time
+                    if (!rangeMinString.isEmpty() && !rangeMaxString.isEmpty()) {
+                        // Random range format: A⏱(50~70)
+                        int minTime = rangeMinString.toInt(&ok);
+                        if (ok) {
+                            int maxTime = rangeMaxString.toInt(&ok);
+                            if (ok && minTime <= maxTime) {
+                                // Generate random wait time within range [minTime, maxTime]
+                                waittime_temp = QRandomGenerator::global()->bounded(minTime, maxTime + 1);
+                                waitTime = waittime_temp;
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace().noquote() << "[sendInputKeys] Random wait time range(" << minTime << "~" << maxTime << ") -> Generated: " << waitTime;
+#endif
+                            }
+                        }
+                    }
+                    else if (!fixedTimeString.isEmpty()) {
+                        // Fixed time format: A⏱50
+                        waittime_temp = fixedTimeString.toInt(&ok);
                         if (ok) {
                             waitTime = waittime_temp;
                         }
@@ -14154,7 +14175,9 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(\d+))?$)");
+    // Support both fixed wait time and random range with bracket notation
+    // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
+    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
 
     // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
     QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex);
