@@ -126,12 +126,13 @@ struct IgnoreWindowInfo
     QString processName;
     QString windowTitle;
     QString className;
+    QString description;
 
     QKeyMapperConstants::WindowInfoMatchType processNameMatchType = QKeyMapperConstants::WindowInfoMatchType::Contains;
     QKeyMapperConstants::WindowInfoMatchType windowTitleMatchType = QKeyMapperConstants::WindowInfoMatchType::Contains;
     QKeyMapperConstants::WindowInfoMatchType classNameMatchType   = QKeyMapperConstants::WindowInfoMatchType::Ignore;
 
-    bool enabled = true;
+    bool disabled = false;
 };
 
 struct MousePoint_Info

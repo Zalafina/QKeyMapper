@@ -1954,7 +1954,7 @@ bool QKeyMapper::isWindowsDarkMode()
 bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname)
 {
     for (const IgnoreWindowInfo &rule : std::as_const(s_IgnoreWindowInfoList)) {
-        if (!rule.enabled)
+        if (rule.disabled)
             continue;
 
         bool matchProcess = (rule.processNameMatchType != WindowInfoMatchType::Ignore && !rule.processName.isEmpty());
