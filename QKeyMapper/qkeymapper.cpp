@@ -484,6 +484,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     m_StartupPositionDialog = new QStartupPositionDialog(this);
+    m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
@@ -6841,6 +6842,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeTableSetupDialog();
             closeFloatingWindowSetupDialog();
             closeItemSetupDialog();
+            closeIgnoreRulesListDialog();
             closeCrosshairSetupDialog();
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
@@ -7191,6 +7193,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         closeTableSetupDialog();
         closeFloatingWindowSetupDialog();
         closeItemSetupDialog();
+        closeIgnoreRulesListDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
@@ -15176,6 +15179,10 @@ void QKeyMapper::closeSelectColorDialog()
 
 void QKeyMapper::showInputDeviceListWindow()
 {
+    if (Q_NULLPTR == m_deviceListWindow) {
+        return;
+    }
+
     if (!m_deviceListWindow->isVisible()) {
         m_deviceListWindow->show();
     }
@@ -15194,6 +15201,10 @@ void QKeyMapper::closeInputDeviceListWindow()
 
 void QKeyMapper::showGyro2MouseAdvancedSettingWindow()
 {
+    if (Q_NULLPTR == m_Gyro2MouseOptionDialog) {
+        return;
+    }
+
     if (!m_Gyro2MouseOptionDialog->isVisible()) {
         m_Gyro2MouseOptionDialog->show();
     }
@@ -15212,6 +15223,10 @@ void QKeyMapper::closeGyro2MouseAdvancedSettingDialog()
 
 void QKeyMapper::showTrayIconSelectDialog()
 {
+    if (Q_NULLPTR == m_TrayIconSelectDialog) {
+        return;
+    }
+
     if (!m_TrayIconSelectDialog->isVisible()) {
         m_TrayIconSelectDialog->show();
     }
@@ -15230,6 +15245,10 @@ void QKeyMapper::closeTrayIconSelectDialog()
 
 void QKeyMapper::showNotificationSetupDialog()
 {
+    if (Q_NULLPTR == m_NotificationSetupDialog) {
+        return;
+    }
+
     if (!m_NotificationSetupDialog->isVisible()) {
         m_NotificationSetupDialog->show();
     }
@@ -15248,6 +15267,10 @@ void QKeyMapper::closeNotificationSetupDialog()
 
 void QKeyMapper::showStartupPositonSettingDialog()
 {
+    if (Q_NULLPTR == m_StartupPositionDialog) {
+        return;
+    }
+
     if (!m_StartupPositionDialog->isVisible()) {
         m_StartupPositionDialog->show();
     }
@@ -15261,6 +15284,28 @@ void QKeyMapper::closeStartupPositonSettingDialog()
 
     if (m_StartupPositionDialog->isVisible()) {
         m_StartupPositionDialog->close();
+    }
+}
+
+void QKeyMapper::showIgnoreRulesListDialog()
+{
+    if (Q_NULLPTR == m_IgnoreRulesListDialog) {
+        return;
+    }
+
+    if (!m_IgnoreRulesListDialog->isVisible()) {
+        m_IgnoreRulesListDialog->show();
+    }
+}
+
+void QKeyMapper::closeIgnoreRulesListDialog()
+{
+    if (Q_NULLPTR == m_IgnoreRulesListDialog) {
+        return;
+    }
+
+    if (m_IgnoreRulesListDialog->isVisible()) {
+        m_IgnoreRulesListDialog->close();
     }
 }
 
@@ -16604,6 +16649,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
+            closeIgnoreRulesListDialog();
             closeTableSetupDialog();
             closeItemSetupDialog();
             hide();
@@ -16651,6 +16697,7 @@ void QKeyMapper::forceHide()
         closeTableSetupDialog();
         closeFloatingWindowSetupDialog();
         closeItemSetupDialog();
+        closeIgnoreRulesListDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
@@ -18847,6 +18894,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->startupPositonSettingButton->setText(tr("Startup Position"));
+    ui->ignoreRulesListButton->setText(tr("Ignore Rules List"));
     ui->mappingAdvancedSettingButton->setText(tr("Mapping Advanced"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
     ui->checkUpdateButton->setText(tr("Check Updates"));
@@ -18982,6 +19030,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_StartupPositionDialog != Q_NULLPTR) {
         m_StartupPositionDialog->setUILanguage(languageindex);
+    }
+
+    if (m_IgnoreRulesListDialog != Q_NULLPTR) {
+        m_IgnoreRulesListDialog->setUILanguage(languageindex);
     }
 
     if (m_MappingAdvancedDialog != Q_NULLPTR) {
@@ -24555,6 +24607,11 @@ void QKeyMapper::on_backupSettingButton_clicked()
     */
 
     opacityAnim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void QKeyMapper::on_ignoreRulesListButton_clicked()
+{
+    showIgnoreRulesListDialog();
 }
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)

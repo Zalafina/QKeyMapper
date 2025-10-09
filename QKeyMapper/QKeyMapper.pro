@@ -170,6 +170,7 @@ HEADERS     += \
     qcrosshairsetupdialog.h \
     qfloatingwindowsetupdialog.h \
     qgyro2mouseoptiondialog.h \
+    qignorewindowinfolistdialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
     qmappingadvanceddialog.h \
@@ -191,6 +192,7 @@ SOURCES     += \
     qcrosshairsetupdialog.cpp \
     qfloatingwindowsetupdialog.cpp \
     qgyro2mouseoptiondialog.cpp \
+    qignorewindowinfolistdialog.cpp \
     qinputdevicelistwindow.cpp \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
@@ -224,6 +226,7 @@ FORMS       += \
     qcrosshairsetupdialog.ui \
     qfloatingwindowsetupdialog.ui \
     qgyro2mouseoptiondialog.ui \
+    qignorewindowinfolistdialog.ui \
     qinputdevicelistwindow.ui \
     qitemsetupdialog.ui \
     qkeymapper.ui \

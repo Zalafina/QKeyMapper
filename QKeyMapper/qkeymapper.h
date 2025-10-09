@@ -80,6 +80,7 @@
 #include "qnotificationsetupdialog.h"
 #include "qstartuppositiondialog.h"
 #include "qmappingadvanceddialog.h"
+#include "qignorewindowinfolistdialog.h"
 
 struct InputDeviceInfo
 {
@@ -1236,6 +1237,8 @@ private slots:
 
     void on_backupSettingButton_clicked();
 
+    void on_ignoreRulesListButton_clicked();
+
 private:
     // Helper methods for saving/restoring category filter state
     // Helper methods for last auto matched setting management
@@ -1399,6 +1402,8 @@ private:
     void closeNotificationSetupDialog(void);
     void showStartupPositonSettingDialog(void);
     void closeStartupPositonSettingDialog(void);
+    void showIgnoreRulesListDialog(void);
+    void closeIgnoreRulesListDialog(void);
     void showMappingAdvancedDialog(void);
     void closeMappingAdvancedDialog(void);
     void showItemSetupDialog(int tabindex, int row);
@@ -1534,6 +1539,7 @@ private:
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
     QNotificationSetupDialog *m_NotificationSetupDialog = Q_NULLPTR;
     QStartupPositionDialog *m_StartupPositionDialog = Q_NULLPTR;
+    QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
