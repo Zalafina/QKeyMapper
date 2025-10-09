@@ -56,6 +56,7 @@ void QIgnoreWindowInfoListDialog::setUILanguage(int languageindex)
     ui->saveRuleButton->setText(tr("Add"));
     ui->clearRuleButton->setText(tr("Clear"));
     ui->ruleDisabledCheckBox->setText(tr("Disabled"));
+    ui->deleteRuleButton->setText(tr("Delete"));
 
     ui->ruleProcessNameMatchTypeComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->ruleProcessNameMatchTypeComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));

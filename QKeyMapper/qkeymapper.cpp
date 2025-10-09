@@ -24618,6 +24618,8 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     : QWidget(parent),
       m_listWidget(new QListWidget(this))
 {
+    m_listWidget->setFrameShape(QFrame::WinPanel);
+
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     // Allow this widget to receive mouse click focus for space key handling
