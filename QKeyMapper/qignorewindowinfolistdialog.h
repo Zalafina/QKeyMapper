@@ -22,10 +22,24 @@ public:
     }
 
     void setUILanguage(int languageindex);
+    void updateRulesListWidget(void);
 
 protected:
     // bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+
+private slots:
+    void on_saveRuleButton_clicked();
+
+    void on_clearRuleButton_clicked();
+
+    void on_deleteRuleButton_clicked();
+
+    void on_ruleNameLineEdit_textChanged(const QString &text);
+
+private:
+    void initRuleWindowInfoArea(void);
 
 private:
     static QIgnoreWindowInfoListDialog *m_instance;

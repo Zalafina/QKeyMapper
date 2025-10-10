@@ -544,116 +544,122 @@
     <name>QIgnoreWindowInfoListDialog</name>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="14"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="48"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="50"/>
         <source>Ignore Rules List</source>
         <translation>無視ルール一覧</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="65"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="52"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="54"/>
         <source>Title</source>
         <translation>タイトル</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="75"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="50"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="52"/>
         <source>Rule Name</source>
         <translation>ルール名</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="217"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="51"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="53"/>
         <source>Process</source>
         <translation>プロセス</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="248"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="56"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="58"/>
         <source>Add</source>
         <translation>追加</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="283"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="53"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="55"/>
         <source>Class</source>
         <translation>クラス名</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="293"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="54"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="56"/>
         <source>Description</source>
         <translation>ルール説明</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="324"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="58"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="60"/>
         <source>Disabled</source>
         <translation>無効</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="352"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="57"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="59"/>
         <source>Clear</source>
         <translation>クリア</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="402"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="55"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="57"/>
         <source>Rules List</source>
         <translation>ルール一覧</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="485"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="61"/>
         <source>Delete</source>
         <translation>削除</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="17"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="60"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="66"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="72"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="19"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="63"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="69"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="75"/>
         <source>Ignore</source>
         <translation>無視</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="18"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="61"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="67"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="73"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="20"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="64"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="70"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="76"/>
         <source>Equals</source>
         <translation>等しい</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="19"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="62"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="68"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="74"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="21"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="65"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="71"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="77"/>
         <source>Contains</source>
         <translation>含む</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="20"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="63"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="69"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="75"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="22"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="66"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="72"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="78"/>
         <source>StartsWith</source>
         <translation>で始まる</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="21"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="64"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="70"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="76"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="23"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="67"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="73"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="79"/>
         <source>EndsWith</source>
         <translation>で終わる</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="22"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="65"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="71"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="77"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="24"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="68"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="74"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="80"/>
         <source>RegexMatch</source>
         <translation>正規表現一致</translation>
+    </message>
+    <message>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="128"/>
+        <source>Are you sure you want to clear the rule information fields?</source>
+        <translation>本当にルール情報フィールドをクリアしますか？</translation>
     </message>
 </context>
 <context>
@@ -2568,7 +2574,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
     <message>
         <location filename="../qkeymapper.cpp" line="21665"/>
         <source>Are you sure you want to clear all data in the mapping table?</source>
-        <translation>マッピングテーブル内全てのデータを消去するか確認してください？</translation>
+        <translation>本当にマッピングテーブル内の全てのデータを消去しますか？</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="23242"/>

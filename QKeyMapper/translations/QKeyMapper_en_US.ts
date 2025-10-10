@@ -544,116 +544,122 @@
     <name>QIgnoreWindowInfoListDialog</name>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="14"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="48"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="50"/>
         <source>Ignore Rules List</source>
         <translation>Ignore Rules List</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="65"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="52"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="54"/>
         <source>Title</source>
         <translation>Title</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="75"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="50"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="52"/>
         <source>Rule Name</source>
         <translation>Rule Name</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="217"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="51"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="53"/>
         <source>Process</source>
         <translation>Process</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="248"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="56"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="58"/>
         <source>Add</source>
         <translation>Add</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="283"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="53"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="55"/>
         <source>Class</source>
         <translation>Class</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="293"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="54"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="56"/>
         <source>Description</source>
         <translation>Description</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="324"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="58"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="60"/>
         <source>Disabled</source>
         <translation>Disabled</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="352"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="57"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="59"/>
         <source>Clear</source>
         <translation>Clear</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="402"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="55"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="57"/>
         <source>Rules List</source>
         <translation>Rules List</translation>
     </message>
     <message>
         <location filename="../qignorewindowinfolistdialog.ui" line="485"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="61"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="17"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="60"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="66"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="72"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="19"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="63"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="69"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="75"/>
         <source>Ignore</source>
         <translation>Ignore</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="18"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="61"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="67"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="73"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="20"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="64"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="70"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="76"/>
         <source>Equals</source>
         <translation>Equals</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="19"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="62"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="68"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="74"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="21"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="65"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="71"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="77"/>
         <source>Contains</source>
         <translation>Contains</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="20"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="63"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="69"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="75"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="22"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="66"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="72"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="78"/>
         <source>StartsWith</source>
         <translation>StartsWith</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="21"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="64"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="70"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="76"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="23"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="67"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="73"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="79"/>
         <source>EndsWith</source>
         <translation>EndsWith</translation>
     </message>
     <message>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="22"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="65"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="71"/>
-        <location filename="../qignorewindowinfolistdialog.cpp" line="77"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="24"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="68"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="74"/>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="80"/>
         <source>RegexMatch</source>
         <translation>RegexMatch</translation>
+    </message>
+    <message>
+        <location filename="../qignorewindowinfolistdialog.cpp" line="128"/>
+        <source>Are you sure you want to clear the rule information fields?</source>
+        <translation>Are you sure you want to clear the rule information fields?</translation>
     </message>
 </context>
 <context>

@@ -1,3 +1,4 @@
+#include "qkeymapper.h"
 #include "qignorewindowinfolistdialog.h"
 #include "ui_qignorewindowinfolistdialog.h"
 #include "qkeymapper_constants.h"
@@ -26,6 +27,8 @@ QIgnoreWindowInfoListDialog::QIgnoreWindowInfoListDialog(QWidget *parent)
     ui->ruleProcessNameMatchTypeComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->ruleWindowTitleMatchTypeComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->ruleClassNameMatchTypeComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
+
+    ui->ruleListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
 
     // Keep uniform item height for consistent DPI scaling
     ui->ruleListWidget->setUniformItemSizes(true);
@@ -78,6 +81,16 @@ void QIgnoreWindowInfoListDialog::setUILanguage(int languageindex)
     ui->ruleClassNameMatchTypeComboBox->setItemText(WINDOWINFO_MATCH_INDEX_REGEXMATCH,      tr("RegexMatch"));
 }
 
+void QIgnoreWindowInfoListDialog::updateRulesListWidget()
+{
+
+}
+
+void QIgnoreWindowInfoListDialog::showEvent(QShowEvent *event)
+{
+    updateRulesListWidget();
+}
+
 #if 0
 bool QIgnoreWindowInfoListDialog::event(QEvent *event)
 {
@@ -100,4 +113,64 @@ void QIgnoreWindowInfoListDialog::mousePressEvent(QMouseEvent *event)
     }
 
     QDialog::mousePressEvent(event);
+}
+
+void QIgnoreWindowInfoListDialog::on_saveRuleButton_clicked()
+{
+
+}
+
+
+void QIgnoreWindowInfoListDialog::on_clearRuleButton_clicked()
+{
+    QString ruleName = ui->ruleNameLineEdit->text();
+    QString ruleProcessName = ui->ruleProcessNameLineEdit->text();
+    QString ruleWindowTitle = ui->ruleWindowTitleLineEdit->text();
+    QString ruleClassName = ui->ruleClassNameLineEdit->text();
+    QString ruleDescription = ui->ruleDescriptionLineEdit->text();
+    bool ruleDisabled = ui->ruleDisabledCheckBox->isChecked();
+
+    if (!ruleName.isEmpty()
+        || !ruleProcessName.isEmpty()
+        || !ruleWindowTitle.isEmpty()
+        || !ruleClassName.isEmpty()
+        || !ruleDescription.isEmpty()
+        || ruleDisabled) {
+        QString message = tr("Are you sure you want to clear the rule information fields?");
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                  QMessageBox::Yes | QMessageBox::No,
+                                                                  QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+            // User cancelled, don't clear
+            return;
+        }
+
+        initRuleWindowInfoArea();
+    }
+}
+
+
+void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
+{
+
+}
+
+
+void QIgnoreWindowInfoListDialog::on_ruleNameLineEdit_textChanged(const QString &text)
+{
+
+}
+
+void QIgnoreWindowInfoListDialog::initRuleWindowInfoArea()
+{
+    ui->ruleProcessNameMatchTypeComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    ui->ruleWindowTitleMatchTypeComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
+    ui->ruleClassNameMatchTypeComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
+
+    ui->ruleNameLineEdit->clear();
+    ui->ruleProcessNameLineEdit->clear();
+    ui->ruleWindowTitleLineEdit->clear();
+    ui->ruleClassNameLineEdit->clear();
+    ui->ruleDescriptionLineEdit->clear();
+    ui->ruleDisabledCheckBox->setChecked(false);
 }
