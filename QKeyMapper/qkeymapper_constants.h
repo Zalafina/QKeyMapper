@@ -228,6 +228,7 @@ namespace QKeyMapperConstants {
     inline constexpr int NOTIFICATION_OFFSET_MAX = 5000;
 
     inline constexpr const char QT_TOOLTIP_WINDOW_CLASS[] = "QWindowToolTipDropShadowSaveBits";
+    inline constexpr const char QT_COMBOBOX_ITEMS_WINDOW_CLASS[] = "QWindowPopupDropShadowSaveBits";
     inline constexpr const char SYSTEM_SHADOW_WINDOW_CLASS[] = "SysShadow";
 
     inline constexpr const char CUSTOM_TRAYICONS_DIR[] = "custom_trayicons";

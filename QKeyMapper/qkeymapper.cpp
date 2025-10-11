@@ -9140,6 +9140,15 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.className = QT_TOOLTIP_WINDOW_CLASS;
     s_IgnoreWindowInfoMap[info.ruleName] = info;
 
+    info.ruleName = "Qt combobox items window";
+    info.processNameMatchType = WindowInfoMatchType::Ignore;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Contains;
+    info.processName.clear();
+    info.windowTitle.clear();
+    info.className = QT_COMBOBOX_ITEMS_WINDOW_CLASS;
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
     info.ruleName = "System shadow window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
     info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
