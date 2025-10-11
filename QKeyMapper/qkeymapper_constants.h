@@ -76,9 +76,14 @@ namespace QKeyMapperConstants {
     inline constexpr int KEYMAPPINGDATATABLE_TOP       = 0;
     inline constexpr int KEYMAPPINGDATATABLE_HEIGHT    = 324;
 
+    inline constexpr int ITEM_ICON_SIZE = 16;
     inline constexpr int BEST_ICON_SIZE = 256;
     inline constexpr int DEFAULT_ICON_WIDTH = 48;
     inline constexpr int DEFAULT_ICON_HEIGHT = 48;
+
+    inline constexpr int PREFER_ICON_LARGE      = 0;
+    inline constexpr int PREFER_ICON_SMALL      = 1;
+    inline constexpr int PREFER_ICON_DEFAULT    = 2;
 
     inline constexpr int COMBOBOX_BLANK_ICON_WIDTH = 16;
     inline constexpr int COMBOBOX_BLANK_ICON_HEIGHT = 16;

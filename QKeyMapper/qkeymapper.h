@@ -851,6 +851,7 @@ public:
     static bool isWindowsDarkMode(void);
     static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
 
+    static void setDisplayScaleValue(double scale);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static QString getProcessPathFromPID(DWORD dwProcessId);
@@ -858,7 +859,7 @@ public:
     static BOOL CALLBACK enumIconGroupsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
     static BOOL CALLBACK enumIconsProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam);
     static QIcon extractIconFromExecutable(const QString &filePath, int targetSize = QKeyMapperConstants::DEFAULT_ICON_WIDTH);
-    static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = QKeyMapperConstants::BEST_ICON_SIZE);
+    static QIcon extractBestIconFromExecutable(const QString &filePath, int targetSize = QKeyMapperConstants::BEST_ICON_SIZE, int prefer = QKeyMapperConstants::PREFER_ICON_LARGE);
     // static QIcon extractAllBestIconsFromExecutable(const QString &filePath);
     static BOOL IsAltTabWindow(HWND hWnd);
     static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
@@ -1449,6 +1450,7 @@ public:
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
+    static double s_DisplayScale;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
     static OrderedMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
     static int s_KeyMappingTabWidgetCurrentIndex;

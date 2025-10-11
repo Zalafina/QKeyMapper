@@ -18,6 +18,7 @@ HWND QKeyMapper::s_CurrentMappingHWND = NULL;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
+double QKeyMapper::s_DisplayScale = 1.0;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
 OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
 int QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = 0;
@@ -2046,6 +2047,15 @@ bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle
     return false;
 }
 
+void QKeyMapper::setDisplayScaleValue(double scale)
+{
+    s_DisplayScale = scale;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[QKeyMapper::setDisplayScaleValue]"<< " Set display scale value = " << scale;
+#endif
+}
+
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
 {
     TCHAR szProcessPath[MAX_PATH] = TEXT("");
@@ -2329,7 +2339,7 @@ QIcon QKeyMapper::extractIconFromExecutable(const QString &filePath, int targetS
     return result;
 }
 
-QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int targetSize)
+QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int targetSize, int prefer)
 {
     QIcon result;
 
@@ -2457,48 +2467,130 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
                   return a.size > b.size;
               });
 
-    // Find the best icon based on target size and quality
+    // Find the best icon based on target size, quality, and preference mode
     // Icons are now sorted by bit count (descending) then size (descending)
     HICON bestIcon = nullptr;
     int bestSize = 0;
     int bestBitCount = 0;
     int bestIndex = -1;
 
-    // Strategy: Find the highest quality icon that fits the target size
-    // If no icon fits exactly, prefer higher bit count over size matching
-    for (int i = 0; i < enumData.icons.size(); ++i) {
-        const IconInfo& iconInfo = enumData.icons[i];
-        int iconSize = iconInfo.size;
-        int bitCount = iconInfo.bitCount;
+    // Different strategies based on prefer parameter:
+    // PREFER_ICON_LARGE (0): Find icon <= targetSize, fallback to largest icon
+    // PREFER_ICON_SMALL (1): Find icon <= targetSize, fallback to smallest icon that's > targetSize
+    // PREFER_ICON_DEFAULT (2): Find icon <= targetSize, fallback to extractIconFromExecutable
 
-        if (iconSize <= targetSize) {
-            // Found an icon that fits within target size
-            // Since icons are sorted by quality first, this is the best quality that fits
-            bestIcon = iconInfo.hIcon;
-            bestSize = iconSize;
-            bestBitCount = bitCount;
-            bestIndex = i;
+    if (prefer == PREFER_ICON_LARGE) {
+        // Strategy: Find the highest quality icon that fits the target size
+        // If no icon fits exactly, prefer higher bit count over size matching
+        for (int i = 0; i < enumData.icons.size(); ++i) {
+            const IconInfo& iconInfo = enumData.icons[i];
+            int iconSize = iconInfo.size;
+            int bitCount = iconInfo.bitCount;
+
+            if (iconSize <= targetSize) {
+                // Found an icon that fits within target size
+                // Since icons are sorted by quality first, this is the best quality that fits
+                bestIcon = iconInfo.hIcon;
+                bestSize = iconSize;
+                bestBitCount = bitCount;
+                bestIndex = i;
 #ifdef EXTRACTICON_VERBOSE_LOG
-            qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon: " << bestSize << "x" << bestSize
+                qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon: " << bestSize << "x" << bestSize
+                                  << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
+#endif
+                break;
+            } else if (!bestIcon) {
+                // If no icon fits within target size, use the first one (highest quality)
+                // This will be the highest bit count icon available
+                bestIcon = iconInfo.hIcon;
+                bestSize = iconSize;
+                bestBitCount = bitCount;
+                bestIndex = i;
+            }
+        }
+
+        // If we only found oversized icons, bestIcon contains the highest quality one
+        if (bestIcon && bestSize > targetSize) {
+#ifdef EXTRACTICON_VERBOSE_LOG
+            qDebug().nospace() << "[extractBestIconFromExecutable] Using highest quality available icon: " << bestSize << "x" << bestSize
                               << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif
-            break;
-        } else if (!bestIcon) {
-            // If no icon fits within target size, use the first one (highest quality)
-            // This will be the highest bit count icon available
-            bestIcon = iconInfo.hIcon;
-            bestSize = iconSize;
-            bestBitCount = bitCount;
-            bestIndex = i;
         }
     }
+    else if (prefer == PREFER_ICON_SMALL) {
+        // Strategy: Find icon <= targetSize, or smallest icon > targetSize if none found
+        HICON smallestOversizedIcon = nullptr;
+        int smallestOversizedSize = INT_MAX;
+        int smallestOversizedBitCount = 0;
+        int smallestOversizedIndex = -1;
 
-    // If we only found oversized icons, bestIcon contains the highest quality one
-    if (bestIcon && bestSize > targetSize) {
+        for (int i = 0; i < enumData.icons.size(); ++i) {
+            const IconInfo& iconInfo = enumData.icons[i];
+            int iconSize = iconInfo.size;
+            int bitCount = iconInfo.bitCount;
+
+            if (iconSize <= targetSize) {
+                // Found an icon that fits within target size
+                bestIcon = iconInfo.hIcon;
+                bestSize = iconSize;
+                bestBitCount = bitCount;
+                bestIndex = i;
 #ifdef EXTRACTICON_VERBOSE_LOG
-        qDebug().nospace() << "[extractBestIconFromExecutable] Using highest quality available icon: " << bestSize << "x" << bestSize
-                          << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
+                qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon: " << bestSize << "x" << bestSize
+                                  << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
 #endif
+                break;
+            } else {
+                // Track the smallest icon that's larger than targetSize
+                if (iconSize < smallestOversizedSize) {
+                    smallestOversizedIcon = iconInfo.hIcon;
+                    smallestOversizedSize = iconSize;
+                    smallestOversizedBitCount = bitCount;
+                    smallestOversizedIndex = i;
+                }
+            }
+        }
+
+        // If no icon <= targetSize found, use the smallest oversized icon
+        if (!bestIcon && smallestOversizedIcon) {
+            bestIcon = smallestOversizedIcon;
+            bestSize = smallestOversizedSize;
+            bestBitCount = smallestOversizedBitCount;
+            bestIndex = smallestOversizedIndex;
+#ifdef EXTRACTICON_VERBOSE_LOG
+            qDebug().nospace() << "[extractBestIconFromExecutable] Using smallest oversized icon: " << bestSize << "x" << bestSize
+                              << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
+#endif
+        }
+    }
+    else if (prefer == PREFER_ICON_DEFAULT) {
+        // Strategy: Find icon <= targetSize only, fallback to extractIconFromExecutable if not found
+        for (int i = 0; i < enumData.icons.size(); ++i) {
+            const IconInfo& iconInfo = enumData.icons[i];
+            int iconSize = iconInfo.size;
+            int bitCount = iconInfo.bitCount;
+
+            if (iconSize <= targetSize) {
+                // Found an icon that fits within target size
+                bestIcon = iconInfo.hIcon;
+                bestSize = iconSize;
+                bestBitCount = bitCount;
+                bestIndex = i;
+#ifdef EXTRACTICON_VERBOSE_LOG
+                qDebug().nospace() << "[extractBestIconFromExecutable] Found optimal icon: " << bestSize << "x" << bestSize
+                                  << " (" << bestBitCount << " bits) for target: " << targetSize << "x" << targetSize;
+#endif
+                break;
+            }
+        }
+
+        // If no icon <= targetSize found, bestIcon remains nullptr
+        // Will trigger fallback to extractIconFromExecutable later
+        if (!bestIcon) {
+#ifdef EXTRACTICON_VERBOSE_LOG
+            qDebug().nospace() << "[extractBestIconFromExecutable] No icon <= targetSize found, will use fallback method";
+#endif
+        }
     }
 
     if (bestIcon) {
@@ -2539,12 +2631,23 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
     // Free the loaded module
     FreeLibrary(hModule);
 
-    // If resource enumeration failed, fallback to ExtractIconEx as backup
+    // Fallback behavior depends on prefer mode
     if (result.isNull()) {
+        if (prefer == PREFER_ICON_DEFAULT) {
+            // PREFER_ICON_DEFAULT mode: Use extractIconFromExecutable as fallback
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[extractBestIconFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
+            qDebug() << "[extractBestIconFromExecutable] No suitable icon found, using extractIconFromExecutable fallback";
 #endif
-        result = extractIconFromExecutable(filePath, targetSize);
+            result = extractIconFromExecutable(filePath, targetSize);
+        }
+        else {
+            // PREFER_ICON_LARGE or PREFER_ICON_SMALL: Already handled above
+            // If still null here, it means resource enumeration completely failed
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[extractBestIconFromExecutable] Resource enumeration failed, trying ExtractIconEx fallback";
+#endif
+            result = extractIconFromExecutable(filePath, targetSize);
+        }
     }
 
     return result;
@@ -11194,7 +11297,12 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         if (!filepathString.isEmpty()
             && QFileInfo::exists(filepathString)){
             QIcon fileicon;
-            fileicon = extractIconFromExecutable(filepathString);
+            if (s_DisplayScale == 1.0) {
+                fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+            }
+            else {
+                fileicon = extractIconFromExecutable(filepathString);
+            }
 
             if (fileicon.isNull()) {
                 QFileIconProvider icon_provider;
@@ -14301,7 +14409,12 @@ void QKeyMapper::loadGeneralSetting()
         if (!filepathString.isEmpty()
             && QFileInfo::exists(filepathString)){
             QIcon fileicon;
-            fileicon = extractIconFromExecutable(filepathString);
+            if (QKeyMapper::s_DisplayScale == 1.0) {
+                fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+            }
+            else {
+                fileicon = extractIconFromExecutable(filepathString);
+            }
 
             if (fileicon.isNull()) {
                 QFileIconProvider icon_provider;
@@ -24816,7 +24929,12 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
                 if (!filepathString.isEmpty()
                     && QFileInfo::exists(filepathString)){
                     QIcon fileicon;
-                    fileicon = QKeyMapper::extractIconFromExecutable(filepathString);
+                    if (QKeyMapper::s_DisplayScale == 1.0) {
+                        fileicon = QKeyMapper::extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+                    }
+                    else {
+                        fileicon = QKeyMapper::extractIconFromExecutable(filepathString);
+                    }
 
                     if (fileicon.isNull()) {
                         QFileIconProvider icon_provider;

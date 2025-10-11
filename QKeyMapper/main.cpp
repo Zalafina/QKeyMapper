@@ -185,10 +185,14 @@ void setupQtScaleEnvironment(const QString &program_dir)
     constexpr double SCALE_175 = 1.75;
     constexpr double SCALE_200 = 2.0;
 
+    int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
     HDC hdc = GetDC(NULL);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
     int height = GetDeviceCaps(hdc, DESKTOPVERTRES);
     Q_UNUSED(height);
+    double dWidth = static_cast<double>(width);
+    double dScreenWidth = static_cast<double>(nScreenWidth);
+    double system_scale_value = dWidth / dScreenWidth;
     ReleaseDC(NULL, hdc);
 
     bool high_dpi = false;
@@ -202,21 +206,25 @@ void setupQtScaleEnvironment(const QString &program_dir)
         scale_value = SCALE_125;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
         high_dpi = true;
+        system_scale_value = SCALE_125;
         break;
     case DISPLAY_SCALE_PERCENT_150:
         scale_value = SCALE_150;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
         high_dpi = true;
+        system_scale_value = SCALE_150;
         break;
     case DISPLAY_SCALE_PERCENT_175:
         scale_value = SCALE_175;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
         high_dpi = true;
+        system_scale_value = SCALE_175;
         break;
     case DISPLAY_SCALE_PERCENT_200:
         scale_value = SCALE_200;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
         high_dpi = true;
+        system_scale_value = SCALE_200;
         break;
     default:
         if (width >= 3840) {
@@ -230,6 +238,8 @@ void setupQtScaleEnvironment(const QString &program_dir)
         qDebug() << "[setupQtScaleEnvironment] Set QT_SCALE_FACTOR from DisplayScale setting value ->" << scale_value;
     }
 #endif
+
+    QKeyMapper::setDisplayScaleValue(system_scale_value);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (high_dpi) {
@@ -266,6 +276,18 @@ int main(int argc, char *argv[])
             QString scaleValue = argument.mid(QString("--scale=").length());
             qputenv("QT_SCALE_FACTOR", scaleValue.toUtf8());
             scale_from_param = true;
+
+            if (scaleValue == "1.0") {
+                int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+                HDC hdc = GetDC(NULL);
+                int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
+                double dWidth = static_cast<double>(width);
+                double dScreenWidth = static_cast<double>(nScreenWidth);
+                double system_scale_value = dWidth / dScreenWidth;
+                ReleaseDC(NULL, hdc);
+
+                QKeyMapper::setDisplayScaleValue(system_scale_value);
+            }
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "Passed scale parameter ->" << scaleValue;
