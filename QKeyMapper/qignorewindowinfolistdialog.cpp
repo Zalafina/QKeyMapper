@@ -87,12 +87,8 @@ void QIgnoreWindowInfoListDialog::updateRulesListWidget()
     ui->ruleListWidget->clear();
 
     // Populate list widget with rule names from the map
-    for (auto it = QKeyMapper::s_IgnoreWindowInfoMap.constBegin();
-         it != QKeyMapper::s_IgnoreWindowInfoMap.constEnd(); ++it) {
-        const QString &ruleName = it.key();
-        const IgnoreWindowInfo &info = it.value();
-
-        QListWidgetItem *item = new QListWidgetItem(ruleName);
+    for (const IgnoreWindowInfo &info : std::as_const(QKeyMapper::s_IgnoreWindowInfoMap)) {
+        QListWidgetItem *item = new QListWidgetItem(info.ruleName);
 
         // Visual indication for disabled rules
         if (info.disabled) {
@@ -104,6 +100,8 @@ void QIgnoreWindowInfoListDialog::updateRulesListWidget()
 
         ui->ruleListWidget->addItem(item);
     }
+
+    updateSaveRuleButtonText();
 }
 
 void QIgnoreWindowInfoListDialog::showEvent(QShowEvent *event)
@@ -259,16 +257,9 @@ void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
 
 void QIgnoreWindowInfoListDialog::on_ruleNameLineEdit_textChanged(const QString &text)
 {
-    QString ruleName = text.trimmed();
+    Q_UNUSED(text);
 
-    // Check if rule name already exists in the map
-    if (QKeyMapper::s_IgnoreWindowInfoMap.contains(ruleName) && !ruleName.isEmpty()) {
-        // Rule exists, button should show "Update"
-        ui->saveRuleButton->setText(tr("Update"));
-    } else {
-        // Rule doesn't exist, button should show "Add"
-        ui->saveRuleButton->setText(tr("Add"));
-    }
+    updateSaveRuleButtonText();
 }
 
 void QIgnoreWindowInfoListDialog::on_ruleListWidget_itemDoubleClicked(QListWidgetItem *item)
@@ -300,6 +291,20 @@ void QIgnoreWindowInfoListDialog::loadRuleToUI(const QString &ruleName)
     ui->ruleWindowTitleMatchTypeComboBox->setCurrentIndex(static_cast<int>(info.windowTitleMatchType));
     ui->ruleClassNameMatchTypeComboBox->setCurrentIndex(static_cast<int>(info.classNameMatchType));
     ui->ruleDisabledCheckBox->setChecked(info.disabled);
+}
+
+void QIgnoreWindowInfoListDialog::updateSaveRuleButtonText()
+{
+    QString ruleName = ui->ruleNameLineEdit->text().trimmed();
+
+    // Check if rule name already exists in the map
+    if (QKeyMapper::s_IgnoreWindowInfoMap.keys().contains(ruleName) && !ruleName.isEmpty()) {
+        // Rule exists, button should show "Update"
+        ui->saveRuleButton->setText(tr("Update"));
+    } else {
+        // Rule doesn't exist, button should show "Add"
+        ui->saveRuleButton->setText(tr("Add"));
+    }
 }
 
 void QIgnoreWindowInfoListDialog::initRuleWindowInfoArea()

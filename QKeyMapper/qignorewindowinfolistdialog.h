@@ -44,6 +44,7 @@ private slots:
 private:
     void initRuleWindowInfoArea(void);
     void loadRuleToUI(const QString &ruleName);
+    void updateSaveRuleButtonText(void);
 
 private:
     static QIgnoreWindowInfoListDialog *m_instance;

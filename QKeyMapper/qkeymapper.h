@@ -1449,7 +1449,7 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
-    static QMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
+    static OrderedMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
     static int s_KeyMappingTabWidgetCurrentIndex;
     static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;

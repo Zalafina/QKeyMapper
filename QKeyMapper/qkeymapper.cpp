@@ -19,7 +19,7 @@ QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINF
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
-QMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
+OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
 int QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = 0;
 int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
@@ -9081,11 +9081,9 @@ void QKeyMapper::saveIgnoreRulesToINI()
     settingFile.setIniCodec("UTF-8");
 #endif
 
-    // Convert QMap to QVariantList for INI storage
+    // Convert OrderedMap to QVariantList for INI storage
     QVariantList rulesList;
-    for (auto it = s_IgnoreWindowInfoMap.constBegin(); it != s_IgnoreWindowInfoMap.constEnd(); ++it) {
-        const IgnoreWindowInfo &info = it.value();
-
+    for (const IgnoreWindowInfo &info : std::as_const(s_IgnoreWindowInfoMap)) {
         QVariantMap ruleMap;
         ruleMap["ruleName"] = info.ruleName;
         ruleMap["processName"] = info.processName;
