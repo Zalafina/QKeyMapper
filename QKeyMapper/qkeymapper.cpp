@@ -9149,6 +9149,15 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.className = QT_COMBOBOX_ITEMS_WINDOW_CLASS;
     s_IgnoreWindowInfoMap[info.ruleName] = info;
 
+    info.ruleName = "Qt tool window";
+    info.processNameMatchType = WindowInfoMatchType::Ignore;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Contains;
+    info.processName.clear();
+    info.windowTitle.clear();
+    info.className = QT_TOOL_WINDOW_CLASS;
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
     info.ruleName = "System shadow window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
     info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
@@ -9190,6 +9199,14 @@ void QKeyMapper::updateIgnoreWindowInfoListDescriptionTranslation()
 {
     if (s_IgnoreWindowInfoMap.contains("Qt tooltip window")) {
         s_IgnoreWindowInfoMap["Qt tooltip window"].description = tr("Tooltip display of Qt.");
+    }
+
+    if (s_IgnoreWindowInfoMap.contains("Qt combobox items window")) {
+        s_IgnoreWindowInfoMap["Qt combobox items window"].description = tr("ComboBox item list display of Qt.");
+    }
+
+    if (s_IgnoreWindowInfoMap.contains("Qt tool window")) {
+        s_IgnoreWindowInfoMap["Qt tool window"].description = tr("Tool window of Qt.");
     }
 
     if (s_IgnoreWindowInfoMap.contains("System shadow window")) {

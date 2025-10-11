@@ -229,6 +229,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char QT_TOOLTIP_WINDOW_CLASS[] = "QWindowToolTipDropShadowSaveBits";
     inline constexpr const char QT_COMBOBOX_ITEMS_WINDOW_CLASS[] = "QWindowPopupDropShadowSaveBits";
+    inline constexpr const char QT_TOOL_WINDOW_CLASS[] = "QWindowToolSaveBits";
     inline constexpr const char SYSTEM_SHADOW_WINDOW_CLASS[] = "SysShadow";
 
     inline constexpr const char CUSTOM_TRAYICONS_DIR[] = "custom_trayicons";
