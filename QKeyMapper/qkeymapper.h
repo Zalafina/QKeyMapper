@@ -1368,6 +1368,7 @@ public:
     void saveKeyMapSetting(void);
     void saveCurrentSettingLastTabName(const QString &tabName);
     static void initIgnoreWindowInfoList(void);
+    static void updateIgnoreWindowInfoListDescriptionTranslation(void);
     static void saveIgnoreRulesToINI(void);
     static void loadIgnoreRulesFromINI(void);
 private:

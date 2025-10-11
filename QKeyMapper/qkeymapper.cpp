@@ -9074,6 +9074,29 @@ void QKeyMapper::initIgnoreWindowInfoList()
     s_IgnoreWindowInfoMap[info.ruleName] = info;
 }
 
+void QKeyMapper::updateIgnoreWindowInfoListDescriptionTranslation()
+{
+    if (s_IgnoreWindowInfoMap.contains("Qt tooltip window")) {
+        s_IgnoreWindowInfoMap["Qt tooltip window"].description = tr("Tooltip display of Qt.");
+    }
+
+    if (s_IgnoreWindowInfoMap.contains("System shadow window")) {
+        s_IgnoreWindowInfoMap["System shadow window"].description = tr("Shadow display of Windows system.");
+    }
+
+    if (s_IgnoreWindowInfoMap.contains("Multitask view Staging")) {
+        s_IgnoreWindowInfoMap["Multitask view Staging"].description = tr("Alt+Tab multi task view staging.");
+    }
+
+    if (s_IgnoreWindowInfoMap.contains("Multitask view Frame Win10")) {
+        s_IgnoreWindowInfoMap["Multitask view Frame Win10"].description = tr("Alt+Tab multi task view of Win10.");
+    }
+
+    if (s_IgnoreWindowInfoMap.contains("Multitask view Frame Win11")) {
+        s_IgnoreWindowInfoMap["Multitask view Frame Win11"].description = tr("Alt+Tab multi task view of Win11.");
+    }
+}
+
 void QKeyMapper::saveIgnoreRulesToINI()
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
@@ -18902,6 +18925,8 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     // Update category filter controls text
     updateCategoryFilterComboBox();
+
+    updateIgnoreWindowInfoListDescriptionTranslation();
 
     ui->addmapdataButton->setText(tr("ADD"));
     if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
