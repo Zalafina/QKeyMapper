@@ -1300,7 +1300,6 @@ public:
     void onCategoryFilterChanged(int index);
     void updateCategoryFilterComboBox(void);
     void updateCategoryFilterByShowCategoryState(void);
-    void initIgnoreWindowInfoList(void);
 
 private:
     void initKeyMappingTabWidget(void);
@@ -1368,6 +1367,9 @@ private:
 public:
     void saveKeyMapSetting(void);
     void saveCurrentSettingLastTabName(const QString &tabName);
+    static void initIgnoreWindowInfoList(void);
+    static void saveIgnoreRulesToINI(void);
+    static void loadIgnoreRulesFromINI(void);
 private:
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false);
     void loadEmptyMapSetting(void);
@@ -1447,7 +1449,7 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
-    static QList<IgnoreWindowInfo> s_IgnoreWindowInfoList;
+    static QMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
     static int s_KeyMappingTabWidgetCurrentIndex;
     static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;

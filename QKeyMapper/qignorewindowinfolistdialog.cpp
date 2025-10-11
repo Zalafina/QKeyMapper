@@ -83,12 +83,34 @@ void QIgnoreWindowInfoListDialog::setUILanguage(int languageindex)
 
 void QIgnoreWindowInfoListDialog::updateRulesListWidget()
 {
+    // Clear existing items
+    ui->ruleListWidget->clear();
 
+    // Populate list widget with rule names from the map
+    for (auto it = QKeyMapper::s_IgnoreWindowInfoMap.constBegin();
+         it != QKeyMapper::s_IgnoreWindowInfoMap.constEnd(); ++it) {
+        const QString &ruleName = it.key();
+        const IgnoreWindowInfo &info = it.value();
+
+        QListWidgetItem *item = new QListWidgetItem(ruleName);
+
+        // Visual indication for disabled rules
+        if (info.disabled) {
+            QFont font = item->font();
+            font.setItalic(true);
+            item->setFont(font);
+            item->setForeground(Qt::gray);
+        }
+
+        ui->ruleListWidget->addItem(item);
+    }
 }
 
 void QIgnoreWindowInfoListDialog::showEvent(QShowEvent *event)
 {
     updateRulesListWidget();
+
+    QDialog::showEvent(event);
 }
 
 #if 0
@@ -117,7 +139,51 @@ void QIgnoreWindowInfoListDialog::mousePressEvent(QMouseEvent *event)
 
 void QIgnoreWindowInfoListDialog::on_saveRuleButton_clicked()
 {
+    // Get and validate rule name
+    QString ruleName = ui->ruleNameLineEdit->text().trimmed();
 
+    if (ruleName.isEmpty()) {
+        QString popupMessage = tr("Rule name cannot be empty.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    // Create IgnoreWindowInfo structure from UI
+    IgnoreWindowInfo info;
+    info.ruleName = ruleName;
+    info.processName = ui->ruleProcessNameLineEdit->text();
+    info.windowTitle = ui->ruleWindowTitleLineEdit->text();
+    info.className = ui->ruleClassNameLineEdit->text();
+    info.description = ui->ruleDescriptionLineEdit->text();
+    info.processNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ui->ruleProcessNameMatchTypeComboBox->currentIndex());
+    info.windowTitleMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ui->ruleWindowTitleMatchTypeComboBox->currentIndex());
+    info.classNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ui->ruleClassNameMatchTypeComboBox->currentIndex());
+    info.disabled = ui->ruleDisabledCheckBox->isChecked();
+
+    // Check if rule already exists (update vs add)
+    bool isUpdate = QKeyMapper::s_IgnoreWindowInfoMap.contains(ruleName);
+
+    // Add or update rule in map
+    QKeyMapper::s_IgnoreWindowInfoMap[ruleName] = info;
+
+    // Refresh list widget
+    updateRulesListWidget();
+
+    // Show success message
+    QString popupMessage;
+    if (isUpdate) {
+        popupMessage = tr("Rule \"%1\" updated successfully").arg(ruleName);
+    } else {
+        popupMessage = tr("Rule \"%1\" added successfully").arg(ruleName);
+    }
+    QString popupMessageColor = SUCCESS_COLOR;
+    int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+
+    // Clear input fields after successful save
+    // initRuleWindowInfoArea();
 }
 
 
@@ -152,13 +218,88 @@ void QIgnoreWindowInfoListDialog::on_clearRuleButton_clicked()
 
 void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
 {
+    // Get selected item
+    QListWidgetItem *selectedItem = ui->ruleListWidget->currentItem();
 
+    if (!selectedItem) {
+        // No item selected, do nothing
+        return;
+    }
+
+    QString ruleName = selectedItem->text();
+
+    // Show confirmation dialog
+    QString message = tr("Are you sure you want to delete rule \"%1\"?").arg(ruleName);
+    QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                              QMessageBox::Yes | QMessageBox::No,
+                                                              QMessageBox::No);
+    if (reply != QMessageBox::Yes) {
+        // User cancelled deletion
+        return;
+    }
+
+    // Remove rule from map
+    QKeyMapper::s_IgnoreWindowInfoMap.remove(ruleName);
+
+    // Refresh list widget
+    updateRulesListWidget();
+
+    // Show success message
+    QString popupMessage = tr("Rule \"%1\" deleted successfully").arg(ruleName);
+    QString popupMessageColor = SUCCESS_COLOR;
+    int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+
+    // Clear input fields if deleted rule was being displayed
+    if (ui->ruleNameLineEdit->text().trimmed() == ruleName) {
+        initRuleWindowInfoArea();
+    }
 }
 
 
 void QIgnoreWindowInfoListDialog::on_ruleNameLineEdit_textChanged(const QString &text)
 {
+    QString ruleName = text.trimmed();
 
+    // Check if rule name already exists in the map
+    if (QKeyMapper::s_IgnoreWindowInfoMap.contains(ruleName) && !ruleName.isEmpty()) {
+        // Rule exists, button should show "Update"
+        ui->saveRuleButton->setText(tr("Update"));
+    } else {
+        // Rule doesn't exist, button should show "Add"
+        ui->saveRuleButton->setText(tr("Add"));
+    }
+}
+
+void QIgnoreWindowInfoListDialog::on_ruleListWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+    if (!item) {
+        return;
+    }
+
+    QString ruleName = item->text();
+    loadRuleToUI(ruleName);
+}
+
+void QIgnoreWindowInfoListDialog::loadRuleToUI(const QString &ruleName)
+{
+    // Find rule in map
+    if (!QKeyMapper::s_IgnoreWindowInfoMap.contains(ruleName)) {
+        return;
+    }
+
+    const IgnoreWindowInfo &info = QKeyMapper::s_IgnoreWindowInfoMap[ruleName];
+
+    // Load rule data to UI controls
+    ui->ruleNameLineEdit->setText(info.ruleName);
+    ui->ruleProcessNameLineEdit->setText(info.processName);
+    ui->ruleWindowTitleLineEdit->setText(info.windowTitle);
+    ui->ruleClassNameLineEdit->setText(info.className);
+    ui->ruleDescriptionLineEdit->setText(info.description);
+    ui->ruleProcessNameMatchTypeComboBox->setCurrentIndex(static_cast<int>(info.processNameMatchType));
+    ui->ruleWindowTitleMatchTypeComboBox->setCurrentIndex(static_cast<int>(info.windowTitleMatchType));
+    ui->ruleClassNameMatchTypeComboBox->setCurrentIndex(static_cast<int>(info.classNameMatchType));
+    ui->ruleDisabledCheckBox->setChecked(info.disabled);
 }
 
 void QIgnoreWindowInfoListDialog::initRuleWindowInfoArea()

@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QMouseEvent>
+#include <QListWidgetItem>
 
 namespace Ui {
 class QIgnoreWindowInfoListDialog;
@@ -38,8 +39,11 @@ private slots:
 
     void on_ruleNameLineEdit_textChanged(const QString &text);
 
+    void on_ruleListWidget_itemDoubleClicked(QListWidgetItem *item);
+
 private:
     void initRuleWindowInfoArea(void);
+    void loadRuleToUI(const QString &ruleName);
 
 private:
     static QIgnoreWindowInfoListDialog *m_instance;

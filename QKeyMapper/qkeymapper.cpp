@@ -19,7 +19,7 @@ QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINF
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
-QList<IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoList;
+QMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
 int QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = 0;
 int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
@@ -191,7 +191,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initCategoryFilterControls();
     initPopupMessage();
     initPushLevelSlider();
-    initIgnoreWindowInfoList();
 
     QString fileDescription = getExeFileDescription();
     QString platformString = getPlatformString();
@@ -1954,7 +1953,8 @@ bool QKeyMapper::isWindowsDarkMode()
 
 bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname)
 {
-    for (const IgnoreWindowInfo &rule : std::as_const(s_IgnoreWindowInfoList)) {
+    // Iterate through all rules in the map
+    for (const IgnoreWindowInfo &rule : std::as_const(s_IgnoreWindowInfoMap)) {
         if (rule.disabled)
             continue;
 
@@ -9020,6 +9020,138 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
     return readresult;
 }
 
+void QKeyMapper::initIgnoreWindowInfoList()
+{
+    // Clear existing rules
+    s_IgnoreWindowInfoMap.clear();
+
+    IgnoreWindowInfo info;
+
+    // Add default system ignore rules using ruleName as key
+    info.ruleName = "Qt tooltip window";
+    info.processNameMatchType = WindowInfoMatchType::Ignore;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Contains;
+    info.processName.clear();
+    info.windowTitle.clear();
+    info.className = QT_TOOLTIP_WINDOW_CLASS;
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
+    info.ruleName = "System shadow window";
+    info.processNameMatchType = WindowInfoMatchType::Ignore;
+    info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName.clear();
+    info.windowTitle = "^$"; // Empty window title
+    info.className = SYSTEM_SHADOW_WINDOW_CLASS;
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
+    info.ruleName = "Multitask view Staging";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName = "explorer.exe";
+    info.windowTitle.clear();
+    info.className = "ForegroundStaging";
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
+    info.ruleName = "Multitask view Frame Win10";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName = "explorer.exe";
+    info.windowTitle.clear();
+    info.className = "MultitaskingViewFrame";
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
+    info.ruleName = "Multitask view Frame Win11";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
+    info.classNameMatchType = WindowInfoMatchType::Equals;
+    info.processName = "explorer.exe";
+    info.windowTitle.clear();
+    info.className = "XamlExplorerHostIslandWindow";
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+}
+
+void QKeyMapper::saveIgnoreRulesToINI()
+{
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    // Convert QMap to QVariantList for INI storage
+    QVariantList rulesList;
+    for (auto it = s_IgnoreWindowInfoMap.constBegin(); it != s_IgnoreWindowInfoMap.constEnd(); ++it) {
+        const IgnoreWindowInfo &info = it.value();
+
+        QVariantMap ruleMap;
+        ruleMap["ruleName"] = info.ruleName;
+        ruleMap["processName"] = info.processName;
+        ruleMap["windowTitle"] = info.windowTitle;
+        ruleMap["className"] = info.className;
+        ruleMap["description"] = info.description;
+        ruleMap["processNameMatchType"] = static_cast<int>(info.processNameMatchType);
+        ruleMap["windowTitleMatchType"] = static_cast<int>(info.windowTitleMatchType);
+        ruleMap["classNameMatchType"] = static_cast<int>(info.classNameMatchType);
+        ruleMap["disabled"] = info.disabled;
+
+        rulesList.append(ruleMap);
+    }
+
+    // Save to INI file under General section
+    settingFile.setValue(IGNOREWINDOWINFO_RULES, rulesList);
+}
+
+void QKeyMapper::loadIgnoreRulesFromINI()
+{
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    if (!settingFile.contains(IGNOREWINDOWINFO_RULES)){
+        initIgnoreWindowInfoList();
+        return;
+    }
+
+    // Load rules from INI file
+    QVariant rulesVar = settingFile.value(IGNOREWINDOWINFO_RULES);
+    if (!rulesVar.isValid() || !rulesVar.canConvert<QVariantList>()) {
+        initIgnoreWindowInfoList();
+        return; // No rules saved or invalid format
+    }
+
+    // Clear existing rules
+    s_IgnoreWindowInfoMap.clear();
+
+    QVariantList rulesList = rulesVar.toList();
+    for (const QVariant &ruleVar : std::as_const(rulesList)) {
+        if (!ruleVar.canConvert<QVariantMap>()) {
+            continue;
+        }
+
+        QVariantMap ruleMap = ruleVar.toMap();
+
+        IgnoreWindowInfo info;
+        info.ruleName = ruleMap.value("ruleName").toString();
+        info.processName = ruleMap.value("processName").toString();
+        info.windowTitle = ruleMap.value("windowTitle").toString();
+        info.className = ruleMap.value("className").toString();
+        info.description = ruleMap.value("description").toString();
+        info.processNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ruleMap.value("processNameMatchType", static_cast<int>(QKeyMapperConstants::WindowInfoMatchType::Contains)).toInt());
+        info.windowTitleMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ruleMap.value("windowTitleMatchType", static_cast<int>(QKeyMapperConstants::WindowInfoMatchType::Contains)).toInt());
+        info.classNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ruleMap.value("classNameMatchType", static_cast<int>(QKeyMapperConstants::WindowInfoMatchType::Ignore)).toInt());
+        info.disabled = ruleMap.value("disabled", false).toBool();
+
+        // Add to map using ruleName as key
+        if (!info.ruleName.isEmpty()) {
+            s_IgnoreWindowInfoMap[info.ruleName] = info;
+        }
+    }
+}
+
 void QKeyMapper::exportSettingToFile()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -9253,6 +9385,9 @@ void QKeyMapper::saveKeyMapSetting(void)
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
 #endif
+
+    // Save ignore rules to INI file
+    saveIgnoreRulesToINI();
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -10302,6 +10437,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 #endif
 
     if (settingtext.isEmpty() || load_all) {
+        // Load ignore rules from INI file
+        loadIgnoreRulesFromINI();
+
         if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
             int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
             if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
@@ -13481,6 +13619,9 @@ void QKeyMapper::loadGeneralSetting()
     settingFile.setIniCodec("UTF-8");
 #endif
 
+    // Load ignore rules from INI file
+    loadIgnoreRulesFromINI();
+
     if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
         int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
         if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
@@ -14168,7 +14309,6 @@ void QKeyMapper::loadGeneralSetting()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "validgroups >>" << validgroups;
 #endif
-
 }
 
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
@@ -17209,58 +17349,6 @@ void QKeyMapper::updateCategoryFilterByShowCategoryState()
         qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category column visible:" << m_KeyMappingDataTable->isCategoryColumnVisible();
     }
 #endif
-}
-
-void QKeyMapper::initIgnoreWindowInfoList()
-{
-    s_IgnoreWindowInfoList.clear();
-
-    IgnoreWindowInfo info;
-
-    info.ruleName = "Qt tooltip window";
-    info.processNameMatchType = WindowInfoMatchType::Ignore;
-    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
-    info.classNameMatchType = WindowInfoMatchType::Contains;
-    info.processName.clear();
-    info.windowTitle.clear();
-    info.className = QT_TOOLTIP_WINDOW_CLASS;
-    s_IgnoreWindowInfoList.append(info);
-
-    info.ruleName = "System shadow window";
-    info.processNameMatchType = WindowInfoMatchType::Ignore;
-    info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
-    info.classNameMatchType = WindowInfoMatchType::Equals;
-    info.processName.clear();
-    info.windowTitle = "^$"; // Empty window title
-    info.className = SYSTEM_SHADOW_WINDOW_CLASS;
-    s_IgnoreWindowInfoList.append(info);
-
-    info.ruleName = "Multitask view Staging";
-    info.processNameMatchType = WindowInfoMatchType::Contains;
-    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
-    info.classNameMatchType = WindowInfoMatchType::Equals;
-    info.processName = "explorer.exe";
-    info.windowTitle.clear();
-    info.className = "ForegroundStaging";
-    s_IgnoreWindowInfoList.append(info);
-
-    info.ruleName = "Multitask view Frame Win10";
-    info.processNameMatchType = WindowInfoMatchType::Contains;
-    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
-    info.classNameMatchType = WindowInfoMatchType::Equals;
-    info.processName = "explorer.exe";
-    info.windowTitle.clear();
-    info.className = "MultitaskingViewFrame";
-    s_IgnoreWindowInfoList.append(info);
-
-    info.ruleName = "Multitask view Frame Win11";
-    info.processNameMatchType = WindowInfoMatchType::Contains;
-    info.windowTitleMatchType = WindowInfoMatchType::Ignore;
-    info.classNameMatchType = WindowInfoMatchType::Equals;
-    info.processName = "explorer.exe";
-    info.windowTitle.clear();
-    info.className = "XamlExplorerHostIslandWindow";
-    s_IgnoreWindowInfoList.append(info);
 }
 
 void QKeyMapper::initKeyMappingTabWidget(void)

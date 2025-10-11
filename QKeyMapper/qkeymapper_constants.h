@@ -24,6 +24,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr unsigned int SWITCH_BACKTO_LAST_MATCHED_SETTING_TIMEOUT = 20000U;
 
+    inline constexpr int POPUP_MESSAGE_DISPLAY_TIME_DEFAULT = 3000;
+
     inline constexpr int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
@@ -925,6 +927,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROCESSINFO_WINDOWTITLE_MATCH_INDEX[] = "ProcessInfo_WindowTitleMatchIndex";
     inline constexpr const char PROCESSINFO_CLASSNAME_MATCH_INDEX[] = "ProcessInfo_ClassNameMatchIndex";
     inline constexpr const char PROCESSINFO_DESCRIPTION[] = "ProcessInfo_Description";
+
+    inline constexpr const char IGNOREWINDOWINFO_RULES[] = "IgnoreWindowInfo_Rules";
 
     inline constexpr const char DATAPORT_NUMBER[] = "DataPortNumber";
     inline constexpr const char GRIP_THRESHOLD_BRAKE[] = "GripThresholdBrake";
