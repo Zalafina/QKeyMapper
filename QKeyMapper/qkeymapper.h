@@ -954,6 +954,8 @@ public:
     static bool getSendToSameTitleWindowsStatus(void);
     static bool getAcceptVirtualGamepadInputStatus(void);
     static bool getProcessIconAsTrayIconStatus(void);
+    static QString getShowWindowPointKey(void);
+    static QString getShowScreenPointKey(void);
     static bool getEnableSystemFilterKeyChecked(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);

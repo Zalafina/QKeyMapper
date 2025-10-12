@@ -306,8 +306,8 @@ namespace QKeyMapperConstants {
     inline constexpr bool FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
 
     inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT[]  = "F11";
-    inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE[]  = "None";
-    inline constexpr int FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX = 0;
+    // inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE[]  = "None";
+    // inline constexpr int FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX = 0;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
@@ -945,6 +945,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char SENDTOSAMEWINDOWS_CHECKED[] = "SendToSameWindowsChecked";
     inline constexpr const char ACCEPTVIRTUALGAMEPADINPUT_CHECKED[] = "AcceptVirtualGamdpadInputChecked";
     inline constexpr const char PROCESSICON_AS_TRAYICON_CHECKED[] = "ProcessIconAsTrayIconChecked";
+    inline constexpr const char SHOW_WINDOW_POINT_KEY[] = "ShowWindowPointKey";
+    inline constexpr const char SHOW_SCREEN_POINT_KEY[] = "ShowScreenPointKey";
     inline constexpr const char MAPPINGSTART_KEY[] = "MappingStartKey";
     inline constexpr const char MAPPINGSTOP_KEY[] = "MappingStopKey";
 
@@ -1112,6 +1114,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char SENDTIMING_STR_KEYUP[]                = "KEYUP";
     inline constexpr const char SENDTIMING_STR_KEYDOWN_AND_KEYUP[]    = "KEYDOWN_AND_KEYUP";
     inline constexpr const char SENDTIMING_STR_NORMAL_AND_KEYUP[]     = "NORMAL_AND_KEYUP";
+
+    inline constexpr const char FUNCTION_KEY_NONE[]  = "None";
+    inline constexpr int FUNCTION_KEY_NONE_INDEX = 0;
 
     inline constexpr const char SHOW_KEY_DEBUGINFO[]            = "Application";
     inline constexpr const char SHOW_POINTS_IN_WINDOW_KEY[]     = "F8";

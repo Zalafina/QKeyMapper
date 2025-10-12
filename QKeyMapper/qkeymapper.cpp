@@ -5461,6 +5461,16 @@ bool QKeyMapper::getProcessIconAsTrayIconStatus()
     return getInstance()->m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
 }
 
+QString QKeyMapper::getShowWindowPointKey()
+{
+    return getInstance()->m_MappingAdvancedDialog->getShowWindowPointKey();
+}
+
+QString QKeyMapper::getShowScreenPointKey()
+{
+    return getInstance()->m_MappingAdvancedDialog->getShowScreenPointKey();
+}
+
 bool QKeyMapper::getEnableSystemFilterKeyChecked()
 {
     return getInstance()->ui->enableSystemFilterKeyCheckBox->isChecked();
@@ -10461,6 +10471,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, m_MappingAdvancedDialog->getAcceptVirtualGamepadInput());
     settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, m_MappingAdvancedDialog->getProcessIconAsTrayIcon());
+    settingFile.setValue(saveSettingSelectStr+SHOW_WINDOW_POINT_KEY, m_MappingAdvancedDialog->getShowWindowPointKey());
+    settingFile.setValue(saveSettingSelectStr+SHOW_SCREEN_POINT_KEY, m_MappingAdvancedDialog->getShowScreenPointKey());
 #ifdef VIGEM_CLIENT_SUPPORT
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_DIRECTMODE, ui->directModeCheckBox->isChecked());
@@ -12927,7 +12939,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         if (index < floatingwindow_mousepassthroughswitchkeylist_loaded.size()) {
             QString floatingwindow_mousepassthroughswitchkey = floatingwindow_mousepassthroughswitchkeylist_loaded.at(index);
 
-            if (floatingwindow_mousepassthroughswitchkey == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE
+            if (floatingwindow_mousepassthroughswitchkey == FUNCTION_KEY_NONE
                 || QKeyMapper_Worker::MultiKeyboardInputList.contains(floatingwindow_mousepassthroughswitchkey)) {
                 s_KeyMappingTabInfoList[index].FloatingWindow_MousePassThroughSwitchKey = floatingwindow_mousepassthroughswitchkey;
             }
@@ -13627,6 +13639,28 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     }
     else {
         m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+SHOW_WINDOW_POINT_KEY)){
+        QString showWindowPointKey = settingFile.value(settingSelectStr+SHOW_WINDOW_POINT_KEY).toString();
+        m_MappingAdvancedDialog->setShowWindowPointKey(showWindowPointKey);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "ShowWindowPointKey =" << showWindowPointKey;
+#endif
+    }
+    else {
+        m_MappingAdvancedDialog->setShowWindowPointKey(SHOW_POINTS_IN_WINDOW_KEY);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+SHOW_SCREEN_POINT_KEY)){
+        QString showScreenPointKey = settingFile.value(settingSelectStr+SHOW_SCREEN_POINT_KEY).toString();
+        m_MappingAdvancedDialog->setShowScreenPointKey(showScreenPointKey);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "ShowScreenPointKey =" << showScreenPointKey;
+#endif
+    }
+    else {
+        m_MappingAdvancedDialog->setShowScreenPointKey(SHOW_POINTS_IN_SCREEN_KEY);
     }
 
 //     QString loadedmappingswitchKeySeqStr;

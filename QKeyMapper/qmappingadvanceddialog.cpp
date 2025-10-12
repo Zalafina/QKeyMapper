@@ -1,3 +1,4 @@
+#include "qkeymapper_worker.h"
 #include "qmappingadvanceddialog.h"
 #include "ui_qmappingadvanceddialog.h"
 #include "qkeymapper_constants.h"
@@ -23,6 +24,14 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
 
     ui->mousePollingIntervalSpinBox->setRange(MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX);
     ui->mousePollingIntervalSpinBox->setValue(MOUSE_POLLING_INTERNAL_DEFAULT);
+
+    ui->showWindowPointKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
+    ui->showWindowPointKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
+    ui->showWindowPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_WINDOW_KEY);
+
+    ui->showScreenPointKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
+    ui->showScreenPointKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
+    ui->showScreenPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_SCREEN_KEY);
 }
 
 QMappingAdvancedDialog::~QMappingAdvancedDialog()
@@ -43,6 +52,9 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
 
     ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
     ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
+
+    ui->showWindowPointKeyLabel->setText(tr("ShowWindowPoint"));
+    ui->showScreenPointKeyLabel->setText(tr("ShowScreenPoint"));
 }
 
 int QMappingAdvancedDialog::getMouseXSpeed()
@@ -70,6 +82,16 @@ bool QMappingAdvancedDialog::getAcceptVirtualGamepadInput()
     return ui->acceptVirtualGamepadInputCheckBox->isChecked();
 }
 
+QString QMappingAdvancedDialog::getShowWindowPointKey()
+{
+    return ui->showWindowPointKeyComboBox->currentText();
+}
+
+QString QMappingAdvancedDialog::getShowScreenPointKey()
+{
+    return ui->showScreenPointKeyComboBox->currentText();
+}
+
 void QMappingAdvancedDialog::setMouseXSpeed(int speed)
 {
     ui->mouseXSpeedSpinBox->setValue(speed);
@@ -93,6 +115,32 @@ void QMappingAdvancedDialog::setProcessIconAsTrayIcon(bool checked)
 void QMappingAdvancedDialog::setAcceptVirtualGamepadInput(bool checked)
 {
     ui->acceptVirtualGamepadInputCheckBox->setChecked(checked);
+}
+
+void QMappingAdvancedDialog::setShowWindowPointKey(const QString &keyname)
+{
+    if (keyname == FUNCTION_KEY_NONE) {
+        ui->showWindowPointKeyComboBox->setCurrentIndex(FUNCTION_KEY_NONE_INDEX);
+    }
+    else if(QKeyMapper_Worker::MultiKeyboardInputList.contains(keyname)) {
+        ui->showWindowPointKeyComboBox->setCurrentText(keyname);
+    }
+    else {
+        ui->showWindowPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_WINDOW_KEY);
+    }
+}
+
+void QMappingAdvancedDialog::setShowScreenPointKey(const QString &keyname)
+{
+    if (keyname == FUNCTION_KEY_NONE) {
+        ui->showScreenPointKeyComboBox->setCurrentIndex(FUNCTION_KEY_NONE_INDEX);
+    }
+    else if(QKeyMapper_Worker::MultiKeyboardInputList.contains(keyname)) {
+        ui->showScreenPointKeyComboBox->setCurrentText(keyname);
+    }
+    else {
+        ui->showScreenPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_SCREEN_KEY);
+    }
 }
 
 void QMappingAdvancedDialog::setProcessIconAsTrayIconEnabled(bool enabled)

@@ -29,12 +29,16 @@ public:
     int getMousePollingInterval(void);
     bool getProcessIconAsTrayIcon(void);
     bool getAcceptVirtualGamepadInput(void);
+    QString getShowWindowPointKey(void);
+    QString getShowScreenPointKey(void);
 
     void setMouseXSpeed(int speed);
     void setMouseYSpeed(int speed);
     void setMousePollingInterval(int interval);
     void setProcessIconAsTrayIcon(bool checked);
     void setAcceptVirtualGamepadInput(bool checked);
+    void setShowWindowPointKey(const QString &keyname);
+    void setShowScreenPointKey(const QString &keyname);
 
     void setProcessIconAsTrayIconEnabled(bool enabled);
 

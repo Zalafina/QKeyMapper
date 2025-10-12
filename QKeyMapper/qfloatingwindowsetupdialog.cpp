@@ -65,7 +65,7 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     ui->windowOpacitySpinBox->setSingleStep(FLOATINGWINDOW_OPACITY_SINGLESTEP);
     ui->windowOpacitySpinBox->setValue(FLOATINGWINDOW_OPACITY_DEFAULT);
 
-    ui->mousePassThroughSwitchKeyComboBox->addItem(tr(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE));
+    ui->mousePassThroughSwitchKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
     ui->mousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     ui->mousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 
@@ -91,7 +91,7 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     ui->windowOpacityLabel->setText(tr("Opacity"));
     ui->mousePassThroughCheckBox->setText(tr("MousePassThrough"));
     ui->mousePassThroughSwitchKeyLabel->setText(tr("MouseSwitchKey"));
-    ui->mousePassThroughSwitchKeyComboBox->setItemText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX, tr("None"));
+    ui->mousePassThroughSwitchKeyComboBox->setItemText(FUNCTION_KEY_NONE_INDEX, tr("None"));
 
     ui->referencePointLabel->setText(tr("RefPoint"));
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT,        tr("ScreenTopLeft"));
@@ -176,8 +176,8 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
             WindowOpacity = FLOATINGWINDOW_OPACITY_DEFAULT;
         }
 
-        if (MousePassThroughSwitchKey == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE) {
-            ui->mousePassThroughSwitchKeyComboBox->setCurrentIndex(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX);
+        if (MousePassThroughSwitchKey == FUNCTION_KEY_NONE) {
+            ui->mousePassThroughSwitchKeyComboBox->setCurrentIndex(FUNCTION_KEY_NONE_INDEX);
         }
         else if(QKeyMapper_Worker::MultiKeyboardInputList.contains(MousePassThroughSwitchKey)) {
             ui->mousePassThroughSwitchKeyComboBox->setCurrentText(MousePassThroughSwitchKey);
@@ -362,8 +362,8 @@ void QFloatingWindowSetupDialog::on_mousePassThroughSwitchKeyComboBox_currentInd
         << "] Floating Window Mouse PassThrough SwitchKey changed -> " << ui->mousePassThroughSwitchKeyComboBox->currentText();
 #endif
 
-    if (index == FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThroughSwitchKey = FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE;
+    if (index == FUNCTION_KEY_NONE_INDEX) {
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThroughSwitchKey = FUNCTION_KEY_NONE;
     }
     else {
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThroughSwitchKey = ui->mousePassThroughSwitchKeyComboBox->currentText();

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>460</width>
+    <width>500</width>
     <height>190</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>460</width>
+    <width>500</width>
     <height>190</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>460</width>
+    <width>500</width>
     <height>190</height>
    </size>
   </property>
@@ -175,6 +175,64 @@
     <number>3</number>
    </property>
   </widget>
+  <widget class="QLabel" name="showWindowPointKeyLabel">
+   <property name="geometry">
+    <rect>
+     <x>225</x>
+     <y>90</y>
+     <width>91</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ShowWindowPoint</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="showWindowPointKeyComboBox">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>90</y>
+     <width>161</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="showScreenPointKeyComboBox">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>130</y>
+     <width>161</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="showScreenPointKeyLabel">
+   <property name="geometry">
+    <rect>
+     <x>225</x>
+     <y>130</y>
+     <width>91</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ShowScreenPoint</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>mouseGroupBox</zorder>
   <zorder>ProcessIconAsTrayIconCheckBox</zorder>
   <zorder>acceptVirtualGamepadInputCheckBox</zorder>
@@ -184,6 +242,10 @@
   <zorder>mouseYSpeedSpinBox</zorder>
   <zorder>mousePollingIntervalLabel</zorder>
   <zorder>mousePollingIntervalSpinBox</zorder>
+  <zorder>showWindowPointKeyLabel</zorder>
+  <zorder>showWindowPointKeyComboBox</zorder>
+  <zorder>showScreenPointKeyComboBox</zorder>
+  <zorder>showScreenPointKeyLabel</zorder>
  </widget>
  <resources/>
  <connections/>
