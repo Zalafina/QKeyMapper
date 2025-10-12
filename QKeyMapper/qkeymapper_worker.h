@@ -772,6 +772,8 @@ public slots:
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);
     void sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey);
+    void saveMousePosition(void);
+    void restoreMousePosition(void);
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
 public:
@@ -1155,6 +1157,7 @@ public:
     // static Joystick_AxisState s_JoyAxisState;
     static QHash<int, Joystick_AxisState> s_JoyAxisStateMap;
     static int s_LastJoyAxisPlayerIndex;
+    static QPoint s_SavedMousePosition;
 
 private:
     HHOOK m_KeyHook;

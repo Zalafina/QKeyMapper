@@ -18008,6 +18008,8 @@ void QKeyMapper::initKeysCategoryMap()
         << MOUSE_X1_SCREENPOINT_STR
         << MOUSE_X2_SCREENPOINT_STR
         << MOUSE_MOVE_SCREENPOINT_STR
+        << MOUSE_POS_SAVE_STR
+        << MOUSE_POS_RESTORE_STR
         ;
 
     /* Original Gamdpad Keys */

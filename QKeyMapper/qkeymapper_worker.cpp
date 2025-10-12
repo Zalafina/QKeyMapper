@@ -121,6 +121,7 @@ QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_En
 // Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 QHash<int, Joystick_AxisState> QKeyMapper_Worker::s_JoyAxisStateMap;
 int QKeyMapper_Worker::s_LastJoyAxisPlayerIndex = INITIAL_PLAYER_INDEX;
+QPoint QKeyMapper_Worker::s_SavedMousePosition = MOUSE_POS_INVALID;
 
 bool QKeyMapper_Hook_Proc::s_LowLevelKeyboardHook_Enable = true;
 bool QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable = true;
@@ -1574,11 +1575,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
             }
+            else if (key.startsWith(MOUSE_POS_PREFIX)) {
+                /* Mouse-Pos KeyUp do nothing. */
+            }
             else if (key.startsWith(FUNC_PREFIX)) {
                 /* Function KeyUp do nothing. */
             }
             else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                sendMouseMoveToPoint(key, postmappingkey);
+                /* Mouse-Move KeyUp do nothing. */
             }
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                 sendMousePointClick(key, KEY_UP, postmappingkey);
@@ -2280,6 +2284,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                 }
+                else if (key.startsWith(MOUSE_POS_PREFIX)) {
+                    if (key == MOUSE_POS_SAVE_STR) {
+                        saveMousePosition();
+                    }
+                    else if (key == MOUSE_POS_RESTORE_STR) {
+                        restoreMousePosition();
+                    }
+                }
                 else if (key.startsWith(FUNC_PREFIX)) {
                     // Function KeyDown processing
                     emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(key);
@@ -2553,6 +2565,25 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postm
 #endif
             }
         }
+    }
+}
+
+void QKeyMapper_Worker::saveMousePosition()
+{
+    POINT pt;
+    if (GetCursorPos(&pt)) {
+        s_SavedMousePosition = QPoint(pt.x, pt.y);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[saveMousePosition] Saved Mouse Cursor Positoin ->" <<  s_SavedMousePosition;
+#endif
+    }
+}
+
+void QKeyMapper_Worker::restoreMousePosition()
+{
+    if (s_SavedMousePosition != MOUSE_POS_INVALID) {
+        POINT saved_position = {s_SavedMousePosition.x(), s_SavedMousePosition.y()};
+        setMouseToPoint(saved_position);
     }
 }
 
@@ -4687,6 +4718,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     pressedDoublePressKeysList.clear();
     s_runningKeySequenceOrikeyList.clear();
     // pressedShortcutKeysList.clear();
+    s_SavedMousePosition = MOUSE_POS_INVALID;
 
     // clearAllLongPressTimers();
     // clearAllDoublePressTimers();
@@ -4862,6 +4894,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
     // resetGlobalSendInputTaskController();
+    s_SavedMousePosition = MOUSE_POS_INVALID;
 
     s_runningKeySequenceOrikeyList.clear();
     clearGlobalSendInputTaskControllerThreadPool();

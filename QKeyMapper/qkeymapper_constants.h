@@ -1099,6 +1099,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char MOUSE_X2_SCREENPOINT_STR[] = "Mouse-X2_ScreenPoint";
     inline constexpr const char MOUSE_MOVE_WINDOWPOINT_STR[]  = "Mouse-Move_WindowPoint";
     inline constexpr const char MOUSE_MOVE_SCREENPOINT_STR[]  = "Mouse-Move_ScreenPoint";
+    inline constexpr const char MOUSE_POS_PREFIX[]  = "Mouse-Pos";
+    inline constexpr const char MOUSE_POS_SAVE_STR[] = "Mouse-PosSave";
+    inline constexpr const char MOUSE_POS_RESTORE_STR[] = "Mouse-PosRestore";
+
+    inline constexpr QPoint MOUSE_POS_INVALID = QPoint(-50000, -50000);
 
     inline constexpr const int SHOW_MODE_NONE                = 0;
     inline constexpr const int SHOW_MODE_SCREEN_MOUSEPOINTS  = 1;
