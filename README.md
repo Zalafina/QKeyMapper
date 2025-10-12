@@ -139,8 +139,8 @@
 * v1.3.8(Build 20251012)
     * 窗口信息标签页添加窗口监测"忽略规则列表"，可以指定窗口的进程、标题、类名等信息的匹配规则来忽略对此窗口的检测。忽略的窗口不会出现在进程列表中，切换到此窗口也不会改变当前映射状态。
     * 映射设定标签页内"映射高级设定"窗口中加入"显示窗口内坐标点"和"显示屏幕内坐标点"按键自定义功能，初始默认设置分别为"F8"和"F9"。
-    * 添加保存当前鼠标指针位置和恢复到之前保存鼠标指针位置映射键，"Mouse-PosSave" 和 "Mouse-PosRestore"。映射按键示例：Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore
-    * 映射按键按下时长支持范围设置，A⏱(50~70)表示按键A按下时长在50毫秒~70毫秒之间取随机值。
+    * 添加保存当前鼠标指针位置和恢复到之前保存鼠标指针位置映射键，"Mouse-PosSave" 和 "Mouse-PosRestore"。映射按键示例：`Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore`
+    * 映射按键按下时长支持范围设置，`A⏱(50~70)` 表示按键A按下时长在50毫秒~70毫秒之间取随机值。
     * 修复setVolume在切换了当前输出设备后更改的仍然是之前输出设备音量的问题。
     * release版本zip压缩包路径添加AHK编写的utils工具，详细使用方法参考 utils 目录下 readme.txt 文件：
       - 窗口切换工具：Run命令使用格式：active_window.exe process="notepad.exe" title="新建文本文档" launch=true
