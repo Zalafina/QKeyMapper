@@ -859,6 +859,7 @@ void QKeyMapper_Worker::setMouseToScreenCenter(void)
     }
 }
 
+#if 0
 void QKeyMapper_Worker::setMouseToPoint(POINT point)
 {
     // Calculate the new coordinates for the mouse input structure.
@@ -882,6 +883,35 @@ void QKeyMapper_Worker::setMouseToPoint(POINT point)
 #endif
     }
 }
+#else
+void QKeyMapper_Worker::setMouseToPoint(POINT point)
+{
+    // Get the virtual desktop boundaries
+    int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    // Convert virtual desktop coordinates to SendInput absolute coordinates
+    double fx = ( (point.x - virtualLeft) * 65535.0 ) / (virtualWidth  - 1);
+    double fy = ( (point.y - virtualTop)  * 65535.0 ) / (virtualHeight - 1);
+
+    INPUT mouse_input = { 0 };
+    mouse_input.type = INPUT_MOUSE;
+    mouse_input.mi.dx = static_cast<LONG>(fx);
+    mouse_input.mi.dy = static_cast<LONG>(fy);
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
+    mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
+
+    // Send the mouse_input event
+    UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
+    if (uSent != 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[setMouseToPoint] SendInput failed: 0x%X\n", HRESULT_FROM_WIN32(GetLastError()));
+#endif
+    }
+}
+#endif
 
 void QKeyMapper_Worker::setMouseToScreenBottomRight()
 {
