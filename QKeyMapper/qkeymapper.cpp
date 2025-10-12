@@ -6950,6 +6950,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
+            closeSettingTransferDialog();
             hide();
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::closeEvent] Hide Window on closeEvent, LastWindowPosition ->" << pos();
@@ -7301,6 +7302,7 @@ void QKeyMapper::MappingSwitch(MappingStartMode startmode)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeSettingTransferDialog();
         changeControlEnableStatus(false);
 
         QString curSettingSelectStr;
@@ -9310,7 +9312,11 @@ void QKeyMapper::exportSettingToFile()
 
     // Export
     SettingTransferDialog dlg(SettingTransferDialog::ExportMode, this);
-    if (dlg.exec() == QDialog::Accepted) {
+    m_SettingTransferDialog = &dlg;  // Save pointer for potential auto-close
+    int result = dlg.exec();
+    m_SettingTransferDialog = Q_NULLPTR;  // Clear pointer after dialog closes
+
+    if (result == QDialog::Accepted) {
         exportSelectedGroups(CONFIG_FILENAME,
                              dlg.selectedFilePath(),
                              dlg.selectedGroups());
@@ -9325,7 +9331,11 @@ void QKeyMapper::importSettingFromFile()
 
     // Import
     SettingTransferDialog dlg(SettingTransferDialog::ImportMode, this);
-    if (dlg.exec() == QDialog::Accepted) {
+    m_SettingTransferDialog = &dlg;  // Save pointer for potential auto-close
+    int result = dlg.exec();
+    m_SettingTransferDialog = Q_NULLPTR;  // Clear pointer after dialog closes
+
+    if (result == QDialog::Accepted) {
         importSelectedGroups(dlg.selectedFilePath(),
                              dlg.selectedGroups());
     }
@@ -15674,6 +15684,17 @@ void QKeyMapper::closeItemSetupDialog()
     }
 }
 
+void QKeyMapper::closeSettingTransferDialog()
+{
+    if (Q_NULLPTR == m_SettingTransferDialog) {
+        return;
+    }
+
+    if (m_SettingTransferDialog->isVisible()) {
+        m_SettingTransferDialog->reject();  // Use reject() to close modal dialog properly
+    }
+}
+
 void QKeyMapper::closeCrosshairSetupDialog()
 {
     if (Q_NULLPTR == QItemSetupDialog::getInstance()->m_CrosshairSetupDialog) {
@@ -16952,6 +16973,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeIgnoreRulesListDialog();
             closeTableSetupDialog();
             closeItemSetupDialog();
+            closeSettingTransferDialog();
             hide();
         }
 #else
@@ -16965,6 +16987,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
         closeNotificationSetupDialog();
         closeTableSetupDialog();
         closeItemSetupDialog();
+        closeSettingTransferDialog();
         hide();
 #endif
 
@@ -17002,6 +17025,7 @@ void QKeyMapper::forceHide()
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeSettingTransferDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QKeyMapper::forceHide] Force hide Window, LastWindowPosition ->" << pos();

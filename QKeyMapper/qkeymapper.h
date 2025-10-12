@@ -1414,6 +1414,7 @@ private:
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
     void closeFloatingWindowSetupDialog(void);
+    void closeSettingTransferDialog(void);
 
     void showTableSetupDialog(int tabindex);
     void closeTableSetupDialog(void);
@@ -1548,6 +1549,7 @@ private:
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
+    SettingTransferDialog *m_SettingTransferDialog = Q_NULLPTR;
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
 #ifdef USE_CUSTOMSTYLE
