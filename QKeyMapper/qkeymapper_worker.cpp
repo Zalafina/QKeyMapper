@@ -3835,15 +3835,19 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 #endif
     }
 
-    // Only scale when custom_radius is valid
+    // Apply custom radius limit when custom_radius is valid
+    // Only clamp the distance if it exceeds the custom radius, do NOT scale smaller values
     if (VJOY_STICK_RADIUS_MIN < custom_radius && custom_radius < VJOY_STICK_RADIUS_MAX) {
         qreal ratio = static_cast<qreal>(custom_radius) / VJOY_STICK_RADIUS_MAX;
         qreal max_radius = THUMB_DISTANCE_MAX * ratio;
+
+        // Only limit the distance if it exceeds the custom radius threshold
+        // Do NOT scale values that are already within the limit
         if (distance > max_radius) {
             distance = max_radius;
-        } else {
-            distance = distance * ratio;
         }
+        // Note: Small movements (distance <= max_radius) are NOT scaled down
+        // This ensures smooth gradual movement in direct mode
     }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -4030,42 +4034,38 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
 
         if (QKeyMapper::getvJoyDirectModeStatus()) {
-            int direct_x;
-            int direct_y;
+            // In direct mode, each joystick maintains its own state independently
+            // Process left joystick in direct mode
             if (leftJoystickUpdate) {
-                direct_x = ViGEmTarget_Report.sThumbLX;
-                direct_y = ViGEmTarget_Report.sThumbLY;
-            }
-            else {
-                direct_x = ViGEmTarget_Report.sThumbRX;
-                direct_y = ViGEmTarget_Report.sThumbRY;
-            }
+                int direct_x = ViGEmTarget_Report.sThumbLX;
+                int direct_y = ViGEmTarget_Report.sThumbLY;
 
-            // Apply sensitivity only if not zero (0 means no movement in that direction)
-            if (vJoy_X_Sensitivity > 0) {
-                direct_x += delta_x * vJoy_X_Sensitivity;
-            }
-            if (vJoy_Y_Sensitivity > 0) {
-                direct_y -= delta_y * vJoy_Y_Sensitivity;
-            }
+                // Apply sensitivity only if not zero (0 means no movement in that direction)
+                if (vJoy_X_Sensitivity > 0) {
+                    direct_x += delta_x * vJoy_X_Sensitivity;
+                }
+                if (vJoy_Y_Sensitivity > 0) {
+                    direct_y -= delta_y * vJoy_Y_Sensitivity;
+                }
 
-            // Clamp values to the joystick range (-32767, 32767)
-            if (direct_x > 32767) {
-                direct_x = 32767;
-            }
-            else if (direct_x < -32767) {
-                direct_x = -32767;
-            }
-            if (direct_y > 32767) {
-                direct_y = 32767;
-            }
-            else if (direct_y < -32767) {
-                direct_y = -32767;
-            }
+                // Clamp values to the joystick range (-32767, 32767)
+                if (direct_x > 32767) {
+                    direct_x = 32767;
+                }
+                else if (direct_x < -32767) {
+                    direct_x = -32767;
+                }
+                if (direct_y > 32767) {
+                    direct_y = 32767;
+                }
+                else if (direct_y < -32767) {
+                    direct_y = -32767;
+                }
 
-            // Assign final joystick values
-            leftX = direct_x;
-            leftY = direct_y;
+                // Assign final left joystick values
+                leftX = direct_x;
+                leftY = direct_y;
+            }
         }
         else {
             // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" >>>
@@ -4102,8 +4102,48 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             // Mouse2Joystick core algorithm from "https://github.com/memethyl/Mouse2Joystick" <<<
         }
 
-        short rightX = leftX;
-        short rightY = leftY;
+        // In non-direct mode, both joysticks share the same calculated values
+        // In direct mode, right joystick needs to be calculated independently
+        short rightX = 0;
+        short rightY = 0;
+        if (QKeyMapper::getvJoyDirectModeStatus()) {
+            // In direct mode, process right joystick independently
+            if (rightJoystickUpdate) {
+                int direct_x = ViGEmTarget_Report.sThumbRX;
+                int direct_y = ViGEmTarget_Report.sThumbRY;
+
+                // Apply sensitivity only if not zero (0 means no movement in that direction)
+                if (vJoy_X_Sensitivity > 0) {
+                    direct_x += delta_x * vJoy_X_Sensitivity;
+                }
+                if (vJoy_Y_Sensitivity > 0) {
+                    direct_y -= delta_y * vJoy_Y_Sensitivity;
+                }
+
+                // Clamp values to the joystick range (-32767, 32767)
+                if (direct_x > 32767) {
+                    direct_x = 32767;
+                }
+                else if (direct_x < -32767) {
+                    direct_x = -32767;
+                }
+                if (direct_y > 32767) {
+                    direct_y = 32767;
+                }
+                else if (direct_y < -32767) {
+                    direct_y = -32767;
+                }
+
+                // Assign final right joystick values
+                rightX = direct_x;
+                rightY = direct_y;
+            }
+        }
+        else {
+            // In non-direct mode, right joystick uses the same values as left joystick
+            rightX = leftX;
+            rightY = leftY;
+        }
 
         if (leftJoystickUpdate) {
             int custom_radius_ls = VJOY_STICK_RADIUS_MAX;
