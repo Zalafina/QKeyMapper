@@ -57,6 +57,7 @@ typedef enum _XUSB_BUTTON
     XUSB_GAMEPAD_LEFT_SHOULDER      = 0x0100,
     XUSB_GAMEPAD_RIGHT_SHOULDER     = 0x0200,
     XUSB_GAMEPAD_GUIDE              = 0x0400,
+    XUSB_GAMEPAD_TOUCHPAD           = 0x0800,
     XUSB_GAMEPAD_A                  = 0x1000,
     XUSB_GAMEPAD_B                  = 0x2000,
     XUSB_GAMEPAD_X                  = 0x4000,

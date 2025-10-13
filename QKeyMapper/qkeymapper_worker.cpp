@@ -3630,6 +3630,12 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                 error = vigem_target_ds4_update(s_ViGEmClient, ViGEmTarget, ds4_report);
             }
             else {
+                if (joystickButton == "vJoy-Touchpad" && updateFlag == VJOY_UPDATE_BUTTONS) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote().nospace() << "[ViGEmClient_PressButton]" << " X360 VirtualGamepad skip \"vJoy-Touchpad\" Button Press!";
+#endif
+                    return;
+                }
                 error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
             }
             Q_UNUSED(error);
@@ -3773,6 +3779,12 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
                 error = vigem_target_ds4_update(s_ViGEmClient, ViGEmTarget, ds4_report);
             }
             else {
+                if (joystickButton == "vJoy-Touchpad" && updateFlag == VJOY_UPDATE_BUTTONS) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote().nospace() << "[ViGEmClient_ReleaseButton]" << " X360 VirtualGamepad skip \"vJoy-Touchpad\" Button Release!";
+#endif
+                    return;
+                }
                 error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
             }
             Q_UNUSED(error);
@@ -13463,6 +13475,7 @@ void QKeyMapper_Worker::initViGEmKeyMap()
     ViGEmButtonMap.insert("vJoy-Key9(LS-Click)"         ,   XUSB_GAMEPAD_LEFT_THUMB     );
     ViGEmButtonMap.insert("vJoy-Key10(RS-Click)"        ,   XUSB_GAMEPAD_RIGHT_THUMB    );
     ViGEmButtonMap.insert("vJoy-Key13(Guide)"           ,   XUSB_GAMEPAD_GUIDE          );
+    ViGEmButtonMap.insert("vJoy-Touchpad"               ,   XUSB_GAMEPAD_TOUCHPAD       );
     /* ViGEm Virtual Joystick DPad Direction */
     ViGEmButtonMap.insert("vJoy-DPad-Up"                ,   XUSB_GAMEPAD_DPAD_UP        );
     ViGEmButtonMap.insert("vJoy-DPad-Down"              ,   XUSB_GAMEPAD_DPAD_DOWN      );

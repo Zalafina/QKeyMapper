@@ -18094,6 +18094,7 @@ void QKeyMapper::initKeysCategoryMap()
         << "vJoy-DPad-Down"
         << "vJoy-DPad-Left"
         << "vJoy-DPad-Right"
+        << "vJoy-Touchpad"
         << "vJoy-Key1(A/×)"
         << "vJoy-Key2(B/○)"
         << "vJoy-Key3(X/□)"
