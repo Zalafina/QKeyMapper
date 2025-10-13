@@ -469,11 +469,15 @@ void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mous
     int x = clientTopLeft.x + mousepoint.x();
     int y = clientTopLeft.y + mousepoint.y();
 
-    // Convert the screen coordinates to absolute coordinates required by SendInput
-    double fScreenWidth  = GetSystemMetrics(SM_CXSCREEN) - 1;
-    double fScreenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
-    double fx = x * (65535.0 / fScreenWidth);
-    double fy = y * (65535.0 / fScreenHeight);
+    // Get the virtual desktop boundaries to support extended screens
+    int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    // Convert virtual desktop coordinates to SendInput absolute coordinates
+    double fx = ( (x - virtualLeft) * 65535.0 ) / (virtualWidth  - 1);
+    double fy = ( (y - virtualTop)  * 65535.0 ) / (virtualHeight - 1);
 
     // Find the virtual mouse button code
     V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(mousebutton);
@@ -486,7 +490,7 @@ void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mous
     mouse_input.mi.mouseData = vmousecode.MouseXButton;
     mouse_input.mi.time = 0;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_POINTCLICK;
-    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
 
     if (keyupdown == KEY_DOWN) {
         mouse_input.mi.dwFlags |= vmousecode.MouseDownCode;
@@ -527,11 +531,15 @@ void QKeyMapper_Worker::sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mous
     int x = clientTopLeft.x + mousepoint.x();
     int y = clientTopLeft.y + mousepoint.y();
 
-    // Convert the screen coordinates to absolute coordinates required by SendInput
-    double fScreenWidth  = GetSystemMetrics(SM_CXSCREEN) - 1;
-    double fScreenHeight = GetSystemMetrics(SM_CYSCREEN) - 1;
-    double fx = x * (65535.0 / fScreenWidth);
-    double fy = y * (65535.0 / fScreenHeight);
+    // Get the virtual desktop boundaries to support extended screens
+    int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    // Convert virtual desktop coordinates to SendInput absolute coordinates
+    double fx = ( (x - virtualLeft) * 65535.0 ) / (virtualWidth  - 1);
+    double fy = ( (y - virtualTop)  * 65535.0 ) / (virtualHeight - 1);
 
     // Configure the input structure
     INPUT mouse_input = { 0 };
@@ -539,7 +547,7 @@ void QKeyMapper_Worker::sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mous
     mouse_input.mi.dx = static_cast<LONG>(fx);
     mouse_input.mi.dy = static_cast<LONG>(fy);
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_MOVE;
-    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+    mouse_input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
 
     // Send the mouse_input event
     UINT uSent = SendInput(1, &mouse_input, sizeof(INPUT));
@@ -2481,10 +2489,16 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             }
         }
         else {
-            double fScreenWidth     = GetSystemMetrics( SM_CXSCREEN )-1;
-            double fScreenHeight    = GetSystemMetrics( SM_CYSCREEN )-1;
-            double fx = x * ( 65535.0f / fScreenWidth );
-            double fy = y * ( 65535.0f / fScreenHeight );
+            // Get the virtual desktop boundaries to support extended screens
+            int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+            int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+            int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+            int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+            // Convert virtual desktop coordinates to SendInput absolute coordinates
+            double fx = ( (x - virtualLeft) * 65535.0 ) / (virtualWidth  - 1);
+            double fy = ( (y - virtualTop)  * 65535.0 ) / (virtualHeight - 1);
+
             V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(mousebutton);
             INPUT mouse_input = { 0 };
             mouse_input.type = INPUT_MOUSE;
@@ -2494,10 +2508,10 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             mouse_input.mi.time = 0;
             mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_POINTCLICK;
             if (KEY_DOWN == keyupdown) {
-                mouse_input.mi.dwFlags = vmousecode.MouseDownCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+                mouse_input.mi.dwFlags = vmousecode.MouseDownCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
             }
             else {
-                mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+                mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
             }
 
             if (postmappingkey || isPostBG) {
