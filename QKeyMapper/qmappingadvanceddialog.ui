@@ -180,7 +180,7 @@
     <rect>
      <x>225</x>
      <y>90</y>
-     <width>91</width>
+     <width>111</width>
      <height>21</height>
     </rect>
    </property>
@@ -194,9 +194,9 @@
   <widget class="QComboBox" name="showWindowPointKeyComboBox">
    <property name="geometry">
     <rect>
-     <x>320</x>
+     <x>340</x>
      <y>90</y>
-     <width>161</width>
+     <width>141</width>
      <height>21</height>
     </rect>
    </property>
@@ -207,9 +207,9 @@
   <widget class="QComboBox" name="showScreenPointKeyComboBox">
    <property name="geometry">
     <rect>
-     <x>320</x>
+     <x>340</x>
      <y>130</y>
-     <width>161</width>
+     <width>141</width>
      <height>21</height>
     </rect>
    </property>
@@ -222,7 +222,7 @@
     <rect>
      <x>225</x>
      <y>130</y>
-     <width>91</width>
+     <width>111</width>
      <height>21</height>
     </rect>
    </property>
