@@ -1475,6 +1475,10 @@ public:
     static QHash<int, QStringList> s_MappingKeysCategoryMap;
     static QIcon s_Icon_Blank;
     static int m_UI_Scale;
+    static int s_TransParentWindowInitialX;
+    static int s_TransParentWindowInitialY;
+    static int s_TransParentWindowInitialWidth;
+    static int s_TransParentWindowInitialHeight;
     KeyMapStatus m_KeyMapStatus;
 
 private:
@@ -1526,10 +1530,6 @@ private:
     QTranslator *m_custom_Translator;
 #endif
     HWND m_TransParentHandle;
-    int m_TransParentWindowInitialX;
-    int m_TransParentWindowInitialY;
-    int m_TransParentWindowInitialWidth;
-    int m_TransParentWindowInitialHeight;
     HWND m_CrosshairHandle;
     int m_CrosshairWindowInitialX;
     int m_CrosshairWindowInitialY;

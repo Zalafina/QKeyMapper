@@ -40,6 +40,10 @@ QHash<int, QStringList> QKeyMapper::s_OriginalKeysCategoryMap;
 QHash<int, QStringList> QKeyMapper::s_MappingKeysCategoryMap;
 QIcon QKeyMapper::s_Icon_Blank;
 int QKeyMapper::m_UI_Scale = UI_SCALE_NORMAL;
+int QKeyMapper::s_TransParentWindowInitialX = 0;
+int QKeyMapper::s_TransParentWindowInitialY = 0;
+int QKeyMapper::s_TransParentWindowInitialWidth = 0;
+int QKeyMapper::s_TransParentWindowInitialHeight = 0;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
     QDialog(parent),
@@ -82,10 +86,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_custom_Translator(new QTranslator(this)),
 #endif
     m_TransParentHandle(NULL),
-    m_TransParentWindowInitialX(0),
-    m_TransParentWindowInitialY(0),
-    m_TransParentWindowInitialWidth(0),
-    m_TransParentWindowInitialHeight(0),
     m_CrosshairHandle(NULL),
     m_CrosshairWindowInitialX(0),
     m_CrosshairWindowInitialY(0),
@@ -4696,15 +4696,27 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
     }
 
     for (const MousePoint_Info& pointInfo : MousePointsList) {
-        int x = pointInfo.x;
-        int y = pointInfo.y;
+        int x = pointInfo.x;  // Virtual desktop coordinate X
+        int y = pointInfo.y;  // Virtual desktop coordinate Y
 
         if (x < 0 || y < 0) {
             continue;
         }
 
+        // Convert virtual desktop coordinates to window client coordinates
+        // For SCREEN mode: window covers entire virtual desktop starting at (virtualLeft, virtualTop)
+        // For WINDOW mode: window covers specific client area, coordinates are already relative
+        int drawX = x;
+        int drawY = y;
+
+        if (showMode == SHOW_MODE_SCREEN_MOUSEPOINTS) {
+            // Convert virtual desktop coordinates to window client coordinates
+            drawX = x - s_TransParentWindowInitialX;
+            drawY = y - s_TransParentWindowInitialY;
+        }
+
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[DrawMousePoints]" << pointInfo.map_key << " -> X = " << x << ", Y = " << y;
+        qDebug().nospace().noquote() << "[DrawMousePoints]" << pointInfo.map_key << " -> Virtual X = " << x << ", Y = " << y << " -> Window X = " << drawX << ", Y = " << drawY;
 #endif
 
         COLORREF color = MOUSE_L_COLOR;
@@ -4723,10 +4735,10 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
         int radius = MOUSE_POINT_RADIUS;
 
         // Calculate the coordinates of the top-left and bottom-right of the circle
-        int left = x - radius;
-        int top = y - radius;
-        int right = x + radius;
-        int bottom = y + radius;
+        int left = drawX - radius;
+        int top = drawY - radius;
+        int right = drawX + radius;
+        int bottom = drawY + radius;
 
         // Draw the circle
         HBRUSH hBrush = CreateSolidBrush(color);
@@ -4858,8 +4870,12 @@ HWND QKeyMapper::createTransparentWindow()
 {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    // Get virtual desktop dimensions to support extended screens
+    // Virtual desktop covers all monitors including main and extended screens
+    int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);    // May be negative for left-side extended monitors
+    int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);    // May be negative for top-side extended monitors
+    int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);   // Total width across all monitors
+    int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);   // Total height across all monitors
 
     // Register window class
     WNDCLASS wc = { 0 };
@@ -4869,16 +4885,16 @@ HWND QKeyMapper::createTransparentWindow()
     wc.lpszClassName = L"QKeyMapper_TransparentWindow";
     RegisterClass(&wc);
 
-    // Create layered window
+    // Create layered window covering the entire virtual desktop
     HWND hwnd = CreateWindowEx(
         WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
         L"QKeyMapper_TransparentWindow",
         NULL,
         WS_POPUP,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        screenWidth,
-        screenHeight,
+        virtualLeft,      // X position (may be negative for left-side extended monitors)
+        virtualTop,       // Y position (may be negative for top-side extended monitors)
+        virtualWidth,     // Total width across all monitors
+        virtualHeight,    // Total height across all monitors
         NULL,
         NULL,
         hInstance,
@@ -4891,9 +4907,11 @@ HWND QKeyMapper::createTransparentWindow()
 
     ShowWindow(hwnd, SW_HIDE);
 
-    // Save the initial width & height of TransparentWindow
-    m_TransParentWindowInitialWidth = screenWidth;
-    m_TransParentWindowInitialHeight = screenHeight;
+    // Save the initial position, width & height of TransparentWindow (for extended screen support)
+    s_TransParentWindowInitialX = virtualLeft;
+    s_TransParentWindowInitialY = virtualTop;
+    s_TransParentWindowInitialWidth = virtualWidth;
+    s_TransParentWindowInitialHeight = virtualHeight;
 
     // Initialize the show mode to SHOW_MODE_SCREEN_MOUSEPOINTS
     SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_SCREEN_MOUSEPOINTS);
@@ -20309,7 +20327,7 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
 
         // Set show mode to SCREEN
         SetWindowLongPtr(m_TransParentHandle, GWLP_USERDATA, SHOW_MODE_SCREEN_MOUSEPOINTS);
-        resizeTransparentWindow(m_TransParentHandle, m_TransParentWindowInitialX, m_TransParentWindowInitialY, m_TransParentWindowInitialWidth, m_TransParentWindowInitialHeight);
+        resizeTransparentWindow(m_TransParentHandle, s_TransParentWindowInitialX, s_TransParentWindowInitialY, s_TransParentWindowInitialWidth, s_TransParentWindowInitialHeight);
 
         // SetWindowPos(m_TransParentHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
         // SWP_SHOWWINDOW parameter will show this window after SetWindowPos() called.
