@@ -141,13 +141,23 @@
 * v1.3.8(Build 20251018)
     * 鼠标操作包含坐标点的映射键添加支持扩展屏幕，包括：Mouse-Move、Mouse-L/R/M/X1/X2、Mouse-PosSave、Mouse-PosRestore等。
     * PS4虚拟手柄映射按键添加"vJoy-Touchpad"按键，对应PS4手柄触摸板键。
+    * utils目录下工具追加，详细使用方法参考 utils 目录下 readme.txt 文件：
+      ##### 1. 窗口状态更改工具：
+          config_window.exe opacity=XXX     (改变鼠标指针指向的窗口或者当前前台窗口的不透明度，可以增加减少也可以设定确定值，范围20~255)
+          config_window.exe alwaysontop     (当前鼠标指针指向的窗口或者当前前台窗口切换置顶状态)
+          config_window.exe passthrough     (当前鼠标指针指向的窗口或者当前前台窗口切换鼠标穿透状态)
+          注意：如果置顶和鼠标穿透切换无效，尝试鼠标点击任务栏选择此窗口让此窗口变为前台窗口后再进行切换通常会有效。
+      ##### 2. 窗口位置移动工具
+          move_window.exe start  (启动窗口位置拖动，启动后当前鼠标指针指向的窗口跟随鼠标指针移动进行位置移动)
+          move_window.exe stop   (停止窗口位置拖动，停止之后窗口不再跟随鼠标指针位置移动)
+          启动窗口位置拖动过程中，按下 Esc 键会回到开始拖动之前的窗口位置。
 * v1.3.8(Build 20251012)
     * 窗口信息标签页添加窗口监测"忽略规则列表"，可以指定窗口的进程、标题、类名等信息的匹配规则来忽略对此窗口的检测。忽略的窗口不会出现在进程列表中，切换到此窗口也不会改变当前映射状态。
     * 映射设定标签页内"映射高级设定"窗口中加入"显示窗口内坐标点"和"显示屏幕内坐标点"按键自定义功能，初始默认设置分别为"F8"和"F9"。
     * 添加保存当前鼠标指针位置和恢复到之前保存鼠标指针位置映射键，"Mouse-PosSave" 和 "Mouse-PosRestore"。映射按键示例：`Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore`
     * 映射按键按下时长支持范围设置，`A⏱(50~70)` 表示按键A按下时长在50毫秒~70毫秒之间取随机值。
     * 修复setVolume在切换了当前输出设备后更改的仍然是之前输出设备音量的问题。
-    * release版本zip压缩包路径添加AHK编写的utils工具，详细使用方法参考 utils 目录下 readme.txt 文件：
+    * release版本zip压缩包下添加AHK编写的utils工具，详细使用方法参考 utils 目录下 readme.txt 文件：
       - 窗口切换工具：Run命令使用格式：active_window.exe process="notepad.exe" title="新建文本文档" launch=true
       - 鼠标指针位置保存恢复工具：mouse_position.exe save=XXX、mouse_position.exe restore=XXX (save将当前鼠标指针位置存储为XXX名称，XXX名称可以自定义。restore从之前存储的鼠标指针位置中查找XXX名称对应的坐标点进行恢复)
 * v1.3.8(Build 20251006)
