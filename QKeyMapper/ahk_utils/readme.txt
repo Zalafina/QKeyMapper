@@ -10,3 +10,16 @@ mouse_position.exe save=XXX       (将当前鼠标指针位置存储为XXX名称
 mouse_position.exe restore=XXX    (从之前存储的鼠标指针位置中查找XXX名称对应的坐标点，将鼠标指针移动到此坐标点)
 注意：保存鼠标指针位置操作需要等待一定时间后再移动鼠标指针，避免存储操作未能正确执行完毕。
 映射按键用法示例：Run(utils\mouse_position save=mousepos)⏱50»Mouse-L(500,600)»Run(utils\mouse_position restore=mousepos)
+
+3. 
+
+
+4. 窗口位置移动工具
+move_window.exe start  (启动窗口位置拖动，启动后当前鼠标指针指向的窗口跟随鼠标指针移动进行位置移动)
+move_window.exe stop   (停止窗口位置拖动，停止之后窗口不再跟随鼠标指针位置移动)
+启动窗口位置拖动过程中，按下 Esc 键会回到开始拖动之前的窗口位置。
+映射按键用法示例：
+原始按键： L-Ctrl+Mouse-L
+映射按键： Run(utils\move_window start)
+抬起映射： Run(utils\move_window stop)
+发送时机： 按下+抬起
