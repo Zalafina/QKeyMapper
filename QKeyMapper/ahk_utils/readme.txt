@@ -11,7 +11,17 @@ mouse_position.exe restore=XXX    (从之前存储的鼠标指针位置中查找
 注意：保存鼠标指针位置操作需要等待一定时间后再移动鼠标指针，避免存储操作未能正确执行完毕。
 映射按键用法示例：Run(utils\mouse_position save=mousepos)⏱50»Mouse-L(500,600)»Run(utils\mouse_position restore=mousepos)
 
-3. 
+3. 窗口状态更改工具：
+config_window.exe opacity=XXX     (改变鼠标指针指向的窗口或者当前前台窗口的不透明度，可以增加减少也可以设定确定值，范围20~255)
+config_window.exe alwaysontop     (当前鼠标指针指向的窗口或者当前前台窗口切换置顶状态)
+config_window.exe passthrough     (当前鼠标指针指向的窗口或者当前前台窗口切换鼠标穿透状态)
+注意：如果置顶和鼠标穿透切换无效，尝试鼠标点击任务栏选择此窗口让此窗口变为前台窗口后再进行切换通常会有效。
+映射按键用法示例：
+Run(utils\config_window opacity=+2)
+Run(utils\config_window opacity=-2)
+Run(utils\config_window opacity=150)
+Run(utils\config_window alwaysontop)
+Run(utils\config_window passthrough)
 
 
 4. 窗口位置移动工具
