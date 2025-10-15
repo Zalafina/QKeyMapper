@@ -51,26 +51,69 @@ if (processInput != "") {
 }
 
 ; -------------------------------
-; 主逻辑
+; 主逻辑（支持多窗口循环切换）
 ; -------------------------------
 found := false
 
+; 构建搜索条件
+criteria := ""
 if (title != "" && processName != "") {
-    ; 标题 + 进程双重条件
     criteria := title " ahk_exe " processName
-    if hwnd := WinExist(criteria) {
-        ActivateWindow(hwnd)
-        found := true
-    }
 } else if (title != "") {
-    if hwnd := WinExist(title) {
-        ActivateWindow(hwnd)
-        found := true
-    }
+    criteria := title
 } else if (processName != "") {
-    if hwnd := WinExist("ahk_exe " processName) {
-        ActivateWindow(hwnd)
-        found := true
+    criteria := "ahk_exe " processName
+}
+
+; 如果有搜索条件，进行智能窗口切换
+if (criteria != "") {
+    ; 获取所有匹配的窗口列表
+    matchingWindows := []
+    hwndList := WinGetList(criteria)
+    
+    for hwnd in hwndList {
+        ; 过滤掉不可见或最小化的窗口（可选）
+        ; if WinGetMinMax("ahk_id " hwnd) = -1  ; 跳过最小化窗口
+        ;     continue
+        matchingWindows.Push(hwnd)
+    }
+    
+    ; 如果找到匹配的窗口
+    if (matchingWindows.Length > 0) {
+        currentHwnd := WinGetID("A")  ; 获取当前活动窗口的 HWND
+        targetHwnd := 0
+        
+        if (matchingWindows.Length = 1) {
+            ; 只有一个匹配窗口，直接激活
+            targetHwnd := matchingWindows[1]
+        } else {
+            ; 多个匹配窗口，实现循环切换
+            currentIndex := 0
+            
+            ; 查找当前窗口在列表中的位置
+            for index, hwnd in matchingWindows {
+                if (hwnd = currentHwnd) {
+                    currentIndex := index
+                    break
+                }
+            }
+            
+            ; 如果当前窗口在匹配列表中，切换到下一个
+            if (currentIndex > 0) {
+                ; 循环到下一个窗口
+                nextIndex := Mod(currentIndex, matchingWindows.Length) + 1
+                targetHwnd := matchingWindows[nextIndex]
+            } else {
+                ; 当前窗口不在匹配列表中，激活第一个匹配窗口
+                targetHwnd := matchingWindows[1]
+            }
+        }
+        
+        ; 激活目标窗口
+        if (targetHwnd != 0) {
+            ActivateWindow(targetHwnd)
+            found := true
+        }
     }
 }
 
