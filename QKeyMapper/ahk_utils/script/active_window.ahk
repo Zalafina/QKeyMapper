@@ -70,26 +70,26 @@ if (criteria != "") {
     ; 获取所有匹配的窗口列表
     matchingWindows := []
     hwndList := WinGetList(criteria)
-    
+
     for hwnd in hwndList {
         ; 过滤掉不可见或最小化的窗口（可选）
         ; if WinGetMinMax("ahk_id " hwnd) = -1  ; 跳过最小化窗口
         ;     continue
         matchingWindows.Push(hwnd)
     }
-    
+
     ; 如果找到匹配的窗口
     if (matchingWindows.Length > 0) {
         currentHwnd := WinGetID("A")  ; 获取当前活动窗口的 HWND
         targetHwnd := 0
-        
+
         if (matchingWindows.Length = 1) {
             ; 只有一个匹配窗口，直接激活
             targetHwnd := matchingWindows[1]
         } else {
             ; 多个匹配窗口，实现循环切换
             currentIndex := 0
-            
+
             ; 查找当前窗口在列表中的位置
             for index, hwnd in matchingWindows {
                 if (hwnd = currentHwnd) {
@@ -97,7 +97,7 @@ if (criteria != "") {
                     break
                 }
             }
-            
+
             ; 如果当前窗口在匹配列表中，切换到下一个
             if (currentIndex > 0) {
                 ; 循环到下一个窗口
@@ -108,7 +108,7 @@ if (criteria != "") {
                 targetHwnd := matchingWindows[1]
             }
         }
-        
+
         ; 激活目标窗口
         if (targetHwnd != 0) {
             ActivateWindow(targetHwnd)
