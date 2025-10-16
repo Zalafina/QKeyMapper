@@ -10,6 +10,68 @@ if (args.Length = 0) {
     ExitApp
 }
 
+; ====================================================================
+; 窗口跳过名单 - 用于过滤不应该被操作的系统窗口
+; 可以根据需要继续添加更多规则
+; ====================================================================
+; 跳过名单结构：每条规则包含 进程名(ProcessName)、窗口标题(WindowTitle) 和 窗口类名(ClassName)
+; 所有非空字段都匹配时才跳过，空字符串表示不检查该项
+global SkipList := [
+    ; Windows 桌面
+    {ProcessName: "explorer.exe", WindowTitle: "", ClassName: "Progman"},
+    ; Windows 任务栏
+    {ProcessName: "explorer.exe", WindowTitle: "", ClassName: "Shell_TrayWnd"},
+    ; 可以继续添加更多规则，例如：
+    ; {ProcessName: "explorer.exe", WindowTitle: "", ClassName: "WorkerW"},
+    ; {ProcessName: "dwm.exe", WindowTitle: "", ClassName: ""},
+    ; {ProcessName: "", WindowTitle: "特定标题", ClassName: ""},
+    ; {ProcessName: "", WindowTitle: "", ClassName: "SomeClassName"}
+]
+
+; ====================================================================
+; 函数: 检查窗口是否在跳过名单中
+; 参数: hwnd - 窗口句柄
+; 返回: true=应该跳过, false=不跳过
+; ====================================================================
+IsWindowInSkipList(hwnd) {
+    global SkipList
+
+    ; 获取窗口信息
+    try {
+        processName := WinGetProcessName("ahk_id " hwnd)
+        windowTitle := WinGetTitle("ahk_id " hwnd)
+        className := WinGetClass("ahk_id " hwnd)
+    }
+    catch {
+        ; 无法获取窗口信息，不跳过
+        return false
+    }
+
+    ; 遍历跳过名单
+    for rule in SkipList {
+        ; 检查进程名是否匹配（如果规则中指定了进程名）
+        processMatch := (rule.ProcessName = "" || StrLower(processName) = StrLower(rule.ProcessName))
+
+        ; 检查窗口标题是否匹配（如果规则中指定了标题）
+        ; 使用 InStr 进行包含匹配，支持部分匹配
+        titleMatch := (rule.WindowTitle = "" || InStr(windowTitle, rule.WindowTitle))
+
+        ; 检查类名是否匹配（如果规则中指定了类名）
+        classMatch := (rule.ClassName = "" || className = rule.ClassName)
+
+        ; 如果所有非空字段都匹配，则应该跳过此窗口
+        if (processMatch && titleMatch && classMatch) {
+            return true
+        }
+    }
+
+    ; 不在跳过名单中
+    return false
+}
+
+; ====================================================================
+; 获取目标窗口句柄
+; ====================================================================
 ; 获取鼠标当前位置下的窗口句柄
 MouseGetPos , , &hwnd
 
@@ -20,6 +82,23 @@ if (!hwnd) {
     hwnd := WinExist("A")
     if (!hwnd) {
         ExitApp
+    }
+
+    ; 检查前台窗口是否在跳过名单中
+    if (IsWindowInSkipList(hwnd)) {
+        ; 前台窗口是系统窗口（如桌面、任务栏），不进行操作
+        ExitApp
+    }
+}
+else {
+    ; 检查鼠标位置的窗口是否在跳过名单中
+    if (IsWindowInSkipList(hwnd)) {
+        ; 尝试使用前台窗口作为备选
+        hwnd := WinExist("A")
+        if (!hwnd || IsWindowInSkipList(hwnd)) {
+            ; 前台窗口也不可用，退出
+            ExitApp
+        }
     }
 }
 
@@ -46,15 +125,15 @@ for arg in args {
     else if (InStr(arg, "opacity=")) {
         opacityFlag := true
         opacityStr := SubStr(arg, InStr(arg, "=") + 1)
-        
+
         ; 获取当前窗口透明度
         currentOpacity := WinGetTransparent("ahk_id " hwnd)
-        
+
         ; 如果窗口当前没有设置透明度，默认为255（不透明）
         if (currentOpacity = "") {
             currentOpacity := 255
         }
-        
+
         ; 判断是绝对值还是相对值
         if (SubStr(opacityStr, 1, 1) = "+") {
             ; 增加透明度
@@ -70,7 +149,7 @@ for arg in args {
             ; 绝对值
             opacityValue := Integer(opacityStr)
         }
-        
+
         ; 限制透明度值在有效范围内 (20~255)
         if (opacityValue < OPACITY_MIN) {
             opacityValue := OPACITY_MIN
