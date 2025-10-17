@@ -17910,7 +17910,6 @@ void QKeyMapper::initKeysCategoryMap()
     mapping_common_keylist = QStringList() \
         << KEY_BLOCKED_STR
         << KEY_NONE_STR
-        << REPEAT_STR
         << UNLOCK_STR
         << SENDTEXT_STR
         << RUN_STR
@@ -22186,32 +22185,6 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                 QKeyMapper::getInstance()->setCurrentOriKeyRecordText(newCombinationKeyText);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[KeyListComboBox_MousePress]" << "Set new CombinationKeyText ->" << newCombinationKeyText;
-#endif
-            }
-        }
-    }
-    if (objectName() == MAPKEY_COMBOBOX_NAME) {
-        if (event->button() == Qt::RightButton) {
-            QString currentMapKeyListText = QKeyMapper::getCurrentMapKeyText();
-
-            if (currentMapKeyListText.isEmpty() == false) {
-                if (currentMapKeyListText.startsWith(MOUSE_BUTTON_PREFIX)) {
-                    if (currentMapKeyListText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
-                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
-                    }
-                    else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
-                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
-                    }
-                }
-                else if (currentMapKeyListText == REPEAT_STR) {
-                    currentMapKeyListText = REPEAT_TEMPLATE_STR;
-                }
-
-                QString newMapKeyText;
-                newMapKeyText = currentMapKeyListText;
-                QKeyMapper::getInstance()->appendParamTextPlainTextEditText(newMapKeyText);
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[KeyListComboBox_MousePress]" << "ParamTextPlainText append MappingKeyText ->" << newMapKeyText;
 #endif
             }
         }

@@ -324,6 +324,7 @@ void QItemSetupDialog::updateMappingKeyListComboBox()
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_UP);
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_BOTH);
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_EXCLUSION);
+    m_MappingKeyListComboBox->addItem(common_icon, REPEAT_STR);
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QIcon icon = mapkeyComboBox->itemIcon(i);
         QString text = mapkeyComboBox->itemText(i);
