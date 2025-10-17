@@ -139,10 +139,15 @@
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20251018)
+    * 映射项设定对话框中映射按键编辑时支持 `Repeat{映射内容}x循环次数` 的写法，循环次数范围 1~99999。
+      ##### 映射循环示例
+          Repeat{A⏱50}x5
+          Repeat{B+C}x3
+          A⏱50»Repeat{C+D»E⏱50}x2»F
     * 鼠标操作包含坐标点的映射键添加支持扩展屏幕，包括：Mouse-Move、Mouse-L/R/M/X1/X2、Mouse-PosSave、Mouse-PosRestore等。
     * PS4虚拟手柄映射按键添加"vJoy-Touchpad"按键，对应PS4手柄触摸板键。
     * utils目录下工具追加，详细使用方法参考 utils 目录下 readme.txt 文件：
-      ##### 1. 窗口状态更改工具：
+      ##### 1. 窗口状态更改工具
           config_window.exe opacity=XXX     (改变鼠标指针指向的窗口或者当前前台窗口的不透明度，可以增加减少也可以设定确定值，范围20~255)
           config_window.exe alwaysontop     (当前鼠标指针指向的窗口或者当前前台窗口切换置顶状态)
           config_window.exe passthrough     (当前鼠标指针指向的窗口或者当前前台窗口切换鼠标穿透状态)
