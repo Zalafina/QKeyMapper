@@ -5323,6 +5323,11 @@ QString QKeyMapper::getCurrentOriKeyText()
     return getInstance()->m_orikeyComboBox->currentText();
 }
 
+QString QKeyMapper::getCurrentMapKeyText()
+{
+    return getInstance()->m_mapkeyComboBox->currentText();
+}
+
 QString QKeyMapper::getCurrentOriKeyRecordText()
 {
     return getInstance()->ui->originalKeyRecordLineEdit->text();
@@ -17631,6 +17636,16 @@ void QKeyMapper::updateCategoryFilterByShowCategoryState()
 #endif
 }
 
+bool QKeyMapper::isParamTextPlainTextEditHasFocus()
+{
+    return ui->sendTextPlainTextEdit->hasFocus();
+}
+
+void QKeyMapper::appendParamTextPlainTextEditText(const QString &text)
+{
+    ui->sendTextPlainTextEdit->appendPlainText(text);
+}
+
 void QKeyMapper::initKeyMappingTabWidget(void)
 {
     m_KeyMappingTabWidget = new KeyMappingTabWidget(this);
@@ -17895,6 +17910,7 @@ void QKeyMapper::initKeysCategoryMap()
     mapping_common_keylist = QStringList() \
         << KEY_BLOCKED_STR
         << KEY_NONE_STR
+        << REPEAT_STR
         << UNLOCK_STR
         << SENDTEXT_STR
         << RUN_STR
@@ -22174,6 +22190,32 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
             }
         }
     }
+    if (objectName() == MAPKEY_COMBOBOX_NAME) {
+        if (event->button() == Qt::RightButton) {
+            QString currentMapKeyListText = QKeyMapper::getCurrentMapKeyText();
+
+            if (currentMapKeyListText.isEmpty() == false) {
+                if (currentMapKeyListText.startsWith(MOUSE_BUTTON_PREFIX)) {
+                    if (currentMapKeyListText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
+                    }
+                    else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
+                    }
+                }
+                else if (currentMapKeyListText == REPEAT_STR) {
+                    currentMapKeyListText = REPEAT_TEMPLATE_STR;
+                }
+
+                QString newMapKeyText;
+                newMapKeyText = currentMapKeyListText;
+                QKeyMapper::getInstance()->appendParamTextPlainTextEditText(newMapKeyText);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[KeyListComboBox_MousePress]" << "ParamTextPlainText append MappingKeyText ->" << newMapKeyText;
+#endif
+            }
+        }
+    }
     else if (objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME) {
         if (event->button() == Qt::RightButton) {
             QString currentOriKeyText = QItemSetupDialog::getOriginalKeyText();
@@ -22237,13 +22279,30 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
 
                 QString newMapKeyText;
                 if (currentMapKeyText.isEmpty()) {
-                    newMapKeyText = currentMapKeyListText;
+                    if (currentMapKeyListText == REPEAT_STR) {
+                        newMapKeyText = REPEAT_TEMPLATE_STR;
+                    }
+                    else {
+                        newMapKeyText = currentMapKeyListText;
+                    }
                 }
                 else {
                     int cursorPos = QItemSetupDialog::getMappingKeyCursorPosition();
+                    bool isCursorAtBegin = (cursorPos == 0);
                     bool isCursorAtEnd = (cursorPos == currentMapKeyText.length());
 
-                    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                    if (currentMapKeyListText == REPEAT_STR) {
+                        if (isCursorAtBegin) {
+                            newMapKeyText = REPEAT_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                        }
+                        else if (isCursorAtEnd) {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                        }
+                    }
+                    else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
                         if (currentMapKeyListText == SEPARATOR_WAITTIME
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP

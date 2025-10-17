@@ -920,6 +920,7 @@ public:
     static bool getKeyMappingDataTableItemBurstStatus(int rowindex);
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);
     static QString getCurrentOriKeyText(void);
+    static QString getCurrentMapKeyText(void);
     static QString getCurrentOriKeyRecordText(void);
     static int getOriginalKeyEditMode(void);
     static QString getSendTextString(void);
@@ -1303,6 +1304,8 @@ public:
     void onCategoryFilterChanged(int index);
     void updateCategoryFilterComboBox(void);
     void updateCategoryFilterByShowCategoryState(void);
+    bool isParamTextPlainTextEditHasFocus(void);
+    void appendParamTextPlainTextEditText(const QString &text);
 
 private:
     void initKeyMappingTabWidget(void);
