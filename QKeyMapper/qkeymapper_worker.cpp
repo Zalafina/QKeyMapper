@@ -1079,6 +1079,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
+    // Expand Repeat{...}x... patterns before processing
+    inputKeys = expandRepeatKeys(inputKeys);
+
     Q_UNUSED(sendmode);
     int waitTime = 0;
     bool keyseq_start = false;
@@ -14279,12 +14282,14 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
+    static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT_FIND);
     // Support both fixed wait time and random range with bracket notation
     // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... to preserve them during splitting
+    // Note: Repeat{...}x... needs to be preserved as a whole pattern to avoid splitting by internal separators (»)
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -14335,15 +14340,31 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
             keystr.replace(placeholder, preservedParts[i]);
         }
 
-        // Handle pure_keys
+        // Handle pure_keys mode (SPLIT_WITH_PLUSANDNEXT)
         if (pure_keys && !keystr.isEmpty()) {
-            QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
-            if (mapkey_match.hasMatch()) {
-                keystr = mapkey_match.captured(2);
+            // Check if this is a Repeat{...}x... pattern
+            QRegularExpressionMatch repeat_match = repeat_regex.match(keystr);
+            if (repeat_match.hasMatch()) {
+                // For Repeat pattern, extract the inner content and recursively split it
+                QString repeat_content = repeat_match.captured(1);
+                // Recursively split the inner content to get pure keys
+                QStringList innerPureKeys = splitMappingKeyString(repeat_content, SPLIT_WITH_PLUSANDNEXT, true);
+                // Add all inner pure keys to the result
+                splitted_mappingkeys.append(innerPureKeys);
+            }
+            else {
+                // Normal key, extract pure key name using mapkey_regex
+                QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
+                if (mapkey_match.hasMatch()) {
+                    keystr = mapkey_match.captured(2);
+                }
+                splitted_mappingkeys.append(keystr);
             }
         }
-
-        splitted_mappingkeys.append(keystr);
+        else {
+            // Not pure_keys mode, append the key as-is
+            splitted_mappingkeys.append(keystr);
+        }
 
         // If the whole string has been processed, break loop
         if (currentPos > tempMappingKey.length()) {
@@ -14377,6 +14398,59 @@ QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys
 QString getRealOriginalKey(const QString &original_key)
 {
     return original_key.left(original_key.indexOf(":"));
+}
+
+QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
+{
+    // Check nesting level limit
+    if (nesting_level > QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX) {
+        qWarning("[expandRepeatKeys] Repeat nesting level exceeds maximum (%d), returning original keys.", QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX);
+        return inputKeys;
+    }
+
+    static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+    QStringList result;
+
+    for (const QString &key : inputKeys) {
+        QRegularExpressionMatch repeat_match = repeat_regex.match(key);
+
+        if (repeat_match.hasMatch()) {
+            // This is a Repeat{...}x... instruction
+            QString repeat_content = repeat_match.captured(1);
+            QString repeat_count_str = repeat_match.captured(2);
+            bool ok = false;
+            int repeat_count = repeat_count_str.toInt(&ok);
+
+            if (!ok || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
+                // Invalid repeat count, skip this key and add it as-is (validation should have caught this)
+                qWarning("[expandRepeatKeys] Invalid repeat count: %s, skipping expansion.", qPrintable(repeat_count_str));
+                result.append(key);
+                continue;
+            }
+
+            // Split the inner content by SEPARATOR_NEXTARROW to get the key sequence
+            QStringList innerKeys = splitMappingKeyString(repeat_content, SPLIT_WITH_NEXT);
+
+            // Recursively expand any nested Repeat in the inner content
+            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1);
+
+            // Append the expanded inner keys repeat_count times
+            for (int i = 0; i < repeat_count; ++i) {
+                result.append(expandedInnerKeys);
+            }
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[expandRepeatKeys] Expanded Repeat{" << repeat_content << "}x" << repeat_count
+                                         << " to " << expandedInnerKeys.size() * repeat_count << " keys (nesting level: " << nesting_level << ")";
+#endif
+        }
+        else {
+            // Normal key, append as-is
+            result.append(key);
+        }
+    }
+
+    return result;
 }
 
 SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int keyupdown, const QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList) :

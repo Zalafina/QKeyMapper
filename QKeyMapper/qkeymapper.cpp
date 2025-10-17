@@ -3922,7 +3922,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     return result;
 }
 
-ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex, const QString &originalkeystr_matched)
+ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex, const QString &originalkeystr_matched, int nesting_level)
 {
     Q_UNUSED(mappingkeystr);
     ValidationResult result;
@@ -3994,7 +3994,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
             for (const QString& mapkey : std::as_const(Mapping_Keys))
             {
-                result = validateSingleMappingKey(mapkey);
+                result = validateSingleMappingKey(mapkey, nesting_level);
                 if (result.isValid == false) {
                     return result;
                 }
@@ -4026,7 +4026,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                 }
             }
 
-            result = validateSingleMappingKey(mapkey);
+            result = validateSingleMappingKey(mapkey, nesting_level);
             if (result.isValid == false) {
                 return result;
             }
@@ -4059,10 +4059,42 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     return result;
 }
 
-ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey)
+ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int nesting_level)
 {
     ValidationResult result;
     result.isValid = true;
+
+    // Check if this is a Repeat{...}x... pattern
+    static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+    QRegularExpressionMatch repeat_match = repeat_regex.match(mapkey);
+
+    if (repeat_match.hasMatch()) {
+        // Check nesting level limit
+        if (nesting_level >= QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX) {
+            result.isValid = false;
+            result.errorMessage = tr("Repeat{...} nesting level is too deep, please do not exceed %1 levels").arg(QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX);
+            return result;
+        }
+
+        // Extract Repeat content and count
+        QString repeat_content = repeat_match.captured(1);
+        QString repeat_count_str = repeat_match.captured(2);
+        bool ok = false;
+        int repeat_count = repeat_count_str.toInt(&ok);
+
+        // Validate repeat count
+        if (!ok || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
+            result.isValid = false;
+            result.errorMessage = tr("Invalid repeat count \"%1\", valid range is %2~%3").arg(repeat_count_str).arg(QKeyMapperConstants::REPEAT_COUNT_MIN).arg(QKeyMapperConstants::REPEAT_COUNT_MAX);
+            return result;
+        }
+
+        // Recursively validate the content inside Repeat{...}
+        QStringList innerKeySeqList = splitMappingKeyString(repeat_content, SPLIT_WITH_NEXT);
+        result = validateMappingKeyString(repeat_content, innerKeySeqList, INITIAL_ROW_INDEX, QString(), nesting_level + 1);
+
+        return result;
+    }
 
     // Support both fixed wait time (A⏱50) and random range (A⏱(50~70))
     // Capture groups: 1=prefix, 2=keyname, 3=range_min, 4=range_max, 5=fixed_time

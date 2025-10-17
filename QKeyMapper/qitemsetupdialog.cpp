@@ -549,17 +549,17 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
 
-    // Create a list of all matches (SendText, Run, SwitchTab, Unlock, and SetVolume) with their positions
+    // Create a list of all matches (SendText, Run, SwitchTab, Unlock, SetVolume, and Repeat) with their positions
     struct MatchInfo {
         int start;
         int end;
         QString content;
-        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "unlock", or "setvolume"
+        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "unlock", "setvolume", or "repeat"
     };
 
     QList<MatchInfo> allMatches;
@@ -829,10 +829,82 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         currentPos = match.capturedEnd();
     }
 
+    // Find all Repeat{...}x... matches with brace balancing
+    // Note: Unlike SendText/Run, we don't modify the content, just preserve the whole pattern during splitting
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        if (repeat_regex.pattern().isEmpty()) {
+            break;
+        }
+
+        // Find "Repeat{" pattern start
+        int repeatStart = mappingKey.indexOf("Repeat{", currentPos);
+        if (repeatStart == -1) {
+            break;
+        }
+
+        // Find the matching closing brace with balance checking
+        int bracePos = repeatStart + 7; // Position after "Repeat{"
+        int depth = 1;
+        while (bracePos < mappingKey.length() && depth > 0) {
+            if (mappingKey[bracePos] == '{') depth++;
+            else if (mappingKey[bracePos] == '}') depth--;
+            bracePos++;
+        }
+
+        if (depth == 0) {
+            // Found balanced braces, now look for the "x<count>" part
+            // Note: Don't use ^ anchor because we're matching from an offset position
+            QRegularExpression countPattern(R"(x(\d+))");
+            QRegularExpressionMatch countMatch = countPattern.match(mappingKey, bracePos);
+
+            if (countMatch.hasMatch()) {
+                // Complete Repeat{...}x<count> pattern found
+                MatchInfo info;
+                info.start = repeatStart;
+                info.end = countMatch.capturedEnd();
+                info.content = mappingKey.mid(repeatStart, info.end - repeatStart);
+                info.type = "repeat";
+                allMatches.append(info);
+                currentPos = info.end;
+            } else {
+                // No valid "x<count>" found, move past this Repeat{
+                currentPos = bracePos;
+            }
+        } else {
+            // Unbalanced braces, move past this Repeat{
+            currentPos = repeatStart + 7;
+        }
+    }
+
     // Sort matches by start position
     std::sort(allMatches.begin(), allMatches.end(), [](const MatchInfo &a, const MatchInfo &b) {
         return a.start < b.start;
     });
+
+    // Remove overlapping matches (keep the outermost/first match)
+    // This handles cases like: Repeat{Run(...)»SendText(...)»A}x2
+    // where Run(...) and SendText(...) are inside Repeat{...}
+    QList<MatchInfo> filteredMatches;
+    for (int i = 0; i < allMatches.size(); ++i) {
+        bool isOverlapped = false;
+        for (int j = 0; j < filteredMatches.size(); ++j) {
+            // Check if current match is completely inside a previously added match
+            if (allMatches[i].start >= filteredMatches[j].start && allMatches[i].end <= filteredMatches[j].end) {
+                isOverlapped = true;
+                break;
+            }
+            // Check if current match overlaps with a previously added match
+            if (allMatches[i].start < filteredMatches[j].end && allMatches[i].end > filteredMatches[j].start) {
+                isOverlapped = true;
+                break;
+            }
+        }
+        if (!isOverlapped) {
+            filteredMatches.append(allMatches[i]);
+        }
+    }
+    allMatches = filteredMatches;
 
     // Store content in order and create a map for placeholder-to-content mapping
     static QRegularExpression simplified_regex(R"([\r\n]+)");
@@ -893,6 +965,11 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         else if (allMatches[i].type == "setvolume") {
             // SetVolume(...) content remains unchanged as it has strict format validation
             // Format: SetVolume(numeric_value) - no whitespace manipulation needed
+        }
+        else if (allMatches[i].type == "repeat") {
+            // Repeat{...}x... content is preserved as-is during splitting
+            // The inner content will be processed during validation and expansion phases
+            // No whitespace or content modification needed here
         }
         // SendText(...) content remains completely unchanged
 
@@ -2413,9 +2490,10 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -2458,9 +2536,10 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), and SetVolume(...) content to preserve them
-    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

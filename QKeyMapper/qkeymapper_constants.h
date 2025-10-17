@@ -1034,6 +1034,20 @@ namespace QKeyMapperConstants {
     // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75)
     inline constexpr const char REGEX_PATTERN_SETVOLUME_FIND[] = R"(SetVolume(🔊)?\([+-]?\d+(?:\.\d{1,2})?\))";
 
+    // Pattern for matching Repeat{...}x... mapping keys
+    // Matches: Repeat{A}x3, Repeat{B+C»D}x10, Repeat{SendText(Hello)}x5
+    // Capture groups: (1) = content inside {}, (2) = repeat count
+    inline constexpr const char REGEX_PATTERN_REPEAT[] = R"(^Repeat\{(.+)\}x(\d+)$)";
+
+    // Pattern for finding Repeat{...}x... parts in a composite string
+    // Uses non-greedy matching for brace content to handle nested structures
+    inline constexpr const char REGEX_PATTERN_REPEAT_FIND[] = R"(Repeat\{[^}]+\}x\d+)";
+
+    // Repeat function limits
+    inline constexpr int REPEAT_COUNT_MIN = 1;
+    inline constexpr int REPEAT_COUNT_MAX = 99999;
+    inline constexpr int REPEAT_NESTING_LEVEL_MAX = 3;
+
     inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
 
