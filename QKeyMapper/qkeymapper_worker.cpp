@@ -14421,9 +14421,11 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
             bool ok = false;
             int repeat_count = repeat_count_str.toInt(&ok);
 
-            if (!ok || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
+            if (!ok || repeat_count_str.startsWith('0') || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
                 // Invalid repeat count, skip this key and add it as-is (validation should have caught this)
+#ifdef DEBUG_LOGOUT_ON
                 qWarning("[expandRepeatKeys] Invalid repeat count: %s, skipping expansion.", qPrintable(repeat_count_str));
+#endif
                 result.append(key);
                 continue;
             }

@@ -4095,7 +4095,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
         int repeat_count = repeat_count_str.toInt(&ok);
 
         // Validate repeat count
-        if (!ok || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
+        if (!ok || repeat_count_str.startsWith('0') || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
             result.isValid = false;
             result.errorMessage = tr("Invalid repeat count \"%1\", valid range is %2~%3").arg(repeat_count_str).arg(QKeyMapperConstants::REPEAT_COUNT_MIN).arg(QKeyMapperConstants::REPEAT_COUNT_MAX);
             return result;
