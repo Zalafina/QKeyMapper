@@ -3966,12 +3966,19 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         }
 
         if (Mapping_Keys.size() > 1) {
+            static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+            bool foundRepeatMappingKey = false;
             QString foundSpecialOriginalKey;
             QString foundSpecialMappingKey;
             // Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList
             for (const QString& mapkey : std::as_const(Mapping_Keys)) {
                 QString mapkey_noindex = mapkey;
                 mapkey_noindex.remove(removeindex_regex);
+                QRegularExpressionMatch repeat_match = repeat_regex.match(mapkey);
+                if (repeat_match.hasMatch()) {
+                    foundRepeatMappingKey = true;
+                    break;
+                }
                 if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
                     foundSpecialMappingKey = mapkey;
                     break;
@@ -3980,6 +3987,11 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     foundSpecialOriginalKey = mapkey;
                     break;
                 }
+            }
+            if (foundRepeatMappingKey) {
+                result.isValid = false;
+                result.errorMessage = tr("MappingCombinationKeys contains Repeat{...}");
+                return result;
             }
             if (!foundSpecialMappingKey.isEmpty()) {
                 result.isValid = false;
