@@ -3966,7 +3966,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         }
 
         if (Mapping_Keys.size() > 1) {
-            static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+            static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
             bool foundRepeatMappingKey = false;
             QString foundSpecialOriginalKey;
             QString foundSpecialMappingKey;
@@ -4077,7 +4077,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
     result.isValid = true;
 
     // Check if this is a Repeat{...}x... pattern
-    static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
     QRegularExpressionMatch repeat_match = repeat_regex.match(mapkey);
 
     if (repeat_match.hasMatch()) {

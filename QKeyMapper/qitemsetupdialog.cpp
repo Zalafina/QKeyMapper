@@ -970,7 +970,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         else if (allMatches[i].type == "repeat") {
             // Repeat{...}x... needs recursive processing to remove whitespace from inner mapping keys
             // Extract the pattern: Repeat{inner_content}x<count>
-            QRegularExpression repeatPattern(R"(^Repeat\{(.+)\}x(\d+)$)");
+            static QRegularExpression repeatPattern(REGEX_PATTERN_REPEAT);
             QRegularExpressionMatch repeatMatch = repeatPattern.match(content);
 
             if (repeatMatch.hasMatch()) {

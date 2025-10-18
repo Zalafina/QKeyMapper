@@ -14403,12 +14403,12 @@ QString getRealOriginalKey(const QString &original_key)
 QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 {
     // Check nesting level limit
-    if (nesting_level > QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX) {
-        qWarning("[expandRepeatKeys] Repeat nesting level exceeds maximum (%d), returning original keys.", QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX);
+    if (nesting_level > REPEAT_NESTING_LEVEL_MAX) {
+        qWarning("[expandRepeatKeys] Repeat nesting level exceeds maximum (%d), returning original keys.", REPEAT_NESTING_LEVEL_MAX);
         return inputKeys;
     }
 
-    static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
     QStringList result;
 
     for (const QString &key : inputKeys) {
@@ -14421,7 +14421,7 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
             bool ok = false;
             int repeat_count = repeat_count_str.toInt(&ok);
 
-            if (!ok || repeat_count_str.startsWith('0') || repeat_count < QKeyMapperConstants::REPEAT_COUNT_MIN || repeat_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
+            if (!ok || repeat_count_str.startsWith('0') || repeat_count < REPEAT_COUNT_MIN || repeat_count > REPEAT_COUNT_MAX) {
                 // Invalid repeat count, skip this key and add it as-is (validation should have caught this)
 #ifdef DEBUG_LOGOUT_ON
                 qWarning("[expandRepeatKeys] Invalid repeat count: %s, skipping expansion.", qPrintable(repeat_count_str));
