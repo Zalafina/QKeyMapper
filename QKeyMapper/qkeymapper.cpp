@@ -22272,7 +22272,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR;
                         }
                         else {
-                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                         }
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
