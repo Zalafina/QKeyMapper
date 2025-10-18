@@ -968,9 +968,43 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             // Format: SetVolume(numeric_value) - no whitespace manipulation needed
         }
         else if (allMatches[i].type == "repeat") {
-            // Repeat{...}x... content is preserved as-is during splitting
-            // The inner content will be processed during validation and expansion phases
-            // No whitespace or content modification needed here
+            // Repeat{...}x... needs recursive processing to remove whitespace from inner mapping keys
+            // Extract the pattern: Repeat{inner_content}x<count>
+            QRegularExpression repeatPattern(R"(^Repeat\{(.+)\}x(\d+)$)");
+            QRegularExpressionMatch repeatMatch = repeatPattern.match(content);
+
+            if (repeatMatch.hasMatch()) {
+                QString innerContent = repeatMatch.captured(1);  // Extract {...} content
+                QString repeatCount = repeatMatch.captured(2);   // Extract x<count>
+
+#if 0
+                // Normalize whitespace between keywords and their brackets before recursive processing
+                // This ensures regex patterns can match correctly: "SendText  (" -> "SendText("
+                static QRegularExpression keywordSpacesRegex(R"((SendText|Run|SwitchTab💾|SwitchTab|Unlock|SetVolume|Repeat)\s+([({]))");
+                innerContent.replace(keywordSpacesRegex, R"(\1\2)");
+#endif
+
+                // Recursively process inner content to handle nested Repeat and remove whitespace
+                QPair<QString, QStringList> innerResult = extractSpecialPatternsWithBracketBalancing(
+                    innerContent, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex
+                );
+                QString processedInner = innerResult.first;
+                QStringList innerPreservedParts = innerResult.second;
+
+                // Remove whitespace from the processed inner content
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                processedInner.remove(whitespace_reg);
+
+                // Restore preserved parts in inner content
+                for (int j = 0; j < innerPreservedParts.size(); ++j) {
+                    QString innerPlaceholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(j);
+                    processedInner.replace(innerPlaceholder, innerPreservedParts[j]);
+                }
+
+                // Reconstruct the Repeat pattern with processed inner content
+                content = QString("Repeat{%1}x%2").arg(processedInner, repeatCount);
+            }
+            // If pattern doesn't match, keep original content unchanged
         }
         // SendText(...) content remains completely unchanged
 
