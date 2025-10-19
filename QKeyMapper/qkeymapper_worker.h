@@ -894,6 +894,7 @@ public slots:
     void onJoystickAxisEvent(const QJoystickAxisEvent &e);
     void onJoystickButtonEvent(const QJoystickButtonEvent &e);
     void onJoystickSensorEvent(const QJoystickSensorEvent &e);
+    void onJoystickBatteryEvent(const QJoystickBatteryEvent &e);
 
     void onGameControllerGyroEnabledSwitch(int gamepadinfo_index);
 

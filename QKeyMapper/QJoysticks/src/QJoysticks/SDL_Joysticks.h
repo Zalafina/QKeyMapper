@@ -52,6 +52,7 @@ signals:
    void axisEvent(const QJoystickAxisEvent &event);
    void buttonEvent(const QJoystickButtonEvent &event);
    void sensorEvent(const QJoystickSensorEvent &event);
+   void batteryEvent(const QJoystickBatteryEvent &event);
 
 public:
    SDL_Joysticks(QObject *parent = Q_NULLPTR);
@@ -70,9 +71,11 @@ private:
    QJoystickDevice *getJoystick(int id);
    QJoystickPOVEvent getPOVEvent(const SDL_Event *sdl_event);
    QJoystickAxisEvent getAxisEvent(const SDL_Event *sdl_event);
+   QJoystickAxisEvent getControllerAxisEvent(const SDL_Event *sdl_event);
    QJoystickButtonEvent getButtonEvent(const SDL_Event *sdl_event);
    QJoystickButtonEvent getControllerButtonEvent(const SDL_Event *sdl_event);
    QJoystickSensorEvent getSensorEvent(const SDL_Event *sdl_event);
+   QJoystickBatteryEvent getBatteryEvent(const SDL_Event *sdl_event);
 
    QMap<int, QJoystickDevice *> m_joysticks;
 };

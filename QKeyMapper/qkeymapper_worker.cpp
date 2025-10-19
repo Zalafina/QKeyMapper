@@ -226,6 +226,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
     QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
+    QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent);
 
     initGlobalSendInputTaskController();
 
@@ -6097,7 +6098,27 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 #ifdef DEBUG_LOGOUT_ON
     QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
     QString productIdStr = QString("0x%1").arg(QString::number(joystick_added->productid, 16).toUpper(), 4, '0');
-    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9")
+    QString powerLevelStr;
+    if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_WIRED) {
+        powerLevelStr = "Wired";
+    }
+    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_FULL) {
+        powerLevelStr = "Full";
+    }
+    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_MEDIUM) {
+        powerLevelStr = "Medium";
+    }
+    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_LOW) {
+        powerLevelStr = "Low";
+    }
+    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_EMPTY) {
+        powerLevelStr = "Empty";
+    }
+    else {
+        powerLevelStr = "Unknown";
+    }
+
+    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9, PowerLevel=%10")
         .arg(joystick_added->name)
         .arg(joystick_added->playerindex)
         .arg(joystick_added->id)
@@ -6106,7 +6127,8 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
         .arg(joystick_added->numbuttons)
         .arg(joystick_added->serial,
              joystick_added->has_gyro ? "true" : "false",
-             joystick_added->has_accel ? "true" : "false");
+             joystick_added->has_accel ? "true" : "false")
+        .arg(powerLevelStr);
     qDebug().nospace().noquote() << debugmessage;
 #endif
 
@@ -6240,6 +6262,14 @@ void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 // #endif
 
     checkJoystickSensor(e);
+}
+
+void QKeyMapper_Worker::onJoystickBatteryEvent(const QJoystickBatteryEvent &e)
+{
+    if (e.joystick == Q_NULLPTR)
+        return;
+
+    emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(JOYSTICK_INVALID_INSTANCE_ID);
 }
 
 void QKeyMapper_Worker::onGameControllerGyroEnabledSwitch(int gamepadinfo_index)

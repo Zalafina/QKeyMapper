@@ -24,6 +24,8 @@
 #define _QJOYSTICKS_COMMON_H
 
 #include <QString>
+#include "SDL_joystick.h"
+#include "SDL_gamecontroller.h"
 
 /**
  * @brief Represents a joystick and its properties
@@ -53,6 +55,7 @@ struct QJoystickDevice
    QList<int> povs; /**< Holds the values for each POV */
    QList<double> axes; /**< Holds the values for each axis */
    QList<bool> buttons; /**< Holds the values for each button */
+   SDL_JoystickPowerLevel powerlevel; /**< Holds the current power level of the joystick */
    QAtomicInteger<bool> has_gyro;
    QAtomicInteger<bool> has_accel;
    QAtomicInteger<bool> sensor_disabled;
@@ -138,6 +141,12 @@ struct QJoystickSensorEvent
    uint64_t timestamp;
    int sensorType; /**< Type of sensor (gyro or accel) */
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
+};
+
+struct QJoystickBatteryEvent
+{
+    SDL_JoystickPowerLevel powerlevel; /**< Current power level of the joystick */
+    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 
 #endif

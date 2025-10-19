@@ -188,7 +188,7 @@ void SDL_Joysticks::update()
         }
         break;
         case SDL_CONTROLLERAXISMOTION:
-            emit axisEvent(getAxisEvent(&event));
+            emit axisEvent(getControllerAxisEvent(&event));
             break;
         case SDL_CONTROLLERSENSORUPDATE:
         {
@@ -225,7 +225,9 @@ void SDL_Joysticks::update()
                 emit POVEvent(getPOVEvent(&event));
             }
         }
-        break;
+        case SDL_JOYBATTERYUPDATED:
+            emit batteryEvent(getBatteryEvent(&event));
+            break;
         }
     }
 
@@ -317,6 +319,7 @@ QJoystickDevice *SDL_Joysticks::getJoystick(int id)
       joystick->vendorid = SDL_JoystickGetVendor(sdl_joystick);
       joystick->productid = SDL_JoystickGetProduct(sdl_joystick);
       joystick->numbuttons = SDL_JoystickNumButtons(sdl_joystick);
+      joystick->powerlevel = SDL_JoystickCurrentPowerLevel(sdl_joystick);
 // #ifdef DEBUG_LOGOUT_ON
 //       QString vendorIdStr = QString("0x%1").arg(QString::number(joystick->vendorid, 16).toUpper(), 4, '0');
 //       QString productIdStr = QString("0x%1").arg(QString::number(joystick->productid, 16).toUpper(), 4, '0');
@@ -371,14 +374,14 @@ QJoystickPOVEvent SDL_Joysticks::getPOVEvent(const SDL_Event *sdl_event)
    event.angle = 0;
    event.joystick = Q_NULLPTR;
 
-   if (!m_joysticks.contains(sdl_event->jdevice.which))
+   if (!m_joysticks.contains(sdl_event->jhat.which))
    {
       return event;
    }
 
 #ifdef SDL_SUPPORTED
    event.pov = sdl_event->jhat.hat;
-   event.joystick = m_joysticks[sdl_event->jdevice.which];
+   event.joystick = m_joysticks[sdl_event->jhat.which];
 
    switch (sdl_event->jhat.value)
    {
@@ -428,26 +431,37 @@ QJoystickAxisEvent SDL_Joysticks::getAxisEvent(const SDL_Event *sdl_event)
    event.value = 0;
    event.joystick = Q_NULLPTR;
 
-   if (!m_joysticks.contains(sdl_event->cdevice.which))
+   if (!m_joysticks.contains(sdl_event->jaxis.which))
    {
-      return event;
+       return event;
    }
 
-#ifdef SDL_SUPPORTED
-   event.axis = sdl_event->caxis.axis;
-   event.value = static_cast<qreal>(sdl_event->caxis.value) / 32767;
-   if (sdl_event->type == SDL_CONTROLLERAXISMOTION) {
-       event.event_type = GameControllerEvent;
-   }
-   else {
-       event.event_type = JoystickEvent;
-   }
-   event.joystick = m_joysticks[sdl_event->cdevice.which];
-#else
-   Q_UNUSED(sdl_event);
-#endif
+   event.axis = sdl_event->jaxis.axis;
+   event.value = static_cast<qreal>(sdl_event->jaxis.value) / 32767;
+   event.event_type = JoystickEvent;
+   event.joystick = m_joysticks[sdl_event->jaxis.which];
 
    return event;
+}
+
+QJoystickAxisEvent SDL_Joysticks::getControllerAxisEvent(const SDL_Event *sdl_event)
+{
+    QJoystickAxisEvent event;
+    event.axis = 0;
+    event.value = 0;
+    event.joystick = Q_NULLPTR;
+
+    if (!m_joysticks.contains(sdl_event->caxis.which))
+    {
+        return event;
+    }
+
+    event.axis = sdl_event->caxis.axis;
+    event.value = static_cast<qreal>(sdl_event->caxis.value) / 32767;
+    event.event_type = GameControllerEvent;
+    event.joystick = m_joysticks[sdl_event->caxis.which];
+
+    return event;
 }
 
 /**
@@ -461,7 +475,7 @@ QJoystickButtonEvent SDL_Joysticks::getButtonEvent(const SDL_Event *sdl_event)
    event.pressed = SDL_RELEASED;
    event.joystick = Q_NULLPTR;
 
-   if (!m_joysticks.contains(sdl_event->jdevice.which))
+   if (!m_joysticks.contains(sdl_event->jbutton.which))
    {
       return event;
    }
@@ -470,7 +484,7 @@ QJoystickButtonEvent SDL_Joysticks::getButtonEvent(const SDL_Event *sdl_event)
    event.event_type = JoystickEvent;
    event.button = sdl_event->jbutton.button;
    event.pressed = sdl_event->jbutton.state == SDL_PRESSED;
-   event.joystick = m_joysticks[sdl_event->jdevice.which];
+   event.joystick = m_joysticks[sdl_event->jbutton.which];
    // event.joystick->buttons[event.button] = event.pressed;
 #else
    Q_UNUSED(sdl_event);
@@ -486,7 +500,7 @@ QJoystickButtonEvent SDL_Joysticks::getControllerButtonEvent(const SDL_Event *sd
     event.pressed = SDL_RELEASED;
     event.joystick = Q_NULLPTR;
 
-    if (!m_joysticks.contains(sdl_event->cdevice.which))
+    if (!m_joysticks.contains(sdl_event->cbutton.which))
     {
         return event;
     }
@@ -494,7 +508,7 @@ QJoystickButtonEvent SDL_Joysticks::getControllerButtonEvent(const SDL_Event *sd
     event.event_type = GameControllerEvent;
     event.button = sdl_event->cbutton.button;
     event.pressed = sdl_event->cbutton.state == SDL_PRESSED;
-    event.joystick = m_joysticks[sdl_event->cdevice.which];
+    event.joystick = m_joysticks[sdl_event->cbutton.which];
     // event.joystick->buttons[event.button] = event.pressed;
 
     return event;
@@ -536,6 +550,23 @@ QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)
     }
 
     event.joystick = m_joysticks[sdl_event->csensor.which];
+
+    return event;
+}
+
+QJoystickBatteryEvent SDL_Joysticks::getBatteryEvent(const SDL_Event *sdl_event)
+{
+    QJoystickBatteryEvent event;
+    event.powerlevel = sdl_event->jbattery.level;
+    event.joystick = Q_NULLPTR;
+
+    if (!m_joysticks.contains(sdl_event->jbattery.which))
+    {
+        return event;
+    }
+
+    event.joystick = m_joysticks[sdl_event->jbattery.which];
+    m_joysticks[sdl_event->jbattery.which]->powerlevel = sdl_event->jbattery.level;
 
     return event;
 }

@@ -204,6 +204,7 @@ struct Gamepad_Info
     bool isvirtual;
     int gyro_enabled;
     QString info_string;
+    int powerlevel;
 
     Gamepad_Info() : instance_id(-1), name(), vendorid(0), productid(0), serial(), isvirtual(false) {}
 

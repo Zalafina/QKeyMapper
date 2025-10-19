@@ -16287,11 +16287,32 @@ void QKeyMapper::updateGamepadSelectComboBox(int instance_id)
             gamepadinfo.vendorid = joystick->vendorid;
             gamepadinfo.productid = joystick->productid;
             gamepadinfo.serial = joystick->serial;
+            gamepadinfo.powerlevel = joystick->powerlevel;
             gamepadinfo.isvirtual = joystick->blacklisted;
             gamepadinfo.gyro_enabled = GAMEPADINFO_GYRO_NONE;
-            gamepadinfo.info_string = QString("[%1] %2 [VID=0x%3][PID=0x%4]")
+            QString powerlevelStr;
+            if(gamepadinfo.powerlevel == SDL_JOYSTICK_POWER_WIRED) {
+                powerlevelStr = tr("PowerWired");
+            }
+            else if(gamepadinfo.powerlevel == SDL_JOYSTICK_POWER_FULL) {
+                powerlevelStr = tr("PowerFull");
+            }
+            else if(gamepadinfo.powerlevel == SDL_JOYSTICK_POWER_MEDIUM) {
+                powerlevelStr = tr("PowerMedium");
+            }
+            else if(gamepadinfo.powerlevel == SDL_JOYSTICK_POWER_LOW) {
+                powerlevelStr = tr("PowerLow");
+            }
+            else if(gamepadinfo.powerlevel == SDL_JOYSTICK_POWER_EMPTY) {
+                powerlevelStr = tr("PowerEmpty");
+            }
+            else {
+                powerlevelStr = tr("PowerUnknown");
+            }
+            gamepadinfo.info_string = QString("[%1] %2 [%3][VID=0x%4][PID=0x%5]")
                 .arg(player_index)
                 .arg(joystick->name,
+                     powerlevelStr,
                      QString::number(joystick->vendorid, 16).toUpper().rightJustified(4, '0'),
                      QString::number(joystick->productid, 16).toUpper().rightJustified(4, '0'));
             if (joystick->has_gyro && joystick->blacklisted != true) {
