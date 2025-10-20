@@ -4100,6 +4100,14 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             return;
         }
 
+        // Apply axis inversion if enabled (affects both joysticks)
+        if (vJoy_InvertX) {
+            delta_x = -delta_x;
+        }
+        if (vJoy_InvertY) {
+            delta_y = -delta_y;
+        }
+
         if (QKeyMapper::getvJoyDirectModeStatus()) {
             // In direct mode, each joystick maintains its own state independently
             // Process left joystick in direct mode
