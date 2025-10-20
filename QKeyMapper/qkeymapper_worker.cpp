@@ -4090,6 +4090,8 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
     if (leftJoystickUpdate || rightJoystickUpdate) {
         int vJoy_X_Sensitivity = QKeyMapper::getvJoyXSensitivity();
         int vJoy_Y_Sensitivity = QKeyMapper::getvJoyYSensitivity();
+        bool vJoy_InvertX = QKeyMapper::getvJoyInvertXStatus();
+        bool vJoy_InvertY = QKeyMapper::getvJoyInvertYStatus();
         short leftX = 0;
         short leftY = 0;
 

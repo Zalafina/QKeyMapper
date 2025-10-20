@@ -944,6 +944,8 @@ public:
     static double getGyro2MouseMaxYSensitivity(void);
     static int getvJoyXSensitivity(void);
     static int getvJoyYSensitivity(void);
+    static bool getvJoyInvertXStatus(void);
+    static bool getvJoyInvertYStatus(void);
     static int getvJoyRecenterTimeout(void);
     static QString getVirtualGamepadType(void);
     static bool getvJoyLockCursorStatus(void);

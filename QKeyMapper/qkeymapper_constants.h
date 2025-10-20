@@ -899,6 +899,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char MOUSE2VJOY_X_SENSITIVITY[] = "Mouse2vJoy_XSensitivity";
     inline constexpr const char MOUSE2VJOY_Y_SENSITIVITY[] = "Mouse2vJoy_YSensitivity";
+    inline constexpr const char MOUSE2VJOY_INVERT_X[] = "Mouse2vJoy_InvertX";
+    inline constexpr const char MOUSE2VJOY_INVERT_Y[] = "Mouse2vJoy_InvertY";
     inline constexpr const char MOUSE2VJOY_LOCKCURSOR[] = "Mouse2vJoy_LockCursor";
     inline constexpr const char MOUSE2VJOY_DIRECTMODE[] = "Mouse2vJoy_DirectMode";
     inline constexpr const char MOUSE2VJOY_RECENTER_TIMEOUT[] = "Mouse2vJoy_Recenter_Timeout";

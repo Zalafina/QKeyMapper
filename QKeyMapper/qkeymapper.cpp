@@ -392,6 +392,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->vJoyYSensSpinBox->setEnabled(false);
     ui->vJoyXSensLabel->setEnabled(false);
     ui->vJoyYSensLabel->setEnabled(false);
+    ui->vJoyInvertXCheckBox->setEnabled(false);
+    ui->vJoyInvertYCheckBox->setEnabled(false);
     ui->vJoyRecenterLabel->setEnabled(false);
     ui->vJoyRecenterSpinBox->setEnabled(false);
     ui->lockCursorCheckBox->setEnabled(false);
@@ -5456,6 +5458,16 @@ int QKeyMapper::getvJoyYSensitivity()
     return getInstance()->ui->vJoyYSensSpinBox->value();
 }
 
+bool QKeyMapper::getvJoyInvertXStatus()
+{
+    return getInstance()->ui->vJoyInvertXCheckBox->isChecked();
+}
+
+bool QKeyMapper::getvJoyInvertYStatus()
+{
+    return getInstance()->ui->vJoyInvertYCheckBox->isChecked();
+}
+
 int QKeyMapper::getvJoyRecenterTimeout()
 {
     return getInstance()->ui->vJoyRecenterSpinBox->value();
@@ -9632,11 +9644,6 @@ void QKeyMapper::saveKeyMapSetting(void)
 #endif
     // int burstpressTime = ui->burstpressSpinBox->value();
     // int burstreleaseTime = ui->burstreleaseSpinBox->value();
-#ifdef VIGEM_CLIENT_SUPPORT
-    int vJoy_X_Sensitivity = ui->vJoyXSensSpinBox->value();
-    int vJoy_Y_Sensitivity = ui->vJoyYSensSpinBox->value();
-    int vJoy_Recenter_Timeout = ui->vJoyRecenterSpinBox->value();
-#endif
 
     QString saveSettingSelectStr;
     // QString cursettingSelectStr = ui->settingselectComboBox->currentText();
@@ -10499,9 +10506,11 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_X_REVERT, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert());
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_Y_REVERT, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert());
 
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY , vJoy_X_Sensitivity);
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY , vJoy_Y_Sensitivity);
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT, vJoy_Recenter_Timeout);
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY, ui->vJoyXSensSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY, ui->vJoyYSensSpinBox->value());
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_INVERT_X, ui->vJoyInvertXCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_INVERT_Y, ui->vJoyInvertYCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT, ui->vJoyRecenterSpinBox->value());
 
     if (saveGlobalSetting) {
 #ifdef DEBUG_LOGOUT_ON
@@ -13534,6 +13543,38 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     }
 
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_INVERT_X)){
+        bool invert_x = settingFile.value(settingSelectStr+MOUSE2VJOY_INVERT_X).toBool();
+        if (true == invert_x) {
+            ui->vJoyInvertXCheckBox->setChecked(true);
+        }
+        else {
+            ui->vJoyInvertXCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy InvertX =" << invert_x;
+#endif
+    }
+    else {
+        ui->vJoyInvertXCheckBox->setChecked(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_INVERT_Y)){
+        bool invert_y = settingFile.value(settingSelectStr+MOUSE2VJOY_INVERT_Y).toBool();
+        if (true == invert_y) {
+            ui->vJoyInvertYCheckBox->setChecked(true);
+        }
+        else {
+            ui->vJoyInvertYCheckBox->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Mouse2vJoy InvertY =" << invert_y;
+#endif
+    }
+    else {
+        ui->vJoyInvertYCheckBox->setChecked(false);
+    }
+
     if (true == settingFile.contains(settingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT)){
         int vJoy_Recenter_Timeout = settingFile.value(settingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT).toInt();
         ui->vJoyRecenterSpinBox->setValue(vJoy_Recenter_Timeout);
@@ -13846,6 +13887,8 @@ void QKeyMapper::loadEmptyMapSetting()
     m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYRevert(false);
     ui->vJoyXSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
     ui->vJoyYSensSpinBox->setValue(VIRTUAL_JOYSTICK_SENSITIVITY_DEFAULT);
+    ui->vJoyInvertXCheckBox->setChecked(false);
+    ui->vJoyInvertYCheckBox->setChecked(false);
     ui->vJoyRecenterSpinBox->setValue(MOUSE2VJOY_RECENTER_TIMEOUT_DEFAULT);
     ui->lockCursorCheckBox->setChecked(false);
     ui->directModeCheckBox->setChecked(false);
@@ -15220,6 +15263,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         ui->vJoyYSensLabel->setEnabled(status);
         ui->vJoyXSensSpinBox->setEnabled(status);
         ui->vJoyYSensSpinBox->setEnabled(status);
+        ui->vJoyInvertXCheckBox->setEnabled(status);
+        ui->vJoyInvertYCheckBox->setEnabled(status);
         ui->vJoyRecenterLabel->setEnabled(status);
         ui->vJoyRecenterSpinBox->setEnabled(status);
         ui->lockCursorCheckBox->setEnabled(status);
@@ -19381,6 +19426,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->directModeCheckBox->setText(tr("Direct Mode"));
     ui->vJoyXSensLabel->setText(tr("X Sens"));
     ui->vJoyYSensLabel->setText(tr("Y Sens"));
+    ui->vJoyInvertXCheckBox->setText(tr("InvertX"));
+    ui->vJoyInvertYCheckBox->setText(tr("InvertY"));
     ui->vJoyRecenterLabel->setText(tr("Recenter"));
     ui->vJoyRecenterSpinBox->setSuffix(tr(" ms"));
     ui->vJoyRecenterSpinBox->setSpecialValueText(tr("Unrecenter"));
@@ -23873,6 +23920,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     if (true == checked) {
         ui->vJoyXSensSpinBox->setEnabled(true);
         ui->vJoyYSensSpinBox->setEnabled(true);
+        ui->vJoyInvertXCheckBox->setEnabled(true);
+        ui->vJoyInvertYCheckBox->setEnabled(true);
         ui->vJoyXSensLabel->setEnabled(true);
         ui->vJoyYSensLabel->setEnabled(true);
         ui->vJoyRecenterLabel->setEnabled(true);
@@ -23887,6 +23936,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     else {
         ui->vJoyXSensSpinBox->setEnabled(false);
         ui->vJoyYSensSpinBox->setEnabled(false);
+        ui->vJoyInvertXCheckBox->setEnabled(false);
+        ui->vJoyInvertYCheckBox->setEnabled(false);
         ui->vJoyXSensLabel->setEnabled(false);
         ui->vJoyYSensLabel->setEnabled(false);
         ui->vJoyRecenterLabel->setEnabled(false);

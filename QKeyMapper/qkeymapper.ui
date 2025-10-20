@@ -433,7 +433,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -1298,8 +1298,8 @@
     <widget class="QSpinBox" name="vJoyXSensSpinBox">
      <property name="geometry">
       <rect>
-       <x>360</x>
-       <y>10</y>
+       <x>80</x>
+       <y>100</y>
        <width>65</width>
        <height>21</height>
       </rect>
@@ -1333,8 +1333,8 @@
     <widget class="QSpinBox" name="vJoyYSensSpinBox">
      <property name="geometry">
       <rect>
-       <x>360</x>
-       <y>40</y>
+       <x>80</x>
+       <y>130</y>
        <width>65</width>
        <height>21</height>
       </rect>
@@ -1346,8 +1346,8 @@
     <widget class="QLabel" name="vJoyYSensLabel">
      <property name="geometry">
       <rect>
-       <x>295</x>
-       <y>40</y>
+       <x>15</x>
+       <y>130</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -1362,8 +1362,8 @@
     <widget class="QLabel" name="vJoyXSensLabel">
      <property name="geometry">
       <rect>
-       <x>295</x>
-       <y>10</y>
+       <x>15</x>
+       <y>100</y>
        <width>61</width>
        <height>21</height>
       </rect>
@@ -1391,9 +1391,9 @@
     <widget class="QLabel" name="vJoyRecenterLabel">
      <property name="geometry">
       <rect>
-       <x>135</x>
+       <x>145</x>
        <y>10</y>
-       <width>81</width>
+       <width>71</width>
        <height>21</height>
       </rect>
      </property>
@@ -1418,6 +1418,44 @@
      </property>
      <property name="text">
       <string>Direct Mode</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="vJoyInvertXCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>100</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>InvertX</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="vJoyInvertYCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>130</y>
+       <width>81</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>InvertY</string>
      </property>
      <property name="checked">
       <bool>false</bool>
