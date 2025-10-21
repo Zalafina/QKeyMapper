@@ -4238,32 +4238,50 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 }
             }
             else if (setvolume_match.hasMatch()) {
-                // Validate SetVolume(...) mapping key
-                // QString sign = setvolume_match.captured(3);         // Optional +/- sign
-                QString valueStr = setvolume_match.captured(4);     // Numeric value
+                // Validate SetVolume(...) and SetMicVolume(...) mapping key
+                QString deviceTypeStr = setvolume_match.captured(1);    // Optional 'Mic'
+                QString iconStr = setvolume_match.captured(2);          // Optional icon (🔊 or 🎤)
+                QString valueStr = setvolume_match.captured(4);         // Numeric value or Mute/MuteOn/MuteOff
 
-                if (valueStr == "Mute"
-                    || valueStr == "MuteOn"
-                    || valueStr == "MuteOff") {
-                    // Mute parameter is ok.
-                }
-                else {
-                    bool ok;
-                    float value = valueStr.toFloat(&ok);
-                    if (!ok) {
+                // Validate icon matches device type
+                if (!iconStr.isEmpty()) {
+                    if (deviceTypeStr.isEmpty() && iconStr == "🎤") {
+                        // SetVolume should not use 🎤 (microphone icon)
                         result.isValid = false;
-                        result.errorMessage = tr("Invalid numeric value in SetVolume(...): \"%1\"").arg(valueStr);
+                        result.errorMessage = tr("SetVolume should use 🔊 icon, not 🎤 icon");
                     }
-                    else if (value < VOLUME_MIN_PERCENTAGE || value > VOLUME_MAX_PERCENTAGE) {
+                    else if (deviceTypeStr == "Mic" && iconStr == "🔊") {
+                        // SetMicVolume should not use 🔊 (speaker icon)
                         result.isValid = false;
-                        result.errorMessage = tr("Volume value out of range (0～100): \"%1\"").arg(valueStr);
+                        result.errorMessage = tr("SetMicVolume should use 🎤 icon, not 🔊 icon");
+                    }
+                }
+
+                // Validate numeric value or Mute parameter
+                if (result.isValid) {
+                    if (valueStr == "Mute"
+                        || valueStr == "MuteOn"
+                        || valueStr == "MuteOff") {
+                        // Mute parameter is ok.
                     }
                     else {
-                        // Check decimal precision (should be at most 2 decimal places)
-                        static QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
-                        if (!precisionRegex.match(valueStr).hasMatch()) {
+                        bool ok;
+                        float value = valueStr.toFloat(&ok);
+                        if (!ok) {
                             result.isValid = false;
-                            result.errorMessage = tr("Volume value precision exceeds 2 decimal places: \"%1\"").arg(valueStr);
+                            result.errorMessage = tr("Invalid numeric value in SetVolume(...): \"%1\"").arg(valueStr);
+                        }
+                        else if (value < VOLUME_MIN_PERCENTAGE || value > VOLUME_MAX_PERCENTAGE) {
+                            result.isValid = false;
+                            result.errorMessage = tr("Volume value out of range (0～100): \"%1\"").arg(valueStr);
+                        }
+                        else {
+                            // Check decimal precision (should be at most 2 decimal places)
+                            static QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
+                            if (!precisionRegex.match(valueStr).hasMatch()) {
+                                result.isValid = false;
+                                result.errorMessage = tr("Volume value precision exceeds 2 decimal places: \"%1\"").arg(valueStr);
+                            }
                         }
                     }
                 }
