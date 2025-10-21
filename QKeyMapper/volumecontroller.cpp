@@ -22,6 +22,9 @@ VolumeController::VolumeController()
     , m_defaultDevice(nullptr)
     , m_endpointVolume(nullptr)
     , m_currentDeviceId()
+    , m_captureDevice(nullptr)
+    , m_captureEndpointVolume(nullptr)
+    , m_currentCaptureDeviceId()
 {
 }
 
@@ -50,9 +53,18 @@ bool VolumeController::initialize()
     }
 
     // Get default audio endpoint and activate volume interface
-    if (!refreshAudioEndpoint()) {
+    if (!refreshAudioEndpoint(VOLUME_DEVICE_TYPE_PLAYBACK)) {
         cleanup();
         return false;
+    }
+
+    // Get default capture endpoint and activate volume interface
+    if (!refreshAudioEndpoint(VOLUME_DEVICE_TYPE_CAPTURE)) {
+        // Capture device initialization failure should not prevent overall initialization
+        // as playback is the primary function
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VolumeController::initialize] Warning: Failed to initialize capture device, but playback device initialized successfully";
+#endif
     }
 
     m_isInitialized = true;
@@ -75,6 +87,16 @@ void VolumeController::cleanup()
         m_defaultDevice = nullptr;
     }
 
+    if (m_captureEndpointVolume) {
+        m_captureEndpointVolume->Release();
+        m_captureEndpointVolume = nullptr;
+    }
+
+    if (m_captureDevice) {
+        m_captureDevice->Release();
+        m_captureDevice = nullptr;
+    }
+
     if (m_deviceEnumerator) {
         m_deviceEnumerator->Release();
         m_deviceEnumerator = nullptr;
@@ -82,13 +104,14 @@ void VolumeController::cleanup()
 
     m_isInitialized = false;
     m_currentDeviceId.clear();
+    m_currentCaptureDeviceId.clear();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[VolumeController::cleanup] Volume controller cleaned up";
 #endif
 }
 
-bool VolumeController::refreshAudioEndpoint()
+bool VolumeController::refreshAudioEndpoint(int deviceType)
 {
     if (!m_deviceEnumerator) {
         return false;
@@ -96,12 +119,14 @@ bool VolumeController::refreshAudioEndpoint()
 
     HRESULT hr;
     IMMDevice* newDevice = nullptr;
+    EDataFlow dataFlow = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? eCapture : eRender;
 
-    // Get default audio render device
-    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &newDevice);
+    // Get default audio endpoint (render for playback, capture for microphone)
+    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(dataFlow, eConsole, &newDevice);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::refreshAudioEndpoint] Failed to get default audio endpoint, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::refreshAudioEndpoint]" << deviceTypeStr << "- Failed to get default audio endpoint, hr =" << QString::number(hr, 16);
 #endif
         return false;
     }
@@ -111,48 +136,75 @@ bool VolumeController::refreshAudioEndpoint()
     hr = newDevice->GetId(&deviceId);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::refreshAudioEndpoint] Failed to get device ID, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::refreshAudioEndpoint]" << deviceTypeStr << "- Failed to get device ID, hr =" << QString::number(hr, 16);
 #endif
         newDevice->Release();
         return false;
     }
 
-    // Store current device ID
-    m_currentDeviceId = deviceId;
+    // Store current device ID based on device type
+    if (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) {
+        m_currentCaptureDeviceId = deviceId;
+    } else {
+        m_currentDeviceId = deviceId;
+    }
     CoTaskMemFree(deviceId);
 
-    // Release old device if exists
-    if (m_defaultDevice) {
-        m_defaultDevice->Release();
-        m_defaultDevice = nullptr;
+    // Release old device and endpoint volume if exists
+    if (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) {
+        if (m_captureDevice) {
+            m_captureDevice->Release();
+            m_captureDevice = nullptr;
+        }
+        if (m_captureEndpointVolume) {
+            m_captureEndpointVolume->Release();
+            m_captureEndpointVolume = nullptr;
+        }
+        // Store new capture device
+        m_captureDevice = newDevice;
+    } else {
+        if (m_defaultDevice) {
+            m_defaultDevice->Release();
+            m_defaultDevice = nullptr;
+        }
+        if (m_endpointVolume) {
+            m_endpointVolume->Release();
+            m_endpointVolume = nullptr;
+        }
+        // Store new playback device
+        m_defaultDevice = newDevice;
     }
-
-    // Release old endpoint volume if exists
-    if (m_endpointVolume) {
-        m_endpointVolume->Release();
-        m_endpointVolume = nullptr;
-    }
-
-    // Store new device
-    m_defaultDevice = newDevice;
 
     // Get audio endpoint volume interface
-    hr = m_defaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL,
-                                   nullptr, reinterpret_cast<void**>(&m_endpointVolume));
+    IAudioEndpointVolume* endpointVolume = nullptr;
+    IMMDevice* targetDevice = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureDevice : m_defaultDevice;
+    hr = targetDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL,
+                                nullptr, reinterpret_cast<void**>(&endpointVolume));
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::refreshAudioEndpoint] Failed to activate audio endpoint volume, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::refreshAudioEndpoint]" << deviceTypeStr << "- Failed to activate audio endpoint volume, hr =" << QString::number(hr, 16);
 #endif
         return false;
     }
 
+    // Store endpoint volume interface based on device type
+    if (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) {
+        m_captureEndpointVolume = endpointVolume;
+    } else {
+        m_endpointVolume = endpointVolume;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[VolumeController::refreshAudioEndpoint] Audio endpoint refreshed successfully, Device ID:" << QString::fromStdWString(m_currentDeviceId);
+    const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+    std::wstring currentId = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_currentCaptureDeviceId : m_currentDeviceId;
+    qDebug() << "[VolumeController::refreshAudioEndpoint]" << deviceTypeStr << "- Audio endpoint refreshed successfully, Device ID:" << QString::fromStdWString(currentId);
 #endif
     return true;
 }
 
-bool VolumeController::updateDefaultAudioEndpointIfChanged()
+bool VolumeController::updateDefaultAudioEndpointIfChanged(int deviceType)
 {
     if (!m_deviceEnumerator) {
         return false;
@@ -160,12 +212,14 @@ bool VolumeController::updateDefaultAudioEndpointIfChanged()
 
     HRESULT hr;
     IMMDevice* currentDevice = nullptr;
+    EDataFlow dataFlow = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? eCapture : eRender;
 
-    // Get current default audio render device
-    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &currentDevice);
+    // Get current default audio endpoint
+    hr = m_deviceEnumerator->GetDefaultAudioEndpoint(dataFlow, eConsole, &currentDevice);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged] Failed to get current default audio endpoint, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged]" << deviceTypeStr << "- Failed to get current default audio endpoint, hr =" << QString::number(hr, 16);
 #endif
         return false;
     }
@@ -175,7 +229,8 @@ bool VolumeController::updateDefaultAudioEndpointIfChanged()
     hr = currentDevice->GetId(&deviceId);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged] Failed to get current device ID, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged]" << deviceTypeStr << "- Failed to get current device ID, hr =" << QString::number(hr, 16);
 #endif
         currentDevice->Release();
         return false;
@@ -186,31 +241,39 @@ bool VolumeController::updateDefaultAudioEndpointIfChanged()
     currentDevice->Release();
 
     // Check if device has changed
-    if (currentDeviceId != m_currentDeviceId) {
+    std::wstring storedDeviceId = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_currentCaptureDeviceId : m_currentDeviceId;
+    if (currentDeviceId != storedDeviceId) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged] Default audio device changed, refreshing endpoint";
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::updateDefaultAudioEndpointIfChanged]" << deviceTypeStr << "- Default audio device changed, refreshing endpoint";
 #endif
         // Device changed, refresh endpoint
-        return refreshAudioEndpoint();
+        return refreshAudioEndpoint(deviceType);
     }
 
     // Device hasn't changed, no update needed
     return true;
 }
 
-bool VolumeController::setVolume(float volumePercentage)
+bool VolumeController::setVolume(float volumePercentage, int deviceType)
 {
-    if (!m_isInitialized || !m_endpointVolume) {
+    IAudioEndpointVolume* endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
+    if (!m_isInitialized || !endpointVol) {
         return false;
     }
 
     // Check if default audio device has changed and update if necessary
-    if (!updateDefaultAudioEndpointIfChanged()) {
+    if (!updateDefaultAudioEndpointIfChanged(deviceType)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::setVolume] Failed to update audio endpoint";
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::setVolume]" << deviceTypeStr << "- Failed to update audio endpoint";
 #endif
         return false;
     }
+
+    // Refresh endpoint volume pointer after update
+    endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
 
     float clampedPercentage = clampVolumePercentage(volumePercentage);
     float scalar = percentageToScalar(clampedPercentage);
@@ -219,47 +282,57 @@ bool VolumeController::setVolume(float volumePercentage)
     // Use QKeyMapper-specific GUID to identify this volume change event
     // This allows other applications to distinguish between QKeyMapper volume changes
     // and system/user-initiated changes, but does NOT control Windows volume OSD display
-    HRESULT hr = m_endpointVolume->SetMasterVolumeLevelScalar(scalar, &s_QKeyMapperVolumeGUID);
+    HRESULT hr = endpointVol->SetMasterVolumeLevelScalar(scalar, &s_QKeyMapperVolumeGUID);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::setVolume] Failed to set volume to" << clampedPercentage << "%, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::setVolume]" << deviceTypeStr << "- Failed to set volume to" << clampedPercentage << "%, hr =" << QString::number(hr, 16);
 #endif
         return false;
     }
 
     // Apply Windows-like mute logic: mute at 0%, unmute at non-zero
-    if (!applyWindowsMuteLogic(clampedPercentage)) {
+    if (!applyWindowsMuteLogic(clampedPercentage, deviceType)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::setVolume] Failed to apply mute logic for volume" << clampedPercentage << "%";
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::setVolume]" << deviceTypeStr << "- Failed to apply mute logic for volume" << clampedPercentage << "%";
 #endif
         // Don't return false here as volume was set successfully, mute operation is supplementary
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[VolumeController::setVolume] Volume set to" << clampedPercentage << "%";
+    const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+    qDebug() << "[VolumeController::setVolume]" << deviceTypeStr << "- Volume set to" << clampedPercentage << "%";
 #endif
     return true;
 }
 
-float VolumeController::getCurrentVolume()
+float VolumeController::getCurrentVolume(int deviceType)
 {
-    if (!m_isInitialized || !m_endpointVolume) {
+    IAudioEndpointVolume* endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
+    if (!m_isInitialized || !endpointVol) {
         return 0.0f;
     }
 
     // Check if default audio device has changed and update if necessary
-    if (!updateDefaultAudioEndpointIfChanged()) {
+    if (!updateDefaultAudioEndpointIfChanged(deviceType)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::getCurrentVolume] Failed to update audio endpoint";
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::getCurrentVolume]" << deviceTypeStr << "- Failed to update audio endpoint";
 #endif
         return 0.0f;
     }
 
+    // Refresh endpoint volume pointer after update
+    endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
     float scalar = 0.0f;
-    HRESULT hr = m_endpointVolume->GetMasterVolumeLevelScalar(&scalar);
+    HRESULT hr = endpointVol->GetMasterVolumeLevelScalar(&scalar);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::getCurrentVolume] Failed to get current volume, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::getCurrentVolume]" << deviceTypeStr << "- Failed to get current volume, hr =" << QString::number(hr, 16);
 #endif
         return 0.0f;
     }
@@ -267,15 +340,15 @@ float VolumeController::getCurrentVolume()
     return scalarToPercentage(scalar);
 }
 
-bool VolumeController::adjustVolume(float deltaPercentage)
+bool VolumeController::adjustVolume(float deltaPercentage, int deviceType)
 {
-    float currentVolume = getCurrentVolume();
+    float currentVolume = getCurrentVolume(deviceType);
     if (currentVolume < 0.0f) {
         return false; // Failed to get current volume
     }
 
     float newVolume = currentVolume + deltaPercentage;
-    return setVolume(newVolume);
+    return setVolume(newVolume, deviceType);
 }
 
 float VolumeController::percentageToScalar(float percentage)
@@ -306,54 +379,69 @@ float VolumeController::clampVolumePercentage(float percentage)
     return std::round(percentage * precision) / precision;
 }
 
-bool VolumeController::setMute(bool muted)
+bool VolumeController::setMute(bool muted, int deviceType)
 {
-    if (!m_isInitialized || !m_endpointVolume) {
+    IAudioEndpointVolume* endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
+    if (!m_isInitialized || !endpointVol) {
         return false;
     }
 
     // Check if default audio device has changed and update if necessary
-    if (!updateDefaultAudioEndpointIfChanged()) {
+    if (!updateDefaultAudioEndpointIfChanged(deviceType)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::setMute] Failed to update audio endpoint";
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::setMute]" << deviceTypeStr << "- Failed to update audio endpoint";
 #endif
         return false;
     }
+
+    // Refresh endpoint volume pointer after update
+    endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
 
     // Use QKeyMapper-specific GUID to identify this mute change event
-    HRESULT hr = m_endpointVolume->SetMute(muted ? TRUE : FALSE, &s_QKeyMapperVolumeGUID);
+    HRESULT hr = endpointVol->SetMute(muted ? TRUE : FALSE, &s_QKeyMapperVolumeGUID);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::setMute] Failed to set mute state to" << muted << ", hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::setMute]" << deviceTypeStr << "- Failed to set mute state to" << muted << ", hr =" << QString::number(hr, 16);
 #endif
         return false;
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[VolumeController::setMute] Mute state set to" << muted;
+    const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+    qDebug() << "[VolumeController::setMute]" << deviceTypeStr << "- Mute state set to" << muted;
 #endif
     return true;
 }
 
-bool VolumeController::isMuted()
+bool VolumeController::isMuted(int deviceType)
 {
-    if (!m_isInitialized || !m_endpointVolume) {
+    IAudioEndpointVolume* endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
+    if (!m_isInitialized || !endpointVol) {
         return false;
     }
 
     // Check if default audio device has changed and update if necessary
-    if (!updateDefaultAudioEndpointIfChanged()) {
+    if (!updateDefaultAudioEndpointIfChanged(deviceType)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::isMuted] Failed to update audio endpoint";
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::isMuted]" << deviceTypeStr << "- Failed to update audio endpoint";
 #endif
         return false;
     }
 
+    // Refresh endpoint volume pointer after update
+    endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
     BOOL muted = FALSE;
-    HRESULT hr = m_endpointVolume->GetMute(&muted);
+    HRESULT hr = endpointVol->GetMute(&muted);
     if (FAILED(hr)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[VolumeController::isMuted] Failed to get mute state, hr =" << QString::number(hr, 16);
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[VolumeController::isMuted]" << deviceTypeStr << "- Failed to get mute state, hr =" << QString::number(hr, 16);
 #endif
         return false;
     }
@@ -361,9 +449,11 @@ bool VolumeController::isMuted()
     return (muted == TRUE);
 }
 
-bool VolumeController::applyWindowsMuteLogic(float volumePercentage)
+bool VolumeController::applyWindowsMuteLogic(float volumePercentage, int deviceType)
 {
-    if (!m_isInitialized || !m_endpointVolume) {
+    IAudioEndpointVolume* endpointVol = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? m_captureEndpointVolume : m_endpointVolume;
+
+    if (!m_isInitialized || !endpointVol) {
         return false;
     }
 
@@ -372,5 +462,5 @@ bool VolumeController::applyWindowsMuteLogic(float volumePercentage)
     // - Setting volume to any non-zero value should unmute the system
     bool shouldMute = (volumePercentage <= VOLUME_EPSILON);
 
-    return setMute(shouldMute);
+    return setMute(shouldMute, deviceType);
 }

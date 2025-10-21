@@ -1027,14 +1027,17 @@ namespace QKeyMapperConstants {
     // Pattern for finding Unlock( and the first ) parts in a composite string (non-greedy matching)
     inline constexpr const char REGEX_PATTERN_UNLOCK_FIND[] = R"(Unlock\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
 
-    // Pattern for matching SetVolume(...) mapping keys
-    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75)
-    // Capture groups: (1) = optional +/- sign, (2) = numeric value
-    inline constexpr const char REGEX_PATTERN_SETVOLUME[] = R"(^SetVolume(🔊)?\(([+-]?)(\d+(?:\.\d{1,2})?)\)$)";
+    // Pattern for matching SetVolume(...) and SetMicVolume(...) mapping keys
+    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75), SetVolume(Mute), SetVolume(MuteOn), SetVolume(MuteOff)
+    //          SetMicVolume(50.5), SetMicVolume(+10.25), SetMicVolume(-5.75), SetMicVolume(Mute), SetMicVolume(MuteOn), SetMicVolume(MuteOff)
+    // Capture groups: (1) = optional 'Mic', (2) = optional notification icon (🔊 or 🎤), (3) = mute control or numeric value
+    //                 (4) = optional +/- sign (only for numeric), (5) = numeric value (only if not mute control)
+    inline constexpr const char REGEX_PATTERN_SETVOLUME[] = R"(^Set(Mic)?Volume(🔊|🎤)?\(([+-]?)(\d+(?:\.\d{1,2})?|Mute|MuteOn|MuteOff)\)$)";
 
-    // Pattern for finding SetVolume( and the first ) parts in a composite string
-    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75)
-    inline constexpr const char REGEX_PATTERN_SETVOLUME_FIND[] = R"(SetVolume(🔊)?\([+-]?\d+(?:\.\d{1,2})?\))";
+    // Pattern for finding SetVolume(...) and SetMicVolume(...) parts in a composite string
+    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75), SetVolume(Mute), SetVolume(MuteOn), SetVolume(MuteOff)
+    //          SetMicVolume(50.5), SetMicVolume(+10.25), SetMicVolume(-5.75), SetMicVolume(Mute), SetMicVolume(MuteOn), SetMicVolume(MuteOff)
+    inline constexpr const char REGEX_PATTERN_SETVOLUME_FIND[] = R"(Set(Mic)?Volume(🔊|🎤)?\([+-]?(?:\d+(?:\.\d{1,2})?|Mute|MuteOn|MuteOff)\))";
 
     // Pattern for matching Repeat{...}x... mapping keys
     // Matches: Repeat{A}x3, Repeat{B+C»D}x10, Repeat{SendText(Hello)}x5
@@ -1304,4 +1307,11 @@ namespace QKeyMapperConstants {
     inline constexpr const int VOLUME_OPERATION_SET          = 0;      // Set absolute volume
     inline constexpr const int VOLUME_OPERATION_INCREASE     = 1;      // Increase volume by amount
     inline constexpr const int VOLUME_OPERATION_DECREASE     = 2;      // Decrease volume by amount
+    inline constexpr const int VOLUME_OPERATION_MUTE_TOGGLE  = 3;      // Toggle mute state
+    inline constexpr const int VOLUME_OPERATION_MUTE_ON      = 4;      // Set mute on
+    inline constexpr const int VOLUME_OPERATION_MUTE_OFF     = 5;      // Set mute off
+
+    // Volume device types
+    inline constexpr const int VOLUME_DEVICE_TYPE_PLAYBACK   = 0;      // Playback device (speakers/headphones)
+    inline constexpr const int VOLUME_DEVICE_TYPE_CAPTURE    = 1;      // Capture device (microphone)
 }

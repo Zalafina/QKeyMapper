@@ -360,7 +360,7 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
 
     if (!match.hasMatch()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[processSetVolumeMapping] Invalid SetVolume format:" << volumeCommand;
+        qDebug() << "[processSetVolumeMapping] Invalid SetVolume/SetMicVolume format:" << volumeCommand;
 #endif
         return;
     }
@@ -372,42 +372,66 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
         return;
     }
 
-    bool notify = !match.captured(1).isEmpty();         // Optional notify '🔊'
-    QString sign = match.captured(2);                   // Optional +/- sign
-    QString valueStr = match.captured(3);               // Numeric value
+    // Parse capture groups
+    QString deviceTypeStr = match.captured(1);                  // Optional 'Mic' for capture device
+    bool notify = !match.captured(2).isEmpty();                 // Optional notify icon (🔊 or 🎤)
+    QString paramStr = match.captured(3);                       // Mute control or numeric value
+    QString sign = match.captured(4);                           // Optional +/- sign (only for numeric)
+    QString valueStr = match.captured(5);                       // Numeric value (only if not mute control)
 
-    bool ok;
-    float value = valueStr.toFloat(&ok);
-    if (!ok) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[processSetVolumeMapping] Invalid numeric value:" << valueStr;
-#endif
-        return;
-    }
+    // Determine device type
+    int deviceType = deviceTypeStr.isEmpty() ? VOLUME_DEVICE_TYPE_PLAYBACK : VOLUME_DEVICE_TYPE_CAPTURE;
 
-    // Determine operation type based on sign
+    // Determine operation type
     int operationType = VOLUME_OPERATION_SET;
-    if (sign == "+") {
-        operationType = VOLUME_OPERATION_INCREASE;
-    } else if (sign == "-") {
-        operationType = VOLUME_OPERATION_DECREASE;
-        value = -value; // Make value negative for decrease
+    float value = 0.0f;
+
+    if (paramStr == "Mute") {
+        operationType = VOLUME_OPERATION_MUTE_TOGGLE;
+    }
+    else if (paramStr == "MuteOn") {
+        operationType = VOLUME_OPERATION_MUTE_ON;
+    }
+    else if (paramStr == "MuteOff") {
+        operationType = VOLUME_OPERATION_MUTE_OFF;
+    }
+    else {
+        // Numeric value operation
+        bool ok;
+        value = valueStr.toFloat(&ok);
+        if (!ok) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[processSetVolumeMapping] Invalid numeric value:" << valueStr;
+#endif
+            return;
+        }
+
+        if (sign == "+") {
+            operationType = VOLUME_OPERATION_INCREASE;
+        } else if (sign == "-") {
+            operationType = VOLUME_OPERATION_DECREASE;
+            value = -value; // Make value negative for decrease
+        }
+        // else: operationType remains VOLUME_OPERATION_SET
     }
 
     bool success = false;
 #ifdef DEBUG_LOGOUT_ON
     float currentVolume = 0.0f;
+    bool currentMuted = false;
 #endif
 
     switch (operationType) {
         case VOLUME_OPERATION_SET:
-            success = m_volumeController.setVolume(value);
+            success = m_volumeController.setVolume(value, deviceType);
             Q_UNUSED(success);
 #ifdef DEBUG_LOGOUT_ON
             if (success) {
-                qDebug() << "[processSetVolumeMapping] Volume set to" << value << "%";
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Volume set to" << value << "%";
             } else {
-                qDebug() << "[processSetVolumeMapping] Failed to set volume to" << value << "%";
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Failed to set volume to" << value << "%";
             }
 #endif
             break;
@@ -415,16 +439,87 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
         case VOLUME_OPERATION_INCREASE:
         case VOLUME_OPERATION_DECREASE:
 #ifdef DEBUG_LOGOUT_ON
-            currentVolume = m_volumeController.getCurrentVolume();
+            currentVolume = m_volumeController.getCurrentVolume(deviceType);
 #endif
-            success = m_volumeController.adjustVolume(value);
+            success = m_volumeController.adjustVolume(value, deviceType);
             Q_UNUSED(success);
 #ifdef DEBUG_LOGOUT_ON
             if (success) {
-                float newVolume = m_volumeController.getCurrentVolume();
-                qDebug() << "[processSetVolumeMapping] Volume adjusted from" << currentVolume << "% to" << newVolume << "% (delta:" << value << "%)";
+                float newVolume = m_volumeController.getCurrentVolume(deviceType);
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Volume adjusted from" << currentVolume << "% to" << newVolume << "% (delta:" << value << "%)";
             } else {
-                qDebug() << "[processSetVolumeMapping] Failed to adjust volume by" << value << "%";
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Failed to adjust volume by" << value << "%";
+            }
+#endif
+            break;
+
+        case VOLUME_OPERATION_MUTE_TOGGLE:
+#ifdef DEBUG_LOGOUT_ON
+            currentMuted = m_volumeController.isMuted(deviceType);
+#endif
+            success = m_volumeController.setMute(!m_volumeController.isMuted(deviceType), deviceType);
+            Q_UNUSED(success);
+#ifdef DEBUG_LOGOUT_ON
+            if (success) {
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Mute toggled from" << (currentMuted ? "ON" : "OFF") << "to" << (currentMuted ? "OFF" : "ON");
+            } else {
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Failed to toggle mute";
+            }
+#endif
+            break;
+
+        case VOLUME_OPERATION_MUTE_ON:
+#ifdef DEBUG_LOGOUT_ON
+            currentMuted = m_volumeController.isMuted(deviceType);
+#endif
+            // Only set mute if currently not muted
+            if (!m_volumeController.isMuted(deviceType)) {
+                success = m_volumeController.setMute(true, deviceType);
+            } else {
+                success = true; // Already muted, consider it success
+            }
+            Q_UNUSED(success);
+#ifdef DEBUG_LOGOUT_ON
+            if (success) {
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                if (currentMuted) {
+                    qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Already muted, no action taken";
+                } else {
+                    qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Mute turned ON";
+                }
+            } else {
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Failed to turn mute ON";
+            }
+#endif
+            break;
+
+        case VOLUME_OPERATION_MUTE_OFF:
+#ifdef DEBUG_LOGOUT_ON
+            currentMuted = m_volumeController.isMuted(deviceType);
+#endif
+            // Only unmute if currently muted
+            if (m_volumeController.isMuted(deviceType)) {
+                success = m_volumeController.setMute(false, deviceType);
+            } else {
+                success = true; // Already unmuted, consider it success
+            }
+            Q_UNUSED(success);
+#ifdef DEBUG_LOGOUT_ON
+            if (success) {
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                if (!currentMuted) {
+                    qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Already unmuted, no action taken";
+                } else {
+                    qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Mute turned OFF";
+                }
+            } else {
+                const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+                qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- Failed to turn mute OFF";
             }
 #endif
             break;
@@ -437,11 +532,13 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
     }
 
     if (notify && success) {
-        float currentVol = m_volumeController.getCurrentVolume();
-        emit QKeyMapper::getInstance()->showSetVolumeNotification_Signal(currentVol);
+        float currentVol = m_volumeController.getCurrentVolume(deviceType);
+        bool muted = m_volumeController.isMuted(deviceType);
+        emit QKeyMapper::getInstance()->showSetVolumeNotification_Signal(currentVol, muted, deviceType);
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[processSetVolumeMapping] SetVolume with notify, current volume value:" << currentVol;
+        const char* deviceTypeStr = (deviceType == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+        qDebug() << "[processSetVolumeMapping]" << deviceTypeStr << "- SetVolume with notify, current volume:" << currentVol << ", muted:" << muted;
 #endif
     }
 }

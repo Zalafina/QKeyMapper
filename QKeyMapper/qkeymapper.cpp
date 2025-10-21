@@ -4239,25 +4239,32 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             }
             else if (setvolume_match.hasMatch()) {
                 // Validate SetVolume(...) mapping key
-                // QString sign = setvolume_match.captured(2);         // Optional +/- sign
-                QString valueStr = setvolume_match.captured(3);     // Numeric value
+                // QString sign = setvolume_match.captured(3);         // Optional +/- sign
+                QString valueStr = setvolume_match.captured(4);     // Numeric value
 
-                bool ok;
-                float value = valueStr.toFloat(&ok);
-                if (!ok) {
-                    result.isValid = false;
-                    result.errorMessage = tr("Invalid numeric value in SetVolume(...): \"%1\"").arg(valueStr);
-                }
-                else if (value < VOLUME_MIN_PERCENTAGE || value > VOLUME_MAX_PERCENTAGE) {
-                    result.isValid = false;
-                    result.errorMessage = tr("Volume value out of range (0～100): \"%1\"").arg(valueStr);
+                if (valueStr == "Mute"
+                    || valueStr == "MuteOn"
+                    || valueStr == "MuteOff") {
+                    // Mute parameter is ok.
                 }
                 else {
-                    // Check decimal precision (should be at most 2 decimal places)
-                    static QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
-                    if (!precisionRegex.match(valueStr).hasMatch()) {
+                    bool ok;
+                    float value = valueStr.toFloat(&ok);
+                    if (!ok) {
                         result.isValid = false;
-                        result.errorMessage = tr("Volume value precision exceeds 2 decimal places: \"%1\"").arg(valueStr);
+                        result.errorMessage = tr("Invalid numeric value in SetVolume(...): \"%1\"").arg(valueStr);
+                    }
+                    else if (value < VOLUME_MIN_PERCENTAGE || value > VOLUME_MAX_PERCENTAGE) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Volume value out of range (0～100): \"%1\"").arg(valueStr);
+                    }
+                    else {
+                        // Check decimal precision (should be at most 2 decimal places)
+                        static QRegularExpression precisionRegex(R"(^\d+(?:\.\d{1,2})?$)");
+                        if (!precisionRegex.match(valueStr).hasMatch()) {
+                            result.isValid = false;
+                            result.errorMessage = tr("Volume value precision exceeds 2 decimal places: \"%1\"").arg(valueStr);
+                        }
                     }
                 }
             }
@@ -16450,22 +16457,28 @@ void QKeyMapper::updateGamepadSelectComboBox(int instance_id)
     }
 }
 
-void QKeyMapper::showSetVolumeNotification(float volume)
+void QKeyMapper::showSetVolumeNotification(float volume, bool muted, int volume_type)
 {
     constexpr int VOLUME_TYPE_NORMAL    = 0;
     constexpr int VOLUME_TYPE_FULL      = 1;
     constexpr int VOLUME_TYPE_MUTED     = 2;
 
-    int volume_type = VOLUME_TYPE_NORMAL;
-    if (volume <= VOLUME_EPSILON) {
-        volume_type = VOLUME_TYPE_MUTED;
+    int display_type = VOLUME_TYPE_NORMAL;
+
+    // Determine display type based on mute state and volume level
+    if (muted) {
+        display_type = VOLUME_TYPE_MUTED;
+    }
+    else if (volume <= VOLUME_EPSILON) {
+        display_type = VOLUME_TYPE_MUTED;
     }
     else if (volume >= VOLUME_FULL) {
-        volume_type = VOLUME_TYPE_FULL;
+        display_type = VOLUME_TYPE_FULL;
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().noquote().nospace() << "[QKeyMapper::showSetVolumeNotification] Volume:" << volume << ", Type:" << volume_type;
+    const char* volumeTypeStr = (volume_type == VOLUME_DEVICE_TYPE_CAPTURE) ? "Capture" : "Playback";
+    qDebug().noquote().nospace() << "[QKeyMapper::showSetVolumeNotification]" << volumeTypeStr << "- Volume:" << volume << ", Muted:" << muted << ", DisplayType:" << display_type;
 #endif
 
     int position = ui->notificationComboBox->currentIndex();
@@ -16543,14 +16556,26 @@ void QKeyMapper::showSetVolumeNotification(float volume)
     opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
 
     QString volumeIcon;
-    if (volume_type == VOLUME_TYPE_MUTED) {
-        volumeIcon = ":/volume_muted.svg";
-    }
-    else if (volume_type == VOLUME_TYPE_FULL) {
-        volumeIcon = ":/volume_full.svg";
+    if (volume_type == VOLUME_DEVICE_TYPE_CAPTURE) {
+        // Capture device (microphone) - only 2 icon states
+        if (display_type == VOLUME_TYPE_MUTED) {
+            volumeIcon = ":/microphone_muted.svg";
+        }
+        else {
+            volumeIcon = ":/microphone.svg";
+        }
     }
     else {
-        volumeIcon = ":/volume.svg";
+        // Playback device (speakers/headphones) - 3 icon states
+        if (display_type == VOLUME_TYPE_MUTED) {
+            volumeIcon = ":/volume_muted.svg";
+        }
+        else if (display_type == VOLUME_TYPE_FULL) {
+            volumeIcon = ":/volume_full.svg";
+        }
+        else {
+            volumeIcon = ":/volume.svg";
+        }
     }
     opts.iconPath = volumeIcon;
     opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;

@@ -18,19 +18,24 @@ public:
     void cleanup();
 
     // Set absolute volume (0.0 to 100.0 percentage)
-    bool setVolume(float volumePercentage);
+    // deviceType: 0 = Playback (default), 1 = Capture
+    bool setVolume(float volumePercentage, int deviceType = 0);
 
     // Get current volume (returns 0.0 to 100.0 percentage)
-    float getCurrentVolume();
+    // deviceType: 0 = Playback (default), 1 = Capture
+    float getCurrentVolume(int deviceType = 0);
 
     // Increase volume by specified amount (can be negative for decrease)
-    bool adjustVolume(float deltaPercentage);
+    // deviceType: 0 = Playback (default), 1 = Capture
+    bool adjustVolume(float deltaPercentage, int deviceType = 0);
 
     // Set mute state (true = muted, false = unmuted)
-    bool setMute(bool muted);
+    // deviceType: 0 = Playback (default), 1 = Capture
+    bool setMute(bool muted, int deviceType = 0);
 
     // Get current mute state (returns true if muted, false if not muted)
-    bool isMuted();
+    // deviceType: 0 = Playback (default), 1 = Capture
+    bool isMuted(int deviceType = 0);
 
     // Check if volume controller is properly initialized
     bool isInitialized() const { return m_isInitialized; }
@@ -47,15 +52,18 @@ private:
 
     // Apply Windows-like mute logic when setting volume
     // Automatically mute when setting to 0%, unmute when setting to non-zero
-    bool applyWindowsMuteLogic(float volumePercentage);
+    // deviceType: 0 = Playback, 1 = Capture
+    bool applyWindowsMuteLogic(float volumePercentage, int deviceType);
 
     // Update default audio endpoint if the current device has changed
-    // This ensures volume operations target the currently active output device
-    bool updateDefaultAudioEndpointIfChanged();
+    // This ensures volume operations target the currently active output/input device
+    // deviceType: 0 = Playback, 1 = Capture
+    bool updateDefaultAudioEndpointIfChanged(int deviceType);
 
     // Get current default audio endpoint and activate volume interface
     // Helper function to refresh endpoint when device changes
-    bool refreshAudioEndpoint();
+    // deviceType: 0 = Playback, 1 = Capture
+    bool refreshAudioEndpoint(int deviceType);
 
     // QKeyMapper-specific GUID for volume change event context
     // This helps identify volume changes made by QKeyMapper vs other applications
@@ -64,7 +72,14 @@ private:
 private:
     bool m_isInitialized;
     IMMDeviceEnumerator* m_deviceEnumerator;
+
+    // Playback device (speakers/headphones) interfaces
     IMMDevice* m_defaultDevice;
     IAudioEndpointVolume* m_endpointVolume;
     std::wstring m_currentDeviceId; // Track current device ID to detect changes
+
+    // Capture device (microphone) interfaces
+    IMMDevice* m_captureDevice;
+    IAudioEndpointVolume* m_captureEndpointVolume;
+    std::wstring m_currentCaptureDeviceId; // Track current capture device ID to detect changes
 };
