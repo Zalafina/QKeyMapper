@@ -141,7 +141,7 @@
 * v1.3.8(Build 20251026)
     * SetVolume功能增强
       ##### 🔊播放设备音量控制
-          SetVolume(Mute)          - 切换静音状态
+          SetVolume(Mute)          - 切换播放设备静音状态
           SetVolume(MuteOn)        - 设置为静音 (如已静音则不动作)
           SetVolume(MuteOff)       - 取消静音 (如未静音则不动作)
           SetVolume🔊(...)         - 与上面功能相同，带提示的播放设备音量控制
