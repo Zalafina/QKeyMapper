@@ -375,9 +375,8 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
     // Parse capture groups
     QString deviceTypeStr = match.captured(1);                  // Optional 'Mic' for capture device
     bool notify = !match.captured(2).isEmpty();                 // Optional notify icon (🔊 or 🎤)
-    QString paramStr = match.captured(3);                       // Mute control or numeric value
-    QString sign = match.captured(4);                           // Optional +/- sign (only for numeric)
-    QString valueStr = match.captured(5);                       // Numeric value (only if not mute control)
+    QString sign = match.captured(3);                           // Optional +/- sign
+    QString valueStr = match.captured(4);                       // Numeric value or Mute/MuteOn/MuteOff
 
     // Determine device type
     int deviceType = deviceTypeStr.isEmpty() ? VOLUME_DEVICE_TYPE_PLAYBACK : VOLUME_DEVICE_TYPE_CAPTURE;
@@ -386,13 +385,13 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
     int operationType = VOLUME_OPERATION_SET;
     float value = 0.0f;
 
-    if (paramStr == "Mute") {
+    if (valueStr == "Mute") {
         operationType = VOLUME_OPERATION_MUTE_TOGGLE;
     }
-    else if (paramStr == "MuteOn") {
+    else if (valueStr == "MuteOn") {
         operationType = VOLUME_OPERATION_MUTE_ON;
     }
-    else if (paramStr == "MuteOff") {
+    else if (valueStr == "MuteOff") {
         operationType = VOLUME_OPERATION_MUTE_OFF;
     }
     else {
