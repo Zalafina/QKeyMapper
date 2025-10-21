@@ -1028,15 +1028,19 @@ namespace QKeyMapperConstants {
     inline constexpr const char REGEX_PATTERN_UNLOCK_FIND[] = R"(Unlock\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
 
     // Pattern for matching SetVolume(...) and SetMicVolume(...) mapping keys
-    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75), SetVolume(Mute), SetVolume(MuteOn), SetVolume(MuteOff)
-    //          SetMicVolume(50.5), SetMicVolume(+10.25), SetMicVolume(-5.75), SetMicVolume(Mute), SetMicVolume(MuteOn), SetMicVolume(MuteOff)
+    // Valid matches: SetVolume(50), SetVolume🔊(50), SetMicVolume(50), SetMicVolume🎤(50)
+    //                SetVolume(+10), SetVolume(-5), SetVolume(Mute), SetVolume(MuteOn), SetVolume(MuteOff)
+    // Invalid matches (rejected by validation): SetVolume🎤(...), SetMicVolume🔊(...)
     // Capture groups: (1) = optional 'Mic', (2) = optional notification icon (🔊 or 🎤),
     //                 (3) = optional +/- sign, (4) = numeric value or Mute/MuteOn/MuteOff
+    // Note: Icon validation is performed at runtime to ensure semantic correctness:
+    //       - SetVolume should use 🔊 (speaker icon), not 🎤 (microphone icon)
+    //       - SetMicVolume should use 🎤 (microphone icon), not 🔊 (speaker icon)
     inline constexpr const char REGEX_PATTERN_SETVOLUME[] = R"(^Set(Mic)?Volume(🔊|🎤)?\(([+-]?)(\d+(?:\.\d{1,2})?|Mute|MuteOn|MuteOff)\)$)";
 
     // Pattern for finding SetVolume(...) and SetMicVolume(...) parts in a composite string
-    // Matches: SetVolume(50.5), SetVolume(+10.25), SetVolume(-5.75), SetVolume(Mute), SetVolume(MuteOn), SetVolume(MuteOff)
-    //          SetMicVolume(50.5), SetMicVolume(+10.25), SetMicVolume(-5.75), SetMicVolume(Mute), SetMicVolume(MuteOn), SetMicVolume(MuteOff)
+    // Valid matches: SetVolume(50), SetVolume🔊(50), SetMicVolume(50), SetMicVolume🎤(50)
+    // Invalid combinations (SetVolume🎤, SetMicVolume🔊) are allowed by regex but rejected by validation
     inline constexpr const char REGEX_PATTERN_SETVOLUME_FIND[] = R"(Set(Mic)?Volume(🔊|🎤)?\([+-]?(?:\d+(?:\.\d{1,2})?|Mute|MuteOn|MuteOff)\))";
 
     // Pattern for matching Repeat{...}x... mapping keys
