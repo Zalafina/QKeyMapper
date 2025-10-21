@@ -139,6 +139,20 @@
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20251026)
+    * SetVolume功能增强
+      ##### 🔊播放设备音量控制
+          SetVolume(Mute)          - 切换静音状态
+          SetVolume(MuteOn)        - 设置为静音 (如已静音则不动作)
+          SetVolume(MuteOff)       - 取消静音 (如未静音则不动作)
+          SetVolume🔊(...)         - 与上面功能相同，带提示的播放设备音量控制
+      ##### 🎤 录音设备音量控制
+          SetMicVolume(50.5)       - 设置麦克风音量到 50.5%
+          SetMicVolume(+10)        - 增加 10%
+          SetMicVolume(-5.5)       - 减少 5.5%
+          SetMicVolume(Mute)       - 切换麦克风静音状态
+          SetMicVolume(MuteOn)     - 设置麦克风静音
+          SetMicVolume(MuteOff)    - 取消麦克风静音
+          SetMicVolume🎤(...)      - 与上面功能相同，带提示的麦克风音量控制
     * 虚拟手柄设定标签页添加鼠标控制虚拟手柄摇杆的 **X轴反转** 和 **Y轴反转** 勾选框。
 * v1.3.8(Build 20251018)
     * 映射项设定对话框中映射按键编辑时支持 `Repeat{映射内容}x循环次数` 的写法，循环次数范围 1~99999。
