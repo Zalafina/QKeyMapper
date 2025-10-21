@@ -18283,6 +18283,8 @@ void QKeyMapper::initKeysCategoryMap()
     mapping_function_keylist = QStringList() \
         << SETVOLUME_STR
         << SETVOLUME_NOTIFY_STR
+        << SETMICVOLUME_STR
+        << SETMICVOLUME_NOTIFY_STR
         << CROSSHAIR_NORMAL_STR
         << CROSSHAIR_TYPEA_STR
         << "VolumeMute"
@@ -21430,7 +21432,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else if (currentMapKeyText == SETVOLUME_STR
-                || currentMapKeyText == SETVOLUME_NOTIFY_STR) {
+                || currentMapKeyText == SETVOLUME_NOTIFY_STR
+                || currentMapKeyText == SETMICVOLUME_STR
+                || currentMapKeyText == SETMICVOLUME_NOTIFY_STR) {
                 QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
                 setvolume_value.remove(whitespace_reg);
                 if (setvolume_value.isEmpty()) {
@@ -21638,7 +21642,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                 }
                 else if (currentMapKeyText == SETVOLUME_STR
-                    || currentMapKeyText == SETVOLUME_NOTIFY_STR) {
+                    || currentMapKeyText == SETVOLUME_NOTIFY_STR
+                    || currentMapKeyText == SETMICVOLUME_STR
+                    || currentMapKeyText == SETMICVOLUME_NOTIFY_STR) {
                     QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
                     setvolume_value.remove(whitespace_reg);
                     if (setvolume_value.isEmpty()) {
