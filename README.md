@@ -141,12 +141,15 @@
 * v1.3.8(Build 20251026)
     * SetVolume功能增强
       ##### 🔊播放设备音量控制
+          SetVolume(35.5)          - 设置播放设备风音量为 35.5%
+          SetVolume(+10)           - 增加 10%
+          SetVolume(-5.5)          - 减少 5.5%
           SetVolume(Mute)          - 切换播放设备静音状态
           SetVolume(MuteOn)        - 设置为静音 (如已静音则不动作)
           SetVolume(MuteOff)       - 取消静音 (如未静音则不动作)
           SetVolume🔊(...)         - 与上面功能相同，带提示的播放设备音量控制
       ##### 🎤 录音设备音量控制
-          SetMicVolume(50.5)       - 设置麦克风音量到 50.5%
+          SetMicVolume(50.5)       - 设置麦克风音量为 50.5%
           SetMicVolume(+10)        - 增加 10%
           SetMicVolume(-5.5)       - 减少 5.5%
           SetMicVolume(Mute)       - 切换麦克风静音状态
