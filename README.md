@@ -774,7 +774,6 @@
 | Run                      |  运行指定命令(可带命令参数)               |
 | SwitchTab                |  切换指定名称的映射表                     |
 | SwitchTab💾              |  切换指定名称的映射表(并进行保存)          |
-| SetVolume                |  设置当前播放设备音量                     |
 | KeySequenceBreak         |  打断所有当前正在执行的按键序列发送         |
 | Key2Mouse-Up             |  原始按键按下后鼠标指针持续向上移动         |
 | Key2Mouse-Down           |  原始按键按下后鼠标指针持续向下移动         |
@@ -791,6 +790,10 @@
 | Mouse-M_ScreenPoint      |  鼠标中键键点击屏幕范围内指定坐标点         |
 | Mouse-X1_ScreenPoint     |  鼠标1号侧键点击屏幕范围内指定坐标点        |
 | Mouse-X2_ScreenPoint     |  鼠标2号侧键点击屏幕范围内指定坐标点        |
+| SetVolume                |  设置当前播放设备音量                     |
+| SetVolume🔊              |  设置当前播放设备音量并显示提示            |
+| SetMicVolume             |  设置当前麦克风设备音量                   |
+| SetMicVolume🎤           |  设置当前麦克风设备音量并显示提示          |
 | Crosshair-Normal         |  原始按键按下后在屏幕上显示普通十字准星     |
 | Crosshair-TypeA          |  原始按键按下后在屏幕上显示A类型十字准星    |
 | Func-Refresh             |  触发Windows系统刷新功能                |
