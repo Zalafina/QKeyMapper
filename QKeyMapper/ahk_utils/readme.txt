@@ -32,4 +32,4 @@ move_window.exe stop   (停止窗口位置拖动，停止之后窗口不再跟�
 原始按键： L-Ctrl+Mouse-L
 映射按键： Run(utils\move_window start)
 抬起映射： Run(utils\move_window stop)
-发送时机： 按下+抬起
+发送时机： 正常+抬起
