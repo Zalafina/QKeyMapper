@@ -25,7 +25,9 @@
 
 #include <QString>
 #include "SDL_joystick.h"
-#include "SDL_gamecontroller.h"
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#undef M_PI
+#endif
 
 /**
  * @brief Represents a joystick and its properties

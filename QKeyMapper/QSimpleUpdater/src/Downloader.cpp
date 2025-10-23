@@ -32,6 +32,9 @@
 #include <QRegularExpressionMatch>
 #include <QAuthenticator>
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#define _USE_MATH_DEFINES
+#endif
 #include <math.h>
 
 #include "AuthenticateDialog.h"

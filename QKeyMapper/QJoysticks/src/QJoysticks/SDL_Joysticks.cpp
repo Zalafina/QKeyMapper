@@ -26,6 +26,10 @@
 #include <QApplication>
 #include <QJoysticks/SDL_Joysticks.h>
 
+#ifndef M_PI
+#define M_PI (3.14159265358979323846)
+#endif
+
 /**
  * Holds a generic mapping to be applied to joysticks that have not been mapped
  * by the SDL project or by the database.
