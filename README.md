@@ -139,6 +139,12 @@
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20251026)
+    * utils目录下工具脚本追加，详细使用方法参考 utils 目录下 readme.txt 文件 (**utils工具策略变为直接使用Autohotkey的.ahk脚本**) ：
+      ##### 窗口大小和位置调整工具
+          ahk.exe winmove.ahk wintitle="记事本" w=800 h=600                (窗口大小调整为 800 x 600)
+          ahk.exe winmove.ahk wintitle="记事本" x=100 y=200                (窗口左上角坐标位置移动到x=100, y=200)
+          ahk.exe winmove.ahk wintitle="记事本" x=100 y=200 w=800 h=600    (窗口左上角坐标位置移动到x=100, y=200的同时窗口大小调整为 宽度=800, 高度=600)
+          ahk.exe winmove.ahk wintitle="记事本" center                     (窗口在当前屏幕居中显示)
     * SetVolume功能增强
       ##### 🔊播放设备音量控制
           SetVolume(35.5)          - 设置播放设备风音量为 35.5%
@@ -148,7 +154,7 @@
           SetVolume(MuteOn)        - 设置为静音 (如已静音则不动作)
           SetVolume(MuteOff)       - 取消静音 (如未静音则不动作)
           SetVolume🔊(...)         - 与上面功能相同，带提示的播放设备音量控制
-      ##### 🎤 录音设备音量控制
+      ##### 🎤录音设备音量控制
           SetMicVolume(50.5)       - 设置麦克风音量为 50.5%
           SetMicVolume(+10)        - 增加 10%
           SetMicVolume(-5.5)       - 减少 5.5%
