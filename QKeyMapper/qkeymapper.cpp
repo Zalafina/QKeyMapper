@@ -1591,11 +1591,24 @@ void QKeyMapper::updateHWNDListProc()
 
     s_last_HWNDList = s_hWndList;
 
-    if (s_last_HWNDList.isEmpty()) {
-        s_CurrentMappingHWND = NULL;
+    if (!s_last_HWNDList.isEmpty()) {
+        HWND hwnd = GetForegroundWindow();
+        if (s_last_HWNDList.contains(hwnd)
+            && s_CurrentMappingHWND != hwnd) {
+            s_CurrentMappingHWND = hwnd;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateHWNDListProc] " << "s_CurrentMappingHWND = GetForegroundWindow()";
+#endif
+        }
+        else if (!s_last_HWNDList.contains(s_CurrentMappingHWND)) {
+            s_CurrentMappingHWND = s_last_HWNDList.constFirst();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[updateHWNDListProc] " << "s_CurrentMappingHWND = s_last_HWNDList.constFirst()";
+#endif
+        }
     }
-    else if (s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
-        s_CurrentMappingHWND = s_last_HWNDList.constFirst();
+    else {
+        s_CurrentMappingHWND = NULL;
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3437,6 +3450,7 @@ void QKeyMapper::WinEventProc(HWINEVENTHOOK hWinEventHook, DWORD event, HWND hwn
 #endif
 
         getInstance()->matchForegroundWindow();
+        getInstance()->updateHWNDListProc();
     }
 }
 
