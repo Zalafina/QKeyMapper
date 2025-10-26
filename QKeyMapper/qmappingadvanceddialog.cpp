@@ -64,7 +64,7 @@ int QMappingAdvancedDialog::getMouseXSpeed()
 
 int QMappingAdvancedDialog::getMouseYSpeed()
 {
-    return ui->mouseXSpeedSpinBox->value();
+    return ui->mouseYSpeedSpinBox->value();
 }
 
 int QMappingAdvancedDialog::getMousePollingInterval()
