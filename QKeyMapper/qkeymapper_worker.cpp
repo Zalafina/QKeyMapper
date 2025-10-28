@@ -10915,8 +10915,9 @@ void QKeyMapper_Worker::CombinationKeyProc(int rowindex, const QString &keycodeS
     }
 }
 
-bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &modifiers, QString &original_key, const QStringList mappingkeyslist)
+bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers modifiers, const QString &original_key, const QStringList &mappingkeyslist)
 {
+    Q_UNUSED(original_key);
     if (mappingkeyslist.size() == 1 && mappingkeyslist.constFirst() == KEY_BLOCKED_STR) {
         return false;
     }
@@ -10961,7 +10962,7 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     for (const QString &modifierstr : std::as_const(pressedKeyboardModifiersList)) {
         QStringList mappingKeyList = QStringList() << modifierstr;
         // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
-        QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+        QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, KEYBOARD_MODIFIERS, SENDMODE_NORMAL, controller);
     }
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
 
@@ -10991,8 +10992,8 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
             // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
             // QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_MODIFIERS);
-            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL, controller);
-            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL, controller);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_DOWN, KEYBOARD_MODIFIERS, SENDMODE_NORMAL, controller);
+            QKeyMapper_Worker::getInstance()->sendInputKeys(-1, mappingKeyList, KEY_UP, KEYBOARD_MODIFIERS, SENDMODE_NORMAL, controller);
             controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_NORMAL;
         }
     }
@@ -11000,7 +11001,7 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers &mo
     return releasemodifier;
 }
 
-bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers &modifiers)
+bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifiers modifiers)
 {
     bool releasemodifier = false;
     QStringList pressedKeyboardModifiersList;
