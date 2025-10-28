@@ -23922,18 +23922,13 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
 void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
+    bool check_state = ui->enableVirtualJoystickCheckBox->isChecked();
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[EnableVirtualGamepad] Enable Virtual Gamepad state changed ->" << (Qt::CheckState)state;
+    qDebug() << "[EnableVirtualGamepad] Enable Virtual Gamepad state changed ->" << check_state;
 #endif
 
-#ifdef VIGEM_CLIENT_SUPPORT
-    bool checked = false;
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
-
-    if (Qt::Checked == state) {
+    bool checked_result = false;
+    if (check_state) {
         bool enable_result = false;
         if (QKeyMapper_Worker::s_VirtualGamepadList.size() <= VIRTUAL_GAMEPAD_NUMBER_MAX
             && QKeyMapper_Worker::s_ViGEmTargetList.isEmpty()
@@ -23960,13 +23955,16 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         }
 
         if (enable_result) {
-            checked = true;
+            checked_result = true;
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Enable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
         }
         else {
+            QKeyMapper_Worker::ViGEmClient_RemoveAllTargets();
+            ui->enableVirtualJoystickCheckBox->blockSignals(true);
             ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
+            ui->enableVirtualJoystickCheckBox->blockSignals(false);
 #ifdef DEBUG_LOGOUT_ON
             qWarning() << "[EnableVirtualJoystick] Enable All Virtual Gamepad failed!!!";
 #endif
@@ -23974,13 +23972,18 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     }
     else {
         QKeyMapper_Worker::ViGEmClient_RemoveAllTargets();
-        checked = false;
+        checked_result = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[EnableVirtualGamepad]" << " Disable Virtual Gamepad success(" << QKeyMapper_Worker::s_VirtualGamepadList.size() << ") -> " << QKeyMapper_Worker::s_VirtualGamepadList;
 #endif
     }
 
-    if (true == checked) {
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    if (true == checked_result) {
         ui->vJoyXSensSpinBox->setEnabled(true);
         ui->vJoyYSensSpinBox->setEnabled(true);
         ui->vJoyInvertXCheckBox->setEnabled(true);
@@ -23994,7 +23997,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->virtualGamepadNumberSpinBox->setEnabled(true);
         ui->virtualGamepadListComboBox->setEnabled(true);
 
-        settingFile.setValue(VIRTUALGAMEPAD_ENABLE , true);
+        settingFile.setValue(VIRTUALGAMEPAD_ENABLE, true);
     }
     else {
         ui->vJoyXSensSpinBox->setEnabled(false);
@@ -24010,9 +24013,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
         ui->virtualGamepadNumberSpinBox->setEnabled(false);
         ui->virtualGamepadListComboBox->setEnabled(false);
 
-        settingFile.setValue(VIRTUALGAMEPAD_ENABLE , false);
+        settingFile.setValue(VIRTUALGAMEPAD_ENABLE, false);
     }
-#endif
 
     emit updateVirtualGamepadListDisplay_Signal();
 }
