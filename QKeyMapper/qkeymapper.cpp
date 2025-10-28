@@ -23930,7 +23930,8 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     bool checked_result = false;
     if (check_state) {
         bool enable_result = false;
-        if (QKeyMapper_Worker::s_VirtualGamepadList.size() <= VIRTUAL_GAMEPAD_NUMBER_MAX
+        if (QKeyMapper_Worker::s_VirtualGamepadList.size() > 0
+            && QKeyMapper_Worker::s_VirtualGamepadList.size() <= VIRTUAL_GAMEPAD_NUMBER_MAX
             && QKeyMapper_Worker::s_ViGEmTargetList.isEmpty()
             && QKeyMapper_Worker::s_ViGEmTarget_ReportList.isEmpty()) {
             if (QKeyMapper_Worker::s_VirtualGamepadList.size() == 1
@@ -23966,7 +23967,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
             ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
             ui->enableVirtualJoystickCheckBox->blockSignals(false);
 #ifdef DEBUG_LOGOUT_ON
-            qWarning() << "[EnableVirtualJoystick] Enable All Virtual Gamepad failed!!!";
+            qWarning() << "[EnableVirtualJoystick] Enable Virtual Gamepad failed!!!";
 #endif
         }
     }
