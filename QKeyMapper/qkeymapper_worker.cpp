@@ -23,6 +23,8 @@ ULONG_PTR QKeyMapper_Worker::VIRTUAL_KEY_OVERLAY = 0;
 ULONG_PTR QKeyMapper_Worker::VIRTUAL_RESEND_REALKEY = 0;
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
+QAtomicBool QKeyMapper_Worker::s_BlockKeyboard;
+QAtomicBool QKeyMapper_Worker::s_BlockMouse;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold;
 QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
@@ -1687,6 +1689,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
             }
+            else if (key == BLOCK_KEYBOARD_STR
+                || key == BLOCK_KEYBOARD_NOTIFY_STR) {
+                s_BlockKeyboard = false;
+            }
+            else if (key == BLOCK_MOUSE_STR
+                || key == BLOCK_MOUSE_NOTIFY_STR) {
+                s_BlockMouse = false;
+            }
             else if (key.startsWith(MOUSE_POS_PREFIX)) {
                 /* Mouse-Pos KeyUp do nothing. */
             }
@@ -2394,6 +2404,18 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             qDebug().nospace().noquote() << "[sendInputKeys] SENDTYPE_BOTH postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
 #endif
                         }
+                    }
+                }
+                else if (key == BLOCK_KEYBOARD_STR
+                    || key == BLOCK_KEYBOARD_NOTIFY_STR) {
+                    s_BlockKeyboard = true;
+                    if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
+                    }
+                }
+                else if (key == BLOCK_MOUSE_STR
+                    || key == BLOCK_MOUSE_NOTIFY_STR) {
+                    s_BlockMouse = true;
+                    if (key == BLOCK_MOUSE_NOTIFY_STR) {
                     }
                 }
                 else if (key.startsWith(MOUSE_POS_PREFIX)) {
@@ -9205,9 +9227,15 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #endif
     }
 
-    if (true == returnFlag){
+    if (s_BlockKeyboard) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[LowLevelKeyboardHookProc] return TRUE");
+        qDebug() << "[LowLevelKeyboardHookProc] s_BlockKeyboard = true, s_AtomicHookProcState =" << s_AtomicHookProcState;
+#endif
+        return (LRESULT)TRUE;
+    }
+    else if (true == returnFlag){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[LowLevelKeyboardHookProc] returnFlag = true, s_AtomicHookProcState =" << s_AtomicHookProcState;
 #endif
         return (LRESULT)TRUE;
     }
@@ -9957,7 +9985,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 #endif
 
-    if (true == returnFlag){
+    if (s_BlockMouse) {
+        return (LRESULT)TRUE;
+    }
+    else if (true == returnFlag){
 //#ifdef DEBUG_LOGOUT_ON
 //        qDebug("LowLevelMouseHookProc() -> return TRUE");
 //#endif
@@ -13816,6 +13847,8 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
 
 void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
 {
+    s_BlockKeyboard = false;
+    s_BlockMouse = false;
     s_Mouse2vJoy_Hold = false;
     s_Gyro2Mouse_MoveActive = false;
     s_Key2Mouse_Up = false;

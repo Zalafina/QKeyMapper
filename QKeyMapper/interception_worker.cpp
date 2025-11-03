@@ -165,7 +165,7 @@ void Interception_Worker::InterceptionThreadStarted()
                 }
 
                 int intercept = QKeyMapper_Worker::InterceptionMouseHookProc(mouse_event, delta_x, delta_y, delta_wheel, flags, extraInfo, index);
-                if (INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION == intercept) {
+                if (QKeyMapper_Worker::s_BlockMouse || INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION == intercept) {
                     /* Do not call interception_send */
                 }
                 else if (INTERCEPTION_RETURN_BLOCKEDBY_LOWLEVELHOOK == intercept) {
@@ -214,7 +214,7 @@ void Interception_Worker::InterceptionThreadStarted()
                 }
 
                 int intercept = QKeyMapper_Worker::InterceptionKeyboardHookProc(scancode, keyupdown, extraInfo, ExtenedFlag_e0, ExtenedFlag_e1, index);
-                if (INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION == intercept) {
+                if (QKeyMapper_Worker::s_BlockKeyboard || INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION == intercept) {
                     /* Do not call interception_send */
                 }
                 else if (INTERCEPTION_RETURN_BLOCKEDBY_LOWLEVELHOOK == intercept) {

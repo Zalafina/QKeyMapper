@@ -18039,6 +18039,10 @@ void QKeyMapper::initKeysCategoryMap()
         << SWITCHTAB_STR
         << SWITCHTAB_SAVE_STR
         << QKEYMAPPER_FN_KEY_STR
+        << BLOCK_KEYBOARD_STR
+        << BLOCK_KEYBOARD_NOTIFY_STR
+        << BLOCK_MOUSE_STR
+        << BLOCK_MOUSE_NOTIFY_STR
         << KEYSEQUENCEBREAK_STR
         ;
 
@@ -18827,6 +18831,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
+                disable_burst = true;
+                // disable_lock = true;
+            }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
                 disable_burst = true;
                 disable_lock = true;
@@ -19023,6 +19031,10 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
         disable_burst = true;
         disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
+        disable_burst = true;
+        // disable_lock = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
         disable_burst = true;

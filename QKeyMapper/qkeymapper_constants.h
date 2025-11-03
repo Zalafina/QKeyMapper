@@ -1100,6 +1100,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEY_BLOCKED_STR[] = "BLOCKED";
     inline constexpr const char GAMEPAD_HOME_STR[] = "GamepadHome";
     inline constexpr const char QKEYMAPPER_FN_KEY_STR[] = "QKeyMapper-Fn";
+    inline constexpr const char BLOCK_KEYBOARD_STR[] = "Block-Keyboard";
+    inline constexpr const char BLOCK_KEYBOARD_NOTIFY_STR[] = "Block-Keyboard⌨";
+    inline constexpr const char BLOCK_MOUSE_STR[] = "Block-Mouse";
+    inline constexpr const char BLOCK_MOUSE_NOTIFY_STR[] = "Block-Mouse🖱";
+    inline constexpr const char BLOCK_INPUT_PREFIX[]  = "Block-";
 
     inline constexpr const char MOUSE_MOVE_PREFIX[]  = "Mouse-Move";
     inline constexpr const char MOUSE_BUTTON_PREFIX[]  = "Mouse-";
