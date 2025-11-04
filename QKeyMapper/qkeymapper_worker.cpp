@@ -6760,22 +6760,22 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState()
     bool key2mouse_right = false;
 
     int findKey2Mouse_index = -1;
-    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_UP_STR);
+    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_UP_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_up = true;
     }
 
-    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_DOWN_STR);
+    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_DOWN_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_down = true;
     }
 
-    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_LEFT_STR);
+    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_LEFT_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_left = true;
     }
 
-    findKey2Mouse_index = QKeyMapper::findMapKeyInKeyMappingDataList(KEY2MOUSE_RIGHT_STR);
+    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_RIGHT_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_right = true;
     }
@@ -8051,19 +8051,6 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
                     returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else {
-                    if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
-                        if (KEY_DOWN == keyupdown){
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << firstmappingkey;
-#endif
-                        }
-                        else {
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << firstmappingkey;
-#endif
-                        }
-                    }
-
                     int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
                     bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
                     if (KEY_DOWN == keyupdown){
@@ -8348,19 +8335,6 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
                     returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                 }
                 else {
-                    if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
-                        if (KEY_DOWN == keyupdown){
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << firstmappingkey;
-#endif
-                        }
-                        else {
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug() << "[InterceptionMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << firstmappingkey;
-#endif
-                        }
-                    }
-
                     int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
                     bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
                     if (KEY_DOWN == keyupdown){
@@ -8624,9 +8598,9 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
 #endif
                         returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
                     }
-                    else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
-                        returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
-                    }
+                    // else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+                    //     returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
+                    // }
                     else {
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                         QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
@@ -8955,19 +8929,6 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         returnFlag = true;
                     }
                     else {
-                        if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
-                            if (KEY_DOWN == keyupdown){
-#ifdef DEBUG_LOGOUT_ON
-                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << firstmappingkey;
-#endif
-                            }
-                            else {
-#ifdef DEBUG_LOGOUT_ON
-                                qDebug() << "[LowLevelKeyboardHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << firstmappingkey;
-#endif
-                            }
-                        }
-
                         int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
                         bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
                         if (KEY_DOWN == keyupdown){
@@ -9576,19 +9537,6 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                             returnFlag = true;
                         }
                         else {
-                            if (firstmappingkey.startsWith(KEY2MOUSE_PREFIX) && mappingkeylist_size == 1) {
-                                if (KEY_DOWN == keyupdown){
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug() << "[LowLevelMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Down ->" << firstmappingkey;
-#endif
-                                }
-                                else {
-#ifdef DEBUG_LOGOUT_ON
-                                    qDebug() << "[LowLevelMouseHookProc]" << "Key2Mouse Key(" << original_key << ") Up ->" << firstmappingkey;
-#endif
-                                }
-                            }
-
                             int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
                             bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
                             if (KEY_DOWN == keyupdown){
@@ -9911,9 +9859,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #endif
                             returnFlag = true;
                         }
-                        else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
-                            returnFlag = true;
-                        }
+                        // else if (mappingKeyList.constFirst().startsWith(KEY2MOUSE_PREFIX) && mappingKeyList.size() == 1) {
+                        //     returnFlag = true;
+                        // }
                         else {
                             QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
                             QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);

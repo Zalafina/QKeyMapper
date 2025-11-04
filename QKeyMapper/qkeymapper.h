@@ -877,6 +877,7 @@ public:
     static int findOriKeyInKeyMappingDataList_ForDoublePress(const QString &keyname);
     // static int findOriKeyInKeyMappingDataListGlobal(const QString &keyname);
     static int findMapKeyInKeyMappingDataList(const QString &keyname);
+    static int findMapKeyStringInKeyMappingDataList(const QString &keystring);
     static ValidationResult validateOriginalKeyString(const QString &originalkeystr, int update_rowindex, const QString &mappingkeystr_matched = QString());
     static ValidationResult validateSingleOriginalKey(const QString &orikey, int update_rowindex);
     static ValidationResult validateSingleOriginalKeyWithoutTimeSuffix(const QString &orikey, int update_rowindex);

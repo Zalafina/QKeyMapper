@@ -3635,6 +3635,26 @@ int QKeyMapper::findMapKeyInKeyMappingDataList(const QString &keyname)
     return returnindex;
 }
 
+int QKeyMapper::findMapKeyStringInKeyMappingDataList(const QString &keystring)
+{
+    int returnindex = -1;
+    int keymapdataindex = 0;
+
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
+    {
+        // Check both Mapping_Keys (press/mapping keys) and MappingKeys_KeyUp (key-up mappings).
+        // If either contains the queried keystring, return the index of this MAP_KEYDATA.
+        if (keymapdata.Mapping_Keys.contains(keystring) || keymapdata.MappingKeys_KeyUp.contains(keystring)) {
+            returnindex = keymapdataindex;
+            break;
+        }
+
+        keymapdataindex += 1;
+    }
+
+    return returnindex;
+}
+
 ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalkeystr, int update_rowindex, const QString &mappingkeystr_matched)
 {
     ValidationResult result;
@@ -6712,6 +6732,7 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         || keymapdata.MappingKeys_KeyUp.constFirst().contains(KEY_BLOCKED_STR)) {
         disable_sendtiming = true;
     }
+#if 0
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)
         || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
         disable_sendtiming = true;
@@ -6728,6 +6749,7 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         || keymapdata.MappingKeys_KeyUp.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
         disable_sendtiming = true;
     }
+#endif
     else if (keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_BRAKE_STR)
         || keymapdata.Mapping_Keys.constFirst().contains(VJOY_RT_BRAKE_STR)
         || keymapdata.Mapping_Keys.constFirst().contains(VJOY_LT_ACCEL_STR)
@@ -18835,10 +18857,6 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 // disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
-                disable_burst = true;
-                disable_lock = true;
-            }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
                 disable_burst = true;
                 // disable_lock = true;
@@ -19035,10 +19053,6 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
         disable_burst = true;
         // disable_lock = true;
-    }
-    else if (keymapdata.Mapping_Keys.constFirst().startsWith(KEY2MOUSE_PREFIX)) {
-        disable_burst = true;
-        disable_lock = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
         disable_burst = true;
@@ -21357,7 +21371,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (findindex != -1){
             if (currentMapKeyText == KEY_BLOCKED_STR
                 || currentMapKeyText == KEYSEQUENCEBREAK_STR
-                || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                 || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                 || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                 || currentMapKeyText == VJOY_LS_RADIUS_STR
@@ -21372,7 +21385,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 MAP_KEYDATA keymapdata = KeyMappingDataList->at(findindex);
                 if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
                     || keymapdata.Mapping_Keys.contains(KEYSEQUENCEBREAK_STR)
-                    || keymapdata.Mapping_Keys.contains(KEY2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
                     || keymapdata.Mapping_Keys.contains(GYRO2MOUSE_PREFIX)
                     || keymapdata.Mapping_Keys.contains(VJOY_LS_RADIUS_STR)
@@ -21389,7 +21401,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             if (ui->nextarrowCheckBox->isChecked()) {
                 if (currentMapKeyText == KEY_BLOCKED_STR
                     || currentMapKeyText == KEYSEQUENCEBREAK_STR
-                    || currentMapKeyText.startsWith(KEY2MOUSE_PREFIX)
                     || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
                     || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
                     || currentMapKeyText == VJOY_LS_RADIUS_STR
@@ -21787,7 +21798,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (waitTime > 0
                     && currentMapKeyComboBoxText != KEY_BLOCKED_STR
                     && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
-                    && currentMapKeyComboBoxText.startsWith(KEY2MOUSE_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
                     && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
