@@ -25,6 +25,10 @@
         <file alias="volume_full.svg">image\button_image\volume_full_01.svg</file>
         <file alias="microphone.svg">image\button_image\microphone_01.svg</file>
         <file alias="microphone_muted.svg">image\button_image\microphone_muted_01.svg</file>
+        <file alias="block_keyboard.svg">image\button_image\block_keyboard.svg</file>
+        <file alias="unblock_keyboard.svg">image\button_image\unblock_keyboard.svg</file>
+        <file alias="block_mouse.svg">image\button_image\block_mouse.svg</file>
+        <file alias="unblock_mouse.svg">image\button_image\unblock_mouse.svg</file>
         <file alias="normal.svg">image\button_image\normal_01.svg</file>
         <file alias="burst.svg">image\button_image\lightning_01.svg</file>
         <file alias="lock.svg">image\button_image\lock_01.svg</file>

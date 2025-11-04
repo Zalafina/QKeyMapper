@@ -576,6 +576,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showSetVolumeNotification_Signal, this, &QKeyMapper::showSetVolumeNotification, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showBlockInputDeviceNotification_Signal, this, &QKeyMapper::showBlockInputDeviceNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showSwitchBurstAndLockNotification_Signal, this, &QKeyMapper::showSwitchBurstAndLockNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
@@ -16649,6 +16650,96 @@ void QKeyMapper::showSetVolumeNotification(float volume, bool muted, int volume_
     opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
 
     // Show Notification Popup
+    showNotificationPopup(popupNotification, opts);
+}
+
+void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked)
+{
+#ifdef DEBUG_LOGOUT_ON
+    const char* deviceTypeStr = (devicetype == BLOCK_INPUTDEVICE_MOUSE) ? "Mouse" : "Keyboard";
+    qDebug().noquote().nospace() << "[QKeyMapper::showBlockInputDeviceNotification]" << deviceTypeStr << " blocked ->" << blocked;
+#endif
+
+    int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        position = NOTIFICATION_POSITION_DEFAULT;
+    }
+
+    QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+    QString color_str;
+    if (tabFontColor.isValid()) {
+        color_str = tabFontColor.name();
+    }
+    else {
+        QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
+        if (notification_font_color.isValid()) {
+            color_str = notification_font_color.name();
+        }
+        else {
+            color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+        }
+    }
+
+    // Setup Notification Options
+    PopupNotificationOptions opts;
+    opts.color = color_str;
+    opts.position = position;
+    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
+    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
+    if (tabBGColor.isValid()) {
+        opts.backgroundColor = tabBGColor;
+    }
+    else {
+        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    }
+    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
+    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
+    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
+    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
+    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
+        opts.fontWeight = QFont::Light;
+    }
+    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
+        opts.fontWeight = QFont::Normal;
+    }
+    else {
+        opts.fontWeight = QFont::Bold;
+    }
+    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
+    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
+    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
+    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
+    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+
+    // Select icon based on device type and blocked state
+    QString popupNotification;
+    QString deviceIcon;
+    if (devicetype == BLOCK_INPUTDEVICE_MOUSE) {
+        if (blocked) {
+            popupNotification = tr("Block Mouse");
+            deviceIcon = ":/block_mouse.svg";
+        }
+        else {
+            popupNotification = tr("Unblock Mouse");
+            deviceIcon = ":/unblock_mouse.svg";
+        }
+    }
+    else {  // BLOCK_INPUTDEVICE_KEYBOARD
+        if (blocked) {
+            popupNotification = tr("Block Keyboard");
+            deviceIcon = ":/block_keyboard.svg";
+        }
+        else {
+            popupNotification = tr("Unblock Keyboard");
+            deviceIcon = ":/unblock_keyboard.svg";
+        }
+    }
+    opts.iconPath = deviceIcon;
+    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+
+    // Show Notification Popup (with icon only, no text)
     showNotificationPopup(popupNotification, opts);
 }
 

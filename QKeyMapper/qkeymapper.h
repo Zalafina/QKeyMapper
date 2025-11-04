@@ -1004,6 +1004,7 @@ signals:
     void updateInputDeviceSelectComboBoxes_Signal(void);
     void updateGamepadSelectComboBox_Signal(int instance_id);
     void showSetVolumeNotification_Signal(float volume, bool muted, int volume_type);
+    void showBlockInputDeviceNotification_Signal(int devicetype, bool blocked);
     void showSwitchBurstAndLockNotification_Signal(int rowindex);
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
@@ -1445,6 +1446,7 @@ public slots:
     void updateInputDeviceSelectComboBoxes(void);
     void updateGamepadSelectComboBox(int instance_id);
     void showSetVolumeNotification(float volume, bool muted, int volume_type);
+    void showBlockInputDeviceNotification(int devicetype, bool blocked);
     void showSwitchBurstAndLockNotification(int rowindex);
     void updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname);
     void updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabhotkey);

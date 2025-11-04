@@ -63,6 +63,9 @@ namespace QKeyMapperConstants {
     inline constexpr int KEY_TYPE_GAMEPAD      = 3;
     inline constexpr int KEY_TYPE_FUNCTION     = 4;
 
+    inline constexpr int BLOCK_INPUTDEVICE_KEYBOARD         = 0;
+    inline constexpr int BLOCK_INPUTDEVICE_MOUSE            = 1;
+
     inline constexpr int KEYMAPPINGTABWIDGET_NARROW_LEFT   = 526;
     inline constexpr int KEYMAPPINGTABWIDGET_NARROW_WIDTH  = 458;
     inline constexpr int KEYMAPPINGTABWIDGET_WIDE_LEFT     = 26;
