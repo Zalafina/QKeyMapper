@@ -13470,10 +13470,6 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
     SpecialMappingKeysList = QStringList() \
             << KEY_BLOCKED_STR
             << KEYSEQUENCEBREAK_STR
-            << KEY2MOUSE_UP_STR
-            << KEY2MOUSE_DOWN_STR
-            << KEY2MOUSE_LEFT_STR
-            << KEY2MOUSE_RIGHT_STR
             << MOUSE2VJOY_HOLD_KEY_STR
             << GYRO2MOUSE_HOLD_KEY_STR
             << GYRO2MOUSE_MOVE_KEY_STR

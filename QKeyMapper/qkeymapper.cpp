@@ -3642,9 +3642,22 @@ int QKeyMapper::findMapKeyStringInKeyMappingDataList(const QString &keystring)
 
     for (const MAP_KEYDATA &keymapdata : std::as_const(*KeyMappingDataList))
     {
-        // Check both Mapping_Keys (press/mapping keys) and MappingKeys_KeyUp (key-up mappings).
-        // If either contains the queried keystring, return the index of this MAP_KEYDATA.
-        if (keymapdata.Mapping_Keys.contains(keystring) || keymapdata.MappingKeys_KeyUp.contains(keystring)) {
+        // Check if any member of Mapping_Keys contains keystring as substring
+        bool foundInMappingKeys = std::any_of(
+            keymapdata.Mapping_Keys.constBegin(),
+            keymapdata.Mapping_Keys.constEnd(),
+            [&keystring](const QString &s) { return s.contains(keystring); }
+        );
+
+        // Check if any member of MappingKeys_KeyUp contains keystring as substring
+        bool foundInMappingKeysKeyUp = std::any_of(
+            keymapdata.MappingKeys_KeyUp.constBegin(),
+            keymapdata.MappingKeys_KeyUp.constEnd(),
+            [&keystring](const QString &s) { return s.contains(keystring); }
+        );
+
+        // If either list contains keystring as substring, return the index of this MAP_KEYDATA
+        if (foundInMappingKeys || foundInMappingKeysKeyUp) {
             returnindex = keymapdataindex;
             break;
         }
