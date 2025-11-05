@@ -2414,16 +2414,34 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 else if (key == BLOCK_KEYBOARD_STR
                     || key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                    s_BlockKeyboard = true;
-                    if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                        emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, true);
+                    if (sendtype == SENDTYPE_UP) {
+                        s_BlockKeyboard = false;
+                        if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
+                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, false);
+                        }
+                    }
+                    else if (sendtype == SENDTYPE_NORMAL
+                        || sendtype == SENDTYPE_DOWN) {
+                        s_BlockKeyboard = true;
+                        if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
+                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, true);
+                        }
                     }
                 }
                 else if (key == BLOCK_MOUSE_STR
                     || key == BLOCK_MOUSE_NOTIFY_STR) {
-                    s_BlockMouse = true;
-                    if (key == BLOCK_MOUSE_NOTIFY_STR) {
-                        emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, true);
+                    if (sendtype == SENDTYPE_UP) {
+                        s_BlockMouse = false;
+                        if (key == BLOCK_MOUSE_NOTIFY_STR) {
+                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, false);
+                        }
+                    }
+                    else if (sendtype == SENDTYPE_NORMAL
+                        || sendtype == SENDTYPE_DOWN) {
+                        s_BlockMouse = true;
+                        if (key == BLOCK_MOUSE_NOTIFY_STR) {
+                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, true);
+                        }
                     }
                 }
                 else if (key.startsWith(MOUSE_POS_PREFIX)) {
