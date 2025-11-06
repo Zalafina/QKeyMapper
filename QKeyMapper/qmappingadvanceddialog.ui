@@ -420,8 +420,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QLabel" name="LT_Threshold_ReleaseLabel">
@@ -452,8 +452,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="RT_Threshold_ReleaseSpinBox">
@@ -468,8 +468,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="RT_Threshold_PressSpinBox">
@@ -484,8 +484,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="LS_Threshold_ReleaseSpinBox">
@@ -500,8 +500,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="LS_Threshold_PushSpinBox">
@@ -516,8 +516,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="RS_Threshold_ReleaseSpinBox">
@@ -532,8 +532,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="RS_Threshold_PushSpinBox">
@@ -548,8 +548,8 @@
     <property name="focusPolicy">
      <enum>Qt::FocusPolicy::ClickFocus</enum>
     </property>
-    <property name="value">
-     <number>3</number>
+    <property name="suffix">
+     <string>%</string>
     </property>
    </widget>
    <widget class="QLabel" name="LT_Threshold_PressLabel">
