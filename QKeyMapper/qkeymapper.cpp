@@ -8168,7 +8168,7 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList()
 #endif
 
     QList<MAP_KEYDATA> insertMappingDataList;
-    for (const MAP_KEYDATA &keymapdata : s_CopiedMappingData) {
+    for (const MAP_KEYDATA &keymapdata : std::as_const(s_CopiedMappingData)) {
         int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(keymapdata.Original_Key);
         if (findindex != -1) {
 #ifdef DEBUG_LOGOUT_ON
@@ -21359,10 +21359,10 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 void QKeyMapper::on_addmapdataButton_clicked()
 {
     bool isDoublePress = false;
-    bool multiInputSupport = false;
-    if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
-        multiInputSupport = true;
-    }
+    // bool multiInputSupport = false;
+    // if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
+    //     multiInputSupport = true;
+    // }
     QString currentOriKeyText;
     QString currentOriKeyTextWithoutPostfix;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
