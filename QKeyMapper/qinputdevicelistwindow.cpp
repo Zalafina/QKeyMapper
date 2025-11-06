@@ -148,7 +148,7 @@ void QInputDeviceListWindow::updateKeyboardDeviceListInfo()
 
     // Temporarily block the signal emit
     ui->keyboardDeviceTable->blockSignals(true);
-    for (const InputDevice &inputdevice : keyboardlist)
+    for (const InputDevice &inputdevice : std::as_const(keyboardlist))
     {
         QTableWidgetItem *number_TableItem = new QTableWidgetItem(QString::number(rowindex));
         ui->keyboardDeviceTable->setItem(rowindex, DEVICE_TABLE_NUMBER_COLUMN, number_TableItem);
@@ -225,7 +225,7 @@ void QInputDeviceListWindow::updateMouseDeviceListInfo()
 
     // Temporarily block the signal emit
     ui->mouseDeviceTable->blockSignals(true);
-    for (const InputDevice &inputdevice : mouselist)
+    for (const InputDevice &inputdevice : std::as_const(mouselist))
     {
         QTableWidgetItem *number_TableItem = new QTableWidgetItem(QString::number(rowindex));
         ui->mouseDeviceTable->setItem(rowindex, DEVICE_TABLE_NUMBER_COLUMN, number_TableItem);
