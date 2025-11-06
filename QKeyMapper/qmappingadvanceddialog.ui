@@ -253,7 +253,7 @@
      <rect>
       <x>20</x>
       <y>30</y>
-      <width>101</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -261,7 +261,7 @@
      <string>LT Threshold</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="RT_ThresholdLabel">
@@ -269,7 +269,7 @@
      <rect>
       <x>20</x>
       <y>60</y>
-      <width>101</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -277,15 +277,15 @@
      <string>RT Threshold</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="RT_Threshold_ReleaseLabel">
     <property name="geometry">
      <rect>
-      <x>305</x>
+      <x>240</x>
       <y>60</y>
-      <width>61</width>
+      <width>51</width>
       <height>21</height>
      </rect>
     </property>
@@ -299,9 +299,9 @@
    <widget class="QLabel" name="RT_Threshold_PressLabel">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>120</x>
       <y>60</y>
-      <width>61</width>
+      <width>41</width>
       <height>21</height>
      </rect>
     </property>
@@ -315,9 +315,9 @@
    <widget class="QLabel" name="LS_Threshold_PushLabel">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>120</x>
       <y>90</y>
-      <width>61</width>
+      <width>41</width>
       <height>21</height>
      </rect>
     </property>
@@ -331,9 +331,9 @@
    <widget class="QLabel" name="LS_Threshold_ReleaseLabel">
     <property name="geometry">
      <rect>
-      <x>305</x>
+      <x>240</x>
       <y>90</y>
-      <width>61</width>
+      <width>51</width>
       <height>21</height>
      </rect>
     </property>
@@ -349,7 +349,7 @@
      <rect>
       <x>20</x>
       <y>90</y>
-      <width>101</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -357,7 +357,7 @@
      <string>LS Threshold</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="RS_ThresholdLabel">
@@ -365,7 +365,7 @@
      <rect>
       <x>20</x>
       <y>120</y>
-      <width>101</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
@@ -373,15 +373,15 @@
      <string>RS Threshold</string>
     </property>
     <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="RS_Threshold_PushLabel">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>120</x>
       <y>120</y>
-      <width>61</width>
+      <width>41</width>
       <height>21</height>
      </rect>
     </property>
@@ -395,9 +395,9 @@
    <widget class="QLabel" name="RS_Threshold_ReleaseLabel">
     <property name="geometry">
      <rect>
-      <x>305</x>
+      <x>240</x>
       <y>120</y>
-      <width>61</width>
+      <width>51</width>
       <height>21</height>
      </rect>
     </property>
@@ -411,9 +411,9 @@
    <widget class="QSpinBox" name="LT_Threshold_PressSpinBox">
     <property name="geometry">
      <rect>
-      <x>215</x>
+      <x>165</x>
       <y>30</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -423,13 +423,19 @@
     <property name="suffix">
      <string>%</string>
     </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="value">
+     <number>99</number>
+    </property>
    </widget>
    <widget class="QLabel" name="LT_Threshold_ReleaseLabel">
     <property name="geometry">
      <rect>
-      <x>305</x>
+      <x>240</x>
       <y>30</y>
-      <width>61</width>
+      <width>51</width>
       <height>21</height>
      </rect>
     </property>
@@ -443,9 +449,9 @@
    <widget class="QSpinBox" name="LT_Threshold_ReleaseSpinBox">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>295</x>
       <y>30</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -459,9 +465,9 @@
    <widget class="QSpinBox" name="RT_Threshold_ReleaseSpinBox">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>295</x>
       <y>60</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -475,9 +481,9 @@
    <widget class="QSpinBox" name="RT_Threshold_PressSpinBox">
     <property name="geometry">
      <rect>
-      <x>215</x>
+      <x>165</x>
       <y>60</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -491,9 +497,9 @@
    <widget class="QSpinBox" name="LS_Threshold_ReleaseSpinBox">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>295</x>
       <y>90</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -507,9 +513,9 @@
    <widget class="QSpinBox" name="LS_Threshold_PushSpinBox">
     <property name="geometry">
      <rect>
-      <x>215</x>
+      <x>165</x>
       <y>90</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -523,9 +529,9 @@
    <widget class="QSpinBox" name="RS_Threshold_ReleaseSpinBox">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>295</x>
       <y>120</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -539,9 +545,9 @@
    <widget class="QSpinBox" name="RS_Threshold_PushSpinBox">
     <property name="geometry">
      <rect>
-      <x>215</x>
+      <x>165</x>
       <y>120</y>
-      <width>71</width>
+      <width>61</width>
       <height>21</height>
      </rect>
     </property>
@@ -555,9 +561,9 @@
    <widget class="QLabel" name="LT_Threshold_PressLabel">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>120</x>
       <y>30</y>
-      <width>61</width>
+      <width>41</width>
       <height>21</height>
      </rect>
     </property>
