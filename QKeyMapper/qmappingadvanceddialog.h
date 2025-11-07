@@ -33,6 +33,14 @@ public:
     bool getAcceptVirtualGamepadInput(void);
     QString getShowWindowPointKey(void);
     QString getShowScreenPointKey(void);
+    int getLeftTriggerPressThreshold(void);
+    int getLeftTriggerReleaseThreshold(void);
+    int getRightTriggerPressThreshold(void);
+    int getRightTriggerReleaseThreshold(void);
+    int getLeftStickPushThreshold(void);
+    int getLeftStickReleaseThreshold(void);
+    int getRightStickPushThreshold(void);
+    int getRightStickReleaseThreshold(void);
 
     void setMouseXSpeed(int speed);
     void setMouseYSpeed(int speed);
@@ -41,6 +49,14 @@ public:
     void setAcceptVirtualGamepadInput(bool checked);
     void setShowWindowPointKey(const QString &keyname);
     void setShowScreenPointKey(const QString &keyname);
+    void setLeftTriggerPressThreshold(int threshold);
+    void setLeftTriggerReleaseThreshold(int threshold);
+    void setRightTriggerPressThreshold(int threshold);
+    void setRightTriggerReleaseThreshold(int threshold);
+    void setLeftStickPushThreshold(int threshold);
+    void setLeftStickReleaseThreshold(int threshold);
+    void setRightStickPushThreshold(int threshold);
+    void setRightStickReleaseThreshold(int threshold);
 
     void setProcessIconAsTrayIconEnabled(bool enabled);
 

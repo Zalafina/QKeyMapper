@@ -101,7 +101,53 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
 
 void QMappingAdvancedDialog::initGamepadThresholdSpinBoxes()
 {
+    // Set LT Press & Release SpinBox range with current value
+    ui->LT_Threshold_PressSpinBox->setMinimum(ui->LT_Threshold_ReleaseSpinBox->value());
+    ui->LT_Threshold_ReleaseSpinBox->setMaximum(ui->LT_Threshold_PressSpinBox->value());
 
+    // Set RT Press & Release SpinBox range with current value
+    ui->RT_Threshold_PressSpinBox->setMinimum(ui->RT_Threshold_ReleaseSpinBox->value());
+    ui->RT_Threshold_ReleaseSpinBox->setMaximum(ui->RT_Threshold_PressSpinBox->value());
+
+    // Set LS Push & Release SpinBox range with current value
+    ui->LS_Threshold_PushSpinBox->setMinimum(ui->LS_Threshold_ReleaseSpinBox->value());
+    ui->LS_Threshold_ReleaseSpinBox->setMaximum(ui->LS_Threshold_PushSpinBox->value());
+
+    // Set RS Push & Release SpinBox range with current value
+    ui->RS_Threshold_PushSpinBox->setMinimum(ui->RS_Threshold_ReleaseSpinBox->value());
+    ui->RS_Threshold_ReleaseSpinBox->setMaximum(ui->RS_Threshold_PushSpinBox->value());
+
+    // Connect LT Press & Release SpinBox
+    QObject::connect(ui->LT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
+        ui->LT_Threshold_PressSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->LT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pressValue){
+        ui->LT_Threshold_ReleaseSpinBox->setMaximum(pressValue);
+    });
+
+    // Connect RT Press & Release SpinBox
+    QObject::connect(ui->RT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
+        ui->RT_Threshold_PressSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->RT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pressValue){
+        ui->RT_Threshold_ReleaseSpinBox->setMaximum(pressValue);
+    });
+
+    // Connect LS Push & Release SpinBox
+    QObject::connect(ui->LS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
+        ui->LS_Threshold_PushSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->LS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pushValue){
+        ui->LS_Threshold_ReleaseSpinBox->setMaximum(pushValue);
+    });
+
+    // Connect RS Push & Release SpinBox
+    QObject::connect(ui->RS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
+        ui->RS_Threshold_PushSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->RS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pushValue){
+        ui->RS_Threshold_ReleaseSpinBox->setMaximum(pushValue);
+    });
 }
 
 int QMappingAdvancedDialog::getMouseXSpeed()
@@ -137,6 +183,46 @@ QString QMappingAdvancedDialog::getShowWindowPointKey()
 QString QMappingAdvancedDialog::getShowScreenPointKey()
 {
     return ui->showScreenPointKeyComboBox->currentText();
+}
+
+int QMappingAdvancedDialog::getLeftTriggerPressThreshold()
+{
+    return ui->LT_Threshold_PressSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getLeftTriggerReleaseThreshold()
+{
+    return ui->LT_Threshold_ReleaseSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getRightTriggerPressThreshold()
+{
+    return ui->RT_Threshold_PressSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getRightTriggerReleaseThreshold()
+{
+    return ui->RT_Threshold_ReleaseSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getLeftStickPushThreshold()
+{
+    return ui->LS_Threshold_PushSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getLeftStickReleaseThreshold()
+{
+    return ui->LS_Threshold_ReleaseSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getRightStickPushThreshold()
+{
+    return ui->RS_Threshold_PushSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getRightStickReleaseThreshold()
+{
+    return ui->RS_Threshold_ReleaseSpinBox->value();
 }
 
 void QMappingAdvancedDialog::setMouseXSpeed(int speed)
@@ -188,6 +274,46 @@ void QMappingAdvancedDialog::setShowScreenPointKey(const QString &keyname)
     else {
         ui->showScreenPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_SCREEN_KEY);
     }
+}
+
+void QMappingAdvancedDialog::setLeftTriggerPressThreshold(int threshold)
+{
+    ui->LT_Threshold_PressSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setLeftTriggerReleaseThreshold(int threshold)
+{
+    ui->LT_Threshold_ReleaseSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setRightTriggerPressThreshold(int threshold)
+{
+    ui->RT_Threshold_PressSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setRightTriggerReleaseThreshold(int threshold)
+{
+    ui->RT_Threshold_ReleaseSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setLeftStickPushThreshold(int threshold)
+{
+    ui->LS_Threshold_PushSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setLeftStickReleaseThreshold(int threshold)
+{
+    ui->LS_Threshold_ReleaseSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setRightStickPushThreshold(int threshold)
+{
+    ui->RS_Threshold_PushSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setRightStickReleaseThreshold(int threshold)
+{
+    ui->RS_Threshold_ReleaseSpinBox->setValue(threshold);
 }
 
 void QMappingAdvancedDialog::setProcessIconAsTrayIconEnabled(bool enabled)
