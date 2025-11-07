@@ -24,6 +24,8 @@ public:
 
     void setUILanguage(int languageindex);
 
+    void initGamepadThresholdSpinBoxes(void);
+
     int getMouseXSpeed(void);
     int getMouseYSpeed(void);
     int getMousePollingInterval(void);

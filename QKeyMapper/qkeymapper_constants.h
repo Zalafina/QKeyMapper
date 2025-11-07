@@ -567,6 +567,13 @@ namespace QKeyMapperConstants {
     inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
     inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
 
+    inline constexpr int GAMEPAD_THRESHOLD_PERCENT_MIN                          = 0;
+    inline constexpr int GAMEPAD_THRESHOLD_PERCENT_MAX                          = 100;
+    inline constexpr int GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT        = 50;
+    inline constexpr int GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT      = 30;
+    inline constexpr int GAMEPAD_JOYSTICK_PUSH_THRESHOLD_PERCENT_DEFAULT        = 50;
+    inline constexpr int GAMEPAD_JOYSTICK_RELEASE_THRESHOLD_PERCENT_DEFAULT     = 30;
+
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD  = -0.25;
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD  = -0.50;
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_HIGH_THRESHOLD  = -0.75;

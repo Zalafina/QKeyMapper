@@ -2816,7 +2816,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <translation>Mouse Move</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="156"/>
+        <location filename="../qmappingadvanceddialog.ui" line="139"/>
         <location filename="../qmappingadvanceddialog.cpp" line="50"/>
         <source>Polling</source>
         <translation>Polling</translation>
@@ -2834,13 +2834,75 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <translation>ShowPointInScreen</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="108"/>
+        <location filename="../qmappingadvanceddialog.ui" line="246"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="59"/>
+        <source>Gamepad</source>
+        <translation>Gamepad</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="261"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="60"/>
+        <source>LT Threshold</source>
+        <translation>LT Threshold</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="277"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="61"/>
+        <source>RT Threshold</source>
+        <translation>RT Threshold</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="293"/>
+        <location filename="../qmappingadvanceddialog.ui" line="434"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="68"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="69"/>
+        <source>Release</source>
+        <translation>Release</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="309"/>
+        <location filename="../qmappingadvanceddialog.ui" line="541"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="64"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="65"/>
+        <source>Press</source>
+        <translation>Press</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="325"/>
+        <location filename="../qmappingadvanceddialog.ui" line="389"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="66"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="67"/>
+        <source>Push</source>
+        <translation>Push</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="341"/>
+        <location filename="../qmappingadvanceddialog.ui" line="405"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="70"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="71"/>
+        <source>Recenter</source>
+        <translation>Recenter</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="357"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="62"/>
+        <source>LS Threshold</source>
+        <translation>LS Threshold</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="373"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="63"/>
+        <source>RS Threshold</source>
+        <translation>RS Threshold</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="107"/>
         <location filename="../qmappingadvanceddialog.cpp" line="49"/>
         <source>Y Speed</source>
         <translation>Y Speed</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="124"/>
+        <location filename="../qmappingadvanceddialog.ui" line="91"/>
         <location filename="../qmappingadvanceddialog.cpp" line="48"/>
         <source>X Speed</source>
         <translation>X Speed</translation>

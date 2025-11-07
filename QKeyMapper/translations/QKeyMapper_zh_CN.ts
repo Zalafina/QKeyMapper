@@ -2815,7 +2815,7 @@ Do you confirm to continue installing Interception driver?</source>
         <translation>鼠标移动</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="156"/>
+        <location filename="../qmappingadvanceddialog.ui" line="139"/>
         <location filename="../qmappingadvanceddialog.cpp" line="50"/>
         <source>Polling</source>
         <translation>轮询间隔</translation>
@@ -2833,13 +2833,75 @@ Do you confirm to continue installing Interception driver?</source>
         <translation>显示屏幕内坐标点</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="108"/>
+        <location filename="../qmappingadvanceddialog.ui" line="246"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="59"/>
+        <source>Gamepad</source>
+        <translation>游戏手柄</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="261"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="60"/>
+        <source>LT Threshold</source>
+        <translation>左扳机阈值</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="277"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="61"/>
+        <source>RT Threshold</source>
+        <translation>右扳机阈值</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="293"/>
+        <location filename="../qmappingadvanceddialog.ui" line="434"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="68"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="69"/>
+        <source>Release</source>
+        <translation>松开</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="309"/>
+        <location filename="../qmappingadvanceddialog.ui" line="541"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="64"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="65"/>
+        <source>Press</source>
+        <translation>按下</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="325"/>
+        <location filename="../qmappingadvanceddialog.ui" line="389"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="66"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="67"/>
+        <source>Push</source>
+        <translation>推杆</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="341"/>
+        <location filename="../qmappingadvanceddialog.ui" line="405"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="70"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="71"/>
+        <source>Recenter</source>
+        <translation>复位</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="357"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="62"/>
+        <source>LS Threshold</source>
+        <translation>左摇杆阈值</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="373"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="63"/>
+        <source>RS Threshold</source>
+        <translation>右摇杆阈值</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="107"/>
         <location filename="../qmappingadvanceddialog.cpp" line="49"/>
         <source>Y Speed</source>
         <translation>垂直鼠标速度</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="124"/>
+        <location filename="../qmappingadvanceddialog.ui" line="91"/>
         <location filename="../qmappingadvanceddialog.cpp" line="48"/>
         <source>X Speed</source>
         <translation>水平鼠标速度</translation>

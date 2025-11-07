@@ -2816,7 +2816,7 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>マウス移動</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="156"/>
+        <location filename="../qmappingadvanceddialog.ui" line="139"/>
         <location filename="../qmappingadvanceddialog.cpp" line="50"/>
         <source>Polling</source>
         <translation>ポーリング間隔</translation>
@@ -2834,13 +2834,75 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>画面内座標点表示</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="108"/>
+        <location filename="../qmappingadvanceddialog.ui" line="246"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="59"/>
+        <source>Gamepad</source>
+        <translation>ゲームパッド</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="261"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="60"/>
+        <source>LT Threshold</source>
+        <translation>左トリガー閾値</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="277"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="61"/>
+        <source>RT Threshold</source>
+        <translation>右トリガー閾値</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="293"/>
+        <location filename="../qmappingadvanceddialog.ui" line="434"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="68"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="69"/>
+        <source>Release</source>
+        <translation>離す</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="309"/>
+        <location filename="../qmappingadvanceddialog.ui" line="541"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="64"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="65"/>
+        <source>Press</source>
+        <translation>押す</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="325"/>
+        <location filename="../qmappingadvanceddialog.ui" line="389"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="66"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="67"/>
+        <source>Push</source>
+        <translation>倒す</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="341"/>
+        <location filename="../qmappingadvanceddialog.ui" line="405"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="70"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="71"/>
+        <source>Recenter</source>
+        <translation>戻る</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="357"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="62"/>
+        <source>LS Threshold</source>
+        <translation>左スティック閾値</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="373"/>
+        <location filename="../qmappingadvanceddialog.cpp" line="63"/>
+        <source>RS Threshold</source>
+        <translation>右スティック閾値</translation>
+    </message>
+    <message>
+        <location filename="../qmappingadvanceddialog.ui" line="107"/>
         <location filename="../qmappingadvanceddialog.cpp" line="49"/>
         <source>Y Speed</source>
         <translation>垂直マウス速度</translation>
     </message>
     <message>
-        <location filename="../qmappingadvanceddialog.ui" line="124"/>
+        <location filename="../qmappingadvanceddialog.ui" line="91"/>
         <location filename="../qmappingadvanceddialog.cpp" line="48"/>
         <source>X Speed</source>
         <translation>水平マウス速度</translation>

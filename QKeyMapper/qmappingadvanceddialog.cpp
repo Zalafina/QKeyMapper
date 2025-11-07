@@ -16,6 +16,7 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
     ui->mouseGroupBox->setStyle(windowsStyle);
+    ui->gamepadGroupBox->setStyle(windowsStyle);
 
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
@@ -32,6 +33,33 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     ui->showScreenPointKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
     ui->showScreenPointKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     ui->showScreenPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_SCREEN_KEY);
+
+    ui->LT_Threshold_PressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->RT_Threshold_PressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->LT_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->RT_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->LS_Threshold_PushSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->RS_Threshold_PushSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->LS_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->RS_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+
+    ui->LT_Threshold_PressSpinBox->setValue(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
+    ui->RT_Threshold_PressSpinBox->setValue(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
+    ui->LT_Threshold_ReleaseSpinBox->setValue(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+    ui->RT_Threshold_ReleaseSpinBox->setValue(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+    ui->LS_Threshold_PushSpinBox->setValue(GAMEPAD_JOYSTICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
+    ui->RS_Threshold_PushSpinBox->setValue(GAMEPAD_JOYSTICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
+    ui->LS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_JOYSTICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+    ui->RS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_JOYSTICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+
+    ui->LT_Threshold_PressSpinBox->setSuffix("%");
+    ui->RT_Threshold_PressSpinBox->setSuffix("%");
+    ui->LT_Threshold_ReleaseSpinBox->setSuffix("%");
+    ui->RT_Threshold_ReleaseSpinBox->setSuffix("%");
+    ui->LS_Threshold_PushSpinBox->setSuffix("%");
+    ui->RS_Threshold_PushSpinBox->setSuffix("%");
+    ui->LS_Threshold_ReleaseSpinBox->setSuffix("%");
+    ui->RS_Threshold_ReleaseSpinBox->setSuffix("%");
 }
 
 QMappingAdvancedDialog::~QMappingAdvancedDialog()
@@ -55,6 +83,25 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
 
     ui->showWindowPointKeyLabel->setText(tr("ShowWindowPoint"));
     ui->showScreenPointKeyLabel->setText(tr("ShowScreenPoint"));
+
+    ui->gamepadGroupBox->setTitle(tr("Gamepad"));
+    ui->LT_ThresholdLabel->setText(tr("LT Threshold"));
+    ui->RT_ThresholdLabel->setText(tr("RT Threshold"));
+    ui->LS_ThresholdLabel->setText(tr("LS Threshold"));
+    ui->RS_ThresholdLabel->setText(tr("RS Threshold"));
+    ui->LT_Threshold_PressLabel->setText(tr("Press"));
+    ui->RT_Threshold_PressLabel->setText(tr("Press"));
+    ui->LS_Threshold_PushLabel->setText(tr("Push"));
+    ui->RS_Threshold_PushLabel->setText(tr("Push"));
+    ui->LT_Threshold_ReleaseLabel->setText(tr("Release"));
+    ui->RT_Threshold_ReleaseLabel->setText(tr("Release"));
+    ui->LS_Threshold_ReleaseLabel->setText(tr("Recenter"));
+    ui->RS_Threshold_ReleaseLabel->setText(tr("Recenter"));
+}
+
+void QMappingAdvancedDialog::initGamepadThresholdSpinBoxes()
+{
+
 }
 
 int QMappingAdvancedDialog::getMouseXSpeed()

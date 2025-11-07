@@ -1032,7 +1032,7 @@ protected:
 public slots:
     void on_keymapButton_clicked();
 
-    void MappingSwitch(MappingStartMode startmode);
+    void MappingSwitch(QKeyMapper::MappingStartMode startmode);
 
     void checkOSVersionMatched(void);
 

@@ -496,6 +496,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     loadSetting_flag = false;
 
     initGyro2MouseSpinBoxes();
+    m_MappingAdvancedDialog->initGamepadThresholdSpinBoxes();
 
     m_PopupNotification = new QPopupNotification(Q_NULLPTR);
     m_deviceListWindow = new QInputDeviceListWindow(this);
@@ -7383,7 +7384,7 @@ void QKeyMapper::on_keymapButton_clicked()
     MappingSwitch(MAPPINGSTART_BUTTONCLICK);
 }
 
-void QKeyMapper::MappingSwitch(MappingStartMode startmode)
+void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 {
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     QMetaEnum mappingstartmodeEnum = QMetaEnum::fromType<QKeyMapper::MappingStartMode>();
