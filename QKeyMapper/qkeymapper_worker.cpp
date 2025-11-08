@@ -7019,26 +7019,38 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         }
         if (pressedRealKeysList.contains(keycodeString)) {
             /* LT Button is already Pressed */
+            int releaseThreshold = QKeyMapper::getGamepadLeftTriggerReleaseThreshold();
+            qreal releaseThresholdValue;
             if (e.event_type == GameControllerEvent) {
-                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER) {
+                // GameController: 0~1 range, release threshold = releaseThreshold / 100.0
+                releaseThresholdValue = releaseThreshold / 100.0;
+                if (e.value <= releaseThresholdValue) {
                     keyupdown = KEY_UP;
                 }
             }
             else { /* e.event_type == JoystickEvent */
-                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK) {
+                // Joystick: -1~1 range, release threshold = (releaseThreshold / 100.0) * 2 - 1
+                releaseThresholdValue = (releaseThreshold / 100.0) * 2.0 - 1.0;
+                if (e.value <= releaseThresholdValue) {
                     keyupdown = KEY_UP;
                 }
             }
         }
         else {
             /* LT Button has been Released */
+            int pressThreshold = QKeyMapper::getGamepadLeftTriggerPressThreshold();
+            qreal pressThresholdValue;
             if (e.event_type == GameControllerEvent) {
-                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER) {
+                // GameController: 0~1 range, press threshold = pressThreshold / 100.0
+                pressThresholdValue = pressThreshold / 100.0;
+                if (e.value >= pressThresholdValue) {
                     keyupdown = KEY_DOWN;
                 }
             }
             else { /* e.event_type == JoystickEvent */
-                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK) {
+                // Joystick: -1~1 range, press threshold = (pressThreshold / 100.0) * 2 - 1
+                pressThresholdValue = (pressThreshold / 100.0) * 2.0 - 1.0;
+                if (e.value >= pressThresholdValue) {
                     keyupdown = KEY_DOWN;
                 }
             }
@@ -7055,26 +7067,38 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
         }
         if (pressedRealKeysList.contains(keycodeString)) {
             /* RT Button is already Pressed */
+            int releaseThreshold = QKeyMapper::getGamepadRightTriggerReleaseThreshold();
+            qreal releaseThresholdValue;
             if (e.event_type == GameControllerEvent) {
-                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER) {
+                // GameController: 0~1 range, release threshold = releaseThreshold / 100.0
+                releaseThresholdValue = releaseThreshold / 100.0;
+                if (e.value <= releaseThresholdValue) {
                     keyupdown = KEY_UP;
                 }
             }
             else { /* e.event_type == JoystickEvent */
-                if (e.value <= JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK) {
+                // Joystick: -1~1 range, release threshold = (releaseThreshold / 100.0) * 2 - 1
+                releaseThresholdValue = (releaseThreshold / 100.0) * 2.0 - 1.0;
+                if (e.value <= releaseThresholdValue) {
                     keyupdown = KEY_UP;
                 }
             }
         }
         else {
             /* RT Button has been Released */
+            int pressThreshold = QKeyMapper::getGamepadRightTriggerPressThreshold();
+            qreal pressThresholdValue;
             if (e.event_type == GameControllerEvent) {
-                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER) {
+                // GameController: 0~1 range, press threshold = pressThreshold / 100.0
+                pressThresholdValue = pressThreshold / 100.0;
+                if (e.value >= pressThresholdValue) {
                     keyupdown = KEY_DOWN;
                 }
             }
             else { /* e.event_type == JoystickEvent */
-                if (e.value >= JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK) {
+                // Joystick: -1~1 range, press threshold = (pressThreshold / 100.0) * 2 - 1
+                pressThresholdValue = (pressThreshold / 100.0) * 2.0 - 1.0;
+                if (e.value >= pressThresholdValue) {
                     keyupdown = KEY_DOWN;
                 }
             }
@@ -7090,10 +7114,21 @@ void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 
 void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
 {
-    if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD
-        || e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD
-        || (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD)) {
+    // Get Left-Stick Horizontal thresholds dynamically
+    int releaseThreshold = QKeyMapper::getGamepadLeftStickReleaseThreshold();
+    int pressThreshold = QKeyMapper::getGamepadLeftStickPushThreshold();
+
+    // Calculate threshold values for Joystick event (-1~1 range)
+    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
+    // leftThreshold = -(pressThreshold / 100.0), rightThreshold = +(pressThreshold / 100.0)
+    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
+    qreal releaseMaxThreshold = releaseThreshold / 100.0;
+    qreal leftThreshold = -(pressThreshold / 100.0);
+    qreal rightThreshold = pressThreshold / 100.0;
+
+    if (e.value <= leftThreshold
+        || e.value >= rightThreshold
+        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
         /* range to process */
     }
     else {
@@ -7131,12 +7166,11 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
 
     if (ls_Left_Pressed || ls_Right_Pressed) {
         /* Left-Stick Horizontal Left or Right changed to Release */
-        if (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD) {
+        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
             keyupdown = KEY_UP;
         }
         /* Left-Stick Horizontal Left changed to Right */
-        else if (ls_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+        else if (ls_Left_Pressed && e.value >= rightThreshold) {
             /* Need to send Left-Stick Horizontal Left Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7145,7 +7179,7 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Horizontal Right changed to Left */
-        else if (ls_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+        else if (ls_Right_Pressed && e.value <= leftThreshold) {
             /* Need to send Left-Stick Horizontal Right Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7156,12 +7190,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else {
         /* Left-Stick Horizontal Release change to Right  */
-        if (e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+        if (e.value >= rightThreshold) {
             keycodeString = keycodeString_LS_Right_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Horizontal Release change to Left  */
-        else if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+        else if (e.value <= leftThreshold) {
             keycodeString = keycodeString_LS_Left_withoutIndex;
             keyupdown = KEY_DOWN;
         }
@@ -7188,10 +7222,21 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
 
 void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
 {
-    if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD
-        || e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD
-        || (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
-         && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD)) {
+    // Get Left-Stick Vertical thresholds dynamically
+    int releaseThreshold = QKeyMapper::getGamepadLeftStickReleaseThreshold();
+    int pressThreshold = QKeyMapper::getGamepadLeftStickPushThreshold();
+
+    // Calculate threshold values for Joystick event (-1~1 range)
+    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
+    // upThreshold = -(pressThreshold / 100.0), downThreshold = +(pressThreshold / 100.0)
+    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
+    qreal releaseMaxThreshold = releaseThreshold / 100.0;
+    qreal upThreshold = -(pressThreshold / 100.0);
+    qreal downThreshold = pressThreshold / 100.0;
+
+    if (e.value <= upThreshold
+        || e.value >= downThreshold
+        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
         /* range to process */
     }
     else {
@@ -7229,12 +7274,11 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
 
     if (ls_Up_Pressed || ls_Down_Pressed) {
         /* Left-Stick Vertical Up or Down changed to Release */
-        if (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD) {
+        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
             keyupdown = KEY_UP;
         }
         /* Left-Stick Vertical Up changed to Down */
-        else if (ls_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+        else if (ls_Up_Pressed && e.value >= downThreshold) {
             /* Need to send Left-Stick Vertical Up Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7243,7 +7287,7 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Vertical Down changed to Up */
-        else if (ls_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+        else if (ls_Down_Pressed && e.value <= upThreshold) {
             /* Need to send Left-Stick Vertical Down Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7254,12 +7298,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
     else {
         /* Left-Stick Vertical Release change to Down  */
-        if (e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+        if (e.value >= downThreshold) {
             keycodeString = keycodeString_LS_Down_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Left-Stick Vertical Release change to Up  */
-        else if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+        else if (e.value <= upThreshold) {
             keycodeString = keycodeString_LS_Up_withoutIndex;
             keyupdown = KEY_DOWN;
         }
@@ -7286,10 +7330,21 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
 
 void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
 {
-    if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD
-        || e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD
-        || (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD)) {
+    // Get Right-Stick Horizontal thresholds dynamically
+    int releaseThreshold = QKeyMapper::getGamepadRightStickReleaseThreshold();
+    int pressThreshold = QKeyMapper::getGamepadRightStickPushThreshold();
+
+    // Calculate threshold values for Joystick event (-1~1 range)
+    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
+    // leftThreshold = -(pressThreshold / 100.0), rightThreshold = +(pressThreshold / 100.0)
+    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
+    qreal releaseMaxThreshold = releaseThreshold / 100.0;
+    qreal leftThreshold = -(pressThreshold / 100.0);
+    qreal rightThreshold = pressThreshold / 100.0;
+
+    if (e.value <= leftThreshold
+        || e.value >= rightThreshold
+        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
         /* range to process */
     }
     else {
@@ -7327,12 +7382,11 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
 
     if (rs_Left_Pressed || rs_Right_Pressed) {
         /* Right-Stick Horizontal Left or Right changed to Release */
-        if (JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD) {
+        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
             keyupdown = KEY_UP;
         }
         /* Right-Stick Horizontal Left changed to Right */
-        else if (rs_Left_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+        else if (rs_Left_Pressed && e.value >= rightThreshold) {
             /* Need to send Right-Stick Horizontal Left Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7341,7 +7395,7 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Horizontal Right changed to Left */
-        else if (rs_Right_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+        else if (rs_Right_Pressed && e.value <= leftThreshold) {
             /* Need to send Right-Stick Horizontal Right Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7352,12 +7406,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else {
         /* Right-Stick Horizontal Release change to Right  */
-        if (e.value >= JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD) {
+        if (e.value >= rightThreshold) {
             keycodeString = keycodeString_RS_Right_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Horizontal Release change to Left  */
-        else if (e.value <= JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD) {
+        else if (e.value <= leftThreshold) {
             keycodeString = keycodeString_RS_Left_withoutIndex;
             keyupdown = KEY_DOWN;
         }
@@ -7384,10 +7438,21 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
 
 void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
 {
-    if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD
-        || e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD
-        || (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD)) {
+    // Get Right-Stick Vertical thresholds dynamically
+    int releaseThreshold = QKeyMapper::getGamepadRightStickReleaseThreshold();
+    int pressThreshold = QKeyMapper::getGamepadRightStickPushThreshold();
+
+    // Calculate threshold values for Joystick event (-1~1 range)
+    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
+    // upThreshold = -(pressThreshold / 100.0), downThreshold = +(pressThreshold / 100.0)
+    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
+    qreal releaseMaxThreshold = releaseThreshold / 100.0;
+    qreal upThreshold = -(pressThreshold / 100.0);
+    qreal downThreshold = pressThreshold / 100.0;
+
+    if (e.value <= upThreshold
+        || e.value >= downThreshold
+        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
         /* range to process */
     }
     else {
@@ -7425,12 +7490,11 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
 
     if (rs_Up_Pressed || rs_Down_Pressed) {
         /* Right-Stick Vertical Up or Down changed to Release */
-        if (JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD <= e.value
-            && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD) {
+        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
             keyupdown = KEY_UP;
         }
         /* Right-Stick Vertical Up changed to Down */
-        else if (rs_Up_Pressed && e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+        else if (rs_Up_Pressed && e.value >= downThreshold) {
             /* Need to send Right-Stick Vertical Up Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7439,7 +7503,7 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Vertical Down changed to Up */
-        else if (rs_Down_Pressed && e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+        else if (rs_Down_Pressed && e.value <= upThreshold) {
             /* Need to send Right-Stick Vertical Down Release first >>> */
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -7450,12 +7514,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
     else {
         /* Right-Stick Vertical Release change to Down  */
-        if (e.value >= JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD) {
+        if (e.value >= downThreshold) {
             keycodeString = keycodeString_RS_Down_withoutIndex;
             keyupdown = KEY_DOWN;
         }
         /* Right-Stick Vertical Release change to Up  */
-        else if (e.value <= JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD) {
+        else if (e.value <= upThreshold) {
             keycodeString = keycodeString_RS_Up_withoutIndex;
             keyupdown = KEY_DOWN;
         }

@@ -551,28 +551,28 @@ namespace QKeyMapperConstants {
 
     inline constexpr qreal JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD = 1e-04;
 
-    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER       = 0.15;
-    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER     = 0.5;
+    // inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_GAMECONTROLLER       = 0.15;
+    // inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_GAMECONTROLLER     = 0.5;
 
-    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK             = -0.7;
-    inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK           = 0;
+    // inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYUP_THRESHOLD_JOYSTICK             = -0.7;
+    // inline constexpr qreal JOYSTICK_AXIS_LT_RT_KEYDOWN_THRESHOLD_JOYSTICK           = 0;
 
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD                = -0.5;
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD              = 0.5;
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD       = -0.15;
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD       = 0.15;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_UP_THRESHOLD                = -0.5;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_DOWN_THRESHOLD              = 0.5;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MIN_THRESHOLD       = -0.15;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_VERTICAL_RELEASE_MAX_THRESHOLD       = 0.15;
 
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD            = -0.5;
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD           = 0.5;
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
-    inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_LEFT_THRESHOLD            = -0.5;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RIGHT_THRESHOLD           = 0.5;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MIN_THRESHOLD     = -0.15;
+    // inline constexpr qreal JOYSTICK_AXIS_LS_RS_HORIZONTAL_RELEASE_MAX_THRESHOLD     = 0.15;
 
     inline constexpr int GAMEPAD_THRESHOLD_PERCENT_MIN                          = 0;
     inline constexpr int GAMEPAD_THRESHOLD_PERCENT_MAX                          = 100;
     inline constexpr int GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT        = 50;
-    inline constexpr int GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT      = 30;
+    inline constexpr int GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT      = 15;
     inline constexpr int GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT           = 50;
-    inline constexpr int GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT        = 30;
+    inline constexpr int GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT        = 15;
 
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD  = -0.25;
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD  = -0.50;
