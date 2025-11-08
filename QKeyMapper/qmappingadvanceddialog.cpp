@@ -47,10 +47,10 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     ui->RT_Threshold_PressSpinBox->setValue(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
     ui->LT_Threshold_ReleaseSpinBox->setValue(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
     ui->RT_Threshold_ReleaseSpinBox->setValue(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-    ui->LS_Threshold_PushSpinBox->setValue(GAMEPAD_JOYSTICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
-    ui->RS_Threshold_PushSpinBox->setValue(GAMEPAD_JOYSTICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
-    ui->LS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_JOYSTICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-    ui->RS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_JOYSTICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+    ui->LS_Threshold_PushSpinBox->setValue(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
+    ui->RS_Threshold_PushSpinBox->setValue(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
+    ui->LS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+    ui->RS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
 
     ui->LT_Threshold_PressSpinBox->setSuffix("%");
     ui->RT_Threshold_PressSpinBox->setSuffix("%");

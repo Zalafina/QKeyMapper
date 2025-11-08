@@ -571,8 +571,8 @@ namespace QKeyMapperConstants {
     inline constexpr int GAMEPAD_THRESHOLD_PERCENT_MAX                          = 100;
     inline constexpr int GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT        = 50;
     inline constexpr int GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT      = 30;
-    inline constexpr int GAMEPAD_JOYSTICK_PUSH_THRESHOLD_PERCENT_DEFAULT        = 50;
-    inline constexpr int GAMEPAD_JOYSTICK_RELEASE_THRESHOLD_PERCENT_DEFAULT     = 30;
+    inline constexpr int GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT           = 50;
+    inline constexpr int GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT        = 30;
 
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_LOW_THRESHOLD  = -0.25;
     inline constexpr qreal JOYSTICK2MOUSE_AXIS_MINUS_MID_THRESHOLD  = -0.50;
@@ -892,6 +892,14 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEY2MOUSE_X_SPEED[] = "Key2Mouse_XSpeed";
     inline constexpr const char KEY2MOUSE_Y_SPEED[] = "Key2Mouse_YSpeed";
     inline constexpr const char KEY2MOUSE_POLLING_INTERVAL[] = "Key2Mouse_PollingInterval";
+    inline constexpr const char GAMEPAD_LT_THRESHOLD_PRESS[]    = "Gamepad_LT_Threshold_Press";
+    inline constexpr const char GAMEPAD_LT_THRESHOLD_RELEASE[]  = "Gamepad_LT_Threshold_Release";
+    inline constexpr const char GAMEPAD_RT_THRESHOLD_PRESS[]    = "Gamepad_RT_Threshold_Press";
+    inline constexpr const char GAMEPAD_RT_THRESHOLD_RELEASE[]  = "Gamepad_RT_Threshold_Release";
+    inline constexpr const char GAMEPAD_LS_THRESHOLD_PUSH[]     = "Gamepad_LS_Threshold_Push";
+    inline constexpr const char GAMEPAD_LS_THRESHOLD_RELEASE[]  = "Gamepad_LS_Threshold_Release";
+    inline constexpr const char GAMEPAD_RS_THRESHOLD_PUSH[]     = "Gamepad_RS_Threshold_Push";
+    inline constexpr const char GAMEPAD_RS_THRESHOLD_RELEASE[]  = "Gamepad_RS_Threshold_Release";
 
     inline constexpr const char GYRO2MOUSE_X_SPEED[] = "Gyro2Mouse_XSpeed";
     inline constexpr const char GYRO2MOUSE_Y_SPEED[] = "Gyro2Mouse_YSpeed";
