@@ -2881,7 +2881,7 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <location filename="../qmappingadvanceddialog.cpp" line="98"/>
         <location filename="../qmappingadvanceddialog.cpp" line="99"/>
         <source>Recenter</source>
-        <translation>戻る</translation>
+        <translation>戻す</translation>
     </message>
     <message>
         <location filename="../qmappingadvanceddialog.ui" line="291"/>

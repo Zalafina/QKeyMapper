@@ -2856,7 +2856,7 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qmappingadvanceddialog.cpp" line="96"/>
         <location filename="../qmappingadvanceddialog.cpp" line="97"/>
         <source>Release</source>
-        <translation>松开</translation>
+        <translation>释放</translation>
     </message>
     <message>
         <location filename="../qmappingadvanceddialog.ui" line="259"/>
@@ -2872,7 +2872,7 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qmappingadvanceddialog.cpp" line="94"/>
         <location filename="../qmappingadvanceddialog.cpp" line="95"/>
         <source>Push</source>
-        <translation>推杆</translation>
+        <translation>推动</translation>
     </message>
     <message>
         <location filename="../qmappingadvanceddialog.ui" line="166"/>
