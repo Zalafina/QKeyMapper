@@ -846,6 +846,25 @@ Update</string>
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QPushButton" name="macroListButton">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>175</y>
+     <width>101</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Macro List</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
   <zorder>burstCheckBox</zorder>
   <zorder>lockCheckBox</zorder>
   <zorder>passThroughCheckBox</zorder>
@@ -889,6 +908,7 @@ Update</string>
   <zorder>updateMappingInfoButton</zorder>
   <zorder>disableOriginalKeyUnlockCheckBox</zorder>
   <zorder>disableFnKeySwitchCheckBox</zorder>
+  <zorder>macroListButton</zorder>
  </widget>
  <resources/>
  <connections/>

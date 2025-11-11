@@ -81,6 +81,7 @@
 #include "qstartuppositiondialog.h"
 #include "qmappingadvanceddialog.h"
 #include "qignorewindowinfolistdialog.h"
+#include "qmacrolistdialog.h"
 
 struct InputDeviceInfo
 {
@@ -1428,6 +1429,10 @@ private:
     void closeIgnoreRulesListDialog(void);
     void showMappingAdvancedDialog(void);
     void closeMappingAdvancedDialog(void);
+public:
+    void showMacroListDialog(void);
+    void closeMacroListDialog(void);
+private:
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
     void closeCrosshairSetupDialog(void);
@@ -1473,6 +1478,8 @@ public:
     static double s_DisplayScale;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
     static OrderedMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
+    static OrderedMap<QString, MappingMacroData> s_MappingMacroList;
+    static OrderedMap<QString, MappingMacroData> s_GlobalMappingMacroList;
     static int s_KeyMappingTabWidgetCurrentIndex;
     static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;
@@ -1566,6 +1573,7 @@ private:
     QStartupPositionDialog *m_StartupPositionDialog = Q_NULLPTR;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
+    QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     SettingTransferDialog *m_SettingTransferDialog = Q_NULLPTR;

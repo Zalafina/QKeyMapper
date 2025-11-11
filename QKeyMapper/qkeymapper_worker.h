@@ -279,6 +279,12 @@ typedef struct MAP_KEYDATA
 #endif
 }MAP_KEYDATA_st;
 
+struct MappingMacroData
+{
+    QString MappingMacro;
+    QString Category;
+};
+
 typedef struct V_KEYCODE
 {
     quint8 KeyCode;
@@ -875,9 +881,9 @@ public slots:
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
-    GripDetectStates checkGripDetectEnableState(void);
+    QKeyMapper_Worker::GripDetectStates checkGripDetectEnableState(void);
     // Joy2vJoyState checkJoy2vJoyState(void);
-    QHash<int, Joy2vJoyState> checkJoy2vJoyEnableStateMap(void);
+    QHash<int, QKeyMapper_Worker::Joy2vJoyState> checkJoy2vJoyEnableStateMap(void);
     void processUdpPendingDatagrams(void);
     void processForzaFormatData(const QByteArray &forzadata);
 
@@ -906,7 +912,7 @@ public slots:
     void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
     // Joy2MouseStates checkJoystick2MouseEnableState(void);
-    QHash<int, Joy2MouseStates> checkJoy2MouseEnableStateMap(void);
+    QHash<int, QKeyMapper_Worker::Joy2MouseStates> checkJoy2MouseEnableStateMap(void);
     bool checkKey2MouseEnableState(void);
     bool checkGyro2MouseEnableState(void);
     bool checkGyro2MouseMoveActiveState(void);

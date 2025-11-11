@@ -173,6 +173,7 @@ HEADERS     += \
     qignorewindowinfolistdialog.h \
     qitemsetupdialog.h \
     qkeyrecord.h \
+    qmacrolistdialog.h \
     qmappingadvanceddialog.h \
     qnotificationsetupdialog.h \
     qstartuppositiondialog.h \
@@ -198,6 +199,7 @@ SOURCES     += \
     qkeymapper.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
+    qmacrolistdialog.cpp \
     qmappingadvanceddialog.cpp \
     qnotificationsetupdialog.cpp \
     qstartuppositiondialog.cpp \
@@ -231,6 +233,7 @@ FORMS       += \
     qitemsetupdialog.ui \
     qkeymapper.ui \
     qkeyrecord.ui \
+    qmacrolistdialog.ui \
     qmappingadvanceddialog.ui \
     qnotificationsetupdialog.ui \
     qstartuppositiondialog.ui \

@@ -21,6 +21,8 @@ QList<HWND> QKeyMapper::s_last_HWNDList;
 double QKeyMapper::s_DisplayScale = 1.0;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
 OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
+OrderedMap<QString, MappingMacroData> QKeyMapper::s_MappingMacroList;
+OrderedMap<QString, MappingMacroData> QKeyMapper::s_GlobalMappingMacroList;
 int QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = 0;
 int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
@@ -488,6 +490,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_StartupPositionDialog = new QStartupPositionDialog(this);
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
+    m_MacroListDialog = new QMacroListDialog(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
@@ -7149,6 +7152,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeSelectColorDialog();
             closeTableSetupDialog();
             closeFloatingWindowSetupDialog();
+            closeMacroListDialog();
             closeItemSetupDialog();
             closeIgnoreRulesListDialog();
             closeCrosshairSetupDialog();
@@ -7501,6 +7505,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         closeSelectColorDialog();
         closeTableSetupDialog();
         closeFloatingWindowSetupDialog();
+        closeMacroListDialog();
         closeItemSetupDialog();
         closeIgnoreRulesListDialog();
         closeCrosshairSetupDialog();
@@ -10798,6 +10803,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
 #endif
+    closeMacroListDialog();
 
     bool loadDefault = false;
     bool loadGlobalSetting = false;
@@ -16020,6 +16026,10 @@ void QKeyMapper::closeIgnoreRulesListDialog()
 
 void QKeyMapper::showMappingAdvancedDialog()
 {
+    if (Q_NULLPTR == m_MappingAdvancedDialog) {
+        return;
+    }
+
     if (!m_MappingAdvancedDialog->isVisible()) {
         m_MappingAdvancedDialog->show();
     }
@@ -16033,6 +16043,28 @@ void QKeyMapper::closeMappingAdvancedDialog()
 
     if (m_MappingAdvancedDialog->isVisible()) {
         m_MappingAdvancedDialog->close();
+    }
+}
+
+void QKeyMapper::showMacroListDialog()
+{
+    if (Q_NULLPTR == m_MacroListDialog) {
+        return;
+    }
+
+    if (!m_MacroListDialog->isVisible()) {
+        m_MacroListDialog->show();
+    }
+}
+
+void QKeyMapper::closeMacroListDialog()
+{
+    if (Q_NULLPTR == m_MacroListDialog) {
+        return;
+    }
+
+    if (m_MacroListDialog->isVisible()) {
+        m_MacroListDialog->close();
     }
 }
 
@@ -17499,6 +17531,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
             closeIgnoreRulesListDialog();
+            closeMacroListDialog();
             closeTableSetupDialog();
             closeItemSetupDialog();
             closeSettingTransferDialog();
@@ -17547,6 +17580,7 @@ void QKeyMapper::forceHide()
         closeInputDeviceListWindow();
         closeTableSetupDialog();
         closeFloatingWindowSetupDialog();
+        closeMacroListDialog();
         closeItemSetupDialog();
         closeIgnoreRulesListDialog();
         closeCrosshairSetupDialog();
@@ -19861,6 +19895,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_MappingAdvancedDialog != Q_NULLPTR) {
         m_MappingAdvancedDialog->setUILanguage(languageindex);
+    }
+
+    if (m_MacroListDialog != Q_NULLPTR) {
+        m_MacroListDialog->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
