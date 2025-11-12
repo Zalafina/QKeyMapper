@@ -401,7 +401,7 @@ struct ViGEm_ReportData
 
 struct SendInputTaskController {
     QThreadPool *task_threadpool;
-    QAtomicInt *task_stop_flag;
+    QAtomicInt *task_stop_flag; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
     QMutex *task_stop_mutex;
     QWaitCondition *task_stop_condition;
     int sendvirtualkey_state;
@@ -747,6 +747,7 @@ public:
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
+public:
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void sendUnicodeChar(wchar_t aChar);
     void sendText(HWND window_hwnd, const QString& text);
@@ -765,16 +766,18 @@ public slots:
     void setMouseToPoint(POINT point);
     void setMouseToScreenBottomRight(void);
     POINT mousePositionAfterSetMouseToScreenBottomRight(void);
-#ifdef VIGEM_CLIENT_SUPPORT
+public slots:
     void onMouseMove(int delta_x, int delta_y, int mouse_index);
     // void onMouse2vJoyResetTimeout(void);
+public:
     void initMouse2vJoyResetTimerMap(void);
     void stopMouse2vJoyResetTimerMap(void);
     void onMouse2vJoyResetTimeoutForMap(int mouse_index);
-#endif
+public slots:
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
     void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+public:
     void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);

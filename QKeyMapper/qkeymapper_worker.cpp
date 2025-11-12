@@ -1030,7 +1030,6 @@ POINT QKeyMapper_Worker::mousePositionAfterSetMouseToScreenBottomRight()
     return pt;
 }
 
-#ifdef VIGEM_CLIENT_SUPPORT
 void QKeyMapper_Worker::onMouseMove(int delta_x, int delta_y, int mouse_index)
 {
     // Q_UNUSED(delta_x);
@@ -1141,7 +1140,6 @@ void QKeyMapper_Worker::onKey2MouseCycleTimeout()
         key2MouseMoveProc();
     }
 }
-#endif
 
 void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
 {
@@ -6272,7 +6270,7 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
         powerLevelStr = "Unknown";
     }
 
-    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9, PowerLevel=%10")
+    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9, PowerLevel=%10") // NOLINT(clazy-qstring-arg)
         .arg(joystick_added->name)
         .arg(joystick_added->playerindex)
         .arg(joystick_added->id)
@@ -6306,7 +6304,7 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
         // Build debug message for a blacklisted virtual gamepad.
         // Note: use single-argument arg() chaining to avoid placeholder re-numbering issues.
         QString debugmessage =
-            QString("[onJoystickAdded] VirtualGamepad[%1] PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, is Blacklisted!")
+            QString("[onJoystickAdded] VirtualGamepad[%1] PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, is Blacklisted!") // NOLINT(clazy-qstring-arg)
                 .arg(joystick_added->name)              // %1 -> device name
                 .arg(joystick_added->playerindex)       // %2 -> player index
                 .arg(joystick_added->id)                // %3 -> internal id
@@ -6328,7 +6326,7 @@ void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed
 
     // Build message with strictly ordered single-arg replacements
     QString debugmessage =
-        QString("[onJoystickRemoved] Removed a Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7")
+        QString("[onJoystickRemoved] Removed a Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7") // NOLINT(clazy-qstring-arg)
             .arg(joystick_removed.name)
             .arg(joystick_removed.playerindex)
             .arg(joystick_removed.id)
