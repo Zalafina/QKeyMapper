@@ -747,10 +747,13 @@ public:
 public slots:
     void sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
+private:
+    HWND findFocusedEditControl(HWND window_hwnd);
 public:
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void sendUnicodeChar(wchar_t aChar);
     void sendText(HWND window_hwnd, const QString& text);
+    void pasteText(HWND window_hwnd, const QString& text);
     void sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));

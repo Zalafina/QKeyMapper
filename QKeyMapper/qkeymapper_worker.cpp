@@ -317,6 +317,69 @@ void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
     SendInput(2, u_input, sizeof(INPUT));
 }
 
+HWND QKeyMapper_Worker::findFocusedEditControl(HWND window_hwnd)
+{
+    if (window_hwnd == NULL) {
+        return NULL;
+    }
+
+    // Try to get the focused control using GetFocus()
+    // Note: GetFocus() only works for windows in the same thread
+    DWORD windowThreadId = GetWindowThreadProcessId(window_hwnd, NULL);
+    DWORD currentThreadId = GetCurrentThreadId();
+
+    HWND hFocusWnd = NULL;
+    bool threadAttached = false;
+
+    // Attach to the window's thread to get its focus
+    if (windowThreadId != currentThreadId) {
+        threadAttached = AttachThreadInput(currentThreadId, windowThreadId, TRUE);
+    }
+
+    if (threadAttached || windowThreadId == currentThreadId) {
+        hFocusWnd = GetFocus();
+
+        // Verify the focused window is a child of our target window
+        if (hFocusWnd != NULL && !IsChild(window_hwnd, hFocusWnd) && hFocusWnd != window_hwnd) {
+            hFocusWnd = NULL;
+        }
+    }
+
+    // Detach thread input if we attached it
+    if (threadAttached) {
+        AttachThreadInput(currentThreadId, windowThreadId, FALSE);
+    }
+
+    // If we found a focused window, check if it's an edit control
+    if (hFocusWnd != NULL) {
+        wchar_t className[256] = {0};
+        if (GetClassName(hFocusWnd, className, 256) > 0) {
+            // Check if it's one of the known edit control types
+            static const wchar_t* editClassNames[] = {
+                L"Edit",
+                L"RichEdit",
+                L"RichEdit20W",
+                L"RichEdit50W",
+                L"Scintilla",
+                nullptr
+            };
+
+            for (int i = 0; editClassNames[i] != nullptr; ++i) {
+                if (wcscmp(className, editClassNames[i]) == 0) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().noquote().nospace() << "[findFocusedEditControl] Found focused edit control: 0x"
+                                                  << Qt::hex << reinterpret_cast<quintptr>(hFocusWnd)
+                                                  << " (" << QString::fromWCharArray(className) << ")";
+#endif
+                    return hFocusWnd;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
 {
     if (text.isEmpty()) {
@@ -326,20 +389,26 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
     if (window_hwnd != NULL) {
         // Try to find edit control in the target window
         HWND hEditWnd = NULL;
-        HWND targetWnd = (window_hwnd == QKeyMapper::s_CurrentMappingHWND) ? window_hwnd : QKeyMapper::s_CurrentMappingHWND;
+        HWND targetWnd = window_hwnd;
 
-        // Try common edit control class names
-        static const wchar_t* editClassNames[] = {
-            L"Edit",            // Standard edit control
-            L"RichEdit",        // Rich edit control (old)
-            L"RichEdit20W",     // Rich edit 2.0
-            L"RichEdit50W",     // Rich edit 5.0+
-            L"Scintilla",       // Scintilla editor (Notepad++, etc.)
-            nullptr
-        };
+        // First, try to find the focused edit control (where the cursor is)
+        hEditWnd = findFocusedEditControl(targetWnd);
 
-        for (int i = 0; editClassNames[i] != nullptr && hEditWnd == NULL; ++i) {
-            hEditWnd = FindWindowEx(targetWnd, NULL, editClassNames[i], NULL);
+        // If no focused control found, fallback to searching for any edit control
+        if (hEditWnd == NULL) {
+            // Try common edit control class names
+            static const wchar_t* editClassNames[] = {
+                L"Edit",            // Standard edit control
+                L"RichEdit",        // Rich edit control (old)
+                L"RichEdit20W",     // Rich edit 2.0
+                L"RichEdit50W",     // Rich edit 5.0+
+                L"Scintilla",       // Scintilla editor (Notepad++, etc.)
+                nullptr
+            };
+
+            for (int i = 0; editClassNames[i] != nullptr && hEditWnd == NULL; ++i) {
+                hEditWnd = FindWindowEx(targetWnd, NULL, editClassNames[i], NULL);
+            }
         }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -389,6 +458,221 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
             sendUnicodeChar(wchar);
         }
     }
+}
+
+void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
+{
+    if (text.isEmpty()) {
+        return;
+    }
+
+    // Save current clipboard content
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    QString originalText = clipboard->text();
+    QClipboard::Mode originalMode = clipboard->ownsClipboard() ? QClipboard::Clipboard : QClipboard::Selection;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().noquote().nospace() << "[pasteText] Text length: " << text.length()
+                                  << ", TargetWnd: 0x" << Qt::hex << reinterpret_cast<quintptr>(window_hwnd);
+#endif
+
+    // Set new text to clipboard
+    clipboard->setText(text, QClipboard::Clipboard);
+
+    // Wait for clipboard to be ready
+    QThread::msleep(50);
+
+    if (window_hwnd != NULL) {
+        // Try to find edit control in the target window
+        HWND hEditWnd = NULL;
+        HWND targetWnd = window_hwnd;
+
+        // First, try to find the focused edit control (where the cursor is)
+        hEditWnd = findFocusedEditControl(targetWnd);
+
+        // If no focused control found, fallback to searching for any edit control
+        if (hEditWnd == NULL) {
+            // Try common edit control class names
+            static const wchar_t* editClassNames[] = {
+                L"Edit",            // Standard edit control
+                L"RichEdit",        // Rich edit control (old)
+                L"RichEdit20W",     // Rich edit 2.0
+                L"RichEdit50W",     // Rich edit 5.0+
+                L"Scintilla",       // Scintilla editor (Notepad++, etc.)
+                nullptr
+            };
+
+            for (int i = 0; editClassNames[i] != nullptr && hEditWnd == NULL; ++i) {
+                hEditWnd = FindWindowEx(targetWnd, NULL, editClassNames[i], NULL);
+            }
+        }
+
+        bool pasteSuccess = false;
+
+        if (hEditWnd != NULL) {
+            // Try WM_PASTE message first (works for most standard edit controls)
+            LRESULT result = 0;
+            DWORD_PTR dwResult = 0;
+            result = SendMessageTimeout(
+                hEditWnd,
+                WM_PASTE,
+                0,
+                0,
+                SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
+                SENDMESSAGE_TIMEOUT * 2,  // Double timeout for paste operation
+                &dwResult
+            );
+
+            pasteSuccess = (result != 0);
+
+#ifdef DEBUG_LOGOUT_ON
+            wchar_t className[256] = {0};
+            if (GetClassName(hEditWnd, className, 256) > 0) {
+                qDebug().noquote().nospace() << "[pasteText] WM_PASTE to EditWnd: 0x" << Qt::hex << reinterpret_cast<quintptr>(hEditWnd)
+                                              << " (" << QString::fromWCharArray(className) << "), result: " << (pasteSuccess ? "Success" : "Failed");
+            }
+#endif
+        }
+
+        // If WM_PASTE failed or no edit control found, simulate Ctrl+V key press
+        if (!pasteSuccess) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[pasteText] Falling back to Ctrl+V simulation";
+#endif
+
+            // Check if target window or any of its ancestors is the foreground window
+            HWND foregroundWnd = GetForegroundWindow();
+            bool isTargetForeground = false;
+
+            if (foregroundWnd != NULL) {
+                // Check if foreground window is the target or target is a child of foreground
+                if (foregroundWnd == targetWnd || IsChild(foregroundWnd, targetWnd)) {
+                    isTargetForeground = true;
+                }
+                else {
+                    // Check if target window is an ancestor of foreground window
+                    HWND parentWnd = foregroundWnd;
+                    while (parentWnd != NULL) {
+                        parentWnd = GetParent(parentWnd);
+                        if (parentWnd == targetWnd) {
+                            isTargetForeground = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!isTargetForeground) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace() << "[pasteText] Target window 0x" << Qt::hex << reinterpret_cast<quintptr>(targetWnd)
+                                              << " is not foreground (foreground is 0x" << reinterpret_cast<quintptr>(foregroundWnd)
+                                              << "), skipping Ctrl+V simulation";
+#endif
+                // Restore clipboard and return
+                if (!originalText.isEmpty()) {
+                    clipboard->setText(originalText, originalMode);
+                } else {
+                    clipboard->clear();
+                }
+                return;
+            }
+
+            // Simulate Ctrl key down
+            INPUT ctrlDown;
+            ctrlDown.type = INPUT_KEYBOARD;
+            ctrlDown.ki.wVk = VK_CONTROL;
+            ctrlDown.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+            ctrlDown.ki.dwFlags = 0;
+            ctrlDown.ki.time = 0;
+            ctrlDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+            // Simulate V key down
+            INPUT vDown;
+            vDown.type = INPUT_KEYBOARD;
+            vDown.ki.wVk = 'V';
+            vDown.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
+            vDown.ki.dwFlags = 0;
+            vDown.ki.time = 0;
+            vDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+            // Simulate V key up
+            INPUT vUp;
+            vUp.type = INPUT_KEYBOARD;
+            vUp.ki.wVk = 'V';
+            vUp.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
+            vUp.ki.dwFlags = KEYEVENTF_KEYUP;
+            vUp.ki.time = 0;
+            vUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+            // Simulate Ctrl key up
+            INPUT ctrlUp;
+            ctrlUp.type = INPUT_KEYBOARD;
+            ctrlUp.ki.wVk = VK_CONTROL;
+            ctrlUp.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+            ctrlUp.ki.dwFlags = KEYEVENTF_KEYUP;
+            ctrlUp.ki.time = 0;
+            ctrlUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+            // Send all inputs as a sequence
+            INPUT inputs[4] = {ctrlDown, vDown, vUp, ctrlUp};
+            SendInput(4, inputs, sizeof(INPUT));
+        }
+    }
+    else {
+        // No valid window handle, simulate Ctrl+V globally
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[pasteText] No window handle, simulating Ctrl+V globally";
+#endif
+
+        // Simulate Ctrl+V key press
+        INPUT ctrlDown, vDown, vUp, ctrlUp;
+
+        ctrlDown.type = INPUT_KEYBOARD;
+        ctrlDown.ki.wVk = VK_CONTROL;
+        ctrlDown.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+        ctrlDown.ki.dwFlags = 0;
+        ctrlDown.ki.time = 0;
+        ctrlDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+        vDown.type = INPUT_KEYBOARD;
+        vDown.ki.wVk = 'V';
+        vDown.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
+        vDown.ki.dwFlags = 0;
+        vDown.ki.time = 0;
+        vDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+        vUp.type = INPUT_KEYBOARD;
+        vUp.ki.wVk = 'V';
+        vUp.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
+        vUp.ki.dwFlags = KEYEVENTF_KEYUP;
+        vUp.ki.time = 0;
+        vUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+        ctrlUp.type = INPUT_KEYBOARD;
+        ctrlUp.ki.wVk = VK_CONTROL;
+        ctrlUp.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+        ctrlUp.ki.dwFlags = KEYEVENTF_KEYUP;
+        ctrlUp.ki.time = 0;
+        ctrlUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+
+        INPUT inputs[4] = {ctrlDown, vDown, vUp, ctrlUp};
+        SendInput(4, inputs, sizeof(INPUT));
+    }
+
+    // Wait for paste operation to complete
+    QThread::msleep(100);
+
+    // Restore original clipboard content
+    if (!originalText.isEmpty()) {
+        clipboard->setText(originalText, originalMode);
+    } else {
+        // Clear clipboard if it was empty
+        clipboard->clear();
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[pasteText] Clipboard restored";
+#endif
 }
 
 void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
@@ -2048,6 +2332,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     releaseKeyboardModifiersDirect(modifiers_arg);
 
                     sendText(QKeyMapper::s_CurrentMappingHWND, text);
+                    // pasteText(QKeyMapper::s_CurrentMappingHWND, text);
                 }
                 else if (runcmd_match.hasMatch()) {
                     QString run_cmd = runcmd_match.captured(1);
@@ -14359,7 +14644,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
