@@ -319,35 +319,71 @@ void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
 
 void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
 {
+    if (text.isEmpty()) {
+        return;
+    }
+
     if (window_hwnd != NULL) {
-        HWND hWnd = NULL;
-        hWnd = FindWindowEx(QKeyMapper::s_CurrentMappingHWND, NULL, L"Edit", NULL);
-        if (hWnd == NULL) {
-            hWnd = FindWindowEx(QKeyMapper::s_CurrentMappingHWND, NULL, L"Scintilla", NULL);
+        // Try to find edit control in the target window
+        HWND hEditWnd = NULL;
+        HWND targetWnd = (window_hwnd == QKeyMapper::s_CurrentMappingHWND) ? window_hwnd : QKeyMapper::s_CurrentMappingHWND;
+
+        // Try common edit control class names
+        static const wchar_t* editClassNames[] = {
+            L"Edit",            // Standard edit control
+            L"RichEdit",        // Rich edit control (old)
+            L"RichEdit20W",     // Rich edit 2.0
+            L"RichEdit50W",     // Rich edit 5.0+
+            L"Scintilla",       // Scintilla editor (Notepad++, etc.)
+            nullptr
+        };
+
+        for (int i = 0; editClassNames[i] != nullptr && hEditWnd == NULL; ++i) {
+            hEditWnd = FindWindowEx(targetWnd, NULL, editClassNames[i], NULL);
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        const wchar_t* foundClassName = L"None";
+        if (hEditWnd != NULL) {
+            wchar_t className[256];
+            if (GetClassName(hEditWnd, className, 256) > 0) {
+                foundClassName = className;
+            }
+        }
+        qDebug().noquote().nospace() << "[sendText] Text: \"" << text << "\", TargetWnd: 0x" << Qt::hex << reinterpret_cast<quintptr>(targetWnd)
+                                    << ", EditWnd: 0x" << reinterpret_cast<quintptr>(hEditWnd) << " (" << QString::fromWCharArray(foundClassName) << ")";
+#endif
 
         for (const QChar &ch : text) {
             wchar_t wchar = ch.unicode();
-            if (hWnd != NULL) {
-                SendMessageTimeout(
-                    hWnd,
+            if (hEditWnd != NULL) {
+                LRESULT result = 0;
+                DWORD_PTR dwResult = 0;
+                result = SendMessageTimeout(
+                    hEditWnd,
                     WM_CHAR,
                     wchar,
                     0,
                     SMTO_ABORTIFHUNG | SMTO_BLOCK | SMTO_ERRORONEXIT,
                     SENDMESSAGE_TIMEOUT,
-                    nullptr
+                    &dwResult
                 );
+
+                // If SendMessageTimeout fails, fallback to SendInput
+                if (result == 0) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[sendText] SendMessageTimeout failed for char:" << ch << ", falling back to SendInput";
+#endif
+                    sendUnicodeChar(wchar);
+                }
             } else {
+                // No edit control found, use SendInput
                 sendUnicodeChar(wchar);
             }
         }
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[sendText]" << "SendText ->" << text << ", hWnd =" << hWnd;
-#endif
     }
     else {
+        // No valid window handle, use SendInput
         for (const QChar &ch : text) {
             wchar_t wchar = ch.unicode();
             sendUnicodeChar(wchar);
