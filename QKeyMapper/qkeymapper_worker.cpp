@@ -8757,6 +8757,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
+    bool isBlockable = true;
     bool returnFlag = false;
     V_KEYCODE vkeycode;
     vkeycode.KeyCode = (quint8)pKeyBoard->vkCode;
@@ -9081,6 +9082,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                     if (PassThrough && returnFlag) {
                         returnFlag = false;
+                        isBlockable = false;
 #ifdef DEBUG_LOGOUT_ON
                         QString keyUpDown;
                         if (KEY_DOWN == keyupdown){
@@ -9276,9 +9278,24 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #endif
     }
 
-    if (s_BlockKeyboard) {
+    if (s_BlockKeyboard
+        && extraInfo != VIRTUAL_KEY_SEND
+        && extraInfo != VIRTUAL_KEY_OVERLAY
+        && extraInfo != VIRTUAL_CUSTOM_KEYS
+        && !returnFlag
+        && isBlockable) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[LowLevelKeyboardHookProc] s_BlockKeyboard = true, s_AtomicHookProcState =" << s_AtomicHookProcState;
+        const char* keyEventType = (WM_KEYDOWN == wParam) ? "KeyDown is Blocked" :
+                                    (WM_KEYUP == wParam) ? "KeyUp is Blocked" :
+                                    (WM_SYSKEYDOWN == wParam) ? "SysKeyDown is Blocked" :
+                                    (WM_SYSKEYUP == wParam) ? "SysKeyUp is Blocked" : "Unknown is Blocked";
+        QByteArray keyNameBytes = keycodeString.toUtf8();
+        const char* keyName = keyNameBytes.constData();
+
+        qDebug("[LowLevelKeyboardHookProc] RealKey: \"%s\" (0x%02X) %s, s_AtomicHookProcState(%d), scanCode(0x%08X), flags(0x%08X), ExtenedFlag(%s), extraInfo(0x%08X)",
+               keyName, pKeyBoard->vkCode, keyEventType, s_AtomicHookProcState.loadRelaxed(),
+               pKeyBoard->scanCode, pKeyBoard->flags,
+               vkeycode.ExtenedFlag==EXTENED_FLAG_TRUE?"true":"false", extraInfo);
 #endif
         return (LRESULT)TRUE;
     }
@@ -9308,6 +9325,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
+    bool isBlockable = true;
     bool returnFlag = false;
     if ((wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)
         || (wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP)
@@ -9689,6 +9707,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                         if (PassThrough && returnFlag) {
                             returnFlag = false;
+                            isBlockable = false;
 #ifdef DEBUG_LOGOUT_ON
                             QString keyUpDown;
                             if (KEY_DOWN == keyupdown){
@@ -9959,6 +9978,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
                         if (PassThrough && returnFlag) {
                             returnFlag = false;
+                            isBlockable = false;
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().noquote().nospace() << "[LowLevelMouseHookProc]" << "PassThrough MouseWheel[" << original_key << "]";
 #endif
@@ -9979,7 +9999,10 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> X =" << pMouse->pt.x << ", Y =" << pMouse->pt.y << ", extraInfoStr =" << extraInfoStr;
 #endif
 
-        if (Interception_Worker::s_InterceptStart != true && extraInfo != VIRTUAL_MOUSE_MOVE && extraInfo != VIRTUAL_MOUSE_POINTCLICK) {
+        if (Interception_Worker::s_InterceptStart != true
+            && extraInfo != VIRTUAL_MOUSE_MOVE
+            && extraInfo != VIRTUAL_MOUSE_MOVE_BYKEYS
+            && extraInfo != VIRTUAL_MOUSE_POINTCLICK) {
             // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE) {
             if (!s_Mouse2vJoy_EnableStateMap.isEmpty()) {
                 /* Add extraInfo check for Multi InputDevice */
@@ -10021,7 +10044,15 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 #endif
 
-    if (s_BlockMouse) {
+    if (s_BlockMouse
+        && extraInfo != VIRTUAL_KEY_SEND
+        && extraInfo != VIRTUAL_KEY_OVERLAY
+        && extraInfo != VIRTUAL_MOUSE_POINTCLICK
+        && extraInfo != VIRTUAL_MOUSE_WHEEL
+        && extraInfo != VIRTUAL_MOUSE_MOVE_BYKEYS
+        && extraInfo != VIRTUAL_MOUSE_MOVE
+        && !returnFlag
+        && isBlockable) {
         return (LRESULT)TRUE;
     }
     else if (true == returnFlag){
