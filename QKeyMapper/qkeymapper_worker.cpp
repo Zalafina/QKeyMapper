@@ -317,6 +317,16 @@ void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
     SendInput(2, u_input, sizeof(INPUT));
 }
 
+// Common edit control class names for searching
+// static const wchar_t* EDIT_CONTROL_CLASSNAMES[] = {
+//     L"Edit",            // Standard edit control
+//     L"RichEdit",        // Rich edit control (old)
+//     L"RichEdit20W",     // Rich edit 2.0
+//     L"RichEdit50W",     // Rich edit 5.0+
+//     L"Scintilla",       // Scintilla editor (Notepad++, etc.)
+//     nullptr
+// };
+
 HWND QKeyMapper_Worker::findFocusedEditControl(HWND window_hwnd)
 {
     if (window_hwnd == NULL) {
@@ -355,17 +365,8 @@ HWND QKeyMapper_Worker::findFocusedEditControl(HWND window_hwnd)
         wchar_t className[256] = {0};
         if (GetClassName(hFocusWnd, className, 256) > 0) {
             // Check if it's one of the known edit control types
-            static const wchar_t* editClassNames[] = {
-                L"Edit",
-                L"RichEdit",
-                L"RichEdit20W",
-                L"RichEdit50W",
-                L"Scintilla",
-                nullptr
-            };
-
-            for (int i = 0; editClassNames[i] != nullptr; ++i) {
-                if (wcscmp(className, editClassNames[i]) == 0) {
+            for (int i = 0; EDIT_CONTROL_CLASSNAMES[i] != nullptr; ++i) {
+                if (wcscmp(className, EDIT_CONTROL_CLASSNAMES[i]) == 0) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().noquote().nospace() << "[findFocusedEditControl] Found focused edit control: 0x"
                                                   << Qt::hex << reinterpret_cast<quintptr>(hFocusWnd)
@@ -396,18 +397,8 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
 
         // If no focused control found, fallback to searching for any edit control
         if (hEditWnd == NULL) {
-            // Try common edit control class names
-            static const wchar_t* editClassNames[] = {
-                L"Edit",            // Standard edit control
-                L"RichEdit",        // Rich edit control (old)
-                L"RichEdit20W",     // Rich edit 2.0
-                L"RichEdit50W",     // Rich edit 5.0+
-                L"Scintilla",       // Scintilla editor (Notepad++, etc.)
-                nullptr
-            };
-
-            for (int i = 0; editClassNames[i] != nullptr && hEditWnd == NULL; ++i) {
-                hEditWnd = FindWindowEx(targetWnd, NULL, editClassNames[i], NULL);
+            for (int i = 0; EDIT_CONTROL_CLASSNAMES[i] != nullptr && hEditWnd == NULL; ++i) {
+                hEditWnd = FindWindowEx(targetWnd, NULL, EDIT_CONTROL_CLASSNAMES[i], NULL);
             }
         }
 
@@ -466,21 +457,99 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         return;
     }
 
-    // Save current clipboard content
-    QClipboard *clipboard = QGuiApplication::clipboard();
-    QString originalText = clipboard->text();
-    QClipboard::Mode originalMode = clipboard->ownsClipboard() ? QClipboard::Clipboard : QClipboard::Selection;
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug().noquote().nospace() << "[pasteText] Text length: " << text.length()
                                   << ", TargetWnd: 0x" << Qt::hex << reinterpret_cast<quintptr>(window_hwnd);
 #endif
 
-    // Set new text to clipboard
-    clipboard->setText(text, QClipboard::Clipboard);
+    // Save current clipboard content using Windows API (more reliable than QClipboard in worker thread)
+    HGLOBAL hOriginalDataCopy = NULL;
+    bool hasOriginalData = false;
 
+    if (OpenClipboard(NULL)) {
+        HANDLE hOriginalData = GetClipboardData(CF_UNICODETEXT);
+        if (hOriginalData != NULL) {
+            SIZE_T dataSize = GlobalSize(hOriginalData);
+            if (dataSize > 0) {
+                // Make a copy of the original data before we modify clipboard
+                hOriginalDataCopy = GlobalAlloc(GMEM_MOVEABLE, dataSize);
+                if (hOriginalDataCopy != NULL) {
+                    void* pOriginal = GlobalLock(hOriginalData);
+                    void* pCopy = GlobalLock(hOriginalDataCopy);
+                    if (pOriginal != NULL && pCopy != NULL) {
+                        memcpy(pCopy, pOriginal, dataSize);
+                        hasOriginalData = true;
+                    }
+                    if (pOriginal != NULL) GlobalUnlock(hOriginalData);
+                    if (pCopy != NULL) GlobalUnlock(hOriginalDataCopy);
+
+                    if (!hasOriginalData) {
+                        // Failed to copy, free the allocated memory
+                        GlobalFree(hOriginalDataCopy);
+                        hOriginalDataCopy = NULL;
+                    }
+                }
+            }
+        }
+        CloseClipboard();
+    }
+
+    // Set new text to clipboard using Windows API
+    bool clipboardSetSuccess = false;
+    if (OpenClipboard(NULL)) {
+        EmptyClipboard();
+
+        // Convert QString to wide string
+        std::wstring wideText = text.toStdWString();
+        SIZE_T textSize = (wideText.length() + 1) * sizeof(wchar_t);
+
+        // Allocate global memory
+        HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, textSize);
+        if (hMem != NULL) {
+            // Lock and copy text
+            wchar_t* pMem = static_cast<wchar_t*>(GlobalLock(hMem));
+            if (pMem != NULL) {
+                memcpy(pMem, wideText.c_str(), textSize);
+                GlobalUnlock(hMem);
+
+                // Set clipboard data
+                if (SetClipboardData(CF_UNICODETEXT, hMem) != NULL) {
+                    clipboardSetSuccess = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[pasteText] Clipboard set successfully using Windows API";
+#endif
+                } else {
+                    GlobalFree(hMem);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[pasteText] SetClipboardData failed";
+#endif
+                }
+            } else {
+                GlobalFree(hMem);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[pasteText] GlobalLock failed";
+#endif
+            }
+        }
+        CloseClipboard();
+    }
+
+    if (!clipboardSetSuccess) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[pasteText] Failed to set clipboard, aborting";
+#endif
+        // Free the original data copy before returning
+        if (hOriginalDataCopy != NULL) {
+            GlobalFree(hOriginalDataCopy);
+            hOriginalDataCopy = NULL;
+        }
+        return;
+    }
+
+    // No need to wait - Windows API clipboard operations are synchronous
+    // CloseClipboard() ensures data is already in system clipboard
     // Wait for clipboard to be ready
-    QThread::msleep(50);
+    QThread::msleep(100);
 
     if (window_hwnd != NULL) {
         // Try to find edit control in the target window
@@ -492,18 +561,8 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
 
         // If no focused control found, fallback to searching for any edit control
         if (hEditWnd == NULL) {
-            // Try common edit control class names
-            static const wchar_t* editClassNames[] = {
-                L"Edit",            // Standard edit control
-                L"RichEdit",        // Rich edit control (old)
-                L"RichEdit20W",     // Rich edit 2.0
-                L"RichEdit50W",     // Rich edit 5.0+
-                L"Scintilla",       // Scintilla editor (Notepad++, etc.)
-                nullptr
-            };
-
-            for (int i = 0; editClassNames[i] != nullptr && hEditWnd == NULL; ++i) {
-                hEditWnd = FindWindowEx(targetWnd, NULL, editClassNames[i], NULL);
+            for (int i = 0; EDIT_CONTROL_CLASSNAMES[i] != nullptr && hEditWnd == NULL; ++i) {
+                hEditWnd = FindWindowEx(targetWnd, NULL, EDIT_CONTROL_CLASSNAMES[i], NULL);
             }
         }
 
@@ -565,14 +624,33 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             if (!isTargetForeground) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().noquote().nospace() << "[pasteText] Target window 0x" << Qt::hex << reinterpret_cast<quintptr>(targetWnd)
-                                              << " is not foreground (foreground is 0x" << reinterpret_cast<quintptr>(foregroundWnd)
-                                              << "), skipping Ctrl+V simulation";
+                                            << " is not foreground (foreground is 0x" << reinterpret_cast<quintptr>(foregroundWnd)
+                                            << "), skipping Ctrl+V simulation";
 #endif
-                // Restore clipboard and return
-                if (!originalText.isEmpty()) {
-                    clipboard->setText(originalText, originalMode);
+                // Restore clipboard and return using Windows API
+                if (hasOriginalData && hOriginalDataCopy != NULL) {
+                    if (OpenClipboard(NULL)) {
+                        EmptyClipboard();
+                        // hOriginalDataCopy is already a copy, we can use it directly
+                        // But SetClipboardData takes ownership, so we pass it directly
+                        if (SetClipboardData(CF_UNICODETEXT, hOriginalDataCopy) != NULL) {
+                            // Success, clipboard now owns the memory
+                            hOriginalDataCopy = NULL; // Prevent double-free
+                        } else {
+                            // Failed, we still own the memory, will be freed at end
+                        }
+                        CloseClipboard();
+                    }
                 } else {
-                    clipboard->clear();
+                    if (OpenClipboard(NULL)) {
+                        EmptyClipboard();
+                        CloseClipboard();
+                    }
+                }
+
+                // Free the copy if it wasn't transferred to clipboard
+                if (hOriginalDataCopy != NULL) {
+                    GlobalFree(hOriginalDataCopy);
                 }
                 return;
             }
@@ -659,20 +737,48 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         SendInput(4, inputs, sizeof(INPUT));
     }
 
-    // Wait for paste operation to complete
+    // Brief wait to ensure target application has time to read clipboard
+    // Some applications handle paste asynchronously
+    // 50ms is sufficient for most cases and much faster than original 100ms
     QThread::msleep(100);
 
-    // Restore original clipboard content
-    if (!originalText.isEmpty()) {
-        clipboard->setText(originalText, originalMode);
+    // Restore original clipboard content using Windows API
+    if (hasOriginalData && hOriginalDataCopy != NULL) {
+        if (OpenClipboard(NULL)) {
+            EmptyClipboard();
+
+            // hOriginalDataCopy is already a copy, we can use it directly
+            // SetClipboardData takes ownership of the memory
+            if (SetClipboardData(CF_UNICODETEXT, hOriginalDataCopy) != NULL) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[pasteText] Original clipboard restored";
+#endif
+                // Success, clipboard now owns the memory, set to NULL to prevent double-free
+                hOriginalDataCopy = NULL;
+            } else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[pasteText] Failed to restore clipboard";
+#endif
+                // Failed, we still own the memory, will be freed below
+            }
+            CloseClipboard();
+        }
     } else {
-        // Clear clipboard if it was empty
-        clipboard->clear();
+        // Clear clipboard if it was originally empty
+        if (OpenClipboard(NULL)) {
+            EmptyClipboard();
+            CloseClipboard();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[pasteText] Clipboard cleared (was originally empty)";
+#endif
+        }
     }
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[pasteText] Clipboard restored";
-#endif
+    // Free the original data copy if it wasn't transferred to clipboard
+    if (hOriginalDataCopy != NULL) {
+        GlobalFree(hOriginalDataCopy);
+        hOriginalDataCopy = NULL;
+    }
 }
 
 void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)

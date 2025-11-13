@@ -1070,6 +1070,16 @@ namespace QKeyMapperConstants {
     // Uses non-greedy matching for brace content to handle nested structures
     inline constexpr const char REGEX_PATTERN_REPEAT_FIND[] = R"(Repeat\{[^}]+\}x\d+)";
 
+    // Common edit control class names for searching
+    inline constexpr const wchar_t* EDIT_CONTROL_CLASSNAMES[] = {
+        L"Edit",            // Standard edit control
+        L"RichEdit",        // Rich edit control (old)
+        L"RichEdit20W",     // Rich edit 2.0
+        L"RichEdit50W",     // Rich edit 5.0+
+        L"Scintilla",       // Scintilla editor (Notepad++, etc.)
+        nullptr
+    };
+
     // Repeat function limits
     inline constexpr int REPEAT_COUNT_MIN = 1;
     inline constexpr int REPEAT_COUNT_MAX = 99999;
