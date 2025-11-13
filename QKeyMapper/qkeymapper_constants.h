@@ -1083,6 +1083,12 @@ namespace QKeyMapperConstants {
         nullptr
     };
 
+    // PasteText function configuration
+    // Time to hold V key down after Ctrl is pressed (milliseconds)
+    // This ensures some applications can properly detect the Ctrl+V key combination
+    inline constexpr int PASTE_MODIFIER_KEY_HOLD_TIME_MS = 100;
+    inline constexpr int PASTE_KEY_HOLD_TIME_MS = 50;
+
     // Repeat function limits
     inline constexpr int REPEAT_COUNT_MIN = 1;
     inline constexpr int REPEAT_COUNT_MAX = 99999;

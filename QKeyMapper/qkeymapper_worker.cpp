@@ -317,6 +317,221 @@ void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
     SendInput(2, u_input, sizeof(INPUT));
 }
 
+// Verify clipboard content matches expected text
+// Parameters:
+//   expectedText: The text expected to be in clipboard
+//   fullCompare: false = fast verify (length + first/last chars), true = full string compare
+// Returns: true if clipboard content matches expected text
+bool QKeyMapper_Worker::verifyClipboardContent(const QString& expectedText, bool fullCompare)
+{
+    if (!OpenClipboard(NULL)) {
+        return false;
+    }
+
+    bool verified = false;
+    HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+
+    if (hData != NULL) {
+        wchar_t* pData = static_cast<wchar_t*>(GlobalLock(hData));
+        if (pData != NULL) {
+            QString clipboardText = QString::fromWCharArray(pData);
+
+            if (fullCompare) {
+                // Full comparison: compare entire strings
+                verified = (clipboardText == expectedText);
+            }
+            else {
+                // Fast comparison: check length and first/last characters
+                if (clipboardText.length() == expectedText.length()) {
+                    if (expectedText.isEmpty()) {
+                        verified = true;
+                    }
+                    else if (expectedText.length() == 1) {
+                        verified = (clipboardText[0] == expectedText[0]);
+                    }
+                    else {
+                        // Check first and last characters for quick validation
+                        verified = (clipboardText[0] == expectedText[0] &&
+                                   clipboardText[clipboardText.length() - 1] == expectedText[expectedText.length() - 1]);
+                    }
+                }
+            }
+
+            GlobalUnlock(hData);
+        }
+    }
+
+    CloseClipboard();
+    return verified;
+}
+
+// Set clipboard text with verification and retry mechanism
+// Parameters:
+//   text: Text to set to clipboard
+//   maxRetries: Maximum number of retry attempts (default: 3)
+// Returns: true if successfully set and verified
+bool QKeyMapper_Worker::setClipboardTextWithVerification(const QString& text, int maxRetries)
+{
+    std::wstring wideText = text.toStdWString();
+    SIZE_T textSize = (wideText.length() + 1) * sizeof(wchar_t);
+
+    for (int attempt = 0; attempt < maxRetries; ++attempt) {
+        bool setSuccess = false;
+
+        if (OpenClipboard(NULL)) {
+            EmptyClipboard();
+
+            // Allocate global memory
+            HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, textSize);
+            if (hMem != NULL) {
+                // Lock and copy text
+                wchar_t* pMem = static_cast<wchar_t*>(GlobalLock(hMem));
+                if (pMem != NULL) {
+                    memcpy(pMem, wideText.c_str(), textSize);
+                    GlobalUnlock(hMem);
+
+                    // Set clipboard data
+                    if (SetClipboardData(CF_UNICODETEXT, hMem) != NULL) {
+                        setSuccess = true;
+                    }
+                    else {
+                        GlobalFree(hMem);
+                    }
+                }
+                else {
+                    GlobalFree(hMem);
+                }
+            }
+
+            CloseClipboard();
+        }
+
+        if (setSuccess) {
+            // Brief wait for clipboard to settle
+            QThread::msleep(5);
+
+            // Verify clipboard content
+            if (verifyClipboardContent(text, false)) {
+#ifdef DEBUG_LOGOUT_ON
+                if (attempt > 0) {
+                    qDebug().nospace() << "[setClipboardTextWithVerification] Success on attempt " << (attempt + 1);
+                }
+#endif
+                return true;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[setClipboardTextWithVerification] Verification failed on attempt " << (attempt + 1);
+#endif
+            }
+        }
+
+        // Wait before retry (except on last attempt)
+        if (attempt < maxRetries - 1) {
+            QThread::msleep(5);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[setClipboardTextWithVerification] Failed after" << maxRetries << "attempts";
+#endif
+    return false;
+}
+
+// Restore clipboard content with verification and retry mechanism
+// Parameters:
+//   hOriginalDataCopy: Handle to the original clipboard data to restore
+//   maxRetries: Maximum number of retry attempts (default: 3)
+// Returns: true if successfully restored and verified
+bool QKeyMapper_Worker::restoreClipboardWithVerification(HGLOBAL hOriginalDataCopy, int maxRetries)
+{
+    if (hOriginalDataCopy == NULL) {
+        // Nothing to restore, clear clipboard
+        if (OpenClipboard(NULL)) {
+            EmptyClipboard();
+            CloseClipboard();
+        }
+        return true;
+    }
+
+    // Get expected content for verification
+    wchar_t* pExpected = static_cast<wchar_t*>(GlobalLock(hOriginalDataCopy));
+    if (pExpected == NULL) {
+        return false;
+    }
+    QString expectedText = QString::fromWCharArray(pExpected);
+    GlobalUnlock(hOriginalDataCopy);
+
+    for (int attempt = 0; attempt < maxRetries; ++attempt) {
+        bool setSuccess = false;
+
+        if (OpenClipboard(NULL)) {
+            EmptyClipboard();
+
+            // Get data size
+            SIZE_T dataSize = GlobalSize(hOriginalDataCopy);
+
+            // Allocate new memory for restoration
+            HGLOBAL hNewMem = GlobalAlloc(GMEM_MOVEABLE, dataSize);
+            if (hNewMem != NULL) {
+                void* pOriginal = GlobalLock(hOriginalDataCopy);
+                void* pNew = GlobalLock(hNewMem);
+
+                if (pOriginal != NULL && pNew != NULL) {
+                    memcpy(pNew, pOriginal, dataSize);
+                    GlobalUnlock(hOriginalDataCopy);
+                    GlobalUnlock(hNewMem);
+
+                    if (SetClipboardData(CF_UNICODETEXT, hNewMem) != NULL) {
+                        setSuccess = true;
+                        // Clipboard now owns hNewMem, don't free it
+                    }
+                    else {
+                        GlobalFree(hNewMem);
+                    }
+                }
+                else {
+                    if (pOriginal != NULL) GlobalUnlock(hOriginalDataCopy);
+                    if (pNew != NULL) GlobalUnlock(hNewMem);
+                    GlobalFree(hNewMem);
+                }
+            }
+
+            CloseClipboard();
+        }
+
+        if (setSuccess) {
+            // Brief wait for clipboard to settle
+            QThread::msleep(5);
+
+            // Verify clipboard content was restored
+            if (verifyClipboardContent(expectedText, false)) {
+#ifdef DEBUG_LOGOUT_ON
+                if (attempt > 0) {
+                    qDebug().nospace() << "[restoreClipboardWithVerification] Success on attempt " << (attempt + 1);
+                }
+#endif
+                return true;
+            }
+            else {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace() << "[restoreClipboardWithVerification] Verification failed on attempt " << (attempt + 1);
+#endif
+            }
+        }
+
+        // Wait before retry (except on last attempt)
+        if (attempt < maxRetries - 1) {
+            QThread::msleep(5);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[restoreClipboardWithVerification] Failed after" << maxRetries << "attempts";
+#endif
+    return false;
+}
+
 // Common edit control class names for searching
 // static const wchar_t* EDIT_CONTROL_CLASSNAMES[] = {
 //     L"Edit",            // Standard edit control
@@ -494,49 +709,12 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         CloseClipboard();
     }
 
-    // Set new text to clipboard using Windows API
-    bool clipboardSetSuccess = false;
-    if (OpenClipboard(NULL)) {
-        EmptyClipboard();
-
-        // Convert QString to wide string
-        std::wstring wideText = text.toStdWString();
-        SIZE_T textSize = (wideText.length() + 1) * sizeof(wchar_t);
-
-        // Allocate global memory
-        HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, textSize);
-        if (hMem != NULL) {
-            // Lock and copy text
-            wchar_t* pMem = static_cast<wchar_t*>(GlobalLock(hMem));
-            if (pMem != NULL) {
-                memcpy(pMem, wideText.c_str(), textSize);
-                GlobalUnlock(hMem);
-
-                // Set clipboard data
-                if (SetClipboardData(CF_UNICODETEXT, hMem) != NULL) {
-                    clipboardSetSuccess = true;
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[pasteText] Clipboard set successfully using Windows API";
-#endif
-                } else {
-                    GlobalFree(hMem);
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[pasteText] SetClipboardData failed";
-#endif
-                }
-            } else {
-                GlobalFree(hMem);
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[pasteText] GlobalLock failed";
-#endif
-            }
-        }
-        CloseClipboard();
-    }
+    // Set new text to clipboard with verification and retry mechanism
+    bool clipboardSetSuccess = setClipboardTextWithVerification(text, 3);
 
     if (!clipboardSetSuccess) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[pasteText] Failed to set clipboard, aborting";
+        qDebug() << "[pasteText] Failed to set clipboard with verification, aborting";
 #endif
         // Free the original data copy before returning
         if (hOriginalDataCopy != NULL) {
@@ -546,10 +724,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         return;
     }
 
-    // No need to wait - Windows API clipboard operations are synchronous
-    // CloseClipboard() ensures data is already in system clipboard
-    // Wait for clipboard to be ready
-    QThread::msleep(100);
+    // No additional wait needed - verification already includes wait time
 
     if (window_hwnd != NULL) {
         // Try to find edit control in the target window
@@ -627,35 +802,23 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
                                             << " is not foreground (foreground is 0x" << reinterpret_cast<quintptr>(foregroundWnd)
                                             << "), skipping Ctrl+V simulation";
 #endif
-                // Restore clipboard and return using Windows API
+                // Restore clipboard with verification and return
                 if (hasOriginalData && hOriginalDataCopy != NULL) {
-                    if (OpenClipboard(NULL)) {
-                        EmptyClipboard();
-                        // hOriginalDataCopy is already a copy, we can use it directly
-                        // But SetClipboardData takes ownership, so we pass it directly
-                        if (SetClipboardData(CF_UNICODETEXT, hOriginalDataCopy) != NULL) {
-                            // Success, clipboard now owns the memory
-                            hOriginalDataCopy = NULL; // Prevent double-free
-                        } else {
-                            // Failed, we still own the memory, will be freed at end
-                        }
-                        CloseClipboard();
-                    }
-                } else {
-                    if (OpenClipboard(NULL)) {
-                        EmptyClipboard();
-                        CloseClipboard();
-                    }
-                }
-
-                // Free the copy if it wasn't transferred to clipboard
-                if (hOriginalDataCopy != NULL) {
+                    restoreClipboardWithVerification(hOriginalDataCopy, 3);
                     GlobalFree(hOriginalDataCopy);
+                    hOriginalDataCopy = NULL;
+                }
+                else if (!hasOriginalData) {
+                    if (OpenClipboard(NULL)) {
+                        EmptyClipboard();
+                        CloseClipboard();
+                    }
                 }
                 return;
             }
 
-            // Simulate Ctrl key down
+            // Simulate Ctrl+V key combination with proper timing
+            // Step 1: Press Ctrl key
             INPUT ctrlDown;
             ctrlDown.type = INPUT_KEYBOARD;
             ctrlDown.ki.wVk = VK_CONTROL;
@@ -663,8 +826,11 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             ctrlDown.ki.dwFlags = 0;
             ctrlDown.ki.time = 0;
             ctrlDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+            SendInput(1, &ctrlDown, sizeof(INPUT));
 
-            // Simulate V key down
+            QThread::msleep(PASTE_MODIFIER_KEY_HOLD_TIME_MS);
+
+            // Step 2: Press V key
             INPUT vDown;
             vDown.type = INPUT_KEYBOARD;
             vDown.ki.wVk = 'V';
@@ -672,8 +838,12 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             vDown.ki.dwFlags = 0;
             vDown.ki.time = 0;
             vDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+            SendInput(1, &vDown, sizeof(INPUT));
 
-            // Simulate V key up
+            // Step 3: Hold V key for configured time to ensure detection
+            QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
+
+            // Step 4: Release V key
             INPUT vUp;
             vUp.type = INPUT_KEYBOARD;
             vUp.ki.wVk = 'V';
@@ -681,8 +851,9 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             vUp.ki.dwFlags = KEYEVENTF_KEYUP;
             vUp.ki.time = 0;
             vUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+            SendInput(1, &vUp, sizeof(INPUT));
 
-            // Simulate Ctrl key up
+            // Step 5: Release Ctrl key
             INPUT ctrlUp;
             ctrlUp.type = INPUT_KEYBOARD;
             ctrlUp.ki.wVk = VK_CONTROL;
@@ -690,10 +861,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             ctrlUp.ki.dwFlags = KEYEVENTF_KEYUP;
             ctrlUp.ki.time = 0;
             ctrlUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
-
-            // Send all inputs as a sequence
-            INPUT inputs[4] = {ctrlDown, vDown, vUp, ctrlUp};
-            SendInput(4, inputs, sizeof(INPUT));
+            SendInput(1, &ctrlUp, sizeof(INPUT));
         }
     }
     else {
@@ -702,39 +870,51 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         qDebug() << "[pasteText] No window handle, simulating Ctrl+V globally";
 #endif
 
-        // Simulate Ctrl+V key press
-        INPUT ctrlDown, vDown, vUp, ctrlUp;
-
+        // Simulate Ctrl+V key combination with proper timing
+        // Step 1: Press Ctrl key
+        INPUT ctrlDown;
         ctrlDown.type = INPUT_KEYBOARD;
         ctrlDown.ki.wVk = VK_CONTROL;
         ctrlDown.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
         ctrlDown.ki.dwFlags = 0;
         ctrlDown.ki.time = 0;
         ctrlDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+        SendInput(1, &ctrlDown, sizeof(INPUT));
 
+        QThread::msleep(QKeyMapperConstants::PASTE_MODIFIER_KEY_HOLD_TIME_MS);
+
+        // Step 2: Press V key
+        INPUT vDown;
         vDown.type = INPUT_KEYBOARD;
         vDown.ki.wVk = 'V';
         vDown.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
         vDown.ki.dwFlags = 0;
         vDown.ki.time = 0;
         vDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+        SendInput(1, &vDown, sizeof(INPUT));
 
+        // Step 3: Hold V key for configured time to ensure detection
+        QThread::msleep(QKeyMapperConstants::PASTE_KEY_HOLD_TIME_MS);
+
+        // Step 4: Release V key
+        INPUT vUp;
         vUp.type = INPUT_KEYBOARD;
         vUp.ki.wVk = 'V';
         vUp.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
         vUp.ki.dwFlags = KEYEVENTF_KEYUP;
         vUp.ki.time = 0;
         vUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
+        SendInput(1, &vUp, sizeof(INPUT));
 
+        // Step 5: Release Ctrl key
+        INPUT ctrlUp;
         ctrlUp.type = INPUT_KEYBOARD;
         ctrlUp.ki.wVk = VK_CONTROL;
         ctrlUp.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
         ctrlUp.ki.dwFlags = KEYEVENTF_KEYUP;
         ctrlUp.ki.time = 0;
         ctrlUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND;
-
-        INPUT inputs[4] = {ctrlDown, vDown, vUp, ctrlUp};
-        SendInput(4, inputs, sizeof(INPUT));
+        SendInput(1, &ctrlUp, sizeof(INPUT));
     }
 
     // Brief wait to ensure target application has time to read clipboard
@@ -742,28 +922,23 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
     // 50ms is sufficient for most cases and much faster than original 100ms
     QThread::msleep(100);
 
-    // Restore original clipboard content using Windows API
+    // Restore original clipboard content with verification and retry mechanism
     if (hasOriginalData && hOriginalDataCopy != NULL) {
-        if (OpenClipboard(NULL)) {
-            EmptyClipboard();
+        bool restoreSuccess = restoreClipboardWithVerification(hOriginalDataCopy, 3);
 
-            // hOriginalDataCopy is already a copy, we can use it directly
-            // SetClipboardData takes ownership of the memory
-            if (SetClipboardData(CF_UNICODETEXT, hOriginalDataCopy) != NULL) {
+        if (!restoreSuccess) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[pasteText] Original clipboard restored";
+            qDebug() << "[pasteText] Failed to restore original clipboard content after all retries";
 #endif
-                // Success, clipboard now owns the memory, set to NULL to prevent double-free
-                hOriginalDataCopy = NULL;
-            } else {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[pasteText] Failed to restore clipboard";
-#endif
-                // Failed, we still own the memory, will be freed below
-            }
-            CloseClipboard();
         }
-    } else {
+
+        // Free the original data copy (verification function handles clipboard ownership)
+        if (hOriginalDataCopy != NULL) {
+            GlobalFree(hOriginalDataCopy);
+            hOriginalDataCopy = NULL;
+        }
+    }
+    else if (!hasOriginalData) {
         // Clear clipboard if it was originally empty
         if (OpenClipboard(NULL)) {
             EmptyClipboard();
@@ -772,12 +947,6 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             qDebug() << "[pasteText] Clipboard cleared (was originally empty)";
 #endif
         }
-    }
-
-    // Free the original data copy if it wasn't transferred to clipboard
-    if (hOriginalDataCopy != NULL) {
-        GlobalFree(hOriginalDataCopy);
-        hOriginalDataCopy = NULL;
     }
 }
 

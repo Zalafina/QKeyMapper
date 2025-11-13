@@ -749,6 +749,9 @@ public slots:
     void sendMouseClick(V_MOUSECODE vmousecode, int keyupdown);
 private:
     HWND findFocusedEditControl(HWND window_hwnd);
+    bool verifyClipboardContent(const QString& expectedText, bool fullCompare = false);
+    bool setClipboardTextWithVerification(const QString& text, int maxRetries = 3);
+    bool restoreClipboardWithVerification(HGLOBAL hOriginalDataCopy, int maxRetries = 3);
 public:
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void sendUnicodeChar(wchar_t aChar);
