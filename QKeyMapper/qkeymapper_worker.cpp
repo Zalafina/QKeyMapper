@@ -3960,7 +3960,6 @@ PVIGEM_TARGET QKeyMapper_Worker::ViGEmClient_AddTarget_byType(const QString &gam
 
     ULONG index = 255;
     VIGEM_ERROR error;
-    Q_UNUSED(index);
     Q_UNUSED(error);
     if (addedTarget != Q_NULLPTR) {
         index = vigem_target_get_index(addedTarget);
@@ -3972,6 +3971,7 @@ PVIGEM_TARGET QKeyMapper_Worker::ViGEmClient_AddTarget_byType(const QString &gam
     else {
         return addedTarget;
     }
+    Q_UNUSED(index);
 
     return addedTarget;
 }
