@@ -823,7 +823,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             shiftDown.type = INPUT_KEYBOARD;
             shiftDown.ki.wVk = VK_SHIFT;
             shiftDown.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-            shiftDown.ki.dwFlags = KEYEVENTF_UNICODE;
+            shiftDown.ki.dwFlags = 0;
             shiftDown.ki.time = 0;
             shiftDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
             SendInput(1, &shiftDown, sizeof(INPUT));
@@ -835,7 +835,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             insertDown.type = INPUT_KEYBOARD;
             insertDown.ki.wVk = VK_INSERT;
             insertDown.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-            insertDown.ki.dwFlags = KEYEVENTF_UNICODE;
+            insertDown.ki.dwFlags = 0;
             insertDown.ki.time = 0;
             insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
             SendInput(1, &insertDown, sizeof(INPUT));
@@ -848,7 +848,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             insertUp.type = INPUT_KEYBOARD;
             insertUp.ki.wVk = VK_INSERT;
             insertUp.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-            insertUp.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+            insertUp.ki.dwFlags = KEYEVENTF_KEYUP;
             insertUp.ki.time = 0;
             insertUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
             SendInput(1, &insertUp, sizeof(INPUT));
@@ -858,7 +858,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             shiftUp.type = INPUT_KEYBOARD;
             shiftUp.ki.wVk = VK_SHIFT;
             shiftUp.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-            shiftUp.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+            shiftUp.ki.dwFlags = KEYEVENTF_KEYUP;
             shiftUp.ki.time = 0;
             shiftUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
             SendInput(1, &shiftUp, sizeof(INPUT));
@@ -876,7 +876,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         shiftDown.type = INPUT_KEYBOARD;
         shiftDown.ki.wVk = VK_SHIFT;
         shiftDown.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-        shiftDown.ki.dwFlags = KEYEVENTF_UNICODE;
+        shiftDown.ki.dwFlags = 0;
         shiftDown.ki.time = 0;
         shiftDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
         SendInput(1, &shiftDown, sizeof(INPUT));
@@ -888,7 +888,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         insertDown.type = INPUT_KEYBOARD;
         insertDown.ki.wVk = VK_INSERT;
         insertDown.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-        insertDown.ki.dwFlags = KEYEVENTF_UNICODE;
+        insertDown.ki.dwFlags = 0;
         insertDown.ki.time = 0;
         insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
         SendInput(1, &insertDown, sizeof(INPUT));
@@ -901,7 +901,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         insertUp.type = INPUT_KEYBOARD;
         insertUp.ki.wVk = VK_INSERT;
         insertUp.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-        insertUp.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+        insertUp.ki.dwFlags = KEYEVENTF_KEYUP;
         insertUp.ki.time = 0;
         insertUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
         SendInput(1, &insertUp, sizeof(INPUT));
@@ -911,7 +911,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         shiftUp.type = INPUT_KEYBOARD;
         shiftUp.ki.wVk = VK_SHIFT;
         shiftUp.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-        shiftUp.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+        shiftUp.ki.dwFlags = KEYEVENTF_KEYUP;
         shiftUp.ki.time = 0;
         shiftUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
         SendInput(1, &shiftUp, sizeof(INPUT));
