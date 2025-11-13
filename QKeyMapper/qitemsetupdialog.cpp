@@ -495,7 +495,8 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
         }
 
         // Check if brackets are balanced in the captured content
-        QString captured = match.captured(1);
+        QString functionName = match.captured(1);   // "SendText" or "PasteText"
+        QString captured = match.captured(2);       // Text content
         int bracketCount = 0;
         bool isBalanced = true;
 
@@ -512,13 +513,15 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
         if (isBalanced) {
             // Brackets are balanced, use this match
             QString placeholder = QString("__SENDTEXT_PLACEHOLDER_%1__").arg(replacementIndex++);
-            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) part
+            sendTextParts.append(match.captured(0)); // Store the entire SendText(...) or PasteText(...) part
             tempMappingKey.replace(match.captured(0), placeholder);
             currentPos = match.capturedEnd();
         } else {
             // Brackets not balanced, try to find the correct closing bracket
             int startPos = match.capturedStart();
-            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"
+            // Skip function name length: "SendText" = 8, "PasteText" = 9
+            int skipLength = functionName.length();
+            int openPos = mappingKey.indexOf('(', startPos + skipLength);
             if (openPos != -1) {
                 int closePos = openPos + 1;
                 int depth = 1;
@@ -577,8 +580,9 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             break;
         }
 
-        // Check if brackets are balanced in the captured content for SendText
-        QString captured = match.captured(1);
+        // Check if brackets are balanced in the captured content for SendText/PasteText
+        QString functionName = match.captured(1);   // "SendText" or "PasteText"
+        QString captured = match.captured(2);       // Text content
         int bracketCount = 0;
         bool isBalanced = true;
 
@@ -598,13 +602,15 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
             info.start = match.capturedStart();
             info.end = match.capturedEnd();
             info.content = match.captured(0);
-            info.type = "sendtext";
+            info.type = "sendtext";  // Keep type as "sendtext" for both SendText and PasteText
             allMatches.append(info);
             currentPos = match.capturedEnd();
         } else {
             // Brackets not balanced, try to find the correct closing bracket
             int startPos = match.capturedStart();
-            int openPos = mappingKey.indexOf('(', startPos + 8); // Skip "SendText"
+            // Skip function name length: "SendText" = 8, "PasteText" = 9
+            int skipLength = functionName.length();
+            int openPos = mappingKey.indexOf('(', startPos + skipLength);
             if (openPos != -1) {
                 int closePos = openPos + 1;
                 int depth = 1;

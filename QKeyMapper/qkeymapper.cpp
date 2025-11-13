@@ -18373,6 +18373,7 @@ void QKeyMapper::initKeysCategoryMap()
         << KEY_NONE_STR
         << UNLOCK_STR
         << SENDTEXT_STR
+        << PASTETEXT_STR
         << RUN_STR
         << SWITCHTAB_STR
         << SWITCHTAB_SAVE_STR
@@ -21857,6 +21858,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
                 }
             }
+            else if (currentMapKeyText == PASTETEXT_STR) {
+                QString pastetext = ui->sendTextPlainTextEdit->toPlainText();
+                if (pastetext.isEmpty()) {
+                    QString message = tr("Please input the text to paste!");
+                    showFailurePopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, pastetext);
+                }
+            }
             else if (currentMapKeyText == RUN_STR) {
                 QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
                 static QRegularExpression simplified_regex(R"([\r\n]+)");
@@ -22065,6 +22077,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
+                    }
+                }
+                else if (currentMapKeyText == PASTETEXT_STR) {
+                    QString pastetext = ui->sendTextPlainTextEdit->toPlainText();
+                    if (pastetext.isEmpty()) {
+                        QString message = tr("Please input the text to paste!");
+                        showFailurePopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, pastetext);
                     }
                 }
                 else if (currentMapKeyText == RUN_STR) {

@@ -2432,13 +2432,20 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
                 else if (sendtext_match.hasMatch()) {
-                    QString text = sendtext_match.captured(1);
+                    QString functionName = sendtext_match.captured(1);  // "SendText" or "PasteText"
+                    QString text = sendtext_match.captured(2);          // Text content
 
                     const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
                     releaseKeyboardModifiersDirect(modifiers_arg);
 
-                    sendText(QKeyMapper::s_CurrentMappingHWND, text);
-                    // pasteText(QKeyMapper::s_CurrentMappingHWND, text);
+                    // Use different method based on function name
+                    if (functionName == "PasteText") {
+                        pasteText(QKeyMapper::s_CurrentMappingHWND, text);
+                    }
+                    else {
+                        // Default to SendText for backward compatibility
+                        sendText(QKeyMapper::s_CurrentMappingHWND, text);
+                    }
                 }
                 else if (runcmd_match.hasMatch()) {
                     QString run_cmd = runcmd_match.captured(1);

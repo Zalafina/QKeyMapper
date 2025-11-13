@@ -1014,15 +1014,18 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char REGEX_PATTERN_TABHOTKEY[] = R"(^(\$)?(💾)?(.+)$)";
 
-    // Use pattern that matches everything between SendText( and the last ) for complete content capture
+    // Pattern that matches SendText() or PasteText() for complete content capture
+    // Supports both text sending methods: SendText uses character-by-character input, PasteText uses clipboard
+    // Capture groups: 1=function_name(SendText|PasteText), 2=text_content
     // This handles complex nested content including multiple parentheses levels and newlines
     // For proper bracket matching, the application logic should handle bracket balancing
-    inline constexpr const char REGEX_PATTERN_SENDTEXT[] = R"(^SendText\(([\s\S]*)\)$)";
+    inline constexpr const char REGEX_PATTERN_SENDTEXT[] = R"(^(SendText|PasteText)\(([\s\S]*)\)$)";
 
-    // Pattern for finding SendText parts in a composite string (without anchors)
-    // Used when searching for SendText segments within a longer mapping string
-    // Uses non-greedy matching to find individual SendText parts, but may need special handling for nested brackets
-    inline constexpr const char REGEX_PATTERN_SENDTEXT_FIND[] = R"(SendText\(([\s\S]*?)\))";
+    // Pattern for finding SendText/PasteText parts in a composite string (without anchors)
+    // Used when searching for text sending segments within a longer mapping string
+    // Capture groups: 1=function_name(SendText|PasteText), 2=text_content
+    // Uses non-greedy matching to find individual text sending parts, may need special handling for nested brackets
+    inline constexpr const char REGEX_PATTERN_SENDTEXT_FIND[] = R"((SendText|PasteText)\(([\s\S]*?)\))";
 
     // Use pattern that matches everything between Run( and the last ) for complete content capture
     inline constexpr const char REGEX_PATTERN_RUN[] = R"(^Run\((.+)\)$)";
@@ -1194,6 +1197,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char ORIKEY_WITHNOTE_FORMAT[] = "%1【%2】";
 
     inline constexpr const char SENDTEXT_STR[]      = "SendText";
+    inline constexpr const char PASTETEXT_STR[]     = "PasteText";
     inline constexpr const char RUN_STR[]           = "Run";
     inline constexpr const char SWITCHTAB_STR[]         = "SwitchTab";
     inline constexpr const char SWITCHTAB_SAVE_STR[]    = "SwitchTab💾";
