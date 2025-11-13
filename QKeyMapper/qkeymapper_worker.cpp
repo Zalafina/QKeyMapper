@@ -2604,14 +2604,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     QString functionName = sendtext_match.captured(1);  // "SendText" or "PasteText"
                     QString text = sendtext_match.captured(2);          // Text content
 
-                    const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
-                    releaseKeyboardModifiersDirect(modifiers_arg);
-
                     // Use different method based on function name
                     if (functionName == "PasteText") {
                         pasteText(QKeyMapper::s_CurrentMappingHWND, text);
                     }
                     else {
+                        const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
+                        releaseKeyboardModifiersDirect(modifiers_arg);
+
                         // Default to SendText for backward compatibility
                         sendText(QKeyMapper::s_CurrentMappingHWND, text);
                     }
