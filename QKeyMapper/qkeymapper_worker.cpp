@@ -532,15 +532,103 @@ bool QKeyMapper_Worker::restoreClipboardWithVerification(HGLOBAL hOriginalDataCo
     return false;
 }
 
-// Common edit control class names for searching
-// static const wchar_t* EDIT_CONTROL_CLASSNAMES[] = {
-//     L"Edit",            // Standard edit control
-//     L"RichEdit",        // Rich edit control (old)
-//     L"RichEdit20W",     // Rich edit 2.0
-//     L"RichEdit50W",     // Rich edit 5.0+
-//     L"Scintilla",       // Scintilla editor (Notepad++, etc.)
-//     nullptr
-// };
+void QKeyMapper_Worker::pasteWithShiftIns()
+{
+    // Simulate Shift+Insert key combination with proper timing
+    // Step 1: Press Shift key
+    INPUT shiftDown = { 0 };
+    shiftDown.type = INPUT_KEYBOARD;
+    shiftDown.ki.wVk = VK_SHIFT;
+    shiftDown.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
+    shiftDown.ki.dwFlags = 0;
+    shiftDown.ki.time = 0;
+    shiftDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &shiftDown, sizeof(INPUT));
+
+    QThread::msleep(PASTE_MODIFIER_KEY_HOLD_TIME_MS);
+
+    // Step 2: Press Insert key
+    INPUT insertDown = { 0 };
+    insertDown.type = INPUT_KEYBOARD;
+    insertDown.ki.wVk = VK_INSERT;
+    insertDown.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
+    insertDown.ki.dwFlags = 0;
+    insertDown.ki.time = 0;
+    insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &insertDown, sizeof(INPUT));
+
+    // Step 3: Hold V key for configured time to ensure detection
+    QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
+
+    // Step 4: Release Insert key
+    INPUT insertUp = { 0 };
+    insertUp.type = INPUT_KEYBOARD;
+    insertUp.ki.wVk = VK_INSERT;
+    insertUp.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
+    insertUp.ki.dwFlags = KEYEVENTF_KEYUP;
+    insertUp.ki.time = 0;
+    insertUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &insertUp, sizeof(INPUT));
+
+    // Step 5: Release Shift key
+    INPUT shiftUp = { 0 };
+    shiftUp.type = INPUT_KEYBOARD;
+    shiftUp.ki.wVk = VK_SHIFT;
+    shiftUp.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
+    shiftUp.ki.dwFlags = KEYEVENTF_KEYUP;
+    shiftUp.ki.time = 0;
+    shiftUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &shiftUp, sizeof(INPUT));
+}
+
+void QKeyMapper_Worker::pasteWithCtrlV()
+{
+    // Simulate Ctrl+V key combination with proper timing
+    // Step 1: Press Ctrl key
+    INPUT ctrlDown = { 0 };
+    ctrlDown.type = INPUT_KEYBOARD;
+    ctrlDown.ki.wVk = VK_CONTROL;
+    ctrlDown.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+    ctrlDown.ki.dwFlags = 0;
+    ctrlDown.ki.time = 0;
+    ctrlDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &ctrlDown, sizeof(INPUT));
+
+    QThread::msleep(PASTE_MODIFIER_KEY_HOLD_TIME_MS);
+
+    // Step 2: Press V key
+    INPUT vDown = { 0 };
+    vDown.type = INPUT_KEYBOARD;
+    vDown.ki.wVk = 'V';
+    vDown.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
+    vDown.ki.dwFlags = 0;
+    vDown.ki.time = 0;
+    vDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &vDown, sizeof(INPUT));
+
+    // Step 3: Hold V key for configured time to ensure detection
+    QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
+
+    // Step 4: Release V key
+    INPUT vUp = { 0 };
+    vUp.type = INPUT_KEYBOARD;
+    vUp.ki.wVk = 'V';
+    vUp.ki.wScan = MapVirtualKey('V', MAPVK_VK_TO_VSC);
+    vUp.ki.dwFlags = KEYEVENTF_KEYUP;
+    vUp.ki.time = 0;
+    vUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &vUp, sizeof(INPUT));
+
+    // Step 5: Release Ctrl key
+    INPUT ctrlUp = { 0 };
+    ctrlUp.type = INPUT_KEYBOARD;
+    ctrlUp.ki.wVk = VK_CONTROL;
+    ctrlUp.ki.wScan = MapVirtualKey(VK_CONTROL, MAPVK_VK_TO_VSC);
+    ctrlUp.ki.dwFlags = KEYEVENTF_KEYUP;
+    ctrlUp.ki.time = 0;
+    ctrlUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
+    SendInput(1, &ctrlUp, sizeof(INPUT));
+}
 
 HWND QKeyMapper_Worker::findFocusedEditControl(HWND window_hwnd)
 {
@@ -817,104 +905,22 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
                 return;
             }
 
-            // Simulate Shift+Insert key combination with proper timing
-            // Step 1: Press Shift key
-            INPUT shiftDown = { 0 };
-            shiftDown.type = INPUT_KEYBOARD;
-            shiftDown.ki.wVk = VK_SHIFT;
-            shiftDown.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-            shiftDown.ki.dwFlags = 0;
-            shiftDown.ki.time = 0;
-            shiftDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-            SendInput(1, &shiftDown, sizeof(INPUT));
+            const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
+            releaseKeyboardModifiersDirect(modifiers_arg);
 
-            QThread::msleep(PASTE_MODIFIER_KEY_HOLD_TIME_MS);
-
-            // Step 2: Press Insert key
-            INPUT insertDown = { 0 };
-            insertDown.type = INPUT_KEYBOARD;
-            insertDown.ki.wVk = VK_INSERT;
-            insertDown.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-            insertDown.ki.dwFlags = 0;
-            insertDown.ki.time = 0;
-            insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-            SendInput(1, &insertDown, sizeof(INPUT));
-
-            // Step 3: Hold V key for configured time to ensure detection
-            QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
-
-            // Step 4: Release Insert key
-            INPUT insertUp = { 0 };
-            insertUp.type = INPUT_KEYBOARD;
-            insertUp.ki.wVk = VK_INSERT;
-            insertUp.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-            insertUp.ki.dwFlags = KEYEVENTF_KEYUP;
-            insertUp.ki.time = 0;
-            insertUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-            SendInput(1, &insertUp, sizeof(INPUT));
-
-            // Step 5: Release Shift key
-            INPUT shiftUp = { 0 };
-            shiftUp.type = INPUT_KEYBOARD;
-            shiftUp.ki.wVk = VK_SHIFT;
-            shiftUp.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-            shiftUp.ki.dwFlags = KEYEVENTF_KEYUP;
-            shiftUp.ki.time = 0;
-            shiftUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-            SendInput(1, &shiftUp, sizeof(INPUT));
+            pasteWithShiftIns();
         }
     }
     else {
-        // No valid window handle, simulate Ctrl+V globally
+        // No valid window handle, simulate Paste key combination globally
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[pasteText] No window handle, simulating Ctrl+V globally";
+        qDebug() << "[pasteText] No window handle, simulating Paste key combination globally";
 #endif
 
-        // Simulate Shift+Insert key combination with proper timing
-        // Step 1: Press Shift key
-        INPUT shiftDown = { 0 };
-        shiftDown.type = INPUT_KEYBOARD;
-        shiftDown.ki.wVk = VK_SHIFT;
-        shiftDown.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-        shiftDown.ki.dwFlags = 0;
-        shiftDown.ki.time = 0;
-        shiftDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-        SendInput(1, &shiftDown, sizeof(INPUT));
+        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
+        releaseKeyboardModifiersDirect(modifiers_arg);
 
-        QThread::msleep(PASTE_MODIFIER_KEY_HOLD_TIME_MS);
-
-        // Step 2: Press Insert key
-        INPUT insertDown = { 0 };
-        insertDown.type = INPUT_KEYBOARD;
-        insertDown.ki.wVk = VK_INSERT;
-        insertDown.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-        insertDown.ki.dwFlags = 0;
-        insertDown.ki.time = 0;
-        insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-        SendInput(1, &insertDown, sizeof(INPUT));
-
-        // Step 3: Hold V key for configured time to ensure detection
-        QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
-
-        // Step 4: Release Insert key
-        INPUT insertUp = { 0 };
-        insertUp.type = INPUT_KEYBOARD;
-        insertUp.ki.wVk = VK_INSERT;
-        insertUp.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-        insertUp.ki.dwFlags = KEYEVENTF_KEYUP;
-        insertUp.ki.time = 0;
-        insertUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-        SendInput(1, &insertUp, sizeof(INPUT));
-
-        // Step 5: Release Shift key
-        INPUT shiftUp = { 0 };
-        shiftUp.type = INPUT_KEYBOARD;
-        shiftUp.ki.wVk = VK_SHIFT;
-        shiftUp.ki.wScan = MapVirtualKey(VK_SHIFT, MAPVK_VK_TO_VSC);
-        shiftUp.ki.dwFlags = KEYEVENTF_KEYUP;
-        shiftUp.ki.time = 0;
-        shiftUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
-        SendInput(1, &shiftUp, sizeof(INPUT));
+        pasteWithShiftIns();
     }
 
     // Brief wait to ensure target application has time to read clipboard
@@ -2606,9 +2612,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                     // Use different method based on function name
                     if (functionName == "PasteText") {
-                        const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
-                        releaseKeyboardModifiersDirect(modifiers_arg);
-
                         pasteText(QKeyMapper::s_CurrentMappingHWND, text);
                     }
                     else {
