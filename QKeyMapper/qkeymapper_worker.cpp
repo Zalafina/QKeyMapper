@@ -11664,6 +11664,10 @@ bool QKeyMapper_Worker::releaseKeyboardModifiers(const Qt::KeyboardModifiers mod
         releasemodifier = true;
     }
 
+    if (pressedKeyboardModifiersList.isEmpty()) {
+        return false;
+    }
+
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
     controller.sendvirtualkey_state = SENDVIRTUALKEY_STATE_MODIFIERS;
     for (const QString &modifierstr : std::as_const(pressedKeyboardModifiersList)) {
@@ -11743,6 +11747,10 @@ bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifie
     if ((GetAsyncKeyState(VK_RWIN) & 0x8000) != 0 && modifiers.testFlag(Qt::MetaModifier)) {
         pressedKeyboardModifiersList.append("R-Win");
         releasemodifier = true;
+    }
+
+    if (pressedKeyboardModifiersList.isEmpty()) {
+        return false;
     }
 
     SendInputTaskController &controller = SendInputTask::s_GlobalSendInputTaskController;
