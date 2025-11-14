@@ -37,6 +37,7 @@ void QMacroListDialog::showEvent(QShowEvent *event)
 void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
 {
 
+    QTabWidget::keyPressEvent(event);
 }
 
 void MacroListDataTableWidget::setCategoryFilter(const QString &category)

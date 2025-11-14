@@ -30,6 +30,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
     inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 5;
+    inline constexpr int MACROLISTDATA_TABLE_COLUMN_COUNT = 3;
 
     inline constexpr int INITIAL_WINDOW_POSITION = -10000;
 
@@ -46,6 +47,10 @@ namespace QKeyMapperConstants {
     inline constexpr int BURST_MODE_COLUMN = 2;
     inline constexpr int LOCK_COLUMN = 3;
     inline constexpr int CATEGORY_COLUMN = 4;
+
+    inline constexpr int MACRONAME_COLUMN = 0;
+    inline constexpr int MACRO_COLUMN = 1;
+    inline constexpr int MACRO_CATEGORY_COLUMN = 2;
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
 

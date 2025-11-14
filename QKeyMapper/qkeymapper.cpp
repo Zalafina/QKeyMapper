@@ -1725,6 +1725,7 @@ void QKeyMapper::stopWinEventHook()
     if (s_WinEventHook != Q_NULLPTR){
         unhook_ret = UnhookWinEvent(s_WinEventHook);
         s_WinEventHook = Q_NULLPTR;
+        Q_UNUSED(unhook_ret);
 
 #ifdef DEBUG_LOGOUT_ON
         if (0 == unhook_ret) {
@@ -2612,6 +2613,8 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 #endif
         }
     }
+    Q_UNUSED(bestBitCount);
+    Q_UNUSED(bestSize);
 
     if (bestIcon) {
 #ifdef DEBUG_LOGOUT_ON
