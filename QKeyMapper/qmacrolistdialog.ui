@@ -13,7 +13,7 @@
   <property name="minimumSize">
    <size>
     <width>500</width>
-    <height>260</height>
+    <height>200</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -41,7 +41,7 @@
       <item>
        <widget class="MacroListTabWidget" name="macroListTabWidget">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="macrolist">
          <attribute name="title">
@@ -49,7 +49,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
-           <widget class="QTableWidget" name="globalMacroTable"/>
+           <widget class="MacroListDataTableWidget" name="globalMacroTable"/>
           </item>
          </layout>
         </widget>
@@ -59,7 +59,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
-           <widget class="QTableWidget" name="macroTable"/>
+           <widget class="MacroListDataTableWidget" name="macroTable"/>
           </item>
          </layout>
         </widget>
@@ -440,7 +440,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox">
+         <widget class="KeyListComboBox" name="mappingKeyListComboBox">
           <property name="minimumSize">
            <size>
             <width>151</width>
@@ -530,6 +530,16 @@
    <extends>QTabWidget</extends>
    <header>qmacrolistdialog.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MacroListDataTableWidget</class>
+   <extends>QTableWidget</extends>
+   <header>qmacrolistdialog.h</header>
+  </customwidget>
+  <customwidget>
+   <class>KeyListComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qkeymapper.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
