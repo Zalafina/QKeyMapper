@@ -20,6 +20,10 @@ void QMacroListDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
     setWindowTitle(tr("Mapping Macro List"));
+
+    ui->addMacroButton->setText(tr("Add Macro"));
+    ui->mapkeyLabel->setText(tr("MapKey"));
+    ui->categoryLabel->setText(tr("Category"));
 }
 
 void QMacroListDialog::refreshMacroListTabWidget()
