@@ -3115,11 +3115,6 @@ void QItemSetupDialog::on_crosshairSetupButton_clicked()
     }
 }
 
-void QItemSetupDialog::on_macroListButton_clicked()
-{
-    QKeyMapper::getInstance()->showMacroListDialog();
-}
-
 void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
 {
     QLineEdit::focusInEvent(event);

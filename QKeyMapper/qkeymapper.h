@@ -1257,6 +1257,8 @@ private slots:
 
     void on_ignoreRulesListButton_clicked();
 
+    void on_mappingMacroListButton_clicked();
+
 private:
     // Helper methods for saving/restoring category filter state
     // Helper methods for last auto matched setting management

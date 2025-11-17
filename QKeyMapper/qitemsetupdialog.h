@@ -121,7 +121,6 @@ private slots:
     void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
     void on_crosshairSetupButton_clicked();
-    void on_macroListButton_clicked();
     void on_fixedVKeyCodeSpinBox_valueChanged(int value);
     void on_keyRecordEditModeButton_clicked();
     void on_keyRecordLineEdit_textChanged(const QString &text);

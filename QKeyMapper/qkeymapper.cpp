@@ -19755,6 +19755,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->startupPositonSettingButton->setText(tr("Startup Position"));
     ui->ignoreRulesListButton->setText(tr("Ignore Rules List"));
     ui->mappingAdvancedSettingButton->setText(tr("Mapping Advanced"));
+    ui->mappingMacroListButton->setText(tr("Mapping MacroList"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
     ui->checkUpdateButton->setText(tr("Check Updates"));
     ui->mappingStartKeyLabel->setText(tr("MappingStart"));
@@ -25523,6 +25524,11 @@ void QKeyMapper::on_backupSettingButton_clicked()
 void QKeyMapper::on_ignoreRulesListButton_clicked()
 {
     showIgnoreRulesListDialog();
+}
+
+void QKeyMapper::on_mappingMacroListButton_clicked()
+{
+    showMacroListDialog();
 }
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
