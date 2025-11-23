@@ -9632,8 +9632,22 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     dst.setIniCodec("UTF-8");
 #endif
 
+    bool hasGeneralgroup = false;
+    QStringList rootKeys = src.childKeys();
+    if (rootKeys.contains(LANGUAGE_INDEX)) {
+        hasGeneralgroup = true;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "General group has LanguageIndex key, rootKeys.count =" << rootKeys.count();
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "General group is not exist, or have no rootKeys.";
+#endif
+    }
+
     QStringList srcGroups = src.childGroups();
-    if (srcGroups.isEmpty()) {
+    if (srcGroups.isEmpty() && !hasGeneralgroup) {
         // Reuse existing styled failure popup pattern
         QString message = tr("No valid groups found in the selected INI file.");
         showFailurePopup(message);
