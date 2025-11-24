@@ -27,6 +27,10 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
     ui->categoryFilterLabel->setText(tr("Filter"));
+
+    QTabWidget *tabWidget = ui->macroListTabWidget;
+    tabWidget->setTabText(tabWidget->indexOf(ui->macrolist),            tr("Macro")          );
+    tabWidget->setTabText(tabWidget->indexOf(ui->universalmacrolist),   tr("Universal Macro"));
 }
 
 void QMacroListDialog::refreshMacroListTabWidget()

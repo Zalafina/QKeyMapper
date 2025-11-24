@@ -64,13 +64,13 @@
            <number>2</number>
           </property>
           <item>
-           <widget class="MacroListDataTableWidget" name="globalMacroTable"/>
+           <widget class="MacroListDataTableWidget" name="macrolistTable"/>
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="globalmacro_list">
+        <widget class="QWidget" name="universalmacrolist">
          <attribute name="title">
-          <string>Global Macro</string>
+          <string>Universal Macro</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout">
           <property name="spacing">
@@ -89,7 +89,7 @@
            <number>2</number>
           </property>
           <item>
-           <widget class="MacroListDataTableWidget" name="macroTable"/>
+           <widget class="MacroListDataTableWidget" name="universalmacrolistTable"/>
           </item>
          </layout>
         </widget>
