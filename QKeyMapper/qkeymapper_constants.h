@@ -1128,6 +1128,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
     inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";
     inline constexpr const char SETUPDIALOG_MAPKEY_COMBOBOX_NAME[] = "SetupDialog_MappingKeyListComboBox";
+    inline constexpr const char MACROLIST_MAPKEY_COMBOBOX_NAME[] = "MacroList_MappingKeyListComboBox";
 
     inline constexpr const char SETUPDIALOG_MAPKEY_LINEEDIT_NAME[]        = "SetupDialog_MappingKeyLineEdit";
     inline constexpr const char SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME[]  = "SetupDialog_MappingKey_KeyUpLineEdit";

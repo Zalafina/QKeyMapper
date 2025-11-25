@@ -19095,6 +19095,10 @@ void QKeyMapper::updateMappingKeyListComboBox()
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->updateMappingKeyListComboBox();
     }
+
+    if (m_MacroListDialog != Q_NULLPTR) {
+        m_MacroListDialog->updateMappingKeyListComboBox();
+    }
 }
 
 void QKeyMapper::setKeyMappingTabWidgetCurrentIndex(int index)
@@ -22636,7 +22640,8 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     }
     else if (VK_CONTROL == vkeycode.KeyCode){
         if (QT_KEY_L_CTRL == (keyevent->nativeModifiers() & QT_KEY_L_CTRL)){
-            if (objectName() != SETUPDIALOG_MAPKEY_COMBOBOX_NAME) {
+            if (objectName() != SETUPDIALOG_MAPKEY_COMBOBOX_NAME
+                && objectName() != MACROLIST_MAPKEY_COMBOBOX_NAME) {
                 keycodeString = QString("L-Ctrl");
             }
         }
@@ -22659,7 +22664,9 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
         if (objectName() == ORIKEY_COMBOBOX_NAME && keycodeString == QString("Backspace")) {
             this->setCurrentText(QString());
         }
-        else if ((objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME || objectName() == SETUPDIALOG_MAPKEY_COMBOBOX_NAME)
+        else if ((objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME
+                  || objectName() == SETUPDIALOG_MAPKEY_COMBOBOX_NAME
+                  || objectName() == MACROLIST_MAPKEY_COMBOBOX_NAME)
             && keycodeString == QString("Esc")) {
             QComboBox::keyPressEvent(keyevent);
         }
@@ -22831,6 +22838,95 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                 QItemSetupDialog::getInstance()->setMappingKeyText(newMapKeyText);
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new MappingKeyText ->" << newMapKeyText;
+#endif
+            }
+        }
+    }
+    else if (objectName() == MACROLIST_MAPKEY_COMBOBOX_NAME) {
+        if (event->button() == Qt::RightButton) {
+            QString currentMapKeyText = QMacroListDialog::getEditingMacroText();
+            QString currentMapKeyListText = QMacroListDialog::getCurrentMapKeyListText();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[KeyListComboBox_MousePress]" << "Mouse Right Click on MacroList_MappingKeyListComboBox.";
+            qDebug().nospace() << "[KeyListComboBox_MousePress]" << " currentMapKeyText -> " << currentMapKeyText << ", currentMapKeyListText -> " << currentMapKeyListText;
+#endif
+            if (currentMapKeyListText.isEmpty() == false) {
+                if (currentMapKeyListText.startsWith(MOUSE_BUTTON_PREFIX)) {
+                    if (currentMapKeyListText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
+                    }
+                    else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
+                    }
+                }
+
+                QString newMapKeyText;
+                if (currentMapKeyText.isEmpty()) {
+                    if (currentMapKeyListText == REPEAT_STR) {
+                        newMapKeyText = REPEAT_TEMPLATE_STR;
+                    }
+                    else {
+                        newMapKeyText = currentMapKeyListText;
+                    }
+                }
+                else {
+                    int cursorPos = QMacroListDialog::getEditingMacroCursorPosition();
+                    bool isCursorAtBegin = (cursorPos == 0);
+                    bool isCursorAtEnd = (cursorPos == currentMapKeyText.length());
+
+                    if (currentMapKeyListText == REPEAT_STR) {
+                        if (isCursorAtBegin) {
+                            newMapKeyText = REPEAT_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                        }
+                        else if (isCursorAtEnd) {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                        }
+                    }
+                    else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                        if (currentMapKeyListText == SEPARATOR_WAITTIME
+                            || currentMapKeyListText == PREFIX_SEND_DOWN
+                            || currentMapKeyListText == PREFIX_SEND_UP
+                            || currentMapKeyListText == PREFIX_SEND_BOTH
+                            || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                            newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                        }
+                    }
+                    else {
+                        if (isCursorAtEnd) {
+                            if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == PREFIX_SEND_DOWN
+                                || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_BOTH
+                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
+                            }
+                        }
+                        else {
+                            if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == PREFIX_SEND_DOWN
+                                || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_BOTH
+                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
+                        }
+                    }
+                }
+                QMacroListDialog::getInstance()->setEditingMacroText(newMapKeyText);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[KeyListComboBox_MousePress]" << "MacroList Set new MappingMacroText ->" << newMapKeyText;
 #endif
             }
         }

@@ -71,9 +71,24 @@ public:
 
     void setUILanguage(int languageindex);
     void refreshMacroListTabWidget(void);
+    void updateMappingKeyListComboBox(void);
+
+    QPushButton* getMapListSelectKeyboardButton(void) const;
+    QPushButton* getMapListSelectMouseButton(void) const;
+    QPushButton* getMapListSelectGamepadButton(void) const;
+    QPushButton* getMapListSelectFunctionButton(void) const;
+
+public:
+    static QString getEditingMacroText(void);
+    static int getEditingMacroCursorPosition(void);
+    static void setEditingMacroText(const QString &new_macrotext);
+    static QString getCurrentMapKeyListText(void);
 
 protected:
     void showEvent(QShowEvent *event) override;
+
+private:
+    void initKeyListComboBoxes(void);
 
 private:
     static QMacroListDialog *m_instance;

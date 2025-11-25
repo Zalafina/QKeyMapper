@@ -292,7 +292,7 @@
           <widget class="QPushButton" name="mapList_SelectKeyboardButton">
            <property name="geometry">
             <rect>
-             <x>165</x>
+             <x>75</x>
              <y>10</y>
              <width>22</width>
              <height>22</height>
@@ -338,7 +338,7 @@
           <widget class="QPushButton" name="mapList_SelectFunctionButton">
            <property name="geometry">
             <rect>
-             <x>135</x>
+             <x>165</x>
              <y>10</y>
              <width>22</width>
              <height>22</height>
@@ -378,7 +378,7 @@
           <widget class="QPushButton" name="mapList_SelectGamepadButton">
            <property name="geometry">
             <rect>
-             <x>105</x>
+             <x>135</x>
              <y>10</y>
              <width>22</width>
              <height>22</height>
@@ -418,7 +418,7 @@
           <widget class="QPushButton" name="mapList_SelectMouseButton">
            <property name="geometry">
             <rect>
-             <x>75</x>
+             <x>105</x>
              <y>10</y>
              <width>22</width>
              <height>22</height>
@@ -471,7 +471,7 @@
             <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
            </property>
           </widget>
-          <widget class="KeyListComboBox" name="mappingKeyListComboBox">
+          <widget class="KeyListComboBox" name="MacroList_MappingKeyListComboBox">
            <property name="geometry">
             <rect>
              <x>76</x>
@@ -492,6 +492,9 @@
              <height>0</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::FocusPolicy::ClickFocus</enum>
+           </property>
           </widget>
           <widget class="QComboBox" name="categoryFilterComboBox">
            <property name="geometry">
@@ -507,6 +510,9 @@
              <width>121</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::FocusPolicy::ClickFocus</enum>
            </property>
           </widget>
           <widget class="QLabel" name="categoryFilterLabel">

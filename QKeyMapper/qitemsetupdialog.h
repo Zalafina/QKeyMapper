@@ -35,6 +35,17 @@ public:
     void updateMappingKeyListComboBox(void);
     bool isCrosshairSetupDialogVisible(void);
     void updateKeyRecordLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
+    void syncConnectOriginalKeySelectButtons(void);
+    void syncConnectMappingKeySelectButtons(void);
+
+    QPushButton* getOriListSelectKeyboardButton(void) const;
+    QPushButton* getOriListSelectMouseButton(void) const;
+    QPushButton* getOriListSelectGamepadButton(void) const;
+    QPushButton* getOriListSelectFunctionButton(void) const;
+    QPushButton* getMapListSelectKeyboardButton(void) const;
+    QPushButton* getMapListSelectMouseButton(void) const;
+    QPushButton* getMapListSelectGamepadButton(void) const;
+    QPushButton* getMapListSelectFunctionButton(void) const;
 
 public:
     static QString getOriginalKeyText(void);
