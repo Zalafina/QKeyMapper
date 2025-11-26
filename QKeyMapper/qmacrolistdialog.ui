@@ -47,7 +47,7 @@
          <attribute name="title">
           <string>Macro</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <layout class="QVBoxLayout" name="verticalLayout_macrolist">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -72,7 +72,7 @@
          <attribute name="title">
           <string>Universal Macro</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_universalmacrolist">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -118,7 +118,7 @@
        <height>150</height>
       </size>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_5">
+     <layout class="QVBoxLayout" name="verticalLayout_others">
       <property name="leftMargin">
        <number>0</number>
       </property>
@@ -178,6 +178,9 @@
             <height>0</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::FocusPolicy::ClickFocus</enum>
+          </property>
          </widget>
         </item>
         <item>
@@ -222,6 +225,9 @@
             <height>22</height>
            </size>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::FocusPolicy::ClickFocus</enum>
+          </property>
          </widget>
         </item>
        </layout>
@@ -260,7 +266,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="macroContentLineEdit"/>
+         <widget class="QLineEdit" name="macroContentLineEdit">
+          <property name="focusPolicy">
+           <enum>Qt::FocusPolicy::ClickFocus</enum>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

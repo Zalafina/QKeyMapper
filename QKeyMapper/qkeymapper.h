@@ -885,6 +885,7 @@ public:
     static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex, const QString &originalkeystr_matched = QString(), int nesting_level = 0);
     static ValidationResult validateSingleMappingKey(const QString &mapkey, int nesting_level = 0);
     static ValidationResult validateUnlockOriginalKeyString(const QString &originalkeystr);
+    static ValidationResult validateMappingMacroString(QString &mappingMacro);
     static bool checkOriginalkeyStr(const QString &originalkeystr);
     static bool checkMappingkeyStr(QString &mappingkeystr);
     static void collectMappingTableTabHotkeys(void);
@@ -1393,6 +1394,10 @@ public:
     static void updateIgnoreWindowInfoListDescriptionTranslation(void);
     static void saveIgnoreRulesToINI(void);
     static void loadIgnoreRulesFromINI(void);
+    static void saveMacroListToINI(void);
+    static void loadMacroListFromINI(void);
+    static void saveUniversalMacroListToINI(void);
+    static void loadUniversalMacroListFromINI(void);
 private:
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false);
     void loadEmptyMapSetting(void);
@@ -1481,7 +1486,7 @@ public:
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
     static OrderedMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
     static OrderedMap<QString, MappingMacroData> s_MappingMacroList;
-    static OrderedMap<QString, MappingMacroData> s_GlobalMappingMacroList;
+    static OrderedMap<QString, MappingMacroData> s_UniversalMappingMacroList;
     static int s_KeyMappingTabWidgetCurrentIndex;
     static int s_KeyMappingTabWidgetLastIndex;
     // static QList<MAP_KEYDATA> KeyMappingDataList;

@@ -22,7 +22,7 @@ double QKeyMapper::s_DisplayScale = 1.0;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
 OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
 OrderedMap<QString, MappingMacroData> QKeyMapper::s_MappingMacroList;
-OrderedMap<QString, MappingMacroData> QKeyMapper::s_GlobalMappingMacroList;
+OrderedMap<QString, MappingMacroData> QKeyMapper::s_UniversalMappingMacroList;
 int QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = 0;
 int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
@@ -4418,6 +4418,40 @@ ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &orig
         return result;
     }
 
+    return result;
+}
+
+ValidationResult QKeyMapper::validateMappingMacroString(QString &mappingMacro)
+{
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
+    static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
+    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingMacro, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
+
+    // Remove whitespace from the temporary string (excluding Run and SendText content)
+    tempMappingKey.remove(whitespace_reg);
+
+    // Restore all preserved parts
+    for (int i = 0; i < preservedParts.size(); ++i) {
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, preservedParts[i]);
+    }
+
+    mappingMacro = tempMappingKey;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingMacro;
+#endif
+
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingMacro, SPLIT_WITH_NEXT);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingMacro, mappingKeySeqList, INITIAL_ROW_INDEX);
     return result;
 }
 
@@ -9517,6 +9551,26 @@ void QKeyMapper::loadIgnoreRulesFromINI()
     }
 }
 
+void QKeyMapper::saveMacroListToINI()
+{
+
+}
+
+void QKeyMapper::loadMacroListFromINI()
+{
+
+}
+
+void QKeyMapper::saveUniversalMacroListToINI()
+{
+
+}
+
+void QKeyMapper::loadUniversalMacroListFromINI()
+{
+
+}
+
 void QKeyMapper::exportSettingToFile()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -9775,6 +9829,12 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     // Save ignore rules to INI file
     saveIgnoreRulesToINI();
+
+    // Save MacroList to INI file
+    saveMacroListToINI();
+
+    // Save UniversalMacroList to INI file
+    saveUniversalMacroListToINI();
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -10835,6 +10895,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     if (settingtext.isEmpty() || load_all) {
         // Load ignore rules from INI file
         loadIgnoreRulesFromINI();
+
+        // Load UniversalMacroList from INI file
+        loadUniversalMacroListFromINI();
 
         if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
             int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
@@ -14206,6 +14269,9 @@ void QKeyMapper::loadGeneralSetting()
 
     // Load ignore rules from INI file
     loadIgnoreRulesFromINI();
+
+    // Load UniversalMacroList from INI file
+    loadUniversalMacroListFromINI();
 
     if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
         int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();

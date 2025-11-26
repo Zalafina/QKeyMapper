@@ -86,6 +86,13 @@ public:
 
 protected:
     void showEvent(QShowEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+
+private slots:
+    void on_addMacroButton_clicked();
+
+private slots:
+    void addMacroToList(void);
 
 private:
     void initKeyListComboBoxes(void);

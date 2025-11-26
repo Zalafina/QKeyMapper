@@ -29,7 +29,30 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->mapList_SelectGamepadButton->setChecked(true);
     ui->mapList_SelectFunctionButton->setChecked(true);
 
-    ui->MacroList_MappingKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
+    QFont customFont(FONTNAME_ENGLISH, 9);
+    ui->macroNameLabel->setFont(customFont);
+    ui->catetoryLabel->setFont(customFont);
+    ui->macroContentLabel->setFont(customFont);
+    ui->mapkeyLabel->setFont(customFont);
+    ui->categoryFilterLabel->setFont(customFont);
+    ui->MacroList_MappingKeyListComboBox->setFont(customFont);
+    ui->categoryFilterComboBox->setFont(customFont);
+    ui->macroNameLineEdit->setFont(customFont);
+    ui->macroContentLineEdit->setFont(customFont);
+    ui->categoryLineEdit->setFont(customFont);
+
+    int scale = QKeyMapper::getInstance()->m_UI_Scale;
+    if (UI_SCALE_4K_PERCENT_150 == scale) {
+        customFont.setPointSize(14);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
+    ui->addMacroButton->setFont(customFont);
+
+    QObject::connect(ui->macroNameLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
+    QObject::connect(ui->macroContentLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
+    QObject::connect(ui->categoryLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
 
     if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
         QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
@@ -129,6 +152,89 @@ void QMacroListDialog::showEvent(QShowEvent *event)
     refreshMacroListTabWidget();
 
     QDialog::showEvent(event);
+}
+
+void QMacroListDialog::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QWidget *focused = focusWidget();
+        if (focused && focused != this) {
+            focused->clearFocus();
+        }
+    }
+
+    QDialog::mousePressEvent(event);
+}
+
+void QMacroListDialog::on_addMacroButton_clicked()
+{
+    addMacroToList();
+}
+
+void QMacroListDialog::addMacroToList()
+{
+    constexpr int CURRENT_TAB_NONE              = -1;
+    constexpr int CURRENT_TAB_MACRO             = 0;
+    constexpr int CURRENT_TAB_UNIVERSAL_MACRO   = 1;
+
+    int current_tab = CURRENT_TAB_NONE;
+    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
+        current_tab = CURRENT_TAB_MACRO;
+    }
+    else if (ui->macroListTabWidget->currentWidget() == ui->universalmacrolist) {
+        current_tab = CURRENT_TAB_UNIVERSAL_MACRO;
+    }
+
+    if (current_tab == CURRENT_TAB_NONE) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    const char* currentTabStr = (current_tab == CURRENT_TAB_MACRO) ? "Macro List" : "Universal Macro List";
+    qDebug() << "[QMacroListDialog::addMacroToList] Add macro to" << currentTabStr;
+#endif
+
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
+
+    QString macroname_str = ui->macroNameLineEdit->text();
+    macroname_str = macroname_str.trimmed();
+    macroname_str.replace(simplified_regex, " ");
+
+    QString macro_str = ui->macroContentLineEdit->text();
+    macro_str = macro_str.trimmed();
+    macro_str.replace(simplified_regex, " ");
+
+    QString category_str = ui->categoryLineEdit->text();
+    category_str = category_str.trimmed();
+    category_str.replace(simplified_regex, " ");
+
+    ValidationResult result = QKeyMapper::validateMappingMacroString(macro_str);
+
+    QString popupMessage;
+    QString popupMessageColor;
+    int popupMessageDisplayTime = 3000;
+    if (!result.isValid) {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = tr("Macro") + " -> " + result.errorMessage;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    OrderedMap<QString, MappingMacroData>& CurrentMacroList = (current_tab == CURRENT_TAB_MACRO) ? QKeyMapper::s_MappingMacroList : QKeyMapper::s_UniversalMappingMacroList;
+
+    if (CurrentMacroList.contains(macroname_str)) {
+        // Macro name is duplicate
+        popupMessageColor = FAILURE_COLOR;
+        if (current_tab == CURRENT_TAB_MACRO) {
+            popupMessage = tr("Macro") + " -> " + tr("Duplicate macro name!");
+        }
+        else {
+            popupMessage = tr("Universal Macro") + " -> " + tr("Duplicate macro name!");
+        }
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
 }
 
 void QMacroListDialog::initKeyListComboBoxes()
