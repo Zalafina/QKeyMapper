@@ -20854,13 +20854,9 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[updateMousePointLabelDisplay]" << " Point X: " << point.x() << ", Point Y: " << point.y();
 #endif
-    if (point.x() >= 0 && point.y() >= 0) {
-        QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
-        ui->pointDisplayLabel->setText(labelText);
-    }
-    // else {
-    //     ui->pointDisplayLabel->clear();
-    // }
+
+    QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
+    ui->pointDisplayLabel->setText(labelText);
 }
 
 void QKeyMapper::showMousePoints(int showpoints_trigger)
