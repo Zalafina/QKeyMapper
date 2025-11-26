@@ -4825,6 +4825,10 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
         int x = pointInfo.x;  // Virtual desktop coordinate X
         int y = pointInfo.y;  // Virtual desktop coordinate Y
 
+        if ((x < 0 || y < 0) && showMode == SHOW_MODE_WINDOW_MOUSEPOINTS) {
+            continue;
+        }
+
         // Convert virtual desktop coordinates to window client coordinates
         // For SCREEN mode: window covers entire virtual desktop starting at (virtualLeft, virtualTop)
         // For WINDOW mode: window covers specific client area, coordinates are already relative
