@@ -4825,10 +4825,6 @@ void QKeyMapper::DrawMousePoints(HWND hwnd, HDC hdc, int showMode)
         int x = pointInfo.x;  // Virtual desktop coordinate X
         int y = pointInfo.y;  // Virtual desktop coordinate Y
 
-        if (x < 0 || y < 0) {
-            continue;
-        }
-
         // Convert virtual desktop coordinates to window client coordinates
         // For SCREEN mode: window covers entire virtual desktop starting at (virtualLeft, virtualTop)
         // For WINDOW mode: window covers specific client area, coordinates are already relative
@@ -5356,7 +5352,7 @@ QPoint QKeyMapper::getMousePointFromLabelString(QString &labelstr)
     int x = x_str.toInt(&x_ok);
     int y = y_str.toInt(&y_ok);
 
-    if (x_ok && y_ok && x >= 0 && y >= 0) {
+    if (x_ok && y_ok) {
         mousepoint.rx() = x;
         mousepoint.ry() = y;
     }
@@ -21800,16 +21796,14 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int x = mousepoint.x();
                     int y = mousepoint.y();
 
-                    if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+                    currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
 
-                        if (keymapdata.Mapping_Keys.size() == 1
-                            && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
-                            && !ui->nextarrowCheckBox->isChecked()) {
-                            QString message = tr("Already set a same screen mouse point!");
-                            showFailurePopup(message);
-                            return;
-                        }
+                    if (keymapdata.Mapping_Keys.size() == 1
+                        && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
+                        && !ui->nextarrowCheckBox->isChecked()) {
+                        QString message = tr("Already set a same screen mouse point!");
+                        showFailurePopup(message);
+                        return;
                     }
                 }
             }
@@ -21825,16 +21819,14 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     int x = mousepoint.x();
                     int y = mousepoint.y();
 
-                    if (x >= 0 && y >= 0) {
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
+                    currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
 
-                        if (keymapdata.Mapping_Keys.size() == 1
-                            && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
-                            && !ui->nextarrowCheckBox->isChecked()) {
-                            QString message = tr("Already set a same window mouse point!");
-                            showFailurePopup(message);
-                            return;
-                        }
+                    if (keymapdata.Mapping_Keys.size() == 1
+                        && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
+                        && !ui->nextarrowCheckBox->isChecked()) {
+                        QString message = tr("Already set a same window mouse point!");
+                        showFailurePopup(message);
+                        return;
                     }
                 }
             }
@@ -22037,9 +22029,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int x = mousepoint.x();
                         int y = mousepoint.y();
 
-                        if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
-                        }
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
                     }
                 }
                 else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
@@ -22054,9 +22044,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                         int x = mousepoint.x();
                         int y = mousepoint.y();
 
-                        if (x >= 0 && y >= 0) {
-                            currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
-                        }
+                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
                     }
                 }
                 else if (currentMapKeyText == UNLOCK_STR) {
