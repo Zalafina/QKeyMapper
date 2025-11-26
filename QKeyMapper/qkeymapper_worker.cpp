@@ -3167,7 +3167,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
 void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey)
 {
-    static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((\d+),(\d+)\))");
+    static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
@@ -3183,7 +3183,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
         int x = match.captured(4).toInt(&x_ok);
         int y = match.captured(5).toInt(&y_ok);
 
-        if (!x_ok || !y_ok || x < 0 || y < 0) {
+        if (!x_ok || !y_ok) {
             return;
         }
 
@@ -3275,7 +3275,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 
 void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey)
 {
-    static QRegularExpression regex(R"(Mouse-Move(:W)?(:BG)?\((\d+),(\d+)\))");
+    static QRegularExpression regex(R"(Mouse-Move(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
@@ -3286,7 +3286,7 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postm
         int x = match.captured(3).toInt(&x_ok);
         int y = match.captured(4).toInt(&y_ok);
 
-        if (!x_ok || !y_ok || x < 0 || y < 0) {
+        if (!x_ok || !y_ok) {
             return;
         }
 
