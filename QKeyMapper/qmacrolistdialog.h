@@ -95,7 +95,11 @@ private slots:
     void addMacroToList(void);
 
 private:
+    void initMacroListTabWidget(void);
+    void initMacroListTable(MacroListDataTableWidget *macroDataTable);
     void initKeyListComboBoxes(void);
+    void resizeMacroListTabWidgetColumnWidth(void);
+    void resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable);
 
 private:
     static QMacroListDialog *m_instance;

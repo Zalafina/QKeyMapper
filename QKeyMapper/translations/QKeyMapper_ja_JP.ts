@@ -2809,84 +2809,88 @@ Interceptionドライバのインストールを続行してもよろしいで�
     <name>QMacroListDialog</name>
     <message>
         <location filename="../qmacrolistdialog.ui" line="20"/>
-        <location filename="../qmacrolistdialog.cpp" line="70"/>
+        <location filename="../qmacrolistdialog.cpp" line="73"/>
         <source>Mapping Macro List</source>
         <translation>マッピングマクロ一覧</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="48"/>
         <location filename="../qmacrolistdialog.ui" line="261"/>
-        <location filename="../qmacrolistdialog.cpp" line="74"/>
-        <location filename="../qmacrolistdialog.cpp" line="80"/>
-        <location filename="../qmacrolistdialog.cpp" line="218"/>
+        <location filename="../qmacrolistdialog.cpp" line="77"/>
+        <location filename="../qmacrolistdialog.cpp" line="84"/>
+        <location filename="../qmacrolistdialog.cpp" line="222"/>
+        <location filename="../qmacrolistdialog.cpp" line="311"/>
         <source>Macro</source>
         <translation>マクロ</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="73"/>
-        <location filename="../qmacrolistdialog.cpp" line="81"/>
+        <location filename="../qmacrolistdialog.cpp" line="85"/>
         <source>Universal Macro</source>
         <translation>汎用マクロ</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="160"/>
-        <location filename="../qmacrolistdialog.cpp" line="72"/>
+        <location filename="../qmacrolistdialog.cpp" line="75"/>
+        <location filename="../qmacrolistdialog.cpp" line="310"/>
         <source>Name</source>
         <translation>マクロ名</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="478"/>
-        <location filename="../qmacrolistdialog.cpp" line="76"/>
+        <location filename="../qmacrolistdialog.cpp" line="80"/>
         <source>MapKeys</source>
         <translation>マップキー</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="538"/>
-        <location filename="../qmacrolistdialog.cpp" line="77"/>
+        <location filename="../qmacrolistdialog.cpp" line="81"/>
         <source>Filter</source>
         <translation>分類表示</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="557"/>
+        <location filename="../qmacrolistdialog.cpp" line="78"/>
         <source>Clear</source>
         <translation>クリア</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="608"/>
-        <location filename="../qmacrolistdialog.cpp" line="75"/>
+        <location filename="../qmacrolistdialog.cpp" line="79"/>
         <source>Add Macro</source>
         <translation>マクロ追加</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="207"/>
-        <location filename="../qmacrolistdialog.cpp" line="73"/>
+        <location filename="../qmacrolistdialog.cpp" line="76"/>
+        <location filename="../qmacrolistdialog.cpp" line="312"/>
         <source>Category</source>
         <translation>分類</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="228"/>
-        <location filename="../qmacrolistdialog.cpp" line="250"/>
+        <location filename="../qmacrolistdialog.cpp" line="232"/>
+        <location filename="../qmacrolistdialog.cpp" line="254"/>
         <source>Macro List</source>
         <translation>マクロ一覧</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="228"/>
-        <location filename="../qmacrolistdialog.cpp" line="253"/>
+        <location filename="../qmacrolistdialog.cpp" line="232"/>
+        <location filename="../qmacrolistdialog.cpp" line="257"/>
         <source>Universal Macro List</source>
         <translation>汎用マクロ一覧</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="229"/>
+        <location filename="../qmacrolistdialog.cpp" line="233"/>
         <source>Macro name already exists. Replace existing macro?</source>
         <translation>マクロ名が既に存在します。既存のマクロを置き換えますか？</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="256"/>
+        <location filename="../qmacrolistdialog.cpp" line="260"/>
         <source>Macro &quot;%1&quot; updated successfully</source>
         <translation>マクロ「%1」を更新しました</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="259"/>
+        <location filename="../qmacrolistdialog.cpp" line="263"/>
         <source>Macro &quot;%1&quot; added successfully</source>
         <translation>マクロ「%1」を追加しました</translation>
     </message>

@@ -30,6 +30,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->mapList_SelectFunctionButton->setChecked(true);
 
     QFont customFont(FONTNAME_ENGLISH, 9);
+    ui->macroListTabWidget->setFont(customFont);
     ui->macroNameLabel->setFont(customFont);
     ui->catetoryLabel->setFont(customFont);
     ui->macroContentLabel->setFont(customFont);
@@ -49,6 +50,8 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
         customFont.setPointSize(12);
     }
     ui->addMacroButton->setFont(customFont);
+
+    initMacroListTabWidget();
 
     QObject::connect(ui->macroNameLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
     QObject::connect(ui->macroContentLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
@@ -72,6 +75,7 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->macroNameLabel->setText(tr("Name"));
     ui->catetoryLabel->setText(tr("Category"));
     ui->macroContentLabel->setText(tr("Macro"));
+    ui->clearButton->setText(tr("Clear"));
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
     ui->categoryFilterLabel->setText(tr("Filter"));
@@ -79,6 +83,13 @@ void QMacroListDialog::setUILanguage(int languageindex)
     QTabWidget *tabWidget = ui->macroListTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->macrolist),            tr("Macro")          );
     tabWidget->setTabText(tabWidget->indexOf(ui->universalmacrolist),   tr("Universal Macro"));
+
+    ui->macrolistTable->setHorizontalHeaderLabels(QStringList()             << tr("Name")
+                                                                            << tr("Macro")
+                                                                            << tr("Category"));
+    ui->universalmacrolistTable->setHorizontalHeaderLabels(QStringList()    << tr("Name")
+                                                                            << tr("Macro")
+                                                                            << tr("Category"));
 }
 
 void QMacroListDialog::refreshMacroListTabWidget()
@@ -264,9 +275,122 @@ void QMacroListDialog::addMacroToList()
     refreshMacroListTabWidget();
 }
 
+void QMacroListDialog::initMacroListTabWidget()
+{
+    QTabWidget *tabWidget = ui->macroListTabWidget;
+    QStyle* windowsStyle = QStyleFactory::create("windows");
+    tabWidget->setStyle(windowsStyle);
+    tabWidget->setFocusPolicy(Qt::StrongFocus);
+    QTabBar *bar = tabWidget->tabBar();
+    for (QObject *child : bar->children()) {
+        if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
+            btn->setFocusPolicy(Qt::NoFocus);
+        }
+    }
+    tabWidget->setFont(QFont(FONTNAME_ENGLISH, 9));
+
+    initMacroListTable(ui->macrolistTable);
+    initMacroListTable(ui->universalmacrolistTable);
+}
+
+void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTable)
+{
+    macroDataTable->setFocusPolicy(Qt::NoFocus);
+    macroDataTable->setColumnCount(MACROLISTDATA_TABLE_COLUMN_COUNT);
+
+    macroDataTable->horizontalHeader()->setStretchLastSection(true);
+    macroDataTable->horizontalHeader()->setHighlightSections(false);
+
+    resizeMacroListTableColumnWidth(macroDataTable);
+
+    macroDataTable->verticalHeader()->setVisible(false);
+    macroDataTable->verticalHeader()->setDefaultSectionSize(25);
+    macroDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    macroDataTable->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    // Allow editing only for specific columns (will be controlled per item)
+    macroDataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    /* Suuport Drag&Drop for macroDataTable Table */
+    macroDataTable->setDragEnabled(true);
+    macroDataTable->setDragDropMode(QAbstractItemView::InternalMove);
+
+    macroDataTable->setHorizontalHeaderLabels(QStringList() << tr("Name")
+                                                            << tr("Macro")
+                                                            << tr("Category"));
+
+    QFont customFont(FONTNAME_ENGLISH, 9);
+    macroDataTable->setFont(customFont);
+    macroDataTable->horizontalHeader()->setFont(customFont);
+    macroDataTable->setStyle(QStyleFactory::create("Fusion"));
+}
+
 void QMacroListDialog::initKeyListComboBoxes()
 {
     updateMappingKeyListComboBox();
+}
+
+void QMacroListDialog::resizeMacroListTabWidgetColumnWidth()
+{
+    resizeMacroListTableColumnWidth(ui->macrolistTable);
+    resizeMacroListTableColumnWidth(ui->universalmacrolistTable);
+}
+
+void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable)
+{
+#if 0
+    mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
+
+    int original_key_width_min = mappingDataTable->width()/5 - 15;
+    int original_key_width_max = mappingDataTable->width() / 2;
+    int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
+
+    mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
+    int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
+    int lock_width = burst_mode_width;
+    burst_mode_width += 8;
+
+    int category_width = 0;
+    if (mappingDataTable->isCategoryColumnVisible()) {
+        lock_width += 8; // Add padding for lock column
+        mappingDataTable->horizontalHeader()->setStretchLastSection(false);
+        int category_width_max = mappingDataTable->width() / 5;
+        mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
+        category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
+        if (category_width < burst_mode_width) {
+            category_width = burst_mode_width;
+        }
+        if (category_width > category_width_max) {
+            category_width = category_width_max;
+        }
+        mappingDataTable->horizontalHeader()->setStretchLastSection(true);
+    }
+
+    if (original_key_width < original_key_width_min) {
+        original_key_width = original_key_width_min;
+    }
+    else if (original_key_width > original_key_width_max) {
+        original_key_width = original_key_width_max;
+    }
+
+    int mapping_key_width_min = mappingDataTable->width()/5 - 15;
+    int mapping_key_width = mappingDataTable->width() - original_key_width - burst_mode_width - lock_width - category_width - 16;
+    if (mapping_key_width < mapping_key_width_min) {
+        mapping_key_width = mapping_key_width_min;
+    }
+
+    mappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
+    mappingDataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    mappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
+    mappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
+    if (mappingDataTable->isCategoryColumnVisible()) {
+        mappingDataTable->setColumnWidth(CATEGORY_COLUMN, category_width);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
+#endif
+
+#endif
 }
 
 void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
