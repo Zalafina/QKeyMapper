@@ -222,19 +222,46 @@ void QMacroListDialog::addMacroToList()
 
     OrderedMap<QString, MappingMacroData>& CurrentMacroList = (current_tab == CURRENT_TAB_MACRO) ? QKeyMapper::s_MappingMacroList : QKeyMapper::s_UniversalMappingMacroList;
 
+    // Check if macro name already exists
+    bool isUpdate = false;
     if (CurrentMacroList.contains(macroname_str)) {
-        // Macro name is duplicate
-        popupMessageColor = FAILURE_COLOR;
-        if (current_tab == CURRENT_TAB_MACRO) {
-            popupMessage = tr("Macro") + " -> " + tr("Duplicate macro name!");
+        QString dialogTitle = (current_tab == CURRENT_TAB_MACRO) ? tr("Macro List") : tr("Universal Macro List");
+        QString messageText = tr("Macro name already exists. Replace existing macro?");
+        
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            dialogTitle,
+            messageText,
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        
+        if (reply != QMessageBox::Yes) {
+            return;
         }
-        else {
-            popupMessage = tr("Universal Macro") + " -> " + tr("Duplicate macro name!");
-        }
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        return;
+        isUpdate = true;
     }
 
+    // Insert or update macro in the list
+    CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str };
+
+    // Show success message
+    popupMessageColor = SUCCESS_COLOR;
+    if (current_tab == CURRENT_TAB_MACRO) {
+        popupMessage = tr("Macro List") + " -> ";
+    }
+    else {
+        popupMessage = tr("Universal Macro List") + " -> ";
+    }
+    if (isUpdate) {
+        popupMessage = popupMessage + tr("Macro \"%1\" updated successfully").arg(macroname_str);
+    }
+    else {
+        popupMessage = popupMessage + tr("Macro \"%1\" added successfully").arg(macroname_str);
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+
+    // Refresh the macro list display
+    refreshMacroListTabWidget();
 }
 
 void QMacroListDialog::initKeyListComboBoxes()

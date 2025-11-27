@@ -2819,14 +2819,12 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qmacrolistdialog.cpp" line="74"/>
         <location filename="../qmacrolistdialog.cpp" line="80"/>
         <location filename="../qmacrolistdialog.cpp" line="218"/>
-        <location filename="../qmacrolistdialog.cpp" line="229"/>
         <source>Macro</source>
         <translation>Macro</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="73"/>
         <location filename="../qmacrolistdialog.cpp" line="81"/>
-        <location filename="../qmacrolistdialog.cpp" line="232"/>
         <source>Universal Macro</source>
         <translation>Universal Macro</translation>
     </message>
@@ -2849,7 +2847,12 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <translation>Filter</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.ui" line="583"/>
+        <location filename="../qmacrolistdialog.ui" line="557"/>
+        <source>Clear</source>
+        <translation>Clear</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.ui" line="608"/>
         <location filename="../qmacrolistdialog.cpp" line="75"/>
         <source>Add Macro</source>
         <translation>Add Macro</translation>
@@ -2861,10 +2864,31 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <translation>Category</translation>
     </message>
     <message>
+        <location filename="../qmacrolistdialog.cpp" line="228"/>
+        <location filename="../qmacrolistdialog.cpp" line="250"/>
+        <source>Macro List</source>
+        <translation>Macro List</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="228"/>
+        <location filename="../qmacrolistdialog.cpp" line="253"/>
+        <source>Universal Macro List</source>
+        <translation>Universal Macro List</translation>
+    </message>
+    <message>
         <location filename="../qmacrolistdialog.cpp" line="229"/>
-        <location filename="../qmacrolistdialog.cpp" line="232"/>
-        <source>Duplicate macro name!</source>
-        <translation>Duplicate macro name!</translation>
+        <source>Macro name already exists. Replace existing macro?</source>
+        <translation>Macro name already exists. Replace existing macro?</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="256"/>
+        <source>Macro &quot;%1&quot; updated successfully</source>
+        <translation>Macro &quot;%1&quot; updated successfully</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="259"/>
+        <source>Macro &quot;%1&quot; added successfully</source>
+        <translation>Macro &quot;%1&quot; added successfully</translation>
     </message>
 </context>
 <context>
