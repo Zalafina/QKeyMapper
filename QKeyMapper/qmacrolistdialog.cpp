@@ -219,11 +219,23 @@ void QMacroListDialog::addMacroToList()
     category_str = category_str.trimmed();
     category_str.replace(simplified_regex, " ");
 
-    ValidationResult result = QKeyMapper::validateMappingMacroString(macro_str);
+    if (macro_str.isEmpty()) {
+        return;
+    }
 
     QString popupMessage;
     QString popupMessageColor;
-    int popupMessageDisplayTime = 3000;
+    int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+
+    if (macroname_str.isEmpty()) {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = tr("Macro name cannot be empty.");
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    ValidationResult result = QKeyMapper::validateMappingMacroString(macro_str);
+
     if (!result.isValid) {
         popupMessageColor = FAILURE_COLOR;
         popupMessage = tr("Macro") + " -> " + result.errorMessage;

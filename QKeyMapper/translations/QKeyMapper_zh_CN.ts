@@ -2817,8 +2817,10 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qmacrolistdialog.ui" line="261"/>
         <location filename="../qmacrolistdialog.cpp" line="77"/>
         <location filename="../qmacrolistdialog.cpp" line="84"/>
-        <location filename="../qmacrolistdialog.cpp" line="222"/>
-        <location filename="../qmacrolistdialog.cpp" line="311"/>
+        <location filename="../qmacrolistdialog.cpp" line="88"/>
+        <location filename="../qmacrolistdialog.cpp" line="91"/>
+        <location filename="../qmacrolistdialog.cpp" line="241"/>
+        <location filename="../qmacrolistdialog.cpp" line="330"/>
         <source>Macro</source>
         <translation>宏</translation>
     </message>
@@ -2831,7 +2833,9 @@ Do you confirm to continue installing Interception driver?</source>
     <message>
         <location filename="../qmacrolistdialog.ui" line="160"/>
         <location filename="../qmacrolistdialog.cpp" line="75"/>
-        <location filename="../qmacrolistdialog.cpp" line="310"/>
+        <location filename="../qmacrolistdialog.cpp" line="87"/>
+        <location filename="../qmacrolistdialog.cpp" line="90"/>
+        <location filename="../qmacrolistdialog.cpp" line="329"/>
         <source>Name</source>
         <translation>宏名</translation>
     </message>
@@ -2854,7 +2858,7 @@ Do you confirm to continue installing Interception driver?</source>
         <translation>清空</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.ui" line="608"/>
+        <location filename="../qmacrolistdialog.ui" line="602"/>
         <location filename="../qmacrolistdialog.cpp" line="79"/>
         <source>Add Macro</source>
         <translation>添加宏</translation>
@@ -2862,34 +2866,41 @@ Do you confirm to continue installing Interception driver?</source>
     <message>
         <location filename="../qmacrolistdialog.ui" line="207"/>
         <location filename="../qmacrolistdialog.cpp" line="76"/>
-        <location filename="../qmacrolistdialog.cpp" line="312"/>
+        <location filename="../qmacrolistdialog.cpp" line="89"/>
+        <location filename="../qmacrolistdialog.cpp" line="92"/>
+        <location filename="../qmacrolistdialog.cpp" line="331"/>
         <source>Category</source>
         <translation>分类</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="232"/>
-        <location filename="../qmacrolistdialog.cpp" line="254"/>
+        <source>Macro name cannot be empty.</source>
+        <translation>宏名不能为空。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="251"/>
+        <location filename="../qmacrolistdialog.cpp" line="273"/>
         <source>Macro List</source>
         <translation>宏列表</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="232"/>
-        <location filename="../qmacrolistdialog.cpp" line="257"/>
+        <location filename="../qmacrolistdialog.cpp" line="251"/>
+        <location filename="../qmacrolistdialog.cpp" line="276"/>
         <source>Universal Macro List</source>
         <translation>通用宏列表</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="233"/>
+        <location filename="../qmacrolistdialog.cpp" line="252"/>
         <source>Macro name already exists. Replace existing macro?</source>
         <translation>宏名已存在。是否替换现有宏？</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="260"/>
+        <location filename="../qmacrolistdialog.cpp" line="279"/>
         <source>Macro &quot;%1&quot; updated successfully</source>
         <translation>宏 &quot;%1&quot; 更新成功</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="263"/>
+        <location filename="../qmacrolistdialog.cpp" line="282"/>
         <source>Macro &quot;%1&quot; added successfully</source>
         <translation>宏 &quot;%1&quot; 添加成功</translation>
     </message>

@@ -2818,8 +2818,10 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <location filename="../qmacrolistdialog.ui" line="261"/>
         <location filename="../qmacrolistdialog.cpp" line="77"/>
         <location filename="../qmacrolistdialog.cpp" line="84"/>
-        <location filename="../qmacrolistdialog.cpp" line="222"/>
-        <location filename="../qmacrolistdialog.cpp" line="311"/>
+        <location filename="../qmacrolistdialog.cpp" line="88"/>
+        <location filename="../qmacrolistdialog.cpp" line="91"/>
+        <location filename="../qmacrolistdialog.cpp" line="241"/>
+        <location filename="../qmacrolistdialog.cpp" line="330"/>
         <source>Macro</source>
         <translation>マクロ</translation>
     </message>
@@ -2832,7 +2834,9 @@ Interceptionドライバのインストールを続行してもよろしいで�
     <message>
         <location filename="../qmacrolistdialog.ui" line="160"/>
         <location filename="../qmacrolistdialog.cpp" line="75"/>
-        <location filename="../qmacrolistdialog.cpp" line="310"/>
+        <location filename="../qmacrolistdialog.cpp" line="87"/>
+        <location filename="../qmacrolistdialog.cpp" line="90"/>
+        <location filename="../qmacrolistdialog.cpp" line="329"/>
         <source>Name</source>
         <translation>マクロ名</translation>
     </message>
@@ -2855,7 +2859,7 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>クリア</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.ui" line="608"/>
+        <location filename="../qmacrolistdialog.ui" line="602"/>
         <location filename="../qmacrolistdialog.cpp" line="79"/>
         <source>Add Macro</source>
         <translation>マクロ追加</translation>
@@ -2863,34 +2867,41 @@ Interceptionドライバのインストールを続行してもよろしいで�
     <message>
         <location filename="../qmacrolistdialog.ui" line="207"/>
         <location filename="../qmacrolistdialog.cpp" line="76"/>
-        <location filename="../qmacrolistdialog.cpp" line="312"/>
+        <location filename="../qmacrolistdialog.cpp" line="89"/>
+        <location filename="../qmacrolistdialog.cpp" line="92"/>
+        <location filename="../qmacrolistdialog.cpp" line="331"/>
         <source>Category</source>
         <translation>分類</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="232"/>
-        <location filename="../qmacrolistdialog.cpp" line="254"/>
+        <source>Macro name cannot be empty.</source>
+        <translation>マクロ名は空にできません。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="251"/>
+        <location filename="../qmacrolistdialog.cpp" line="273"/>
         <source>Macro List</source>
         <translation>マクロ一覧</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="232"/>
-        <location filename="../qmacrolistdialog.cpp" line="257"/>
+        <location filename="../qmacrolistdialog.cpp" line="251"/>
+        <location filename="../qmacrolistdialog.cpp" line="276"/>
         <source>Universal Macro List</source>
         <translation>汎用マクロ一覧</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="233"/>
+        <location filename="../qmacrolistdialog.cpp" line="252"/>
         <source>Macro name already exists. Replace existing macro?</source>
         <translation>マクロ名が既に存在します。既存のマクロを置き換えますか？</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="260"/>
+        <location filename="../qmacrolistdialog.cpp" line="279"/>
         <source>Macro &quot;%1&quot; updated successfully</source>
         <translation>マクロ「%1」を更新しました</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="263"/>
+        <location filename="../qmacrolistdialog.cpp" line="282"/>
         <source>Macro &quot;%1&quot; added successfully</source>
         <translation>マクロ「%1」を追加しました</translation>
     </message>

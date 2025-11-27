@@ -556,12 +556,6 @@
            <property name="text">
             <string>Clear</string>
            </property>
-           <property name="checkable">
-            <bool>true</bool>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
            <property name="autoDefault">
             <bool>false</bool>
            </property>
@@ -606,12 +600,6 @@
           </property>
           <property name="text">
            <string>Add Macro</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
           </property>
           <property name="autoDefault">
            <bool>false</bool>
