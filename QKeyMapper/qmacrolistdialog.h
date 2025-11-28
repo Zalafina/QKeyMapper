@@ -88,14 +88,32 @@ public:
     void onMacroCategoryFilterChanged(int index);
     void updateMacroCategoryFilterComboBox(void);
 
+    // Macro list item operations
+    void selectedMacroItemsMoveUp(void);
+    void selectedMacroItemsMoveDown(void);
+    void deleteMacroSelectedItems(void);
+
+signals:
+    // Signal for drag and drop move operation
+    void macroListTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
+
 protected:
     void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
 private slots:
     void on_addMacroButton_clicked();
-
     void on_clearButton_clicked();
+    void on_deleteMacroButton_clicked();
+
+    // Slot for handling macro table item double click
+    void macroTableItemDoubleClicked(QTableWidgetItem *item);
+
+    // Slot for handling drag and drop move
+    void macroListTableDragDropMove(int top_row, int bottom_row, int dragged_to);
+
+    // Slot for handling macro table cell changed (category editing)
+    void macroTableCellChanged(int row, int column);
 
 private slots:
     void addMacroToList(void);
@@ -106,6 +124,11 @@ private:
     void initKeyListComboBoxes(void);
     void resizeMacroListTabWidgetColumnWidth(void);
     void resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable);
+    void updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable);
+
+    // Helper methods to get current macro table and data list
+    MacroListDataTableWidget* getCurrentMacroDataTable(void);
+    OrderedMap<QString, MappingMacroData>* getCurrentMacroDataList(void);
 
 private:
     static QMacroListDialog *m_instance;

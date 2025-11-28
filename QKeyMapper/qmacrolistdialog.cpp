@@ -53,6 +53,14 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
 
     initMacroListTabWidget();
 
+    // Connect category filter ComboBox signal
+    QObject::connect(ui->categoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, &QMacroListDialog::onMacroCategoryFilterChanged);
+
+    // Connect drag and drop move signal
+    QObject::connect(this, &QMacroListDialog::macroListTableDragDropMove_Signal,
+                     this, &QMacroListDialog::macroListTableDragDropMove);
+
     QObject::connect(ui->macroNameLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
     QObject::connect(ui->macroContentLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
     QObject::connect(ui->categoryLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
@@ -224,12 +232,111 @@ bool QMacroListDialog::isMacroDataTableFiltered()
 
 void QMacroListDialog::onMacroCategoryFilterChanged(int index)
 {
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
 
+    if (index == CATEGORY_FILTER_ALL_INDEX) {
+        // Index 0 is always "All" - clear filter to show all items
+        macroDataTable->clearCategoryFilter();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onMacroCategoryFilterChanged]" << "Selected 'All' - clearing category filter";
+#endif
+    } else {
+        // Index > 0 is a user category - apply the filter
+        QString selectedCategory = ui->categoryFilterComboBox->itemText(index);
+        macroDataTable->setCategoryFilter(selectedCategory);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onMacroCategoryFilterChanged]" << "Selected category:" << selectedCategory << "at index:" << index;
+#endif
+    }
 }
 
 void QMacroListDialog::updateMacroCategoryFilterComboBox()
 {
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateMacroCategoryFilterComboBox]" << "macroDataTable is null, skipping update";
+#endif
+        return;
+    }
 
+    // Store the current filter value before updating ComboBox
+    QString currentFilter = macroDataTable->m_CategoryFilter;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateMacroCategoryFilterComboBox]" << "Category filter:" << currentFilter;
+#endif
+
+    ui->categoryFilterComboBox->clear();
+    ui->categoryFilterComboBox->addItem(tr("All"));
+
+    QStringList categories = macroDataTable->getAvailableCategories();
+
+    // Separate regular categories from the special "Blank" option
+    QStringList regularCategories;
+    bool hasBlankOption = false;
+
+    for (const QString &category : std::as_const(categories)) {
+        if (category == tr("Blank")) {
+            hasBlankOption = true;
+        } else {
+            regularCategories.append(category);
+        }
+    }
+
+    // Sort regular categories and add them
+    regularCategories.sort();
+    ui->categoryFilterComboBox->addItems(regularCategories);
+
+    // Add "Blank" option at the end if it exists
+    if (hasBlankOption) {
+        ui->categoryFilterComboBox->addItem(tr("Blank"));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateMacroCategoryFilterComboBox]" << "Available categories:" << categories;
+#endif
+
+    int index = -1;
+
+    // Check if we're looking for the "clear filter" state (empty filter)
+    if (currentFilter.isEmpty()) {
+        // Empty filter means "show all", so select index 0
+        index = CATEGORY_FILTER_ALL_INDEX;
+    } else if (currentFilter == tr("Blank")) {
+        // Looking for blank entries
+        if (hasBlankOption) {
+            index = ui->categoryFilterComboBox->count() - 1; // "Blank" is always last
+        }
+    } else {
+        // We're looking for a specific category
+        // Start searching from sorted regular categories to avoid the built-in "All" at index 0
+        index = regularCategories.indexOf(currentFilter);
+        if (index != -1) {
+            index += 1; // Adjust index to account for "All" at index 0
+        }
+    }
+
+    if (index != -1) {
+        ui->categoryFilterComboBox->setCurrentIndex(index);
+#ifdef DEBUG_LOGOUT_ON
+        if (index == CATEGORY_FILTER_ALL_INDEX) {
+            qDebug() << "[updateMacroCategoryFilterComboBox]" << "Restored filter to 'All' (show all items)";
+        } else {
+            qDebug() << "[updateMacroCategoryFilterComboBox]" << "Restored filter to category:" << currentFilter << "at index:" << index;
+        }
+#endif
+    } else {
+        // Category not found, clear filter and default to "All"
+        macroDataTable->m_CategoryFilter.clear();
+        ui->categoryFilterComboBox->setCurrentIndex(CATEGORY_FILTER_ALL_INDEX);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateMacroCategoryFilterComboBox]" << "Previous filter not found, defaulting to 'All'";
+#endif
+    }
 }
 
 void QMacroListDialog::showEvent(QShowEvent *event)
@@ -259,7 +366,26 @@ void QMacroListDialog::on_addMacroButton_clicked()
 
 void QMacroListDialog::on_clearButton_clicked()
 {
+    QString macroName = ui->macroNameLineEdit->text();
+    QString macroContent = ui->macroContentLineEdit->text();
+    QString category = ui->categoryLineEdit->text();
 
+    // Check if any field has content
+    if (!macroName.isEmpty() || !macroContent.isEmpty() || !category.isEmpty()) {
+        QString message = tr("Are you sure you want to clear the macro information fields?");
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                  QMessageBox::Yes | QMessageBox::No,
+                                                                  QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+            // User cancelled, don't clear
+            return;
+        }
+
+        // Clear all input fields
+        ui->macroNameLineEdit->clear();
+        ui->macroContentLineEdit->clear();
+        ui->categoryLineEdit->clear();
+    }
 }
 
 void QMacroListDialog::addMacroToList()
@@ -403,10 +529,10 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     macroDataTable->verticalHeader()->setDefaultSectionSize(25);
     macroDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     macroDataTable->setSelectionMode(QAbstractItemView::ContiguousSelection);
-    // Allow editing only for specific columns (will be controlled per item)
-    macroDataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    // Enable double-click editing for category column
+    macroDataTable->setEditTriggers(QAbstractItemView::DoubleClicked);
 
-    /* Suuport Drag&Drop for macroDataTable Table */
+    /* Support Drag&Drop for macroDataTable Table */
     macroDataTable->setDragEnabled(true);
     macroDataTable->setDragDropMode(QAbstractItemView::InternalMove);
 
@@ -418,6 +544,24 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     macroDataTable->setFont(customFont);
     macroDataTable->horizontalHeader()->setFont(customFont);
     macroDataTable->setStyle(QStyleFactory::create("Fusion"));
+
+    // Connect signals for this table
+    updateMacroDataTableConnection(macroDataTable);
+}
+
+void QMacroListDialog::updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable)
+{
+    if (macroDataTable != Q_NULLPTR) {
+        QObject::connect(macroDataTable, &QTableWidget::cellChanged,
+                         this, &QMacroListDialog::macroTableCellChanged, Qt::UniqueConnection);
+        QObject::connect(macroDataTable, &QTableWidget::itemDoubleClicked,
+                         this, &QMacroListDialog::macroTableItemDoubleClicked, Qt::UniqueConnection);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[updateMacroDataTableConnection]" << "Invalid macroDataTable pointer!";
+#endif
+    }
 }
 
 void QMacroListDialog::initKeyListComboBoxes()
@@ -483,21 +627,18 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
     if (macroListDialog && QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
         if (event->key() == Qt::Key_Up) {
             // Move selected items up
-            // TODO: Implement selectedMacroItemsMoveUp()
-            // macroListDialog->selectedMacroItemsMoveUp();
-            // return;
+            macroListDialog->selectedMacroItemsMoveUp();
+            return;
         }
         else if (event->key() == Qt::Key_Down) {
             // Move selected items down
-            // TODO: Implement selectedMacroItemsMoveDown()
-            // macroListDialog->selectedMacroItemsMoveDown();
-            // return;
+            macroListDialog->selectedMacroItemsMoveDown();
+            return;
         }
         else if (event->key() == Qt::Key_Delete) {
             // Delete selected items
-            // TODO: Implement deleteMacroButton_clicked()
-            // macroListDialog->on_deleteMacroButton_clicked();
-            // return;
+            macroListDialog->deleteMacroSelectedItems();
+            return;
         }
     }
 
@@ -582,8 +723,8 @@ void MacroListDataTableWidget::dropEvent(QDropEvent *event)
             droppedRow = rowCount() - 1;
         }
 
-        // TODO: Emit signal to handle macro list reordering
-        // emit QMacroListDialog::getInstance()->macroListTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
+        // Emit signal to handle macro list reordering
+        emit QMacroListDialog::getInstance()->macroListTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[MacroListDataTableWidget::dropEvent]" << "Drag from" << m_DraggedTopRow << "to" << m_DraggedBottomRow << "dropped at" << droppedRow;
 #endif
@@ -645,4 +786,459 @@ void MacroListDataTableWidget::updateRowVisibility()
 
         setRowHidden(row, !shouldShow);
     }
+}
+
+// Helper method to get the current macro data table based on active tab
+MacroListDataTableWidget* QMacroListDialog::getCurrentMacroDataTable()
+{
+    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
+        return ui->macrolistTable;
+    }
+    else if (ui->macroListTabWidget->currentWidget() == ui->universalmacrolist) {
+        return ui->universalmacrolistTable;
+    }
+    return Q_NULLPTR;
+}
+
+// Helper method to get the current macro data list based on active tab
+OrderedMap<QString, MappingMacroData>* QMacroListDialog::getCurrentMacroDataList()
+{
+    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
+        return &QKeyMapper::s_MappingMacroList;
+    }
+    else if (ui->macroListTabWidget->currentWidget() == ui->universalmacrolist) {
+        return &QKeyMapper::s_UniversalMappingMacroList;
+    }
+    return Q_NULLPTR;
+}
+
+void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
+{
+    if (item == Q_NULLPTR) {
+        return;
+    }
+
+    int rowindex = item->row();
+    int columnindex = item->column();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[macroTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
+#endif
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    // Check if the double-clicked item is in the Category column
+    if (columnindex == MACRO_CATEGORY_COLUMN) {
+        // If it's the category column, allow inline editing
+        macroDataTable->editItem(item);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[macroTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
+#endif
+    }
+    else {
+        // For Name and Macro columns, load data to LineEdit controls
+        QTableWidgetItem *nameItem = macroDataTable->item(rowindex, MACRO_NAME_COLUMN);
+        QTableWidgetItem *contentItem = macroDataTable->item(rowindex, MACRO_CONTENT_COLUMN);
+        QTableWidgetItem *categoryItem = macroDataTable->item(rowindex, MACRO_CATEGORY_COLUMN);
+
+        if (nameItem) {
+            ui->macroNameLineEdit->setText(nameItem->text());
+        }
+        if (contentItem) {
+            ui->macroContentLineEdit->setText(contentItem->text());
+        }
+        if (categoryItem) {
+            ui->categoryLineEdit->setText(categoryItem->text());
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[macroTableItemDoubleClicked]" << "Loaded macro data to LineEdit controls";
+#endif
+    }
+}
+
+void QMacroListDialog::macroTableCellChanged(int row, int column)
+{
+    // Only handle category column changes
+    if (column != MACRO_CATEGORY_COLUMN) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
+    QTableWidgetItem *categoryItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
+
+    if (!nameItem || !categoryItem) {
+        return;
+    }
+
+    QString macroName = nameItem->text();
+    QString newCategory = categoryItem->text().trimmed();
+
+    // Update the category in the data list
+    if (macroDataList->contains(macroName)) {
+        (*macroDataList)[macroName].Category = newCategory;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[macroTableCellChanged]" << "Updated category for macro:" << macroName << "to:" << newCategory;
+#endif
+        // Update the category filter ComboBox
+        updateMacroCategoryFilterComboBox();
+    }
+}
+
+void QMacroListDialog::macroListTableDragDropMove(int top_row, int bottom_row, int dragged_to)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[macroListTableDragDropMove] DragDrop : Rows" << top_row << ":" << bottom_row << "->" << dragged_to;
+#endif
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    int mappingdata_size = macroDataList->size();
+    if (top_row >= 0 && bottom_row < mappingdata_size && dragged_to >= 0 && dragged_to < mappingdata_size
+        && (dragged_to > bottom_row || dragged_to < top_row)) {
+
+        int draged_row_count = bottom_row - top_row + 1;
+        bool isDraggedToBottom = (dragged_to > bottom_row);
+
+        // Get all keys in order
+        QList<QString> keysList = macroDataList->keys();
+
+        // Extract keys to be moved
+        QList<QString> movedKeys;
+        for (int i = top_row; i <= bottom_row; ++i) {
+            movedKeys.append(keysList.at(i));
+        }
+
+        // Remove moved keys from list
+        for (int i = bottom_row; i >= top_row; --i) {
+            keysList.removeAt(i);
+        }
+
+        // Calculate insert position
+        int insertPos;
+        if (isDraggedToBottom) {
+            insertPos = dragged_to - draged_row_count + 1;
+        } else {
+            insertPos = dragged_to;
+        }
+
+        // Insert moved keys at new position
+        for (int i = 0; i < movedKeys.size(); ++i) {
+            keysList.insert(insertPos + i, movedKeys.at(i));
+        }
+
+        // Rebuild the OrderedMap with new order
+        OrderedMap<QString, MappingMacroData> newMacroList;
+        for (const QString &key : std::as_const(keysList)) {
+            newMacroList[key] = macroDataList->value(key);
+        }
+        *macroDataList = newMacroList;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[macroListTableDragDropMove] : refreshMacroListTabWidget()";
+#endif
+        refreshMacroListTabWidget(macroDataTable, *macroDataList);
+
+        // Reselect the moved rows
+        QTableWidgetSelectionRange newSelection;
+        if (isDraggedToBottom) {
+            newSelection = QTableWidgetSelectionRange(dragged_to - draged_row_count + 1, 0, dragged_to, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+        } else {
+            newSelection = QTableWidgetSelectionRange(dragged_to, 0, dragged_to + draged_row_count - 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+        }
+        macroDataTable->clearSelection();
+        macroDataTable->setRangeSelected(newSelection, true);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (macroDataTable->rowCount() != macroDataList->size()) {
+            qDebug("macroListTableDragDropMove : MacroData sync error!!! DataTableSize(%d), DataListSize(%d)", macroDataTable->rowCount(), macroDataList->size());
+        }
+#endif
+    }
+}
+
+void QMacroListDialog::selectedMacroItemsMoveUp()
+{
+    if (isMacroDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the macro table is filtered!");
+        QKeyMapper::getInstance()->showWarningPopup(message);
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveUpMacroItem] There is no selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+    if (topRow <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveUpMacroItem] Cannot move up, already at the top";
+#endif
+        return;
+    }
+
+    // Get all keys in order
+    QList<QString> keysList = macroDataList->keys();
+
+    bool move_to_top = false;
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        move_to_top = true;
+        // Move the selected rows to the top (preserve order)
+        QList<QString> movedKeys;
+        // Save selected keys in order
+        for (int row = topRow; row <= bottomRow; ++row) {
+            movedKeys.append(keysList.at(row));
+        }
+        // Remove selected keys from bottom to top
+        for (int row = bottomRow; row >= topRow; --row) {
+            keysList.removeAt(row);
+        }
+        // Insert keys at the top in original order
+        for (int i = movedKeys.size() - 1; i >= 0; --i) {
+            keysList.insert(0, movedKeys.at(i));
+        }
+    }
+    else {
+        // Move the selected rows up by one
+        for (int row = topRow; row <= bottomRow; ++row) {
+            keysList.move(row, row - 1);
+        }
+    }
+
+    // Rebuild the OrderedMap with new order
+    OrderedMap<QString, MappingMacroData> newMacroList;
+    for (const QString &key : std::as_const(keysList)) {
+        newMacroList[key] = macroDataList->value(key);
+    }
+    *macroDataList = newMacroList;
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("[selectedMacroItemsMoveUp] %1: topRow(%2), bottomRow(%3)").arg(move_to_top?"MoveTop":"MoveUp").arg(topRow).arg(bottomRow);
+    qDebug().nospace().noquote() << debugmessage;
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << __func__ << ": refreshMacroListTabWidget()";
+#endif
+    refreshMacroListTabWidget(macroDataTable, *macroDataList);
+
+    QTableWidgetSelectionRange newSelection;
+    if (move_to_top) {
+        // Reselect the moved rows at the top
+        newSelection = QTableWidgetSelectionRange(0, 0, bottomRow - topRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    }
+    else {
+        // Reselect the moved rows
+        newSelection = QTableWidgetSelectionRange(topRow - 1, 0, bottomRow - 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    }
+    macroDataTable->clearSelection();
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected items visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelection.topRow(), 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (macroDataTable->rowCount() != macroDataList->size()) {
+        qDebug("MoveUp:MacroData sync error!!! DataTableSize(%d), DataListSize(%d)", macroDataTable->rowCount(), macroDataList->size());
+    }
+#endif
+}
+
+void QMacroListDialog::selectedMacroItemsMoveDown()
+{
+    if (isMacroDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the macro table is filtered!");
+        QKeyMapper::getInstance()->showWarningPopup(message);
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveDownMacroItem] There is no selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+    if (bottomRow >= macroDataTable->rowCount() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveDownMacroItem] Cannot move down, already at the bottom";
+#endif
+        return;
+    }
+
+    // Get all keys in order
+    QList<QString> keysList = macroDataList->keys();
+
+    bool move_to_bottom = false;
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        move_to_bottom = true;
+        // Move the selected rows to the bottom (preserve order)
+        QList<QString> movedKeys;
+        // Save selected keys in order
+        for (int row = topRow; row <= bottomRow; ++row) {
+            movedKeys.append(keysList.at(row));
+        }
+        // Remove selected keys from bottom to top
+        for (int row = bottomRow; row >= topRow; --row) {
+            keysList.removeAt(row);
+        }
+        // Append keys to the bottom in original order
+        for (int i = 0; i < movedKeys.size(); ++i) {
+            keysList.append(movedKeys.at(i));
+        }
+    }
+    else {
+        // Move the selected rows down by one
+        for (int row = bottomRow; row >= topRow; --row) {
+            keysList.move(row, row + 1);
+        }
+    }
+
+    // Rebuild the OrderedMap with new order
+    OrderedMap<QString, MappingMacroData> newMacroList;
+    for (const QString &key : std::as_const(keysList)) {
+        newMacroList[key] = macroDataList->value(key);
+    }
+    *macroDataList = newMacroList;
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("[selectedMacroItemsMoveDown] %1: topRow(%2), bottomRow(%3)").arg(move_to_bottom?"MoveBottom":"MoveDown").arg(topRow).arg(bottomRow);
+    qDebug().nospace().noquote() << debugmessage;
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << __func__ << ": refreshMacroListTabWidget()";
+#endif
+    refreshMacroListTabWidget(macroDataTable, *macroDataList);
+
+    QTableWidgetSelectionRange newSelection;
+    if (move_to_bottom) {
+        // Reselect the moved rows at the bottom
+        newSelection = QTableWidgetSelectionRange(macroDataTable->rowCount() - (bottomRow - topRow + 1), 0, macroDataTable->rowCount() - 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    }
+    else {
+        // Reselect the moved rows
+        newSelection = QTableWidgetSelectionRange(topRow + 1, 0, bottomRow + 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    }
+    macroDataTable->clearSelection();
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected items visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelection.bottomRow(), 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (macroDataTable->rowCount() != macroDataList->size()) {
+        qDebug("MoveDown:MacroData sync error!!! DataTableSize(%d), DataListSize(%d)", macroDataTable->rowCount(), macroDataList->size());
+    }
+#endif
+}
+
+void QMacroListDialog::on_deleteMacroButton_clicked()
+{
+    deleteMacroSelectedItems();
+}
+
+void QMacroListDialog::deleteMacroSelectedItems()
+{
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[DeleteMacroItem] There is no selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("DeleteMacro: topRow(%d), bottomRow(%d)", topRow, bottomRow);
+#endif
+
+    // Collect macro names to delete
+    QList<QString> macroNamesToDelete;
+    for (int row = topRow; row <= bottomRow; ++row) {
+        QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
+        if (nameItem) {
+            macroNamesToDelete.append(nameItem->text());
+        }
+    }
+
+    // Remove from data list
+    for (const QString &macroName : std::as_const(macroNamesToDelete)) {
+        macroDataList->remove(macroName);
+    }
+
+    // Refresh the display
+    refreshMacroListTabWidget(macroDataTable, *macroDataList);
+
+    QString popupMessage;
+    QString popupMessageColor = SUCCESS_COLOR;
+    int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+
+    if (macroNamesToDelete.size() == 1) {
+        popupMessage = tr("Macro \"%1\" deleted successfully").arg(macroNamesToDelete.first());
+    } else {
+        popupMessage = tr("%1 macros deleted successfully").arg(macroNamesToDelete.size());
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }
