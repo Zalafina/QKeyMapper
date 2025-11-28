@@ -579,7 +579,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
 {
     macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
-    int macro_name_width_min = macroDataTable->width()/5 - 15;
+    int macro_name_width_min = macroDataTable->width()/7 - 15;
     int macro_name_width_max = macroDataTable->width() / 2;
     int macro_name_width = macroDataTable->columnWidth(MACRO_NAME_COLUMN);
 
