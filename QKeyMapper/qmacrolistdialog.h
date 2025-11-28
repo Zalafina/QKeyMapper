@@ -95,6 +95,8 @@ protected:
 private slots:
     void on_addMacroButton_clicked();
 
+    void on_clearButton_clicked();
+
 private slots:
     void addMacroToList(void);
 

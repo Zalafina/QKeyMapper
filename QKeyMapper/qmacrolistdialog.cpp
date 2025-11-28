@@ -94,6 +94,57 @@ void QMacroListDialog::setUILanguage(int languageindex)
 
 void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macroDataTable, const OrderedMap<QString, MappingMacroData> &mappingMacroDataList)
 {
+    macroDataTable->clearContents();
+    macroDataTable->setRowCount(0);
+
+    if (false == mappingMacroDataList.isEmpty()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[refreshMacroListTabWidget]" << "mappingMacroDataList Start >>>";
+#endif
+        int rowindex = 0;
+        macroDataTable->setRowCount(mappingMacroDataList.size());
+
+        // Iterate through the OrderedMap using keys()
+        QList<QString> macroNameList = mappingMacroDataList.keys();
+        for (const QString& macroName : std::as_const(macroNameList))
+        {
+            const MappingMacroData& macroData = mappingMacroDataList.value(macroName);
+
+            /* MACRO_NAME_COLUMN */
+            QTableWidgetItem *name_TableItem = new QTableWidgetItem(macroName);
+            name_TableItem->setToolTip(macroName);
+            name_TableItem->setFlags(name_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            macroDataTable->setItem(rowindex, MACRO_NAME_COLUMN, name_TableItem);
+
+            /* MACRO_CONTENT_COLUMN */
+            QTableWidgetItem *content_TableItem = new QTableWidgetItem(macroData.MappingMacro);
+            content_TableItem->setToolTip(macroData.MappingMacro);
+            content_TableItem->setFlags(content_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            macroDataTable->setItem(rowindex, MACRO_CONTENT_COLUMN, content_TableItem);
+
+            /* MACRO_CATEGORY_COLUMN */
+            QTableWidgetItem *category_TableItem = new QTableWidgetItem(macroData.Category);
+            category_TableItem->setToolTip(macroData.Category);
+            // Category column is always editable (always visible)
+            category_TableItem->setFlags(category_TableItem->flags() | Qt::ItemIsEditable);
+            macroDataTable->setItem(rowindex, MACRO_CATEGORY_COLUMN, category_TableItem);
+
+            rowindex += 1;
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[refreshMacroListTabWidget] " << macroName << " -> " << macroData.MappingMacro << ", Category -> " << macroData.Category;
+#endif
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[refreshMacroListTabWidget]" << "mappingMacroDataList End <<<";
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[refreshMacroListTabWidget]" << "Empty mappingMacroDataList";
+#endif
+    }
 
     resizeMacroListTableColumnWidth(macroDataTable);
 
@@ -204,6 +255,11 @@ void QMacroListDialog::mousePressEvent(QMouseEvent *event)
 void QMacroListDialog::on_addMacroButton_clicked()
 {
     addMacroToList();
+}
+
+void QMacroListDialog::on_clearButton_clicked()
+{
+
 }
 
 void QMacroListDialog::addMacroToList()
@@ -419,49 +475,174 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
 
 void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MacroListTabWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << "Modifiers:" << event->modifiers();
+#endif
+
+    QMacroListDialog *macroListDialog = QMacroListDialog::getInstance();
+    if (macroListDialog && QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        if (event->key() == Qt::Key_Up) {
+            // Move selected items up
+            // TODO: Implement selectedMacroItemsMoveUp()
+            // macroListDialog->selectedMacroItemsMoveUp();
+            // return;
+        }
+        else if (event->key() == Qt::Key_Down) {
+            // Move selected items down
+            // TODO: Implement selectedMacroItemsMoveDown()
+            // macroListDialog->selectedMacroItemsMoveDown();
+            // return;
+        }
+        else if (event->key() == Qt::Key_Delete) {
+            // Delete selected items
+            // TODO: Implement deleteMacroButton_clicked()
+            // macroListDialog->on_deleteMacroButton_clicked();
+            // return;
+        }
+    }
 
     QTabWidget::keyPressEvent(event);
 }
 
 void MacroListDataTableWidget::setCategoryFilter(const QString &category)
 {
-
+    m_CategoryFilter = category;
+    updateRowVisibility();
 }
 
 void MacroListDataTableWidget::clearCategoryFilter()
 {
-
+    m_CategoryFilter.clear();
+    updateRowVisibility();
 }
 
 QStringList MacroListDataTableWidget::getAvailableCategories() const
 {
     QStringList categories;
 
+    // Category column is always visible in macro list dialog
+    bool hasNonEmptyCategories = false;
+    bool hasEmptyCategories = false;
+
+    for (int row = 0; row < rowCount(); ++row) {
+        QTableWidgetItem *categoryItem = item(row, MACRO_CATEGORY_COLUMN);
+        QString category;
+
+        if (categoryItem) {
+            category = categoryItem->text().trimmed();
+        }
+
+        if (category.isEmpty()) {
+            hasEmptyCategories = true;
+        } else {
+            hasNonEmptyCategories = true;
+            if (!categories.contains(category)) {
+#ifdef DEBUG_LOGOUT_ON
+                // Avoid confusion with the built-in "All" option
+                // Users can still create an "All" category, but we'll warn about it
+                if (category == tr("All")) {
+                    qDebug() << "[getAvailableCategories]" << "Warning: Found user-created category named 'All', which may cause confusion with the built-in 'All' option";
+                }
+#endif
+                categories.append(category);
+            }
+        }
+    }
+
+    // Add "(Blanks)" option only if there are both non-empty and empty categories
+    // If all categories are empty, showing "(Blanks)" would be the same as "All"
+    if (hasEmptyCategories && hasNonEmptyCategories) {
+        categories.append(tr("Blank"));
+    }
+
     return categories;
 }
 
 void MacroListDataTableWidget::startDrag(Qt::DropActions supportedActions)
 {
-
+    QList<QTableWidgetSelectionRange> selectedRanges = this->selectedRanges();
+    if (!selectedRanges.isEmpty()) {
+        QTableWidgetSelectionRange range = selectedRanges.first();
+        m_DraggedTopRow = range.topRow();
+        m_DraggedBottomRow = range.bottomRow();
+    }
     QTableWidget::startDrag(supportedActions);
 }
 
 void MacroListDataTableWidget::dropEvent(QDropEvent *event)
 {
+    if (event->dropAction() == Qt::MoveAction) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        int droppedRow = rowAt(event->position().toPoint().y());
+#else
+        int droppedRow = rowAt(event->pos().y());
+#endif
 
+        if (droppedRow < 0) {
+            droppedRow = rowCount() - 1;
+        }
+
+        // TODO: Emit signal to handle macro list reordering
+        // emit QMacroListDialog::getInstance()->macroListTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MacroListDataTableWidget::dropEvent]" << "Drag from" << m_DraggedTopRow << "to" << m_DraggedBottomRow << "dropped at" << droppedRow;
+#endif
+    }
 }
 
 void MacroListDataTableWidget::dragEnterEvent(QDragEnterEvent *event)
 {
-
+    if (QMacroListDialog::getInstance()->isMacroDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the macro table is filtered!");
+        QKeyMapper::getInstance()->showWarningPopup(message);
+        event->ignore();
+    } else {
+        QTableWidget::dragEnterEvent(event);
+    }
 }
 
 void MacroListDataTableWidget::dragMoveEvent(QDragMoveEvent *event)
 {
-
+    if (QMacroListDialog::getInstance()->isMacroDataTableFiltered()) {
+        event->ignore();
+    } else {
+        QTableWidget::dragMoveEvent(event);
+    }
 }
 
 void MacroListDataTableWidget::updateRowVisibility()
 {
+    if (m_CategoryFilter.isEmpty()) {
+        // Show all rows when no filter is active
+        for (int row = 0; row < rowCount(); ++row) {
+            setRowHidden(row, false);
+        }
+        return;
+    }
 
+    // Filter rows based on category
+    for (int row = 0; row < rowCount(); ++row) {
+        QTableWidgetItem *categoryItem = item(row, MACRO_CATEGORY_COLUMN);
+        bool shouldShow = false;
+
+        if (m_CategoryFilter == tr("Blank")) {
+            // Show rows with empty/blank categories
+            if (categoryItem) {
+                QString itemCategory = categoryItem->text().trimmed();
+                shouldShow = itemCategory.isEmpty();
+            } else {
+                // No item means it's also considered blank
+                shouldShow = true;
+            }
+        } else {
+            // Show rows matching the specific category
+            if (categoryItem) {
+                QString itemCategory = categoryItem->text().trimmed();
+                shouldShow = (itemCategory == m_CategoryFilter);
+            }
+        }
+
+        setRowHidden(row, !shouldShow);
+    }
 }
