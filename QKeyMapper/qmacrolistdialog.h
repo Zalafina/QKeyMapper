@@ -5,6 +5,8 @@
 #include <QTabWidget>
 #include <QTableWidget>
 
+#include "qkeymapper_worker.h"
+
 namespace Ui {
 class QMacroListDialog;
 }
@@ -35,8 +37,6 @@ public:
     void setCategoryFilter(const QString &category);
     void clearCategoryFilter();
     QStringList getAvailableCategories() const;
-    bool isCategoryColumnVisible() const { return m_CategoryColumnVisible; }
-    void setCategoryColumnVisible(bool visible);
 
 protected:
     // Drag and drop support for row reordering
@@ -51,8 +51,8 @@ private:
 private:
     int m_DraggedTopRow;                  // Top row index when dragging multi-selection
     int m_DraggedBottomRow;               // Bottom row index when dragging multi-selection
-    bool m_CategoryColumnVisible;         // Category column visibility state
-    QSet<QString> m_CategoryFilter;       // Set of categories to filter by
+public:
+    QString m_CategoryFilter = QString();  // Current category filter
 };
 
 // QMacroListDialog: Main dialog class for displaying and managing macro lists
@@ -70,7 +70,7 @@ public:
     }
 
     void setUILanguage(int languageindex);
-    void refreshMacroListTabWidget(void);
+    void refreshMacroListTabWidget(MacroListDataTableWidget *macroDataTable, const OrderedMap<QString, MappingMacroData>& mappingMacroDataList);
     void updateMappingKeyListComboBox(void);
 
     QPushButton* getMapListSelectKeyboardButton(void) const;
@@ -83,6 +83,10 @@ public:
     static int getEditingMacroCursorPosition(void);
     static void setEditingMacroText(const QString &new_macrotext);
     static QString getCurrentMapKeyListText(void);
+
+    bool isMacroDataTableFiltered(void);
+    void onMacroCategoryFilterChanged(int index);
+    void updateMacroCategoryFilterComboBox(void);
 
 protected:
     void showEvent(QShowEvent *event) override;

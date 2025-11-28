@@ -92,9 +92,12 @@ void QMacroListDialog::setUILanguage(int languageindex)
                                                                             << tr("Category"));
 }
 
-void QMacroListDialog::refreshMacroListTabWidget()
+void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macroDataTable, const OrderedMap<QString, MappingMacroData> &mappingMacroDataList)
 {
 
+    resizeMacroListTableColumnWidth(macroDataTable);
+
+    updateMacroCategoryFilterComboBox();
 }
 
 void QMacroListDialog::updateMappingKeyListComboBox()
@@ -158,9 +161,30 @@ QString QMacroListDialog::getCurrentMapKeyListText()
     return getInstance()->ui->MacroList_MappingKeyListComboBox->currentText();
 }
 
+bool QMacroListDialog::isMacroDataTableFiltered()
+{
+    if (ui->categoryFilterComboBox->currentIndex() != CATEGORY_FILTER_ALL_INDEX) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void QMacroListDialog::onMacroCategoryFilterChanged(int index)
+{
+
+}
+
+void QMacroListDialog::updateMacroCategoryFilterComboBox()
+{
+
+}
+
 void QMacroListDialog::showEvent(QShowEvent *event)
 {
-    refreshMacroListTabWidget();
+    refreshMacroListTabWidget(ui->macrolistTable, QKeyMapper::s_MappingMacroList);
+    refreshMacroListTabWidget(ui->universalmacrolistTable, QKeyMapper::s_UniversalMappingMacroList);
 
     QDialog::showEvent(event);
 }
@@ -189,16 +213,21 @@ void QMacroListDialog::addMacroToList()
     constexpr int CURRENT_TAB_UNIVERSAL_MACRO   = 1;
 
     int current_tab = CURRENT_TAB_NONE;
+    MacroListDataTableWidget *macroDataTable = Q_NULLPTR;
     if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
         current_tab = CURRENT_TAB_MACRO;
+        macroDataTable = ui->macrolistTable;
     }
     else if (ui->macroListTabWidget->currentWidget() == ui->universalmacrolist) {
         current_tab = CURRENT_TAB_UNIVERSAL_MACRO;
+        macroDataTable = ui->universalmacrolistTable;
     }
 
     if (current_tab == CURRENT_TAB_NONE) {
         return;
     }
+
+    OrderedMap<QString, MappingMacroData>& CurrentMacroList = (current_tab == CURRENT_TAB_MACRO) ? QKeyMapper::s_MappingMacroList : QKeyMapper::s_UniversalMappingMacroList;
 
 #ifdef DEBUG_LOGOUT_ON
     const char* currentTabStr = (current_tab == CURRENT_TAB_MACRO) ? "Macro List" : "Universal Macro List";
@@ -243,8 +272,6 @@ void QMacroListDialog::addMacroToList()
         return;
     }
 
-    OrderedMap<QString, MappingMacroData>& CurrentMacroList = (current_tab == CURRENT_TAB_MACRO) ? QKeyMapper::s_MappingMacroList : QKeyMapper::s_UniversalMappingMacroList;
-
     // Check if macro name already exists
     bool isUpdate = false;
     if (CurrentMacroList.contains(macroname_str)) {
@@ -284,7 +311,7 @@ void QMacroListDialog::addMacroToList()
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 
     // Refresh the macro list display
-    refreshMacroListTabWidget();
+    refreshMacroListTabWidget(macroDataTable, CurrentMacroList);
 }
 
 void QMacroListDialog::initMacroListTabWidget()
@@ -300,6 +327,7 @@ void QMacroListDialog::initMacroListTabWidget()
         }
     }
     tabWidget->setFont(QFont(FONTNAME_ENGLISH, 9));
+    tabWidget->setCurrentIndex(tabWidget->indexOf(ui->macrolist));
 
     initMacroListTable(ui->macrolistTable);
     initMacroListTable(ui->universalmacrolistTable);
@@ -349,59 +377,43 @@ void QMacroListDialog::resizeMacroListTabWidgetColumnWidth()
 
 void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable)
 {
-#if 0
-    mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
+    macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
-    int original_key_width_min = mappingDataTable->width()/5 - 15;
-    int original_key_width_max = mappingDataTable->width() / 2;
-    int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
+    int macro_name_width_min = macroDataTable->width()/5 - 15;
+    int macro_name_width_max = macroDataTable->width() / 2;
+    int macro_name_width = macroDataTable->columnWidth(MACRO_NAME_COLUMN);
 
-    mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
-    int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
-    int lock_width = burst_mode_width;
-    burst_mode_width += 8;
+    macroDataTable->horizontalHeader()->setStretchLastSection(false);
+    int macro_category_width_max = macroDataTable->width() / 5;
+    macroDataTable->resizeColumnToContents(MACRO_CATEGORY_COLUMN);
+    int macro_category_width = macroDataTable->columnWidth(MACRO_CATEGORY_COLUMN);
+    // if (macro_category_width < burst_mode_width) {
+    //     macro_category_width = burst_mode_width;
+    // }
+    if (macro_category_width > macro_category_width_max) {
+        macro_category_width = macro_category_width_max;
+    }
+    macroDataTable->horizontalHeader()->setStretchLastSection(true);
 
-    int category_width = 0;
-    if (mappingDataTable->isCategoryColumnVisible()) {
-        lock_width += 8; // Add padding for lock column
-        mappingDataTable->horizontalHeader()->setStretchLastSection(false);
-        int category_width_max = mappingDataTable->width() / 5;
-        mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
-        category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
-        if (category_width < burst_mode_width) {
-            category_width = burst_mode_width;
-        }
-        if (category_width > category_width_max) {
-            category_width = category_width_max;
-        }
-        mappingDataTable->horizontalHeader()->setStretchLastSection(true);
+    if (macro_name_width < macro_name_width_min) {
+        macro_name_width = macro_name_width_min;
+    }
+    else if (macro_name_width > macro_name_width_max) {
+        macro_name_width = macro_name_width_max;
     }
 
-    if (original_key_width < original_key_width_min) {
-        original_key_width = original_key_width_min;
-    }
-    else if (original_key_width > original_key_width_max) {
-        original_key_width = original_key_width_max;
-    }
-
-    int mapping_key_width_min = mappingDataTable->width()/5 - 15;
-    int mapping_key_width = mappingDataTable->width() - original_key_width - burst_mode_width - lock_width - category_width - 16;
-    if (mapping_key_width < mapping_key_width_min) {
-        mapping_key_width = mapping_key_width_min;
+    int macro_content_width_min = macroDataTable->width()/5 - 15;
+    int macro_content_width = macroDataTable->width() - macro_name_width - macro_category_width - 16;
+    if (macro_content_width < macro_content_width_min) {
+        macro_content_width = macro_content_width_min;
     }
 
-    mappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
-    mappingDataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
-    mappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
-    mappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
-    if (mappingDataTable->isCategoryColumnVisible()) {
-        mappingDataTable->setColumnWidth(CATEGORY_COLUMN, category_width);
-    }
+    macroDataTable->setColumnWidth(MACRO_NAME_COLUMN, macro_name_width);
+    macroDataTable->setColumnWidth(MACRO_CONTENT_COLUMN, macro_content_width);
+    macroDataTable->setColumnWidth(MACRO_CATEGORY_COLUMN, macro_category_width);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
-#endif
-
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width;
 #endif
 }
 

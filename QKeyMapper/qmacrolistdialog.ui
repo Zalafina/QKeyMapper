@@ -175,7 +175,13 @@
           <property name="minimumSize">
            <size>
             <width>210</width>
-            <height>0</height>
+            <height>21</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>21</height>
            </size>
           </property>
           <property name="focusPolicy">
@@ -216,13 +222,13 @@
           <property name="minimumSize">
            <size>
             <width>120</width>
-            <height>22</height>
+            <height>21</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>300</width>
-            <height>22</height>
+            <height>21</height>
            </size>
           </property>
           <property name="focusPolicy">
@@ -267,6 +273,18 @@
         </item>
         <item>
          <widget class="QLineEdit" name="macroContentLineEdit">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>21</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>21</height>
+           </size>
+          </property>
           <property name="focusPolicy">
            <enum>Qt::FocusPolicy::ClickFocus</enum>
           </property>
@@ -487,7 +505,7 @@
              <x>76</x>
              <y>40</y>
              <width>151</width>
-             <height>21</height>
+             <height>22</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -512,7 +530,7 @@
              <x>300</x>
              <y>40</y>
              <width>141</width>
-             <height>21</height>
+             <height>22</height>
             </rect>
            </property>
            <property name="minimumSize">

@@ -48,8 +48,8 @@ namespace QKeyMapperConstants {
     inline constexpr int LOCK_COLUMN = 3;
     inline constexpr int CATEGORY_COLUMN = 4;
 
-    inline constexpr int MACRONAME_COLUMN = 0;
-    inline constexpr int MACRO_COLUMN = 1;
+    inline constexpr int MACRO_NAME_COLUMN = 0;
+    inline constexpr int MACRO_CONTENT_COLUMN = 1;
     inline constexpr int MACRO_CATEGORY_COLUMN = 2;
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
