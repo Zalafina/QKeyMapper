@@ -98,6 +98,8 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->universalmacrolistTable->setHorizontalHeaderLabels(QStringList()    << tr("Name")
                                                                             << tr("Macro")
                                                                             << tr("Category"));
+
+    resizeMacroListTabWidgetColumnWidth();
 }
 
 void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macroDataTable, const OrderedMap<QString, MappingMacroData> &mappingMacroDataList)
@@ -523,8 +525,6 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     macroDataTable->horizontalHeader()->setStretchLastSection(true);
     macroDataTable->horizontalHeader()->setHighlightSections(false);
 
-    resizeMacroListTableColumnWidth(macroDataTable);
-
     macroDataTable->verticalHeader()->setVisible(false);
     macroDataTable->verticalHeader()->setDefaultSectionSize(25);
     macroDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -544,6 +544,8 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     macroDataTable->setFont(customFont);
     macroDataTable->horizontalHeader()->setFont(customFont);
     macroDataTable->setStyle(QStyleFactory::create("Fusion"));
+
+    resizeMacroListTableColumnWidth(macroDataTable);
 
     // Connect signals for this table
     updateMacroDataTableConnection(macroDataTable);
@@ -577,19 +579,24 @@ void QMacroListDialog::resizeMacroListTabWidgetColumnWidth()
 
 void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable)
 {
+    // Use TabWidget width instead of table width to ensure consistent column widths
+    // when the table's tab is not currently visible (hidden tabs have small width)
+    int referenceWidth = ui->macroListTabWidget->width() - 8;
+
     macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
-    int macro_name_width_min = macroDataTable->width()/7 - 15;
-    int macro_name_width_max = macroDataTable->width() / 2;
+    int macro_name_width_min = referenceWidth/7 - 15;
+    int macro_name_width_max = referenceWidth / 2;
     int macro_name_width = macroDataTable->columnWidth(MACRO_NAME_COLUMN);
 
     macroDataTable->horizontalHeader()->setStretchLastSection(false);
-    int macro_category_width_max = macroDataTable->width() / 5;
+    int macro_category_width_min = referenceWidth / 20;
+    int macro_category_width_max = referenceWidth / 5;
     macroDataTable->resizeColumnToContents(MACRO_CATEGORY_COLUMN);
     int macro_category_width = macroDataTable->columnWidth(MACRO_CATEGORY_COLUMN);
-    // if (macro_category_width < burst_mode_width) {
-    //     macro_category_width = burst_mode_width;
-    // }
+    if (macro_category_width < macro_category_width_min) {
+        macro_category_width = macro_category_width_min;
+    }
     if (macro_category_width > macro_category_width_max) {
         macro_category_width = macro_category_width_max;
     }
@@ -602,8 +609,8 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
         macro_name_width = macro_name_width_max;
     }
 
-    int macro_content_width_min = macroDataTable->width()/5 - 15;
-    int macro_content_width = macroDataTable->width() - macro_name_width - macro_category_width - 16;
+    int macro_content_width_min = referenceWidth/5 - 15;
+    int macro_content_width = referenceWidth - macro_name_width - macro_category_width - 16;
     if (macro_content_width < macro_content_width_min) {
         macro_content_width = macro_content_width_min;
     }
@@ -613,7 +620,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     macroDataTable->setColumnWidth(MACRO_CATEGORY_COLUMN, macro_category_width);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width;
 #endif
 }
 
