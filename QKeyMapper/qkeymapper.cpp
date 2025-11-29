@@ -4360,21 +4360,10 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
 
                 if (macro_match.hasMatch()) {
                     // Validate Macro(...) or UniversalMacro(...) mapping key
-                    QString macroType = macro_match.captured(1);      // "" for Macro, "Universal" for UniversalMacro
-                    QString macroName = macro_match.captured(2);      // Macro name inside ()
                     QString repeatCountStr = macro_match.captured(3); // Optional repeat count
 
-                    // Validate macro name is not empty
-                    if (macroName.isEmpty()) {
-                        result.isValid = false;
-                        if (macroType.isEmpty()) {
-                            result.errorMessage = tr("Macro name cannot be empty");
-                        } else {
-                            result.errorMessage = tr("UniversalMacro name cannot be empty");
-                        }
-                    }
                     // Validate repeat count if provided
-                    else if (!repeatCountStr.isEmpty()) {
+                    if (!repeatCountStr.isEmpty()) {
                         bool ok = false;
                         int repeatCount = repeatCountStr.toInt(&ok);
                         if (!ok || repeatCountStr.startsWith('0') || repeatCount < REPEAT_COUNT_MIN || repeatCount > REPEAT_COUNT_MAX) {
