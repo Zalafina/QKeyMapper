@@ -1213,6 +1213,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char RUN_STR[]           = "Run";
     inline constexpr const char SWITCHTAB_STR[]         = "SwitchTab";
     inline constexpr const char SWITCHTAB_SAVE_STR[]    = "SwitchTab💾";
+    inline constexpr const char MACRO_STR[]             = "Macro";
+    inline constexpr const char UNIVERSAL_MACRO_STR[]   = "UniversalMacro";
     inline constexpr const char REPEAT_STR[]            = "Repeat";
     inline constexpr const char UNLOCK_STR[]            = "Unlock";
     inline constexpr const char SETVOLUME_STR[]             = "SetVolume";

@@ -18460,6 +18460,8 @@ void QKeyMapper::initKeysCategoryMap()
         << RUN_STR
         << SWITCHTAB_STR
         << SWITCHTAB_SAVE_STR
+        << MACRO_STR
+        << UNIVERSAL_MACRO_STR
         << QKEYMAPPER_FN_KEY_STR
         << BLOCK_KEYBOARD_STR
         << BLOCK_KEYBOARD_NOTIFY_STR
@@ -21821,6 +21823,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 
     if (false == already_exist) {
+        static QRegularExpression simplified_regex(R"([\r\n]+)");
         if (findindex != -1) {
             MAP_KEYDATA keymapdata = KeyMappingDataList->at(findindex);
             if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
@@ -21951,7 +21954,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             }
             else if (currentMapKeyText == RUN_STR) {
                 QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
-                static QRegularExpression simplified_regex(R"([\r\n]+)");
                 run_cmd.replace(simplified_regex, " ");
                 run_cmd = run_cmd.trimmed();
                 if (run_cmd.isEmpty()) {
@@ -21966,7 +21968,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             else if (currentMapKeyText == SWITCHTAB_STR
                 || currentMapKeyText == SWITCHTAB_SAVE_STR) {
                 QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
-                static QRegularExpression simplified_regex(R"([\r\n]+)");
                 switchtab_name.replace(simplified_regex, " ");
                 if (switchtab_name.isEmpty()) {
                     QString message = tr("Please input the tabname to switch!");
@@ -21975,6 +21976,19 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
                 else {
                     currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
+                }
+            }
+            else if (currentMapKeyText == MACRO_STR
+                || currentMapKeyText == UNIVERSAL_MACRO_STR) {
+                QString macro_content = ui->sendTextPlainTextEdit->toPlainText();
+                macro_content.replace(simplified_regex, " ");
+                if (macro_content.isEmpty()) {
+                    QString message = tr("Please input the mapping macro!");
+                    showFailurePopup(message);
+                    return;
+                }
+                else {
+                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, macro_content);
                 }
             }
             else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
@@ -22168,7 +22182,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
                 else if (currentMapKeyText == RUN_STR) {
                     QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
-                    static QRegularExpression simplified_regex(R"([\r\n]+)");
                     run_cmd.replace(simplified_regex, " ");
                     run_cmd = run_cmd.trimmed();
                     if (run_cmd.isEmpty()) {
@@ -22183,7 +22196,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else if (currentMapKeyText == SWITCHTAB_STR
                     || currentMapKeyText == SWITCHTAB_SAVE_STR) {
                     QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
-                    static QRegularExpression simplified_regex(R"([\r\n]+)");
                     switchtab_name.replace(simplified_regex, " ");
                     if (switchtab_name.isEmpty()) {
                         QString message = tr("Please input the tabname to switch!");
@@ -22192,6 +22204,20 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     }
                     else {
                         currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
+                    }
+                }
+                else if (currentMapKeyText == MACRO_STR
+                    || currentMapKeyText == UNIVERSAL_MACRO_STR) {
+                    QString macro_content = ui->sendTextPlainTextEdit->toPlainText();
+                    macro_content = macro_content.trimmed();
+                    macro_content.replace(simplified_regex, " ");
+                    if (macro_content.isEmpty()) {
+                        QString message = tr("Please input the mapping macro!");
+                        showFailurePopup(message);
+                        return;
+                    }
+                    else {
+                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, macro_content);
                     }
                 }
                 else if (currentMapKeyText == KEY_BLOCKED_STR) {
