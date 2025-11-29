@@ -436,6 +436,15 @@ void QMacroListDialog::addMacroToList()
         return;
     }
 
+    // Validate macro name does not contain ')' character
+    // This ensures the macro can be referenced correctly in Macro(name) syntax
+    if (macroname_str.contains(')')) {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = tr("Macro name cannot contain ')' character.");
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
     ValidationResult result = QKeyMapper::validateMappingMacroString(macro_str);
 
     if (!result.isValid) {

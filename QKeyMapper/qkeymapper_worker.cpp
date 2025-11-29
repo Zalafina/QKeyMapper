@@ -14945,7 +14945,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        // s_LowLevelKeyboardHook_Enable = false;
+        s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
@@ -15322,13 +15322,18 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
     return result;
 }
 
-QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level)
+QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSet<QString> *expandingMacros)
 {
-    // Check nesting level limit to prevent infinite recursion
-    // This handles cases where Macro A contains Macro B which contains Macro A
+    // Check nesting level limit to prevent deeply nested recursion
     if (nesting_level > REPEAT_NESTING_LEVEL_MAX) {
         qWarning("[expandMacroKeys] Macro nesting level exceeds maximum (%d), returning original keys.", REPEAT_NESTING_LEVEL_MAX);
         return inputKeys;
+    }
+
+    // Create local set to track expanding macros if not provided (top-level call)
+    QSet<QString> localExpandingMacros;
+    if (expandingMacros == nullptr) {
+        expandingMacros = &localExpandingMacros;
     }
 
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO);
@@ -15387,11 +15392,28 @@ QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level)
                 continue; // Skip this macro that doesn't exist
             }
 
+            // Create a unique identifier for this macro (type + name)
+            QString macroIdentifier = macroType + "Macro(" + macroName + ")";
+
+            // Check for recursive macro reference (cycle detection)
+            if (expandingMacros->contains(macroIdentifier)) {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[expandMacroKeys] Recursive macro reference detected: %s, skipping to prevent infinite loop.", qPrintable(macroIdentifier));
+#endif
+                continue; // Skip this macro to prevent infinite recursion
+            }
+
+            // Add current macro to the expanding set before recursion
+            expandingMacros->insert(macroIdentifier);
+
             // Split the macro content into key sequence
             QStringList macroKeys = splitMappingKeyString(macroContent, SPLIT_WITH_NEXT);
 
             // Recursively expand any nested Macro in the macro content
-            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1);
+            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1, expandingMacros);
+
+            // Remove current macro from the expanding set after recursion completes
+            expandingMacros->remove(macroIdentifier);
 
             // Also expand any Repeat{...}x... patterns in the expanded macro keys
             expandedMacroKeys = expandRepeatKeys(expandedMacroKeys);
