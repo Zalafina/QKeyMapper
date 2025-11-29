@@ -4024,7 +4024,9 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
         if (Mapping_Keys.size() > 1) {
             static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
+            static QRegularExpression macro_regex(REGEX_PATTERN_MACRO);
             bool foundRepeatMappingKey = false;
+            bool foundMacroMappingKey = false;
             QString foundSpecialOriginalKey;
             QString foundSpecialMappingKey;
             // Check Mapping_Keys contains keystring in QKeyMapper_Worker::SpecialMappingKeysList
@@ -4034,6 +4036,11 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                 QRegularExpressionMatch repeat_match = repeat_regex.match(mapkey);
                 if (repeat_match.hasMatch()) {
                     foundRepeatMappingKey = true;
+                    break;
+                }
+                QRegularExpressionMatch macro_match = macro_regex.match(mapkey);
+                if (macro_match.hasMatch()) {
+                    foundMacroMappingKey = true;
                     break;
                 }
                 if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
@@ -4048,6 +4055,11 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
             if (foundRepeatMappingKey) {
                 result.isValid = false;
                 result.errorMessage = tr("MappingCombinationKeys contains Repeat{...}");
+                return result;
+            }
+            if (foundMacroMappingKey) {
+                result.isValid = false;
+                result.errorMessage = tr("MappingCombinationKeys contains Macro(...)");
                 return result;
             }
             if (!foundSpecialMappingKey.isEmpty()) {
@@ -4342,8 +4354,41 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 }
             }
             else {
-                result.isValid = false;
-                result.errorMessage = tr("Invalid key \"%1\"").arg(mapping_key);
+                // Check if it's a Macro(...) or UniversalMacro(...) pattern
+                static QRegularExpression macro_regex(REGEX_PATTERN_MACRO);
+                QRegularExpressionMatch macro_match = macro_regex.match(mapping_key);
+
+                if (macro_match.hasMatch()) {
+                    // Validate Macro(...) or UniversalMacro(...) mapping key
+                    QString macroType = macro_match.captured(1);      // "" for Macro, "Universal" for UniversalMacro
+                    QString macroName = macro_match.captured(2);      // Macro name inside ()
+                    QString repeatCountStr = macro_match.captured(3); // Optional repeat count
+
+                    // Validate macro name is not empty
+                    if (macroName.isEmpty()) {
+                        result.isValid = false;
+                        if (macroType.isEmpty()) {
+                            result.errorMessage = tr("Macro name cannot be empty");
+                        } else {
+                            result.errorMessage = tr("UniversalMacro name cannot be empty");
+                        }
+                    }
+                    // Validate repeat count if provided
+                    else if (!repeatCountStr.isEmpty()) {
+                        bool ok = false;
+                        int repeatCount = repeatCountStr.toInt(&ok);
+                        if (!ok || repeatCountStr.startsWith('0') || repeatCount < REPEAT_COUNT_MIN || repeatCount > REPEAT_COUNT_MAX) {
+                            result.isValid = false;
+                            result.errorMessage = tr("Invalid repeat count \"%1\" for Macro, valid range is %2~%3").arg(repeatCountStr).arg(REPEAT_COUNT_MIN).arg(REPEAT_COUNT_MAX);
+                        }
+                    }
+                    // Note: We don't validate if the macro exists here because macros can be defined later
+                    // The existence check will be done at runtime in expandMacroKeys()
+                }
+                else {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid key \"%1\"").arg(mapping_key);
+                }
             }
         }
 
@@ -4429,9 +4474,10 @@ ValidationResult QKeyMapper::validateMappingMacroString(QString &mappingMacro)
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... content to preserve them
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingMacro, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingMacro, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex, macro_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

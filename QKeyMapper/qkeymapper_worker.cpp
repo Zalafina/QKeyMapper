@@ -1777,8 +1777,27 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
-    // Expand Repeat{...}x... patterns before processing
+    // Expand Macro(...) and UniversalMacro(...) patterns first
+    // Note: expandMacroKeys internally calls expandRepeatKeys for macro content
+    inputKeys = expandMacroKeys(inputKeys);
+
+    // Expand Repeat{...}x... patterns
+    // This handles any top-level Repeat patterns that weren't inside macros
     inputKeys = expandRepeatKeys(inputKeys);
+
+    int key_sequence_count = inputKeys.size();
+    if (key_sequence_count <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("sendInputKeys(): Input key count error(%d), skip sendInputKeys!!!", key_sequence_count);
+#endif
+        return;
+    }
+    else if (key_sequence_count > KEY_SEQUENCE_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("sendInputKeys(): Key sequence is too long(%d)!!!", key_sequence_count);
+#endif
+        return;
+    }
 
     Q_UNUSED(sendmode);
     int waitTime = 0;
@@ -1830,20 +1849,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             qDebug() << "[sendInputKeys] Mouse Wheel KeyUp wait end ->" << original_key;
 #endif
         }
-    }
-
-    int key_sequence_count = inputKeys.size();
-    if (key_sequence_count <= 0) {
-#ifdef DEBUG_LOGOUT_ON
-        qWarning("sendInputKeys(): no input keys, size error(%d)!!!", key_sequence_count);
-#endif
-        return;
-    }
-    else if (key_sequence_count > KEY_SEQUENCE_MAX) {
-#ifdef DEBUG_LOGOUT_ON
-        qWarning("sendInputKeys(): Key sequence is too long(%d)!!!", key_sequence_count);
-#endif
-        return;
     }
 
     if (keyMappingDataList == Q_NULLPTR && rowindex >= 0) {
@@ -14940,7 +14945,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");
@@ -15133,13 +15138,14 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
     static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression macro_regex(QKeyMapperConstants::REGEX_PATTERN_MACRO_FIND);
     // Support both fixed wait time and random range with bracket notation
     // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
     static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... to preserve them during splitting
-    // Note: Repeat{...}x... needs to be preserved as a whole pattern to avoid splitting by internal separators (»)
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) to preserve them during splitting
+    // Note: Repeat{...}x... and Macro(...)x... need to be preserved as whole patterns to avoid splitting by internal separators (»)
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex, macro_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -15203,12 +15209,22 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
                 splitted_mappingkeys.append(innerPureKeys);
             }
             else {
-                // Normal key, extract pure key name using mapkey_regex
-                QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
-                if (mapkey_match.hasMatch()) {
-                    keystr = mapkey_match.captured(2);
+                // Check if this is a Macro(...) or UniversalMacro(...) pattern
+                static QRegularExpression macro_pattern(REGEX_PATTERN_MACRO);
+                QRegularExpressionMatch macro_match = macro_pattern.match(keystr);
+                if (macro_match.hasMatch()) {
+                    // For Macro pattern, keep it as a whole in pure keys mode
+                    // The macro content will be expanded at runtime
+                    splitted_mappingkeys.append(keystr);
                 }
-                splitted_mappingkeys.append(keystr);
+                else {
+                    // Normal key, extract pure key name using mapkey_regex
+                    QRegularExpressionMatch mapkey_match = mapkey_regex.match(keystr);
+                    if (mapkey_match.hasMatch()) {
+                        keystr = mapkey_match.captured(2);
+                    }
+                    splitted_mappingkeys.append(keystr);
+                }
             }
         }
         else {
@@ -15284,6 +15300,7 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
             QStringList innerKeys = splitMappingKeyString(repeat_content, SPLIT_WITH_NEXT);
 
             // Recursively expand any nested Repeat in the inner content
+            // Note: Macro expansion should be done before calling expandRepeatKeys
             QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1);
 
             // Append the expanded inner keys repeat_count times
@@ -15294,6 +15311,101 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[expandRepeatKeys] Expanded Repeat{" << repeat_content << "}x" << repeat_count
                                          << " to " << expandedInnerKeys.size() * repeat_count << " keys (nesting level: " << nesting_level << ")";
+#endif
+        }
+        else {
+            // Normal key, append as-is
+            result.append(key);
+        }
+    }
+
+    return result;
+}
+
+QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level)
+{
+    // Check nesting level limit to prevent infinite recursion
+    // This handles cases where Macro A contains Macro B which contains Macro A
+    if (nesting_level > REPEAT_NESTING_LEVEL_MAX) {
+        qWarning("[expandMacroKeys] Macro nesting level exceeds maximum (%d), returning original keys.", REPEAT_NESTING_LEVEL_MAX);
+        return inputKeys;
+    }
+
+    static QRegularExpression macro_regex(REGEX_PATTERN_MACRO);
+    QStringList result;
+
+    for (const QString &key : inputKeys) {
+        QRegularExpressionMatch macro_match = macro_regex.match(key);
+
+        if (macro_match.hasMatch()) {
+            // This is a Macro(...) or UniversalMacro(...) instruction
+            QString macroType = macro_match.captured(1);      // "" for Macro, "Universal" for UniversalMacro
+            QString macroName = macro_match.captured(2);      // Macro name inside ()
+            QString repeatCountStr = macro_match.captured(3); // Optional repeat count
+
+            // Determine repeat count (default is 1)
+            int repeatCount = 1;
+            if (!repeatCountStr.isEmpty()) {
+                bool ok = false;
+                repeatCount = repeatCountStr.toInt(&ok);
+                if (!ok || repeatCount < REPEAT_COUNT_MIN || repeatCount > REPEAT_COUNT_MAX) {
+                    // Invalid repeat count, skip this macro
+#ifdef DEBUG_LOGOUT_ON
+                    qWarning("[expandMacroKeys] Invalid repeat count: %s, skipping expansion.", qPrintable(repeatCountStr));
+#endif
+                    continue; // Skip this invalid macro
+                }
+            }
+
+            // Look up macro content from the appropriate list
+            QString macroContent;
+            bool macroFound = false;
+
+            if (macroType.isEmpty()) {
+                // Regular Macro - look up in s_MappingMacroList
+                if (QKeyMapper::s_MappingMacroList.contains(macroName)) {
+                    macroContent = QKeyMapper::s_MappingMacroList.value(macroName).MappingMacro;
+                    macroFound = true;
+                }
+            } else {
+                // UniversalMacro - look up in s_UniversalMappingMacroList
+                if (QKeyMapper::s_UniversalMappingMacroList.contains(macroName)) {
+                    macroContent = QKeyMapper::s_UniversalMappingMacroList.value(macroName).MappingMacro;
+                    macroFound = true;
+                }
+            }
+
+            if (!macroFound || macroContent.isEmpty()) {
+                // Macro not found or empty, skip this key
+#ifdef DEBUG_LOGOUT_ON
+                if (macroType.isEmpty()) {
+                    qWarning("[expandMacroKeys] Macro \"%s\" not found in MappingMacroList, skipping.", qPrintable(macroName));
+                } else {
+                    qWarning("[expandMacroKeys] UniversalMacro \"%s\" not found in UniversalMappingMacroList, skipping.", qPrintable(macroName));
+                }
+#endif
+                continue; // Skip this macro that doesn't exist
+            }
+
+            // Split the macro content into key sequence
+            QStringList macroKeys = splitMappingKeyString(macroContent, SPLIT_WITH_NEXT);
+
+            // Recursively expand any nested Macro in the macro content
+            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1);
+
+            // Also expand any Repeat{...}x... patterns in the expanded macro keys
+            expandedMacroKeys = expandRepeatKeys(expandedMacroKeys);
+
+            // Append the expanded macro keys repeatCount times
+            for (int i = 0; i < repeatCount; ++i) {
+                result.append(expandedMacroKeys);
+            }
+
+#ifdef DEBUG_LOGOUT_ON
+            QString macroTypeStr = macroType.isEmpty() ? "Macro" : "UniversalMacro";
+            qDebug().nospace().noquote() << "[expandMacroKeys] Expanded " << macroTypeStr << "(" << macroName << ")"
+                                         << (repeatCount > 1 ? QString("x%1").arg(repeatCount) : QString())
+                                         << " to " << expandedMacroKeys.size() * repeatCount << " keys (nesting level: " << nesting_level << ")";
 #endif
         }
         else {

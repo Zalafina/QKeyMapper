@@ -629,17 +629,17 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex, const QRegularExpression &macro_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
 
-    // Create a list of all matches (SendText, Run, SwitchTab, Unlock, SetVolume, and Repeat) with their positions
+    // Create a list of all matches (SendText, Run, SwitchTab, Unlock, SetVolume, Repeat, and Macro) with their positions
     struct MatchInfo {
         int start;
         int end;
         QString content;
-        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "unlock", "setvolume", or "repeat"
+        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "unlock", "setvolume", "repeat", "macro", or "universalmacro"
     };
 
     QList<MatchInfo> allMatches;
@@ -960,6 +960,34 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         }
     }
 
+    // Find all Macro(...) and UniversalMacro(...) matches
+    // Pattern: Macro(name) or Macro(name)x<count> or UniversalMacro(name) or UniversalMacro(name)x<count>
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        if (macro_regex.pattern().isEmpty()) {
+            break;
+        }
+
+        QRegularExpressionMatch match = macro_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        // Macro/UniversalMacro pattern is simple with no nested brackets expected
+        MatchInfo info;
+        info.start = match.capturedStart();
+        info.end = match.capturedEnd();
+        info.content = match.captured(0);
+        // Determine if it's Macro or UniversalMacro based on the captured group(1)
+        if (!match.captured(1).isEmpty()) {
+            info.type = "universalmacro"; // UniversalMacro(...) format
+        } else {
+            info.type = "macro"; // Macro(...) format
+        }
+        allMatches.append(info);
+        currentPos = match.capturedEnd();
+    }
+
     // Sort matches by start position
     std::sort(allMatches.begin(), allMatches.end(), [](const MatchInfo &a, const MatchInfo &b) {
         return a.start < b.start;
@@ -1068,7 +1096,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
 
                 // Recursively process inner content to handle nested Repeat and remove whitespace
                 QPair<QString, QStringList> innerResult = extractSpecialPatternsWithBracketBalancing(
-                    innerContent, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex
+                    innerContent, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex, macro_regex
                 );
                 QString processedInner = innerResult.first;
                 QStringList innerPreservedParts = innerResult.second;
@@ -1087,6 +1115,38 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
                 content = QString("Repeat{%1}x%2").arg(processedInner, repeatCount);
             }
             // If pattern doesn't match, keep original content unchanged
+        }
+        else if (allMatches[i].type == "macro") {
+            // Macro(...) content - remove whitespace from macro name
+            // Format: Macro(macroName) or Macro(macroName)x<count>
+            static QRegularExpression macroPattern(REGEX_PATTERN_MACRO);
+            QRegularExpressionMatch macroMatch = macroPattern.match(content);
+            if (macroMatch.hasMatch()) {
+                QString macroName = macroMatch.captured(2).simplified();
+                macroName.remove(whitespace_reg);
+                QString repeatCount = macroMatch.captured(3);
+                if (repeatCount.isEmpty()) {
+                    content = QString("%1(%2)").arg(MACRO_STR, macroName);
+                } else {
+                    content = QString("%1(%2)x%3").arg(MACRO_STR, macroName, repeatCount);
+                }
+            }
+        }
+        else if (allMatches[i].type == "universalmacro") {
+            // UniversalMacro(...) content - remove whitespace from macro name
+            // Format: UniversalMacro(macroName) or UniversalMacro(macroName)x<count>
+            static QRegularExpression macroPattern(REGEX_PATTERN_MACRO);
+            QRegularExpressionMatch macroMatch = macroPattern.match(content);
+            if (macroMatch.hasMatch()) {
+                QString macroName = macroMatch.captured(2).simplified();
+                macroName.remove(whitespace_reg);
+                QString repeatCount = macroMatch.captured(3);
+                if (repeatCount.isEmpty()) {
+                    content = QString("%1(%2)").arg(UNIVERSAL_MACRO_STR, macroName);
+                } else {
+                    content = QString("%1(%2)x%3").arg(UNIVERSAL_MACRO_STR, macroName, repeatCount);
+                }
+            }
         }
         // SendText(...) content remains completely unchanged
 
@@ -2608,9 +2668,10 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... content to preserve them
-    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex, macro_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
@@ -2654,9 +2715,10 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), and Repeat{...}x... content to preserve them
-    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex);
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(mappingKey, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex, macro_regex);
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

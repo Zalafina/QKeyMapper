@@ -1078,6 +1078,16 @@ namespace QKeyMapperConstants {
     // Uses non-greedy matching for brace content to handle nested structures
     inline constexpr const char REGEX_PATTERN_REPEAT_FIND[] = R"(Repeat\{[^}]+\}x\d+)";
 
+    // Pattern for matching Macro(...) and UniversalMacro(...) mapping keys
+    // Matches: Macro(TestMacro), Macro(MyMacro)x3, UniversalMacro(GlobalMacro), UniversalMacro(GlobalMacro)x5
+    // Capture groups: (1) = macro type prefix ("" for Macro, "Universal" for UniversalMacro),
+    //                 (2) = macro name inside (), (3) = optional repeat count (x followed by number)
+    inline constexpr const char REGEX_PATTERN_MACRO[] = R"(^(Universal)?Macro\(([^)]+)\)(?:x(\d+))?$)";
+
+    // Pattern for finding Macro(...) and UniversalMacro(...) parts in a composite string
+    // Uses non-greedy matching for macro name to handle multiple occurrences
+    inline constexpr const char REGEX_PATTERN_MACRO_FIND[] = R"((Universal)?Macro\([^)]+\)(?:x\d+)?)";
+
     // Common edit control class names for searching
     inline constexpr const wchar_t* EDIT_CONTROL_CLASSNAMES[] = {
         L"Edit",            // Standard edit control
