@@ -394,29 +394,16 @@ void QMacroListDialog::on_clearButton_clicked()
 
 void QMacroListDialog::addMacroToList()
 {
-    constexpr int CURRENT_TAB_NONE              = -1;
-    constexpr int CURRENT_TAB_MACRO             = 0;
-    constexpr int CURRENT_TAB_UNIVERSAL_MACRO   = 1;
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
 
-    int current_tab = CURRENT_TAB_NONE;
-    MacroListDataTableWidget *macroDataTable = Q_NULLPTR;
-    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
-        current_tab = CURRENT_TAB_MACRO;
-        macroDataTable = ui->macrolistTable;
-    }
-    else if (ui->macroListTabWidget->currentWidget() == ui->universalmacrolist) {
-        current_tab = CURRENT_TAB_UNIVERSAL_MACRO;
-        macroDataTable = ui->universalmacrolistTable;
-    }
-
-    if (current_tab == CURRENT_TAB_NONE) {
+    if (macroDataTable == Q_NULLPTR) {
         return;
     }
 
-    OrderedMap<QString, MappingMacroData>& CurrentMacroList = (current_tab == CURRENT_TAB_MACRO) ? QKeyMapper::s_MappingMacroList : QKeyMapper::s_UniversalMappingMacroList;
+    OrderedMap<QString, MappingMacroData>& CurrentMacroList = (macroDataTable == ui->macrolistTable) ? QKeyMapper::s_MappingMacroList : QKeyMapper::s_UniversalMappingMacroList;
 
 #ifdef DEBUG_LOGOUT_ON
-    const char* currentTabStr = (current_tab == CURRENT_TAB_MACRO) ? "Macro List" : "Universal Macro List";
+    const char* currentTabStr = (macroDataTable == ui->macrolistTable) ? "Macro List" : "Universal Macro List";
     qDebug() << "[QMacroListDialog::addMacroToList] Add macro to" << currentTabStr;
 #endif
 
@@ -461,7 +448,7 @@ void QMacroListDialog::addMacroToList()
     // Check if macro name already exists
     bool isUpdate = false;
     if (CurrentMacroList.contains(macroname_str)) {
-        QString dialogTitle = (current_tab == CURRENT_TAB_MACRO) ? tr("Macro List") : tr("Universal Macro List");
+        QString dialogTitle = (macroDataTable == ui->macrolistTable) ? tr("Macro List") : tr("Universal Macro List");
         QString messageText = tr("Macro name already exists. Replace existing macro?");
         
         QMessageBox::StandardButton reply = QMessageBox::question(
@@ -482,7 +469,7 @@ void QMacroListDialog::addMacroToList()
 
     // Show success message
     popupMessageColor = SUCCESS_COLOR;
-    if (current_tab == CURRENT_TAB_MACRO) {
+    if (macroDataTable == ui->macrolistTable) {
         popupMessage = tr("Macro List") + " -> ";
     }
     else {
