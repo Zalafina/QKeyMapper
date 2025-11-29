@@ -53,6 +53,8 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
 
     initMacroListTabWidget();
 
+    QObject::connect(ui->macroListTabWidget, &QTabWidget::currentChanged, this, &QMacroListDialog::macroListTabWidgetCurrentChanged);
+
     // Connect category filter ComboBox signal
     QObject::connect(ui->categoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &QMacroListDialog::onMacroCategoryFilterChanged);
@@ -864,6 +866,12 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         qDebug() << "[macroTableItemDoubleClicked]" << "Loaded macro data to LineEdit controls";
 #endif
     }
+}
+
+void QMacroListDialog::macroListTabWidgetCurrentChanged(int index)
+{
+    Q_UNUSED(index);
+    updateMacroCategoryFilterComboBox();
 }
 
 void QMacroListDialog::macroTableCellChanged(int row, int column)

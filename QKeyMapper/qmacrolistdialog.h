@@ -108,6 +108,7 @@ private slots:
 
     // Slot for handling macro table item double click
     void macroTableItemDoubleClicked(QTableWidgetItem *item);
+    void macroListTabWidgetCurrentChanged(int index);
 
     // Slot for handling drag and drop move
     void macroListTableDragDropMove(int top_row, int bottom_row, int dragged_to);
