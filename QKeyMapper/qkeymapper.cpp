@@ -9599,13 +9599,11 @@ void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
 
     // Convert OrderedMap to QVariantList for INI storage
     QVariantList macroList;
-    const QList<QString> macroNameList = s_MappingMacroList.keys();
-    for (const QString &macroName : std::as_const(macroNameList)) {
-        const MappingMacroData &macroData = s_MappingMacroList.value(macroName);
+    for (auto it = s_MappingMacroList.begin(); it != s_MappingMacroList.end(); ++it) {
         QVariantMap macroMap;
-        macroMap[MACROLIST_FIELD_MACRONAME] = macroName;
-        macroMap[MACROLIST_FIELD_MACROCONTENT] = macroData.MappingMacro;
-        macroMap[MACROLIST_FIELD_MACROCATEGORY] = macroData.Category;
+        macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
+        macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
+        macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
         macroList.append(macroMap);
     }
 
@@ -9678,13 +9676,11 @@ void QKeyMapper::saveUniversalMacroListToINI()
 
     // Convert OrderedMap to QVariantList for INI storage
     QVariantList macroList;
-    const QList<QString> macroNameList = s_UniversalMappingMacroList.keys();
-    for (const QString &macroName : std::as_const(macroNameList)) {
-        const MappingMacroData &macroData = s_UniversalMappingMacroList.value(macroName);
+    for (auto it = s_UniversalMappingMacroList.begin(); it != s_UniversalMappingMacroList.end(); ++it) {
         QVariantMap macroMap;
-        macroMap[MACROLIST_FIELD_MACRONAME] = macroName;
-        macroMap[MACROLIST_FIELD_MACROCONTENT] = macroData.MappingMacro;
-        macroMap[MACROLIST_FIELD_MACROCATEGORY] = macroData.Category;
+        macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
+        macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
+        macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
         macroList.append(macroMap);
     }
 

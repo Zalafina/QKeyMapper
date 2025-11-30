@@ -116,11 +116,11 @@ void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macro
         int rowindex = 0;
         macroDataTable->setRowCount(mappingMacroDataList.size());
 
-        // Iterate through the OrderedMap using keys()
-        QList<QString> macroNameList = mappingMacroDataList.keys();
-        for (const QString& macroName : std::as_const(macroNameList))
+        // Iterate through the OrderedMap using iterator for better performance
+        for (auto it = mappingMacroDataList.begin(); it != mappingMacroDataList.end(); ++it)
         {
-            const MappingMacroData& macroData = mappingMacroDataList.value(macroName);
+            const QString &macroName = it.key();
+            const MappingMacroData &macroData = it.value();
 
             /* MACRO_NAME_COLUMN */
             QTableWidgetItem *name_TableItem = new QTableWidgetItem(macroName);
