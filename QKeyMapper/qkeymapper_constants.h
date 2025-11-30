@@ -822,6 +822,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char IGNOREWINDOWINFO_RULES[] = "IgnoreWindowInfo_Rules";
     inline constexpr const char MACROLIST_UNIVERSAL[] = "MacroList_Universal";
 
+    // MacroList data field names for INI storage
+    inline constexpr const char MACROLIST_FIELD_MACRONAME[] = "macroName";
+    inline constexpr const char MACROLIST_FIELD_MACROCONTENT[] = "macroContent";
+    inline constexpr const char MACROLIST_FIELD_MACROCATEGORY[] = "macroCategory";
+
     inline constexpr const char NOTIFICATION_FONTCOLOR[] = "Notification_FontColor";
     inline constexpr const char NOTIFICATION_FONTSIZE[] = "Notification_FontSize";
     inline constexpr const char NOTIFICATION_FONTWEIGHT[] = "Notification_FontWeight";
@@ -1237,8 +1242,6 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYSEQUENCEBREAK_STR[]  = "KeySequenceBreak";
 
     inline constexpr const char REPEAT_TEMPLATE_STR[]   = "Repeat{}x5";
-
-    inline constexpr const char MACRO_STR[]   = "Macro";
 
     inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";
 

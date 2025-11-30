@@ -9588,25 +9588,157 @@ void QKeyMapper::loadIgnoreRulesFromINI()
 
 void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
 {
+    if (setting_groupname.isEmpty()) {
+        return;
+    }
 
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    // Convert OrderedMap to QVariantList for INI storage
+    QVariantList macroList;
+    const QList<QString> macroNameList = s_MappingMacroList.keys();
+    for (const QString &macroName : std::as_const(macroNameList)) {
+        const MappingMacroData &macroData = s_MappingMacroList.value(macroName);
+        QVariantMap macroMap;
+        macroMap[MACROLIST_FIELD_MACRONAME] = macroName;
+        macroMap[MACROLIST_FIELD_MACROCONTENT] = macroData.MappingMacro;
+        macroMap[MACROLIST_FIELD_MACROCATEGORY] = macroData.Category;
+        macroList.append(macroMap);
+    }
+
+    // Save to INI file under the specific setting group
+    QString settingKey = setting_groupname + "/" + MACROLIST;
+    settingFile.setValue(settingKey, macroList);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[saveMacroListToINI] Saved " << s_MappingMacroList.size() << " macros to [" << settingKey << "]";
+#endif
 }
 
 void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
 {
+    // Clear existing macro list first
+    s_MappingMacroList.clear();
+
     if (setting_groupname.isEmpty()) {
-        s_MappingMacroList.clear();
         return;
     }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    QString settingKey = setting_groupname + "/" + MACROLIST;
+
+    if (!settingFile.contains(settingKey)) {
+        // No MacroList saved for this setting group
+        return;
+    }
+
+    // Load macro list from INI file
+    QVariant macroListVar = settingFile.value(settingKey);
+    if (!macroListVar.isValid() || !macroListVar.canConvert<QVariantList>()) {
+        // Invalid format, keep the list empty
+        return;
+    }
+
+    QVariantList macroList = macroListVar.toList();
+    for (const QVariant &macroVar : std::as_const(macroList)) {
+        if (!macroVar.canConvert<QVariantMap>()) {
+            continue;
+        }
+
+        QVariantMap macroMap = macroVar.toMap();
+
+        QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
+        QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
+        QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
+
+        // Add to map if macro name is not empty
+        if (!macroName.isEmpty()) {
+            s_MappingMacroList[macroName] = MappingMacroData{ macroContent, category };
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[loadMacroListFromINI] Loaded " << s_MappingMacroList.size() << " macros from [" << settingKey << "]";
+#endif
 }
 
 void QKeyMapper::saveUniversalMacroListToINI()
 {
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
 
+    // Convert OrderedMap to QVariantList for INI storage
+    QVariantList macroList;
+    const QList<QString> macroNameList = s_UniversalMappingMacroList.keys();
+    for (const QString &macroName : std::as_const(macroNameList)) {
+        const MappingMacroData &macroData = s_UniversalMappingMacroList.value(macroName);
+        QVariantMap macroMap;
+        macroMap[MACROLIST_FIELD_MACRONAME] = macroName;
+        macroMap[MACROLIST_FIELD_MACROCONTENT] = macroData.MappingMacro;
+        macroMap[MACROLIST_FIELD_MACROCATEGORY] = macroData.Category;
+        macroList.append(macroMap);
+    }
+
+    // Save to INI file under General (root) section
+    settingFile.setValue(MACROLIST_UNIVERSAL, macroList);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[saveUniversalMacroListToINI] Saved " << s_UniversalMappingMacroList.size() << " universal macros to [" << MACROLIST_UNIVERSAL << "]";
+#endif
 }
 
 void QKeyMapper::loadUniversalMacroListFromINI()
 {
+    // Clear existing universal macro list first
+    s_UniversalMappingMacroList.clear();
 
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    if (!settingFile.contains(MACROLIST_UNIVERSAL)) {
+        // No UniversalMacroList saved
+        return;
+    }
+
+    // Load universal macro list from INI file
+    QVariant macroListVar = settingFile.value(MACROLIST_UNIVERSAL);
+    if (!macroListVar.isValid() || !macroListVar.canConvert<QVariantList>()) {
+        // Invalid format, keep the list empty
+        return;
+    }
+
+    QVariantList macroList = macroListVar.toList();
+    for (const QVariant &macroVar : std::as_const(macroList)) {
+        if (!macroVar.canConvert<QVariantMap>()) {
+            continue;
+        }
+
+        QVariantMap macroMap = macroVar.toMap();
+
+        QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
+        QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
+        QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
+
+        // Add to map if macro name is not empty
+        if (!macroName.isEmpty()) {
+            s_UniversalMappingMacroList[macroName] = MappingMacroData{ macroContent, category };
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[loadUniversalMacroListFromINI] Loaded " << s_UniversalMappingMacroList.size() << " universal macros from [" << MACROLIST_UNIVERSAL << "]";
+#endif
 }
 
 void QKeyMapper::exportSettingToFile()
@@ -14196,8 +14328,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Stop Key [" << settingSelectStr+MAPPINGSTOP_KEY << "] -> \"" << s_MappingStopKeyString << "\"";
 #endif
 
+    // Load MacroList from INI file for the current setting group
     if (settingFile.contains(settingSelectStr+MACROLIST)){
-        const QString loadSettingName = settingSelectStr.remove("/");
+        QString loadSettingName = settingSelectStr;
+        loadSettingName.remove("/");
         loadMacroListFromINI(loadSettingName);
     }
     else {
