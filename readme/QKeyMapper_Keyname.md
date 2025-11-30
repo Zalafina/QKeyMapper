@@ -143,6 +143,7 @@
 | Mouse-M_ScreenPoint      |  鼠标中键键点击屏幕范围内指定坐标点         |
 | Mouse-X1_ScreenPoint     |  鼠标1号侧键点击屏幕范围内指定坐标点        |
 | Mouse-X2_ScreenPoint     |  鼠标2号侧键点击屏幕范围内指定坐标点        |
+| Mouse-Move_ScreenPoint   |  鼠标指针移动到屏幕内指定坐标点            |
 | SetVolume                |  设置当前播放设备音量                     |
 | SetVolume🔊              |  设置当前播放设备音量并显示提示            |
 | SetMicVolume             |  设置当前麦克风设备音量                   |
