@@ -1117,6 +1117,8 @@ namespace QKeyMapperConstants {
     inline constexpr int REPEAT_COUNT_MAX = 99999;
     inline constexpr int REPEAT_NESTING_LEVEL_MAX = 5;
 
+    inline constexpr int MAPPINGKEY_LINE_EDIT_MAX_LENGTH = 1000000;
+
     inline constexpr const char CONFIG_FILE_TOPLEVEL_GROUPNAME[] = "General";
     inline constexpr const char SETTING_BACKUP_ACTION_POPUP_NAME[] = "SettingBackupActionPopup";
 

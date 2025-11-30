@@ -18,6 +18,8 @@ QKeyRecord::QKeyRecord(QWidget *parent)
 
     ui->keyRecordLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
 
+    ui->keyRecordLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+
     QObject::connect(this, &QKeyRecord::updateKeyRecordLineEdit_Signal, this, &QKeyRecord::updateKeyRecordLineEdit, Qt::QueuedConnection);
 }
 

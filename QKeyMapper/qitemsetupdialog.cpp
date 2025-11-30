@@ -1681,6 +1681,9 @@ void QItemSetupDialog::initKeyStringLineEdit()
     m_MappingKey_KeyUpLineEdit->setObjectName(SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME);
     m_MappingKey_KeyUpLineEdit->setGeometry(QRect(left, top, width, height));
 
+    m_MappingKeyLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+    m_MappingKey_KeyUpLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+
     setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
 }
 

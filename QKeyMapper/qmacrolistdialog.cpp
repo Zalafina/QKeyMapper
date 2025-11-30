@@ -53,6 +53,8 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
 
     initMacroListTabWidget();
 
+    ui->macroContentLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+
     QObject::connect(ui->macroListTabWidget, &QTabWidget::currentChanged, this, &QMacroListDialog::macroListTabWidgetCurrentChanged);
 
     // Connect category filter ComboBox signal
