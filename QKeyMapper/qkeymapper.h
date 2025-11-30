@@ -1394,8 +1394,8 @@ public:
     static void updateIgnoreWindowInfoListDescriptionTranslation(void);
     static void saveIgnoreRulesToINI(void);
     static void loadIgnoreRulesFromINI(void);
-    static void saveMacroListToINI(void);
-    static void loadMacroListFromINI(void);
+    static void saveMacroListToINI(const QString &setting_groupname);
+    static void loadMacroListFromINI(const QString &setting_groupname);
     static void saveUniversalMacroListToINI(void);
     static void loadUniversalMacroListFromINI(void);
 private:

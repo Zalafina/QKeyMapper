@@ -9586,14 +9586,17 @@ void QKeyMapper::loadIgnoreRulesFromINI()
     }
 }
 
-void QKeyMapper::saveMacroListToINI()
+void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
 {
 
 }
 
-void QKeyMapper::loadMacroListFromINI()
+void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
 {
-
+    if (setting_groupname.isEmpty()) {
+        s_MappingMacroList.clear();
+        return;
+    }
 }
 
 void QKeyMapper::saveUniversalMacroListToINI()
@@ -9864,12 +9867,6 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     // Save ignore rules to INI file
     saveIgnoreRulesToINI();
-
-    // Save MacroList to INI file
-    saveMacroListToINI();
-
-    // Save UniversalMacroList to INI file
-    saveUniversalMacroListToINI();
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -10845,6 +10842,12 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     const QString savedSettingName = saveSettingSelectStr.remove("/");
+
+    // Save MacroList to INI file
+    saveMacroListToINI(savedSettingName);
+
+    // Save UniversalMacroList to INI file
+    saveUniversalMacroListToINI();
 
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(savedSettingName);
@@ -14193,9 +14196,18 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load & Set Mapping Stop Key [" << settingSelectStr+MAPPINGSTOP_KEY << "] -> \"" << s_MappingStopKeyString << "\"";
 #endif
 
+    if (settingFile.contains(settingSelectStr+MACROLIST)){
+        const QString loadSettingName = settingSelectStr.remove("/");
+        loadMacroListFromINI(loadSettingName);
+    }
+    else {
+        loadMacroListFromINI(QString());
+    }
+
     QString loadedSettingString;
     if (false == datavalidflag){
         showFailurePopup(tr("Invalid mapping data : ") + settingtext);
+        loadMacroListFromINI(QString());
         return loadedSettingString;
     }
     else {
@@ -14230,6 +14242,7 @@ void QKeyMapper::loadEmptyMapSetting()
 {
     clearKeyMappingTabWidget();
     KeyMappingDataList->clear();
+    loadMacroListFromINI(QString());
 
     // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
     ui->settingNameLineEdit->setText(QString());
@@ -19294,6 +19307,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(MACRO_STR)) {
+                disable_burst = true;
+                disable_lock = true;
+            }
             else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
                 disable_burst = true;
                 // disable_lock = true;
@@ -19488,6 +19505,10 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_lock = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().contains(KEY_BLOCKED_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(MACRO_STR)) {
         disable_burst = true;
         disable_lock = true;
     }

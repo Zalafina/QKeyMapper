@@ -819,6 +819,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char DISPLAY_SCALE[] = "DisplayScale";
     inline constexpr const char THEME_COLOR[] = "ThemeColor";
 
+    inline constexpr const char IGNOREWINDOWINFO_RULES[] = "IgnoreWindowInfo_Rules";
+    inline constexpr const char MACROLIST_UNIVERSAL[] = "MacroList_Universal";
+
     inline constexpr const char NOTIFICATION_FONTCOLOR[] = "Notification_FontColor";
     inline constexpr const char NOTIFICATION_FONTSIZE[] = "Notification_FontSize";
     inline constexpr const char NOTIFICATION_FONTWEIGHT[] = "Notification_FontWeight";
@@ -960,7 +963,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROCESSINFO_CLASSNAME_MATCH_INDEX[] = "ProcessInfo_ClassNameMatchIndex";
     inline constexpr const char PROCESSINFO_DESCRIPTION[] = "ProcessInfo_Description";
 
-    inline constexpr const char IGNOREWINDOWINFO_RULES[] = "IgnoreWindowInfo_Rules";
+    inline constexpr const char MACROLIST[] = "MacroList";
 
     inline constexpr const char DATAPORT_NUMBER[] = "DataPortNumber";
     inline constexpr const char GRIP_THRESHOLD_BRAKE[] = "GripThresholdBrake";
@@ -1234,6 +1237,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYSEQUENCEBREAK_STR[]  = "KeySequenceBreak";
 
     inline constexpr const char REPEAT_TEMPLATE_STR[]   = "Repeat{}x5";
+
+    inline constexpr const char MACRO_STR[]   = "Macro";
 
     inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";
 
