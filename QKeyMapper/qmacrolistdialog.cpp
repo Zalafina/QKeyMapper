@@ -44,7 +44,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->macroNoteLineEdit->setFont(customFont);
     ui->categoryLineEdit->setFont(customFont);
     ui->clearButton->setFont(customFont);
-    ui->macroBackupButton->setFont(customFont);
+    ui->macroListBackupButton->setFont(customFont);
 
     int scale = QKeyMapper::getInstance()->m_UI_Scale;
     if (UI_SCALE_4K_PERCENT_150 == scale) {
@@ -97,7 +97,7 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
     ui->categoryFilterLabel->setText(tr("Filter"));
-    ui->macroBackupButton->setText(tr("MacroList Backup"));
+    ui->macroListBackupButton->setText(tr("MacroList Backup"));
 
     QTabWidget *tabWidget = ui->macroListTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->macrolist),            tr("Macro")          );
@@ -411,6 +411,18 @@ void QMacroListDialog::on_clearButton_clicked()
         ui->categoryLineEdit->clear();
     }
 }
+
+void QMacroListDialog::on_macroListBackupButton_clicked()
+{
+
+}
+
+#if 0
+void QMacroListDialog::on_deleteMacroButton_clicked()
+{
+    deleteMacroSelectedItems();
+}
+#endif
 
 void QMacroListDialog::addMacroToList()
 {
@@ -1275,11 +1287,6 @@ void QMacroListDialog::selectedMacroItemsMoveDown()
         qDebug("MoveDown:MacroData sync error!!! DataTableSize(%d), DataListSize(%d)", macroDataTable->rowCount(), macroDataList->size());
     }
 #endif
-}
-
-void QMacroListDialog::on_deleteMacroButton_clicked()
-{
-    deleteMacroSelectedItems();
 }
 
 void QMacroListDialog::deleteMacroSelectedItems()

@@ -632,7 +632,7 @@
             <bool>false</bool>
            </property>
           </widget>
-          <widget class="QPushButton" name="macroBackupButton">
+          <widget class="QPushButton" name="macroListBackupButton">
            <property name="geometry">
             <rect>
              <x>76</x>
