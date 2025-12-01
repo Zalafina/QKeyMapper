@@ -547,12 +547,12 @@ void QKeyMapper_Worker::pasteWithShiftIns()
 
     QThread::msleep(PASTE_MODIFIER_KEY_HOLD_TIME_MS);
 
-    // Step 2: Press Insert key
+    // Step 2: Press Insert key (extended key, not Numpad 0)
     INPUT insertDown = { 0 };
     insertDown.type = INPUT_KEYBOARD;
     insertDown.ki.wVk = VK_INSERT;
     insertDown.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-    insertDown.ki.dwFlags = 0;
+    insertDown.ki.dwFlags = KEYEVENTF_EXTENDEDKEY;
     insertDown.ki.time = 0;
     insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
     SendInput(1, &insertDown, sizeof(INPUT));
@@ -560,12 +560,12 @@ void QKeyMapper_Worker::pasteWithShiftIns()
     // Step 3: Hold Insert key for configured time to ensure detection
     QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
 
-    // Step 4: Release Insert key
+    // Step 4: Release Insert key (extended key)
     INPUT insertUp = { 0 };
     insertUp.type = INPUT_KEYBOARD;
     insertUp.ki.wVk = VK_INSERT;
     insertUp.ki.wScan = MapVirtualKey(VK_INSERT, MAPVK_VK_TO_VSC);
-    insertUp.ki.dwFlags = KEYEVENTF_KEYUP;
+    insertUp.ki.dwFlags = KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY;
     insertUp.ki.time = 0;
     insertUp.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
     SendInput(1, &insertUp, sizeof(INPUT));
